@@ -187,3 +187,26 @@
 
 **Issues touched:**
 - #005 — COMPLETE (analyze 0, 37 power tests green, 87.4% power coverage; full suite 182 passed) → closing.
+
+## 2026-08-27 — agent:triage — validator (run 2)
+
+**Done:**
+- Re-ran full triage audit per validator contract. `python3 issues/issues.py validate` → OK (all 10 issues pass naming + frontmatter).
+- `stats`: 10 total / 5 open (#006,#007,#008,#009,#010) / 5 closed (#001,#002,#003,#004,#005). By priority P1:5 P2:4 P3:1; by type feature:8 chore:2. Open IDs 006–010 contiguous, no gaps/reuse.
+- Duplicate NNN across open+closed: clean (no overlaps). Filename↔id prefix match verified for all 5 open (006..010).
+- `.gitignore` audit: `git check-ignore` exit=1 (NOT ignored) for `issues/open/006-*` and `progress/journal.md`; exit=0 (ignored) for `.env` and `.dart_tool/build`. Tracking dirs safe, secrets/build outputs correctly excluded.
+- Git hygiene: branch ahead of origin/main by 8 commits; working tree clean (nothing to commit). Last verified push 2026-08-26 23:13 (~18h ago, under 24h) — no push WARN. Remote is GitHub mirror only (no GitHub Issues used).
+- Stale detection: all 5 open issues last updated 2026-08-26 (1 day stale) — under the 3-day threshold; no Progress Log stale notes appended, `updated` left as-is.
+- `progress_summary.md` accuracy fix: the **Shipped** detail bullets omitted #003 (discovery engine) although "Closed this week" and the Snapshot already listed it. Inserted a #003 Shipped bullet with coverage/metrics so Shipped (5 entries) matches Closed-this-week (5) and the In Progress (5 open) + Metrics (5 open/5 closed) sections. Snapshot date 2026-08-27 already current.
+
+**Decisions:**
+- No frontmatter/naming repairs needed (validate green, IDs contiguous, status=open, closed=null on all open).
+- No stale notes / no journal "today missing" stub needed (today entry present; appended this run 2 entry for audit trail).
+- No push WARN: last push <24h and working tree clean.
+
+**Next:**
+- dev-worker continues #006 (System overview adaptive cards) — next open by priority; #007/#008/#009/#010 queued.
+- triage re-runs in 6h; watch for >24h-without-push after 2026-08-27 23:13.
+
+**Issues touched:**
+- `progress/progress_summary.md` (#003 Shipped bullet added) — no issue number.
