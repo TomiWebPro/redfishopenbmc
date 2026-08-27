@@ -150,3 +150,24 @@
 
 **Issues touched:**
 - #003 — COMPLETE (analyze 0, 93 tests green, 91.0% discovery coverage) → closing.
+
+## 2026-08-27 — agent:opencode — #004 (close)
+
+**Done:**
+- Finalized #004 Multi-system manager (implementation carried over from prior agent session, completed this run). All acceptance criteria + tasks checked.
+- Models: `ConnectionProfile` (uuid id, host/port/scheme, `useTls`, `AuthMethod`, `rememberPassword`, `allowSelfSigned`, `createdAt`; password never in persisted blob), `SystemSnapshot` + `Health`/`PowerState` enums + `fromSystemJson`/`toJson`.
+- `SystemManager` (`StateNotifier<SystemState>`): `Map<id,SystemHandle>`, add/remove/update/connect/disconnect/select, `ProfileRepository` (SecureStorage; password stripped from blob, keystore only when remembered), `rehydrate()` on startup, per-system token isolation via injected `AuthManager`, instant context switch (select does NOT re-discover; cached `SystemFeatures`/`SystemSnapshot` reused).
+- Routing: `go_router` `/:systemId/{overview,power,sensors,firmware,kvm}` + `SystemShell` capability-gated tabs (Overview always; others only when `features.*` true).
+- Dashboard: `DashboardView` adaptive grid (1/2/3 cols) + `AggregatedStatus` header banner (`"2 OK, 1 Critical"`); `SystemCard`/`HealthBadge`/`PowerBadge` widgets.
+- CRUD UI: `AddSystemDialog`/`EditSystemPage`/`SystemProfileForm` with `validateHost` (IPv4/IPv6/hostname) + `validatePort` (1–65535) + self-signed warning banner.
+
+**Decisions:**
+- `ConnectionProfile` defined in feature layer and re-exported from `redfish/models/connection_profile.dart` (shim) to keep #002 client compiling — documented in both files.
+- Fixed 2 pre-existing widget-test harness bugs (off-viewport `Save` tap needed `ensureVisible`; `find.text('SN1')` → `Serial: SN1`) and added 2 dialog/page submit tests to exercise real `SystemManager`.
+- Enlarged test viewport (1200×1600) for dialog/page submit tests instead of relying on scroll+ensureVisible.
+
+**Next:**
+- #005 power execution (now unblocked by #004 + #003); #006 adaptive overview cards; #007 realtime sensors.
+
+**Issues touched:**
+- #004 COMPLETE (analyze 0, 145 tests green / 1 skipped integration stub, 88.1% `features/systems` coverage) → closing.

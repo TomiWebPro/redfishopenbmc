@@ -1,0 +1,612 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:redfishopenbmc/core/storage/secure_storage.dart';
+import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
+import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
+import 'package:redfishopenbmc/features/systems/providers/profile_repository.dart';
+import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
+import 'package:redfishopenbmc/features/systems/views/add_system_dialog.dart';
+import 'package:redfishopenbmc/features/systems/views/dashboard_view.dart';
+import 'package:redfishopenbmc/features/systems/views/edit_system_page.dart';
+import 'package:redfishopenbmc/features/systems/views/system_overview_page.dart';
+import 'package:redfishopenbmc/features/systems/views/system_profile_form.dart';
+import 'package:redfishopenbmc/features/systems/views/system_shell.dart';
+import 'package:redfishopenbmc/features/systems/widgets/status_badges.dart';
+import 'package:redfishopenbmc/features/systems/widgets/system_card.dart';
+import 'package:redfishopenbmc/redfish/models/session.dart';
+import 'package:redfishopenbmc/redfish/models/system_features.dart';
+
+SystemManager seededManager({
+  required Map<String, SystemHandle> systems,
+  String? selectedId,
+}) {
+  final SystemManager m = SystemManager(
+    repository: InMemoryProfileRepository(),
+    storage: InMemoryStorage(),
+  );
+  m.state = SystemState(systems: systems, selectedId: selectedId);
+  return m;
+}
+
+SystemHandle connectedHandle({
+  required String id,
+  String name = 'Lab',
+  String host = '1.2.3.4',
+  Health health = Health.ok,
+  PowerState power = PowerState.on,
+  SystemFeatures? features,
+  String? manufacturer,
+  String? model,
+  String? serialNumber,
+  ConnectionStatus status = ConnectionStatus.connected,
+  String? lastError,
+}) {
+  return SystemHandle(
+    profile: ConnectionProfile(id: id, name: name, host: host),
+    status: status,
+    session: status == ConnectionStatus.connected
+        ? Session(systemId: id, token: 't', location: '', username: '')
+        : null,
+    features: features,
+    snapshot: SystemSnapshot(
+      health: health,
+      powerState: power,
+      manufacturer: manufacturer,
+      model: model,
+      serialNumber: serialNumber,
+    ),
+    lastError: lastError,
+  );
+}
+
+/// Finds the [TextFormField] whose label text is [label].
+Finder field(String label) =>
+    find.ancestor(of: find.text(label), matching: find.byType(TextFormField));
+
+/// Finds the [SwitchListTile] whose title text is [label].
+Finder switchTile(String label) => find.ancestor(
+      of: find.text(label),
+      matching: find.byType(SwitchListTile),
+    );
+
+/// Pumps [child] inside a ProviderScope + GoRouter so `context.go` works and the
+/// [systemManagerProvider] is overridden with [manager].
+Future<void> pumpManaged(
+  WidgetTester tester,
+  SystemManager manager,
+  Widget child, {
+  String initialLocation = '/bmc1/overview',
+}) async {
+  final GoRouter router = GoRouter(
+    initialLocation: initialLocation,
+    routes: <RouteBase>[
+      GoRoute(
+        path: '/:systemId/overview',
+        builder: (BuildContext c, GoRouterState s) => SystemShell(
+          systemId: s.pathParameters['systemId']!,
+          child: child is SystemOverviewPage
+              ? child
+              : SystemOverviewPage(systemId: s.pathParameters['systemId']!),
+        ),
+      ),
+    ],
+  );
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: <Override>[
+        secureStorageProvider.overrideWith((ref) => InMemoryStorage()),
+        systemManagerProvider.overrideWith((ref) => manager),
+      ],
+      child: MaterialApp.router(routerConfig: router),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+/// Hosts a [SystemProfileForm] (which is taller than the default test viewport)
+/// inside a scrollable so layout does not overflow during widget tests.
+Widget _formScreen(Widget child) => MaterialApp(
+      home: Scaffold(body: SingleChildScrollView(child: child)),
+    );
+
+/// Renders [SystemOverviewPage] directly (no [SystemShell]) so the page can be
+/// exercised without triggering the shell's auto-connect-on-enter behavior.
+Future<void> pumpOverviewDirect(
+  WidgetTester tester,
+  SystemManager manager,
+  String id,
+) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: <Override>[
+        secureStorageProvider.overrideWith((ref) => InMemoryStorage()),
+        systemManagerProvider.overrideWith((ref) => manager),
+      ],
+      child: MaterialApp(home: SystemOverviewPage(systemId: id)),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  group('HealthBadge / PowerBadge', () {
+    testWidgets('render every health and power state without throwing',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: const Scaffold(
+            body: const Column(
+              children: const <Widget>[
+                const HealthBadge(health: Health.ok),
+                const HealthBadge(health: Health.warning),
+                const HealthBadge(health: Health.critical),
+                const HealthBadge(health: Health.unknown),
+                const PowerBadge(powerState: PowerState.on),
+                const PowerBadge(powerState: PowerState.off),
+                const PowerBadge(powerState: PowerState.unknown),
+              ],
+            ),
+          ),
+        ),
+      );
+      expect(find.text('OK'), findsOneWidget);
+      expect(find.text('Warning'), findsOneWidget);
+      expect(find.text('Critical'), findsOneWidget);
+      expect(find.text('Unknown'), findsWidgets);
+      expect(find.text('On'), findsOneWidget);
+      expect(find.text('Off'), findsOneWidget);
+    });
+  });
+
+  group('SystemCard', () {
+    testWidgets('shows name, host, badges and detail line', (tester) async {
+      final SystemHandle handle = connectedHandle(
+        id: 'bmc1',
+        name: 'Lab BMC',
+        health: Health.warning,
+        power: PowerState.off,
+        manufacturer: 'Acme',
+        model: 'Server-9',
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: Scaffold(body: SystemCard(handle: handle))),
+      );
+      expect(find.text('Lab BMC'), findsOneWidget);
+      expect(find.text('https://1.2.3.4:443'), findsOneWidget);
+      expect(find.text('Warning'), findsOneWidget);
+      expect(find.text('Off'), findsOneWidget);
+      expect(find.text('Acme · Server-9'), findsOneWidget);
+    });
+
+    testWidgets('tapping the card and selecting a menu action fires callbacks',
+        (tester) async {
+      final SystemHandle handle = connectedHandle(id: 'bmc1');
+      final List<String> actions = <String>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SystemCard(
+              handle: handle,
+              onTap: () {},
+              onMenuAction: actions.add,
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.byType(SystemCard));
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
+      expect(actions, contains('remove'));
+    });
+
+    testWidgets('shows a per-status connection icon', (tester) async {
+      for (final ConnectionStatus status in const <ConnectionStatus>[
+        ConnectionStatus.connecting,
+        ConnectionStatus.error,
+        ConnectionStatus.connected,
+        ConnectionStatus.disconnected,
+      ]) {
+        final SystemHandle handle = connectedHandle(
+          id: 'x',
+          status: status,
+          health: Health.unknown,
+        );
+        await tester.pumpWidget(
+          MaterialApp(home: Scaffold(body: SystemCard(handle: handle))),
+        );
+        expect(find.byType(SystemCard), findsOneWidget);
+      }
+    });
+  });
+
+  group('SystemProfileForm', () {
+    testWidgets('validates and emits a profile on save (create mode)',
+        (tester) async {
+      ConnectionProfile? submitted;
+      await tester.pumpWidget(
+        _formScreen(
+          SystemProfileForm(
+            onSubmit: (ConnectionProfile p) => submitted = p,
+          ),
+        ),
+      );
+      await tester.ensureVisible(field('Host / IP'));
+      await tester.pumpAndSettle();
+      await tester.enterText(field('Host / IP'), 'bmc.example.com');
+      await tester.ensureVisible(field('Port'));
+      await tester.pumpAndSettle();
+      await tester.enterText(field('Port'), '8443');
+      await tester.ensureVisible(field('Username'));
+      await tester.pumpAndSettle();
+      await tester.enterText(field('Username'), 'root');
+      await tester.ensureVisible(find.text('Add system'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add system'));
+      await tester.pumpAndSettle();
+
+      expect(submitted, isNotNull);
+      expect(submitted!.host, 'bmc.example.com');
+      expect(submitted!.port, 8443);
+      expect(submitted!.username, 'root');
+      expect(submitted!.scheme, 'https');
+      expect(submitted!.authMethod, AuthMethod.session);
+      expect(submitted!.useTls, isTrue);
+    });
+
+    testWidgets('shows validation error when host is empty', (tester) async {
+      await tester.pumpWidget(
+        _formScreen(
+          SystemProfileForm(onSubmit: (_) {}),
+        ),
+      );
+      await tester.ensureVisible(find.text('Add system'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add system'));
+      await tester.pumpAndSettle();
+      expect(find.text('Host is required'), findsOneWidget);
+    });
+
+    testWidgets('self-signed toggle reveals the warning banner', (tester) async {
+      await tester.pumpWidget(
+        _formScreen(
+          SystemProfileForm(onSubmit: (_) {}),
+        ),
+      );
+      expect(
+        find.textContaining('Self-signed certificates disable'),
+        findsNothing,
+      );
+      await tester.tap(switchTile('Allow self-signed certificate'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Self-signed certificates disable'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('TLS off flips scheme to http and basic auth is selectable',
+        (tester) async {
+      ConnectionProfile? submitted;
+      await tester.pumpWidget(
+        _formScreen(
+          SystemProfileForm(
+            onSubmit: (ConnectionProfile p) => submitted = p,
+          ),
+        ),
+      );
+      await tester.ensureVisible(switchTile('Use TLS (HTTPS)'));
+      await tester.pumpAndSettle();
+      await tester.tap(switchTile('Use TLS (HTTPS)'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byType(DropdownButton<AuthMethod>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(DropdownButton<AuthMethod>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Basic').last);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(field('Host / IP'));
+      await tester.pumpAndSettle();
+      await tester.enterText(field('Host / IP'), 'h');
+      await tester.ensureVisible(find.text('Add system'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add system'));
+      await tester.pumpAndSettle();
+      expect(submitted!.scheme, 'http');
+      expect(submitted!.authMethod, AuthMethod.basic);
+    });
+
+    testWidgets('edit mode prefills and submits an update', (tester) async {
+      final ConnectionProfile initial = const ConnectionProfile(
+        id: 'bmc1',
+        name: 'Old',
+        host: 'old.host',
+        port: 443,
+        authMethod: AuthMethod.session,
+      );
+      ConnectionProfile? submitted;
+      await tester.pumpWidget(
+        _formScreen(
+          SystemProfileForm(
+            initial: initial,
+            onSubmit: (ConnectionProfile p) => submitted = p,
+          ),
+        ),
+      );
+      expect(
+        tester.widget<TextFormField>(field('Host / IP')).controller!.text,
+        'old.host',
+      );
+      await tester.enterText(field('Host / IP'), 'new.host');
+      await tester.ensureVisible(find.text('Save'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(submitted!.id, 'bmc1');
+      expect(submitted!.host, 'new.host');
+    });
+  });
+
+  group('SystemOverviewPage', () {
+    testWidgets('shows badges, feature chips and a disconnect control',
+        (tester) async {
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(
+            id: 'bmc1',
+            manufacturer: 'Acme',
+            model: 'Server-9',
+            serialNumber: 'SN1',
+            features: const SystemFeatures(
+              systemId: 'bmc1',
+              powerControl: true,
+              sensorMonitoring: true,
+              sensorCount: 12,
+            ),
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+      await pumpManaged(tester, m, const SystemOverviewPage(systemId: 'bmc1'));
+      expect(find.textContaining('Acme'), findsWidgets);
+      expect(find.text('Serial: SN1'), findsOneWidget);
+      expect(find.text('Power control'), findsOneWidget);
+      expect(find.text('Sensors (12)'), findsOneWidget);
+
+      await tester.tap(find.text('Disconnect'));
+      await tester.pumpAndSettle();
+      expect(m.state.systems['bmc1']!.status, ConnectionStatus.disconnected);
+    });
+
+    testWidgets('renders a connection error message', (tester) async {
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(
+            id: 'bmc1',
+            status: ConnectionStatus.error,
+            health: Health.unknown,
+            lastError: 'boom',
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+      await pumpOverviewDirect(tester, m, 'bmc1');
+      expect(find.textContaining('Connection error: boom'), findsOneWidget);
+    });
+
+    testWidgets('renders "System not found" for an unknown id', (tester) async {
+      final SystemManager m = seededManager(systems: <String, SystemHandle>{});
+      await pumpOverviewDirect(tester, m, 'ghost');
+      expect(find.text('System not found'), findsOneWidget);
+    });
+  });
+
+  group('SystemShell', () {
+    testWidgets('gates tabs by discovered features', (tester) async {
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(
+            id: 'bmc1',
+            features: const SystemFeatures(
+              systemId: 'bmc1',
+              powerControl: true,
+              sensorMonitoring: true,
+            ),
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+      await pumpManaged(tester, m, const Text('child'));
+      // Overview is always present; Power + Sensors advertised, Firmware/KVM not.
+      expect(find.text('Overview'), findsOneWidget);
+      expect(find.text('Power'), findsOneWidget);
+      expect(find.text('Sensors'), findsOneWidget);
+      expect(find.text('Firmware'), findsNothing);
+      expect(find.text('KVM'), findsNothing);
+      // Entering the shell selects the system (instant context switch).
+      expect(m.state.selectedId, 'bmc1');
+    });
+
+    testWidgets('shows not-found scaffold for unknown system', (tester) async {
+      final SystemManager m = seededManager(systems: <String, SystemHandle>{});
+      await pumpManaged(tester, m, const Text('child'),
+          initialLocation: '/ghost/overview');
+      expect(find.text('System not found'), findsOneWidget);
+    });
+  });
+
+  group('Dialogs / pages', () {
+    testWidgets('AddSystemDialog renders the profile form', (tester) async {
+      final SystemManager m = seededManager(systems: <String, SystemHandle>{});
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            secureStorageProvider.overrideWith((ref) => InMemoryStorage()),
+            systemManagerProvider.overrideWith((ref) => m),
+          ],
+          child: MaterialApp(
+            home: Builder(
+              builder: (BuildContext context) => ElevatedButton(
+                onPressed: () => showAddSystemDialog(context),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(find.byType(SystemProfileForm), findsOneWidget);
+    });
+
+    testWidgets('EditSystemPage prefilled form submits an update', (tester) async {
+      final ConnectionProfile initial = const ConnectionProfile(
+        id: 'bmc1',
+        name: 'Edit Me',
+        host: 'edit.host',
+      );
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(id: 'bmc1'),
+        },
+        selectedId: 'bmc1',
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            secureStorageProvider.overrideWith((ref) => InMemoryStorage()),
+            systemManagerProvider.overrideWith((ref) => m),
+          ],
+          child: MaterialApp(home: EditSystemPage(profile: initial)),
+        ),
+      );
+      expect(
+        tester.widget<TextFormField>(field('Host / IP')).controller!.text,
+        'edit.host',
+      );
+    });
+
+    testWidgets('AddSystemDialog submit adds a profile through the manager',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      final SystemManager m = seededManager(systems: <String, SystemHandle>{});
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            secureStorageProvider.overrideWith((ref) => InMemoryStorage()),
+            systemManagerProvider.overrideWith((ref) => m),
+          ],
+          child: MaterialApp(
+            home: Builder(
+              builder: (BuildContext context) => ElevatedButton(
+                onPressed: () => showAddSystemDialog(context),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(field('Host / IP'));
+      await tester.pumpAndSettle();
+      await tester.enterText(field('Host / IP'), 'added.host');
+      await tester.ensureVisible(
+        find.widgetWithText(FilledButton, 'Add system'),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Add system'));
+      await tester.pumpAndSettle();
+      expect(
+        m.state.systems.values
+            .where((SystemHandle h) => h.profile.host == 'added.host'),
+        isNotEmpty,
+      );
+    });
+
+    testWidgets('EditSystemPage submit updates the profile and pops',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      final ConnectionProfile initial = const ConnectionProfile(
+        id: 'bmc1',
+        name: 'Edit Me',
+        host: 'edit.host',
+      );
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(id: 'bmc1'),
+        },
+        selectedId: 'bmc1',
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            secureStorageProvider.overrideWith((ref) => InMemoryStorage()),
+            systemManagerProvider.overrideWith((ref) => m),
+          ],
+          child: MaterialApp(home: EditSystemPage(profile: initial)),
+        ),
+      );
+      await tester.ensureVisible(field('Host / IP'));
+      await tester.pumpAndSettle();
+      await tester.enterText(field('Host / IP'), 'edited.host');
+      await tester.ensureVisible(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+      expect(m.state.systems['bmc1']!.profile.host, 'edited.host');
+    });
+  });
+
+  group('DashboardView integration', () {
+    testWidgets('renders aggregated banner and dashboard cards', (tester) async {
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(
+            id: 'bmc1',
+            name: 'Lab',
+            health: Health.ok,
+            power: PowerState.on,
+          ),
+          'bmc2': connectedHandle(
+            id: 'bmc2',
+            name: 'Prod',
+            health: Health.critical,
+            power: PowerState.off,
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+      final GoRouter router = GoRouter(
+        initialLocation: '/systems',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/systems',
+            builder: (BuildContext c, GoRouterState s) => const DashboardView(),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            secureStorageProvider.overrideWith((ref) => InMemoryStorage()),
+            systemManagerProvider.overrideWith((ref) => m),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('1 OK, 1 Critical'), findsOneWidget);
+      expect(find.text('Lab'), findsOneWidget);
+      expect(find.text('Prod'), findsOneWidget);
+    });
+  });
+}

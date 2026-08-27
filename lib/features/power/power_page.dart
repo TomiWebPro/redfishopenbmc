@@ -6,7 +6,10 @@ import 'package:flutter/material.dart';
 /// static scaffold in #001; real controls land in #005.
 class PowerPage extends StatelessWidget {
   /// Creates a [PowerPage].
-  const PowerPage({super.key});
+  const PowerPage({this.systemId, super.key});
+
+  /// Logical id of the system this page is scoped to, if any.
+  final String? systemId;
 
   @override
   Widget build(BuildContext context) {

@@ -6,7 +6,10 @@ import 'package:flutter/material.dart';
 /// scaffold in #001; real update flow lands in #008.
 class FirmwarePage extends StatelessWidget {
   /// Creates a [FirmwarePage].
-  const FirmwarePage({super.key});
+  const FirmwarePage({this.systemId, super.key});
+
+  /// Logical id of the system this page is scoped to, if any.
+  final String? systemId;
 
   @override
   Widget build(BuildContext context) {

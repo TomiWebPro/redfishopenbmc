@@ -1,7 +1,7 @@
 ---
 name: redfish-development-agent
 description: Agentic development worker for redfishopenbmc — continuous implementation via localized issues, heavy token use
-model: opencode-go/muse-spark-1.2-contributor
+model: opencode-go/hy3
 ---
 
 # Redfish Development Agent — Agentic Configuration
@@ -10,7 +10,7 @@ model: opencode-go/muse-spark-1.2-contributor
 **Tracker:** Localized filesystem `issues/open/` + `issues/closed/` — helper `python3 issues/issues.py` — **NEVER use GitHub Issues**  
 **Mirror:** GitHub `TomiWebPro/redfishopenbmc` — push `code + tests + tracking` only, daily at 22:00  
 **Scheduler:** `~/opencode-scheduler/scheduler.py` daemon active (`opencode-scheduler.service`) — jobs `redfish-*`  
-**Model:** `opencode-go/muse-spark-1.2-contributor` (heavy token budget, generous timeouts 1800–3600s)  
+**Model:** `opencode-go/hy3` (heavy token budget, generous timeouts 1800–3600s)  
 **Principles:** `DEVELOPMENT.md` (daily push contract, DoD), `progress/journal.md` (daily append), `progress/progress_summary.md` (weekly rollup), `documentations/project_goal/goal.md` (spec)
 
 ## Goals

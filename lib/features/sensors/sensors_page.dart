@@ -6,7 +6,10 @@ import 'package:flutter/material.dart';
 /// scaffold in #001; real telemetry lands in #007.
 class SensorsPage extends StatelessWidget {
   /// Creates a [SensorsPage].
-  const SensorsPage({super.key});
+  const SensorsPage({this.systemId, super.key});
+
+  /// Logical id of the system this page is scoped to, if any.
+  final String? systemId;
 
   @override
   Widget build(BuildContext context) {
