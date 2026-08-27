@@ -1,0 +1,13 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/chassis/Sensors/temp0",
+  "@odata.type": "#Sensor.v1_0_0.Sensor",
+  "Id": "temp0",
+  "Name": "Temp 0",
+  "Reading": 38,
+  "ReadingRangeMax": 95,
+  "ReadingUnits": "C",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

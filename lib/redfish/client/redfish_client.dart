@@ -58,10 +58,16 @@ class RedfishClient {
   Future<Map<String, dynamic>> getJson(
     String path, {
     Map<String, dynamic>? query,
+    Map<String, String>? headers,
   }) async {
     try {
-      final response =
-          await _dio.get<dynamic>(path, queryParameters: query);
+      final response = await _dio.get<dynamic>(
+        path,
+        queryParameters: query,
+        options: headers == null
+            ? null
+            : Options(headers: headers),
+      );
       return _asMap(response.data);
     } on DioException catch (e) {
       throw RedfishException.fromDioException(

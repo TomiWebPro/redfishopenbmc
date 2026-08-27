@@ -1,0 +1,8 @@
+{
+  "@odata.id": "/redfish/v1/Systems/1",
+  "@odata.type": "#ComputerSystem.v1_20_0.ComputerSystem",
+  "Id": "1",
+  "Name": "System",
+  "PowerState": "On",
+  "Status": { "Health": "OK", "State": "Enabled" }
+}

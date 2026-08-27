@@ -1,0 +1,21 @@
+{
+  "@odata.id": "/redfish/v1/Systems/system",
+  "@odata.type": "#ComputerSystem.v1_20_0.ComputerSystem",
+  "Id": "system",
+  "Name": "System",
+  "Manufacturer": "OpenBMC",
+  "Model": "Rainier",
+  "PowerState": "On",
+  "Status": { "Health": "OK", "State": "Enabled" },
+  "Boot": { "@odata.id": "/redfish/v1/Systems/system/Boot" },
+  "SupportedResetTypes": ["On", "ForceOff", "GracefulShutdown", "GracefulRestart", "ForceRestart", "ForceOn", "PushPowerButton"],
+  "Actions": {
+    "#ComputerSystem.Reset": {
+      "target": "/redfish/v1/Systems/system/Actions/ComputerSystem.Reset",
+      "ResetType@Redfish.AllowableValues": ["On", "ForceOff", "GracefulShutdown", "GracefulRestart", "ForceRestart", "ForceOn", "PushPowerButton"]
+    },
+    "#ComputerSystem.SetPowerState": {
+      "target": "/redfish/v1/Systems/system/Actions/ComputerSystem.SetPowerState"
+    }
+  }
+}

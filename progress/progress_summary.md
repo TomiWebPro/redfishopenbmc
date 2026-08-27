@@ -4,9 +4,9 @@
 
 **Project:** Redfish Multi-System Control App (Flutter) — unified Redfish/OpenBMC control plane. Spec: `documentations/project_goal/goal.md`.
 
-## Snapshot — 2026-08-27 (scaffold complete, #001 + #002 closed)
+## Snapshot — 2026-08-27 (scaffold complete, #001 + #002 + #003 closed)
 
-**Phase:** Scaffold → Feature build. #001 (Flutter scaffold + CI) CLOSED, #002 (Redfish client core) CLOSED (analyze 0, 55 tests green, 89.8% client coverage); #003 discovery engine is next. Localized issue system + daily tracking active.
+**Phase:** Scaffold → Feature build. #001 (Flutter scaffold + CI) CLOSED, #002 (Redfish client core) CLOSED (analyze 0, 55 tests green, 89.8% client coverage), #003 (discovery engine) CLOSED (analyze 0, 93 tests green, **91.0% discovery coverage**). #004 (multi-system manager) is now unblocked. Localized issue system + daily tracking active.
 
 **Shipped:**
 - 2026-08-26 — Localized tracker (`issues/open|closed`, `README.md`, `TEMPLATE.md`, `issues.py`) + skill (`.opencode/skills/redfish-issues/`) + `DEVELOPMENT.md` + 10 starter issues + `progress/journal.md`. Validated `issues.py list/stats/validate`.
@@ -14,8 +14,7 @@
 - 2026-08-27 — **#002 P1 feature — Redfish client core CLOSED.** `RedfishClient` (TLS-first Dio: `https://{host}:{port}`, `Accept`/`OData-Version: 4.0`, 10s/30s timeouts, opt-in self-signed via platform adapter) + `createDioForProfile` factory; `AuthManager` with Basic (`Authorization: Basic`) + Session (`POST /SessionService/Sessions` → `X-Auth-Token`+`Location`, stored token-only in `SecureStorage`, 401-refresh with per-system `Future` lock, `DELETE` on logout) + `withAuth` wrapper; per-system token isolation (`Map<systemId,_SystemAuth>`); normalized `RedfishException` (+ parsed `RedfishError.details`); `Session`/`ConnectionProfile`/`RedfishError`/`RedfishException` models; `SecureStorage` interface + `InMemoryStorage` + `FlutterSecureStorageImpl`; mocked `http_mock_adapter` unit tests (`auth_manager_test`, `redfish_client_extra_test`, `http_client_config_test`, `models_test`) + `client_integration_test` stub. `flutter analyze` 0 issues, `flutter test` 55 passed / 1 skipped, `redfish/client/` coverage **89.8%**. `DEVELOPMENT.md` carries the `#002` Security notes (TLS matrix, secret-at-rest, storage backend table, error taxonomy).
 
 **In Progress (open):**
-- #003 P1 — Discovery engine (NOW UNBLOCKED by #002)
-- #004 P1 — Multi-system manager (blocked by #002 #003)
+- #004 P1 — Multi-system manager (NOW UNBLOCKED by #002 + #003)
 - #005 P1 — Power management (blocked by #003 #004)
 - #006 P2 — System overview adaptive cards
 - #007 P2 — Sensor monitoring realtime
@@ -23,13 +22,13 @@
 - #009 P3 — Remote KVM
 - #010 P2 — Hardening (secure storage, theming, a11y, coverage)
 
-**Closed this week:** #001 (2026-08-27), #002 (2026-08-27)
+**Closed this week:** #001 (2026-08-27), #002 (2026-08-27), #003 (2026-08-27)
 
 **Metrics:**
-- Coverage: `redfish/client/` **89.8%** (target 80), app scaffold baseline otherwise
+- Coverage: `redfish/client/` **89.8%** (target 80), `redfish/discovery/` **91.0%** (target 85)
 - `flutter analyze`: **0 issues**
-- `flutter test`: **55 passed / 1 skipped** (integration stub)
-- Issues: 8 open / 2 closed — `python3 issues/issues.py stats`
+- `flutter test`: **93 passed / 1 skipped** (integration stub)
+- Issues: 7 open / 3 closed — `python3 issues/issues.py stats`
 
 **Risks & Decisions:**
 - Choice of Riverpod vs Bloc deferred to #001 (document rationale in DEVELOPMENT.md)

@@ -1,0 +1,31 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/chassis/Power",
+  "@odata.type": "#Power.v1_5_0.Power",
+  "Id": "Power",
+  "Name": "Power",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "Voltages": [
+    {
+      "Name": "VDD_12V",
+      "ReadingVolts": 12.08,
+      "UpperThresholdCritical": 13.2
+    },
+    {
+      "Name": "VDD_5V",
+      "ReadingVolts": 5.02,
+      "UpperThresholdCritical": 5.5
+    }
+  ],
+  "PowerSupplies": [
+    {
+      "Name": "PSU0",
+      "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+      }
+    }
+  ]
+}

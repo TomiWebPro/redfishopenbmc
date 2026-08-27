@@ -1,0 +1,7 @@
+{
+  "@odata.id": "/redfish/v1/Managers/1",
+  "@odata.type": "#Manager.v1_16_0.Manager",
+  "Id": "1",
+  "Name": "Manager",
+  "Status": { "Health": "OK", "State": "Enabled" }
+}

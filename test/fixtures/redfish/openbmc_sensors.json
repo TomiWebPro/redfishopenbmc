@@ -1,0 +1,10 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/chassis/Sensors",
+  "@odata.type": "#SensorCollection.SensorCollection",
+  "Name": "Sensor Collection",
+  "Members@odata.count": 2,
+  "Members": [
+    { "@odata.id": "/redfish/v1/Chassis/chassis/Sensors/fan0" },
+    { "@odata.id": "/redfish/v1/Chassis/chassis/Sensors/temp0" }
+  ]
+}

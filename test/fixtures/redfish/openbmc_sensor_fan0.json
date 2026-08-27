@@ -1,0 +1,13 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/chassis/Sensors/fan0",
+  "@odata.type": "#Sensor.v1_0_0.Sensor",
+  "Id": "fan0",
+  "Name": "Fan 0",
+  "Reading": 4200,
+  "ReadingRangeMax": 12000,
+  "ReadingUnits": "RPM",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  }
+}

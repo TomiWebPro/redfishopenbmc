@@ -1,0 +1,17 @@
+{
+  "@odata.id": "/redfish/v1/Chassis/chassis/Thermal",
+  "@odata.type": "#Thermal.v1_7_0.Thermal",
+  "Id": "Thermal",
+  "Name": "Thermal",
+  "Status": { "Health": "OK", "State": "Enabled" },
+  "Temperatures": [
+    { "Name": "CPU1 Temp", "ReadingCelsius": 42.0, "Status": { "State": "Enabled" } },
+    { "Name": "Inlet Temp", "ReadingCelsius": 23.0, "Status": { "State": "Enabled" } }
+  ],
+  "Fans": [
+    { "Name": "Fan0", "ReadingRPM": 4000, "Status": { "State": "Enabled" } }
+  ],
+  "Voltages": [
+    { "Name": "VCPU", "ReadingVolts": 1.8, "Status": { "State": "Enabled" } }
+  ]
+}

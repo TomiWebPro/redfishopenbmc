@@ -1,0 +1,19 @@
+{
+  "@odata.id": "/redfish/v1/Managers/bmc",
+  "@odata.type": "#Manager.v1_16_0.Manager",
+  "Id": "bmc",
+  "Name": "BMC",
+  "Status": { "Health": "OK", "State": "Enabled" },
+  "GraphicalConsole": {
+    "Enabled": true,
+    "ConnectTypesSupported": ["KVMIP"],
+    "MaxConcurrentSessions": 1,
+    "Port": 5900
+  },
+  "SerialConsole": {
+    "Enabled": false,
+    "ConnectTypesSupported": ["SSH", "Telnet"],
+    "MaxConcurrentSessions": 1
+  },
+  "NetworkProtocol": { "@odata.id": "/redfish/v1/Managers/bmc/NetworkProtocol" }
+}
