@@ -86,3 +86,29 @@
 
 **Issues touched:**
 - #001 — stricter lint + docs committed on top of the closed scaffold.
+
+## 2026-08-27 — agent:triage — validator
+
+**Done:**
+- Ran full triage audit per validator contract. `python3 issues/issues.py validate` → OK (all 10 issues pass naming + frontmatter).
+- `stats`: 10 total / 9 open (002–010) / 1 closed (001). By priority P1:5 P2:4 P3:1; by type feature:8 chore:2. Open IDs 002–010 contiguous, no gaps/reuse.
+- Duplicate NNN check across open+closed: clean (no overlaps).
+- `issues.py` helper defect found + fixed: `list --json` and `stats --json` raised `TypeError: date not JSON serializable` (date objects in frontmatter). Patched both `json.dumps` calls with `default=str`. Verified both commands now emit valid JSON.
+- `.gitignore` audit: `issues/open/*` and `progress/journal.md` NOT ignored (correct); `.env` and `.dart_tool/build` ARE ignored (correct). Tracking dirs safe.
+- Stale detection: all open issues last updated 2026-08-26 (1 day stale) — under the 3-day threshold, so no stale Progress Log notes appended, `updated` left as-is.
+- Git hygiene: branch ahead of origin/main by 2 commits (e43be1f, bbf794d); last push 2026-08-26 23:13 (~3.5h ago) — under 24h, no push WARN.
+- `progress_summary.md`: refreshed Snapshot date to 2026-08-27 and "Next update" note (was pending #001 close, now pending #002 close). In Progress list (9 open) + Metrics (9 open/1 closed) already matched current stats.
+
+**Decisions:**
+- No stale notes / no frontmatter repairs needed (validate green, IDs contiguous, status/closed correct).
+- WIP files for #002 (untracked `lib/redfish/client/*`, `lib/redfish/models/*`, `test/redfish/`) intentionally left uncommitted — owned by the active #002 dev-worker, not triage.
+- Modified `.opencode/agents/development-agent.md` left uncommitted (agent config, not triage scope).
+
+**Next:**
+- dev-worker continues #002 (Redfish client core); triage re-runs in 6h.
+- Watch for >24h-without-push after 2026-08-27 23:13 to trigger push WARN.
+
+**Issues touched:**
+- Helper: `issues/issues.py` (json serialization fix) — no issue number.
+- `progress/progress_summary.md` (snapshot date + next-update note) — no issue number.
+

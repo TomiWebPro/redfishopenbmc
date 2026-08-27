@@ -4,7 +4,7 @@
 
 **Project:** Redfish Multi-System Control App (Flutter) — unified Redfish/OpenBMC control plane. Spec: `documentations/project_goal/goal.md`.
 
-## Snapshot — 2026-08-26 (bootstrap)
+## Snapshot — 2026-08-27 (scaffold complete, #001 closed)
 
 **Phase:** Planning → Scaffold. Spec complete (`README.md` + `goal.md` + `LICENSE`), no Flutter code yet. Localized issue system just bootstrapped.
 
@@ -50,4 +50,4 @@
 - `DEVELOPMENT.md` — what is pushed daily and Definition of Done
 
 ---
-*Next update: after #001 closes (or 2026-09-02 weekly).*
+*Next update: after #002 closes (or 2026-09-02 weekly).*

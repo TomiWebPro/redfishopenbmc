@@ -131,7 +131,7 @@ def cmd_list(args):
     pri_order={"P1":0,"P2":1,"P3":2,"P4":3}
     issues.sort(key=lambda x: (pri_order.get(str(x["priority"]),9), int(x["id"]) if str(x["id"]).isdigit() else 999))
     if args.json:
-        print(json.dumps([{k:v for k,v in i.items() if k not in ("raw","frontmatter")} for i in issues], indent=2))
+        print(json.dumps([{k:v for k,v in i.items() if k not in ("raw","frontmatter")} for i in issues], indent=2, default=str))
         return
     if not issues:
         print(f"No issues in {','.join(dirs)}/")
@@ -310,7 +310,7 @@ def cmd_stats(args):
         "closed_ids": sorted([i["id"] for i in closed_issues]),
     }
     if args.json:
-        print(json.dumps(stats, indent=2))
+        print(json.dumps(stats, indent=2, default=str))
     else:
         print(f"Total: {stats['total']}  Open: {stats['open']}  Closed: {stats['closed']}")
         print(f"By priority: {stats['by_priority']}")
