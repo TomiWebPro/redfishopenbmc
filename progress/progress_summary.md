@@ -6,7 +6,7 @@
 
 ## Snapshot — 2026-08-27 (scaffold complete, #001 + #002 closed)
 
-**Phase:** Planning → Scaffold. Spec complete (`README.md` + `goal.md` + `LICENSE`), no Flutter code yet. Localized issue system just bootstrapped.
+**Phase:** Scaffold → Feature build. #001 (Flutter scaffold + CI) CLOSED, #002 (Redfish client core) CLOSED (analyze 0, 55 tests green, 89.8% client coverage); #003 discovery engine is next. Localized issue system + daily tracking active.
 
 **Shipped:**
 - 2026-08-26 — Localized tracker (`issues/open|closed`, `README.md`, `TEMPLATE.md`, `issues.py`) + skill (`.opencode/skills/redfish-issues/`) + `DEVELOPMENT.md` + 10 starter issues + `progress/journal.md`. Validated `issues.py list/stats/validate`.
