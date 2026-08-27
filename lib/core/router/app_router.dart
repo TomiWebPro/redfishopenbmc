@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/discovery/discovery_page.dart';
-import '../../features/firmware/firmware_page.dart';
-import '../../features/kvm/kvm_page.dart';
-import '../../features/power/power_page.dart';
-import '../../features/sensors/sensors_page.dart';
-import '../../features/systems/systems_page.dart';
+import 'package:redfishopenbmc/features/discovery/discovery_page.dart';
+import 'package:redfishopenbmc/features/firmware/firmware_page.dart';
+import 'package:redfishopenbmc/features/kvm/kvm_page.dart';
+import 'package:redfishopenbmc/features/power/power_page.dart';
+import 'package:redfishopenbmc/features/sensors/sensors_page.dart';
+import 'package:redfishopenbmc/features/systems/systems_page.dart';
 
-/// Central GoRouter configuration.
-/// Shell route provides adaptive scaffold; feature tabs are
-/// rendered only when discovered (future #003 gating).
+/// Central [GoRouter] configuration.
+///
+/// A shell route provides an adaptive scaffold; feature tabs are rendered
+/// only when discovered (future #003 gating).
 class AppRouter {
   AppRouter._();
 
+  /// Builds the application [GoRouter] with the shell + feature routes.
   static GoRouter createRouter() {
     return GoRouter(
       initialLocation: '/systems',
@@ -62,8 +64,7 @@ class AppRouter {
           ],
         ),
       ],
-      errorBuilder: (BuildContext context, GoRouterState state) =>
-          Scaffold(
+      errorBuilder: (BuildContext context, GoRouterState state) => Scaffold(
         appBar: AppBar(title: const Text('Not found')),
         body: Center(child: Text('Route not found: ${state.uri}')),
       ),
@@ -76,8 +77,10 @@ class AppRouter {
 /// - tablet: NavigationRail
 /// - desktop: NavigationRail + extended
 class AppShell extends StatelessWidget {
+  /// Creates the adaptive [AppShell] wrapping [child].
   const AppShell({required this.child, super.key});
 
+  /// The routed feature screen rendered inside the shell.
   final Widget child;
 
   static const List<_NavItem> _items = <_NavItem>[
@@ -85,13 +88,17 @@ class AppShell extends StatelessWidget {
     _NavItem(label: 'Discovery', icon: Icons.explore_outlined, path: '/discovery'),
     _NavItem(label: 'Power', icon: Icons.power_outlined, path: '/power'),
     _NavItem(label: 'Sensors', icon: Icons.thermostat_outlined, path: '/sensors'),
-    _NavItem(label: 'Firmware', icon: Icons.system_update_outlined, path: '/firmware'),
+    _NavItem(
+      label: 'Firmware',
+      icon: Icons.system_update_outlined,
+      path: '/firmware',
+    ),
     _NavItem(label: 'KVM', icon: Icons.computer_outlined, path: '/kvm'),
   ];
 
   int _selectedIndex(BuildContext context) {
-    final String loc = GoRouterState.of(context).uri.toString();
-    for (int i = 0; i < _items.length; i++) {
+    final loc = GoRouterState.of(context).uri.toString();
+    for (var i = 0; i < _items.length; i++) {
       if (loc.startsWith(_items[i].path)) return i;
     }
     return 0;
@@ -105,11 +112,11 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final double width = constraints.maxWidth;
-        final bool isMobile = width < 600;
-        final bool isTablet = width >= 600 && width < 1200;
+        final width = constraints.maxWidth;
+        final isMobile = width < 600;
+        final isTablet = width >= 600 && width < 1200;
 
-        final int selected = _selectedIndex(context);
+        final selected = _selectedIndex(context);
 
         if (isMobile) {
           return Scaffold(
@@ -118,10 +125,12 @@ class AppShell extends StatelessWidget {
               selectedIndex: selected,
               onDestinationSelected: (int i) => _onTap(context, i),
               destinations: _items
-                  .map((e) => NavigationDestination(
-                        icon: Icon(e.icon),
-                        label: e.label,
-                      ))
+                  .map(
+                    (e) => NavigationDestination(
+                      icon: Icon(e.icon),
+                      label: e.label,
+                    ),
+                  )
                   .toList(),
             ),
           );
@@ -138,10 +147,12 @@ class AppShell extends StatelessWidget {
                     ? NavigationRailLabelType.selected
                     : NavigationRailLabelType.none,
                 destinations: _items
-                    .map((e) => NavigationRailDestination(
-                          icon: Icon(e.icon),
-                          label: Text(e.label),
-                        ))
+                    .map(
+                      (e) => NavigationRailDestination(
+                        icon: Icon(e.icon),
+                        label: Text(e.label),
+                      ),
+                    )
                     .toList(),
               ),
               const VerticalDivider(width: 1),

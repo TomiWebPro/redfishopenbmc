@@ -1,25 +1,42 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Abstract secure storage interface.
-/// Keeps tokens/credentials off plaintext; implementations
-/// must never log values.
+///
+/// Keeps tokens/credentials off plaintext; implementations must never log
+/// values.
 abstract class SecureStorage {
+  /// Reads the value stored under [key], or `null` if absent.
   Future<String?> read(String key);
+
+  /// Writes [value] under [key].
   Future<void> write(String key, String value);
+
+  /// Deletes the value stored under [key].
   Future<void> delete(String key);
+
+  /// Deletes all stored key/value pairs.
   Future<void> deleteAll();
+
+  /// Whether a value is stored under [key].
   Future<bool> containsKey(String key);
+
+  /// Returns a copy of all stored key/value pairs.
   Future<Map<String, String>> readAll();
 }
 
-/// Production implementation backed by platform keystore
+/// Production implementation backed by the platform keystore
 /// (Keychain / Keystore / credential manager).
 class FlutterSecureStorageImpl implements SecureStorage {
+  /// Creates a [FlutterSecureStorageImpl].
   FlutterSecureStorageImpl({FlutterSecureStorage? storage})
       : _storage = storage ??
             const FlutterSecureStorage(
-              aOptions: AndroidOptions(encryptedSharedPreferences: true),
-              iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+              aOptions: AndroidOptions(
+                encryptedSharedPreferences: true,
+              ),
+              iOptions: IOSOptions(
+                accessibility: KeychainAccessibility.first_unlock,
+              ),
             );
 
   final FlutterSecureStorage _storage;
@@ -45,8 +62,9 @@ class FlutterSecureStorageImpl implements SecureStorage {
 }
 
 /// In-memory implementation for tests and previews.
-/// Never used in production; keeps interface testable without
-/// platform channels.
+///
+/// Never used in production; keeps the interface testable without platform
+/// channels.
 class InMemoryStorage implements SecureStorage {
   final Map<String, String> _store = <String, String>{};
 

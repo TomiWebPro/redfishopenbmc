@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 
 /// Central theme definitions for redfishopenbmc.
-/// Dark mode is first-class: [lightTheme] and [darkTheme] share
-/// the same component overrides, differing only in color scheme.
+///
+/// Dark mode is first-class: [lightTheme] and [darkTheme] share the same
+/// component overrides, differing only in the derived color scheme.
 class AppTheme {
   AppTheme._();
 
   static const _seed = Color(0xFF0F62FE);
 
+  /// Light [ThemeData] built from a shared seed color.
   static ThemeData get lightTheme {
-    final ColorScheme scheme = ColorScheme.fromSeed(
-      seedColor: _seed,
-      brightness: Brightness.light,
-    );
+    final scheme = ColorScheme.fromSeed(seedColor: _seed);
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
@@ -37,8 +36,9 @@ class AppTheme {
     );
   }
 
+  /// Dark [ThemeData] built from a shared seed color.
   static ThemeData get darkTheme {
-    final ColorScheme scheme = ColorScheme.fromSeed(
+    final scheme = ColorScheme.fromSeed(
       seedColor: _seed,
       brightness: Brightness.dark,
     );

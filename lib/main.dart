@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'core/router/app_router.dart';
-import 'core/theme/app_theme.dart';
+import 'package:redfishopenbmc/core/router/app_router.dart';
+import 'package:redfishopenbmc/core/theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const ProviderScope(child: RedfishApp()));
 }
 
+/// Root application widget.
+///
+/// Composes ProviderScope (Riverpod), GoRouter navigation, and the
+/// light/dark [AppTheme] using the system theme mode.
 class RedfishApp extends ConsumerWidget {
+  /// Creates the root [RedfishApp].
   const RedfishApp({super.key});
 
   @override
@@ -19,7 +23,6 @@ class RedfishApp extends ConsumerWidget {
       title: 'Redfish OpenBMC',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );
@@ -27,8 +30,10 @@ class RedfishApp extends ConsumerWidget {
 }
 
 /// Lightweight adaptive shell preview used by widget_test.
-/// Exposes breakpoint logic without requiring GoRouter.
+///
+/// Exposes breakpoint logic without requiring [AppRouter].
 class AdaptiveShellPreview extends StatelessWidget {
+  /// Creates the [AdaptiveShellPreview].
   const AdaptiveShellPreview({super.key});
 
   @override
@@ -38,8 +43,8 @@ class AdaptiveShellPreview extends StatelessWidget {
       darkTheme: AppTheme.darkTheme,
       home: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final double w = constraints.maxWidth;
-          final String bp = w < 600
+          final w = constraints.maxWidth;
+          final bp = w < 600
               ? 'mobile'
               : w < 1200
                   ? 'tablet'
