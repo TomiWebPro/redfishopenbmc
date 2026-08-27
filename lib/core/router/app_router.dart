@@ -71,17 +71,23 @@ class AppRouter {
                 GoRoute(
                   path: '/:systemId/sensors',
                   builder: (BuildContext context, GoRouterState state) =>
-                      const SensorsPage(),
+                      SensorsPage(
+                    systemId: state.pathParameters['systemId'] ?? '',
+                  ),
                 ),
                 GoRoute(
                   path: '/:systemId/firmware',
                   builder: (BuildContext context, GoRouterState state) =>
-                      const FirmwarePage(),
+                      FirmwarePage(
+                    systemId: state.pathParameters['systemId'] ?? '',
+                  ),
                 ),
                 GoRoute(
                   path: '/:systemId/kvm',
                   builder: (BuildContext context, GoRouterState state) =>
-                      const KvmPage(),
+                      KvmPage(
+                    systemId: state.pathParameters['systemId'] ?? '',
+                  ),
                 ),
                 GoRoute(
                   path: '/:systemId',

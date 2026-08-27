@@ -200,17 +200,28 @@ class FeatureRules {
   }
 
   /// Returns the enabled console type for a manager, or `null`.
+  ///
+  /// Honors the real Redfish schema field `ServiceEnabled` (used by the DMTF
+  /// mockup and shipping BMCs) and falls back to the older `Enabled` key for
+  /// backwards compatibility.
   static String? _managerConsoleType(Map<String, dynamic> manager) {
     final dynamic graphical = manager['GraphicalConsole'];
     if (graphical is Map<dynamic, dynamic> &&
-        graphical['Enabled'] == true) {
+        _consoleEnabled(graphical)) {
       return 'GraphicalConsole';
     }
     final dynamic serial = manager['SerialConsole'];
-    if (serial is Map<dynamic, dynamic> && serial['Enabled'] == true) {
+    if (serial is Map<dynamic, dynamic> && _consoleEnabled(serial)) {
       return 'SerialConsole';
     }
     if (manager['Oem'] is Map<dynamic, dynamic>) return 'Oem';
     return null;
+  }
+
+  /// True when a console block reports itself as enabled, checking both the
+  /// schema-correct `ServiceEnabled` and the legacy `Enabled` fields.
+  static bool _consoleEnabled(dynamic console) {
+    if (console is! Map<dynamic, dynamic>) return false;
+    return console['ServiceEnabled'] == true || console['Enabled'] == true;
   }
 }

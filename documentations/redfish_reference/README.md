@@ -1,0 +1,85 @@
+# Redfish Reference Documentation
+
+Authoritative DMTF Redfish reference material for the Redfish/OpenBMC Flutter client.
+This folder contains **generated documentation only** — it does not modify application
+source code. The raw API payloads that back every example here live under
+`test/fixtures/redfish/`.
+
+## Sources (exact URLs used)
+
+### 1. DMTF Redfish Mockup (real `/redfish/v1` API responses)
+- Repository: <https://github.com/DMTF/Redfish-Mockup-Server>
+- Command used:
+  ```bash
+  git clone --depth 1 https://github.com/DMTF/Redfish-Mockup-Server /tmp/redfish-mockup
+  ```
+- Mockup profile used: `public-rackmount1` (a rackmount server with BMC).
+  - Reported `RedfishVersion`: `1.15.0` (ServiceRoot `@odata.type` `#ServiceRoot.v1_16_1.ServiceRoot`).
+- Copied verbatim (preserving the full relative tree) into:
+  `test/fixtures/redfish/dmtf_mockup/`
+
+### 2. DMTF JSON Schemas (machine-readable property definitions)
+- Base URL pattern: `https://redfish.dmtf.org/schemas/v1/<Name>.json`
+  - The bare `<Name>.json` URL resolves (HTTP 302) to the **latest** published
+    version and is an *aggregator* document (`anyOf` of every version). The real
+    property definitions live in the versioned files, which were also downloaded.
+- Downloaded into: `test/fixtures/redfish/schemas/`
+  - Bare (aggregator) files: `ComputerSystem.json`, `Chassis.json`, `Manager.json`,
+    `Power.json`, `PowerSupply.json`, `PowerSubsystem.json`, `Thermal.json`,
+    `Sensor.json`, `SensorCollection.json`, `UpdateService.json`,
+    `SoftwareInventory.json`, `SoftwareInventoryCollection.json`, `SimpleUpdate`
+    (see gaps), `AccountService.json`, `SessionService.json`, `EthernetInterface.json`,
+    `LogService.json`, `EventService.json`, `TaskService.json`, `Resource.json`,
+    `RedfishError` (see gaps), `Odata.json`, `AttributeRegistry.json`.
+  - Versioned definition files (latest, used for property tables):
+    `ComputerSystem.v1_28_0.json`, `Chassis.v1_28_0.json`, `Manager.v1_25_0.json`,
+    `Power.v1_7_3.json`, `Thermal.v1_7_3.json`, `Sensor.v1_13_0.json`,
+    `UpdateService.v1_17_1.json`, `SoftwareInventory.v1_14_0.json`,
+    `AccountService.v1_18_1.json`, `SessionService.v1_2_0.json`,
+    `EthernetInterface.v1_12_5.json`, `EventService.v1_12_0.json`,
+    `LogService.v1_9_0.json`, plus `odata.4.0.0.json`.
+
+## Gaps / notes
+- `SimpleUpdate` has **no standalone JSON schema** — it is an Action defined inside
+  `UpdateService.json` (`#UpdateService.SimpleUpdate`). Its target URI in the mockup is
+  `/redfish/v1/UpdateService/Actions/SimpleUpdate`.
+- `RedfishError` has **no JSON schema** at the DMTF schema site (only `RedfishError_v1.xml/.bin/.map`).
+  Its shape is defined by the Redfish specification and is documented in `redfish_error.md`.
+- `Odata.json` is fetched as `odata.4.0.0.json` (the bare `Odata.json` 404s; lowercase `odata`).
+- `SoftwareInventoryCollection` is **not present** in the `public-rackmount1` mockup — only
+  `FirmwareInventory` is exposed. Per the DMTF spec, `FirmwareInventory` and `SoftwareInventory`
+  are collections of the same `SoftwareInventory` resource; treat them interchangeably in code.
+
+## How to regenerate
+1. Re-clone / refresh the mockup (see step 1) and re-copy `public-rackmount1/` into
+   `test/fixtures/redfish/dmtf_mockup/`.
+2. Re-download schemas from the base URL and re-resolve the latest versioned files.
+3. Re-run the doc generator (`/tmp/gen_docs.py` is reproducible) to rebuild the
+   per-resource Markdown pages, then hand-maintain `README.md`, `index.md`, and
+   `api_formats.md`.
+
+## Directory layout
+```
+documentations/redfish_reference/
+  README.md              # this file
+  index.md               # data-model overview + table of contents
+  api_formats.md         # endpoint + field quick reference (coding cheat-sheet)
+  computer_system.md
+  chassis.md
+  manager.md
+  power.md
+  thermal.md
+  sensor.md
+  update_service.md
+  software_inventory.md
+  account_service.md
+  session_service.md
+  ethernet_interface.md
+  event_service.md
+  log_service.md
+  redfish_error.md
+
+test/fixtures/redfish/
+  dmtf_mockup/           # full public-rackmount1 tree (264 real JSON files)
+  schemas/               # 34 raw DMTF schema files (aggregator + versioned)
+```
