@@ -128,16 +128,44 @@ Close via `python3 issues/issues.py close NNN --reason "..."` then commit.
 
 | Tool | Version | Notes |
 |------|---------|-------|
-| Flutter | 3.x (record `flutter --version` on setup → #001) |  |
-| Dart | (from Flutter) |  |
-| State | Riverpod (chosen in #001) | alternative Bloc documented if switched |
-| Router | go_router |  |
-| Storage | flutter_secure_storage | per-platform matrix in #010 |
-| HTTP | dio |  |
-| Charts | fl_chart |  |
-| Tests | flutter_test + mockito/http_mock_adapter |  |
+| Flutter | **3.47.1** (channel stable, revision 6655482ec0, 2026-08-19) | installed via `git clone https://github.com/flutter/flutter.git ~/flutter --depth 1 --branch stable` (per #001 step 2); `~/flutter/bin/flutter` on PATH |
+| Dart | **3.13.1** (from Flutter 3.47.1) | DevTools 2.60.0 |
+| State | Riverpod 2.6.1 (chosen in #001) | alternative Bloc documented below if switched |
+| Router | go_router 14.8.1 |  |
+| Storage | flutter_secure_storage 9.2.4 | per-platform matrix in #010 |
+| HTTP | dio 5.7.0 |  |
+| JSON | json_annotation 4.9.0 + json_serializable 6.8.0 (build_runner 2.4.13) | codegen available for #002+ |
+| Intl | intl 0.20.2 |  |
+| Charts | fl_chart (to be added in #007) |  |
+| Tests | flutter_test + mockito/http_mock_adapter (to be added in #002) |  |
 
 Update this table when a dep is added.
+
+## State management decision — Riverpod (chosen in #001)
+
+`#001` evaluated **Riverpod** vs **Bloc** for app-wide state. Decision: **Riverpod**
+(`flutter_riverpod`), recorded here per the issue's "decide and document" requirement.
+
+Rationale:
+- **Async-native**: Redfish is I/O heavy (HTTP, session, polling). Riverpod's
+  `FutureProvider`/`StreamProvider` map directly onto `GET`/subscription without
+  a manual event-sink boilerplate that Bloc requires for every async source.
+- **Scoped, testable providers**: per-system state isolation (session tokens,
+  cached schema, feature map) is expressed as `family` providers keyed by
+  `systemId` — ideal for the multi-host model in `goal.md § Multi-System`.
+- **Less ceremony**: no `Event`/`State` class pairs for simple reads; `ref.watch`
+  rebuilds only dependents. Lower barrier for the many small feature slices
+  (#002–#010).
+- **First-class `ConsumerWidget` + `ProviderScope`**: composes cleanly with
+  `go_router` shell and `flutter_secure_storage`.
+- Bloc remains a documented alternative but was not chosen; if a feature needs
+  explicit state-machine semantics (e.g. firmware update job FSM in #008) we can
+  embed a `Cubit` inside a provider without re-architecting.
+
+Dependency pins (see `pubspec.yaml`): `flutter_riverpod ^2.6.1`, `go_router ^14.8.1`,
+`flutter_secure_storage ^9.2.4`, `dio ^5.7.0`, `json_annotation ^4.9.0`, `intl ^0.20.2`.
+Codegen (`json_serializable` + `build_runner`) is available as a dev dependency
+for #002+ models; the #001 scaffold uses hand-written `fromJson`/`toJson` stubs.
 
 ## Redfish dev notes
 

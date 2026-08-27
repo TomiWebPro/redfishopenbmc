@@ -10,25 +10,26 @@
 
 **Shipped:**
 - 2026-08-26 — Localized tracker (`issues/open|closed`, `README.md`, `TEMPLATE.md`, `issues.py`) + skill (`.opencode/skills/redfish-issues/`) + `DEVELOPMENT.md` + 10 starter issues + `progress/journal.md`. Validated `issues.py list/stats/validate`.
+- 2026-08-27 — **#001 P1 chore — Flutter scaffold + tooling CLOSED.** `flutter create .` (6 platforms), `lib/` layout, `pubspec.lock` pinned (`flutter_riverpod`, `go_router`, `flutter_secure_storage`, `dio`, `json_annotation`, `intl`), `analysis_options.yaml` (stricter lints, 0 issues), dark+light `ThemeData` + `ThemeMode.system`, adaptive `LayoutBuilder`/`NavigationRail`/`NavigationBar` shell, `SecureStorage` interface + `FlutterSecureStorageImpl` + `InMemoryStorage`, placeholder widget + theme tests (13/13 green), `.github/workflows/flutter-ci.yml` (analyze+test+coverage+issues-validate). Flutter 3.47.1 / Dart 3.13.1 installed at `~/flutter`.
 
 **In Progress (open):**
-- #001 P1 chore — Project setup / Flutter scaffold — **ready to start** (blocks all)
-- #002 P1 — Redfish client core (blocked by #001)
-- #003 P1 — Discovery engine (blocked by #001 #002)
-- #004 P1 — Multi-system manager (blocked by #001–#003)
-- #005 P1 — Power management (blocked by #001–#004)
+- #002 P1 — Redfish client core (NOW UNBLOCKED)
+- #003 P1 — Discovery engine (blocked by #002)
+- #004 P1 — Multi-system manager (blocked by #002 #003)
+- #005 P1 — Power management (blocked by #003 #004)
 - #006 P2 — System overview adaptive cards
 - #007 P2 — Sensor monitoring realtime
 - #008 P2 — Firmware & update management
 - #009 P3 — Remote KVM
 - #010 P2 — Hardening (secure storage, theming, a11y, coverage)
 
-**Closed this week:** — (none yet; bootstrap counts as infra)
+**Closed this week:** #001 (2026-08-27)
 
 **Metrics:**
-- Coverage: n/a (no code)
-- `flutter analyze`: n/a
-- Issues: 10 open / 0 closed — `python3 issues/issues.py stats`
+- Coverage: scaffold ~ baseline (13 tests, `flutter test --coverage` runs; lcov in CI)
+- `flutter analyze`: **0 issues**
+- `flutter test`: **13/13 green**
+- Issues: 9 open / 1 closed — `python3 issues/issues.py stats`
 
 **Risks & Decisions:**
 - Choice of Riverpod vs Bloc deferred to #001 (document rationale in DEVELOPMENT.md)

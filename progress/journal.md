@@ -50,3 +50,23 @@
 - staged: .opencode/agents/development-agent.md (code+tracking only, secrets excluded)
 - issues: Total: 10  Open: 10  Closed: 0 By priority: {'P1': 5, 'P2': 4, 'P3': 1} By type:     {'chore': 2, 'feature': 8} By status:   {'open': 10} Open IDs:   001, 002, 003, 004, 005, 006, 007, 008, 009, 010 Closed IDs: — 
 - validate: validate: OK — all issues pass naming + frontmatter checks
+
+## 2026-08-27 — agent:opencode — #001 (close)
+
+**Done:**
+- Installed Flutter 3.47.1 / Dart 3.13.1 (`git clone ~/flutter --depth 1 --branch stable`; `~/flutter/bin` on PATH).
+- Verified existing `flutter create .` scaffold (all 6 platforms) + `lib/` layout per acceptance criteria.
+- `flutter pub get` → `pubspec.lock` generated & tracked. `flutter analyze` → **0 issues**. `flutter test` → **13/13 green**. `flutter test --coverage` → lcov generated.
+- Fixed `analysis_options.yaml` (removed 6 Dart-3.x-removed lints) and 2 test bugs (`colorScheme.seed` getter; `find.textContaining` matching 2 widgets).
+- Added `.github/workflows/flutter-ci.yml` (analyze+test+coverage+issues validate) — already present, confirmed correct.
+- Documented Riverpod-over-Bloc rationale + toolchain table in `DEVELOPMENT.md`.
+
+**Decisions:**
+- Riverpod chosen for state (#001): async-native (`FutureProvider`/`StreamProvider`), `family` providers give per-`systemId` isolation matching the multi-host model, less ceremony than Bloc for the many small slices #002–#010.
+- Kept `json_serializable`/`build_runner` as dev deps for #002+ models; #001 uses hand-written `fromJson`/`toJson` stubs.
+
+**Next:**
+- #002 Redfish client core (HTTP/TLS/auth/session) — unblocks #003–#010.
+
+**Issues touched:**
+- #001 — COMPLETE, all criteria checked, analyze 0 / tests 13 green → closing.
