@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:redfishopenbmc/core/storage/secure_storage.dart';
+import 'package:redfishopenbmc/features/overview/models/system_overview.dart';
+import 'package:redfishopenbmc/features/overview/overview_provider.dart';
 import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
 import 'package:redfishopenbmc/features/systems/providers/profile_repository.dart';
@@ -99,12 +101,35 @@ Future<void> pumpManaged(
       overrides: <Override>[
         secureStorageProvider.overrideWith((ref) => InMemoryStorage()),
         systemManagerProvider.overrideWith((ref) => manager),
+        overviewProvider.overrideWith(
+          (ref, id) => Future<SystemOverview>.value(_sampleOverview()),
+        ),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );
   await tester.pumpAndSettle();
 }
+
+/// A representative [SystemOverview] used to feed [overviewProvider] in widget
+/// tests so the embedded [OverviewView] renders real cards without network.
+SystemOverview _sampleOverview() => SystemOverview(
+      manufacturer: 'Acme',
+      model: 'Server-9',
+      serialNumber: 'SN1',
+      sku: 'SKU-1',
+      partNumber: 'PN-1',
+      biosVersion: 'v1.2',
+      powerState: PowerState.on,
+      health: Health.ok,
+      healthRollup: Health.ok,
+      processorSummary: const ProcessorSummary(count: 2, model: 'Cortex-A72'),
+      memorySummary: const MemorySummary(totalGiB: 32),
+      indicatorLed: IndicatorLed.lit,
+      leadingTemperatureCelsius: 42.0,
+      resourceUri: '/redfish/v1/Systems/system',
+      lastUpdated: DateTime(2026, 1, 1),
+    );
 
 /// Hosts a [SystemProfileForm] (which is taller than the default test viewport)
 /// inside a scrollable so layout does not overflow during widget tests.
@@ -124,6 +149,9 @@ Future<void> pumpOverviewDirect(
       overrides: <Override>[
         secureStorageProvider.overrideWith((ref) => InMemoryStorage()),
         systemManagerProvider.overrideWith((ref) => manager),
+        overviewProvider.overrideWith(
+          (ref, id) => Future<SystemOverview>.value(_sampleOverview()),
+        ),
       ],
       child: MaterialApp(home: SystemOverviewPage(systemId: id)),
     ),
@@ -379,8 +407,9 @@ void main() {
         selectedId: 'bmc1',
       );
       await pumpManaged(tester, m, const SystemOverviewPage(systemId: 'bmc1'));
+      // Identity now lives in the embedded OverviewView's Identity card.
       expect(find.textContaining('Acme'), findsWidgets);
-      expect(find.text('Serial: SN1'), findsOneWidget);
+      expect(find.text('SN1'), findsOneWidget);
       expect(find.text('Power control'), findsOneWidget);
       expect(find.text('Sensors (12)'), findsOneWidget);
 
