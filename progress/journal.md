@@ -171,3 +171,19 @@
 
 **Issues touched:**
 - #004 COMPLETE (analyze 0, 145 tests green / 1 skipped integration stub, 88.1% `features/systems` coverage) → closing.
+
+## 2026-08-27 — agent:opencode — #005 (close)
+
+**Done:**
+- Completed issue #005 (Power management). `PowerService.reset(systemId, ResetType)` POSTs `/redfish/v1/Systems/{id}/Actions/ComputerSystem.Reset` with the Redfish `ResetType` body, resolving the target via discovery raw tree → known `@odata.id` → live `/redfish/v1/Systems` crawl → canonical fallback. Unsupported types rejected locally (`SystemFeatures.supportedResetTypes`); 202+`Location` accepted (task polling deferred to #008). `PowerState`/`ResetType` enums, `PowerController` (optimistic transition + non-blocking 3s/30s polling), and Riverpod `powerServiceProvider`/`powerControllerProvider` families. `PowerView` gated on `features.powerControl` (renders nothing otherwise), animated `PowerBadge` (pulse only while transitioning), destructive-styled `ResetButton`s (disabled when unsupported), and `ConfirmResetDialog`. Error taxonomy: 403 → insufficient privilege, 409 → system busy, 400 → `@Message.ExtendedInfo`.
+- Tests: 37 (service + controller + view + providers + model), all green; `flutter analyze` → **0 issues**; `features/power/` line coverage **87.4%** (gate ≥80%). Full suite now **182 passed / 1 skipped**.
+
+**Decisions:**
+- `RedfishError.fromJson` now extracts `Message` from `@Message.ExtendedInfo` entries (previously stored the whole map via `toString()`), so 400 extended-info messages surface correctly. `PowerBadge` only starts its pulse animation for transitional states (idle badges stay static, so `pumpAndSettle` in widget tests converges).
+- Removed garbled/duplicate scratch scaffolding from the prior interrupted #005 session (`test/features/power/power_models_test.dart`, `test/scratch_debug_test.dart`) and fixed several test-harness bugs (wrong `overrideWith` arity, `expectLater(...) as RedfishException` cast, missing `id:'bmc1'` in `ConnectionProfile`, `find.widgetWithText` for disabled buttons, malformed 403 mock replying 202).
+
+**Next:**
+- #006 System overview adaptive cards (next open by priority). Power tab already routed via `app_router.dart` + gated in `SystemShell`.
+
+**Issues touched:**
+- #005 — COMPLETE (analyze 0, 37 power tests green, 87.4% power coverage; full suite 182 passed) → closing.

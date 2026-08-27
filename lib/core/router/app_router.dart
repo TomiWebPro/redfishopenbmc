@@ -64,7 +64,9 @@ class AppRouter {
                 GoRoute(
                   path: '/:systemId/power',
                   builder: (BuildContext context, GoRouterState state) =>
-                      const PowerPage(),
+                      PowerPage(
+                    systemId: state.pathParameters['systemId'] ?? '',
+                  ),
                 ),
                 GoRoute(
                   path: '/:systemId/sensors',

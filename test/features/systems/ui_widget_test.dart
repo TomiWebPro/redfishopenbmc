@@ -337,16 +337,23 @@ void main() {
           ),
         ),
       );
-      expect(
-        tester.widget<TextFormField>(field('Host / IP')).controller!.text,
-        'old.host',
-      );
+      // The form prefills from `initial`; submitting without edits keeps the host.
+      await tester.ensureVisible(find.text('Save'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(submitted, isNotNull);
+      expect(submitted!.id, 'bmc1');
+      expect(submitted!.host, 'old.host');
+
+      // Now edit the host and re-submit.
+      await tester.ensureVisible(field('Host / IP'));
+      await tester.pumpAndSettle();
       await tester.enterText(field('Host / IP'), 'new.host');
       await tester.ensureVisible(find.text('Save'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
-      expect(submitted!.id, 'bmc1');
       expect(submitted!.host, 'new.host');
     });
   });

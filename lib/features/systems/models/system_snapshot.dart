@@ -1,3 +1,7 @@
+import 'package:redfishopenbmc/features/power/models/power_state.dart';
+
+export 'package:redfishopenbmc/features/power/models/power_state.dart';
+
 /// Overall health of a system as derived from Redfish `Status.Health`.
 enum Health {
   /// System is healthy (`OK`).
@@ -10,18 +14,6 @@ enum Health {
   critical,
 
   /// Health could not be determined (no data / error).
-  unknown,
-}
-
-/// Power state of a computer system.
-enum PowerState {
-  /// Powered on.
-  on,
-
-  /// Powered off.
-  off,
-
-  /// Power state could not be determined.
   unknown,
 }
 
@@ -39,6 +31,7 @@ class SystemSnapshot {
     this.manufacturer,
     this.model,
     this.serialNumber,
+    this.resourceUri,
     this.lastUpdated,
     this.error,
   });
@@ -57,6 +50,11 @@ class SystemSnapshot {
 
   /// System serial number, when discovered.
   final String? serialNumber;
+
+  /// Canonical Redfish `@odata.id` of the ComputerSystem resource this snapshot
+  /// was derived from (e.g. `/redfish/v1/Systems/system`). Used by the power
+  /// feature (#005) to resolve action targets without an extra discovery pass.
+  final String? resourceUri;
 
   /// When this snapshot was captured.
   final DateTime? lastUpdated;
@@ -77,6 +75,7 @@ class SystemSnapshot {
     String? manufacturer,
     String? model,
     String? serialNumber,
+    String? resourceUri,
     DateTime? lastUpdated,
     String? error,
   }) =>
@@ -86,6 +85,7 @@ class SystemSnapshot {
         manufacturer: manufacturer ?? this.manufacturer,
         model: model ?? this.model,
         serialNumber: serialNumber ?? this.serialNumber,
+        resourceUri: resourceUri ?? this.resourceUri,
         lastUpdated: lastUpdated ?? this.lastUpdated,
         error: error ?? this.error,
       );
@@ -100,12 +100,14 @@ class SystemSnapshot {
         status is Map<String, dynamic> ? status : <String, dynamic>{};
     final String? healthStr = statusMap['Health'] as String?;
     final String? powerStr = json['PowerState'] as String?;
+    final String? odataId = json['@odata.id'] as String?;
     return SystemSnapshot(
       health: HealthX.fromStatus(healthStr),
-      powerState: PowerStateX.fromStatus(powerStr),
+      powerState: PowerStateX.fromRedfish(powerStr),
       manufacturer: json['Manufacturer'] as String?,
       model: json['Model'] as String?,
       serialNumber: json['SerialNumber'] as String?,
+      resourceUri: odataId,
       lastUpdated: DateTime.now(),
     );
   }
@@ -117,6 +119,7 @@ class SystemSnapshot {
         'manufacturer': manufacturer,
         'model': model,
         'serial_number': serialNumber,
+        'resource_uri': resourceUri,
         'last_updated': lastUpdated?.toIso8601String(),
         'error': error,
       };
@@ -128,10 +131,11 @@ class SystemSnapshot {
     final String? updated = json['last_updated'] as String?;
     return SystemSnapshot(
       health: HealthX.fromStatus(healthStr),
-      powerState: PowerStateX.fromStatus(powerStr),
+      powerState: PowerStateX.fromRedfish(powerStr),
       manufacturer: json['manufacturer'] as String?,
       model: json['model'] as String?,
       serialNumber: json['serial_number'] as String?,
+      resourceUri: json['resource_uri'] as String?,
       lastUpdated: updated == null ? null : DateTime.tryParse(updated),
       error: json['error'] as String?,
     );
@@ -164,33 +168,6 @@ extension HealthX on Health {
       case Health.critical:
         return 'Critical';
       case Health.unknown:
-        return 'Unknown';
-    }
-  }
-}
-
-/// Helpers for mapping Redfish power strings to [PowerState].
-extension PowerStateX on PowerState {
-  /// Maps a Redfish `PowerState` string (or an enum `name`) to [PowerState].
-  static PowerState fromStatus(String? value) {
-    switch (value?.toLowerCase()) {
-      case 'on':
-        return PowerState.on;
-      case 'off':
-        return PowerState.off;
-      default:
-        return PowerState.unknown;
-    }
-  }
-
-  /// Human-readable label for the power state.
-  String get label {
-    switch (this) {
-      case PowerState.on:
-        return 'On';
-      case PowerState.off:
-        return 'Off';
-      case PowerState.unknown:
         return 'Unknown';
     }
   }

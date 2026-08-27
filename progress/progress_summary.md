@@ -13,22 +13,22 @@
 - 2026-08-27 — **#001 P1 chore — Flutter scaffold + tooling CLOSED.** `flutter create .` (6 platforms), `lib/` layout, `pubspec.lock` pinned (`flutter_riverpod`, `go_router`, `flutter_secure_storage`, `dio`, `json_annotation`, `intl`), `analysis_options.yaml` (stricter lints, 0 issues), dark+light `ThemeData` + `ThemeMode.system`, adaptive `LayoutBuilder`/`NavigationRail`/`NavigationBar` shell, `SecureStorage` interface + `FlutterSecureStorageImpl` + `InMemoryStorage`, placeholder widget + theme tests (13/13 green), `.github/workflows/flutter-ci.yml` (analyze+test+coverage+issues-validate). Flutter 3.47.1 / Dart 3.13.1 installed at `~/flutter`.
 - 2026-08-27 — **#002 P1 feature — Redfish client core CLOSED.** `RedfishClient` (TLS-first Dio: `https://{host}:{port}`, `Accept`/`OData-Version: 4.0`, 10s/30s timeouts, opt-in self-signed via platform adapter) + `createDioForProfile` factory; `AuthManager` with Basic (`Authorization: Basic`) + Session (`POST /SessionService/Sessions` → `X-Auth-Token`+`Location`, stored token-only in `SecureStorage`, 401-refresh with per-system `Future` lock, `DELETE` on logout) + `withAuth` wrapper; per-system token isolation (`Map<systemId,_SystemAuth>`); normalized `RedfishException` (+ parsed `RedfishError.details`); `Session`/`ConnectionProfile`/`RedfishError`/`RedfishException` models; `SecureStorage` interface + `InMemoryStorage` + `FlutterSecureStorageImpl`; mocked `http_mock_adapter` unit tests (`auth_manager_test`, `redfish_client_extra_test`, `http_client_config_test`, `models_test`) + `client_integration_test` stub. `flutter analyze` 0 issues, `flutter test` 55 passed / 1 skipped, `redfish/client/` coverage **89.8%**. `DEVELOPMENT.md` carries the `#002` Security notes (TLS matrix, secret-at-rest, storage backend table, error taxonomy).
 - 2026-08-27 — **#004 P1 feature — Multi-system manager & dashboard CLOSED.** `ConnectionProfile`/`SystemSnapshot`/`Health`/`PowerState` models (password never in persisted blob; keystore only); `SystemManager` (`StateNotifier<SystemState>`) with `Map<id,SystemHandle>`, add/remove/update/connect/disconnect/select, `ProfileRepository` (SecureStorage, password stripped), `rehydrate()` on startup, per-system token isolation, instant context switch (no re-discover); `go_router` `/:systemId/{overview,power,sensors,firmware,kvm}` + `SystemShell` capability-gated tabs; `DashboardView` adaptive grid (1/2/3 cols) + `AggregatedStatus` banner; `SystemCard`/`HealthBadge`/`PowerBadge`; `AddSystemDialog`/`EditSystemPage`/`SystemProfileForm` with host/port validation + self-signed warning. 13 test files under `test/features/systems/`. `flutter analyze` 0 issues, `flutter test` **145 passed / 1 skipped**, `features/systems/` coverage **88.1%** (target 80).
+- 2026-08-27 — **#005 P1 feature — Power management CLOSED.** `PowerService.reset` POSTs `/redfish/v1/Systems/{id}/Actions/ComputerSystem.Reset` (Redfish `ResetType`), target resolved via discovery raw tree → known `@odata.id` → live `/redfish/v1/Systems` crawl → fallback; unsupported types rejected locally (`SystemFeatures.supportedResetTypes`); 202+`Location` accepted (task polling → #008). `PowerState`/`ResetType` enums + `PowerController` (optimistic state + non-blocking 3s/30s polling) + Riverpod `powerServiceProvider`/`powerControllerProvider` families. `PowerView` gated on `features.powerControl` (renders nothing otherwise), animated `PowerBadge` (pulse only while transitioning), destructive-styled `ResetButton`s, `ConfirmResetDialog`; error taxonomy 403/409/400 (`@Message.ExtendedInfo`). `flutter analyze` 0 issues, `flutter test` **37 power tests green**, `features/power/` coverage **87.4%** (target 80%). Full suite **182 passed / 1 skipped**.
 
 **In Progress (open):**
-- #005 P1 — Power management (NOW UNBLOCKED by #003 + #004)
 - #006 P2 — System overview adaptive cards
 - #007 P2 — Sensor monitoring realtime
 - #008 P2 — Firmware & update management
 - #009 P3 — Remote KVM
 - #010 P2 — Hardening (secure storage, theming, a11y, coverage)
 
-**Closed this week:** #001 (2026-08-27), #002 (2026-08-27), #003 (2026-08-27), #004 (2026-08-27)
+**Closed this week:** #001 (2026-08-27), #002 (2026-08-27), #003 (2026-08-27), #004 (2026-08-27), #005 (2026-08-27)
 
 **Metrics:**
-- Coverage: `redfish/client/` **89.8%** (target 80), `redfish/discovery/` **91.0%** (target 85), `features/systems/` **88.1%** (target 80)
+- Coverage: `redfish/client/` **89.8%** (target 80), `redfish/discovery/` **91.0%** (target 85), `features/systems/` **88.1%** (target 80), `features/power/` **87.4%** (target 80)
 - `flutter analyze`: **0 issues**
-- `flutter test`: **145 passed / 1 skipped** (live-BMC integration stub)
-- Issues: 6 open / 4 closed — `python3 issues/issues.py stats`
+- `flutter test`: **182 passed / 1 skipped** (live-BMC integration stub)
+- Issues: 5 open / 5 closed — `python3 issues/issues.py stats`
 
 **Risks & Decisions:**
 - Choice of Riverpod vs Bloc deferred to #001 (document rationale in DEVELOPMENT.md)
@@ -41,7 +41,7 @@
 2. ~~#002 — `Dio` client + `SessionService` auth + token isolation~~ DONE
 3. ~~#003 — Discovery engine + `SystemFeatures` fixture tests~~ DONE
 4. ~~#004 — Multi-system manager, dashboard, routing, context switch~~ DONE
-5. #005 — Power management (reset/force-off/poll) — next P1
+5. ~~#005 — Power management (reset/force-off/poll)~~ DONE
 6. #006/#007/#008/#009 — overview cards, sensors, firmware, KVM tabs
 
 **How to read this repo:**

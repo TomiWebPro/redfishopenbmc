@@ -37,11 +37,11 @@ void main() {
       expect(Health.unknown.label, 'Unknown');
     });
 
-    test('PowerStateX.fromStatus maps known and unknown values', () {
-      expect(PowerStateX.fromStatus('On'), PowerState.on);
-      expect(PowerStateX.fromStatus('Off'), PowerState.off);
-      expect(PowerStateX.fromStatus('Maybe'), PowerState.unknown);
-      expect(PowerStateX.fromStatus(null), PowerState.unknown);
+    test('PowerStateX.fromRedfish maps known and unknown values', () {
+      expect(PowerStateX.fromRedfish('On'), PowerState.on);
+      expect(PowerStateX.fromRedfish('Off'), PowerState.off);
+      expect(PowerStateX.fromRedfish('Maybe'), PowerState.unknown);
+      expect(PowerStateX.fromRedfish(null), PowerState.unknown);
       expect(PowerState.on.label, 'On');
       expect(PowerState.off.label, 'Off');
     });

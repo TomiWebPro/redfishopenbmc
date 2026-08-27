@@ -22,10 +22,21 @@ class RedfishError {
     final List<dynamic>? rawExt =
         (json['@Message.ExtendedInfo'] ?? json['extendedInfo'])
             as List<dynamic>?;
+    final List<String>? extendedInfo = rawExt == null
+        ? null
+        : rawExt.map((e) {
+            if (e is Map<dynamic, dynamic>) {
+              // Extended-info entries are themselves envelopes; the actionable
+              // text lives in their `Message` / `message` field.
+              final dynamic msg = e['Message'] ?? e['message'];
+              return msg?.toString() ?? e.toString();
+            }
+            return e.toString();
+          }).toList();
     return RedfishError(
       code: code ?? 'Unknown',
       message: message ?? 'Unknown error',
-      extendedInfo: rawExt?.map((e) => e.toString()).toList(),
+      extendedInfo: extendedInfo,
     );
   }
 
@@ -37,4 +48,30 @@ class RedfishError {
 
   /// Optional extended info entries from `@Message.ExtendedInfo`.
   final List<String>? extendedInfo;
+
+  /// The first extended-info message, when present, else [message].
+  ///
+  /// BMCs frequently encode the actionable detail inside
+  /// `@Message.ExtendedInfo[0].Message`; this prefers that over the coarse
+  /// top-level [message].
+  String get firstMessage {
+    final List<String>? info = extendedInfo;
+    if (info != null && info.isNotEmpty) return info.first;
+    return message;
+  }
+
+  /// Parses a [RedfishError] from an arbitrary response body, returning `null`
+  /// when [data] is not a decodable error envelope (e.g. an empty 204 body).
+  static RedfishError? tryParse(dynamic data) {
+    if (data is Map<String, dynamic>) return RedfishError.fromJson(data);
+    if (data is Map) {
+      return RedfishError.fromJson(
+        <String, dynamic>{
+          for (final MapEntry<dynamic, dynamic> e in data.entries)
+            e.key.toString(): e.value,
+        },
+      );
+    }
+    return null;
+  }
 }

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 /// Remote KVM screen.
 ///
-/// Placeholder shell for remote KVM / GraphicalConsole (#009). Renders a
-/// static scaffold in #001; real console lands in #009.
+/// Placeholder shell for remote KVM / GraphicalConsole (#009). Rendered inside
+/// [SystemShell] (which supplies the tab/AppBar), so it returns only its body.
 class KvmPage extends StatelessWidget {
   /// Creates a [KvmPage].
   const KvmPage({this.systemId, super.key});
@@ -13,11 +13,8 @@ class KvmPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('KVM')),
-      body: const Center(
-        child: Text('Remote KVM — GraphicalConsole (#009)'),
-      ),
+    return const Center(
+      child: Text('Remote KVM — GraphicalConsole (#009)'),
     );
   }
 }
