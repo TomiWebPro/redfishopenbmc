@@ -12,13 +12,20 @@ class RedfishError {
   });
 
   /// Creates a [RedfishError] from a decoded JSON envelope.
+  ///
+  /// Redfish error bodies use the capital-cased `Message` / `Code` /
+  /// `@Message.ExtendedInfo` keys; we fall back to the lowercase variants
+  /// for lenient interop with non-conformant services.
   factory RedfishError.fromJson(Map<String, dynamic> json) {
+    final String? code = (json['Code'] ?? json['code']) as String?;
+    final String? message = (json['Message'] ?? json['message']) as String?;
+    final List<dynamic>? rawExt =
+        (json['@Message.ExtendedInfo'] ?? json['extendedInfo'])
+            as List<dynamic>?;
     return RedfishError(
-      code: json['code'] as String? ?? 'Unknown',
-      message: json['message'] as String? ?? 'Unknown error',
-      extendedInfo: (json['@Message.ExtendedInfo'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList(),
+      code: code ?? 'Unknown',
+      message: message ?? 'Unknown error',
+      extendedInfo: rawExt?.map((e) => e.toString()).toList(),
     );
   }
 

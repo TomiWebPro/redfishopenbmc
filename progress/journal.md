@@ -112,3 +112,22 @@
 - Helper: `issues/issues.py` (json serialization fix) — no issue number.
 - `progress/progress_summary.md` (snapshot date + next-update note) — no issue number.
 
+
+## 2026-08-27 — agent:opencode — #002 (close)
+
+**Done:**
+- Verified the #002 Redfish client core (implemented by a prior worker) is fully green: `flutter analyze` → 0 issues, `flutter test` → 55 passed / 1 integration skipped.
+- Added `RedfishClient.createDioForProfile(profile)` static factory so callers get the shared TLS-first + Redfish-header + 10s/30s-timeout policy without constructing a client.
+- Added `AuthManager.withAuth(systemId, action)` convenience wrapper (throws `StateError` when not logged in; runs the action with the authenticated client and inherits the 401-refresh interceptor).
+- Added `test/redfish/client/redfish_client_extra_test.dart` (factory config assertions + withAuth happy/error paths) and `test/redfish/models/models_test.dart` (Session `copyWith`/`isExpired`, ConnectionProfile `copyWith`/`baseUrl`, `RedfishError` both-case parsing).
+- Measured `redfish/client/` line coverage at **89.8%** (gate 80%). All acceptance criteria checked; `DEVELOPMENT.md` already carries the `#002` Security notes (TLS matrix, secret-at-rest, storage backend table, error taxonomy).
+
+**Decisions:**
+- Kept `withAuth` non-async-locking on top of the existing per-system `Future` refresh lock — transparent 401 re-auth works inside it.
+- `redfish_error.dart` already tolerant of `Code`/`code` + `Message`/`message`; regression test asserts both.
+
+**Next:**
+- #002 closing unblocks #003 (discovery engine). Next worker should start #003 with `DiscoveryEngine` + `feature_rules.dart` + fixtures.
+
+**Issues touched:**
+- #002 — COMPLETE (analyze 0, 55 tests green, 89.8% client coverage) → closing.

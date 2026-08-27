@@ -27,6 +27,13 @@ class RedfishClient {
   /// Underlying [Dio]; the auth manager attaches interceptors to it.
   Dio get dio => _dio;
 
+  /// Builds a fully-configured [Dio] for [profile] without constructing a
+  /// [RedfishClient]. Useful when a caller needs the raw transport (e.g. the
+  /// auth manager's per-host client factory) but wants the same TLS + header
+  /// + timeout policy.
+  static Dio createDioForProfile(ConnectionProfile profile) =>
+      _buildDio(profile);
+
   static Dio _buildDio(ConnectionProfile profile) {
     final dio = Dio(
       BaseOptions(

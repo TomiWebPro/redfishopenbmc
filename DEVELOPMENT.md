@@ -174,6 +174,65 @@ for #002+ models; the #001 scaffold uses hand-written `fromJson`/`toJson` stubs.
 - Vendor OEM under `Oem.*` — parse defensively, log unknown.
 - Low-bandwidth: stream image uploads, cap `Future.wait` concurrency 4.
 
+## Security notes — TLS + secure storage (issue #002)
+
+These rules are enforced by the code in `lib/redfish/client/` +
+`lib/core/storage/` and MUST NOT be relaxed without a documented, per-profile,
+user-acknowledged reason.
+
+### TLS (transport)
+- **TLS-first**: the client only builds `https` base URLs (`ConnectionProfile.baseUrl`).
+  `http` is intentionally unsupported — any caller that wants plaintext must
+  opt in at the type level, not by passing a flag.
+- **Validation on by default**: `RedfishClient` uses `IOHttpClientAdapter`
+  (Linux/Win/macOS) with certificate validation enabled. The opt-in
+  `allowSelfSigned` flag on a profile swaps in an adapter whose
+  `badCertificateCallback` accepts *any* cert. That flag is a deliberate
+  security downgrade and is per-profile only (see `http_client_config_io.dart`).
+- **Web is non-negotiable**: on the web target (`http_client_config_web.dart`)
+  the `allowSelfSigned` flag is a **no-op** — browsers own TLS and there is no
+  programmatic way to suppress cert errors. Self-signed BMCs must present a
+  browser-trusted cert for the web build to work.
+- Timeouts: 10s connect / 30s receive (set in `RedfishClient._buildDio`) so a
+  dead BMC can't hang the UI thread.
+
+### Secrets (at rest)
+- **No plaintext password at rest.** `ConnectionProfile.password` is held in
+  memory only for the duration of a `login()` call. It is never written to
+  secure storage, logs, or crash reports.
+- **Session token is the only persisted secret.** After a successful
+  `POST /redfish/v1/SessionService/Sessions`, `AuthManager` writes *only* the
+  `X-Auth-Token` (key `redfish.token.<systemId>`) and the session `Location`
+  (key `redfish.session_loc.<systemId>`) via `SecureStorage`. The old
+  `dio` `Lock` was replaced with a `Future`-based per-system refresh lock so
+  concurrent 401s serialize a single re-auth (no token refresh storm).
+- **Per-system isolation**: the auth map is `Map<systemId, _SystemAuth>`; the
+  `X-Auth-Token` for `bmc1` is attached only to `bmc1`'s `Dio` interceptor and
+  can never leak to `bmc2`. `clientFor(systemId)`/`sessionFor(systemId)`
+  return `null` until a login succeeds.
+- **Storage backend matrix** (from `flutter_secure_storage`):
+  | Platform | Backend | Notes |
+  |----------|---------|-------|
+  | Android | EncryptedSharedPreferences (`encryptedSharedPreferences: true`) | AES-backed, OS keystore |
+  | iOS / macOS | Keychain (`first_unlock`) | accessible after first unlock |
+  | Linux | `libsecret` (via secret-service) | requires desktop secret-service running |
+  | Windows | Credential Manager (DPAPI) | |
+  | Web | (not available) | tokens kept in-memory only; use Basic or re-auth each session |
+- **"Remember password" tradeoff**: storing the password (vs. just the token)
+  is intentionally **not** implemented. A persisted token can be invalidated
+  server-side (session timeout / logout) without exposing the user's BMC
+  password; a persisted password is a permanent credential leak surface.
+  If ever added it MUST be behind an explicit opt-in + OS biometric/keystore
+  encryption (tracked in #010 hardening).
+
+### Error taxonomy
+- All transport failures normalize to `RedfishException` (`redfish_exception.dart`)
+  with `statusCode`, `errorCode` (e.g. `Base.1.8.GeneralError`), `message`,
+  `retryable`, and a parsed `RedfishError` `details` (`@Message.ExtendedInfo`).
+- `retryable` is `true` for timeouts, connection errors, 429, and 5xx; `false`
+  for 401/403/404 and certificate failures. Cert errors are classified as
+  `CertificateError` and are fatal (never auto-retried).
+
 ## Agent startup prompt (copy-paste)
 
 ```

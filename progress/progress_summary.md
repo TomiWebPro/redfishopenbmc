@@ -4,17 +4,17 @@
 
 **Project:** Redfish Multi-System Control App (Flutter) — unified Redfish/OpenBMC control plane. Spec: `documentations/project_goal/goal.md`.
 
-## Snapshot — 2026-08-27 (scaffold complete, #001 closed)
+## Snapshot — 2026-08-27 (scaffold complete, #001 + #002 closed)
 
 **Phase:** Planning → Scaffold. Spec complete (`README.md` + `goal.md` + `LICENSE`), no Flutter code yet. Localized issue system just bootstrapped.
 
 **Shipped:**
 - 2026-08-26 — Localized tracker (`issues/open|closed`, `README.md`, `TEMPLATE.md`, `issues.py`) + skill (`.opencode/skills/redfish-issues/`) + `DEVELOPMENT.md` + 10 starter issues + `progress/journal.md`. Validated `issues.py list/stats/validate`.
 - 2026-08-27 — **#001 P1 chore — Flutter scaffold + tooling CLOSED.** `flutter create .` (6 platforms), `lib/` layout, `pubspec.lock` pinned (`flutter_riverpod`, `go_router`, `flutter_secure_storage`, `dio`, `json_annotation`, `intl`), `analysis_options.yaml` (stricter lints, 0 issues), dark+light `ThemeData` + `ThemeMode.system`, adaptive `LayoutBuilder`/`NavigationRail`/`NavigationBar` shell, `SecureStorage` interface + `FlutterSecureStorageImpl` + `InMemoryStorage`, placeholder widget + theme tests (13/13 green), `.github/workflows/flutter-ci.yml` (analyze+test+coverage+issues-validate). Flutter 3.47.1 / Dart 3.13.1 installed at `~/flutter`.
+- 2026-08-27 — **#002 P1 feature — Redfish client core CLOSED.** `RedfishClient` (TLS-first Dio: `https://{host}:{port}`, `Accept`/`OData-Version: 4.0`, 10s/30s timeouts, opt-in self-signed via platform adapter) + `createDioForProfile` factory; `AuthManager` with Basic (`Authorization: Basic`) + Session (`POST /SessionService/Sessions` → `X-Auth-Token`+`Location`, stored token-only in `SecureStorage`, 401-refresh with per-system `Future` lock, `DELETE` on logout) + `withAuth` wrapper; per-system token isolation (`Map<systemId,_SystemAuth>`); normalized `RedfishException` (+ parsed `RedfishError.details`); `Session`/`ConnectionProfile`/`RedfishError`/`RedfishException` models; `SecureStorage` interface + `InMemoryStorage` + `FlutterSecureStorageImpl`; mocked `http_mock_adapter` unit tests (`auth_manager_test`, `redfish_client_extra_test`, `http_client_config_test`, `models_test`) + `client_integration_test` stub. `flutter analyze` 0 issues, `flutter test` 55 passed / 1 skipped, `redfish/client/` coverage **89.8%**. `DEVELOPMENT.md` carries the `#002` Security notes (TLS matrix, secret-at-rest, storage backend table, error taxonomy).
 
 **In Progress (open):**
-- #002 P1 — Redfish client core (NOW UNBLOCKED)
-- #003 P1 — Discovery engine (blocked by #002)
+- #003 P1 — Discovery engine (NOW UNBLOCKED by #002)
 - #004 P1 — Multi-system manager (blocked by #002 #003)
 - #005 P1 — Power management (blocked by #003 #004)
 - #006 P2 — System overview adaptive cards
@@ -23,13 +23,13 @@
 - #009 P3 — Remote KVM
 - #010 P2 — Hardening (secure storage, theming, a11y, coverage)
 
-**Closed this week:** #001 (2026-08-27)
+**Closed this week:** #001 (2026-08-27), #002 (2026-08-27)
 
 **Metrics:**
-- Coverage: scaffold ~ baseline (13 tests, `flutter test --coverage` runs; lcov in CI)
+- Coverage: `redfish/client/` **89.8%** (target 80), app scaffold baseline otherwise
 - `flutter analyze`: **0 issues**
-- `flutter test`: **13/13 green**
-- Issues: 9 open / 1 closed — `python3 issues/issues.py stats`
+- `flutter test`: **55 passed / 1 skipped** (integration stub)
+- Issues: 8 open / 2 closed — `python3 issues/issues.py stats`
 
 **Risks & Decisions:**
 - Choice of Riverpod vs Bloc deferred to #001 (document rationale in DEVELOPMENT.md)
@@ -38,8 +38,8 @@
 - `GraphicalConsole` KVM detection vs OEM — pluggable `KvmOemRegistry` in #009
 
 **Next Milestone — Scaffold → First Redfish call:**
-1. #001 — `flutter create`, deps, `analysis_options.yaml`, theme shell, `.gitignore`, CI
-2. #002 — `Dio` client + `SessionService` auth + token isolation
+1. ~~#001 — `flutter create`, deps, `analysis_options.yaml`, theme shell, `.gitignore`, CI~~ DONE
+2. ~~#002 — `Dio` client + `SessionService` auth + token isolation~~ DONE
 3. #003 — Discovery engine + `SystemFeatures` fixture tests
 - Target: dashboard slice (#004) after #003
 
@@ -50,4 +50,4 @@
 - `DEVELOPMENT.md` — what is pushed daily and Definition of Done
 
 ---
-*Next update: after #002 closes (or 2026-09-02 weekly).*
+*Next update: after #003 closes (or 2026-09-02 weekly).*
