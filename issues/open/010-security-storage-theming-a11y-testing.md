@@ -5,7 +5,7 @@ status: open
 priority: P2
 type: chore
 created: 2026-08-26
-updated: 2026-08-26
+updated: 2026-08-30
 closed: null
 assignee: unassigned
 labels: [security, storage, theme, a11y, testing, performance]
@@ -76,6 +76,7 @@ None — quality gate, not an endpoint. Validates behavior of #002–#009.
 ## Progress Log
 
 - 2026-08-26 — Created. Depends on #001–#009 (run last, or iterative). P2 to ensure ship criteria before 1.0.
+- 2026-08-30 — STALE (triage): no Progress Log update for 4 days (>1-day threshold).
 
 ## References
 

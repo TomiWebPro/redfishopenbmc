@@ -5,7 +5,7 @@ status: open
 priority: P3
 type: feature
 created: 2026-08-26
-updated: 2026-08-26
+updated: 2026-08-30
 closed: null
 assignee: unassigned
 labels: [kvm, console, managers, webview]
@@ -69,6 +69,7 @@ estimated_tokens: 45000
 ## Progress Log
 
 - 2026-08-26 — Created. Depends on #001 #003 #004. Lower priority (P3) — do after #005–#008.
+- 2026-08-30 — STALE (triage): no Progress Log update for 4 days (>1-day threshold).
 
 ## References
 

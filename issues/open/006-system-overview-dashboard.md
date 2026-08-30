@@ -5,7 +5,7 @@ status: open
 priority: P2
 type: feature
 created: 2026-08-26
-updated: 2026-08-26
+updated: 2026-08-30
 closed: null
 assignee: unassigned
 labels: [ui, dashboard, overview, inventory]
@@ -67,6 +67,7 @@ estimated_tokens: 40000
 ## Progress Log
 
 - 2026-08-26 — Created. Depends on #001 #003 #004.
+- 2026-08-30 — STALE (triage): no Progress Log update for 4 days (>1-day threshold). Note: WIP commit f083802 (2026-08-27, analyze 0 / 203 tests green) landed without a log entry.
 
 ## References
 

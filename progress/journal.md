@@ -233,3 +233,27 @@
 
 **Issues touched:**
 - none (audit only)
+
+## 2026-08-30 — agent:triage — validator (run 2)
+
+**Done:**
+- Ran full triage audit per validator contract. `python3 issues/issues.py validate` → OK (all 27 issues pass naming + frontmatter).
+- `stats`: 27 total / 22 open / 5 closed (#001–#005). By priority P1:8 P2:14 P3:5; by type feature:9 bug:12 chore:6. Open IDs 006–027, closed 001–005 — contiguous, no gaps/reuse.
+- `list --all` cross-checked vs stats: consistent.
+- Staleness: all 22 open issues `assignee: unassigned` → "assigned & >1 day stale" rule not triggered; no new stale notes. (Run 1 today already flagged #006–#010 stale — 4 days no Progress Log since 2026-08-26 — and created #011–#027.)
+- Frontmatter: no repairs needed (validate green, `updated` = 2026-08-30 on all open, `closed: null` on all open, IDs contiguous).
+- `.gitignore` compliance: clean. Tracked non-issue files are config/docs only; `build/`, `coverage/`, `.dart_tool/` ignored AND untracked; no secrets tracked (`.env*`, `*.pem`, `*.keystore`, `*.jks`, `*.p12`, `credentials.json` all absent from `git ls-files`). `pubspec.lock` intentionally tracked (app, not package).
+- `closed/` untouched (no edits in working tree; no reopens).
+- `progress_summary.md`: already current — Snapshot dated 2026-08-30, Shipped + "Closed this week" cover #001–#005, Metrics 22 open/5 closed matches stats. No edit needed.
+- **Git hygiene WARN:** working tree dirty from run-1 triage (modified #006–#010 stale notes + summary; untracked #011–#027) — **not committed, not pushed**. Branch level with origin/main; last push 2026-08-27 20:41 (~>24h ago) → push gate breached.
+
+**Decisions:**
+- No frontmatter repairs, no stale-note additions, no summary edits this run.
+- Next dev-worker action should start with committing + pushing the run-1 triage output (daily push contract), then pick #027 (Flutter toolchain) or #014 (error parsing) — both P1.
+
+**Next:**
+- Commit + push run-1 triage changes (restores push gate).
+- #027 (toolchain) gates analyzer-verified work; #014/#015 are the P1 bug fixes.
+
+**Issues touched:**
+- none (audit only)

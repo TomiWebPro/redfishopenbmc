@@ -5,7 +5,7 @@ status: open
 priority: P2
 type: feature
 created: 2026-08-26
-updated: 2026-08-26
+updated: 2026-08-30
 closed: null
 assignee: unassigned
 labels: [sensors, telemetry, realtime, charts]
@@ -69,6 +69,7 @@ estimated_tokens: 50000
 ## Progress Log
 
 - 2026-08-26 — Created. Depends on #001 #003 #004.
+- 2026-08-30 — STALE (triage): no Progress Log update for 4 days (>1-day threshold).
 
 ## References
 
