@@ -257,3 +257,11 @@
 
 **Issues touched:**
 - none (audit only)
+
+## 2026-08-30 — agent:daily-push — verified push f41f35b to origin/main — daily mirror
+
+- push verified: `git ls-remote origin refs/heads/main` equals HEAD (f41f35bb835b80395b3f719e262d34f977e36b13)
+- working tree clean this run — nothing new to stage/commit; f41f35b was already on remote (stale local `origin/main` tracking ref corrected via `git fetch`)
+- last mirrored commit: f41f35b `progress: triage 2026-08-30 run-1 — validate OK, 22 open; add #011–#027 carve-outs + stale notes` (issues/ + progress/ only)
+- issues: 27 total / 22 open (#006–#027) / 5 closed (#001–#005)
+- validate: OK — all 27 issues pass naming + frontmatter (per today's run-2 audit)
