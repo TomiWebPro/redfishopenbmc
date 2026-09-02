@@ -265,3 +265,26 @@
 - last mirrored commit: f41f35b `progress: triage 2026-08-30 run-1 — validate OK, 22 open; add #011–#027 carve-outs + stale notes` (issues/ + progress/ only)
 - issues: 27 total / 22 open (#006–#027) / 5 closed (#001–#005)
 - validate: OK — all 27 issues pass naming + frontmatter (per today's run-2 audit)
+
+## 2026-09-02 — agent:triage — validator
+
+**Done:**
+- Ran full triage audit per validator contract. `python3 issues/issues.py validate` → OK (all 27 issues pass naming + frontmatter).
+- `stats`: 27 total / 22 open / 5 closed (#001–#005). By priority P1:8 P2:14 P3:5; by type feature:9 bug:12 chore:6. `list --all` cross-checked vs stats: consistent, IDs contiguous (open 006–027, closed 001–005), no gaps/reuse.
+- Staleness: all 22 open issues `assignee: unassigned` → "assigned & >1 day stale" rule not triggered; no new stale notes appended. Pre-existing STALE notes on #006–#010 (added 2026-08-30) remain valid — their Progress Logs are now ~7 days old (last entry 2026-08-30) and still unactioned. #011–#027 Progress Logs last touched 2026-08-30 (creation).
+- Frontmatter: no repairs needed. `validate` green; all required fields present in every open issue (spot-scanned); `updated: 2026-08-30` on all open, `closed: null` on all open; `closed/` frontmatter intact (`status: closed` + closed date 2026-08-27 on #001–#005).
+- `.gitignore` compliance: clean. `build/`, `coverage/`, `.dart_tool/`, `.env`/`*.env`, `credentials.json`, `*.keystore`, `*.jks`, `*.p12`, `*.pem` all ignored; none tracked. Only tracked `*.lock` is `pubspec.lock` (intentional, negated in `.gitignore`). `test/fixtures/redfish/.../NVMeoFSecrets/*.json` are Redfish mock data, not secrets.
+- Git hygiene: working tree clean; HEAD = origin/main = 54366e1 — branch in sync, nothing unpushed, no push WARN.
+- `closed/` untouched (no edits, no reopens).
+
+**Decisions:**
+- No issue-file edits this run (no stale flags to add, no frontmatter to fix).
+- `progress_summary.md` NOT updated: no P1/P2 closed since the 2026-08-30 snapshot (closed set unchanged at #001–#005, all already in Shipped/Metrics). Snapshot content remains accurate (22 open / 5 closed). Note: the footer's 2026-09-02 weekly cadence date was reached with nothing new to roll up; next update remains gated on the next P1/P2 close.
+- Next dev-worker action: assign + start a P1 — #027 (Flutter toolchain) unblocks analyzer-verified work for #014/#015 (P1 bug fixes) and the 22-issue queue.
+
+**Next:**
+- dev-worker: commit assignment + Progress Log entry when starting #027 (or #014/#015 directly).
+- triage re-runs per cadence; watch for first P1 close to roll up `progress_summary.md`.
+
+**Issues touched:**
+- none (audit only; this journal entry)
