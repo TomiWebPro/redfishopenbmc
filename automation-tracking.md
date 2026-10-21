@@ -37,3 +37,22 @@ Append-only run log for the `redfish-automation` scheduler job.
   DMTF mockup-server emulator harness.
 
 <!-- APPEND NEW RUNS BELOW THIS LINE, OLDEST FIRST -->
+
+## 2026-10-21 15:00 — SETUP (assistant)
+
+- **Baseline:** analyze 0; tests 231 passed / 1 skipped; starting commit 1cc0f01.
+- **Primary work:** fixed the broken agent chain found during setup review.
+- **Chain audit:** the scheduler implements "agent" only by prepending "FIRST read
+  and follow `/home/tomi/redfishopenbmc/.opencode/agents/build.md`" to the prompt —
+  that file did not exist, so the run's first instruction pointed at nothing.
+  `.opencode/agents/development-agent.md` was also stale (wrong path
+  `/home/tomi/projects/redfishopenbmc`, phantom jobs, "DO NOT push" contradicting
+  the runbook).
+- **Changes:** created `.opencode/agents/build.md` (agent protocol; runbook is
+  authoritative); fixed `development-agent.md` paths, model, push policy, job
+  table, and auth notes (credential store, no embedded PAT).
+- **Verification:** analyze 0; tests 231 passed / 1 skipped; issues validate OK.
+- **Commit:** pending — pushed as part of the setup series.
+- **Next:** first real automation run at next 5h tick; quota on deepseek-free
+  should have cleared.
+

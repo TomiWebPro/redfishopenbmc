@@ -1,16 +1,16 @@
 ---
 name: redfish-development-agent
 description: Agentic development worker for redfishopenbmc — continuous implementation via localized issues, heavy token use
-model: opencode-go/hy3
+model: opencode/deepseek-v4.1-flash-free
 ---
 
 # Redfish Development Agent — Agentic Configuration
 
-**Project:** `/home/tomi/projects/redfishopenbmc` (symlink `~/projects/redfishbmc`)  
+**Project:** `/home/tomi/redfishopenbmc`  
 **Tracker:** Localized filesystem `issues/open/` + `issues/closed/` — helper `python3 issues/issues.py` — **NEVER use GitHub Issues**  
-**Mirror:** GitHub `TomiWebPro/redfishopenbmc` — push `code + tests + tracking` only, daily at 22:00  
-**Scheduler:** `~/opencode-scheduler/scheduler.py` daemon active (`opencode-scheduler.service`) — jobs `redfish-*`  
-**Model:** `opencode-go/hy3` (heavy token budget, generous timeouts 1800–3600s)  
+**Mirror:** GitHub `TomiWebPro/redfishopenbmc` — push `code + tests + tracking` only, on every automation run after verification  
+**Scheduler:** `~/opencode-scheduler/scheduler.py` daemon active (`opencode-scheduler.service`) — job `redfish-automation` (every 5h)  
+**Model:** `opencode/deepseek-v4.1-flash-free` (agent `build`, timeout 7200s)  
 **Principles:** `DEVELOPMENT.md` (daily push contract, DoD), `progress/journal.md` (daily append), `progress/progress_summary.md` (weekly rollup), `documentations/project_goal/goal.md` (spec)
 
 ## Goals
@@ -18,7 +18,7 @@ Heavy token use, quick development: every dev session must be exhaustive, verbos
 
 ## Pre-flight (every session)
 ```bash
-cd /home/tomi/projects/redfishopenbmc
+cd /home/tomi/redfishopenbmc
 python3 issues/issues.py list --all
 python3 issues/issues.py stats
 python3 issues/issues.py validate
@@ -60,24 +60,21 @@ Only when ALL acceptance criteria checked + tests green:
 python3 issues/issues.py close NNN --reason "detailed reason + coverage % + analyze 0"
 git add lib/ test/ pubspec.yaml pubspec.lock analysis_options.yaml .github/ issues/ progress/ DEVELOPMENT.md README.md
 git commit -m "feat: #NNN <title> — <what> (or progress: #NNN wip)"
-# DO NOT push — daily-push job does it at 22:00 (or immediately if P1/P2 and --allow-push)
+# Push after verification on every automation run (runbook §7.4); record push status in tracking
 ```
 
-## Daily Push (separate job but agent may push if urgent P1/P2)
-- Stage only: `lib/ test/ pubspec.* analysis_options.yaml .github/ issues/ progress/ DEVELOPMENT.md README.md LICENSE documentations/ .opencode/`
-- Never stage: `.dart_tool/ build/ .env credentials.json *.keystore`
-- Commit: `chore: daily sync YYYY-MM-DD — #NNN ...` with WIP prefix if needed; `git push origin main` (remote already has PAT `https://oauth2:TOKEN@github.com/...` — never print token).
+## Push (every automation run, after verification — runbook §7.4)
+- Stage only intended files per the runbook (never `git add -A`): `lib/ test/ test_integration/ tool/ documentations/ automation-tracking.md FUTUREWORK.md progress/ issues/ pubspec.yaml pubspec.lock README.md DEVELOPMENT.md .opencode/`
+- Never stage: `.dart_tool/ build/ .env credentials.json *.keystore *.pem *.key`
+- Commit: `auto: <mode> — <summary> (run YYYY-MM-DD HH:MM)`; `git push origin main` (credential store handles auth — never print tokens).
 
 ## Scheduler Jobs
 | Job | Schedule | Timeout | Purpose |
 |-----|----------|---------|---------|
-| `redfish-dev-worker` | every 2h | 3600s | Continuous dev: picks top open issue, implements fully, tests, journals, commits (heavy token) |
-| `redfish-daily-push` | 0 22 * * * daily 22:00 | 600s | Push code+tests+tracking to GitHub, verify, log |
-| `redfish-triage` | every 6h | 900s | Validate issues/, stats, progress/journal health, stale detection |
-| `redfish-starter` | @once immediate | 3600s | Bootstrap #001 now (flutter scaffold) — runs once |
+| `redfish-automation` | `0 */5 * * *` (every 5h) | 7200s | Unattended maintainer: preflight, one workstream (REPAIR/DOCS/EMULATOR/FEATURE/UI/REFACTOR), verify, track, commit, push. Runbook: `.opencode/skills/redfish-automation/SKILL.md`; queue: `FUTUREWORK.md`; log: `automation-tracking.md`. |
 
 ## Auth & Git
-- `git remote -v` already contains PAT via oauth2 URL — agents use `git push` directly, no credential helper needed, never log PAT.
+- Remote is plain `https://github.com/TomiWebPro/redfishopenbmc.git`; auth comes from the credential store — agents just `git push`, never embed or print tokens/PATs.
 - `gh` not needed; use `git` not `wget`.
 
 ## Tracking
