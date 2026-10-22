@@ -297,7 +297,8 @@
   (upstream `0128851e`), Redfish-Mockup-Server README (upstream `23d21f9a`),
   full DMTF schema index listing, and 16 base aggregator schemas. Manifest with
   URL + fetch time + SHA-256 + bytes in `documentations/external/README.md`
-  (~4.8 MB total, within budget).
+  (~4.8 MB total, within budget). Commit c8dc7e1 (local; push blocked — no
+  GitHub credentials in this environment, recorded in tracking).
 - Created `documentations/external/redfish/REQUIREMENTS.md`: 14-row
   requirement→code→test→status trace (9 OK, 4 GAP, vendor rows cited).
 - UI-2 increment: `HealthBadge`/`PowerBadge` semantic labels + per-state health

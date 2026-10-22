@@ -43,7 +43,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       Start at `https://redfish.dmtf.org/`, `https://redfish.dmtf.org/schemas/v1/`,
       `https://github.com/DMTF/Redfish-Mockup-Server`, and
       `https://github.com/openbmc/bmcweb/tree/master/docs`.
-      (run 2026-10-22, commit TBD — mirror + manifest + REQUIREMENTS.md live;
+      (run 2026-10-22, commit c8dc7e1 — mirror + manifest + REQUIREMENTS.md live;
       re-fetch on upstream change only)
 - [~] **DOCS-2** Refresh the DMTF schema/mockup snapshot used by
       `documentations/redfish_reference/` and `test/fixtures/redfish/`; verify the
@@ -114,7 +114,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 
 - [ ] **UI-1** Empty / loading / error states for dashboard, sensors, firmware, KVM.
 - [ ] **UI-2** Accessibility: semantics labels, contrast, touch targets, focus order.
-      (Health/Power badges semantic labels done 2026-10-22 — commit TBD; extend
+      (Health/Power badges semantic labels done 2026-10-22 — commit c8dc7e1; extend
       to cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.

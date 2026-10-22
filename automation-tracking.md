@@ -94,7 +94,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   note pointing to the new live corpus (DOCS-2 partial).
 - **Verification:** analyze 0; tests 233 passed / 1 skipped; issues validate OK;
   `git diff --check` clean; secret scan clean.
-- **Commit:** <commit> — `auto: DOCS — official docs mirror (DSP0266, bmcweb, schemas, REQUIREMENTS) + badge a11y (run 2026-10-22 12:44)`; pushed: yes/no.
+- **Commit:** c8dc7e1 — `auto: DOCS — official docs mirror (DSP0266, bmcweb, schemas, REQUIREMENTS) + badge a11y (run 2026-10-22 12:44)`; pushed: **no** — `git push origin main` failed with `fatal: could not read Username for 'https://github.com': No such device or address`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine. Local commit kept; not retried (runbook failure handling). Verify `git ls-remote origin refs/heads/main` vs `c8dc7e1` next run.
 - **Next:** 1) EMULATOR run — stand up Redfish-Mockup-Server over HTTPS and add
   `test_integration/emulator/` tests (EMU-1/EMU-2); 2) DOCS-2 refresh the
   `test/fixtures/redfish/` + `redfish_reference` snapshot against the verified
