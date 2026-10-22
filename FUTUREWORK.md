@@ -7,10 +7,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-22 (DOCS run — DOCS-4 bmcweb diff audit + KVM Oem fix, #027 closed)
-- **Current focus:** #027 closed (toolchain evidence); DOCS-4 completed (bmcweb feature-detection diff
-  recorded, KVM Oem false-positive fixed); next P1: #015 (AuthManager) or #016/#022 (ActionInfo/etag);
-  EMU-3 extension + UI-5 busy dialog remain
+- **Last updated:** 2026-10-22 (EMULATOR run — emulator suite +2: systems detail + HttpPushUri, UI-5 dialog busy confirm completed)
+- **Current focus:** EMU-3 extended (13 emulator tests; error paths stay unit-fixture-covered per EMU-5);
+  UI-5 fully done (dialog confirm busy state); next P1: #015 (AuthManager) or #016/#022 (ActionInfo/etag);
+  #008/#020 HTTP-push path has an emulator assertion to build against
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -104,8 +104,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
       (session + basic auth, reset action, 404 mapping done 2026-10-22;
-      remaining: a richer emulator is needed to exercise 403/409/400 extended
-      info paths — see EMU-5)
+      systems-detail + HttpPushUri tests added 2026-10-22 → 13 emulator tests;
+      remaining: 403/409/400 extended info paths need a richer emulator — see
+      EMU-5: decision is to keep covering error mapping with spec-conformant
+      unit fixtures, so EMU-3 is effectively complete)
 - [x] **EMU-4** Add `tool/emulator/run_tests.sh` that starts the server, waits for
       health, runs the integration tests, and always stops the server via `trap`.
       Pin the emulator commit and document it.
@@ -160,7 +162,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - [ ] **#008 / #020** Firmware update management, upload progress, task timeline.
       (bmcweb: update is HTTP-push via `HttpPushUri`/`MultipartHttpPushUri`, no
       `SimpleUpdate` — our `startSimpleUpdate` would 405 on OpenBMC; add push
-      path — DOCS-4, REQUIREMENTS.md)
+      path — DOCS-4, REQUIREMENTS.md; emulator asserts `UpdateServiceInfo.
+      httpPushUri == '/FWUpdate'` on the DMTF mockup — run 2026-10-22)
 - [ ] **#009 / #021** Remote KVM capability detection and console rendering.
 - [ ] **#010** Hardening: secure storage, theming, accessibility, coverage.
 
@@ -179,9 +182,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - [ ] **UI-5** Power confirmation dialog: clearer destructive-action copy and
       disabled/busy states.
       (destructive copy + a11y label done 2026-10-22 — commit 81dfb8f; reset
-      buttons now announce the in-flight state to assistive tech
-      "action in progress" + disable while busy — done 2026-10-22 this run;
-      busy state on the dialog confirm button itself still pending)
+      buttons announce the in-flight state + disable while busy — done
+      2026-10-22; dialog confirm button busy state (spinner + disabled, Cancel
+      disabled, barrier non-dismissible while in flight, busy semantics)
+      completed 2026-10-22 — 2 new widget tests) — **UI-5 done**
 - [ ] **UI-6** Sensor table: sorting/filtering, threshold highlighting, stale data.
 - [ ] **UI-7** Firmware upload: progress, cancel, task status timeline.
 - [ ] **UI-8** KVM: launch/placeholder UX when the console is unsupported.

@@ -131,14 +131,17 @@ class PowerView extends ConsumerWidget {
   ) async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
+      // The dialog owns the in-flight state (UI-5): the confirm button
+      // disables and shows a spinner while the reset request is pending, so
+      // it must not be dismissible by tapping the barrier mid-flight.
+      barrierDismissible: false,
       builder: (BuildContext dialogContext) => ConfirmResetDialog(
         action: action,
         systemName: systemName,
+        onConfirm: () => controller.reset(action),
       ),
     );
     if (confirmed != true) return;
-
-    await controller.reset(action);
 
     if (!context.mounted) return;
     final PowerUiState after = ref.read(powerControllerProvider(systemId));
@@ -214,11 +217,19 @@ class ResetButton extends StatelessWidget {
 }
 
 /// Confirmation dialog shown before a destructive (or any) reset action.
-class ConfirmResetDialog extends StatelessWidget {
+///
+/// UI-5: the confirm button owns the in-flight state — while [onConfirm]'s
+/// future is pending the confirm button is disabled and shows a spinner, and
+/// both buttons stop responding, so the operator gets unambiguous feedback
+/// that the request is being sent. The dialog only pops (`true`) once the
+/// action completes (or fails) — [PowerController.reset] never throws, it
+/// records the error in state, so the caller can read the outcome afterwards.
+class ConfirmResetDialog extends StatefulWidget {
   /// Creates a [ConfirmResetDialog].
   const ConfirmResetDialog({
     required this.action,
     required this.systemName,
+    required this.onConfirm,
     super.key,
   });
 
@@ -228,28 +239,50 @@ class ConfirmResetDialog extends StatelessWidget {
   /// Display name of the target system.
   final String systemName;
 
+  /// Invoked when the operator confirms; awaited before the dialog pops.
+  final Future<void> Function() onConfirm;
+
+  @override
+  State<ConfirmResetDialog> createState() => _ConfirmResetDialogState();
+}
+
+class _ConfirmResetDialogState extends State<ConfirmResetDialog> {
+  bool _busy = false;
+
+  Future<void> _confirm() async {
+    setState(() => _busy = true);
+    await widget.onConfirm();
+    if (!mounted) return;
+    Navigator.of(context).pop(true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
-    final bool destructive = action.isDestructive;
+    final bool destructive = widget.action.isDestructive;
+    final String confirmLabel = destructive ? 'Force' : 'Confirm';
     return AlertDialog(
-      title: Text('Confirm ${action.label}?'),
+      title: Text('Confirm ${widget.action.label}?'),
       content: Text(
         destructive
-            ? 'This will ${action.label} "$systemName".\n\n'
+            ? 'This will ${widget.action.label} "${widget.systemName}".\n\n'
                 'This action may interrupt service; unsaved work on the host '
                 'could be lost. Continue?'
-            : 'This will ${action.label} "$systemName". Continue?',
+            : 'This will ${widget.action.label} "${widget.systemName}". '
+                'Continue?',
       ),
       actions: <Widget>[
         TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: _busy ? null : () => Navigator.of(context).pop(false),
           child: const Text('Cancel'),
         ),
         Semantics(
-          label: destructive
-              ? 'Confirm ${action.label} (destructive)'
-              : 'Confirm ${action.label}',
+          label: _busy
+              ? '${destructive ? 'Force' : 'Confirm'} ${widget.action.label}, '
+                  'action in progress'
+              : destructive
+                  ? 'Confirm ${widget.action.label} (destructive)'
+                  : 'Confirm ${widget.action.label}',
           button: true,
           child: FilledButton(
             style: destructive
@@ -258,8 +291,13 @@ class ConfirmResetDialog extends StatelessWidget {
                     foregroundColor: scheme.onError,
                   )
                 : null,
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(destructive ? 'Force' : 'Confirm'),
+            onPressed: _busy ? null : _confirm,
+            child: _busy
+                ? const SizedBox.square(
+                    dimension: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(confirmLabel),
           ),
         ),
       ],

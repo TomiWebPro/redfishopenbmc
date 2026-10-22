@@ -310,3 +310,52 @@ Append-only run log for the `redfish-automation` scheduler job.
   session reuse/expiry) — unit-level with in-process mock server; 3) #016/#022:
   `ResetActionInfo` allow-list fallback + PATCH/etag, or #008/#020: bmcweb
   HTTP-push firmware upload path.
+
+## 2026-10-22 17:38 — EMULATOR
+
+- **Baseline:** analyze 0; tests 249 passed / 1 skipped; starting commit c971745;
+  issues validate OK; branch `main` clean but ahead 9 of origin (9 commits
+  unpushed — GitHub push blocked: no credentials, see earlier entries).
+- **Primary work:** EMULATOR — re-verified the pinned DMTF Redfish-Mockup-Server
+  suite end-to-end (13/13 pass over HTTPS, trap cleanup confirmed) and extended
+  the suite with two tests that close the "systems" and firmware-push gaps:
+  ComputerSystem inventory-detail + HTTP-push URI exposure.
+- **Emulator:** ran `tool/emulator/run_tests.sh` twice (once pre-work to confirm
+  an 11-test baseline, once post-change) — all green, no stray server process
+  left, port 8443 closed after each run. Added `systems: ComputerSystem exposes
+  full inventory fields` (Model `3500`, Manufacturer `Contoso`, SerialNumber
+  `437XR1138R2`, PowerState `On`, `Status` OK, and `#ComputerSystem.Reset`
+  `target` + `ResetType@Redfish.AllowableValues` present) and `firmware:
+  UpdateServiceInfo exposes the HTTP-push URI (DOCS-4)` (asserts
+  `httpPushUri == '/FWUpdate'` through the real `FirmwareService`, tying
+  DOCS-4's bmcweb HTTP-push finding to an emulator-level assertion for
+  #008/#020). Emulator suite now 13 tests.
+- **Code/tests:** no production logic change from the emulator work; UI-5 landed
+  (below); `REQUIREMENTS.md` trace notes updated (emulator test count 13 +
+  inventory/push coverage; the bmcweb HTTP-push row now cites the emulator
+  assertion).
+- **UI:** UI-5 completed — `ConfirmResetDialog` is now stateful and owns the
+  in-flight state: the confirm button disables + shows a spinner while the
+  reset request is pending, Cancel disables too, the dialog is
+  `barrierDismissible: false` so it cannot vanish mid-flight, and a Semantics
+  "«action», action in progress" label is announced (mirrors the reset-button
+  busy pattern). `PowerView._confirmAndRun` passes `controller.reset(action)`
+  as `onConfirm`; the dialog only pops after the request resolves, so the
+  snackbar outcome is unchanged. Tests: +2 in `power_view_test.dart` (deferred
+  gate: confirm disabled + spinner + cancel disabled + busy semantics while a
+  reset is pending, then dialog closes on release; failing service: dialog
+  closes and both inline error + snackbar show the message). +2 tests.
+- **Verification:** analyze 0; tests 251 passed / 1 skipped; issues validate
+  OK; `git diff --check` clean; secret scan clean (only the pre-existing
+  AuthMethods doc table line matched — not a credential). Repo-wide `dart
+  format` still churns ~50 files and reintroduces the pre-existing
+  `curly_braces` lint in `kvm_view.dart`; reverted the format-only churn to
+  keep the diff focused (consistent with prior-run precedent; repo-wide format
+  stays FUTUREWORK P2).
+- **Commit:** <hash here> — `auto: EMULATOR — emulator suite +2 (systems detail, HttpPushUri), UI-5 dialog busy confirm, REQUIREMENTS trace (run 2026-10-22 17:38)`; pushed: **no** — same GitHub credential blocker (no credential helper / env token / SSH key on this machine); local commit kept, not retried. 9 commits queued locally before this run, 10 after.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (10 queued); 2) P1 #015 AuthManager (authMethod, safe logout
+  URI, session reuse/expiry) — unit-level with in-process mock server;
+  3) #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag, or
+  #008/#020: bmcweb HTTP-push firmware upload path (the emulator now asserts
+  `HttpPushUri` is readable).

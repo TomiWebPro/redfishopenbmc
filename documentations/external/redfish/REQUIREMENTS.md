@@ -38,7 +38,7 @@ Sources:
 | bmcweb `EventService`: `SubmitTestEvent`, `DeliveryRetryAttempts` (default 3), `DeliveryRetryIntervalSeconds`, `EventFormatTypes`, `SSEFilterPropertiesSupported` | OpenBMC `Redfish.md` §EventService | not implemented | — | vendor row (bmcweb) |
 | bmcweb `TaskService`: `CompletedTaskOverWritePolicy`, `LifeCycleEventOnTaskStateChange`, `Tasks` collection | OpenBMC `Redfish.md` §TaskService | not implemented (202 accepted only) | — | vendor row (bmcweb) |
 | Session timeout handling (`SessionService.SessionTimeout`) | DSP0266 §12.4; `SessionService.json` | `lib/redfish/models/session.dart` (expiry) | `test/redfish/client/auth_manager_test.dart` | OK |
-| bmcweb firmware update: `HttpPushUri` / `MultipartHttpPushUri` upload (no `SimpleUpdate` action) | OpenBMC `Redfish.md` §UpdateService (bmcweb `0128851e`) | `FirmwareService.startSimpleUpdate` POSTs `#UpdateService.SimpleUpdate` — **will not match bmcweb** | firmware tests use SimpleUpdate action | GAP: #008/#020 must add HTTP-push upload path for OpenBMC |
+| bmcweb firmware update: `HttpPushUri` / `MultipartHttpPushUri` upload (no `SimpleUpdate` action) | OpenBMC `Redfish.md` §UpdateService (bmcweb `0128851e`) | `FirmwareService.fetchUpdateService` surfaces `HttpPushUri`; `startSimpleUpdate` POSTs `#UpdateService.SimpleUpdate` — **will not match bmcweb** | unit: `test/features/firmware/`; emulator: `emulator_suite_test.dart` asserts `UpdateServiceInfo.httpPushUri == '/FWUpdate'` on the DMTF mockup | GAP: #008/#020 must add HTTP-push upload path for OpenBMC |
 | bmcweb reset types: `ResetActionInfo` ActionInfo (`Parameters/AllowableValues`) instead of system-level `SupportedResetTypes` | OpenBMC `Redfish.md` §ComputerSystem (`ResetActionInfo` resource) | `FeatureRules.supportedResetTypes` reads `SupportedResetTypes` directly | `feature_rules_test.dart` | Partial: empty list on bmcweb → power UI treats empty as "all allowed" (safe), but the true allow-list is not surfaced; add ActionInfo fallback in #022/#016 |
 | bmcweb serial console lives on the ComputerSystem (`SerialConsole/SSH|IPMI`), not the Manager | OpenBMC `Redfish.md` §ComputerSystem (`SerialConsole` fields) | `FeatureRules._managerConsoleType` only checks `Manager.GraphicalConsole/SerialConsole/Oem` | `feature_rules_test.dart` | Partial: GraphicalConsole detection still correct; System-level SerialConsole not yet mapped (see #009/#021 KVM) |
 | bmcweb auth surface: `AccountService.Oem.OpenBMC.AuthMethods.*` (`BasicAuth`, `Cookie`, `SessionToken`, `TLS`, `XToken`) + `HTTPBasicAuth` | OpenBMC `Redfish.md` §AccountService | `AuthManager` prefers session, falls back to basic | `test/redfish/client/auth_manager_test.dart` | Partial: vendor auth-method negotiation is #015/#026 |
@@ -60,7 +60,10 @@ Sources:
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined.
+     `REDFISH_EMULATOR_URL` is defined. 13 tests: service root + BFS discovery,
+     sensors, firmware inventory + `HttpPushUri`, KVM console, systems detail
+     (ComputerSystem inventory fields + `ResetType@Redfish.AllowableValues`),
+     session + basic auth, power state/reset, and 404 error mapping.
   Both cover the rows above end-to-end against authentic payload shapes.
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)

@@ -490,3 +490,46 @@
 
 **Issues touched:**
 - #027 closed (2026-10-22) — second P1 close; progress_summary.md updated.
+
+## 2026-10-22 — agent:redfish-automation — EMULATOR run (suite +2, UI-5 dialog busy)
+
+**Done:**
+- EMULATOR primary: re-verified the pinned DMTF Redfish-Mockup-Server suite
+  end-to-end (13/13 over HTTPS, trap cleanup, no stray process) and extended
+  the suite with two tests: `systems: ComputerSystem exposes full inventory
+  fields` (Model/Manufacturer/SerialNumber/PowerState/Status + `ResetType@
+  Redfish.AllowableValues` on the Reset action) and `firmware: UpdateServiceInfo
+  exposes the HTTP-push URI (DOCS-4)` (asserts `httpPushUri == '/FWUpdate'`
+  through the real `FirmwareService` — the emulator-level counterpart of
+  DOCS-4's bmcweb finding, ready for #008/#020).
+- UI-5 **completed**: `ConfirmResetDialog` is now stateful and owns the
+  in-flight state — confirm button disables + spins while the reset request is
+  pending, Cancel disables too, `barrierDismissible: false` prevents mid-flight
+  dismissal, and a "«action», action in progress" Semantics label mirrors the
+  reset-button busy pattern. `PowerView._confirmAndRun` passes
+  `controller.reset(action)` as `onConfirm`; the dialog pops only after the
+  request resolves so snackbar behaviour is unchanged. 2 new widget tests
+  (deferred-gate busy assertions + failing-service snackbar assertion).
+- REQUIREMENTS.md: emulator trace notes updated (13 tests, inventory/push
+  coverage); the bmcweb HTTP-push row now cites the emulator assertion.
+
+**Decisions:**
+- Kept the diff focused again: repo-wide `dart format` churns ~50 files and
+  reintroduces the known `curly_braces` lint in `kvm_view.dart`; reverted the
+  format-only churn and formatted only the touched files (prior-run precedent;
+  repo-wide format remains FUTUREWORK P2).
+- UI-5 dialog busy state is owned by the dialog (not the controller): the
+  controller's `reset` never throws (records error in state), so the dialog
+  can await it and pop with the outcome; the snackbar then reads the recorded
+  error — no new error plumbing needed.
+
+**Next:**
+- Push 10 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod, safe logout URI, session reuse/expiry) —
+  unit-level with the in-process mock server.
+- #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag, or #008/#020:
+  bmcweb HTTP-push firmware upload path (emulator now asserts HttpPushUri).
+
+**Issues touched:**
+- none opened/closed this run (EMULATOR extension + UI-5 completion; no issue
+  status change; EMU-3 note updated in FUTUREWORK).

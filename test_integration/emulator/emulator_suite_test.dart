@@ -175,6 +175,44 @@ void main() {
       expect(primary, isNotNull);
       expect(primary!.type, KvmConsoleType.graphical);
     });
+
+    test('systems: ComputerSystem exposes full inventory fields', () async {
+      final Map<String, dynamic> sys =
+          await client.getJson('/redfish/v1/Systems/437XR1138R2');
+      expect(sys['@odata.id'], '/redfish/v1/Systems/437XR1138R2');
+      expect(sys['Model'], '3500');
+      expect(sys['Manufacturer'], 'Contoso');
+      expect(sys['SerialNumber'], '437XR1138R2');
+      expect(sys['PowerState'], 'On');
+      final Map<dynamic, dynamic> status =
+          sys['Status'] as Map<dynamic, dynamic>;
+      expect(status['State'], 'Enabled');
+      expect(status['Health'], 'OK');
+      // Reset action advertises its AllowableValues (the allow-list the
+      // client gates reset types on — DOCS-4 / #022).
+      final Map<dynamic, dynamic> actions =
+          sys['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> reset =
+          actions['#ComputerSystem.Reset'] as Map<dynamic, dynamic>;
+      expect(reset['target'],
+          '/redfish/v1/Systems/437XR1138R2/Actions/ComputerSystem.Reset');
+      expect(reset['ResetType@Redfish.AllowableValues'], isA<List<dynamic>>());
+    });
+
+    test('firmware: UpdateServiceInfo exposes the HTTP-push URI (DOCS-4)',
+        () async {
+      final FirmwareService svc = FirmwareService(
+        client: client,
+        systemId: 'em1',
+      );
+      final UpdateServiceInfo info = await svc.fetchUpdateService();
+      expect(info.serviceEnabled, isTrue);
+      expect(info.httpPushUri, '/FWUpdate',
+          reason: 'the DMTF mockup advertises HttpPushUri; OpenBMC bmcweb '
+              'firmware updates are HTTP-push (HttpPushUri), not SimpleUpdate '
+              '(DOCS-4, FUTUREWORK #008/#020)');
+      expect(info.inventory, isNotEmpty);
+    });
   });
 
   group('emulator: auth (EMU-3)', () {

@@ -1,4 +1,6 @@
 // ignore_for_file: prefer_const_constructors
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +15,7 @@ import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
 import 'package:redfishopenbmc/features/systems/providers/profile_repository.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
+import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/session.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
@@ -22,6 +25,34 @@ class _FakePowerService extends PowerService {
   int resetCalls = 0;
   @override
   Future<void> reset(ResetType type) async => resetCalls++;
+  @override
+  Future<PowerState> fetchPowerState() async => PowerState.on;
+}
+
+/// A [PowerService] double whose reset request stays pending until the test
+/// releases it — lets tests observe the dialog's in-flight (busy) state.
+class _DeferredPowerService extends PowerService {
+  _DeferredPowerService() : super(client: null, systemId: 'bmc1');
+  final Completer<void> gate = Completer<void>();
+  int resetCalls = 0;
+  @override
+  Future<void> reset(ResetType type) {
+    resetCalls++;
+    return gate.future;
+  }
+
+  @override
+  Future<PowerState> fetchPowerState() async => PowerState.on;
+}
+
+/// A [PowerService] double whose reset fails with a Redfish error.
+class _FailingPowerService extends PowerService {
+  _FailingPowerService() : super(client: null, systemId: 'bmc1');
+  @override
+  Future<void> reset(ResetType type) async {
+    throw RedfishException(message: 'reset was rejected', statusCode: 400);
+  }
+
   @override
   Future<PowerState> fetchPowerState() async => PowerState.on;
 }
@@ -345,6 +376,124 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.bySemanticsLabel(RegExp('action in progress')), findsNothing);
+    });
+
+    testWidgets(
+        'dialog confirm button disables + spins while reset is in '
+        'flight (UI-5)', (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      final _DeferredPowerService svc = _DeferredPowerService();
+      final PowerController controller = PowerController(
+        service: svc,
+        features: SystemFeatures(
+          systemId: 'bmc1',
+          powerControl: true,
+          supportedResetTypes: const <String>['On'],
+        ),
+        initialState: const PowerUiState(powerState: PowerState.off),
+        pollInterval: const Duration(seconds: 60),
+        pollTimeout: const Duration(milliseconds: 1),
+      );
+
+      await tester.pumpWidget(
+        harness(manager: manager, controller: controller),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Power On'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirm'));
+      // Bounded pumps: the busy spinner animates forever while pending.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Dialog stays open, confirm button disabled + spinner shown, both
+      // buttons inert.
+      expect(find.text('Confirm Power On?'), findsOneWidget);
+      final Finder dialogConfirm = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(FilledButton),
+      );
+      expect(dialogConfirm, findsOneWidget);
+      final FilledButton confirmButton =
+          tester.widget<FilledButton>(dialogConfirm);
+      expect(confirmButton.onPressed, isNull,
+          reason: 'busy confirm button must be disabled');
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsOneWidget,
+        reason: 'busy confirm button must show a spinner',
+      );
+      final TextButton cancelButton =
+          tester.widget<TextButton>(find.widgetWithText(TextButton, 'Cancel'));
+      expect(cancelButton.onPressed, isNull,
+          reason: 'cancel must be disabled mid-flight');
+      expect(
+        find.bySemanticsLabel(RegExp('^Confirm Power On, action in progress')),
+        findsOneWidget,
+        reason: 'busy state must be announced to assistive tech',
+      );
+
+      // Releasing the gate pops the dialog (request completed).
+      svc.gate.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Confirm Power On?'), findsNothing);
+      expect(svc.resetCalls, 1);
+    });
+
+    testWidgets(
+        'failed reset closes the dialog and surfaces the error snackbar',
+        (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      final _FailingPowerService svc = _FailingPowerService();
+      final PowerController controller = PowerController(
+        service: svc,
+        features: SystemFeatures(
+          systemId: 'bmc1',
+          powerControl: true,
+          supportedResetTypes: const <String>['On'],
+        ),
+        initialState: const PowerUiState(powerState: PowerState.off),
+        pollInterval: const Duration(seconds: 60),
+        pollTimeout: const Duration(milliseconds: 1),
+      );
+
+      await tester.pumpWidget(
+        harness(manager: manager, controller: controller),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Power On'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+
+      // Dialog closed, error reported via the inline error text AND the
+      // snackbar (the controller records the error instead of throwing, so
+      // the dialog pops after the request resolves).
+      expect(find.text('Confirm Power On?'), findsNothing);
+      expect(find.text('reset was rejected'), findsWidgets);
+      expect(
+        find.descendant(
+          of: find.byType(SnackBar),
+          matching: find.text('reset was rejected'),
+        ),
+        findsOneWidget,
+        reason: 'the snackbar must carry the failure message',
+      );
     });
   });
 }
