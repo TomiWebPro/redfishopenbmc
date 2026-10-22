@@ -288,3 +288,33 @@
 
 **Issues touched:**
 - none (audit only; this journal entry)
+
+## 2026-10-22 — agent:redfish-automation — DOCS run
+
+**Done:**
+- DOCS-1: established `documentations/external/redfish/` official-docs mirror —
+  DSP0266 1.25.0 PDF, bmcweb Redfish.md / REDFISH_CHECKLIST.md / OEM_SCHEMAS.md
+  (upstream `0128851e`), Redfish-Mockup-Server README (upstream `23d21f9a`),
+  full DMTF schema index listing, and 16 base aggregator schemas. Manifest with
+  URL + fetch time + SHA-256 + bytes in `documentations/external/README.md`
+  (~4.8 MB total, within budget).
+- Created `documentations/external/redfish/REQUIREMENTS.md`: 14-row
+  requirement→code→test→status trace (9 OK, 4 GAP, vendor rows cited).
+- UI-2 increment: `HealthBadge`/`PowerBadge` semantic labels + per-state health
+  icons; 2 new widget tests.
+- DOCS-2 partial: provenance note linking `redfish_reference` to the live corpus.
+
+**Decisions:**
+- Fresh queue → DOCS first (no DOCS/EMULATOR run yet in tracking).
+- Mirrored base aggregator schemas (small stubs) rather than versioned files
+  (keeps corpus bounded; versioned defs resolvable via the index listing).
+- Event subscription gap is real (no EventService code); filed as DOCS-7 instead
+  of an issue until scope is decided.
+
+**Next:**
+- EMULATOR run (EMU-1/EMU-2): stand up mockup-server over HTTPS + integration tests.
+- DOCS-2: refresh fixtures snapshot against verified upstream commits.
+- DOCS-3: continue DSP0266 audit; decide event-subscription scope (DOCS-7).
+
+**Issues touched:**
+- none opened/closed this run (docs + UI only; FUTUREWORK updated).

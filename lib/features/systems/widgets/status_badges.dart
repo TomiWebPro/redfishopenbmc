@@ -28,17 +28,23 @@ class HealthBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final Color color = healthColor(health, scheme);
-    return Chip(
-      avatar: Icon(
-        health == Health.ok ? Icons.check_circle_outline : Icons.error_outline,
-        size: 16,
-        color: color,
+    final IconData icon = switch (health) {
+      Health.ok => Icons.check_circle_outline,
+      Health.warning => Icons.warning_amber_rounded,
+      Health.critical => Icons.error_outline,
+      Health.unknown => Icons.help_outline,
+    };
+    return Semantics(
+      label: 'Health ${health.label}',
+      container: true,
+      child: Chip(
+        avatar: Icon(icon, size: 16, color: color),
+        label: Text(health.label),
+        labelStyle: TextStyle(color: color),
+        visualDensity: VisualDensity.compact,
+        side: BorderSide(color: color.withValues(alpha: 0.4)),
+        backgroundColor: color.withValues(alpha: 0.08),
       ),
-      label: Text(health.label),
-      labelStyle: TextStyle(color: color),
-      visualDensity: VisualDensity.compact,
-      side: BorderSide(color: color.withValues(alpha: 0.4)),
-      backgroundColor: color.withValues(alpha: 0.08),
     );
   }
 }
@@ -138,15 +144,19 @@ class _PowerBadgeState extends State<PowerBadge>
 
     final Widget avatar = Icon(icon, size: 16, color: color);
 
-    return Chip(
-      avatar: transitioning
-          ? FadeTransition(opacity: _opacity, child: avatar)
-          : avatar,
-      label: Text(widget.powerState.label),
-      labelStyle: TextStyle(color: color),
-      visualDensity: VisualDensity.compact,
-      side: BorderSide(color: color.withValues(alpha: 0.4)),
-      backgroundColor: color.withValues(alpha: 0.08),
+    return Semantics(
+      label: 'Power ${widget.powerState.label}',
+      container: true,
+      child: Chip(
+        avatar: transitioning
+            ? FadeTransition(opacity: _opacity, child: avatar)
+            : avatar,
+        label: Text(widget.powerState.label),
+        labelStyle: TextStyle(color: color),
+        visualDensity: VisualDensity.compact,
+        side: BorderSide(color: color.withValues(alpha: 0.4)),
+        backgroundColor: color.withValues(alpha: 0.08),
+      ),
     );
   }
 }

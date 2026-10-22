@@ -187,6 +187,53 @@ void main() {
       expect(find.text('On'), findsOneWidget);
       expect(find.text('Off'), findsOneWidget);
     });
+
+    testWidgets('announce accessible semantics labels for screen readers',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: const Scaffold(
+            body: const Column(
+              children: const <Widget>[
+                const HealthBadge(health: Health.warning),
+                const PowerBadge(powerState: PowerState.off),
+              ],
+            ),
+          ),
+        ),
+      );
+      expect(
+        find.bySemanticsLabel('Health Warning'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Power Off'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('health badge uses a distinct icon per state',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: const Scaffold(
+            body: const Column(
+              children: const <Widget>[
+                const HealthBadge(health: Health.warning),
+                const HealthBadge(health: Health.critical),
+                const HealthBadge(health: Health.unknown),
+              ],
+            ),
+          ),
+        ),
+      );
+      expect(
+        find.byIcon(Icons.warning_amber_rounded),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(find.byIcon(Icons.help_outline), findsOneWidget);
+    });
   });
 
   group('SystemCard', () {
@@ -299,7 +346,8 @@ void main() {
       expect(find.text('Host is required'), findsOneWidget);
     });
 
-    testWidgets('self-signed toggle reveals the warning banner', (tester) async {
+    testWidgets('self-signed toggle reveals the warning banner',
+        (tester) async {
       await tester.pumpWidget(
         _formScreen(
           SystemProfileForm(onSubmit: (_) {}),
@@ -499,7 +547,8 @@ void main() {
       expect(find.byType(SystemProfileForm), findsOneWidget);
     });
 
-    testWidgets('EditSystemPage prefilled form submits an update', (tester) async {
+    testWidgets('EditSystemPage prefilled form submits an update',
+        (tester) async {
       final ConnectionProfile initial = const ConnectionProfile(
         id: 'bmc1',
         name: 'Edit Me',
@@ -603,7 +652,8 @@ void main() {
   });
 
   group('DashboardView integration', () {
-    testWidgets('renders aggregated banner and dashboard cards', (tester) async {
+    testWidgets('renders aggregated banner and dashboard cards',
+        (tester) async {
       final SystemManager m = seededManager(
         systems: <String, SystemHandle>{
           'bmc1': connectedHandle(

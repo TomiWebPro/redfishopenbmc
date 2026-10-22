@@ -58,6 +58,12 @@ source code. The raw API payloads that back every example here live under
    per-resource Markdown pages, then hand-maintain `README.md`, `index.md`, and
    `api_formats.md`.
 
+> Snapshot refresh status: this mirror's `test/fixtures/redfish/` snapshot was
+> last refreshed at setup (2026-10-21). A live upstream refresh (DMTF schema
+> index shows 14,259 JSON/YAML entries as of 2026-10-22) is tracked as
+> `DOCS-2` in `FUTUREWORK.md`; the authoritative live docs corpus now lives in
+> `documentations/external/redfish/` with per-file hashes.
+
 ## Directory layout
 ```
 documentations/redfish_reference/

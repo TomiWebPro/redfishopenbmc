@@ -56,3 +56,48 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Next:** first real automation run at next 5h tick; quota on deepseek-free
   should have cleared.
 
+## 2026-10-22 12:44 — DOCS
+
+- **Baseline:** analyze 0; tests 231 passed / 1 skipped; starting commit 9fd38dc;
+  issues validate OK; branch `main` clean.
+- **Primary work:** DOCS-1 — established the official-docs mirror under
+  `documentations/external/redfish/` (fresh queue, first DOCS run).
+- **Docs:** pulled and verified (curl `-sSIL` 200 on every source):
+  - DSP0266 1.25.0 PDF from `www.dmtf.org` (1,243,359 bytes,
+    `385ee6d0...82149`) → `redfish/spec/`.
+  - bmcweb `Redfish.md` (25,689 B), `REDFISH_CHECKLIST.md` (1,761 B),
+    `OEM_SCHEMAS.md` (5,687 B) at upstream commit `0128851e` → `redfish/openbmc/`.
+  - Redfish-Mockup-Server README (7,318 B) at commit `23d21f9a` → `redfish/mockup/`.
+  - Full DMTF schema index listing (3,448,133 B, 14,259 JSON/YAML entries)
+    → `redfish/schemas/v1-index.html`.
+  - 16 base aggregator schemas (ServiceRoot, ComputerSystem, Chassis, Sensor,
+    Power, Thermal, SessionService, AccountService, UpdateService,
+    SoftwareInventory, EventService, Manager, LogService, EthernetInterface,
+    TaskService, MessageRegistry; 106,322 B total) → `redfish/schemas/v1/`.
+  - Total new downloads ≈ 4.8 MB (well under the 50 MB run budget; no file over
+    25 MB). Manifest table + SHA-256s updated in `documentations/external/README.md`;
+    upstream anchors re-verified with commits.
+  - Created `documentations/external/redfish/REQUIREMENTS.md` — 14-row
+    requirement→code→test→status trace. 9 requirements OK (tested), 4 GAP rows
+    already tracked (#016 PATCH/ETag, #008/#020 tasks, event subscription not yet
+    filed, session URI #015), vendor rows cited to bmcweb.
+- **Emulator:** none this run (DOCS run).
+- **Code/tests:** no production code changes from docs; trace table links to
+  existing code + tests.
+- **UI:** UI-2 accessibility increment — `HealthBadge` / `PowerBadge` now wrap
+  the chip in `Semantics(label: 'Health <x>' / 'Power <x>')` so screen readers
+  announce state, and `HealthBadge` uses a distinct icon per state
+  (`warning_amber_rounded` for warning, `help_outline` for unknown) instead of
+  a generic error icon. Added 2 widget tests
+  (`test/features/systems/ui_widget_test.dart`): semantics labels + per-state
+  icons. Also touched `documentations/redfish_reference/README.md` provenance
+  note pointing to the new live corpus (DOCS-2 partial).
+- **Verification:** analyze 0; tests 233 passed / 1 skipped; issues validate OK;
+  `git diff --check` clean; secret scan clean.
+- **Commit:** <commit> — `auto: DOCS — official docs mirror (DSP0266, bmcweb, schemas, REQUIREMENTS) + badge a11y (run 2026-10-22 12:44)`; pushed: yes/no.
+- **Next:** 1) EMULATOR run — stand up Redfish-Mockup-Server over HTTPS and add
+  `test_integration/emulator/` tests (EMU-1/EMU-2); 2) DOCS-2 refresh the
+  `test/fixtures/redfish/` + `redfish_reference` snapshot against the verified
+  upstream commits; 3) DOCS-3 continue DSP0266 audit — file the event
+  subscription gap (EventService/Subscriptions) as a new FUTUREWORK item.
+

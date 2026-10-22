@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-21 14:50 (setup)
-- **Current focus:** official docs mirror + DMTF emulator harness, then P1 correctness
+- **Last updated:** 2026-10-22 12:44 (DOCS run)
+- **Current focus:** official docs mirror established; next EMULATOR harness + P1 correctness
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -37,19 +37,24 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 
 ## P1 — official docs and compliance
 
-- [ ] **DOCS-1** Establish `documentations/external/` as the official-docs mirror:
+- [x] **DOCS-1** Establish `documentations/external/` as the official-docs mirror:
       DMTF Redfish spec, schema index, mockup, and OpenBMC bmcweb docs. Add a
       manifest with URL, fetch time, SHA-256, size, and license/notes.
       Start at `https://redfish.dmtf.org/`, `https://redfish.dmtf.org/schemas/v1/`,
       `https://github.com/DMTF/Redfish-Mockup-Server`, and
       `https://github.com/openbmc/bmcweb/tree/master/docs`.
-- [ ] **DOCS-2** Refresh the DMTF schema/mockup snapshot used by
+      (run 2026-10-22, commit TBD — mirror + manifest + REQUIREMENTS.md live;
+      re-fetch on upstream change only)
+- [~] **DOCS-2** Refresh the DMTF schema/mockup snapshot used by
       `documentations/redfish_reference/` and `test/fixtures/redfish/`; verify the
       provenance section in `documentations/redfish_reference/README.md` is current.
+      (provenance note added 2026-10-22; full fixture refresh pending)
 - [ ] **DOCS-3** Audit the latest Redfish specification (DSP0266, currently linked
       from `https://redfish.dmtf.org/`) against the client's discovery, auth,
       error, PATCH/ETag, task, and subscription behaviour. Record gaps with
       section numbers and source URLs.
+      (14-row trace started in `documentations/external/redfish/REQUIREMENTS.md`
+      2026-10-22; continue auditing EventService/Subscriptions and TaskService)
 - [ ] **DOCS-4** Audit OpenBMC bmcweb's `docs/Redfish.md`,
       `docs/REDFISH_CHECKLIST.md`, and `docs/OEM_SCHEMAS.md`; document where our
       feature detection differs from bmcweb's actual behaviour.
@@ -59,6 +64,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - [ ] **DOCS-6** Keep the downloaded corpus bounded: max 25 MB per file and 50 MB
       of new downloads per run. For larger artifacts store the URL + hash +
       extracted notes instead of the binary.
+- [ ] **DOCS-7** Event subscription support: client has no EventService /
+      Subscriptions implementation yet; DSP0266 §14 "Eventing" + `EventService.json`
+      now mirrored (schemas/v1/EventService.json). Decide: implement subscribe +
+      SSE/webhook handling, or document as out-of-scope with rationale.
 
 ## P1 — emulator and integration tests
 
@@ -105,6 +114,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 
 - [ ] **UI-1** Empty / loading / error states for dashboard, sensors, firmware, KVM.
 - [ ] **UI-2** Accessibility: semantics labels, contrast, touch targets, focus order.
+      (Health/Power badges semantic labels done 2026-10-22 — commit TBD; extend
+      to cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.
 - [ ] **UI-4** Visual consistency for cards, badges, health/power colors, spacing.
