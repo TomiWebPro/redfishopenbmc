@@ -150,7 +150,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   churn; formats stay a FUTUREWORK P2 item.
 - **Verification:** analyze 0; tests 234 passed / 1 skipped; issues validate
   OK; `git diff --check` clean; secret scan clean.
-- **Commit:** pending — `auto: EMULATOR — DMTF mockup-server HTTPS harness + test_integration suite (EMU-1..4) + power dialog a11y (run 2026-10-22 14:01)`; pushed: **no** (no GitHub credentials on this machine — same blocker as the DOCS run; `git ls-remote` works read-only, push needs auth. Local commits kept.)
+- **Commit:** 81dfb8f — `auto: EMULATOR — DMTF mockup-server HTTPS harness + test_integration suite (EMU-1..4) + power dialog a11y (run 2026-10-22 14:01)`; pushed: **no** — `git push origin main` failed with `fatal: could not read Username for 'https://github.com': No such device or address` (same blocker as the DOCS run; no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine). Local commit kept; not retried. 3 commits now queued locally: c8dc7e1 (DOCS), 0c526fa (chore), 81dfb8f (EMULATOR).
 - **Next:** 1) Re-attempt `git push origin main` from a machine with GitHub
   credentials (2 commits queued: c8dc7e1 DOCS + this EMULATOR commit); 2)
   DOCS-3 continue DSP0266 audit — decide EventService/Subscriptions scope

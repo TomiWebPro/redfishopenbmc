@@ -74,13 +74,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - [x] **EMU-1** Stand up the official DMTF Redfish-Mockup-Server over HTTPS using
       `test/fixtures/redfish/dmtf_mockup` (public-rackmount1) and a generated
       self-signed cert. Health-check `GET /redfish/v1/` before tests.
-      (run 2026-10-22, commit pending — pin `23d21f9a`, script
+      (run 2026-10-22, commit 81dfb8f — pin `23d21f9a`, script
       `tool/emulator/run_tests.sh`, port 8443)
 - [x] **EMU-2** Add end-to-end tests under `test_integration/emulator/` (outside
       `test/` so plain `flutter test` never needs the emulator). Cover discovery,
       service-root traversal, systems, sensors, firmware inventory, and KVM
       capability detection.
-      (run 2026-10-22, commit pending — 11 tests in
+      (run 2026-10-22, commit 81dfb8f — 11 tests in
       `test_integration/emulator/emulator_suite_test.dart`; skips without
       `REDFISH_EMULATOR_URL`)
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
@@ -92,7 +92,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - [x] **EMU-4** Add `tool/emulator/run_tests.sh` that starts the server, waits for
       health, runs the integration tests, and always stops the server via `trap`.
       Pin the emulator commit and document it.
-      (run 2026-10-22, commit pending — verified end-to-end; trap cleanup
+      (run 2026-10-22, commit 81dfb8f — verified end-to-end; trap cleanup
       confirmed; pin `23d21f9a` in the script + docs README)
 - [ ] **EMU-5** Evaluate `DMTF/Redfish-Interface-Emulator` only if the mockup
       server cannot exercise the required dynamic actions. Record the decision.
@@ -130,14 +130,14 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - [ ] **UI-1** Empty / loading / error states for dashboard, sensors, firmware, KVM.
 - [ ] **UI-2** Accessibility: semantics labels, contrast, touch targets, focus order.
       (Health/Power badges semantic labels done 2026-10-22 — commit c8dc7e1;
-      destructive power dialog label done 2026-10-22 — commit pending; extend
+      destructive power dialog label done 2026-10-22 — commit 81dfb8f; extend
       to cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.
 - [ ] **UI-4** Visual consistency for cards, badges, health/power colors, spacing.
 - [ ] **UI-5** Power confirmation dialog: clearer destructive-action copy and
       disabled/busy states.
-      (destructive copy + a11y label done 2026-10-22 — commit pending; busy
+      (destructive copy + a11y label done 2026-10-22 — commit 81dfb8f; busy
       state on the dialog confirm button still pending)
 - [ ] **UI-6** Sensor table: sorting/filtering, threshold highlighting, stale data.
 - [ ] **UI-7** Firmware upload: progress, cancel, task status timeline.
