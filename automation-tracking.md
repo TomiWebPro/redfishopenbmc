@@ -452,7 +452,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   `dart format` churn (44 files) reverted per prior-run precedent — it
   reintroduces the pre-existing `curly_braces` lint in `kvm_view.dart`;
   formatted only the touched files.
-- **Commit:** TBD — `auto: EMULATOR — suite +3 (SessionService URI #017, Manager reset allow-list, Chassis chain), UI-3 KVM breakpoints (run 2026-10-22 21:08)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
+- **Commit:** 5e7c357 — `auto: EMULATOR — suite +3 (SessionService URI #017, Manager reset allow-list, Chassis chain), UI-3 KVM breakpoints (run 2026-10-22 21:08)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
 - **Next:** 1) Push the queued local commits from a machine with GitHub
   credentials (14 queued); 2) P1 #015 AuthManager (authMethod, safe logout URI,
   session reuse/expiry) — unit-level with in-process mock server; 3) #016/#022:
