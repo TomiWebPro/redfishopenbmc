@@ -573,3 +573,55 @@
 
 **Issues touched:**
 - none opened/closed this run (DOCS-5 + UI-3 increment; no issue status change).
+
+## 2026-10-22 — agent:redfish-automation — EMULATOR run (suite +3, UI-3 KVM breakpoints)
+
+**Done:**
+- EMULATOR primary: re-verified the pinned DMTF Redfish-Mockup-Server suite
+  end-to-end (16/16 over HTTPS, trap cleanup, no stray process) and extended
+  the suite with three tests:
+  1. `service root advertises a discoverable SessionService URI (#017)` —
+     asserts `SessionService.@odata.id` at the service root and that the
+     discovered URI serves a conformant SessionService (ServiceEnabled +
+     Sessions). This is the exact contract #017 needs (the client currently
+     hardcodes `/redfish/v1/SessionService/Sessions`).
+  2. `managers: Manager exposes console capabilities + reset allow-list
+     (DOCS-4 / #022)` — Manager collection enumerates `BMC`;
+     `GraphicalConsole.ServiceEnabled=true` + `ConnectTypesSupported` KVMIP
+     (the `FeatureRules.oemHasConsole`/`KvmConsole.fromManager` source);
+     `#Manager.Reset` carries its own `ResetType@Redfish.AllowableValues`
+     (`ForceRestart`, `GracefulRestart`) — the #022/#016 allow-list fallback
+     must not conflate manager- vs system-level Reset actions.
+  3. `chassis: Chassis exposes inventory + thermal/power sub-resources` —
+     `Chassis/1U` ChassisType RackMount, SerialNumber 437XR1138R2, PowerState
+     On, Status Enabled/OK, the `Thermal`/`Power` `@odata.id` links (sensor
+     discovery source chain), and `Links.ComputerSystems[0]` back to the
+     system.
+- UI-3: KvmView no-overflow tests at 320/800/1300 px added to
+  `kvm_widget_test.dart` (+3; two console cards, graphical + serial; no
+  production change — view already wraps; regression protection added).
+  Power/Sensors/Firmware/KVM done; dashboard/overview is the only UI-3 view
+  remaining.
+- REQUIREMENTS.md "Test platforms" note updated: emulator suite 13 → 16 tests,
+  new coverage listed.
+
+**Decisions:**
+- No production code change this run — the emulator additions are pure
+  contract-verification tests (matching the suite's existing style).
+- Kept the diff focused again: repo-wide `dart format` churns 44 files and
+  reintroduces the known `curly_braces` lint in `kvm_view.dart`; reverted the
+  format-only churn and formatted only the touched files (prior-run precedent;
+  repo-wide format remains FUTUREWORK P2).
+
+**Next:**
+- Push 13+1 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod, safe logout URI, session reuse/expiry) —
+  unit-level with the in-process mock server (emulator now asserts the
+  SessionService URI is discoverable — #017 contract).
+- #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag (emulator now
+  documents manager- vs system-level Reset allow-list sources); or #008/#020:
+  bmcweb HTTP-push firmware upload path.
+
+**Issues touched:**
+- none opened/closed this run (EMULATOR extension + UI-3 increment; no issue
+  status change). #017/#022/#015 got emulator-level contract notes.

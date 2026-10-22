@@ -60,9 +60,12 @@ Sources:
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 13 tests: service root + BFS discovery,
-     sensors, firmware inventory + `HttpPushUri`, KVM console, systems detail
-     (ComputerSystem inventory fields + `ResetType@Redfish.AllowableValues`),
+     `REDFISH_EMULATOR_URL` is defined. 16 tests: service root + BFS discovery
+     + discoverable `SessionService` URI (#017), sensors, firmware inventory +
+     `HttpPushUri`, KVM console, systems detail (ComputerSystem inventory
+     fields + `ResetType@Redfish.AllowableValues`), managers detail (console
+     capabilities + manager-level Reset allow-list, DOCS-4/#022), chassis
+     detail (inventory + Thermal/Power sub-resource chain + system link),
      session + basic auth, power state/reset, and 404 error mapping.
   Both cover the rows above end-to-end against authentic payload shapes.
 

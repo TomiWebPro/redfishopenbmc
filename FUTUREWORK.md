@@ -7,10 +7,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-22 (DOCS run — DOCS-5 `SystemFeatures` flag→spec→test map; `firmwareUpdate` honors `ServiceEnabled`; UI-3 FirmwareView breakpoint tests)
-- **Current focus:** DOCS-5 done (per-flag map in REQUIREMENTS.md; `firmwareUpdate`
-  honors `ServiceEnabled`); UI-3 extended to FirmwareView (Power/Sensors/Firmware
-  done, dashboard/KVM remaining); next P1: #015 (AuthManager) or #016/#022
+- **Last updated:** 2026-10-22 (EMULATOR run — suite +3: SessionService URI #017, Manager reset allow-list, Chassis chain; UI-3 KVM breakpoint tests)
+- **Current focus:** EMU-2/3 suite at 16 tests (SessionService URI #017, Manager
+  reset allow-list, Chassis chain added); UI-3 KVM breakpoints done, dashboard/
+  overview remaining; next P1: #015 (AuthManager) or #016/#022
   (ActionInfo/etag); #008/#020 HTTP-push path has an emulator assertion to build against
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
@@ -102,7 +102,9 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       capability detection.
       (run 2026-10-22, commit 81dfb8f — 11 tests in
       `test_integration/emulator/emulator_suite_test.dart`; skips without
-      `REDFISH_EMULATOR_URL`)
+      `REDFISH_EMULATOR_URL`; extended 2026-10-22 → 13 tests (systems detail +
+      HttpPushUri) then 16 tests (SessionService URI, Manager detail +
+      allow-list, Chassis detail))
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -137,7 +139,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       tests in `models_test.dart` + `auth_manager_test.dart`; closed)
 - [ ] **#015** AuthManager: auth method, safe logout URI, session reuse/expiry.
       (bmcweb `AccountService.Oem.OpenBMC.AuthMethods.*` vendor row recorded in
-      REQUIREMENTS.md — DOCS-4)
+      REQUIREMENTS.md — DOCS-4; emulator asserts the service root advertises a
+      discoverable SessionService URI — run 2026-10-22 #017 contract)
 - [x] **#027** Verify the Flutter toolchain issue is stale; close it with evidence
       if `flutter analyze`/`flutter test` work, otherwise fix it.
       (run 2026-10-22 — closed with evidence: `~/flutter/bin/flutter` on PATH,
@@ -147,10 +150,15 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       (bmcweb ResetActionInfo → supportedResetTypes fallback also folds here —
       DOCS-4)
 - [ ] **#017** Discover the SessionService URI instead of assuming it.
+      (emulator test asserts `SessionService.@odata.id` is discoverable from the
+      service root and serves a conformant SessionService — run 2026-10-22)
 - [ ] **#018** Fix discovery-cache stale replay/leak.
 - [ ] **#022** Power: task polling, races, and error fixes.
       (bmcweb `ResetActionInfo` ActionInfo `Parameters/AllowableValues` is the
-      allow-list source on OpenBMC; add fallback — DOCS-4)
+      allow-list source on OpenBMC; add fallback — DOCS-4. Emulator asserts the
+      DMTF mockup's `#Manager.Reset` carries its own
+      `ResetType@Redfish.AllowableValues` — the fallback must not conflate
+      manager- vs system-level Reset actions — run 2026-10-22)
 - [ ] **#024** `profile_repository.clear()` orphaned passwords.
 - [ ] **#026** Resolve duplicate auth fields.
 
@@ -181,7 +189,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       widget tests for each breakpoint.
       (PowerView no-overflow tests added 2026-10-22; SensorsView no-overflow
       tests added 2026-10-22; FirmwareView no-overflow tests added 2026-10-22
-      this run; extend to dashboard/KVM)
+      this run; KvmView no-overflow tests added 2026-10-22 this run; extend to
+      dashboard/overview — the only view remaining)
 - [ ] **UI-4** Visual consistency for cards, badges, health/power colors, spacing.
 - [ ] **UI-5** Power confirmation dialog: clearer destructive-action copy and
       disabled/busy states.

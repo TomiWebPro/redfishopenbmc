@@ -112,6 +112,108 @@ void main() {
       expect(features.chassis, greaterThan(0));
       expect(features.raw, isNotEmpty);
     });
+
+    test('service root advertises a discoverable SessionService URI (#017)',
+        () async {
+      final RedfishClient client = rawClient();
+      final Map<String, dynamic> root = await client.getJson('/redfish/v1/');
+      // #017: the client must discover the SessionService URI from the service
+      // root instead of assuming `/redfish/v1/SessionService`. The official
+      // mockup advertises it under `SessionService.@odata.id`; a conformant
+      // service can place the session service at any path.
+      final dynamic sessionService = root['SessionService'];
+      expect(sessionService, isA<Map<dynamic, dynamic>>());
+      final Object? sessionUri =
+          (sessionService as Map<dynamic, dynamic>)['@odata.id'];
+      expect(sessionUri, isA<String>());
+      final Map<String, dynamic> svc =
+          await client.getJson(sessionUri! as String);
+      expect(svc['ServiceEnabled'], isTrue);
+      expect(svc['Sessions'], isA<Map<dynamic, dynamic>>());
+    });
+  });
+
+  group('emulator: managers + chassis inventory', () {
+    late AuthManager manager;
+    late RedfishClient client;
+
+    setUpAll(() async {
+      manager = AuthManager(storage: InMemoryStorage());
+      await manager.login('em-inv', emulatorProfile());
+      client = manager.clientFor('em-inv')!;
+    });
+
+    tearDownAll(() async {
+      await manager.logout('em-inv');
+    });
+
+    test(
+        'managers: Manager exposes console capabilities + reset allow-list '
+        '(DOCS-4 / #022)', () async {
+      final Map<String, dynamic> collection =
+          await client.getJson('/redfish/v1/Managers');
+      final List<dynamic> members = collection['Members'] as List<dynamic>;
+      expect(members, isNotEmpty);
+      expect(
+        members.any((dynamic m) =>
+            (m as Map<dynamic, dynamic>)['@odata.id'] ==
+            '/redfish/v1/Managers/BMC'),
+        isTrue,
+      );
+
+      final Map<String, dynamic> mgr =
+          await client.getJson('/redfish/v1/Managers/BMC');
+      expect(mgr['ManagerType'], 'BMC');
+      expect(mgr['FirmwareVersion'], isA<String>());
+      // The KVM console source (FeatureRules.oemHasConsole / KvmConsole.fromManager).
+      final Map<dynamic, dynamic> graphical =
+          mgr['GraphicalConsole'] as Map<dynamic, dynamic>;
+      expect(graphical['ServiceEnabled'], isTrue);
+      expect(graphical['ConnectTypesSupported'], contains('KVMIP'));
+      // Manager-level Reset action advertises its own AllowableValues — the
+      // #022/#016 fallback must not conflate it with the system Reset action.
+      final Map<dynamic, dynamic> actions =
+          mgr['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> managerReset =
+          actions['#Manager.Reset'] as Map<dynamic, dynamic>;
+      expect(managerReset['target'],
+          '/redfish/v1/Managers/BMC/Actions/Manager.Reset');
+      final List<dynamic> allowed =
+          managerReset['ResetType@Redfish.AllowableValues'] as List<dynamic>;
+      expect(allowed, containsAll(<String>['ForceRestart', 'GracefulRestart']));
+    });
+
+    test('chassis: Chassis exposes inventory + thermal/power sub-resources',
+        () async {
+      final Map<String, dynamic> chassis =
+          await client.getJson('/redfish/v1/Chassis/1U');
+      expect(chassis['ChassisType'], 'RackMount');
+      expect(chassis['SerialNumber'], '437XR1138R2');
+      expect(chassis['PowerState'], 'On');
+      final Map<dynamic, dynamic> status =
+          chassis['Status'] as Map<dynamic, dynamic>;
+      expect(status['State'], 'Enabled');
+      expect(status['Health'], 'OK');
+      // The sensor-discovery source chain: Chassis → Thermal (+ Power).
+      expect(
+        (chassis['Thermal'] as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/Chassis/1U/Thermal',
+      );
+      expect(
+        (chassis['Power'] as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/Chassis/1U/Power',
+      );
+      // The chassis is linked back to the system the client scopes sensors to.
+      final Map<dynamic, dynamic> links =
+          chassis['Links'] as Map<dynamic, dynamic>;
+      final List<dynamic> systems = links['ComputerSystems'] as List<dynamic>;
+      expect(
+        systems.any((dynamic s) =>
+            (s as Map<dynamic, dynamic>)['@odata.id'] ==
+            '/redfish/v1/Systems/437XR1138R2'),
+        isTrue,
+      );
+    });
   });
 
   group('emulator: feature services', () {

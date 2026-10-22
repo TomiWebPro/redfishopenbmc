@@ -13,7 +13,8 @@ import 'package:redfishopenbmc/redfish/models/system_features.dart';
 /// A [KvmController] whose [load] is a no-op and whose state can be pre-seeded
 /// for widget tests (avoids hitting the network from the post-frame callback).
 class _StubController extends KvmController {
-  _StubController() : super(service: KvmService(client: null, systemId: 'bmc1'));
+  _StubController()
+      : super(service: KvmService(client: null, systemId: 'bmc1'));
 
   @override
   Future<void> load() async {}
@@ -72,5 +73,57 @@ void main() {
       expect(find.text('Manager: BMC'), findsOneWidget);
       expect(find.text('Copy connect info'), findsOneWidget);
     });
+  });
+
+  group('KvmView — responsive layout (UI-3)', () {
+    Future<void> pumpAtWidth(WidgetTester tester, double width) async {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(
+          consoles: <KvmConsole>[
+            KvmConsole(
+              type: KvmConsoleType.graphical,
+              managerId: 'BMC',
+              connectTypesSupported: <String>['KVMIP'],
+              serviceEnabled: true,
+              sourceManagerUri: '/redfish/v1/Managers/BMC',
+            ),
+            KvmConsole(
+              type: KvmConsoleType.serial,
+              managerId: 'BMC',
+              connectTypesSupported: <String>['SSH'],
+              serviceEnabled: true,
+              sourceManagerUri: '/redfish/v1/Managers/BMC',
+            ),
+          ],
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    for (final double width in <double>[320, 800, 1300]) {
+      testWidgets('renders without overflow at ${width.toInt()} px',
+          (tester) async {
+        await pumpAtWidth(tester, width);
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'KvmView must not overflow at $width px',
+        );
+        // Both console cards render at every breakpoint.
+        expect(find.text('Graphical Console'), findsOneWidget);
+        expect(find.text('Serial Console'), findsOneWidget);
+      });
+    }
   });
 }

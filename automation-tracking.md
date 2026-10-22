@@ -407,3 +407,55 @@ Append-only run log for the `redfish-automation` scheduler job.
   session reuse/expiry) — unit-level with in-process mock server; 3) #016/#022:
   `ResetActionInfo` allow-list fallback + PATCH/etag, or #008/#020: bmcweb
   HTTP-push firmware upload path (emulator asserts `HttpPushUri`).
+
+## 2026-10-22 21:08 — EMULATOR
+
+- **Baseline:** analyze 0; tests 256 passed / 1 skipped; starting commit 1e0de47;
+  issues validate OK; branch `main` clean but ahead 13 of origin (13 commits
+  unpushed — GitHub push blocked: no credentials, see earlier entries).
+- **Primary work:** EMULATOR — re-verified the pinned DMTF Redfish-Mockup-Server
+  suite end-to-end (16/16 pass over HTTPS, trap cleanup confirmed) and extended
+  the suite with three tests that close remaining discovery/inventory gaps:
+  SessionService URI discoverability (#017), Manager detail (console
+  capabilities + manager-level Reset allow-list, DOCS-4/#022), and Chassis
+  detail (inventory + Thermal/Power sub-resource chain + system link).
+- **Emulator:** ran `tool/emulator/run_tests.sh` — 16/16 green, no stray server
+  process, port 8443 closed after each run. Added:
+  - `service root advertises a discoverable SessionService URI (#017)` —
+    asserts `SessionService.@odata.id` is present at the service root and the
+    discovered URI serves a conformant SessionService (ServiceEnabled +
+    Sessions), the exact contract #017 wants the client to use instead of the
+    hardcoded `/redfish/v1/SessionService`.
+  - `managers: Manager exposes console capabilities + reset allow-list
+    (DOCS-4 / #022)` — asserts the Manager collection enumerates `BMC`, the
+    Manager payload carries `GraphicalConsole.ServiceEnabled=true` with
+    `ConnectTypesSupported` KVMIP (the KVM console source
+    `FeatureRules.oemHasConsole`/`KvmConsole.fromManager`), and
+    `#Manager.Reset` advertises its own `ResetType@Redfish.AllowableValues`
+    (`ForceRestart`, `GracefulRestart`) — documenting that the #022/#016
+    allow-list fallback must not conflate the manager-level Reset action with
+    the system Reset action.
+  - `chassis: Chassis exposes inventory + thermal/power sub-resources` —
+    asserts `Chassis/1U` inventory fields (ChassisType RackMount, SerialNumber,
+    PowerState On, Status Enabled/OK), the `Thermal`/`Power` `@odata.id` links
+    (the sensor-discovery source chain), and `Links.ComputerSystems[0]` back to
+    `/redfish/v1/Systems/437XR1138R2`.
+- **Code/tests:** no production logic change; emulator suite 13 → 16 tests.
+  REQUIREMENTS.md "Test platforms" note updated to 16 tests and the new
+  coverage. No new downloads (corpus unchanged; DOCS-6 budget respected).
+- **UI:** UI-3 extended to KvmView — no-overflow tests at 320/800/1300 px in
+  `kvm_widget_test.dart` (+3, same `pumpAtWidth` pattern as
+  Power/Sensors/Firmware views; two console cards, graphical + serial).
+  Dashboard/overview is now the only UI-3 view remaining.
+- **Verification:** analyze 0; tests 259 passed / 1 skipped; issues validate
+  OK; `git diff --check` clean; secret scan clean; emulator 16/16. Repo-wide
+  `dart format` churn (44 files) reverted per prior-run precedent — it
+  reintroduces the pre-existing `curly_braces` lint in `kvm_view.dart`;
+  formatted only the touched files.
+- **Commit:** TBD — `auto: EMULATOR — suite +3 (SessionService URI #017, Manager reset allow-list, Chassis chain), UI-3 KVM breakpoints (run 2026-10-22 21:08)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (14 queued); 2) P1 #015 AuthManager (authMethod, safe logout URI,
+  session reuse/expiry) — unit-level with in-process mock server; 3) #016/#022:
+  `ResetActionInfo` allow-list fallback + PATCH/etag (the emulator now documents
+  the manager- vs system-level Reset allow-list sources), or #008/#020: bmcweb
+  HTTP-push firmware upload path.
