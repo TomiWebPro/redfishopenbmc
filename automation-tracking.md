@@ -499,7 +499,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 265 passed / 1 skipped; emulator 16/16;
   issues validate OK; `git diff --check` clean; secret scan clean. Repo-wide
   `dart format` churn avoided again — formatted only the touched files.
-- **Commit:** pending — message `auto: DOCS — DOCS-2 versioned schema refresh (6 files), UI-3 dashboard+overview breakpoints & overflow fixes (run 2026-10-22 19:59)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried. Commits queued locally before this run: 15.
+- **Commit:** 24a2d7f — `auto: DOCS — DOCS-2 versioned schema refresh (6 files), UI-3 dashboard+overview breakpoints & overflow fixes (run 2026-10-22 19:59)`; pushed: **no** — same GitHub credential blocker (`fatal: could not read Username for 'https://github.com'`: no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key); local commit kept, not retried. Commits queued locally before this run: 15.
 - **Next:** 1) Push the queued local commits from a machine with GitHub
   credentials (16 queued); 2) P1 #015 AuthManager (authMethod, safe logout URI,
   session reuse/expiry) — unit-level with in-process mock server (emulator
