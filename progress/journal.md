@@ -732,3 +732,59 @@
 - none opened/closed this run (EMULATOR extension + UI-1 increment; no issue
   status change). #015/#017/#008/#020/#022/#019 got emulator-level contract
   notes.
+
+## 2026-10-22 — agent:redfish-automation — DOCS-8 upstream-freshness audit + UI-1 dashboard error summary
+
+**Done:**
+- DOCS-8 primary: re-verified every mirrored upstream anchor against live
+  sources. (1) All 13 tracked schema families match the current DMTF index
+  (`https://redfish.dmtf.org/schemas/v1/`, 14,259 entries) — no version advanced
+  since the DOCS-2 refresh. (2) DSP0266 1.25.0 remains the latest published PDF
+  (1.26.0 probe → 404). (3) `DMTF/Redfish-Mockup-Server` HEAD still `23d21f9a`
+  (= the pinned commit). (4) bmcweb master moved `0128851e` → `27e0930b` (+3
+  commits: http/parsing, update_service.hpp, time_utils; no `docs/` files
+  changed) — the three mirrored docs are byte-identical; manifest pins updated.
+  (5) Mirrored new `docs/CLIENTS.md` (2,695 B): official bmcweb
+  client-compatibility doc listing DMTF Redfish-Service-Validator /
+  Protocol-Validator, python-redfish-library, Redfish-Tacklebox, redfishtool,
+  fwupd, Redfish-Event-Listener — a useful reference for future integration
+  test beds. (6) Decision recorded (README + REQUIREMENTS): bmcweb
+  `COMMON_ERRORS.md` and `HEADERS.md` are C++ contributor docs with no
+  client-facing Redfish contract — not mirrored.
+- REQUIREMENTS.md gained a "DOCS-8 — upstream-freshness audit" section and the
+  source header pin was updated; external README "Current upstream anchors" +
+  manifest updated with the new pin and the CLIENTS.md row (SHA-256, bytes).
+  New downloads 2,695 bytes — inside the DOCS-6 budget.
+- UI-1 completed (last open view): DashboardView now shows an error summary
+  card (errorContainer + icon + count message + one-tap Retry) when any system
+  is in `ConnectionStatus.error`. Backed by a new `SystemManager.retryFailed()`
+  that re-connects only error-state systems (disconnected/connecting untouched).
+  New widget tests drive both the persistent-failure and transient-failure
+  retry paths (+3 dashboard), plus a manager unit test for `retryFailed`
+  isolation (+1). Error-card pattern matches the FirmwareView one from the
+  20:51 run.
+
+**Decisions:**
+- Labeled the freshness audit **DOCS-8** (not DOCS-6) to avoid a naming
+  collision with the existing FUTUREWORK DOCS-6 "keep the corpus bounded"
+  policy item, which remains open.
+- Kept the mirrored bmcweb files at the new pin without re-downloading content:
+  the bytes are identical, so the corpus is current with only provenance
+  changes.
+- Did not mirror bmcweb C++ contributor docs (COMMON_ERRORS/HEADERS) — they are
+  internal, not client-facing; noted so future audits skip them.
+- Formatted only the 4 touched Dart files; no repo-wide `dart format` churn
+  (prior-run precedent: it reintroduces the known `curly_braces` lint).
+
+**Next:**
+- Push 20 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout expiry) — emulator section contract pinned (create →
+  X-Auth-Token+Location, DELETE session resource, 405 collection,
+  SessionTimeout=30); implement unit-level with the in-process mock server.
+- #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag, or #008/#020:
+  bmcweb HTTP-push firmware upload path (emulator asserts HttpPushUri + Tasks).
+
+**Issues touched:**
+- none opened/closed this run (DOCS-8 audit + UI-1 completion; no issue status
+  change). UI-1 FUTUREWORK item checked off; UI-1 fully done.

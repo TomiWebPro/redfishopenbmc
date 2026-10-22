@@ -7,16 +7,18 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-22 (EMULATOR run — suite 16 → 21: session lifecycle
-  #015/#017, SessionTimeout, TaskService, EventService contract tests; UI-1
-  firmware error state + Retry action)
+- **Last updated:** 2026-10-22 (DOCS run — DOCS-8 upstream-freshness audit:
+  corpus current, bmcweb pin moved to `27e0930b`, `CLIENTS.md` added; UI-1
+  dashboard error summary + `retryFailed` completes the last UI-1 gap)
 - **Current focus:** DOCS-2 schema refresh done (ComputerSystem/Chassis v1_29_0,
   Sensor v1_14_0, AccountService v1_19_0, EthernetInterface v1_12_6,
   SoftwareInventory v1_15_0); UI-3 fully done (all views covered);
   emulator at 21 tests (session lifecycle #015/#017, SessionTimeout,
-  TaskService, EventService contracts added); next P1: #015 (AuthManager) —
-  emulator now pins the full session contract; #016/#022 (ActionInfo/etag) or
-  #008/#020 (HTTP-push firmware, Tasks URI) both have emulator assertions
+  TaskService, EventService contracts added); **UI-1 done** (dashboard error
+  summary + Retry; firmware error+retry from 20:51 run); next P1: #015
+  (AuthManager) — emulator now pins the full session contract; #016/#022
+  (ActionInfo/etag) or #008/#020 (HTTP-push firmware, Tasks URI) both have
+  emulator assertions
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -52,7 +54,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `https://github.com/DMTF/Redfish-Mockup-Server`, and
       `https://github.com/openbmc/bmcweb/tree/master/docs`.
       (run 2026-10-22, commit c8dc7e1 — mirror + manifest + REQUIREMENTS.md live;
-      re-fetch on upstream change only)
+      re-fetch on upstream change only; DOCS-8 23:55 run re-verified pins, moved
+      bmcweb to `27e0930b`, added CLIENTS.md)
 - [x] **DOCS-2** Refresh the DMTF schema/mockup snapshot used by
       `documentations/redfish_reference/` and `test/fixtures/redfish/`; verify the
       provenance section in `documentations/redfish_reference/README.md` is current.
@@ -69,7 +72,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       Eventing citation to §12.1 and Tasks to §12.2 "Asynchronous operations" in
       REQUIREMENTS.md; added task-monitor polling + event-subscription + SSE +
       bmcweb vendor rows; remaining gaps are code issues #016/#008/#020/#022 + the
-      DOCS-7 events decision)
+      DOCS-7 events decision; DOCS-8 23:55 run re-verified 1.25.0 is still the
+      latest published PDF)
 - [x] **DOCS-4** Audit OpenBMC bmcweb's `docs/Redfish.md`,
       `docs/REDFISH_CHECKLIST.md`, and `docs/OEM_SCHEMAS.md`; document where our
       feature detection differs from bmcweb's actual behaviour.
@@ -196,10 +200,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 
 ## P2 — UI improvements (one small, tested increment per green run)
 
-- [ ] **UI-1** Empty / loading / error states for dashboard, sensors, firmware, KVM.
+- [x] **UI-1** Empty / loading / error states for dashboard, sensors, firmware, KVM.
       (FirmwareView error state upgraded to an errorContainer card with a
       working Retry action — done 2026-10-22; KVM/Sensors/Overview views already
-      covered; dashboard empty/error summaries still open)
+      covered; **dashboard error summary + one-tap Retry via
+      `SystemManager.retryFailed()` done 2026-10-22 (DOCS-8 run, commit
+      placeholder)** — all views covered, **UI-1 done**)
 - [ ] **UI-2** Accessibility: semantics labels, contrast, touch targets, focus order.
       (Health/Power badges semantic labels done 2026-10-22 — commit c8dc7e1;
       destructive power dialog label done 2026-10-22 — commit 81dfb8f; extend

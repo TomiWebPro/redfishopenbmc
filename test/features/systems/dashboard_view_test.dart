@@ -9,6 +9,8 @@ import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
 import 'package:redfishopenbmc/features/systems/providers/profile_repository.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/features/systems/views/dashboard_view.dart';
+import 'package:redfishopenbmc/redfish/models/session.dart';
+import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
 SystemManager seededManager() {
   final SystemManager m = SystemManager(
@@ -149,4 +151,118 @@ void main() {
       });
     }
   });
+
+  group('DashboardView — error summary (UI-1)', () {
+    Future<DashboardViewHarness> pumpFailed(
+      WidgetTester tester, {
+      bool transient = true,
+    }) async {
+      int calls = 0;
+      // Fail the first `failFirst` login calls, then succeed. With two systems
+      // and `transient: true` that means the initial connect of both fails and
+      // a later Retry succeeds. With `transient: false` every attempt fails.
+      final int failFirst = transient ? 2 : 1 << 30;
+      final SystemManager manager = SystemManager(
+        repository: InMemoryProfileRepository(),
+        storage: InMemoryStorage(),
+        loginOverride: (id, p) async {
+          calls++;
+          if (calls <= failFirst) throw Exception('boom');
+          return Session(
+            systemId: id,
+            token: 'ok-$id',
+            location: '',
+            username: p.username ?? '',
+            createdAt: DateTime.now(),
+          );
+        },
+        discoverOverride: (c, id) async => SystemFeatures(systemId: id),
+        snapshotOverride: (c, id) async =>
+            const SystemSnapshot(health: Health.ok),
+      );
+      await manager.addProfile(const ConnectionProfile(id: 'bmc1', host: '1'));
+      await manager.addProfile(const ConnectionProfile(id: 'bmc2', host: '2'));
+      await manager.connect('bmc1');
+      await manager.connect('bmc2');
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/systems',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/systems',
+            builder: (BuildContext c, GoRouterState s) => const DashboardView(),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [systemManagerProvider.overrideWith((ref) => manager)],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return DashboardViewHarness(manager, router);
+    }
+
+    testWidgets('shows an error summary when systems fail to connect',
+        (tester) async {
+      await pumpFailed(tester, transient: false);
+
+      expect(find.text('2 systems could not be reached'), findsOneWidget);
+      // The banner aggregates OK; cards still show their cloud-off icon.
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(find.byIcon(Icons.cloud_off), findsNWidgets(2));
+
+      // Retry is offered; a permanent failure keeps the summary visible.
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+      expect(find.text('2 systems could not be reached'), findsOneWidget);
+    });
+
+    testWidgets('retry reconnects failed systems and clears the summary',
+        (tester) async {
+      final DashboardViewHarness harness = await pumpFailed(tester);
+      expect(find.text('2 systems could not be reached'), findsOneWidget);
+
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+
+      expect(harness.manager.state.systems['bmc1']!.status,
+          ConnectionStatus.connected);
+      expect(harness.manager.state.systems['bmc2']!.status,
+          ConnectionStatus.connected);
+      expect(find.text('2 systems could not be reached'), findsNothing);
+      expect(find.text('2 OK'), findsOneWidget);
+    });
+
+    testWidgets('no error summary when all systems are healthy',
+        (tester) async {
+      final SystemManager manager = seededManager();
+      final GoRouter router = GoRouter(
+        initialLocation: '/systems',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/systems',
+            builder: (BuildContext c, GoRouterState s) => const DashboardView(),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [systemManagerProvider.overrideWith((ref) => manager)],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.error_outline), findsNothing);
+      expect(find.text('1 OK, 1 Warning'), findsOneWidget);
+    });
+  });
+}
+
+class DashboardViewHarness {
+  DashboardViewHarness(this.manager, this.router);
+  final SystemManager manager;
+  final GoRouter router;
 }

@@ -34,9 +34,10 @@ documentations/external/
 | File | Source URL | Fetched (UTC) | SHA-256 | Bytes | Upstream version/commit | Notes |
 |---|---|---|---|---|---|---|
 | `redfish/spec/DSP0266_1.25.0.pdf` | https://www.dmtf.org/sites/default/files/standards/documents/DSP0266_1.25.0.pdf | 2026-10-22 12:17 | `385ee6d0039a2dbc610c7af9fa9bba304fc2a461ceb5a8eda0adb33630c82149` | 1,243,359 | DSP0266 1.25.0 | Redfish specification PDF; linked from redfish.dmtf.org hub |
-| `redfish/openbmc/Redfish.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/Redfish.md | 2026-10-22 12:31 | `9be2748b017c1657631565b747ff38fc3e74afaaeae1f39cdb6b3a519d786105` | 25,689 | bmcweb master `0128851e` | OpenBMC Redfish overview |
-| `redfish/openbmc/REDFISH_CHECKLIST.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/REDFISH_CHECKLIST.md | 2026-10-22 12:31 | `98ff60be5d6592dd592b267a36f86224c121aba7ad23c34d8e93ceb2f8cdb5ce` | 1,761 | bmcweb master `0128851e` | OpenBMC compliance checklist |
-| `redfish/openbmc/OEM_SCHEMAS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/OEM_SCHEMAS.md | 2026-10-22 12:31 | `7d651fd19bc715b64497fdd466fae03cf043acd50c9efacbacb4a5def469d726` | 5,687 | bmcweb master `0128851e` | OpenBMC OEM schema extensions |
+| `redfish/openbmc/Redfish.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/Redfish.md | 2026-10-22 12:31 (re-verified 23:43 UTC @ `27e0930b`) | `9be2748b017c1657631565b747ff38fc3e74afaaeae1f39cdb6b3a519d786105` | 25,689 | bmcweb master `27e0930b` (was `0128851e`) | OpenBMC Redfish overview — byte-identical at new HEAD |
+| `redfish/openbmc/REDFISH_CHECKLIST.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/REDFISH_CHECKLIST.md | 2026-10-22 12:31 (re-verified 23:43 UTC @ `27e0930b`) | `98ff60be5d6592dd592b267a36f86224c121aba7ad23c34d8e93ceb2f8cdb5ce` | 1,761 | bmcweb master `27e0930b` | OpenBMC compliance checklist — byte-identical at new HEAD |
+| `redfish/openbmc/OEM_SCHEMAS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/OEM_SCHEMAS.md | 2026-10-22 12:31 (re-verified 23:43 UTC @ `27e0930b`) | `7d651fd19bc715b64497fdd466fae03cf043acd50c9efacbacb4a5def469d726` | 5,687 | bmcweb master `27e0930b` | OpenBMC OEM schema extensions — byte-identical at new HEAD |
+| `redfish/openbmc/CLIENTS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/CLIENTS.md | 2026-10-22 23:40 | `cfea5163ec820bb4edaba449ef837c9906ce3a2b690e22c4ce16132e526a735f` | 2,695 | bmcweb master `27e0930b` | Client-compat map: DMTF validators, python-redfish-library, redfishtool, fwupd |
 | `redfish/mockup/README-mockup-server.md` | https://raw.githubusercontent.com/DMTF/Redfish-Mockup-Server/master/README.md | 2026-10-22 12:31 | `b3af2ff369dcfd78c75f156bd1ddedfca46750d185c59eefdffaa2f11c289431` | 7,318 | Redfish-Mockup-Server `23d21f9a` | Mockup server usage + DSP2043 link |
 | `redfish/schemas/v1-index.html` | https://redfish.dmtf.org/schemas/v1/ | 2026-10-22 12:17 | `e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86` | 3,448,133 | n/a | Full DMTF schema index listing (14,259 JSON/YAML entries) |
 | `redfish/schemas/v1/<16 schemas>.json` | https://redfish.dmtf.org/schemas/v1/<Name>.json | 2026-10-22 12:34 | see `sha256sum` in run notes | 106,322 (total) | latest per aggregator | Base aggregator stubs for the 16 resources the client maps |
@@ -71,16 +72,34 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-22)
+## Current upstream anchors (verified 2026-10-22 23:43 UTC)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing)
 - Redfish specification DSP0266 — <https://www.dmtf.org/sites/default/files/standards/documents/DSP0266_1.25.0.pdf>
-  (1.24 MB, linked from the hub at `DSP0266_1.25.0.pdf`)
+  (1.24 MB, linked from the hub at `DSP0266_1.25.0.pdf`; probe of `DSP0266_1.26.0.pdf`
+  → 404 — 1.25.0 is still the current release)
 - Redfish Mockup Server — <https://github.com/DMTF/Redfish-Mockup-Server>
-  (master `23d21f9a`; README saved to `redfish/mockup/`)
+  (master `23d21f9a` — unchanged; README saved to `redfish/mockup/`)
 - OpenBMC bmcweb docs — <https://github.com/openbmc/bmcweb/tree/master/docs>
-  (master `0128851e`; Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md saved)
+  (master `27e0930b`, was `0128851e`; Redfish.md, REDFISH_CHECKLIST.md,
+  OEM_SCHEMAS.md, CLIENTS.md saved; the three original docs are byte-identical
+  at the new HEAD)
+
+### DOCS-8 upstream-freshness audit (2026-10-22 23:43 UTC)
+
+Re-verified every corpus anchor against live upstream. All 13 schema families
+under `redfish/schemas/v1/` + `test/fixtures/redfish/schemas/` match the current
+DMTF index (no version advanced since the DOCS-2 refresh). DSP0266 1.25.0 still
+the latest published PDF (1.26.0 → 404). `DMTF/Redfish-Mockup-Server` HEAD
+still `23d21f9a` (pinned). bmcweb master advanced `0128851e` → `27e0930b` (3
+commits); the mirrored docs are byte-identical and `docs/CLIENTS.md` was added
+to the mirror (client-compatibility reference relevant to future integration
+work). New downloads this run: 2,695 bytes (CLIENTS.md only) — inside the
+DOCS-6 50 MB budget. Decision: `docs/COMMON_ERRORS.md` and `docs/HEADERS.md`
+are bmcweb *C++ contributor* docs (build/header architecture, pointer
+dereferencing) with no client-facing Redfish contract — not mirrored; noted
+here so the next audit doesn't re-evaluate them.
 
 > DMTF's `www.dmtf.org` pages may return 403 to plain curl. Use a browser
 > user-agent, the `webfetch` tool, or the `redfish.dmtf.org` mirror, and record

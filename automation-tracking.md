@@ -562,3 +562,52 @@ Append-only run log for the `redfish-automation` scheduler job.
   documents both manager- and system-level Reset allow-lists + TaskService),
   or #008/#020: bmcweb HTTP-push firmware upload (emulator asserts
   `HttpPushUri` + Tasks).
+
+## 2026-10-22 23:55 — DOCS
+
+- **Baseline:** analyze 0; tests 266 passed / 1 skipped; starting commit 8d81937;
+  issues validate OK; branch `main` clean but ahead 19 of origin (19 commits
+  unpushed — GitHub push blocked: no credentials, see earlier entries).
+- **Primary work:** DOCS-8 — full upstream-freshness audit of the mirrored
+  corpus. Live schema-index scan (`https://redfish.dmtf.org/schemas/v1/`, 14,259
+  entries) vs. all 13 tracked schema families: **no version advanced** since the
+  DOCS-2 refresh (AccountService 1_19_0 … UpdateService 1_17_1 all current).
+  DSP0266 1.25.0 still the latest published PDF (probe of 1.26.0 → 404).
+  `DMTF/Redfish-Mockup-Server` HEAD still `23d21f9a` (unchanged, still pinned).
+  bmcweb master moved `0128851e` → `27e0930b` (+3 commits: `http/parsing`,
+  `update_service.hpp`, `time_utils` — no `docs/` files changed). Re-verified
+  the three mirrored bmcweb docs are byte-identical at the new HEAD and updated
+  the manifest pins; added `docs/CLIENTS.md` (2,695 B, official
+  client-compatibility doc listing DMTF validators / python-redfish-library /
+  redfishtool / fwupd / Redfish-Event-Listener) to the mirror. Decision
+  recorded: `COMMON_ERRORS.md` + `HEADERS.md` are bmcweb C++ contributor docs
+  (no client-facing contract) — not mirrored.
+- **Docs:** 1 new file `redfish/openbmc/CLIENTS.md`; manifest updated (bmcweb
+  pin → `27e0930b`, re-verified timestamps, new CLIENTS.md row with SHA-256);
+  REQUIREMENTS.md gained "DOCS-8 — upstream-freshness audit" section + updated
+  source header; README "Current upstream anchors" section rewritten with the
+  DOCS-8 results. New downloads this run: 2,695 bytes (well inside DOCS-6
+  50 MB budget).
+- **Emulator:** none this run (no fixture change; mockup pinned `23d21f9a`
+  verified unchanged upstream).
+- **Code/tests:** `SystemManager.retryFailed()` added (reconnects only
+  error-state systems); unit test `test/features/systems/system_manager_test.dart`
+  +1 ("retryFailed reconnects only the failed systems"). DashboardView
+  `_ErrorSummary` banner (errorContainer card, count message, one-tap Retry
+  → `retryFailed()`) — UI-1 gap *dashboard empty/error summaries* now closes
+  the remaining UI-1 item; widget tests
+  `test/features/systems/dashboard_view_test.dart` +3 (error summary shown,
+  retry clears summary after transient failure, no summary when healthy).
+- **UI:** UI-1 dashboard error summary (above). No new dependencies, no
+  decoration-only changes; error-card pattern matches FirmwareView's
+  (errorContainer + icon + Retry). UI-2/UI-3/UI-4/UI-5 untouched.
+- **Verification:** analyze 0; tests 270 passed / 1 skipped (baseline 266 → +4);
+  issues validate OK; `git diff --check` clean; secret scan clean (no tokens/
+  creds in diff); formatted only the 4 touched files (no repo-wide churn).
+- **Commit:** placeholder — `auto: DOCS — DOCS-8 upstream-freshness audit (bmcweb → 27e0930b, +CLIENTS.md), UI-1 dashboard error summary + retryFailed (run 2026-10-22 23:55)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried. Commits queued locally before this run: 19.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (20 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
+  logout URI, token rehydrate, SessionTimeout expiry) — emulator contract pinned
+  last run; implement unit-level with the in-process mock server; 3) #016/#022:
+  `ResetActionInfo` allow-list fallback + PATCH/etag, or #008/#020: bmcweb
+  HTTP-push firmware upload (emulator asserts `HttpPushUri` + Tasks).

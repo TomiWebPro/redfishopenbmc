@@ -39,6 +39,13 @@ class DashboardView extends ConsumerWidget {
         child: CustomScrollView(
           slivers: <Widget>[
             SliverToBoxAdapter(child: _AggregatedBanner(state: state)),
+            if (state.systems.isNotEmpty && _failedCount(state) > 0)
+              SliverToBoxAdapter(
+                child: _ErrorSummary(
+                  count: _failedCount(state),
+                  onRetry: () => manager.retryFailed(),
+                ),
+              ),
             if (state.systems.isEmpty)
               const SliverFillRemaining(
                 child: Center(
@@ -179,5 +186,60 @@ class _AggregatedBanner extends StatelessWidget {
     if (agg.warning > 0) return Colors.orange;
     if (agg.total == 0) return scheme.outline;
     return scheme.primary;
+  }
+}
+
+/// Number of systems whose last connection attempt failed.
+int _failedCount(SystemState state) => state.systems.values
+    .where((SystemHandle h) => h.status == ConnectionStatus.error)
+    .length;
+
+/// Dashboard summary banner for systems that failed to connect.
+///
+/// UI-1: surfaces connection failures (per-handle `ConnectionStatus.error`)
+/// with a one-tap retry of every failed system. Reuses the FirmwareView
+/// error-card pattern (errorContainer card, icon, message, disabled-while-busy
+/// Retry action) so the dashboard never silently hides a down BMC.
+class _ErrorSummary extends StatelessWidget {
+  const _ErrorSummary({required this.count, required this.onRetry});
+
+  /// Number of failed systems.
+  final int count;
+
+  /// Invoked when the operator taps Retry.
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: Card(
+        color: scheme.errorContainer,
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.error_outline, color: scheme.onErrorContainer),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  count == 1
+                      ? '1 system could not be reached'
+                      : '$count systems could not be reached',
+                  style: TextStyle(color: scheme.onErrorContainer),
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: onRetry,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

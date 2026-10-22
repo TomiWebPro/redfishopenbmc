@@ -286,9 +286,8 @@ class SystemManager extends StateNotifier<SystemState> {
   ///
   /// Returns the canonical id. The new system starts disconnected.
   Future<String> addProfile(ConnectionProfile profile) async {
-    final String id = profile.id.isEmpty
-        ? ConnectionProfile.generateId()
-        : profile.id;
+    final String id =
+        profile.id.isEmpty ? ConnectionProfile.generateId() : profile.id;
     final ConnectionProfile withId =
         profile.id.isEmpty ? profile.copyWith(id: id) : profile;
     await repository.saveProfile(withId);
@@ -319,8 +318,9 @@ class SystemManager extends StateNotifier<SystemState> {
       await _auth.logout(id);
     }
     await repository.removeProfile(id);
-    final Map<String, SystemHandle> systems =
-        <String, SystemHandle>{...state.systems}..remove(id);
+    final Map<String, SystemHandle> systems = <String, SystemHandle>{
+      ...state.systems
+    }..remove(id);
     final String? selectedId = state.selectedId == id
         ? (systems.isNotEmpty ? systems.keys.first : null)
         : state.selectedId;
@@ -430,6 +430,18 @@ class SystemManager extends StateNotifier<SystemState> {
       await connect(id);
     }
   }
+
+  /// Re-connects only the systems whose last attempt failed
+  /// (dashboard error-summary Retry action).
+  Future<void> retryFailed() async {
+    final List<String> failed = state.systems.values
+        .where((SystemHandle h) => h.status == ConnectionStatus.error)
+        .map((SystemHandle h) => h.profile.id)
+        .toList();
+    for (final String id in failed) {
+      await connect(id);
+    }
+  }
 }
 
 /// Provides the app-wide [SecureStorage] implementation.
@@ -451,8 +463,7 @@ final Provider<AuthManager> authManagerProvider = Provider<AuthManager>(
 );
 
 /// The single [SystemManager] driving all multi-system state.
-final StateNotifierProvider<SystemManager, SystemState>
-    systemManagerProvider =
+final StateNotifierProvider<SystemManager, SystemState> systemManagerProvider =
     StateNotifierProvider<SystemManager, SystemState>((ref) {
   final SystemManager manager = SystemManager(
     repository: ref.watch(profileRepositoryProvider),

@@ -47,8 +47,7 @@ SystemManager buildStubbedManager({
 void main() {
   group('SystemManager — CRUD', () {
     test('addProfile assigns a UUID id and starts disconnected', () async {
-      final SystemManager m =
-          buildStubbedManager(storage: InMemoryStorage());
+      final SystemManager m = buildStubbedManager(storage: InMemoryStorage());
       final String id = await m.addProfile(
         const ConnectionProfile(host: 'h', name: 'A'),
       );
@@ -169,11 +168,13 @@ void main() {
       expect(m.state.systems.containsKey(id), isTrue);
     });
 
-    test('select performs an instant context switch without reconnect', () async {
+    test('select performs an instant context switch without reconnect',
+        () async {
       final SystemManager m = buildStubbedManager(
         storage: InMemoryStorage(),
         discoverOverride: (c, id) async => SystemFeatures(systemId: id),
-        snapshotOverride: (c, id) async => const SystemSnapshot(health: Health.ok),
+        snapshotOverride: (c, id) async =>
+            const SystemSnapshot(health: Health.ok),
         loginOverride: (id, p) async => Session(
           systemId: id,
           token: 't',
@@ -189,6 +190,42 @@ void main() {
       // a's cached features/snapshot remain; b not force-reconnected
       expect(m.state.systems[a]!.status, ConnectionStatus.connected);
       expect(m.state.systems[b]!.status, ConnectionStatus.disconnected);
+    });
+
+    test('retryFailed reconnects only the failed systems', () async {
+      int calls = 0;
+      final SystemManager m = buildStubbedManager(
+        storage: InMemoryStorage(),
+        loginOverride: (id, p) async {
+          calls++;
+          // Fail the first attempt of every system, succeed on retry.
+          if (calls <= 2) throw Exception('first attempt boom');
+          return Session(
+            systemId: id,
+            token: 'ok-$id',
+            location: '',
+            username: p.username ?? '',
+          );
+        },
+        discoverOverride: (c, id) async => SystemFeatures(systemId: id),
+        snapshotOverride: (c, id) async =>
+            const SystemSnapshot(health: Health.ok),
+      );
+      final String a = await m.addProfile(const ConnectionProfile(host: 'a'));
+      final String b = await m.addProfile(const ConnectionProfile(host: 'b'));
+      final String c = await m.addProfile(const ConnectionProfile(host: 'c'));
+      await m.connect(a);
+      await m.connect(b);
+      // c was never connected (stays disconnected → must NOT be retried)
+      expect(m.state.systems[a]!.status, ConnectionStatus.error);
+      expect(m.state.systems[b]!.status, ConnectionStatus.error);
+      expect(m.state.systems[c]!.status, ConnectionStatus.disconnected);
+
+      await m.retryFailed();
+      expect(m.state.systems[a]!.status, ConnectionStatus.connected);
+      expect(m.state.systems[b]!.status, ConnectionStatus.connected);
+      // c untouched — retryFailed only targets error-state systems.
+      expect(m.state.systems[c]!.status, ConnectionStatus.disconnected);
     });
   });
 
@@ -207,10 +244,13 @@ void main() {
           );
         },
         discoverOverride: (c, id) async => SystemFeatures(systemId: id),
-        snapshotOverride: (c, id) async => const SystemSnapshot(health: Health.ok),
+        snapshotOverride: (c, id) async =>
+            const SystemSnapshot(health: Health.ok),
       );
-      final String bmc1 = await m.addProfile(const ConnectionProfile(host: '1'));
-      final String bmc2 = await m.addProfile(const ConnectionProfile(host: '2'));
+      final String bmc1 =
+          await m.addProfile(const ConnectionProfile(host: '1'));
+      final String bmc2 =
+          await m.addProfile(const ConnectionProfile(host: '2'));
       await m.connect(bmc1);
       await m.connect(bmc2);
 
@@ -224,11 +264,11 @@ void main() {
       );
     });
 
-    test('real auth manager stores per-system tokens (no cross-leak)', () async {
+    test('real auth manager stores per-system tokens (no cross-leak)',
+        () async {
       final InMemoryStorage storage = InMemoryStorage();
       final Map<String, DioAdapter> adapters = <String, DioAdapter>{};
-      DioAdapter adapterFor(String host) =>
-          adapters.putIfAbsent(host, () {
+      DioAdapter adapterFor(String host) => adapters.putIfAbsent(host, () {
             final Dio dio = Dio(BaseOptions(baseUrl: 'https://$host:443'));
             final DioAdapter a = DioAdapter(
               dio: dio,
@@ -263,7 +303,8 @@ void main() {
         storage: storage,
         authManager: authManager,
         discoverOverride: (c, id) async => SystemFeatures(systemId: id),
-        snapshotOverride: (c, id) async => const SystemSnapshot(health: Health.ok),
+        snapshotOverride: (c, id) async =>
+            const SystemSnapshot(health: Health.ok),
       );
       final String id = await m.addProfile(
         const ConnectionProfile(
@@ -306,7 +347,8 @@ void main() {
       expect(m.state.aggregated.warning, 1);
       expect(m.state.aggregated.critical, 1);
       expect(m.state.aggregated.unknown, 1);
-      expect(m.state.aggregated.summary, '1 OK, 1 Warning, 1 Critical, 1 Unknown');
+      expect(
+          m.state.aggregated.summary, '1 OK, 1 Warning, 1 Critical, 1 Unknown');
     });
   });
 }

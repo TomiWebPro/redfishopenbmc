@@ -6,14 +6,15 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-22 (DOCS-5: `SystemFeatures` flag → spec citation → test
-mapping; DOCS-4 was the prior audit — bmcweb feature-detection diff).
+Last audited: 2026-10-22 (DOCS-8 upstream-freshness audit — bmcweb pin moved
+`0128851e` → `27e0930b`, corpus otherwise current; DOCS-5 was the prior audit —
+`SystemFeatures` flag → spec citation → test mapping).
 Sources:
 
 - DSP0266 1.25.0 — `redfish/spec/DSP0266_1.25.0.pdf`
 - DMTF schema index — `redfish/schemas/v1-index.html` + `redfish/schemas/v1/*.json`
-- bmcweb — `redfish/openbmc/Redfish.md`, `REDFISH_CHECKLIST.md`, `OEM_SCHEMAS.md`
-  (bmcweb master `0128851e`)
+- bmcweb — `redfish/openbmc/Redfish.md`, `REDFISH_CHECKLIST.md`, `OEM_SCHEMAS.md`,
+  `CLIENTS.md` (bmcweb master `27e0930b`)
 
 | Requirement | Source (section/URL) | Code | Test | Status |
 |---|---|---|---|---|
@@ -142,7 +143,7 @@ The bmcweb `EventService` implements a superset of the DMTF minimum:
 exposes `CompletedTaskOverWritePolicy`, `LifeCycleEventOnTaskStateChange`, and
 `Tasks`. Any future subscription client should target the bmcweb field set
 (audited in `openbmc/Redfish.md` §EventService / §TaskService, commit
-`0128851e`).
+`0128851e` → now `27e0930b`).
 
 ## DOCS-4 — bmcweb feature-detection diff audit (2026-10-22)
 
@@ -244,3 +245,43 @@ is purely additive; full `flutter test` stays green. Remaining DOCS-2 scope:
 the 2026-10-21 `dmtf_mockup` payload snapshot itself still matches upstream
 (mockup server pinned `23d21f9a`, unchanged), so no mockup refresh was needed
 this run.
+
+## DOCS-8 — upstream-freshness audit (2026-10-22)
+
+Full re-verification of every mirrored upstream anchor against live sources
+(schema index, DSP0266, bmcweb, mockup server). Used to decide whether any
+mirror file or fixture needs a refresh; provenance + hashes in
+`documentations/external/README.md` "DOCS-8 upstream-freshness audit".
+
+1. **All 13 schema families current.** Live scan of
+   `https://redfish.dmtf.org/schemas/v1/` (14,259 entries, 3.4 MB listing)
+   compared against `test/fixtures/redfish/schemas/` +
+   `documentations/external/redfish/schemas/v1/`: AccountService 1_19_0,
+   Chassis 1_29_0, ComputerSystem 1_29_0, EthernetInterface 1_12_6,
+   EventService 1_12_0, LogService 1_9_0, Manager 1_25_0, Power 1_7_3,
+   Sensor 1_14_0, SessionService 1_2_0, SoftwareInventory 1_15_0,
+   Thermal 1_7_3, UpdateService 1_17_1 — **no version advanced** since the
+   DOCS-2 refresh. No fixture change.
+2. **DSP0266 still 1.25.0.** The hub-linked PDF fetches 200 with identical
+   content-length (1,243,359 bytes); a probe for `DSP0266_1.26.0.pdf` returns
+   404. No spec refresh.
+3. **Mockup server pinned at HEAD.** `DMTF/Redfish-Mockup-Server` master is
+   still `23d21f9a` — the pinned commit. No mockup fixture change.
+4. **bmcweb master moved `0128851e` → `27e0930b`** (3 commits: `http/parsing`,
+   `redfish-core/lib/update_service.hpp` [+tests], `time_utils`). No `docs/`
+   files changed between the two SHAs; the three mirrored docs are
+   byte-identical (same SHA-256s). Pin updated in the manifest + this header.
+   The `update_service.hpp` change is noted as upstream context for #008/#020
+   (firmware update service internals) — no client-facing contract delta.
+5. **`docs/CLIENTS.md` mirrored (new).** Official bmcweb client-compatibility
+   doc: lists the DMTF Redfish-Service-Validator / Protocol-Validator,
+   python-redfish-library, Redfish-Tacklebox, redfishtool, fwupd, and
+   Redfish-Event-Listener. Client-facing value: pins which reference tools the
+   service must interop with (a future test bed can reuse
+   Redfish-Service-Validator against our emulator harness). 2,695 bytes —
+   within DOCS-6 budget.
+6. **Not mirrored (decision):** `docs/COMMON_ERRORS.md` (bmcweb C++ pointer /
+   string-view traps for contributors) and `docs/HEADERS.md` (build-time header
+   architecture) are internal contributor docs with no client-facing Redfish
+   contract. Skipping avoids junk in the corpus; recorded so the next audit
+   does not re-evaluate them.
