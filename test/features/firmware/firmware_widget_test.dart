@@ -123,6 +123,45 @@ void main() {
       expect(find.textContaining('3.2.1'), findsWidgets);
     });
 
+    testWidgets('inventory card exposes a merged accessibility label (UI-2)',
+        (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(
+          info: const UpdateServiceInfo(
+            serviceEnabled: true,
+            version: '9.9.9',
+            inventory: <FirmwareInventoryItem>[
+              FirmwareInventoryItem(
+                id: 'BMC',
+                name: 'BMC Firmware',
+                version: '3.2.1',
+                updateable: true,
+                health: 'OK',
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Screen readers announce the whole card as one concise summary.
+      expect(
+        find.bySemanticsLabel(
+          'Firmware BMC Firmware, 3.2.1, OK, updateable',
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets(
         'error state shows the message with a Retry button that reloads '
         '(UI-1)', (tester) async {

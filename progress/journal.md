@@ -788,3 +788,59 @@
 **Issues touched:**
 - none opened/closed this run (DOCS-8 audit + UI-1 completion; no issue status
   change). UI-1 FUTUREWORK item checked off; UI-1 fully done.
+
+## 2026-10-23 — agent:redfish-automation — EMULATOR run (suite 21→24, push apply-time parse, UI-2 firmware card semantics)
+
+**Done:**
+- EMULATOR primary: extended the pinned DMTF Redfish-Mockup-Server suite
+  **21 → 24 tests** with three contract pins that de-risk queued issues:
+  1. `ProtocolFeaturesSupported` (#018): the service root advertises
+     `ExcerptQuery: true` and `ExpandQuery{ExpandAll:true, Levels:true}` and
+     publishes `FilterQuery`/`SelectQuery` booleans — the query-capability
+     surface a lightweight discovery pass must use (the client currently
+     ignores it; documented gap for the discovery-cache rework).
+  2. AccountService / Accounts (#015/#026): the Accounts collection is
+     discoverable from the service and every member resolves with
+     `UserName`/`RoleId`; `MinPasswordLength` published — the auth-surface
+     contract #015/#026 reason about.
+  3. UpdateService `HttpPushUriOptions` (#008/#020): the mockup publishes
+     `HttpPushUriApplyTime.ApplyTime == 'Immediate'` +
+     `ApplyTime@Redfish.AllowableValues` (Immediate/OnReset/
+     AtMaintenanceWindowStart/InMaintenanceWindowOnReset) +
+     `MaintenanceWindowStartTime` — the apply-time selection a push-upload
+     flow must offer instead of assuming Immediate.
+- Code increment: `UpdateServiceInfo` now parses
+  `HttpPushUriOptions.HttpPushUriApplyTime` into `httpPushApplyTime` (current
+  mode) + `httpPushApplyTimes` (AllowableValues); `copyWithInventory`
+  preserves both. Additive fields only — no public behaviour change. Unit
+  tests +2 (DMTF fixture parse + absent-options fallback).
+- UI (UI-2): each firmware inventory card wrapped in
+  `Semantics(container: true, label: ...)` announcing a concise merged summary
+  (component, version, health, updateable/locked) as one unit. New widget test
+  asserts `find.bySemanticsLabel('Firmware BMC Firmware, 3.2.1, OK,
+  updateable')`. No new dependencies.
+
+**Decisions:**
+- Followed the DOCS/EMULATOR alternation (last run DOCS — EMULATOR next).
+- Kept emulator pins to contracts the mockup *actually* serves: probed live
+  with `curl -k` before writing assertions. Noted that the mockup serves no
+  `@odata.etag` on resources — #016 etag behaviour stays in unit tests, can't
+  be pinned on this fixture (recorded in FUTUREWORK #016 note).
+- Formatted only the 5 touched files; no repo-wide `dart format` (prior-run
+  precedent: it reintroduces the known `curly_braces` lint — this run it
+  churned 35 files and surfaced exactly that; all restored via `git checkout`).
+- Emulator server stopped via exact-PID kill after the run — no stray process.
+
+**Next:**
+- Push 22 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout expiry) — emulator pins session lifecycle + AccountService
+  surface; implement unit-level with the in-process mock server.
+- #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag, or #008/#020:
+  bmcweb HTTP-push firmware upload (emulator asserts HttpPushUri +
+  HttpPushUriOptions apply-time modes + Tasks).
+
+**Issues touched:**
+- none opened/closed this run (EMULATOR extension + model increment + UI-2
+  label; no issue status change). #015/#016/#018/#020/#026 got emulator-level
+  contract notes in FUTUREWORK.

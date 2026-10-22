@@ -611,3 +611,58 @@ Append-only run log for the `redfish-automation` scheduler job.
   last run; implement unit-level with the in-process mock server; 3) #016/#022:
   `ResetActionInfo` allow-list fallback + PATCH/etag, or #008/#020: bmcweb
   HTTP-push firmware upload (emulator asserts `HttpPushUri` + Tasks).
+
+## 2026-10-23 05:00 — EMULATOR
+
+- **Baseline:** analyze 0; tests 270 passed / 1 skipped; starting commit dbb1aa8;
+  issues validate OK; branch `main` clean but ahead 21 of origin (21 commits
+  unpushed — GitHub push blocked: no credentials, see earlier entries).
+- **Primary work:** EMULATOR — extended the pinned DMTF Redfish-Mockup-Server
+  suite **21 → 24 tests** with three contract pins that de-risk queued issues,
+  plus a small tested firmware model increment the pins document:
+  1. `ProtocolFeaturesSupported` (— #018): the service root advertises
+     `ExcerptQuery: true` and `ExpandQuery{ExpandAll,Levels}` so a
+     lightweight/expand-aware discovery pass is possible; `FilterQuery` /
+     `SelectQuery` published as booleans. The client currently ignores query
+     capabilities — documented gap for the discovery-cache rework.
+  2. AccountService / Accounts (— #015/#026): the Accounts collection is
+     discoverable from the service and every member is readable
+     (`UserName`, `RoleId`), and `MinPasswordLength` is published — the
+     auth-method surface #015/#026 reason about.
+  3. UpdateService `HttpPushUriOptions` (— #008/#020): the mockup publishes
+     `HttpPushUriApplyTime.ApplyTime == 'Immediate'` plus
+     `ApplyTime@Redfish.AllowableValues` (`Immediate`, `OnReset`,
+     `AtMaintenanceWindowStart`, `InMaintenanceWindowOnReset`) and
+     `MaintenanceWindowStartTime` — the apply-time selection a push-upload
+     flow must offer instead of assuming Immediate.
+- **Docs:** none this run (no new downloads; DOCS-6 budget respected). The
+  ProtocolFeaturesSupported + push-options contracts were probed live
+  (`curl -k https://127.0.0.1:8443/...`) before pinning.
+- **Emulator:** suite 21 → 24 tests, all green over HTTPS; server stopped via
+  exact-PID kill after the run (no stray process); pin `23d21f9a` unchanged.
+- **Code/tests:** `UpdateServiceInfo` now parses
+  `HttpPushUriOptions.HttpPushUriApplyTime` into `httpPushApplyTime` (current
+  mode) + `httpPushApplyTimes` (AllowableValues); `copyWithInventory` preserves
+  both. No public behaviour changed (additive fields). Unit tests
+  `test/features/firmware/firmware_model_test.dart` +2 (DMTF fixture parse +
+  absent-options fallback). No issue status change.
+- **UI:** UI-2 increment — each firmware inventory card is now wrapped in a
+  `Semantics(container: true, label: ...)` that announces a concise merged
+  summary (component, version, health, updateable/locked) as one unit;
+  `test/features/firmware/firmware_widget_test.dart` +1 asserts
+  `find.bySemanticsLabel('Firmware BMC Firmware, 3.2.1, OK, updateable')`.
+  No new dependencies; UI-2 remains open (cards/dialogs/tables partially done).
+- **Verification:** analyze 0; tests 273 passed / 1 skipped (baseline 270 →
+  +3); emulator 24/24; issues validate OK; `git diff --check` clean; secret
+  scan clean (only the spec field name `MinPasswordLength` matched the token
+  grep — not a credential). Repo-wide `dart format` churn avoided again:
+  formatted only the 5 touched files (prior-run precedent: repo-wide format
+  reintroduces the known `curly_braces` lint).
+- **Commit:** (pending) — `auto: EMULATOR — suite +3 (query capabilities #018, Accounts #015/#026, push apply-time #008/#020), UpdateServiceInfo push-apply-time parse, UI-2 firmware card semantics (run 2026-10-23 05:00)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried. Commits queued locally before this run: 21.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (22 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
+  logout URI, token rehydrate, SessionTimeout expiry) — emulator now also pins
+  the AccountService surface; implement unit-level with the in-process mock
+  server; 3) #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag, or
+  #008/#020: bmcweb HTTP-push firmware upload (emulator asserts `HttpPushUri`
+  + `HttpPushUriOptions` apply-time modes + Tasks).

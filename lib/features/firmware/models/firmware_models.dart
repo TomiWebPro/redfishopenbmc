@@ -62,8 +62,7 @@ class FirmwareInventoryItem {
     final dynamic relatedRaw = body['RelatedItem'];
     if (relatedRaw is List<dynamic>) {
       for (final dynamic entry in relatedRaw) {
-        if (entry is Map<dynamic, dynamic> &&
-            entry['@odata.id'] is String) {
+        if (entry is Map<dynamic, dynamic> && entry['@odata.id'] is String) {
           related.add(entry['@odata.id'] as String);
         } else if (entry is String) {
           related.add(entry);
@@ -107,6 +106,8 @@ class UpdateServiceInfo {
     this.serviceEnabled = false,
     this.version,
     this.httpPushUri,
+    this.httpPushApplyTime,
+    this.httpPushApplyTimes = const <String>[],
     this.inventory = const <FirmwareInventoryItem>[],
     this.transferProtocols = _kDefaultProtocols,
   });
@@ -130,6 +131,15 @@ class UpdateServiceInfo {
   /// URI used for an HTTP/HTTPS push update (`HttpPushUri`, e.g. `/FWUpdate`).
   final String? httpPushUri;
 
+  /// Current push-apply-time mode (`HttpPushUriOptions.HttpPushUriApplyTime.
+  /// ApplyTime`, e.g. `Immediate`), or `null` when the service does not
+  /// publish push options (issue #008/#020).
+  final String? httpPushApplyTime;
+
+  /// Allowable push-apply-time modes (`ApplyTime@Redfish.AllowableValues`),
+  /// e.g. `Immediate` / `OnReset` / `AtMaintenanceWindowStart`.
+  final List<String> httpPushApplyTimes;
+
   /// Fully-resolved firmware inventory (one entry per collection member).
   final List<FirmwareInventoryItem> inventory;
 
@@ -151,6 +161,8 @@ class UpdateServiceInfo {
       serviceEnabled: body['ServiceEnabled'] as bool? ?? false,
       version: _asString(body['Version']) ?? _asString(body['Id']),
       httpPushUri: _asString(body['HttpPushUri']),
+      httpPushApplyTime: _applyTime(body),
+      httpPushApplyTimes: _applyTimes(body),
       inventory: inventory ?? const <FirmwareInventoryItem>[],
       transferProtocols: transferProtocols ?? _kDefaultProtocols,
     );
@@ -163,6 +175,8 @@ class UpdateServiceInfo {
         serviceEnabled: serviceEnabled,
         version: version,
         httpPushUri: httpPushUri,
+        httpPushApplyTime: httpPushApplyTime,
+        httpPushApplyTimes: httpPushApplyTimes,
         inventory: inventory,
         transferProtocols: transferProtocols,
       );
@@ -219,3 +233,36 @@ class UpdateTask {
 
 /// Returns [value] as a [String] or `null` when it is not a string.
 String? _asString(Object? value) => value is String ? value : null;
+
+/// Reads `HttpPushUriOptions.HttpPushUriApplyTime.ApplyTime` (the current
+/// push-apply-time mode) from an `UpdateService` [body].
+String? _applyTime(Map<String, dynamic> body) {
+  final Map<String, dynamic> options =
+      body['HttpPushUriOptions'] is Map<String, dynamic>
+          ? body['HttpPushUriOptions'] as Map<String, dynamic>
+          : const <String, dynamic>{};
+  final Map<String, dynamic> applyTime =
+      options['HttpPushUriApplyTime'] is Map<String, dynamic>
+          ? options['HttpPushUriApplyTime'] as Map<String, dynamic>
+          : const <String, dynamic>{};
+  return _asString(applyTime['ApplyTime']);
+}
+
+/// Reads `HttpPushUriOptions.HttpPushUriApplyTime.
+/// ApplyTime@Redfish.AllowableValues` (the allow-list of push-apply-time modes)
+/// from an `UpdateService` [body]. Returns an empty list when absent.
+List<String> _applyTimes(Map<String, dynamic> body) {
+  final Map<String, dynamic> options =
+      body['HttpPushUriOptions'] is Map<String, dynamic>
+          ? body['HttpPushUriOptions'] as Map<String, dynamic>
+          : const <String, dynamic>{};
+  final Map<String, dynamic> applyTime =
+      options['HttpPushUriApplyTime'] is Map<String, dynamic>
+          ? options['HttpPushUriApplyTime'] as Map<String, dynamic>
+          : const <String, dynamic>{};
+  final Object? allowed = applyTime['ApplyTime@Redfish.AllowableValues'];
+  if (allowed is List<dynamic>) {
+    return allowed.whereType<String>().toList(growable: false);
+  }
+  return const <String>[];
+}

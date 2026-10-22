@@ -50,6 +50,40 @@ void main() {
       expect(info.transferProtocols, isNotEmpty);
     });
 
+    test('parses HttpPushUriOptions apply-time modes (DOCS-4 / #008/#020)', () {
+      final File file = File(
+        'test/fixtures/redfish/dmtf_mockup/UpdateService/index.json',
+      );
+      final Map<String, dynamic> body =
+          jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+
+      final UpdateServiceInfo info = UpdateServiceInfo.fromJson(body);
+
+      expect(info.httpPushUri, '/FWUpdate');
+      // The DMTF mockup publishes a current mode + the AllowableValues list.
+      expect(info.httpPushApplyTime, 'Immediate');
+      expect(info.httpPushApplyTimes, <String>[
+        'Immediate',
+        'OnReset',
+        'AtMaintenanceWindowStart',
+        'InMaintenanceWindowOnReset',
+      ]);
+    });
+
+    test('push apply-time fields are empty when HttpPushUriOptions is absent',
+        () {
+      final UpdateServiceInfo info = UpdateServiceInfo.fromJson(
+        <String, dynamic>{
+          'Id': 'UpdateService',
+          'ServiceEnabled': true,
+          'HttpPushUri': '/FWUpdate',
+        },
+      );
+      expect(info.httpPushUri, '/FWUpdate');
+      expect(info.httpPushApplyTime, isNull);
+      expect(info.httpPushApplyTimes, isEmpty);
+    });
+
     test('parses an explicitly disabled UpdateService (DOCS-5)', () {
       final UpdateServiceInfo info = UpdateServiceInfo.fromJson(
         <String, dynamic>{

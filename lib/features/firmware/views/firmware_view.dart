@@ -254,18 +254,25 @@ class _InventoryList extends StatelessWidget {
         for (final FirmwareInventoryItem item in data.inventory)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Card(
-              child: ListTile(
-                title: Text(item.name ?? item.id),
-                subtitle: Text(
-                  '${item.id}${item.version != null ? ' · ${item.version}' : ''}'
-                  '${item.health != null ? ' · ${item.health}' : ''}',
-                ),
-                trailing: Chip(
-                  label: Text(item.updateable ? 'Updateable' : 'Locked'),
-                  backgroundColor: item.updateable
-                      ? Theme.of(context).colorScheme.primaryContainer
-                      : Theme.of(context).colorScheme.secondaryContainer,
+            child: Semantics(
+              container: true,
+              label: 'Firmware ${item.name ?? item.id}, '
+                  '${item.version ?? 'version unknown'}, '
+                  '${item.health ?? 'health unknown'}, '
+                  '${item.updateable ? 'updateable' : 'locked'}',
+              child: Card(
+                child: ListTile(
+                  title: Text(item.name ?? item.id),
+                  subtitle: Text(
+                    '${item.id}${item.version != null ? ' · ${item.version}' : ''}'
+                    '${item.health != null ? ' · ${item.health}' : ''}',
+                  ),
+                  trailing: Chip(
+                    label: Text(item.updateable ? 'Updateable' : 'Locked'),
+                    backgroundColor: item.updateable
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : Theme.of(context).colorScheme.secondaryContainer,
+                  ),
                 ),
               ),
             ),

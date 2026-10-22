@@ -563,4 +563,92 @@ void main() {
       expect(submit['target'], isA<String>());
     });
   });
+
+  group(
+      'emulator: query capabilities + account + push-options contracts '
+      '(#008/#015/#018/#020/#026)', () {
+    late AuthManager manager;
+    late RedfishClient client;
+
+    setUpAll(() async {
+      manager = AuthManager(storage: InMemoryStorage());
+      await manager.login('em-cap', emulatorProfile());
+      client = manager.clientFor('em-cap')!;
+    });
+
+    tearDownAll(() async {
+      await manager.logout('em-cap');
+    });
+
+    test(
+        'service root: ProtocolFeaturesSupported advertises query '
+        'capabilities (#018)', () async {
+      // #018 (discovery-cache) will need $expand/$select/excerpt awareness:
+      // the official mockup advertises the supported OData query features so a
+      // client can decide whether a lightweight discovery pass is available.
+      final Map<String, dynamic> root = await client.getJson('/redfish/v1/');
+      final Map<dynamic, dynamic> protocol =
+          root['ProtocolFeaturesSupported'] as Map<dynamic, dynamic>;
+      expect(protocol, isNotNull);
+      expect(protocol['ExcerptQuery'], isTrue,
+          reason: 'excerpt queries allow light-weight discovery payloads');
+      final Map<dynamic, dynamic> expand =
+          protocol['ExpandQuery'] as Map<dynamic, dynamic>;
+      expect(expand['ExpandAll'], isTrue);
+      expect(expand['Levels'], isTrue);
+      expect(protocol['FilterQuery'], isA<bool>());
+      expect(protocol['SelectQuery'], isA<bool>());
+    });
+
+    test(
+        'account service: Accounts collection is enumerable and readable '
+        '(#015/#026)', () async {
+      // #015 authMethod / #026 duplicate-auth-fields both depend on reading
+      // the account surface; the mockup ships a readable Accounts collection.
+      final Map<String, dynamic> svc =
+          await client.getJson('/redfish/v1/AccountService');
+      expect(svc['ServiceEnabled'], isTrue);
+      expect(svc['MinPasswordLength'], isA<int>());
+      final String accountsUri =
+          (svc['Accounts'] as Map<dynamic, dynamic>)['@odata.id'] as String;
+      final Map<String, dynamic> accounts = await client.getJson(accountsUri);
+      final List<dynamic> members = accounts['Members'] as List<dynamic>;
+      expect(members, isNotEmpty);
+      for (final dynamic member in members) {
+        final String uri =
+            (member as Map<dynamic, dynamic>)['@odata.id'] as String;
+        final Map<String, dynamic> account = await client.getJson(uri);
+        expect(account['UserName'], isA<String>());
+        expect(account['RoleId'], isA<String>());
+      }
+    });
+
+    test(
+        'update service: HttpPushUriOptions publishes apply-time modes '
+        '(#008/#020)', () async {
+      // The client parses ApplyTime + AllowableValues from
+      // HttpPushUriOptions.HttpPushUriApplyTime so a future push-upload flow
+      // can offer apply-time selection instead of assuming Immediate.
+      final Map<String, dynamic> svc =
+          await client.getJson('/redfish/v1/UpdateService');
+      expect(svc['ServiceEnabled'], isTrue);
+      expect(svc['HttpPushUri'], '/FWUpdate');
+      final Map<dynamic, dynamic> options =
+          svc['HttpPushUriOptions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> applyTime =
+          options['HttpPushUriApplyTime'] as Map<dynamic, dynamic>;
+      expect(applyTime['ApplyTime'], 'Immediate');
+      final List<dynamic> allowed =
+          applyTime['ApplyTime@Redfish.AllowableValues'] as List<dynamic>;
+      expect(
+          allowed,
+          containsAll(<String>[
+            'Immediate',
+            'OnReset',
+            'AtMaintenanceWindowStart',
+            'InMaintenanceWindowOnReset',
+          ]));
+      expect(applyTime['MaintenanceWindowStartTime'], isA<String>());
+    });
+  });
 }

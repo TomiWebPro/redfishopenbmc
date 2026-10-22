@@ -7,18 +7,20 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-22 (DOCS run — DOCS-8 upstream-freshness audit:
-  corpus current, bmcweb pin moved to `27e0930b`, `CLIENTS.md` added; UI-1
-  dashboard error summary + `retryFailed` completes the last UI-1 gap)
+- **Last updated:** 2026-10-23 (EMULATOR run — emulator suite 24 tests: pins
+  `ProtocolFeaturesSupported` (#018), AccountService/Accounts (#015/#026),
+  UpdateService push apply-time modes (#008/#020); `UpdateServiceInfo` now
+  parses `HttpPushUriOptions` apply-time; UI-2 firmware card semantics label)
 - **Current focus:** DOCS-2 schema refresh done (ComputerSystem/Chassis v1_29_0,
   Sensor v1_14_0, AccountService v1_19_0, EthernetInterface v1_12_6,
   SoftwareInventory v1_15_0); UI-3 fully done (all views covered);
-  emulator at 21 tests (session lifecycle #015/#017, SessionTimeout,
-  TaskService, EventService contracts added); **UI-1 done** (dashboard error
-  summary + Retry; firmware error+retry from 20:51 run); next P1: #015
-  (AuthManager) — emulator now pins the full session contract; #016/#022
-  (ActionInfo/etag) or #008/#020 (HTTP-push firmware, Tasks URI) both have
-  emulator assertions
+  emulator at 24 tests (session lifecycle #015/#017, SessionTimeout,
+  TaskService, EventService, ProtocolFeaturesSupported #018, Accounts #015/#026,
+  push apply-time #008/#020); **UI-1 done** (dashboard error summary + Retry;
+  firmware error+retry from 20:51 run); next P1: #015 (AuthManager) — emulator
+  now pins the full session contract + the AccountService surface; #016/#022
+  (ActionInfo/etag) or #008/#020 (HTTP-push firmware, Tasks URI + push
+  apply-time modes) both have emulator assertions
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -118,7 +120,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `REDFISH_EMULATOR_URL`; extended 2026-10-22 → 13 tests (systems detail +
       HttpPushUri) → 16 tests (SessionService URI, Manager detail + allow-list,
       Chassis detail) → 21 tests (session lifecycle #015/#017, SessionTimeout,
-      TaskService, EventService contracts))
+      TaskService, EventService contracts) → 24 tests (ProtocolFeaturesSupported
+      #018, Accounts #015/#026, push apply-time #008/#020 — 2026-10-23))
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -160,7 +163,9 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       now also pins the full session lifecycle: POST via discovered Sessions
       URI returns X-Auth-Token + Location (session resource, not collection),
       DELETE session 204 vs DELETE collection 405, SessionTimeout=30 published —
-      run 2026-10-22)
+      run 2026-10-22; emulator AccountService test added 2026-10-23: Accounts
+      collection discoverable + readable with UserName/RoleId, MinPasswordLength
+      published — the auth-surface contract #015/#026 reason about)
 - [x] **#027** Verify the Flutter toolchain issue is stale; close it with evidence
       if `flutter analyze`/`flutter test` work, otherwise fix it.
       (run 2026-10-22 — closed with evidence: `~/flutter/bin/flutter` on PATH,
@@ -168,11 +173,17 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       this repo; DEVELOPMENT.md Toolchain documents the setup)
 - [ ] **#016** PATCH / `If-Match` / `@odata.etag` support.
       (bmcweb ResetActionInfo → supportedResetTypes fallback also folds here —
-      DOCS-4)
+      DOCS-4; emulator notes: the DMTF mockup serves no `@odata.etag` on
+      resources — etag behaviour cannot be pinned on this fixture, keep it in
+      unit tests — 2026-10-23)
 - [ ] **#017** Discover the SessionService URI instead of assuming it.
       (emulator test asserts `SessionService.@odata.id` is discoverable from the
       service root and serves a conformant SessionService — run 2026-10-22)
 - [ ] **#018** Fix discovery-cache stale replay/leak.
+      (emulator test added 2026-10-23: service root `ProtocolFeaturesSupported`
+      advertises `ExcerptQuery` + `ExpandQuery{ExpandAll,Levels}` and publishes
+      `FilterQuery`/`SelectQuery` — the query-capability surface a lightweight
+      discovery pass must use; the client currently ignores it)
 - [ ] **#022** Power: task polling, races, and error fixes.
       (bmcweb `ResetActionInfo` ActionInfo `Parameters/AllowableValues` is the
       allow-list source on OpenBMC; add fallback — DOCS-4. Emulator asserts the
@@ -194,7 +205,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       (bmcweb: update is HTTP-push via `HttpPushUri`/`MultipartHttpPushUri`, no
       `SimpleUpdate` — our `startSimpleUpdate` would 405 on OpenBMC; add push
       path — DOCS-4, REQUIREMENTS.md; emulator asserts `UpdateServiceInfo.
-      httpPushUri == '/FWUpdate'` on the DMTF mockup — run 2026-10-22)
+      httpPushUri == '/FWUpdate'` on the DMTF mockup — run 2026-10-22; emulator
+      test added 2026-10-23: `HttpPushUriOptions.HttpPushUriApplyTime` publishes
+      `ApplyTime == 'Immediate'` + AllowableValues (Immediate/OnReset/
+      AtMaintenanceWindowStart/InMaintenanceWindowOnReset) + MaintenanceWindow
+      start time; `UpdateServiceInfo` now parses both — the push-upload flow
+      must offer apply-time selection instead of assuming Immediate)
 - [ ] **#009 / #021** Remote KVM capability detection and console rendering.
 - [ ] **#010** Hardening: secure storage, theming, accessibility, coverage.
 
@@ -208,8 +224,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       b9dcd31)** — all views covered, **UI-1 done**)
 - [ ] **UI-2** Accessibility: semantics labels, contrast, touch targets, focus order.
       (Health/Power badges semantic labels done 2026-10-22 — commit c8dc7e1;
-      destructive power dialog label done 2026-10-22 — commit 81dfb8f; extend
-      to cards, dialogs, tables)
+      destructive power dialog label done 2026-10-22 — commit 81dfb8f; firmware
+      inventory cards merged a11y label done 2026-10-23 — Semantics container
+      with concise summary (component, version, health, updateable/locked) +
+      widget test; extend to remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.
       (PowerView no-overflow tests added 2026-10-22; SensorsView no-overflow
