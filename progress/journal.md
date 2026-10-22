@@ -402,3 +402,44 @@
 **Issues touched:**
 - none opened/closed this run (docs audit + DOCS-7 decision + UI-3 tests;
   FUTUREWORK updated).
+
+## 2026-10-22 — agent:redfish-automation — EMULATOR run (EMU-5 decision + #014)
+
+**Done:**
+- EMU-5: evaluated `DMTF/Redfish-Interface-Emulator` @ `5f51d8a` (dynamic
+  service, 400 on invalid ResetType). **Decision: stay on Redfish-Mockup-Server**
+  — the richer emulator's error bodies are non-conformant (`{"error":"msg"}`,
+  no `error` envelope / `@Message.ExtendedInfo`) and its SessionService 404s;
+  decision + pin recorded in REQUIREMENTS.md "EMU-5 decision". Re-ran
+  `tool/emulator/run_tests.sh` (11 emulator tests green; trap cleanup ok).
+- #014 (P1) **closed**: `RedfishError.fromJson` self-descends into the DSP0266
+  `error` envelope; `RedfishException.fromResponse` normalizes any map-shaped
+  body via `RedfishError.tryParse`; removed dead lowercase dynamic-keyed branch.
+  Spec-conformant unit fixtures (envelope, top-level noise, full-body
+  fromResponse with `@Message.ExtendedInfo`) prove the old silent-drop bug
+  ("Unknown error") is fixed and `firstMessage` prefers `ExtendedInfo[0]`.
+- UI-2/UI-5 increment: reset buttons announce "«action», action in progress"
+  to assistive tech while in flight (Semantics label) and stay disabled;
+  2 new widget tests (busy announced / idle none), bounded pumps for the
+  infinite spinner.
+- Tracking: automation-tracking.md section appended; FUTUREWORK updated
+  (EMU-5 `[x]`, #014 `[x]` + removed from P1 defects, UI-5 note, #027 note,
+  focus line); progress_summary.md updated for the P1 close.
+
+**Decisions:**
+- EMU-5: mockup-server + unit fixtures > richer emulator for error mapping
+  (non-conformant bodies would encode the wrong contract; no auth coverage).
+- #014: self-descend in `fromJson` rather than changing every caller — keeps
+  `RedfishError.tryParse` and `fromResponse` correct for both full-body and
+  pre-extracted inputs; spec-pinned fixtures stay authoritative.
+
+**Next:**
+- Push 7 queued local commits from a machine with GitHub credentials.
+- P1 #015 AuthManager (authMethod, safe logout URI, session reuse/expiry) —
+  unit-level with the in-process mock server.
+- #027: close the stale toolchain issue with evidence (baseline green every
+  run since DOCS-1); or UI-5 busy state on the dialog confirm button.
+
+**Issues touched:**
+- #014 closed (2026-10-22) — first P1 close since #005; progress_summary.md
+  updated.

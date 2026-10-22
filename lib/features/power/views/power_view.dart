@@ -192,16 +192,23 @@ class ResetButton extends StatelessWidget {
           )
         : const ButtonStyle();
 
-    return FilledButton.icon(
-      onPressed: disabled ? null : onPressed,
-      icon: busy
-          ? const SizedBox.square(
-              dimension: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Icon(action.isDestructive ? Icons.warning_amber : Icons.power),
-      label: Text(action.label),
-      style: style,
+    return Semantics(
+      // Announce the in-flight state to assistive tech; the visible label
+      // already communicates the action, so append the state rather than
+      // replacing it (keeps the button's name stable for re-discovery).
+      label: busy ? '${action.label}, action in progress' : null,
+      button: true,
+      child: FilledButton.icon(
+        onPressed: disabled ? null : onPressed,
+        icon: busy
+            ? const SizedBox.square(
+                dimension: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Icon(action.isDestructive ? Icons.warning_amber : Icons.power),
+        label: Text(action.label),
+        style: style,
+      ),
     );
   }
 }

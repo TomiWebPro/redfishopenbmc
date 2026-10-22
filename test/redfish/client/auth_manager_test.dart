@@ -42,7 +42,8 @@ String _sessionLocUrl(String host, String id) =>
 /// Builds an [AuthManager] with a **pre-created** per-host [Dio]+[DioAdapter]
 /// so mocks can be registered before `login`. The same adapter is reused by
 /// the client the auth manager creates, giving real per-system isolation.
-(AuthManager, Map<String, DioAdapter>, List<Map<String, dynamic>>) buildManager() {
+(AuthManager, Map<String, DioAdapter>, List<Map<String, dynamic>>)
+    buildManager() {
   final Map<String, DioAdapter> adapters = <String, DioAdapter>{};
   final List<Map<String, dynamic>> captured = <Map<String, dynamic>>[];
 
@@ -50,8 +51,8 @@ String _sessionLocUrl(String host, String id) =>
         final Dio dio = Dio(BaseOptions(baseUrl: 'https://$host:443'));
         dio.interceptors.add(
           InterceptorsWrapper(
-            onRequest: (RequestOptions options,
-                RequestInterceptorHandler handler) {
+            onRequest:
+                (RequestOptions options, RequestInterceptorHandler handler) {
               captured.add(Map<String, dynamic>.from(options.headers));
               handler.next(options);
             },
@@ -126,8 +127,11 @@ void main() {
   group('AuthManager - session auth', () {
     test('login captures X-Auth-Token + Location and stores only token',
         () async {
-      final (AuthManager manager, Map<String, DioAdapter> adapters,
-          List<Map<String, dynamic>> captured) = buildManager();
+      final (
+        AuthManager manager,
+        Map<String, DioAdapter> adapters,
+        List<Map<String, dynamic>> captured
+      ) = buildManager();
       mockSessionLogin(adapters['bmc1']!, 'bmc1',
           token: 'tok-abc', locationId: '42');
 
@@ -152,7 +156,8 @@ void main() {
       expect(postAuth.last['X-Auth-Token'], 'tok-abc');
     });
 
-    test('401 triggers exactly one session re-create (no loop) and updates '
+    test(
+        '401 triggers exactly one session re-create (no loop) and updates '
         'the session', () async {
       final (AuthManager manager, Map<String, DioAdapter> adapters, _) =
           buildManager();
@@ -428,10 +433,14 @@ void main() {
         ),
       );
 
-      await manager.login('bmc1',
-          const ConnectionProfile(host: 'bmc1', username: 'root', password: 'pw1'));
-      await manager.login('bmc2',
-          const ConnectionProfile(host: 'bmc2', username: 'root', password: 'pw2'));
+      await manager.login(
+          'bmc1',
+          const ConnectionProfile(
+              host: 'bmc1', username: 'root', password: 'pw1'));
+      await manager.login(
+          'bmc2',
+          const ConnectionProfile(
+              host: 'bmc2', username: 'root', password: 'pw2'));
 
       final List<Map<String, dynamic>> c1 = capturePostAuth(adapters, 'bmc1');
       final List<Map<String, dynamic>> c2 = capturePostAuth(adapters, 'bmc2');
@@ -534,6 +543,42 @@ void main() {
       expect(e.details!.extendedInfo, contains('Power limit exceeded'));
     });
 
+    test('DSP0266 error envelope yields real extendedInfo diagnostics', () {
+      // Spec-conformant BMC: body nests under `error` and
+      // `@Message.ExtendedInfo` carries per-property diagnostics.
+      final Response<dynamic> resp = Response<dynamic>(
+        requestOptions: RequestOptions(path: '/x'),
+        statusCode: 400,
+        data: <String, dynamic>{
+          'error': <String, dynamic>{
+            'code': 'Base.1.8.PropertyValueTypeError',
+            'message': 'The value 42 for the property AssetTag is of a '
+                'different type than the property can accept.',
+            '@Message.ExtendedInfo': <dynamic>[
+              <String, dynamic>{
+                '@odata.type': '#Message.v1_1_2.Message',
+                'MessageId': 'Base.1.8.PropertyValueTypeError',
+                'Message': 'The value 42 for the property AssetTag is of a '
+                    'different type than the property can accept.',
+                'Severity': 'Warning',
+              },
+            ],
+          },
+        },
+      );
+      final RedfishException e = RedfishException.fromResponse(resp);
+      expect(e.hasDetails, isTrue, reason: 'details must parse under error');
+      expect(e.statusCode, 400);
+      expect(e.details!.code, 'Base.1.8.PropertyValueTypeError');
+      expect(e.details!.extendedInfo, isNotNull);
+      expect(e.details!.extendedInfo!.single, contains('AssetTag'));
+      expect(
+        e.details!.firstMessage,
+        contains('different type'),
+        reason: 'firstMessage prefers ExtendedInfo[0].Message',
+      );
+    });
+
     test('5xx responses are retryable, 4xx are not', () {
       final Response<dynamic> resp500 = Response<dynamic>(
         requestOptions: RequestOptions(path: '/x'),
@@ -581,11 +626,15 @@ void main() {
         dio: dio,
         matcher: const _PathMatcher(),
       );
-      return (RedfishClient(profile: ConnectionProfile(host: host), dio: dio), adapter);
+      return (
+        RedfishClient(profile: ConnectionProfile(host: host), dio: dio),
+        adapter
+      );
     }
 
     test('getJson success returns decoded map', () async {
-      final (RedfishClient client, DioAdapter adapter) = await clientFor('bmc1');
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
       adapter.onGet(
         _rootUrl('bmc1'),
         (server) => server.reply(200, <String, dynamic>{'a': 1}),
@@ -595,7 +644,8 @@ void main() {
     });
 
     test('getJson with no content returns empty map', () async {
-      final (RedfishClient client, DioAdapter adapter) = await clientFor('bmc1');
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
       adapter.onGet(
         _rootUrl('bmc1'),
         (server) => server.reply(200, null),
@@ -605,7 +655,8 @@ void main() {
     });
 
     test('getJson with non-map body wraps into {"value"}', () async {
-      final (RedfishClient client, DioAdapter adapter) = await clientFor('bmc1');
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
       adapter.onGet(
         _rootUrl('bmc1'),
         (server) => server.reply(200, 'plain string'),
@@ -615,7 +666,8 @@ void main() {
     });
 
     test('postJson success returns decoded body', () async {
-      final (RedfishClient client, DioAdapter adapter) = await clientFor('bmc1');
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
       adapter.onPost(
         _sessionsUrl('bmc1'),
         (server) => server.reply(
@@ -636,16 +688,19 @@ void main() {
     });
 
     test('delete success returns true', () async {
-      final (RedfishClient client, DioAdapter adapter) = await clientFor('bmc1');
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
       adapter.onDelete(
         _sessionLocUrl('bmc1', '1'),
         (server) => server.reply(204, <String, dynamic>{}),
       );
-      expect(await client.delete('/redfish/v1/SessionService/Sessions/1'), isTrue);
+      expect(
+          await client.delete('/redfish/v1/SessionService/Sessions/1'), isTrue);
     });
 
     test('delete non-2xx throws RedfishException', () async {
-      final (RedfishClient client, DioAdapter adapter) = await clientFor('bmc1');
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
       adapter.onDelete(
         _sessionLocUrl('bmc1', '1'),
         (server) => server.reply(500, <String, dynamic>{}),
@@ -660,7 +715,8 @@ void main() {
     });
 
     test('postJson non-2xx throws RedfishException', () async {
-      final (RedfishClient client, DioAdapter adapter) = await clientFor('bmc1');
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
       adapter.onPost(
         _sessionsUrl('bmc1'),
         (server) => server.reply(
@@ -695,7 +751,8 @@ void main() {
     });
 
     test('non-2xx GET throws RedfishException', () async {
-      final (RedfishClient client, DioAdapter adapter) = await clientFor('bmc1');
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
       adapter.onGet(
         _rootUrl('bmc1'),
         (server) => server.reply(

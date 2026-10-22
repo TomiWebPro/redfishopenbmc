@@ -209,3 +209,59 @@ Append-only run log for the `redfish-automation` scheduler job.
   #014 (RedfishError ExtendedInfo parsing) or #015 (AuthManager session URI
   discovery) — unit-level work with the in-process mock server; 3) EMU-5
   evaluation if 403/409/400 extended-info paths are needed for #014/#015 tests.
+
+## 2026-10-22 15:56 — EMULATOR + #014
+
+- **Baseline:** analyze 0; tests 237 passed / 1 skipped; starting commit be910ff;
+  issues validate OK; branch `main` clean but ahead 6 of origin (6 commits
+  unpushed — GitHub push blocked: no credentials, see earlier entries).
+- **Primary work:** EMU-5 evaluation (richer emulator decision) + P1 #014
+  RedfishError envelope parsing fix. Chose EMULATOR over DOCS because the last
+  two entries were DOCS/EMULATOR alternating and EMULATOR had gone longest; the
+  P1 #014 fix is the code work the error-path story needs.
+- **Emulator:**
+  - Evaluated `DMTF/Redfish-Interface-Emulator` @ `5f51d8a` (tag 1.2.2):
+    cloned, venv-installed, ran on :8444. It serves a dynamic service
+    (Systems System-1..7, Chassis, TaskService) and returns **400** for an
+    invalid `ResetType` (dynamic 4xx the static mockup cannot produce).
+  - **Decision: stay on Redfish-Mockup-Server** (EMU-5 closed, marked `[x]`).
+    Reasons recorded in `REQUIREMENTS.md` "EMU-5 decision": (1) the richer
+    emulator's error bodies are non-conformant — `{"error":"msg"}` with no
+    DSP0266 `error` envelope / `@Message.ExtendedInfo`, and `emulator.py`'s
+    `error_response` uses a `{"Status","Message"}` shape; (2) its
+    SessionService 404s on `POST /redfish/v1/SessionService/Sessions` and
+    self-describes under `/rest/v1/...` — auth coverage would regress; (3)
+    error mapping is better tested with spec-conformant unit fixtures than
+    with another HTTP layer. Pin recorded; no harness committed.
+  - Ran `tool/emulator/run_tests.sh` end-to-end (11 emulator tests) — all
+    passed; `trap` cleanup confirmed (no stray mockup-server process).
+- **Code/tests:** P1 **#014 closed** — `RedfishError.fromJson` now self-descends
+  into the DSP0266 `error` envelope (`{"error":{"code","message",
+  "@Message.ExtendedInfo"}}`), falling back to top-level keys for lenient
+  interop; `RedfishException.fromResponse` normalizes any map-shaped body
+  (String- or dynamic-keyed) and lets `RedfishError.tryParse` handle the
+  envelope (removed the dead lowercase dynamic-keyed branch). Files:
+  `lib/redfish/models/redfish_error.dart`, `lib/redfish/models/
+  redfish_exception.dart`. Tests: `test/redfish/models/models_test.dart`
+  (envelope + top-level-noise cases), `test/redfish/client/auth_manager_test.dart`
+  (full-body `fromResponse` with `@Message.ExtendedInfo` diagnostics;
+  `firstMessage` prefers `ExtendedInfo[0]`).
+- **UI:** UI-2/UI-5 increment — reset buttons now carry a `Semantics` label
+  "«action», action in progress" while `actionInFlight` (and are already
+  disabled); 2 new widget tests in `power_view_test.dart` (busy announced +
+  idle has no busy semantics; busy test uses bounded pumps because the spinner
+  animates forever). Production: `lib/features/power/views/power_view.dart`.
+- **Docs:** `REQUIREMENTS.md` gained the "EMU-5 decision" section (evaluation,
+  reasons, fallback, pin `5f51d8a`).
+- **Verification:** analyze 0; tests 242 passed / 1 skipped; issues validate
+  OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this run) — pushed: **no** (same GitHub credential blocker:
+  `fatal: could not read Username for 'https://github.com'`; no credential
+  helper / env token / SSH key on this machine; local commit kept). 7 commits
+  now queued locally (c8dc7e1, 0c526fa, 81dfb8f, ed2e943, 980189f, be910ff +
+  this one).
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (7 queued); 2) P1 #015 AuthManager (authMethod, safe logout URI,
+  session reuse/expiry) — unit-level with in-process mock server; 3) #027:
+  close the stale toolchain issue with evidence (baseline green every run);
+  or UI-5: busy state on the ConfirmResetDialog confirm button.

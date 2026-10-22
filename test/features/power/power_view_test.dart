@@ -287,6 +287,66 @@ void main() {
       });
     }
   });
+
+  group('PowerView — busy-state semantics (UI-2/UI-5)', () {
+    testWidgets('busy reset button announces the in-flight action',
+        (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      final PowerController controller = PowerController(
+        service: _FakePowerService(),
+        features: SystemFeatures(
+          systemId: 'bmc1',
+          powerControl: true,
+          supportedResetTypes: const <String>['On'],
+        ),
+        initialState: const PowerUiState(
+          powerState: PowerState.off,
+          actionInFlight: true,
+        ),
+        pollInterval: const Duration(seconds: 60),
+        pollTimeout: const Duration(milliseconds: 1),
+      );
+
+      await tester.pumpWidget(
+        harness(manager: manager, controller: controller),
+      );
+      // The in-flight spinner animates forever, so bounded pumps, not
+      // pumpAndSettle.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // The in-flight button is disabled and announced as busy for AT.
+      final Finder powerOn = find.widgetWithText(FilledButton, 'Power On');
+      expect(powerOn, findsOneWidget);
+      final FilledButton button = tester.widget<FilledButton>(powerOn);
+      expect(button.onPressed, isNull, reason: 'busy button must be disabled');
+      expect(
+        find.bySemanticsLabel(RegExp('^Power On, action in progress')),
+        findsOneWidget,
+        reason: 'busy state must be announced to assistive tech',
+      );
+    });
+
+    testWidgets('idle reset button has no busy semantics', (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      await tester.pumpWidget(
+        harness(manager: manager, controller: _fakeController()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel(RegExp('action in progress')), findsNothing);
+    });
+  });
 }
 
 PowerController _fakeController() => PowerController(

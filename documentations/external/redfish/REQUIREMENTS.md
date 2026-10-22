@@ -57,6 +57,43 @@ Sources:
      `REDFISH_EMULATOR_URL` is defined.
   Both cover the rows above end-to-end against authentic payload shapes.
 
+## EMU-5 decision — richer emulator evaluation (2026-10-22)
+
+**Decision: stay on Redfish-Mockup-Server; do not adopt
+`DMTF/Redfish-Interface-Emulator` for error-path testing.** Recorded so the
+rationale survives.
+
+- **Evaluated:** `DMTF/Redfish-Interface-Emulator` @ `5f51d8a` (tag `1.2.2`),
+  cloned to `/tmp`, venv install, run on port 8444 against its built-in
+  dynamic mockup.
+- **What it does:** serves a real dynamic Redfish service (ServiceRoot,
+  Systems `System-1..7`, Chassis, Managers, TaskService); `POST
+  /redfish/v1/Systems/System-1/Actions/ComputerSystem.Reset` executes
+  `ResetType` and mutates `PowerState`; an invalid `ResetType` returns
+  **400** (dynamic 4xx path the static mockup cannot produce).
+- **Why we stay on the mockup server:**
+  1. **Error bodies are non-conformant.** The emulator's 400 response is
+     `{"error": "Invalid ResetType: Bogus"}` — no DSP0266 `error` envelope
+     (`{"error":{"code","message","@Message.ExtendedInfo"}}`), no
+     `@Message.ExtendedInfo`, and a `{"Status","Message"}` shape in
+     `emulator.py:error_response` instead. Testing error *mapping* against it
+     would encode the wrong contract (#014's fixtures must be spec-conformant).
+  2. **SessionService is broken/mismatched.** `POST
+     /redfish/v1/SessionService/Sessions` returns 404 and the resource
+     self-describes as `#Session.0.94.0.SessionCollection` at a
+     `/rest/v1/...` context — auth coverage would regress vs. the mockup
+     server (which mints tokens and honours logout).
+  3. **Overlap + risk.** The static mockup already covers discovery, sensors,
+     firmware, KVM, power, and 404 mapping; the only gap is spec-conformant
+     extended-info bodies, which are better exercised with unit fixtures
+     (spec text pinned in DSP0266 § "Response messages") than with another
+     HTTP layer.
+- **Fallback for #014/#015 error paths:** `test/redfish/models/` +
+  `test/redfish/client/` unit fixtures with compliant `{"error":{...}}`
+  bodies; the emulator suite keeps asserting 404 mapping end-to-end.
+- Pin recorded: `DMTF/Redfish-Interface-Emulator` `5f51d8a` (evaluated only;
+  no committed harness).
+
 ## DOCS-7 decision — event subscriptions / SSE (2026-10-22)
 
 **Decision: implement later, not this milestone.** Recorded here so the rationale

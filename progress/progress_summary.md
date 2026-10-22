@@ -4,7 +4,22 @@
 
 **Project:** Redfish Multi-System Control App (Flutter) — unified Redfish/OpenBMC control plane. Spec: `documentations/project_goal/goal.md`.
 
-## Snapshot — 2026-08-30 (#001–#005 closed; 22 open incl. #011–#027 carve-outs)
+## P1 closed — #014 (2026-10-22)
+
+**#014 P1 — Fix RedfishError @Message.ExtendedInfo parsing — CLOSED** (by
+`redfish-automation`, EMULATOR run). `RedfishError.fromJson` now self-descends
+into the DSP0266 `error` envelope (`{"error":{"code","message",
+"@Message.ExtendedInfo"}}`), falling back to top-level keys for lenient
+interop; `RedfishException.fromResponse` normalizes any map-shaped body and
+lets `RedfishError.tryParse` handle the envelope (dead lowercase
+dynamic-keyed branch removed). Unit fixtures in `models_test.dart` +
+`auth_manager_test.dart` prove compliant BMC bodies now yield non-null
+`extendedInfo` (were silently dropped → "Unknown error"). EMU-5 evaluation
+(REQUIREMENTS.md) kept spec-conformant error-path testing on unit fixtures
+rather than the richer emulator. Results: `flutter analyze` 0, `flutter test`
+**242 passed / 1 skipped**, issues validate OK. First P1 close since #005.
+
+## Snapshot — 2026-08-30 (#001–#005 closed; 21 open incl. #011–#027 carve-outs)
 
 **Phase:** Feature build. #001 (Flutter scaffold + CI) CLOSED, #002 (Redfish client core) CLOSED (analyze 0, 55 tests green, 89.8% client coverage), #003 (discovery engine) CLOSED (analyze 0, 93 tests green, **91.0% discovery coverage**), #004 (multi-system manager) CLOSED (analyze 0, 145 tests green, **88.1% systems coverage**), #005 (power) CLOSED 2026-08-27 (analyze 0, 37 power tests green, 87.4% coverage). 2026-08-30 triage carve-outs #011–#027 opened (core correctness + layering fixes). Localized issue system + daily tracking active.
 
@@ -16,8 +31,7 @@
 - 2026-08-27 — **#004 P1 feature — Multi-system manager & dashboard CLOSED.** `ConnectionProfile`/`SystemSnapshot`/`Health`/`PowerState` models (password never in persisted blob; keystore only); `SystemManager` (`StateNotifier<SystemState>`) with `Map<id,SystemHandle>`, add/remove/update/connect/disconnect/select, `ProfileRepository` (SecureStorage, password stripped), `rehydrate()` on startup, per-system token isolation, instant context switch (no re-discover); `go_router` `/:systemId/{overview,power,sensors,firmware,kvm}` + `SystemShell` capability-gated tabs; `DashboardView` adaptive grid (1/2/3 cols) + `AggregatedStatus` banner; `SystemCard`/`HealthBadge`/`PowerBadge`; `AddSystemDialog`/`EditSystemPage`/`SystemProfileForm` with host/port validation + self-signed warning. 13 test files under `test/features/systems/`. `flutter analyze` 0 issues, `flutter test` **145 passed / 1 skipped**, `features/systems/` coverage **88.1%** (target 80).
 - 2026-08-27 — **#005 P1 feature — Power management CLOSED.** `PowerService.reset` POSTs `/redfish/v1/Systems/{id}/Actions/ComputerSystem.Reset` (Redfish `ResetType`), target resolved via discovery raw tree → known `@odata.id` → live `/redfish/v1/Systems` crawl → fallback; unsupported types rejected locally (`SystemFeatures.supportedResetTypes`); 202+`Location` accepted (task polling → #008). `PowerState`/`ResetType` enums + `PowerController` (optimistic state + non-blocking 3s/30s polling) + Riverpod `powerServiceProvider`/`powerControllerProvider` families. `PowerView` gated on `features.powerControl` (renders nothing otherwise), animated `PowerBadge` (pulse only while transitioning), destructive-styled `ResetButton`s, `ConfirmResetDialog`; error taxonomy 403/409/400 (`@Message.ExtendedInfo`). `flutter analyze` 0 issues, `flutter test` **37 power tests green**, `features/power/` coverage **87.4%** (target 80%). Full suite **182 passed / 1 skipped**.
 
-**In Progress (open — 22):**
-- #014 P1 — Fix RedfishError @Message.ExtendedInfo parsing
+**In Progress (open — 21):**
 - #015 P1 — AuthManager: authMethod, safe logout URI, session reuse/expiry
 - #027 P1 — Make project analyzable/testable (Flutter SDK uninitialized)
 - #006 P2 — System overview adaptive cards
@@ -40,13 +54,13 @@
 - #023 P3 — Overview: listenManual leak & async errors
 - #025 P3 — Harden unsafe .first / as casts
 
-**Closed this week:** #001 (2026-08-27), #002 (2026-08-27), #003 (2026-08-27), #004 (2026-08-27), #005 (2026-08-27)
+**Closed this week:** #014 (2026-10-22), #001 (2026-08-27), #002 (2026-08-27), #003 (2026-08-27), #004 (2026-08-27), #005 (2026-08-27)
 
 **Metrics:**
 - Coverage: `redfish/client/` **89.8%** (target 80), `redfish/discovery/` **91.0%** (target 85), `features/systems/` **88.1%** (target 80), `features/power/` **87.4%** (target 80)
 - `flutter analyze`: **0 issues**
-- `flutter test`: **182 passed / 1 skipped** (live-BMC integration stub)
-- Issues: 22 open / 5 closed — `python3 issues/issues.py stats`
+- `flutter test`: **242 passed / 1 skipped** (live-BMC integration stub; emulator suite skipped without `REDFISH_EMULATOR_URL`)
+- Issues: 21 open / 6 closed — `python3 issues/issues.py stats`
 
 **Risks & Decisions:**
 - Choice of Riverpod vs Bloc deferred to #001 (document rationale in DEVELOPMENT.md)

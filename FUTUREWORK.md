@@ -7,8 +7,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-22 (DOCS run — DSP0266 eventing/tasks audit, DOCS-7 decision)
-- **Current focus:** DOCS-3 + DOCS-7 done (eventing/tasks audit; events out-of-scope this milestone with rationale); next P1 code: #014/#015 or EMU-5 richer emulator
+- **Last updated:** 2026-10-22 (EMULATOR run — EMU-5 decision + #014 closed, busy-state a11y)
+- **Current focus:** #014 closed (RedfishError envelope parsing) + EMU-5 decided
+  (stay on mockup-server); next P1: #015 (AuthManager) or #027 (toolchain stale check);
+  EMU-3 extension + UI-5 busy dialog remain
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -104,11 +106,14 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       Pin the emulator commit and document it.
       (run 2026-10-22, commit 81dfb8f — verified end-to-end; trap cleanup
       confirmed; pin `23d21f9a` in the script + docs README)
-- [ ] **EMU-5** Evaluate `DMTF/Redfish-Interface-Emulator` only if the mockup
+- [x] **EMU-5** Evaluate `DMTF/Redfish-Interface-Emulator` only if the mockup
       server cannot exercise the required dynamic actions. Record the decision.
-      (mockup server covers discovery/sensors/firmware/KVM/power; dynamic
-      error-action paths (403/409/400 + ExtendedInfo) would need the richer
-      emulator)
+      (run 2026-10-22 — evaluated `5f51d8a`; **decision: stay on
+      Redfish-Mockup-Server**. The richer emulator serves dynamic 400s but its
+      error bodies are non-conformant — `{"error":"msg"}` with no `error`
+      envelope / `@Message.ExtendedInfo`, and its SessionService 404s. Error
+      mapping is covered with spec-conformant unit fixtures instead; rationale
+      in REQUIREMENTS.md "EMU-5 decision")
 - [x] **EMU-6** Do not loosen production TLS. Use `allowSelfSigned: true` only in
       the test profile; never add an HTTP/plaintext production path.
       (run 2026-10-22 — self-signed cert is `/tmp`-generated test-only;
@@ -116,10 +121,15 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 
 ## P1 — confirmed code defects
 
-- [ ] **#014** Fix `RedfishError` `@Message.ExtendedInfo` parsing.
+- [x] **#014** Fix `RedfishError` `@Message.ExtendedInfo` parsing.
+      (run 2026-10-22 — `fromJson` self-descends into the DSP0266 `error`
+      envelope; `fromResponse` normalizes map bodies; compliant-envelope unit
+      tests in `models_test.dart` + `auth_manager_test.dart`; closed)
 - [ ] **#015** AuthManager: auth method, safe logout URI, session reuse/expiry.
 - [ ] **#027** Verify the Flutter toolchain issue is stale; close it with evidence
       if `flutter analyze`/`flutter test` work, otherwise fix it.
+      (baseline still green every run — analyze 0 / tests 242 this run; next
+      run should close with evidence)
 - [ ] **#016** PATCH / `If-Match` / `@odata.etag` support.
 - [ ] **#017** Discover the SessionService URI instead of assuming it.
 - [ ] **#018** Fix discovery-cache stale replay/leak.
@@ -153,8 +163,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - [ ] **UI-4** Visual consistency for cards, badges, health/power colors, spacing.
 - [ ] **UI-5** Power confirmation dialog: clearer destructive-action copy and
       disabled/busy states.
-      (destructive copy + a11y label done 2026-10-22 — commit 81dfb8f; busy
-      state on the dialog confirm button still pending)
+      (destructive copy + a11y label done 2026-10-22 — commit 81dfb8f; reset
+      buttons now announce the in-flight state to assistive tech
+      "action in progress" + disable while busy — done 2026-10-22 this run;
+      busy state on the dialog confirm button itself still pending)
 - [ ] **UI-6** Sensor table: sorting/filtering, threshold highlighting, stale data.
 - [ ] **UI-7** Firmware upload: progress, cancel, task status timeline.
 - [ ] **UI-8** KVM: launch/placeholder UX when the console is unsupported.

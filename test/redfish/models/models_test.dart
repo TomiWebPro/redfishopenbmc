@@ -105,6 +105,44 @@ void main() {
       expect(e.extendedInfo, <String>['x']);
     });
 
+    test('parses the DSP0266 error envelope ({"error":{...}})', () {
+      // Spec-compliant BMC: everything nests under `error`, and
+      // `@Message.ExtendedInfo` entries are message objects with `Message`.
+      final RedfishError e = RedfishError.fromJson(<String, dynamic>{
+        'error': <String, dynamic>{
+          'code': 'Base.1.8.GeneralError',
+          'message': 'A general error has occurred',
+          '@Message.ExtendedInfo': <dynamic>[
+            <String, dynamic>{
+              '@odata.type': '#Message.v1_1_2.Message',
+              'MessageId': 'Base.1.8.PropertyValueTypeError',
+              'Message': 'The value 42 for the property AssetTag is of a '
+                  'different type than the property can accept.',
+              'Severity': 'Warning',
+            },
+          ],
+        },
+      });
+      expect(e.code, 'Base.1.8.GeneralError');
+      expect(e.message, 'A general error has occurred');
+      expect(e.extendedInfo, isNotNull);
+      expect(e.extendedInfo!.single, contains('different type'));
+      expect(e.firstMessage, contains('AssetTag'));
+    });
+
+    test('envelope with extra top-level noise still uses the error object', () {
+      final RedfishError e = RedfishError.fromJson(<String, dynamic>{
+        'ok': true,
+        'error': <String, dynamic>{
+          'code': 'Base.1.8.PropertyMissing',
+          'message': 'A required property is missing.',
+        },
+      });
+      expect(e.code, 'Base.1.8.PropertyMissing');
+      expect(e.message, 'A required property is missing.');
+      expect(e.extendedInfo, isNull);
+    });
+
     test('falls back to Unknown when keys absent', () {
       final RedfishError e = RedfishError.fromJson(<String, dynamic>{});
       expect(e.code, 'Unknown');

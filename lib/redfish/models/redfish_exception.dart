@@ -42,8 +42,7 @@ class RedfishException implements Exception {
   final RedfishError? details;
 
   @override
-  String toString() =>
-      'RedfishException(status=$statusCode, code=$errorCode, '
+  String toString() => 'RedfishException(status=$statusCode, code=$errorCode, '
       'retryable=$retryable): $message';
 
   /// Whether a structured [RedfishError] envelope was parsed from the body.
@@ -117,20 +116,25 @@ class RedfishException implements Exception {
 
     final data = response.data;
     RedfishError? details;
-    if (data is Map<String, dynamic>) {
-      message = data['Message'] as String? ??
-          (data['error'] is Map<String, dynamic>
-              ? data['error']['message'] as String?
-              : null) ??
-          message;
-      errorCode = data['Code'] as String? ??
-          (data['error'] is Map<String, dynamic>
-              ? data['error']['code'] as String?
-              : null);
-      details = RedfishError.fromJson(data);
-    } else if (data is Map) {
-      message = data['Message'] as String? ?? message;
-      errorCode = data['Code'] as String?;
+    if (data is Map) {
+      // Normalize any map-shaped body (String-keyed or dynamic-keyed) and let
+      // RedfishError handle the DSP0266 `error` envelope (self-descends).
+      final Map<String, dynamic> body = data is Map<String, dynamic>
+          ? data
+          : <String, dynamic>{
+              for (final MapEntry<dynamic, dynamic> e in data.entries)
+                e.key.toString(): e.value,
+            };
+      final RedfishError? parsed = RedfishError.tryParse(body);
+      details = parsed;
+      if (parsed != null) {
+        if (parsed.message != 'Unknown error') {
+          message = parsed.message;
+        }
+        if (parsed.code != 'Unknown') {
+          errorCode = parsed.code;
+        }
+      }
     }
 
     // 429 (rate limit) and 5xx are generally retryable.

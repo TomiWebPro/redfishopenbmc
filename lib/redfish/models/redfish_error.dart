@@ -13,15 +13,27 @@ class RedfishError {
 
   /// Creates a [RedfishError] from a decoded JSON envelope.
   ///
-  /// Redfish error bodies use the capital-cased `Message` / `Code` /
-  /// `@Message.ExtendedInfo` keys; we fall back to the lowercase variants
-  /// for lenient interop with non-conformant services.
+  /// DSP0266 nests Redfish error bodies under an `error` object:
+  /// `{"error":{"code","message","@Message.ExtendedInfo"}}`. We read those
+  /// keys from that envelope when present, and fall back to top-level keys for
+  /// lenient interop with non-conformant services. Capital-cased `Message` /
+  /// `Code` / `@Message.ExtendedInfo` are the spec keys; lowercase variants
+  /// are tolerated as well.
   factory RedfishError.fromJson(Map<String, dynamic> json) {
-    final String? code = (json['Code'] ?? json['code']) as String?;
-    final String? message = (json['Message'] ?? json['message']) as String?;
-    final List<dynamic>? rawExt =
-        (json['@Message.ExtendedInfo'] ?? json['extendedInfo'])
-            as List<dynamic>?;
+    final dynamic errorEnvelope = json['error'];
+    final Map<String, dynamic> source;
+    if (errorEnvelope is Map) {
+      source = <String, dynamic>{
+        for (final MapEntry<dynamic, dynamic> e in errorEnvelope.entries)
+          e.key.toString(): e.value,
+      };
+    } else {
+      source = json;
+    }
+    final String? code = (source['Code'] ?? source['code']) as String?;
+    final String? message = (source['Message'] ?? source['message']) as String?;
+    final List<dynamic>? rawExt = (source['@Message.ExtendedInfo'] ??
+        source['extendedInfo']) as List<dynamic>?;
     final List<String>? extendedInfo = rawExt == null
         ? null
         : rawExt.map((e) {
