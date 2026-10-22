@@ -401,7 +401,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 256 passed / 1 skipped; issues validate
   OK; `git diff --check` clean; secret scan clean (only pre-existing
   `estimated_tokens`/comment false positives); emulator 13/13.
-- **Commit:** <to fill after commit> — `auto: DOCS — DOCS-5 SystemFeatures flag map, firmwareUpdate honors ServiceEnabled, UI-3 FirmwareView breakpoints (run 2026-10-22 20:25)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine), 12 commits queued locally; local commit kept, not retried.
+- **Commit:** 96e2b93 — `auto: DOCS — DOCS-5 SystemFeatures flag map, firmwareUpdate honors ServiceEnabled, UI-3 FirmwareView breakpoints (run 2026-10-22 20:25)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine), 12 commits queued locally; local commit kept, not retried.
 - **Next:** 1) Push the queued local commits from a machine with GitHub
   credentials (12 queued); 2) P1 #015 AuthManager (authMethod, safe logout URI,
   session reuse/expiry) — unit-level with in-process mock server; 3) #016/#022:
