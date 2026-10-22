@@ -255,11 +255,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   reasons, fallback, pin `5f51d8a`).
 - **Verification:** analyze 0; tests 242 passed / 1 skipped; issues validate
   OK; `git diff --check` clean; secret scan clean.
-- **Commit:** (this run) — pushed: **no** (same GitHub credential blocker:
-  `fatal: could not read Username for 'https://github.com'`; no credential
-  helper / env token / SSH key on this machine; local commit kept). 7 commits
-  now queued locally (c8dc7e1, 0c526fa, 81dfb8f, ed2e943, 980189f, be910ff +
-  this one).
+- **Commit:** 9041bc5 — `auto: EMULATOR + P1 — EMU-5 decision (stay on mockup-server), #014 RedfishError envelope parsing, busy-state button a11y (run 2026-10-22 15:56)`; pushed: **no** (same GitHub credential blocker: `fatal: could not read Username for 'https://github.com': No such device or address`; no credential helper / env token / SSH key on this machine; local commit kept, not retried). 7 commits queued locally (c8dc7e1, 0c526fa, 81dfb8f, ed2e943, 980189f, be910ff, 9041bc5).
 - **Next:** 1) Push the queued local commits from a machine with GitHub
   credentials (7 queued); 2) P1 #015 AuthManager (authMethod, safe logout URI,
   session reuse/expiry) — unit-level with in-process mock server; 3) #027:
