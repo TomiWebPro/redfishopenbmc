@@ -6,6 +6,8 @@
 /// [KvmConsole] so the UI can list them uniformly.
 library;
 
+import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
+
 /// The kind of Redfish console a [KvmConsole] represents.
 enum KvmConsoleType {
   /// A `GraphicalConsole` (KVM-over-IP / remote desktop style console).
@@ -128,8 +130,8 @@ class KvmConsole {
     Map<String, dynamic> managerBody, {
     required String managerId,
   }) {
-    final String sourceManagerUri =
-        (managerBody['@odata.id'] as String?) ?? '/redfish/v1/Managers/$managerId';
+    final String sourceManagerUri = (managerBody['@odata.id'] as String?) ??
+        '/redfish/v1/Managers/$managerId';
 
     final List<KvmConsole> consoles = <KvmConsole>[];
 
@@ -152,9 +154,12 @@ class KvmConsole {
       );
     }
 
-    // OEM console, if the manager exposes one under `Oem`.
+    // OEM console, if the manager exposes one under `Oem`. Strict check: a
+    // bare vendor-metadata `Oem` block (present on every OpenBMC bmcweb
+    // Manager) must not be reported as a console — only blocks that actually
+    // contain a console-like structure count (DOCS-4, 2026-10-22).
     final dynamic oem = managerBody['Oem'];
-    if (oem is Map<String, dynamic> && oem.isNotEmpty) {
+    if (oem is Map<String, dynamic> && FeatureRules.oemHasConsole(oem)) {
       consoles.add(
         KvmConsole(
           type: KvmConsoleType.oem,
@@ -195,8 +200,7 @@ class KvmConsole {
   }
 
   @override
-  String toString() =>
-      'KvmConsole(type=$type, manager=$managerId, '
+  String toString() => 'KvmConsole(type=$type, manager=$managerId, '
       'types=$connectTypesSupported, enabled=$serviceEnabled)';
 }
 

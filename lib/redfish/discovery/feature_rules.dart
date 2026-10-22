@@ -74,8 +74,7 @@ class FeatureRules {
   // ---------------------------------------------------------------------------
 
   /// True when any computer system exposes the `#ComputerSystem.Reset` action.
-  static bool powerControl(List<Map<String, dynamic>> systems) =>
-      systems.any(
+  static bool powerControl(List<Map<String, dynamic>> systems) => systems.any(
         (Map<String, dynamic> s) =>
             ODataResource(s).actionTarget(computerSystemReset) != null,
       );
@@ -151,8 +150,7 @@ class FeatureRules {
       final dynamic members = s['Members'];
       if (members is List<dynamic>) {
         total += members.length;
-      } else if (s.containsKey('Reading') ||
-          s.containsKey('ReadingRangeMax')) {
+      } else if (s.containsKey('Reading') || s.containsKey('ReadingRangeMax')) {
         total += 1;
       }
     }
@@ -204,18 +202,47 @@ class FeatureRules {
   /// Honors the real Redfish schema field `ServiceEnabled` (used by the DMTF
   /// mockup and shipping BMCs) and falls back to the older `Enabled` key for
   /// backwards compatibility.
+  ///
+  /// The `Oem` fallback is deliberate but strict: it only fires when the OEM
+  /// block actually contains a console-like structure (`GraphicalConsole`,
+  /// `SerialConsole`, or a `Kvm`/`Console` marker). OpenBMC bmcweb Managers
+  /// always carry an `Oem` block for vendor metadata (see `Redfish.md` Manager
+  /// field list), so a bare `Oem` map must **not** be treated as a console —
+  /// otherwise KVM would report available on every OpenBMC system (DOCS-4,
+  /// 2026-10-22).
   static String? _managerConsoleType(Map<String, dynamic> manager) {
     final dynamic graphical = manager['GraphicalConsole'];
-    if (graphical is Map<dynamic, dynamic> &&
-        _consoleEnabled(graphical)) {
+    if (graphical is Map<dynamic, dynamic> && _consoleEnabled(graphical)) {
       return 'GraphicalConsole';
     }
     final dynamic serial = manager['SerialConsole'];
     if (serial is Map<dynamic, dynamic> && _consoleEnabled(serial)) {
       return 'SerialConsole';
     }
-    if (manager['Oem'] is Map<dynamic, dynamic>) return 'Oem';
+    if (FeatureRules.oemHasConsole(manager['Oem'])) return 'Oem';
     return null;
+  }
+
+  /// True when an `Oem` block advertises a console rather than mere vendor
+  /// metadata. Recurses a bounded depth looking for console-like keys
+  /// (`console`, `kvm`) — the shape used by vendor OEM consoles.
+  ///
+  /// Public so feature parsers (e.g. `KvmConsole.fromManager`) share the same
+  /// strict contract instead of treating any `Oem` map as a console (DOCS-4).
+  static bool oemHasConsole(dynamic oem) {
+    return _oemHasConsoleAt(oem, 0);
+  }
+
+  static bool _oemHasConsoleAt(dynamic oem, int depth) {
+    if (depth > 3 || oem is! Map<dynamic, dynamic>) return false;
+    for (final dynamic key in oem.keys) {
+      final String k = key.toString().toLowerCase();
+      if (k.contains('console') || k.contains('kvm')) return true;
+    }
+    for (final dynamic value in oem.values) {
+      if (_oemHasConsoleAt(value, depth + 1)) return true;
+    }
+    return false;
   }
 
   /// True when a console block reports itself as enabled, checking both the

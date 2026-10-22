@@ -16,22 +16,23 @@ class _FakeSensorsService extends SensorsService {
 
   @override
   Future<List<ChassisSensors>> fetchAll() async => <ChassisSensors>[
-    ChassisSensors(
-      chassisId: '1U',
-      chassisName: 'Chassis 1U',
-      thermal: <ThermalReading>[
-        ThermalReading(name: 'CPU1 Temp', readingCelsius: 41.0),
-      ],
-      fans: const <FanReading>[],
-      sensors: const <SensorReading>[],
-    ),
-  ];
+        ChassisSensors(
+          chassisId: '1U',
+          chassisName: 'Chassis 1U',
+          thermal: <ThermalReading>[
+            ThermalReading(name: 'CPU1 Temp', readingCelsius: 41.0),
+          ],
+          fans: const <FanReading>[],
+          sensors: const <SensorReading>[],
+        ),
+      ];
 }
 
 SystemHandle buildHandle({required bool sensorMonitoring}) => SystemHandle(
       profile: ConnectionProfile(id: 'x', host: 'h'),
       status: ConnectionStatus.connected,
-      features: SystemFeatures(systemId: 'x', sensorMonitoring: sensorMonitoring),
+      features:
+          SystemFeatures(systemId: 'x', sensorMonitoring: sensorMonitoring),
     );
 
 void main() {
@@ -59,7 +60,8 @@ void main() {
           overrides: <Override>[
             systemHandleProvider('x')
                 .overrideWithValue(buildHandle(sensorMonitoring: true)),
-            sensorsServiceProvider('x').overrideWithValue(_FakeSensorsService()),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_FakeSensorsService()),
           ],
           child: const MaterialApp(home: SensorsView(systemId: 'x')),
         ),
@@ -68,5 +70,38 @@ void main() {
 
       expect(find.text('CPU1 Temp'), findsWidgets);
     });
+  });
+
+  group('SensorsView — responsive layout (UI-3)', () {
+    Future<void> pumpAtWidth(WidgetTester tester, double width) async {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_FakeSensorsService()),
+          ],
+          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    for (final double width in <double>[320, 800, 1300]) {
+      testWidgets('renders without overflow at ${width.toInt()} px',
+          (tester) async {
+        await pumpAtWidth(tester, width);
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'SensorsView must not overflow at $width px',
+        );
+        expect(find.text('CPU1 Temp'), findsWidgets);
+      });
+    }
   });
 }

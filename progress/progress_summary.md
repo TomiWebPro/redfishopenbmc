@@ -45,7 +45,7 @@ rather than the richer emulator. Results: `flutter analyze` 0, `flutter test`
 - #019 P2 — Sensors: real-time telemetry + retry
 - #020 P2 — Firmware: binary upload + task progress
 - #021 P2 — KVM: remote console rendering
-- #022 P2 — Power: task polling/race/error fixes
+- #022 P2 — Power: task polling/race/error fixes (bmcweb ResetActionInfo allow-list fallback — DOCS-4)
 - #024 P2 — profile_repository.clear() orphaned passwords
 - #026 P2 — Resolve duplicate auth fields
 - #009 P3 — Remote KVM
@@ -54,19 +54,20 @@ rather than the richer emulator. Results: `flutter analyze` 0, `flutter test`
 - #023 P3 — Overview: listenManual leak & async errors
 - #025 P3 — Harden unsafe .first / as casts
 
-**Closed this week:** #014 (2026-10-22), #001 (2026-08-27), #002 (2026-08-27), #003 (2026-08-27), #004 (2026-08-27), #005 (2026-08-27)
+**Closed this week:** #027 (2026-10-22 — toolchain evidence: ~/flutter/bin/flutter, analyze 0 / tests 242 green, no orphans), #014 (2026-10-22), #001 (2026-08-27), #002 (2026-08-27), #003 (2026-08-27), #004 (2026-08-27), #005 (2026-08-27)
 
 **Metrics:**
 - Coverage: `redfish/client/` **89.8%** (target 80), `redfish/discovery/` **91.0%** (target 85), `features/systems/` **88.1%** (target 80), `features/power/` **87.4%** (target 80)
 - `flutter analyze`: **0 issues**
-- `flutter test`: **242 passed / 1 skipped** (live-BMC integration stub; emulator suite skipped without `REDFISH_EMULATOR_URL`)
-- Issues: 21 open / 6 closed — `python3 issues/issues.py stats`
+- `flutter test`: **245 passed / 1 skipped** (live-BMC integration stub; emulator suite skipped without `REDFISH_EMULATOR_URL`)
+- Issues: 20 open / 7 closed — `python3 issues/issues.py stats`
 
 **Risks & Decisions:**
 - Choice of Riverpod vs Bloc deferred to #001 (document rationale in DEVELOPMENT.md)
 - OpenBMC `Thermal` vs modern `Sensors` collection — handled via fallback in #007, fixtures to capture both
-- `UpdateService` multipart vs `SimpleUpdate` — both supported in #008, stream for low-bandwidth
-- `GraphicalConsole` KVM detection vs OEM — pluggable `KvmOemRegistry` in #009
+- `UpdateService` multipart vs `SimpleUpdate` — DOCS-4 confirmed bmcweb is HTTP-push only (`HttpPushUri`/`MultipartHttpPushUri`, no `SimpleUpdate`); #008 must add the push path
+- `GraphicalConsole` KVM detection vs OEM — DOCS-4 fixed the bare-`Oem` false positive; OEM consoles require a console-like marker (`Kvm`/`*console*` key)
+- `ResetActionInfo` vs system `SupportedResetTypes` — bmcweb uses ActionInfo; add fallback in #022/#016
 
 **Next Milestone — Feature build (per-system capabilities):**
 1. ~~#001 — `flutter create`, deps, `analysis_options.yaml`, theme shell, `.gitignore`, CI~~ DONE

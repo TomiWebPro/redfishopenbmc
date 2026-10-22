@@ -7,9 +7,9 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-22 (EMULATOR run — EMU-5 decision + #014 closed, busy-state a11y)
-- **Current focus:** #014 closed (RedfishError envelope parsing) + EMU-5 decided
-  (stay on mockup-server); next P1: #015 (AuthManager) or #027 (toolchain stale check);
+- **Last updated:** 2026-10-22 (DOCS run — DOCS-4 bmcweb diff audit + KVM Oem fix, #027 closed)
+- **Current focus:** #027 closed (toolchain evidence); DOCS-4 completed (bmcweb feature-detection diff
+  recorded, KVM Oem false-positive fixed); next P1: #015 (AuthManager) or #016/#022 (ActionInfo/etag);
   EMU-3 extension + UI-5 busy dialog remain
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
@@ -60,15 +60,20 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       REQUIREMENTS.md; added task-monitor polling + event-subscription + SSE +
       bmcweb vendor rows; remaining gaps are code issues #016/#008/#020/#022 + the
       DOCS-7 events decision)
-- [ ] **DOCS-4** Audit OpenBMC bmcweb's `docs/Redfish.md`,
+- [x] **DOCS-4** Audit OpenBMC bmcweb's `docs/Redfish.md`,
       `docs/REDFISH_CHECKLIST.md`, and `docs/OEM_SCHEMAS.md`; document where our
       feature detection differs from bmcweb's actual behaviour.
-      (partial 2026-10-22: bmcweb EventService + TaskService field sets audited
-      and recorded in REQUIREMENTS.md "bmcweb field notes"; full
-      feature-detection diff still pending)
+      (run 2026-10-22 — full feature-detection diff audit complete: KVM Oem
+      false-positive fixed in `FeatureRules` + `KvmConsole.fromManager`;
+      bmcweb firmware update is HTTP-push not SimpleUpdate (→ #008/#020);
+      ResetActionInfo vs SupportedResetTypes (→ #022/#016); SerialConsole lives
+      on ComputerSystem not Manager (→ #009/#021); AuthMethods + TelemetryService
+      vendor rows recorded. Cited `Redfish.md`/`OEM_SCHEMAS.md` @ `0128851e`.
+      REDFISH_CHECKLIST.md is contributor-process only — no client-facing fields)
 - [ ] **DOCS-5** Map every `SystemFeatures` flag to a spec citation and a test.
       Add a table under `documentations/redfish_reference/` or
       `documentations/external/redfish/REQUIREMENTS.md`.
+      (partial: flags now cite bmcweb rows from DOCS-4; full per-flag table pending)
 - [ ] **DOCS-6** Keep the downloaded corpus bounded: max 25 MB per file and 50 MB
       of new downloads per run. For larger artifacts store the URL + hash +
       extracted notes instead of the binary.
@@ -126,14 +131,21 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       envelope; `fromResponse` normalizes map bodies; compliant-envelope unit
       tests in `models_test.dart` + `auth_manager_test.dart`; closed)
 - [ ] **#015** AuthManager: auth method, safe logout URI, session reuse/expiry.
-- [ ] **#027** Verify the Flutter toolchain issue is stale; close it with evidence
+      (bmcweb `AccountService.Oem.OpenBMC.AuthMethods.*` vendor row recorded in
+      REQUIREMENTS.md — DOCS-4)
+- [x] **#027** Verify the Flutter toolchain issue is stale; close it with evidence
       if `flutter analyze`/`flutter test` work, otherwise fix it.
-      (baseline still green every run — analyze 0 / tests 242 this run; next
-      run should close with evidence)
+      (run 2026-10-22 — closed with evidence: `~/flutter/bin/flutter` on PATH,
+      analyze 0 / tests 242 green every run, no orphaned flutter_tester from
+      this repo; DEVELOPMENT.md Toolchain documents the setup)
 - [ ] **#016** PATCH / `If-Match` / `@odata.etag` support.
+      (bmcweb ResetActionInfo → supportedResetTypes fallback also folds here —
+      DOCS-4)
 - [ ] **#017** Discover the SessionService URI instead of assuming it.
 - [ ] **#018** Fix discovery-cache stale replay/leak.
 - [ ] **#022** Power: task polling, races, and error fixes.
+      (bmcweb `ResetActionInfo` ActionInfo `Parameters/AllowableValues` is the
+      allow-list source on OpenBMC; add fallback — DOCS-4)
 - [ ] **#024** `profile_repository.clear()` orphaned passwords.
 - [ ] **#026** Resolve duplicate auth fields.
 
@@ -146,6 +158,9 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       monitoring (#008/#020/#022) creates a receiver. Spec: DSP0266 §12.1,
       bmcweb field set audited in REQUIREMENTS.md "bmcweb field notes".
 - [ ] **#008 / #020** Firmware update management, upload progress, task timeline.
+      (bmcweb: update is HTTP-push via `HttpPushUri`/`MultipartHttpPushUri`, no
+      `SimpleUpdate` — our `startSimpleUpdate` would 405 on OpenBMC; add push
+      path — DOCS-4, REQUIREMENTS.md)
 - [ ] **#009 / #021** Remote KVM capability detection and console rendering.
 - [ ] **#010** Hardening: secure storage, theming, accessibility, coverage.
 
@@ -158,8 +173,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       to cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.
-      (PowerView no-overflow tests at 320/800/1300 px added 2026-10-22 — this
-      run; extend to dashboard/sensors/firmware/KVM)
+      (PowerView no-overflow tests added 2026-10-22; SensorsView no-overflow
+      tests added 2026-10-22 this run; extend to dashboard/firmware/KVM)
 - [ ] **UI-4** Visual consistency for cards, badges, health/power colors, spacing.
 - [ ] **UI-5** Power confirmation dialog: clearer destructive-action copy and
       disabled/busy states.

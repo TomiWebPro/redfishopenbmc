@@ -6,7 +6,8 @@ import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
 
 /// Reads and decodes the real DMTF `public-rackmount1` BMC manager fixture.
 Map<String, dynamic> _loadBmc() {
-  final String path = 'test/fixtures/redfish/dmtf_mockup/Managers/BMC/index.json';
+  final String path =
+      'test/fixtures/redfish/dmtf_mockup/Managers/BMC/index.json';
   final String contents = File(path).readAsStringSync();
   return jsonDecode(contents) as Map<String, dynamic>;
 }
@@ -23,7 +24,8 @@ void main() {
       expect(consoles, isNotEmpty);
     });
 
-    test('detects a graphical console backed by the real GraphicalConsole block',
+    test(
+        'detects a graphical console backed by the real GraphicalConsole block',
         () {
       final List<KvmConsole> consoles =
           KvmConsole.fromManager(body, managerId: 'BMC');
@@ -78,6 +80,40 @@ void main() {
       );
       expect(KvmConsoleType.fromRedfish(null), KvmConsoleType.oem);
       expect(KvmConsoleType.graphical.label, 'Graphical Console');
+    });
+
+    test(
+        'bare Oem vendor metadata is not reported as an OEM console '
+        '(bmcweb-style, DOCS-4)', () {
+      final List<KvmConsole> consoles = KvmConsole.fromManager(
+        <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/bmc',
+          'Oem': <String, dynamic>{
+            'OpenBMC': <String, dynamic>{'FirmwareVersion': '1.0'},
+          },
+        },
+        managerId: 'bmc',
+      );
+      expect(
+        consoles.where((KvmConsole c) => c.type == KvmConsoleType.oem),
+        isEmpty,
+      );
+    });
+
+    test('Oem block with a console marker yields an OEM console', () {
+      final List<KvmConsole> consoles = KvmConsole.fromManager(
+        <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/bmc',
+          'Oem': <String, dynamic>{
+            'Vendor': <String, dynamic>{'Kvm': <String, dynamic>{}},
+          },
+        },
+        managerId: 'bmc',
+      );
+      expect(
+        consoles.where((KvmConsole c) => c.type == KvmConsoleType.oem),
+        hasLength(1),
+      );
     });
   });
 }

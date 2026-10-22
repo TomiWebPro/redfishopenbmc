@@ -19,7 +19,8 @@ void main() {
       final Map<String, dynamic> system = <String, dynamic>{
         '@odata.type': '#ComputerSystem.v1_20_0.ComputerSystem',
       };
-      expect(FeatureRules.powerControl(<Map<String, dynamic>>[system]), isFalse);
+      expect(
+          FeatureRules.powerControl(<Map<String, dynamic>>[system]), isFalse);
     });
 
     test('supportedResetTypes unions across systems and sorts', () {
@@ -45,7 +46,8 @@ void main() {
         'GraphicalConsole': <String, dynamic>{'Enabled': true},
       };
       expect(FeatureRules.kvm(<Map<String, dynamic>>[m]), isTrue);
-      expect(FeatureRules.kvmType(<Map<String, dynamic>>[m]), 'GraphicalConsole');
+      expect(
+          FeatureRules.kvmType(<Map<String, dynamic>>[m]), 'GraphicalConsole');
     });
 
     test('ignores disabled consoles', () {
@@ -59,7 +61,30 @@ void main() {
 
     test('prefers OEM console when no graphical/serial', () {
       final Map<String, dynamic> m = <String, dynamic>{
-        'Oem': <String, dynamic>{'Vendor': <String, dynamic>{}},
+        'Oem': <String, dynamic>{
+          'Vendor': <String, dynamic>{'GraphicalConsole': <String, dynamic>{}},
+        },
+      };
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[m]), 'Oem');
+    });
+
+    test('ignores bare Oem vendor metadata (bmcweb-style)', () {
+      // bmcweb Managers always carry an `Oem` block for vendor data; a bare
+      // map must not report KVM as available (DOCS-4).
+      final Map<String, dynamic> m = <String, dynamic>{
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{'FirmwareVersion': '1.0'},
+        },
+      };
+      expect(FeatureRules.kvm(<Map<String, dynamic>>[m]), isFalse);
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[m]), isNull);
+    });
+
+    test('Oem Kvm marker enables the OEM console path', () {
+      final Map<String, dynamic> m = <String, dynamic>{
+        'Oem': <String, dynamic>{
+          'Vendor': <String, dynamic>{'Kvm': <String, dynamic>{}},
+        },
       };
       expect(FeatureRules.kvmType(<Map<String, dynamic>>[m]), 'Oem');
     });
@@ -164,7 +189,8 @@ void main() {
 
   group('DiscoveryCache', () {
     test('get returns fresh entry and drops expired ones', () {
-      final DiscoveryCache cache = DiscoveryCache(ttl: const Duration(hours: 1));
+      final DiscoveryCache cache =
+          DiscoveryCache(ttl: const Duration(hours: 1));
       final SystemFeatures f = const SystemFeatures(systemId: 'bmc1');
       cache.put(
         DiscoveryCacheEntry(

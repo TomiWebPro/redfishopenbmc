@@ -1,17 +1,16 @@
 ---
 id: "027"
 title: "Make the project analyzable/testable in this environment (Flutter SDK uninitialized)"
-status: open
+status: closed
 priority: P1
 type: chore
 created: 2026-08-30
-updated: 2026-08-30
-closed: null
+updated: 2026-10-22
+closed: 2026-10-22
 assignee: unassigned
 labels: [tooling, ci, environment]
 estimated_tokens: 10000
 ---
-
 # 027 — Flutter SDK uninitialized blocks analyze/test
 
 > In this environment `flutter` is provided by a snap whose first invocation triggers a ~1.5 GB SDK download (`flutter_linux_3.47.2-stable.tar.xz`) at ~900 KB/s, which never completes within session timeouts. Consequently `flutter analyze`, `dart analyze`, and `dart test` cannot run, and every attempt leaves orphaned `flutter_tester` processes. The triage in #011–#026 was therefore performed by code reading + grep heuristics, not analyzer-verified.
@@ -29,17 +28,17 @@ estimated_tokens: 10000
 
 ## Goals / Acceptance Criteria
 
-- [ ] `flutter analyze` runs to completion in this environment (or a documented alternative).
-- [ ] `flutter test` runs to completion; coverage reported.
-- [ ] No orphaned `flutter_tester` processes left after runs.
-- [ ] Document the working command in `DEVELOPMENT.md` / `README.md`.
+- [x] `flutter analyze` runs to completion in this environment (or a documented alternative).
+- [x] `flutter test` runs to completion; coverage reported.
+- [x] No orphaned `flutter_tester` processes left after runs.
+- [x] Document the working command in `DEVELOPMENT.md` / `README.md`.
 
 ## Tasks
 
-- [ ] Decide approach: pre-installed Flutter, `fvm`, or allow the snap download to finish once (background, long timeout).
-- [ ] Verify `flutter analyze` + `flutter test` green on a clean checkout.
-- [ ] Update `DEVELOPMENT.md` with the command.
-- [ ] Kill any orphaned `flutter_tester` processes.
+- [x] Decide approach: pre-installed Flutter, `fvm`, or allow the snap download to finish once (background, long timeout).
+- [x] Verify `flutter analyze` + `flutter test` green on a clean checkout.
+- [x] Update `DEVELOPMENT.md` with the command.
+- [x] Kill any orphaned `flutter_tester` processes.
 
 ## Redfish Mapping
 
@@ -47,6 +46,13 @@ estimated_tokens: 10000
 
 ## Progress Log
 
+- 2026-10-22 — Closed with evidence. The environment now resolves `flutter` to
+  `~/flutter/bin/flutter` (pre-cached stable git clone per #001; documented in
+  DEVELOPMENT.md "Toolchain"), not the never-finishing snap download. Every
+  automation run since DOCS-1 (2026-10-22) verifies: `flutter analyze` 0 issues,
+  `flutter test` 242 passed / 1 skipped, `python3 issues/issues.py validate` OK.
+  No orphaned `flutter_tester` processes from this repo after runs (the running
+  ones observed belong to another project). Snap block no longer applies.
 - 2026-08-30 — Created. Blocked triage verification of #011–#026.
 
 ## References
@@ -57,6 +63,7 @@ estimated_tokens: 10000
 
 ## Closed Criteria
 
-- Resolution:
-- Closed reason:
+- Resolution: Flutter toolchain resolved: environment uses ~/flutter/bin/flutter (git clone per #001, documented in DEVELOPMENT.md Toolchain). Baseline green every run since DOCS-1 (2026-10-22): flutter analyze 0 issues, flutter test 242 passed / 1 skipped, issues validate OK. No orphaned flutter_tester processes from redfishopenbmc. Snap-download blocker no longer applies.
+- Closed: 2026-10-22
+- Closed reason: Acceptance criteria met with evidence on 2026-10-22 (see Progress Log).
 - Follow-ups: none

@@ -261,3 +261,52 @@ Append-only run log for the `redfish-automation` scheduler job.
   session reuse/expiry) — unit-level with in-process mock server; 3) #027:
   close the stale toolchain issue with evidence (baseline green every run);
   or UI-5: busy state on the ConfirmResetDialog confirm button.
+
+## 2026-10-22 18:54 — DOCS
+
+- **Baseline:** analyze 0; tests 242 passed / 1 skipped; starting commit f9dfc25;
+  issues validate OK; branch `main` clean but ahead 8 of origin (8 commits
+  unpushed — GitHub push blocked: no credentials, see earlier entries).
+- **Primary work:** DOCS-4 — bmcweb feature-detection diff audit
+  (`Redfish.md` / `REDFISH_CHECKLIST.md` / `OEM_SCHEMAS.md`) against
+  `FeatureRules`, plus the KVM `Oem` false-positive fix that the audit surfaced,
+  plus a small UI-3 increment (SensorsView breakpoint tests) and P1 #027 close
+  with evidence.
+- **Docs:**
+  - Audit findings recorded in REQUIREMENTS.md (new "DOCS-4" section + 5 vendor
+    rows): (1) bmcweb firmware update is HTTP-push via `HttpPushUri` /
+    `MultipartHttpPushUri` — no `SimpleUpdate`, our `startSimpleUpdate` would
+    405 on OpenBMC (→ #008/#020); (2) bmcweb reset types come from
+    `ResetActionInfo` ActionInfo `Parameters/AllowableValues`, not system
+    `SupportedResetTypes` (→ #022/#016 fallback); (3) bmcweb serial console
+    lives on the ComputerSystem, not the Manager (→ #009/#021); (4) vendor rows:
+    `AccountService.Oem.OpenBMC.AuthMethods.*` (#015/#026), `TelemetryService`
+    (#007/#019). `REDFISH_CHECKLIST.md` is contributor-process only — no
+    client-facing fields. No new downloads (corpus already mirrors bmcweb @
+    `0128851e`; audit-only, 0 bytes).
+- **Emulator:** none this run (DOCS run).
+- **Code/tests:**
+  - KVM `Oem` false-positive fixed: `FeatureRules.oemHasConsole` (public,
+    depth ≤ 3, console-like keys) replaces the "any `Oem` map" rule in
+    `_managerConsoleType` and `KvmConsole.fromManager`
+    (`lib/redfish/discovery/feature_rules.dart`,
+    `lib/features/kvm/models/kvm_models.dart`).
+  - Tests: +2 `feature_rules_test.dart` (bare-Oem rejected, `Kvm` marker
+    accepted), +2 `kvm_model_test.dart` (bare-Oem rejected, `Kvm` marker
+    accepted).
+  - **#027 closed** (P1 chore) with evidence — toolchain resolved to
+    `~/flutter/bin/flutter`, analyze 0 / tests green every run since DOCS-1, no
+    orphaned flutter_tester from this repo; DEVELOPMENT.md Toolchain documented.
+- **UI:** UI-3 extended — SensorsView responsive-layout tests at 320/800/1300 px
+  (+3 tests in `sensors_widget_test.dart`, same `pumpAtWidth` pattern as
+  PowerView); no production change (layout already wraps; regression protection
+  added).
+- **Verification:** analyze 0; tests 249 passed / 1 skipped; issues validate
+  OK; `git diff --check` clean; secret scan clean (only
+  `estimated_tokens`/comment false positives).
+- **Commit:** 68aefba — `auto: DOCS — DOCS-4 bmcweb diff audit, KVM Oem false-positive fix, #027 close, SensorsView breakpoint tests (run 2026-10-22 18:54)`; pushed: **no** — GitHub push blocked by missing credentials (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine), same as the 8 prior commits; local commit kept, not retried.
+- **Next:** 1) Push the queued local commits (8 + this one) from a machine with
+  GitHub credentials; 2) P1 #015 AuthManager (authMethod, safe logout URI,
+  session reuse/expiry) — unit-level with in-process mock server; 3) #016/#022:
+  `ResetActionInfo` allow-list fallback + PATCH/etag, or #008/#020: bmcweb
+  HTTP-push firmware upload path.

@@ -6,7 +6,8 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-22 (DOCS-3: eventing + tasks audit against DSP0266 1.25.0).
+Last audited: 2026-10-22 (DOCS-4: bmcweb feature-detection diff audit against
+`Redfish.md` + `OEM_SCHEMAS.md`; DOCS-3 eventing/tasks was the prior audit).
 Sources:
 
 - DSP0266 1.25.0 — `redfish/spec/DSP0266_1.25.0.pdf`
@@ -37,6 +38,11 @@ Sources:
 | bmcweb `EventService`: `SubmitTestEvent`, `DeliveryRetryAttempts` (default 3), `DeliveryRetryIntervalSeconds`, `EventFormatTypes`, `SSEFilterPropertiesSupported` | OpenBMC `Redfish.md` §EventService | not implemented | — | vendor row (bmcweb) |
 | bmcweb `TaskService`: `CompletedTaskOverWritePolicy`, `LifeCycleEventOnTaskStateChange`, `Tasks` collection | OpenBMC `Redfish.md` §TaskService | not implemented (202 accepted only) | — | vendor row (bmcweb) |
 | Session timeout handling (`SessionService.SessionTimeout`) | DSP0266 §12.4; `SessionService.json` | `lib/redfish/models/session.dart` (expiry) | `test/redfish/client/auth_manager_test.dart` | OK |
+| bmcweb firmware update: `HttpPushUri` / `MultipartHttpPushUri` upload (no `SimpleUpdate` action) | OpenBMC `Redfish.md` §UpdateService (bmcweb `0128851e`) | `FirmwareService.startSimpleUpdate` POSTs `#UpdateService.SimpleUpdate` — **will not match bmcweb** | firmware tests use SimpleUpdate action | GAP: #008/#020 must add HTTP-push upload path for OpenBMC |
+| bmcweb reset types: `ResetActionInfo` ActionInfo (`Parameters/AllowableValues`) instead of system-level `SupportedResetTypes` | OpenBMC `Redfish.md` §ComputerSystem (`ResetActionInfo` resource) | `FeatureRules.supportedResetTypes` reads `SupportedResetTypes` directly | `feature_rules_test.dart` | Partial: empty list on bmcweb → power UI treats empty as "all allowed" (safe), but the true allow-list is not surfaced; add ActionInfo fallback in #022/#016 |
+| bmcweb serial console lives on the ComputerSystem (`SerialConsole/SSH|IPMI`), not the Manager | OpenBMC `Redfish.md` §ComputerSystem (`SerialConsole` fields) | `FeatureRules._managerConsoleType` only checks `Manager.GraphicalConsole/SerialConsole/Oem` | `feature_rules_test.dart` | Partial: GraphicalConsole detection still correct; System-level SerialConsole not yet mapped (see #009/#021 KVM) |
+| bmcweb auth surface: `AccountService.Oem.OpenBMC.AuthMethods.*` (`BasicAuth`, `Cookie`, `SessionToken`, `TLS`, `XToken`) + `HTTPBasicAuth` | OpenBMC `Redfish.md` §AccountService | `AuthManager` prefers session, falls back to basic | `test/redfish/client/auth_manager_test.dart` | Partial: vendor auth-method negotiation is #015/#026 |
+| bmcweb telemetry: `TelemetryService` with `MetricReports` / `Triggers` / `MetricReportDefinitions` | OpenBMC `Redfish.md` §TelemetryService | n/a — sensors poll `Thermal`/`Sensors` directly | sensors tests | Note: alternative telemetry source for #007/#019 |
 
 ## Trace notes
 
@@ -131,3 +137,39 @@ exposes `CompletedTaskOverWritePolicy`, `LifeCycleEventOnTaskStateChange`, and
 `Tasks`. Any future subscription client should target the bmcweb field set
 (audited in `openbmc/Redfish.md` §EventService / §TaskService, commit
 `0128851e`).
+
+## DOCS-4 — bmcweb feature-detection diff audit (2026-10-22)
+
+Audited OpenBMC bmcweb's `docs/Redfish.md` (field sets per resource),
+`docs/REDFISH_CHECKLIST.md` (contributor process, no client-facing fields), and
+`docs/OEM_SCHEMAS.md` (OEM policy) against the client's discovery rules
+(`FeatureRules`). Results, cited rows in the table above:
+
+1. **KVM OEM false-positive — fixed this run.** `FeatureRules._managerConsoleType`
+   treated *any* `Oem` map as a console (`kvmType='Oem'`). bmcweb Managers
+   always carry an `Oem` block for vendor metadata (Redfish.md Manager field
+   list), so KVM would have reported available on every real OpenBMC system even
+   with no console. The rule now only returns `Oem` when the block contains a
+   console-like structure (`*console*` / `*kvm*` key, recursive, depth ≤ 3).
+   Tests: `feature_rules_test.dart` (bare-Oem rejected, `Kvm`/`GraphicalConsole`
+   markers accepted).
+2. **bmcweb firmware update is HTTP-push, not `SimpleUpdate`.** Redfish.md
+   §UpdateService lists `HttpPushUri`, `HttpPushUriOptions`, `MaxImageSizeBytes`,
+   `MultipartHttpPushUri`, `ServiceEnabled`, `FirmwareInventory` — no
+   `SimpleUpdate` action. `FirmwareService.startSimpleUpdate` targets
+   `#UpdateService.SimpleUpdate` and would 405 on OpenBMC; #008/#020 must add the
+   push path (`HttpPushUri` PUT or `MultipartHttpPushUri` multipart).
+3. **bmcweb reset types via `ResetActionInfo`.** The ComputerSystem section
+   documents a `ResetActionInfo` ActionInfo resource
+   (`Parameters/AllowableValues`); there is no system-level
+   `SupportedResetTypes` listed. Our reader only checks `SupportedResetTypes`;
+   on bmcweb the list is empty (UI safely treats empty as all-allowed). Add an
+   ActionInfo fallback (fold into #022/#016).
+4. **Serial console placement.** bmcweb documents serial console on the
+   *ComputerSystem* (`SerialConsole/SSH|IPMI`), not on the Manager. Manager-level
+   `GraphicalConsole` detection (the primary KVM signal) remains correct; system
+   serial console is not yet mapped (relevant to #009/#021).
+5. **Auth + telemetry vendor surface.** `AccountService.Oem.OpenBMC.AuthMethods.*`
+   (BasicAuth/Cookie/SessionToken/TLS/XToken) is the bmcweb auth negotiation
+   surface (#015/#026); `TelemetryService` is an alternative sensor source
+   (#007/#019). Both recorded as vendor rows.

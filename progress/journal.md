@@ -443,3 +443,50 @@
 **Issues touched:**
 - #014 closed (2026-10-22) — first P1 close since #005; progress_summary.md
   updated.
+
+## 2026-10-22 — agent:redfish-automation — DOCS run (DOCS-4 + #027 close)
+
+**Done:**
+- DOCS-4: completed the bmcweb feature-detection diff audit against
+  `openbmc/Redfish.md` (field sets), `REDFISH_CHECKLIST.md` (contributor-process
+  only — no client-facing fields), and `OEM_SCHEMAS.md` (OEM policy). Three real
+  diffs recorded in REQUIREMENTS.md: (1) bmcweb firmware update is HTTP-push via
+  `HttpPushUri`/`MultipartHttpPushUri` — no `SimpleUpdate` action, our
+  `startSimpleUpdate` would 405 on OpenBMC (→ #008/#020); (2) bmcweb reset
+  types come from `ResetActionInfo` ActionInfo `Parameters/AllowableValues`, not
+  system `SupportedResetTypes` (→ #022/#016 fallback); (3) bmcweb serial console
+  lives on the ComputerSystem, not the Manager (→ #009/#021). Plus vendor rows
+  for `AccountService.Oem.OpenBMC.AuthMethods.*` (#015/#026) and
+  `TelemetryService` (#007/#019).
+- KVM `Oem` false-positive **fixed**: `FeatureRules._managerConsoleType` treated
+  any `Oem` map as a console; bmcweb Managers always carry an `Oem` vendor block,
+  so KVM would report available on every real OpenBMC system. New public
+  `FeatureRules.oemHasConsole` requires a console-like key (`*console*`/`*kvm*`,
+  depth ≤ 3); `KvmConsole.fromManager` uses the same contract. Tests in
+  `feature_rules_test.dart` + `kvm_model_test.dart` (bare-Oem rejected, marker
+  accepted).
+- UI-3: SensorsView responsive-layout tests at 320/800/1300 px added to
+  `sensors_widget_test.dart` (+3 tests; no production change — layout already
+  wraps; regression protection added, same pattern as PowerView).
+- #027 (P1 chore) **closed** with evidence: toolchain resolved to
+  `~/flutter/bin/flutter` (git clone per #001, DEVELOPMENT.md Toolchain), analyze
+  0 / tests green every run, no orphaned flutter_tester from this repo; snap
+  download blocker no longer applies. Progress Log + Closed Criteria updated.
+
+**Decisions:**
+- `FeatureRules.oemHasConsole` is the single OEM-console contract shared by
+  discovery rules and KVM parsing — prevents future divergence.
+- No new doc downloads this run (corpus already mirrors bmcweb docs @ `0128851e`;
+  audit-only).
+- Kept the diff focused: `dart format` on touched files only (repo-wide format
+  churn remains a deliberate FUTUREWORK P2 item).
+
+**Next:**
+- Push 9 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod, safe logout URI, session reuse/expiry) —
+  unit-level with in-process mock server.
+- #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag; or #008/#020:
+  bmcweb HTTP-push firmware upload path.
+
+**Issues touched:**
+- #027 closed (2026-10-22) — second P1 close; progress_summary.md updated.
