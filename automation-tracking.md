@@ -352,7 +352,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   `curly_braces` lint in `kvm_view.dart`; reverted the format-only churn to
   keep the diff focused (consistent with prior-run precedent; repo-wide format
   stays FUTUREWORK P2).
-- **Commit:** <hash here> — `auto: EMULATOR — emulator suite +2 (systems detail, HttpPushUri), UI-5 dialog busy confirm, REQUIREMENTS trace (run 2026-10-22 17:38)`; pushed: **no** — same GitHub credential blocker (no credential helper / env token / SSH key on this machine); local commit kept, not retried. 9 commits queued locally before this run, 10 after.
+- **Commit:** b5840a2 — `auto: EMULATOR — emulator suite +2 (systems detail, HttpPushUri), UI-5 dialog busy confirm, REQUIREMENTS trace (run 2026-10-22 17:38)`; pushed: **no** — same GitHub credential blocker (no credential helper / env token / SSH key on this machine); local commit kept, not retried. 9 commits queued locally before this run, 10 after.
 - **Next:** 1) Push the queued local commits from a machine with GitHub
   credentials (10 queued); 2) P1 #015 AuthManager (authMethod, safe logout
   URI, session reuse/expiry) — unit-level with in-process mock server;
