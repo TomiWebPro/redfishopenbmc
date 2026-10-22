@@ -205,7 +205,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       working Retry action — done 2026-10-22; KVM/Sensors/Overview views already
       covered; **dashboard error summary + one-tap Retry via
       `SystemManager.retryFailed()` done 2026-10-22 (DOCS-8 run, commit
-      placeholder)** — all views covered, **UI-1 done**)
+      b9dcd31)** — all views covered, **UI-1 done**)
 - [ ] **UI-2** Accessibility: semantics labels, contrast, touch targets, focus order.
       (Health/Power badges semantic labels done 2026-10-22 — commit c8dc7e1;
       destructive power dialog label done 2026-10-22 — commit 81dfb8f; extend

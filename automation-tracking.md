@@ -604,7 +604,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 270 passed / 1 skipped (baseline 266 → +4);
   issues validate OK; `git diff --check` clean; secret scan clean (no tokens/
   creds in diff); formatted only the 4 touched files (no repo-wide churn).
-- **Commit:** placeholder — `auto: DOCS — DOCS-8 upstream-freshness audit (bmcweb → 27e0930b, +CLIENTS.md), UI-1 dashboard error summary + retryFailed (run 2026-10-22 23:55)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried. Commits queued locally before this run: 19.
+- **Commit:** b9dcd31 — `auto: DOCS — DOCS-8 upstream-freshness audit (bmcweb → 27e0930b, +CLIENTS.md), UI-1 dashboard error summary + retryFailed (run 2026-10-22 23:55)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried. Commits queued locally before this run: 19.
 - **Next:** 1) Push the queued local commits from a machine with GitHub
   credentials (20 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
   logout URI, token rehydrate, SessionTimeout expiry) — emulator contract pinned
