@@ -160,11 +160,22 @@ class FeatureRules {
   // ---------------------------------------------------------------------------
   // Rule: firmware_update
   //   firmware_update = UpdateService link present
+  //                     && ServiceEnabled != false (explicitly disabled)
   // ---------------------------------------------------------------------------
 
-  /// True when an UpdateService resource was discovered.
-  static bool firmwareUpdate(Map<String, dynamic>? updateService) =>
-      updateService != null;
+  /// True when an UpdateService resource was discovered and not explicitly
+  /// disabled.
+  ///
+  /// Per the DMTF `UpdateService` schema, `ServiceEnabled` "shall indicate
+  /// whether this service is enabled", and OpenBMC bmcweb advertises
+  /// `ServiceEnabled` on its UpdateService (`Redfish.md` §UpdateService). A
+  /// missing or `null` flag is treated as enabled (capability present) so
+  /// conformant services that omit the flag still surface the feature; an
+  /// explicit `false` gates the feature off (DOCS-5, 2026-10-22).
+  static bool firmwareUpdate(Map<String, dynamic>? updateService) {
+    if (updateService == null) return false;
+    return updateService['ServiceEnabled'] != false;
+  }
 
   /// The firmware / UpdateService version string, preferring `FirmwareVersion`
   /// then `Id`.

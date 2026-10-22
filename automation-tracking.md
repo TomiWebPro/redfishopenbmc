@@ -359,3 +359,51 @@ Append-only run log for the `redfish-automation` scheduler job.
   3) #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag, or
   #008/#020: bmcweb HTTP-push firmware upload path (the emulator now asserts
   `HttpPushUri` is readable).
+
+## 2026-10-22 20:25 — DOCS
+
+- **Baseline:** analyze 0; tests 251 passed / 1 skipped; starting commit 45adec8;
+  issues validate OK; branch `main` clean but ahead 11 of origin (11 commits
+  unpushed — GitHub push blocked: no credentials, see earlier entries).
+- **Primary work:** DOCS-5 — full `SystemFeatures` flag → spec citation → test
+  map in `REQUIREMENTS.md` (all 10 flags), plus the `ServiceEnabled` gap the
+  audit surfaced, plus a UI-3 increment (FirmwareView breakpoint tests).
+- **Docs:** REQUIREMENTS.md gained the "DOCS-5 — SystemFeatures flag → spec
+  citation → test map" section: a 10-row table tracing `powerControl`,
+  `supportedResetTypes`, `kvm`, `kvmType`, `sensorMonitoring`, `sensorCount`,
+  `firmwareUpdate`, `updateServiceVersion`, `managers`, `chassis` to
+  DSP0266/`UpdateService.v1_13_0.json`/bmcweb `Redfish.md` citations and to
+  their exact tests. Two findings folded into code (below). No new downloads
+  (schema citations verified live from `https://redfish.dmtf.org/schemas/v1/
+  UpdateService.v1_13_0.json`; corpus unchanged).
+- **Emulator:** re-ran `tool/emulator/run_tests.sh` after the rule change —
+  all 13 emulator tests pass over HTTPS (confirms `firmwareUpdate` still true
+  on the DMTF mockup, whose UpdateService carries `ServiceEnabled: true`).
+- **Code/tests:**
+  - **`FeatureRules.firmwareUpdate` now honors `ServiceEnabled`.** Previously any
+    `UpdateService` resource counted as capability. DMTF `UpdateService.json`
+    declares `ServiceEnabled` "shall indicate whether this service is enabled"
+    and bmcweb advertises it (`Redfish.md` §UpdateService), so an explicitly
+    disabled service must not surface the Firmware tab / overview chip.
+    Missing/`null` stays enabled (conformant services may omit it). Files:
+    `lib/redfish/discovery/feature_rules.dart`; tests:
+    `feature_rules_test.dart` (+1 "firmwareUpdate honors ServiceEnabled
+    (DOCS-5)"), `firmware_model_test.dart` (+1 disabled-UpdateService parse),
+    discovery + integration suites re-run green (fixtures already carry
+    `ServiceEnabled: true`).
+  - **`updateServiceVersion` fallback confirmed conformant** — DMTF
+    UpdateService schema has no `FirmwareVersion` property; the OpenBMC
+    fixture's value is vendor-only, `Id` fallback is correct. No code change.
+- **UI:** UI-3 extended to FirmwareView — no-overflow tests at 320/800/1300 px
+  in `firmware_widget_test.dart` (+3, same `pumpAtWidth` pattern as
+  PowerView/SensorsView); no production layout change (view already wraps;
+  regression protection added).
+- **Verification:** analyze 0; tests 256 passed / 1 skipped; issues validate
+  OK; `git diff --check` clean; secret scan clean (only pre-existing
+  `estimated_tokens`/comment false positives); emulator 13/13.
+- **Commit:** <to fill after commit> — `auto: DOCS — DOCS-5 SystemFeatures flag map, firmwareUpdate honors ServiceEnabled, UI-3 FirmwareView breakpoints (run 2026-10-22 20:25)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine), 12 commits queued locally; local commit kept, not retried.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (12 queued); 2) P1 #015 AuthManager (authMethod, safe logout URI,
+  session reuse/expiry) — unit-level with in-process mock server; 3) #016/#022:
+  `ResetActionInfo` allow-list fallback + PATCH/etag, or #008/#020: bmcweb
+  HTTP-push firmware upload path (emulator asserts `HttpPushUri`).

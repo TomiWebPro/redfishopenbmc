@@ -533,3 +533,43 @@
 **Issues touched:**
 - none opened/closed this run (EMULATOR extension + UI-5 completion; no issue
   status change; EMU-3 note updated in FUTUREWORK).
+
+## 2026-10-22 — agent:redfish-automation — DOCS-5 run
+
+**Done:**
+- DOCS-5 **completed**: added the full `SystemFeatures` flag → spec citation →
+  test map to `documentations/external/redfish/REQUIREMENTS.md` — a 10-row
+  table tracing `powerControl`, `supportedResetTypes`, `kvm`, `kvmType`,
+  `sensorMonitoring`, `sensorCount`, `firmwareUpdate`, `updateServiceVersion`,
+  `managers`, `chassis` to DSP0266 sections / DMTF schemas / bmcweb `Redfish.md`
+  and to their exact test cases in `feature_rules_test.dart` +
+  `discovery_engine_test.dart`.
+- **`FeatureRules.firmwareUpdate` fixed to honor `UpdateService.ServiceEnabled`**
+  (DOCS-5 finding): an explicitly disabled UpdateService no longer counts as
+  firmware capability — the Firmware tab and overview chip are gated off.
+  Missing/`null` stays enabled. Tests: +1 rule test, +1 model test (disabled
+  parse), discovery + integration + emulator suites re-run green.
+- Confirmed `updateServiceVersion`'s `Version → Id` fallback is the conformant
+  path (DMTF schema has no `FirmwareVersion`; it is vendor-only in the OpenBMC
+  fixture) — recorded, no code change.
+- UI-3 extended: FirmwareView no-overflow tests at 320/800/1300 px (+3 in
+  `firmware_widget_test.dart`); Power/Sensors/Firmware now covered, dashboard
+  and KVM remaining.
+
+**Decisions:**
+- `ServiceEnabled` semantics: missing/`null` → enabled (conformant services may
+  omit the flag; keeps the DMTF mockup + OpenBMC fixtures working), explicit
+  `false` → disabled. Conservative "nothing is assumed" direction.
+- No new corpus downloads this run — schema citations verified live
+  (`UpdateService.v1_13_0.json` 200 OK) and the corpus already mirrors the
+  bmcweb field list; DOCS-6 budget respected (0 bytes).
+
+**Next:**
+- Push 11+1 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod, safe logout URI, session reuse/expiry) —
+  unit-level with the in-process mock server.
+- #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag; or #008/#020:
+  bmcweb HTTP-push firmware upload path (emulator asserts HttpPushUri).
+
+**Issues touched:**
+- none opened/closed this run (DOCS-5 + UI-3 increment; no issue status change).

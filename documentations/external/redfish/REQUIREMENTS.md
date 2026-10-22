@@ -6,8 +6,8 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-22 (DOCS-4: bmcweb feature-detection diff audit against
-`Redfish.md` + `OEM_SCHEMAS.md`; DOCS-3 eventing/tasks was the prior audit).
+Last audited: 2026-10-22 (DOCS-5: `SystemFeatures` flag → spec citation → test
+mapping; DOCS-4 was the prior audit — bmcweb feature-detection diff).
 Sources:
 
 - DSP0266 1.25.0 — `redfish/spec/DSP0266_1.25.0.pdf`
@@ -29,7 +29,7 @@ Sources:
 | Power control: `ComputerSystem.Reset` action with `ResetType` body; 202+`Location` accepted | DSP0266 §12.2 "Actions"; `ComputerSystem.json` `Actions` | `lib/features/power/power_service.dart` | `test/features/power/` | OK |
 | Sensor telemetry: `Chassis[*].Thermal` / `Sensors`, reading + units | DSP0266 §8.10; `Sensor.json`, `Thermal.json` | `lib/features/sensors/sensors_controller.dart` | `test/features/sensors/` | OK |
 | Firmware inventory: `UpdateService` / `SoftwareInventory` collection | DSP0266 §8.14 "Software inventory"; `SoftwareInventory.json` | `lib/features/firmware/firmware_models.dart` | `test/features/firmware/` | OK |
-| Firmware update: `UpdateService.SimpleUpdate` (entity-upload mode TBD) | DSP0266 §9.7 "Firmware update"; `UpdateService.json` | `lib/features/firmware/firmware_service.dart` | `test/features/firmware/` | Partial — task monitoring in #008/#020 |
+| Firmware update: `UpdateService.SimpleUpdate` (entity-upload mode TBD); `UpdateService.ServiceEnabled` gates the capability | DSP0266 §9.7 "Firmware update"; `UpdateService.json` (`ServiceEnabled`); OpenBMC `Redfish.md` §UpdateService | `lib/features/firmware/firmware_service.dart`; `FeatureRules.firmwareUpdate` honors `ServiceEnabled` (DOCS-5) | `test/features/firmware/`; `feature_rules_test.dart` (ServiceEnabled case) | Partial — task monitoring in #008/#020 |
 | KVM capability: `Manager.GraphicalConsole` / OEM console detection | OpenBMC `Redfish.md`; `Manager.json` | `lib/redfish/discovery/feature_rules.dart` (`kvm`, `kvmType`) | `test/redfish/discovery/feature_rules_test.dart` | OK (rendering gated in #009/#021) |
 | Event subscription: `EventService.Subscriptions` — POST → 201 + `Location`; DELETE to unsubscribe | DSP0266 §12.1.1–§12.1.2 "Eventing"; `EventService.json` | **not implemented** | — | GAP: DOCS-7 — decision recorded below (out-of-scope this milestone) |
 | SSE event stream: GET `EventService.ServerSentEventUri` | DSP0266 §12.1.3 "Open an SSE connection"; `EventService.v1_6_9+` | **not implemented** (no SSE transport dependency in `pubspec.yaml`) | — | GAP: DOCS-7 — revisit when telemetry/eventing lands (#007/#019) |
@@ -176,3 +176,44 @@ Audited OpenBMC bmcweb's `docs/Redfish.md` (field sets per resource),
    (BasicAuth/Cookie/SessionToken/TLS/XToken) is the bmcweb auth negotiation
    surface (#015/#026); `TelemetryService` is an alternative sensor source
    (#007/#019). Both recorded as vendor rows.
+
+## DOCS-5 — `SystemFeatures` flag → spec citation → test map (2026-10-22)
+
+Every flag the discovery engine emits is traced to the authoritative source and
+a test. This is the per-flag table FUTUREWORK DOCS-5 asked for; the flags are
+defined in `lib/redfish/models/system_features.dart`, computed by
+`lib/redfish/discovery/feature_rules.dart`, and asserted in
+`test/redfish/discovery/feature_rules_test.dart` +
+`test/redfish/discovery/discovery_engine_test.dart`.
+
+| Flag | Meaning | Source | Rule | Test |
+|---|---|---|---|---|
+| `powerControl` | `Systems[*].Actions.#ComputerSystem.Reset` present | DSP0266 §12.2 "Actions"; `ComputerSystem.json` (`Actions`) | `FeatureRules.powerControl` | `feature_rules_test.dart` "powerControl true/false" |
+| `supportedResetTypes` | union of `SupportedResetTypes` across systems | DSP0266 `ComputerSystem.json`; OpenBMC `Redfish.md` §ComputerSystem (bmcweb uses `ResetActionInfo` instead — DOCS-4, gap #022/#016) | `FeatureRules.supportedResetTypes` | `feature_rules_test.dart` "unions across systems and sorts" |
+| `kvm` | any Manager exposes enabled console (`GraphicalConsole` / `SerialConsole` / strict OEM console) | DSP0266 `Manager.json`; OpenBMC `Redfish.md` §Manager + OEM_SCHEMAS (DOCS-4: bare `Oem` is vendor metadata, not a console) | `FeatureRules.kvm` / `_managerConsoleType` | `feature_rules_test.dart` "detects GraphicalConsole", "ignores bare Oem", "Oem Kvm marker" |
+| `kvmType` | first detected console kind (`GraphicalConsole`/`SerialConsole`/`Oem`) | same as `kvm` | `FeatureRules.kvmType` | same tests |
+| `sensorMonitoring` | any `Chassis[*].(Thermal \|\| Sensors \|\| Power)` link | DSP0266 §8.10; `Chassis.json` | `FeatureRules.sensorMonitoring` | `feature_rules_test.dart` "sensorMonitoring true via Thermal link" |
+| `sensorCount` | temps + fans + voltages + sensor members | DSP0266 `Thermal.json` / `Sensor.json` | `FeatureRules.sensorCount` | `feature_rules_test.dart` "sums temperatures + fans + voltages + sensor members" |
+| `firmwareUpdate` | `UpdateService` present **and not explicitly disabled** | DSP0266 `UpdateService.json` `ServiceEnabled` ("This property shall indicate whether this service is enabled"); OpenBMC `Redfish.md` §UpdateService lists `ServiceEnabled` | `FeatureRules.firmwareUpdate` (honors `ServiceEnabled` — **fixed this run**) | `feature_rules_test.dart` "firmware_update presence…" + "firmwareUpdate honors ServiceEnabled (DOCS-5)"; `discovery_engine_test.dart` happy path |
+| `updateServiceVersion` | `Version` → `Id` fallback (vendor `FirmwareVersion` in OpenBMC fixture) | DMTF `UpdateService.v1_13_0.json` — **no** `FirmwareVersion` property (vendor field in the OpenBMC fixture only); `Id` is the conformant fallback | `FeatureRules.updateServiceVersion` | `feature_rules_test.dart` "version preference"; `discovery_engine_test.dart` expects `2.14.0` from the OpenBMC fixture |
+| `managers` | count of discovered `Manager` resources | DSP0266 §8.3 ServiceRoot `Managers` link | `DiscoveryEngine._crawl` (classify) | `discovery_engine_test.dart` "discovers the full capability map" (`managers == 1`) |
+| `chassis` | count of discovered `Chassis` resources | DSP0266 §8.3 ServiceRoot `Chassis` link | `DiscoveryEngine._crawl` (classify) | `discovery_engine_test.dart` ("`chassis == 1`") |
+
+Findings folded into code this run:
+
+1. **`firmwareUpdate` now honors `ServiceEnabled`.** `FeatureRules.firmwareUpdate`
+   treated any `UpdateService` resource as capability. The DMTF schema declares
+   `ServiceEnabled` "shall indicate whether this service is enabled" and bmcweb
+   advertises it on UpdateService (`Redfish.md` §UpdateService), so an explicitly
+   disabled service must not surface the Firmware tab or the overview "Firmware
+   update" chip. Missing/`null` stays enabled (conformant services may omit it).
+   Tests: `feature_rules_test.dart` "firmwareUpdate honors ServiceEnabled
+   (DOCS-5)".
+2. **`updateServiceVersion` fallback is conformant.** The DMTF `UpdateService`
+   schema has no `FirmwareVersion` property — that value in the OpenBMC fixture
+   is vendor-only. The model's `Version` → `Id` fallback is correct; no change.
+
+UI-3 increment this run: FirmwareView responsive-layout tests at 320/800/1300 px
+(`firmware_widget_test.dart`, same `pumpAtWidth` pattern as PowerView /
+SensorsView); no production layout change (view already wraps — regression
+protection added).

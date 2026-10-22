@@ -45,7 +45,8 @@ SystemHandle makeHandle({required bool firmwareUpdate}) {
 
 void main() {
   group('FirmwareView', () {
-    testWidgets('renders nothing when firmwareUpdate is disabled', (tester) async {
+    testWidgets('renders nothing when firmwareUpdate is disabled',
+        (tester) async {
       final SystemHandle handle = makeHandle(firmwareUpdate: false);
       final FirmwareController controller = FirmwareController(
         service: FakeFirmwareService(),
@@ -94,5 +95,56 @@ void main() {
       // The loaded version string should appear in the inventory card.
       expect(find.textContaining('3.2.1'), findsWidgets);
     });
+  });
+
+  group('FirmwareView — responsive layout (UI-3)', () {
+    Future<void> pumpAtWidth(WidgetTester tester, double width) async {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(
+          info: const UpdateServiceInfo(
+            serviceEnabled: true,
+            version: '1.2.3',
+            httpPushUri: '/FWUpdate',
+            inventory: <FirmwareInventoryItem>[
+              FirmwareInventoryItem(
+                id: 'BMC',
+                name: 'BMC Firmware',
+                version: '3.2.1',
+                updateable: true,
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    for (final double width in <double>[320, 800, 1300]) {
+      testWidgets('renders without overflow at ${width.toInt()} px',
+          (tester) async {
+        await pumpAtWidth(tester, width);
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'FirmwareView must not overflow at $width px',
+        );
+        // Inventory + update form are visible at every breakpoint.
+        expect(find.textContaining('BMC Firmware'), findsOneWidget);
+        expect(find.text('Start update'), findsOneWidget);
+      });
+    }
   });
 }

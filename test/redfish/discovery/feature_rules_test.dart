@@ -138,6 +138,34 @@ void main() {
         'US',
       );
     });
+
+    test('firmwareUpdate honors ServiceEnabled (DOCS-5)', () {
+      // Explicitly disabled update service → no firmware capability.
+      expect(
+        FeatureRules.firmwareUpdate(
+          <String, dynamic>{'ServiceEnabled': false},
+        ),
+        isFalse,
+      );
+      // Enabled service → capability present.
+      expect(
+        FeatureRules.firmwareUpdate(
+          <String, dynamic>{'ServiceEnabled': true},
+        ),
+        isTrue,
+      );
+      // bmcweb + DMTF mockup shape (fixture carries ServiceEnabled: true).
+      expect(
+        FeatureRules.firmwareUpdate(
+          <String, dynamic>{
+            'Id': 'UpdateService',
+            'FirmwareVersion': '2.14.0',
+            'ServiceEnabled': true,
+          },
+        ),
+        isTrue,
+      );
+    });
   });
 
   group('FeatureRules — build composes everything', () {

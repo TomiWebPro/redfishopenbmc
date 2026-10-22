@@ -49,6 +49,17 @@ void main() {
       expect(info.inventory.length, 1);
       expect(info.transferProtocols, isNotEmpty);
     });
+
+    test('parses an explicitly disabled UpdateService (DOCS-5)', () {
+      final UpdateServiceInfo info = UpdateServiceInfo.fromJson(
+        <String, dynamic>{
+          'Id': 'UpdateService',
+          'ServiceEnabled': false,
+        },
+      );
+      expect(info.serviceEnabled, isFalse);
+      expect(info.httpPushUri, isNull);
+    });
   });
 
   group('SimpleUpdateRequest', () {

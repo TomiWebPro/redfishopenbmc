@@ -7,10 +7,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-22 (EMULATOR run — emulator suite +2: systems detail + HttpPushUri, UI-5 dialog busy confirm completed)
-- **Current focus:** EMU-3 extended (13 emulator tests; error paths stay unit-fixture-covered per EMU-5);
-  UI-5 fully done (dialog confirm busy state); next P1: #015 (AuthManager) or #016/#022 (ActionInfo/etag);
-  #008/#020 HTTP-push path has an emulator assertion to build against
+- **Last updated:** 2026-10-22 (DOCS run — DOCS-5 `SystemFeatures` flag→spec→test map; `firmwareUpdate` honors `ServiceEnabled`; UI-3 FirmwareView breakpoint tests)
+- **Current focus:** DOCS-5 done (per-flag map in REQUIREMENTS.md; `firmwareUpdate`
+  honors `ServiceEnabled`); UI-3 extended to FirmwareView (Power/Sensors/Firmware
+  done, dashboard/KVM remaining); next P1: #015 (AuthManager) or #016/#022
+  (ActionInfo/etag); #008/#020 HTTP-push path has an emulator assertion to build against
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -70,10 +71,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       on ComputerSystem not Manager (→ #009/#021); AuthMethods + TelemetryService
       vendor rows recorded. Cited `Redfish.md`/`OEM_SCHEMAS.md` @ `0128851e`.
       REDFISH_CHECKLIST.md is contributor-process only — no client-facing fields)
-- [ ] **DOCS-5** Map every `SystemFeatures` flag to a spec citation and a test.
+- [x] **DOCS-5** Map every `SystemFeatures` flag to a spec citation and a test.
       Add a table under `documentations/redfish_reference/` or
       `documentations/external/redfish/REQUIREMENTS.md`.
-      (partial: flags now cite bmcweb rows from DOCS-4; full per-flag table pending)
+      (run 2026-10-22 — full per-flag table added under REQUIREMENTS.md
+      "DOCS-5 — SystemFeatures flag → spec citation → test map" for all 10
+      flags; surfaced + fixed the `firmwareUpdate` `ServiceEnabled` gap)
 - [ ] **DOCS-6** Keep the downloaded corpus bounded: max 25 MB per file and 50 MB
       of new downloads per run. For larger artifacts store the URL + hash +
       extracted notes instead of the binary.
@@ -177,7 +180,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.
       (PowerView no-overflow tests added 2026-10-22; SensorsView no-overflow
-      tests added 2026-10-22 this run; extend to dashboard/firmware/KVM)
+      tests added 2026-10-22; FirmwareView no-overflow tests added 2026-10-22
+      this run; extend to dashboard/KVM)
 - [ ] **UI-4** Visual consistency for cards, badges, health/power colors, spacing.
 - [ ] **UI-5** Power confirmation dialog: clearer destructive-action copy and
       disabled/busy states.
