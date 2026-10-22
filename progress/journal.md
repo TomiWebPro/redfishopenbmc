@@ -319,3 +319,47 @@
 
 **Issues touched:**
 - none opened/closed this run (docs + UI only; FUTUREWORK updated).
+
+## 2026-10-22 — agent:redfish-automation — EMULATOR run
+
+**Done:**
+- EMU-1: official DMTF Redfish-Mockup-Server (pin `23d21f9a`) running over
+  HTTPS on 127.0.0.1:8443 against `test/fixtures/redfish/dmtf_mockup` with a
+  generated self-signed cert; health check + `-S` fixture mode verified.
+- EMU-2: `test_integration/emulator/emulator_suite_test.dart` — 11 end-to-end
+  tests (service root, DiscoveryEngine BFS + feature map, sensors, firmware
+  inventory, KVM console, session + basic auth, power state, reset action,
+  404 error mapping). Skips via `markTestSkipped` when `REDFISH_EMULATOR_URL`
+  is unset, so plain `flutter test` never needs the emulator.
+- EMU-4: `tool/emulator/run_tests.sh` (committed pin `23d21f9a`, venv/cert
+  under /tmp only, health wait, `trap` cleanup) — verified end-to-end, no
+  stray process after run.
+- EMU-3 partial: auth (session token mint/reuse/logout + basic) and reset
+  action + 404 mapping covered; 403/409/400 extended-info paths deferred to a
+  richer emulator (EMU-5).
+- UI-5 (+UI-2 tie-in): `ConfirmResetDialog` destructive copy + destructive
+  `Semantics` label on confirm button; 1 new widget test.
+- Docs: emulator harness section in `documentations/external/README.md`;
+  "Test platforms" note in `REQUIREMENTS.md`.
+
+**Decisions:**
+- Kept the diff focused: `dart format` on touched files only. A repo-wide
+  format run would churn ~54 files and introduces a `curly_braces` lint in
+  `kvm_view.dart`; format-cleanliness remains a deliberate FUTUREWORK P2 item.
+- `allowSelfSigned: true` is test-profile-only (EMU-6); production TLS is
+  untouched.
+- Emulator session POST mints a token for any credentials (static mockup) — the
+  suite asserts the client's session flow works, not that the mockup validates
+  credentials.
+
+**Next:**
+- Push 2 queued local commits (c8dc7e1 DOCS, EMULATOR) once a machine with
+  GitHub credentials is available.
+- DOCS-3: continue DSP0266 audit; decide EventService/Subscriptions scope
+  (DOCS-7).
+- P1 #014/#015 (RedfishError parsing / session URI discovery) — likely need
+  richer fixtures (EMU-5) or unit-level work.
+
+**Issues touched:**
+- none opened/closed this run (EMU-1..4, EMU-6, UI-5, UI-2 partial; FUTUREWORK
+  updated with run markers).

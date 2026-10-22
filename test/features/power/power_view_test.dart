@@ -99,9 +99,11 @@ void main() {
       expect(find.text('Power On'), findsOneWidget);
     });
 
-    testWidgets('renders nothing when power control is disabled', (tester) async {
+    testWidgets('renders nothing when power control is disabled',
+        (tester) async {
       final SystemManager manager = buildManager(powerControl: false);
-      await manager.addProfile(const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'));
+      await manager.addProfile(
+          const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'));
       await manager.connect('bmc1');
 
       await tester.pumpWidget(
@@ -119,7 +121,8 @@ void main() {
   group('PowerView — actions', () {
     testWidgets('shows a confirmation dialog on tap', (tester) async {
       final SystemManager manager = buildManager(powerControl: true);
-      await manager.addProfile(const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'));
+      await manager.addProfile(
+          const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'));
       await manager.connect('bmc1');
 
       await tester.pumpWidget(
@@ -146,7 +149,8 @@ void main() {
 
     testWidgets('confirming a reset calls the controller', (tester) async {
       final SystemManager manager = buildManager(powerControl: true);
-      await manager.addProfile(const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'));
+      await manager.addProfile(
+          const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'));
       await manager.connect('bmc1');
 
       final _FakePowerService svc = _FakePowerService();
@@ -185,7 +189,8 @@ void main() {
         powerControl: true,
         supportedResetTypes: const <String>['On'],
       );
-      await manager.addProfile(const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'));
+      await manager.addProfile(
+          const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'));
       await manager.connect('bmc1');
 
       // Only "On" advertised → Force Off must be disabled.
@@ -205,11 +210,51 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final Finder forceOff =
-          find.widgetWithText(FilledButton, 'Force Off');
+      final Finder forceOff = find.widgetWithText(FilledButton, 'Force Off');
       expect(forceOff, findsOneWidget);
       final FilledButton button = tester.widget<FilledButton>(forceOff);
       expect(button.onPressed, isNull);
+    });
+
+    testWidgets('destructive dialog shows clearer warning copy + semantics',
+        (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      await tester.pumpWidget(
+        harness(manager: manager, controller: _fakeController()),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap a destructive action (Force Off).
+      await tester.tap(find.text('Force Off'));
+      await tester.pumpAndSettle();
+
+      // Warning copy mentions service interruption + data loss risk.
+      expect(
+        find.textContaining('may interrupt service'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('unsaved work on the host'),
+        findsOneWidget,
+      );
+      // Confirm button carries a destructive semantic label for screen readers.
+      final Finder forceButton = find.widgetWithText(FilledButton, 'Force');
+      expect(forceButton, findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp('destructive')),
+        findsOneWidget,
+        reason: 'destructive action must be announced as destructive',
+      );
+
+      // Cancel still dismisses cleanly.
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.text('Confirm Force Off?'), findsNothing);
     });
   });
 }

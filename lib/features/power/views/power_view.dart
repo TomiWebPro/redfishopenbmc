@@ -224,25 +224,36 @@ class ConfirmResetDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
+    final bool destructive = action.isDestructive;
     return AlertDialog(
       title: Text('Confirm ${action.label}?'),
       content: Text(
-        'This will ${action.label} "$systemName". Continue?',
+        destructive
+            ? 'This will ${action.label} "$systemName".\n\n'
+                'This action may interrupt service; unsaved work on the host '
+                'could be lost. Continue?'
+            : 'This will ${action.label} "$systemName". Continue?',
       ),
       actions: <Widget>[
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          style: action.isDestructive
-              ? FilledButton.styleFrom(
-                  backgroundColor: scheme.error,
-                  foregroundColor: scheme.onError,
-                )
-              : null,
-          onPressed: () => Navigator.of(context).pop(true),
-          child: Text(action.isDestructive ? 'Force' : 'Confirm'),
+        Semantics(
+          label: destructive
+              ? 'Confirm ${action.label} (destructive)'
+              : 'Confirm ${action.label}',
+          button: true,
+          child: FilledButton(
+            style: destructive
+                ? FilledButton.styleFrom(
+                    backgroundColor: scheme.error,
+                    foregroundColor: scheme.onError,
+                  )
+                : null,
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(destructive ? 'Force' : 'Confirm'),
+          ),
         ),
       ],
     );

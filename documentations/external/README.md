@@ -66,6 +66,21 @@ run notes in `automation-tracking.md`.
 > the URL that actually returned 200. (PDF download from `www.dmtf.org` worked
 > with a browser UA this run.)
 
+## Emulator harness (DMTF Redfish-Mockup-Server)
+
+`tool/emulator/run_tests.sh` runs the real mockup server over HTTPS (self-signed
+cert, generated per-run under `/tmp`) against
+`test/fixtures/redfish/dmtf_mockup` and executes
+`test_integration/emulator/emulator_suite_test.dart` with
+`--dart-define=REDFISH_EMULATOR_URL=https://127.0.0.1:8443`.
+
+- **Pinned upstream:** `DMTF/Redfish-Mockup-Server @ 23d21f9a`
+  (same commit mirrored in `redfish/mockup/README.md`; verified 2026-10-22).
+- **Isolation:** plain `flutter test` never touches the emulator; the suite
+  `markTestSkipped`s when the URL define is absent.
+- **TLS:** `allowSelfSigned: true` is test-profile only (EMU-6); production
+  code keeps TLS validation.
+
 ## Requirement traceability
 
 `redfish/REQUIREMENTS.md` maps each audited requirement to the implementation and

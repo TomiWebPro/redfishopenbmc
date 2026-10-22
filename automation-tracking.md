@@ -101,3 +101,61 @@ Append-only run log for the `redfish-automation` scheduler job.
   upstream commits; 3) DOCS-3 continue DSP0266 audit — file the event
   subscription gap (EventService/Subscriptions) as a new FUTUREWORK item.
 
+## 2026-10-22 14:01 — EMULATOR
+
+- **Baseline:** analyze 0; tests 233 passed / 1 skipped; starting commit 0c526fa;
+  issues validate OK; branch `main` clean (ahead 2 of origin: c8dc7e1 + 0c526fa
+  still unpushed from the DOCS run — push blocked, no GitHub credentials).
+- **Primary work:** EMU-1..EMU-4 — stood up the official DMTF
+  Redfish-Mockup-Server over HTTPS and added an end-to-end integration suite
+  under `test_integration/emulator/`.
+- **Emulator:**
+  - Cloned `DMTF/Redfish-Mockup-Server` at pinned commit `23d21f9a` to `/tmp`;
+    generated a short-lived self-signed cert (`/CN=127.0.0.1`,
+    SAN IP:127.0.0.1/DNS:localhost); served `test/fixtures/redfish/dmtf_mockup`
+    on `https://127.0.0.1:8443` with `-S` (short-form fixture, no top-level
+    `redfish/` dir — verified `-S` is correct).
+  - Health-checked `GET /redfish/v1/` (200). Probed: session POST mints
+    `X-Auth-Token` + `Location`; Basic auth 200; `ComputerSystem.Reset` action
+    204; unknown resource/action → 404 surfaced to Dio as `badResponse`
+    (mockup closes the TLS connection abruptly, but the status line arrives so
+    error mapping sees `statusCode: 404`).
+  - New `test_integration/emulator/emulator_suite_test.dart` (11 tests):
+    service-root discovery, DiscoveryEngine BFS + full feature map, sensors
+    (Thermal temps/fans), firmware inventory (3 entries), KVM graphical
+    console, session auth (token mint + reuse + logout), basic auth, power
+    state read, reset action accepted, and 404 error mapping for unknown
+    resource + unknown action. Reads
+    `String.fromEnvironment('REDFISH_EMULATOR_URL')` and `markTestSkipped`s
+    when absent — plain `flutter test` never requires the emulator.
+  - New `tool/emulator/run_tests.sh` (EMU-4): pins upstream commit `23d21f9a`,
+    clones/venvs/certs under `/tmp` only, starts the server, waits for health,
+    runs the suite, stops the server via `trap`. Verified end-to-end; trap
+    cleanup confirmed (no stray process after run).
+- **Docs:** added an "Emulator harness" section to
+  `documentations/external/README.md` (pin, isolation, TLS note) and a
+  "Test platforms" note to `documentations/external/redfish/REQUIREMENTS.md`
+  describing the two integration layers (in-process mock + real emulator).
+- **Code/tests:** power view `ConfirmResetDialog` (UI-5) — destructive actions
+  now show clearer warning copy ("may interrupt service; unsaved work on the
+  host could be lost") and the confirm button carries a `Semantics` label
+  "Confirm <action> (destructive)" (UI-2 tie-in). Non-destructive dialog copy
+  unchanged. New widget test covers the destructive copy + semantics label.
+  Files: `lib/features/power/views/power_view.dart`,
+  `test/features/power/power_view_test.dart`.
+- **UI:** one small tested increment landed (see above); `dart format` on the
+  touched files only. Note: a repo-wide `dart format` would touch ~54 files
+  (repo not fully format-clean; a reformat of `kvm_view.dart` would introduce
+  a `curly_braces` lint) — kept the diff focused and did not commit format
+  churn; formats stay a FUTUREWORK P2 item.
+- **Verification:** analyze 0; tests 234 passed / 1 skipped; issues validate
+  OK; `git diff --check` clean; secret scan clean.
+- **Commit:** pending — `auto: EMULATOR — DMTF mockup-server HTTPS harness + test_integration suite (EMU-1..4) + power dialog a11y (run 2026-10-22 14:01)`; pushed: **no** (no GitHub credentials on this machine — same blocker as the DOCS run; `git ls-remote` works read-only, push needs auth. Local commits kept.)
+- **Next:** 1) Re-attempt `git push origin main` from a machine with GitHub
+  credentials (2 commits queued: c8dc7e1 DOCS + this EMULATOR commit); 2)
+  DOCS-3 continue DSP0266 audit — decide EventService/Subscriptions scope
+  (DOCS-7); 3) P1 repair: #014 RedfishError ExtendedInfo parsing (requires
+  emulator fixtures richer than the static mockup), or EMU-3 extension:
+  assert client error mapping for 405/501 actions if a richer emulator is
+  added (EMU-5 evaluation).
+

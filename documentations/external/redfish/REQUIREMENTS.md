@@ -42,3 +42,12 @@ Last audited: 2026-10-22 (docs mirror refresh run). Sources:
   tracker unless acceptance criteria are added.
 - bmcweb-specific behaviour (OEM schemas, console types) is cited from
   `redfish/openbmc/OEM_SCHEMAS.md` + `Redfish.md` — vendor behaviour, not DMTF.
+- **Test platforms:** beyond unit/widget tests, the project has two integration
+  layers against authentic DMTF payloads:
+  1. `test/integration/discovery_mock_test.dart` — in-process HTTP mock server
+     (`test/helpers/mock_redfish_server.dart`), runs in plain `flutter test`.
+  2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
+     Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
+     `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
+     `REDFISH_EMULATOR_URL` is defined.
+  Both cover the rows above end-to-end against authentic payload shapes.
