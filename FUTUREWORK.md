@@ -7,14 +7,16 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-22 (DOCS-2 schema refresh run — 6 versioned DMTF
-  schemas refreshed; UI-3 dashboard + overview breakpoint tests, 2 responsive
-  overflow fixes)
+- **Last updated:** 2026-10-22 (EMULATOR run — suite 16 → 21: session lifecycle
+  #015/#017, SessionTimeout, TaskService, EventService contract tests; UI-1
+  firmware error state + Retry action)
 - **Current focus:** DOCS-2 schema refresh done (ComputerSystem/Chassis v1_29_0,
   Sensor v1_14_0, AccountService v1_19_0, EthernetInterface v1_12_6,
   SoftwareInventory v1_15_0); UI-3 fully done (all views covered);
-  emulator at 16 tests; next P1: #015 (AuthManager) or #016/#022
-  (ActionInfo/etag); #008/#020 HTTP-push path has an emulator assertion to build against
+  emulator at 21 tests (session lifecycle #015/#017, SessionTimeout,
+  TaskService, EventService contracts added); next P1: #015 (AuthManager) —
+  emulator now pins the full session contract; #016/#022 (ActionInfo/etag) or
+  #008/#020 (HTTP-push firmware, Tasks URI) both have emulator assertions
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -110,13 +112,16 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       (run 2026-10-22, commit 81dfb8f — 11 tests in
       `test_integration/emulator/emulator_suite_test.dart`; skips without
       `REDFISH_EMULATOR_URL`; extended 2026-10-22 → 13 tests (systems detail +
-      HttpPushUri) then 16 tests (SessionService URI, Manager detail +
-      allow-list, Chassis detail))
+      HttpPushUri) → 16 tests (SessionService URI, Manager detail + allow-list,
+      Chassis detail) → 21 tests (session lifecycle #015/#017, SessionTimeout,
+      TaskService, EventService contracts))
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
       (session + basic auth, reset action, 404 mapping done 2026-10-22;
       systems-detail + HttpPushUri tests added 2026-10-22 → 13 emulator tests;
+      session lifecycle + logout-target (DELETE session 204 / collection 405) +
+      SessionTimeout added 2026-10-22 → 21 tests;
       remaining: 403/409/400 extended info paths need a richer emulator — see
       EMU-5: decision is to keep covering error mapping with spec-conformant
       unit fixtures, so EMU-3 is effectively complete)
@@ -147,7 +152,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - [ ] **#015** AuthManager: auth method, safe logout URI, session reuse/expiry.
       (bmcweb `AccountService.Oem.OpenBMC.AuthMethods.*` vendor row recorded in
       REQUIREMENTS.md — DOCS-4; emulator asserts the service root advertises a
-      discoverable SessionService URI — run 2026-10-22 #017 contract)
+      discoverable SessionService URI — run 2026-10-22 #017 contract; emulator
+      now also pins the full session lifecycle: POST via discovered Sessions
+      URI returns X-Auth-Token + Location (session resource, not collection),
+      DELETE session 204 vs DELETE collection 405, SessionTimeout=30 published —
+      run 2026-10-22)
 - [x] **#027** Verify the Flutter toolchain issue is stale; close it with evidence
       if `flutter analyze`/`flutter test` work, otherwise fix it.
       (run 2026-10-22 — closed with evidence: `~/flutter/bin/flutter` on PATH,
@@ -188,6 +197,9 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 ## P2 — UI improvements (one small, tested increment per green run)
 
 - [ ] **UI-1** Empty / loading / error states for dashboard, sensors, firmware, KVM.
+      (FirmwareView error state upgraded to an errorContainer card with a
+      working Retry action — done 2026-10-22; KVM/Sensors/Overview views already
+      covered; dashboard empty/error summaries still open)
 - [ ] **UI-2** Accessibility: semantics labels, contrast, touch targets, focus order.
       (Health/Power badges semantic labels done 2026-10-22 — commit c8dc7e1;
       destructive power dialog label done 2026-10-22 — commit 81dfb8f; extend

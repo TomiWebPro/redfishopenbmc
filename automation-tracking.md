@@ -506,3 +506,59 @@ Append-only run log for the `redfish-automation` scheduler job.
   asserts the SessionService URI is discoverable — #017 contract); 3) #016/#022:
   `ResetActionInfo` allow-list fallback + PATCH/etag, or #008/#020: bmcweb
   HTTP-push firmware upload path (emulator asserts `HttpPushUri`).
+
+## 2026-10-22 20:51 — EMULATOR
+
+- **Baseline:** analyze 0; tests 265 passed / 1 skipped; starting commit 9ada585;
+  issues validate OK; branch `main` clean but ahead 17 of origin (17 commits
+  unpushed — GitHub push blocked: no credentials, see earlier entries).
+- **Primary work:** EMULATOR — re-verified the pinned DMTF Redfish-Mockup-Server
+  suite end-to-end over HTTPS and extended it **16 → 21 tests** with contract
+  tests that de-risk the queued P1/P2 issues:
+  1. Session lifecycle (#015/#017) — create a session via the *discovered*
+     Sessions URI (never the hardcoded path): asserts the mockup returns 204 +
+     `X-Auth-Token` + `Location` (naming the session resource, not the
+     collection) and that the created session is GET-able. Pins the exact
+     contract #015's logout-target fix must use.
+  2. Logout-target clarity (#015) — DELETE of a session resource succeeds
+     (204); DELETE of the Sessions *collection* is rejected with a normalized
+     **405** non-retryable `RedfishException`. The #015 bug fell back to
+     deleting the collection; this test proves the collection is never a valid
+     logout target.
+  3. SessionTimeout (#015) — `SessionService.SessionTimeout` (30) is published
+     as a positive int: the input `Session.expiresAt` / `isExpired` proactive
+     re-auth needs.
+  4. Task service (#008/#020/#022) — the discovery root advertises `Tasks`,
+     the TaskService is enabled, and its Tasks collection is enumerable: the
+     task-URI source for long-running firmware uploads and power operations.
+  5. Event service (DOCS-7 bed / #019) — `EventService` is enabled and exposes
+     `Subscriptions` + `#EventService.SubmitTestEvent`: a future telemetry /
+     event receiver has a conformant contract to test against (documents the
+     DOCS-7 out-of-scope decision).
+- **Docs:** none this run (no new downloads; DOCS-6 budget respected).
+- **Emulator:** `tool/emulator/run_tests.sh` — 21/21 green over HTTPS, trap
+  cleanup confirmed, no stray process; suite 16 → 21 tests.
+- **Code/tests:** no production logic change from the emulator work
+  (`test_integration/emulator/emulator_suite_test.dart` +5). UI-1 increment:
+  `lib/features/firmware/views/firmware_view.dart` error state upgraded from a
+  plain red `Text` to an `errorContainer` card with icon + message + a working
+  **Retry** action (re-runs `FirmwareController.load()`, disabled while
+  loading); `test/features/firmware/firmware_widget_test.dart` +1 — a flaky
+  service (first fetch throws, second succeeds) drives the retry path: error +
+  Retry shown, tap → reload succeeds → error cleared, inventory visible.
+- **UI:** UI-1 firmware error+retry (above). No new dependencies, no
+  decoration-only changes; the empty/loading/error states for other views were
+  already present, so no UI-1 gap elsewhere was touched this run.
+- **Verification:** analyze 0; tests 266 passed / 1 skipped; issues validate
+  OK; `git diff --check` clean; secret scan clean (only pre-existing comment
+  false positives); emulator 21/21.
+- **Commit:** placeholder — `auto: EMULATOR — suite +5 (session lifecycle #015/#017, SessionTimeout, TaskService, EventService), UI-1 firmware error+retry (run 2026-10-22 20:51)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (17 queued); 2) P1 #015 AuthManager — the emulator now pins the
+  full session contract (create → X-Auth-Token+Location, DELETE session
+  resource, 405 collection, SessionTimeout); implement authMethod dispatch +
+  safe logout URI + token rehydrate + expiry with the in-process mock server;
+  3) #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag (emulator
+  documents both manager- and system-level Reset allow-lists + TaskService),
+  or #008/#020: bmcweb HTTP-push firmware upload (emulator asserts
+  `HttpPushUri` + Tasks).

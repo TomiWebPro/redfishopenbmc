@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:redfishopenbmc/core/storage/secure_storage.dart';
@@ -408,6 +409,158 @@ void main() {
         expect(e.statusCode, 404);
         expect(e.retryable, isFalse);
       }
+    });
+  });
+
+  group('emulator: session lifecycle (#015 / #017)', () {
+    late AuthManager manager;
+    late RedfishClient client;
+
+    setUpAll(() async {
+      manager = AuthManager(storage: InMemoryStorage());
+      await manager.login('em-sess', emulatorProfile());
+      client = manager.clientFor('em-sess')!;
+    });
+
+    tearDownAll(() async {
+      await manager.logout('em-sess');
+    });
+
+    test(
+        'create session: POST via the discovered Sessions URI returns '
+        'X-Auth-Token + Location and the session is readable (#015/#017)',
+        () async {
+      // #017: discover the Sessions collection from the service root instead
+      // of assuming /redfish/v1/SessionService/Sessions.
+      final Map<String, dynamic> root = await client.getJson('/redfish/v1/');
+      final String sessionServiceUri = (root['SessionService']
+          as Map<dynamic, dynamic>)['@odata.id'] as String;
+      final Map<String, dynamic> service =
+          await client.getJson(sessionServiceUri);
+      final String sessionsUri =
+          (service['Sessions'] as Map<dynamic, dynamic>)['@odata.id'] as String;
+
+      final Response<dynamic> response = await client.dio.post<dynamic>(
+        sessionsUri,
+        data: <String, String>{'UserName': 'root', 'Password': 'calvin'},
+      );
+      // The official mockup mints sessions with 204 + headers, like bmcweb.
+      expect(response.statusCode, 204);
+      final String? token = response.headers.value('X-Auth-Token') ??
+          response.headers.value('x-auth-token');
+      final String? location = response.headers.value('Location') ??
+          response.headers.value('Content-Location');
+      expect(token, isNotNull,
+          reason: '#015: the X-Auth-Token is the secret the client persists');
+      expect(token, isNotEmpty);
+      expect(location, isNotNull,
+          reason: '#015: logout must DELETE the session @odata.id/Location, '
+              'never the collection');
+      expect(location, isNot(endsWith('/Sessions')),
+          reason: '#015: the returned Location must name the session resource, '
+              'not the Sessions collection');
+
+      // The created session resource must resolve (create → readable).
+      final Map<String, dynamic> created = await client.getJson(location!);
+      expect(created['@odata.id'], location);
+      expect(created['UserName'], isA<String>());
+    });
+
+    test(
+        'logout target: DELETE the session resource succeeds; DELETE the '
+        'collection is rejected with 405 (#015)', () async {
+      final Response<dynamic> response = await client.dio.post<dynamic>(
+        '/redfish/v1/SessionService/Sessions',
+        data: <String, String>{'UserName': 'root', 'Password': 'calvin'},
+      );
+      final String? location = response.headers.value('Location') ??
+          response.headers.value('Content-Location');
+      expect(location, isNotNull);
+
+      // The correct logout target (the session resource) must be deletable.
+      final bool deleted = await client.delete(location!);
+      expect(deleted, isTrue);
+
+      // The collection must never be a DELETE target: the mockup rejects it,
+      // so the client's logout fallback must resolve the session @odata.id
+      // from the create response instead of falling back to the collection
+      // (the #015 bug was DELETEing /SessionService/Sessions).
+      try {
+        await client.delete('/redfish/v1/SessionService/Sessions');
+        fail('expected the Sessions collection DELETE to be rejected (405)');
+      } on RedfishException catch (e) {
+        expect(e.statusCode, 405);
+        expect(e.retryable, isFalse,
+            reason: 'a rejected logout target is not retryable');
+      }
+    });
+
+    test('SessionService publishes SessionTimeout for proactive expiry (#015)',
+        () async {
+      final Map<String, dynamic> svc =
+          await client.getJson('/redfish/v1/SessionService');
+      expect(svc['ServiceEnabled'], isTrue);
+      final Object? timeout = svc['SessionTimeout'];
+      expect(timeout, isA<int>(),
+          reason: '#015: Session.expiresAt is derived from '
+              'SessionService.SessionTimeout');
+      expect(timeout as int, greaterThan(0));
+    });
+  });
+
+  group('emulator: task + event service contracts (#008/#020/#022, DOCS-7)',
+      () {
+    late AuthManager manager;
+    late RedfishClient client;
+
+    setUpAll(() async {
+      manager = AuthManager(storage: InMemoryStorage());
+      await manager.login('em1', emulatorProfile());
+      client = manager.clientFor('em1')!;
+    });
+
+    tearDownAll(() async {
+      await manager.logout('em1');
+    });
+
+    test(
+        'task service: discovery root advertises Tasks and the collection is '
+        'enumerable (#008/#020/#022)', () async {
+      // The service root may link the task service under either key; resolve
+      // the @odata.id and follow it (discovery contract, not hardcoding).
+      final Map<String, dynamic> root = await client.getJson('/redfish/v1/');
+      final dynamic tasksLink = root['Tasks'] ?? root['TaskService'];
+      expect(tasksLink, isA<Map<dynamic, dynamic>>(),
+          reason: 'service root must advertise the task service link');
+      final String taskServiceUri =
+          (tasksLink as Map<dynamic, dynamic>)['@odata.id'] as String;
+      final Map<String, dynamic> svc = await client.getJson(taskServiceUri);
+      expect(svc['ServiceEnabled'], isTrue);
+      final String tasksUri =
+          (svc['Tasks'] as Map<dynamic, dynamic>)['@odata.id'] as String;
+      final Map<String, dynamic> tasks = await client.getJson(tasksUri);
+      expect(tasks['Members@odata.count'], isA<int>());
+      expect(tasks['Members'], isA<List<dynamic>>());
+    });
+
+    test(
+        'event service: subscriptions collection + SubmitTestEvent action are '
+        'exposed (DOCS-7 bed for #019)', () async {
+      final Map<String, dynamic> svc =
+          await client.getJson('/redfish/v1/EventService');
+      expect(svc['ServiceEnabled'], isTrue);
+      expect(svc['EventTypesForSubscription'], isA<List<dynamic>>());
+      expect(
+        (svc['Subscriptions'] as Map<dynamic, dynamic>)['@odata.id'],
+        isNotNull,
+      );
+      // The DOCS-7 decision (no client event receiver yet) is documented; a
+      // future #019/#007 telemetry receiver has a contract to test against.
+      final Map<dynamic, dynamic> actions =
+          svc['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> submit =
+          actions['#EventService.SubmitTestEvent'] as Map<dynamic, dynamic>;
+      expect(submit['target'], isA<String>());
     });
   });
 }

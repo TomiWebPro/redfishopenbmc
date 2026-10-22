@@ -9,6 +9,7 @@ import 'package:redfishopenbmc/features/firmware/models/firmware_models.dart';
 import 'package:redfishopenbmc/features/firmware/views/firmware_view.dart';
 import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
+import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
 /// A [FirmwareService] double returning a canned [UpdateServiceInfo].
@@ -26,6 +27,32 @@ class FakeFirmwareService extends FirmwareService {
   @override
   Future<String> startSimpleUpdate(SimpleUpdateRequest req) async =>
       'http://task/1';
+}
+
+/// A [FakeFirmwareService] that fails on the first fetch, then succeeds —
+/// the transient-failure shape the error+retry path exists for.
+class _FlakyFirmwareService extends FakeFirmwareService {
+  _FlakyFirmwareService()
+      : super(
+          info: const UpdateServiceInfo(
+            serviceEnabled: true,
+            version: '9.9.9',
+            inventory: <FirmwareInventoryItem>[
+              FirmwareInventoryItem(id: 'BMC', version: '9.9.9'),
+            ],
+          ),
+        );
+
+  int calls = 0;
+
+  @override
+  Future<UpdateServiceInfo> fetchUpdateService() async {
+    calls++;
+    if (calls == 1) {
+      throw const RedfishException(message: 'boom');
+    }
+    return info ?? const UpdateServiceInfo();
+  }
 }
 
 SystemHandle makeHandle({required bool firmwareUpdate}) {
@@ -94,6 +121,37 @@ void main() {
       await tester.pumpAndSettle();
       // The loaded version string should appear in the inventory card.
       expect(find.textContaining('3.2.1'), findsWidgets);
+    });
+
+    testWidgets(
+        'error state shows the message with a Retry button that reloads '
+        '(UI-1)', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final _FlakyFirmwareService service = _FlakyFirmwareService();
+      final FirmwareController controller =
+          FirmwareController(service: service);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      // The post-frame auto-load runs; the first fetch fails.
+      await tester.pumpAndSettle();
+      expect(service.calls, 1);
+      expect(find.text('boom'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+
+      // Retry re-runs the load; the second fetch succeeds and clears the error.
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+      expect(service.calls, 2);
+      expect(find.text('boom'), findsNothing);
+      expect(find.text('Retry'), findsNothing);
+      expect(find.textContaining('9.9.9'), findsWidgets);
     });
   });
 

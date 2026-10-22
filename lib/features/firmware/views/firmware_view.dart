@@ -49,7 +49,8 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
 
   @override
   Widget build(BuildContext context) {
-    final SystemHandle? handle = ref.watch(systemHandleProvider(widget.systemId));
+    final SystemHandle? handle =
+        ref.watch(systemHandleProvider(widget.systemId));
     final SystemFeatures? features = handle?.features;
 
     // Discovery not complete yet (or tab shown before capability gate).
@@ -61,11 +62,12 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
       return const SizedBox.shrink();
     }
 
-    final FirmwareUiState ui = ref.watch(firmwareControllerProvider(widget.systemId));
+    final FirmwareUiState ui =
+        ref.watch(firmwareControllerProvider(widget.systemId));
     final FirmwareController controller =
         ref.read(firmwareControllerProvider(widget.systemId).notifier);
-    final List<String> protocols =
-        ui.info?.transferProtocols ?? const UpdateServiceInfo().transferProtocols;
+    final List<String> protocols = ui.info?.transferProtocols ??
+        const UpdateServiceInfo().transferProtocols;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -84,8 +86,10 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                    if (ui.loading) const SizedBox.square(dimension: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2)),
+                    if (ui.loading)
+                      const SizedBox.square(
+                          dimension: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2)),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -94,10 +98,37 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                 if (ui.error != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(
-                      ui.error!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+                    child: Card(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: <Widget>[
+                            Icon(
+                              Icons.error_outline,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onErrorContainer,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                ui.error!,
+                                style: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onErrorContainer,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            TextButton(
+                              onPressed:
+                                  ui.loading ? null : () => controller.load(),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -232,7 +263,7 @@ class _InventoryList extends StatelessWidget {
                 ),
                 trailing: Chip(
                   label: Text(item.updateable ? 'Updateable' : 'Locked'),
-                      backgroundColor: item.updateable
+                  backgroundColor: item.updateable
                       ? Theme.of(context).colorScheme.primaryContainer
                       : Theme.of(context).colorScheme.secondaryContainer,
                 ),

@@ -682,3 +682,53 @@
 **Issues touched:**
 - none opened/closed this run (DOCS-2 refresh + UI-3 completion; no issue status
   change).
+
+## 2026-10-22 — agent:redfish-automation — EMULATOR run (suite +5 session/task/event contracts, UI-1 firmware retry)
+
+**Done:**
+- EMULATOR primary: extended the pinned DMTF Redfish-Mockup-Server suite
+  **16 → 21 tests** with contract tests that de-risk the queued issues:
+  1. Session lifecycle (#015/#017): create via the *discovered* Sessions URI
+     returns 204 + `X-Auth-Token` + `Location`; the `Location` names the
+     session resource (never the collection) and the created session is
+     readable (200).
+  2. Logout target (#015): DELETE the session resource → 204; DELETE the
+     Sessions *collection* → normalized **405** non-retryable `RedfishException`
+     — the #015 fallback bug would have deleted every session on the BMC.
+  3. SessionTimeout (#015): `SessionService.SessionTimeout`=30 published as a
+     positive int — the input for `Session.expiresAt` / proactive re-auth.
+  4. TaskService (#008/#020/#022): advertised from the discovery root, enabled,
+     Tasks collection enumerable — the task-URI source for long-running ops.
+  5. EventService (DOCS-7 / #019): enabled, `Subscriptions` +
+     `#EventService.SubmitTestEvent` contract documented as the future
+     receiver's test bed.
+- UI (UI-1): FirmwareView error state upgraded from a plain red `Text` to an
+  `errorContainer` card with icon + message + **Retry** button that re-runs
+  `FirmwareController.load()` (disabled while loading). New widget test drives
+  a transient failure (flaky service: first fetch throws, second succeeds):
+  error + Retry shown → tap → reload succeeds → error cleared, inventory
+  visible. No new dependencies; capability gate unchanged.
+
+**Decisions:**
+- Followed the DOCS/EMULATOR alternation: EMULATOR ran less recently than DOCS
+  today (DOCS 5×, EMULATOR 4× with this run). No production logic change in
+  the emulator tests — pure contract pins.
+- The collection-DELETE assertion also verifies the client normalizes the
+  mockup's abrupt-close 405 deterministically (`statusCode: 405`), which the
+  raw-curl probe earlier showed can surface as an EOF.
+- Kept the diff focused: formatted only the 3 touched files (repo-wide
+  `dart format` churns 44 files and reintroduces the known `curly_braces`
+  lint — prior-run precedent; repo-wide format remains FUTUREWORK P2).
+
+**Next:**
+- Push 17 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, session
+  rehydrate, SessionTimeout expiry) — emulator contract now pinned; implement
+  unit-level with the in-process mock server.
+- #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag; #008/#020:
+  bmcweb HTTP-push firmware upload path (emulator asserts HttpPushUri + Tasks).
+
+**Issues touched:**
+- none opened/closed this run (EMULATOR extension + UI-1 increment; no issue
+  status change). #015/#017/#008/#020/#022/#019 got emulator-level contract
+  notes.
