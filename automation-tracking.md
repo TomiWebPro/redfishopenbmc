@@ -658,7 +658,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   grep — not a credential). Repo-wide `dart format` churn avoided again:
   formatted only the 5 touched files (prior-run precedent: repo-wide format
   reintroduces the known `curly_braces` lint).
-- **Commit:** (pending) — `auto: EMULATOR — suite +3 (query capabilities #018, Accounts #015/#026, push apply-time #008/#020), UpdateServiceInfo push-apply-time parse, UI-2 firmware card semantics (run 2026-10-23 05:00)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried. Commits queued locally before this run: 21.
+- **Commit:** d76b5eb — `auto: EMULATOR — suite +3 (query capabilities #018, Accounts #015/#026, push apply-time #008/#020), UpdateServiceInfo push-apply-time parse, UI-2 firmware card semantics (run 2026-10-23 05:00)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried. Commits queued locally before this run: 21.
 - **Next:** 1) Push the queued local commits from a machine with GitHub
   credentials (22 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
   logout URI, token rehydrate, SessionTimeout expiry) — emulator now also pins
