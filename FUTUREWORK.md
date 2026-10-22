@@ -7,10 +7,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-22 (EMULATOR run — suite +3: SessionService URI #017, Manager reset allow-list, Chassis chain; UI-3 KVM breakpoint tests)
-- **Current focus:** EMU-2/3 suite at 16 tests (SessionService URI #017, Manager
-  reset allow-list, Chassis chain added); UI-3 KVM breakpoints done, dashboard/
-  overview remaining; next P1: #015 (AuthManager) or #016/#022
+- **Last updated:** 2026-10-22 (DOCS-2 schema refresh run — 6 versioned DMTF
+  schemas refreshed; UI-3 dashboard + overview breakpoint tests, 2 responsive
+  overflow fixes)
+- **Current focus:** DOCS-2 schema refresh done (ComputerSystem/Chassis v1_29_0,
+  Sensor v1_14_0, AccountService v1_19_0, EthernetInterface v1_12_6,
+  SoftwareInventory v1_15_0); UI-3 fully done (all views covered);
+  emulator at 16 tests; next P1: #015 (AuthManager) or #016/#022
   (ActionInfo/etag); #008/#020 HTTP-push path has an emulator assertion to build against
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
@@ -48,10 +51,14 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `https://github.com/openbmc/bmcweb/tree/master/docs`.
       (run 2026-10-22, commit c8dc7e1 — mirror + manifest + REQUIREMENTS.md live;
       re-fetch on upstream change only)
-- [~] **DOCS-2** Refresh the DMTF schema/mockup snapshot used by
+- [x] **DOCS-2** Refresh the DMTF schema/mockup snapshot used by
       `documentations/redfish_reference/` and `test/fixtures/redfish/`; verify the
       provenance section in `documentations/redfish_reference/README.md` is current.
-      (provenance note added 2026-10-22; full fixture refresh pending)
+      (run 2026-10-22 — 6 versioned DMTF schemas refreshed to current upstream:
+      ComputerSystem/Chassis v1_29_0, Sensor v1_14_0, AccountService v1_19_0,
+      EthernetInterface v1_12_6, SoftwareInventory v1_15_0; superseded files kept;
+      mockup payload still matches pinned upstream `23d21f9a`, no refresh needed;
+      provenance updated in both READMEs + REQUIREMENTS.md DOCS-2 section)
 - [x] **DOCS-3** Audit the latest Redfish specification (DSP0266, currently linked
       from `https://redfish.dmtf.org/`) against the client's discovery, auth,
       error, PATCH/ETag, task, and subscription behaviour. Record gaps with
@@ -188,9 +195,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.
       (PowerView no-overflow tests added 2026-10-22; SensorsView no-overflow
-      tests added 2026-10-22; FirmwareView no-overflow tests added 2026-10-22
-      this run; KvmView no-overflow tests added 2026-10-22 this run; extend to
-      dashboard/overview — the only view remaining)
+      tests added 2026-10-22; FirmwareView no-overflow tests added 2026-10-22;
+      KvmView no-overflow tests added 2026-10-22; DashboardView + OverviewView
+      no-overflow tests added 2026-10-22 — fixes: DashboardView 1-col grid
+      aspect ratio 1.25, OverviewView 1-col natural-height card stack) —
+      **all views covered, UI-3 done**
 - [ ] **UI-4** Visual consistency for cards, badges, health/power colors, spacing.
 - [ ] **UI-5** Power confirmation dialog: clearer destructive-action copy and
       disabled/busy states.

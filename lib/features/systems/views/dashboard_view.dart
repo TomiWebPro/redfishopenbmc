@@ -75,12 +75,16 @@ class DashboardView extends ConsumerWidget {
             : width < 1200
                 ? 2
                 : 3;
+        // A single-column tile is far narrower than a multi-column tile, so a
+        // fixed 1.6 ratio would squeeze the card content at ~320 px (UI-3 found
+        // a 28 px vertical overflow). Use a taller tile for the 1-column layout.
+        final double aspectRatio = columns == 1 ? 1.25 : 1.6;
         return SliverGrid(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
-            childAspectRatio: 1.6,
+            childAspectRatio: aspectRatio,
           ),
           delegate: SliverChildBuilderDelegate(
             (BuildContext context, int index) {

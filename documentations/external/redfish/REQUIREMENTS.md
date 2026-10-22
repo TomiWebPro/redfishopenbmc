@@ -220,3 +220,27 @@ UI-3 increment this run: FirmwareView responsive-layout tests at 320/800/1300 px
 (`firmware_widget_test.dart`, same `pumpAtWidth` pattern as PowerView /
 SensorsView); no production layout change (view already wraps — regression
 protection added).
+
+## DOCS-2 — versioned-schema refresh audit (2026-10-22)
+
+DMTF schema index (`https://redfish.dmtf.org/schemas/v1/`, fetched 2026-10-22
+21:45 UTC) showed six versioned definition files advanced upstream since the
+2026-10-21 mirror snapshot. Refreshed them in `test/fixtures/redfish/schemas/`
+and `documentations/external/redfish/schemas/v1/` (provenance + hashes in
+`documentations/external/README.md` "DOCS-2 refresh").
+
+| Schema (new) | Old fixture | Client impact | Trace |
+|---|---|---|---|
+| `ComputerSystem.v1_29_0` | v1_28_0 | `ProductionDate` + new graphical-console actions `GraphicalConsoleGetOneTimeURL`/`SetOneTimePassword`/`SetPassword` + `ConsoleAccessMode` enum. Client reads neither; KVM detection uses Manager `GraphicalConsole` (unchanged). No code change. | `lib/redfish/discovery/feature_rules.dart` (`kvm` via Manager console); REQ row "kvm" |
+| `Chassis.v1_29_0` | v1_28_0 | `ProductionDate`; ChassisType `OpenRack`/`OpenRackWide` added, `OpenU` deprecated. Client maps ChassisType as free string. No code change. | `lib/redfish/...` chassis parse (free-string) |
+| `Sensor.v1_14_0` | v1_13_0 | ReadingType `Turbidity`/`LiquidConductivity`/`pH`; `Oem` on Sensor. Client stores `ReadingType` as string and renders units generically. No code change. | `lib/features/sensors/models/sensor_models.dart` (`readingType`, `ReadingUnits` generic) |
+| `AccountService.v1_19_0` | v1_18_1 | New read-only `KerberosKeytabSet`/`PasswordSet`/`TokenSet`; LDAP STARTTLS note. #015 AuthManager doesn't parse these (basic-session flow). No code change. | `lib/redfish/...auth*`; REQ "bmcweb AuthMethods" vendor row |
+| `EthernetInterface.v1_12_6` | v1_12_5 | SLAAC wording clarified (IPv4 link-local). Client exposes ethernet info read-only. No code change. | `lib/features/...ethernet*` |
+| `SoftwareInventory.v1_15_0` | v1_14_0 | New `ImageState` enum + `ActiveTargets`/`StagedTargets`/`ArmedTargets` links — relevant when #008/#020 firmware task timeline lands. No code change. | `lib/features/firmware/...`; REQ "firmware inventory" row |
+
+Superseded versioned files are retained for history (mirror manifest notes
+this). No test fixture references the old versioned filenames, so the refresh
+is purely additive; full `flutter test` stays green. Remaining DOCS-2 scope:
+the 2026-10-21 `dmtf_mockup` payload snapshot itself still matches upstream
+(mockup server pinned `23d21f9a`, unchanged), so no mockup refresh was needed
+this run.

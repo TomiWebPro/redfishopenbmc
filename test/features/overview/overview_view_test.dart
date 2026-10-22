@@ -98,7 +98,8 @@ ProviderScope scopeWith({
 
 void main() {
   group('OverviewView — loading', () {
-    testWidgets('shows skeleton cards while the provider loads', (tester) async {
+    testWidgets('shows skeleton cards while the provider loads',
+        (tester) async {
       // A never-completed completer keeps the provider in the loading state
       // without scheduling a real Timer (which would leak past the test).
       final Completer<SystemOverview> completer = Completer<SystemOverview>();
@@ -160,7 +161,8 @@ void main() {
       expect(find.byType(InfoCard), findsWidgets);
     });
 
-    testWidgets('omits the temperature card and shows "not exposed" for missing fields',
+    testWidgets(
+        'omits the temperature card and shows "not exposed" for missing fields',
         (tester) async {
       await tester.pumpWidget(scopeWith(sample: emptySample()));
       await tester.pumpAndSettle();
@@ -183,6 +185,31 @@ void main() {
       expect(find.byType(GridView), findsOneWidget);
       expect(find.byType(InfoCard), findsNWidgets(5));
     });
+  });
+
+  group('OverviewView — responsive layout (UI-3)', () {
+    Future<void> pumpAtWidth(WidgetTester tester, double width) async {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(scopeWith(sample: fullSample()));
+      await tester.pumpAndSettle();
+    }
+
+    for (final double width in <double>[320, 800, 1300]) {
+      testWidgets('renders without overflow at ${width.toInt()} px',
+          (tester) async {
+        await pumpAtWidth(tester, width);
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'OverviewView must not overflow at $width px',
+        );
+        // Health banner + every data card render at every breakpoint.
+        expect(find.text('Healthy'), findsOneWidget);
+        expect(find.byType(InfoCard), findsNWidgets(5));
+      });
+    }
   });
 
   group('OverviewView — error', () {

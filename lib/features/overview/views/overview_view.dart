@@ -51,7 +51,8 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
     // manual pull. Tracked against the last known state to avoid refresh loops.
     PowerState? lastPower =
         ref.read(systemHandleProvider(widget.systemId))?.snapshot?.powerState;
-    ref.listenManual(systemHandleProvider(widget.systemId), (_, SystemHandle? next) {
+    ref.listenManual(systemHandleProvider(widget.systemId),
+        (_, SystemHandle? next) {
       final PowerState? p = next?.snapshot?.powerState;
       if (p != null && p != lastPower) {
         lastPower = p;
@@ -142,6 +143,23 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
       builder: (BuildContext ctx, BoxConstraints constraints) {
         final int cols =
             OverviewGridBreakpoints.columnsForWidth(constraints.maxWidth);
+        if (cols == 1) {
+          // Single column: stack natural-height skeletons (same rationale as
+          // _dataGrid — a fixed-ratio grid cell squeezes the content).
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: List<Widget>.generate(
+                5,
+                (int i) => Padding(
+                  padding: EdgeInsets.only(bottom: i == 4 ? 0 : 12),
+                  child: const SkeletonCard(),
+                ),
+              ),
+            ),
+          );
+        }
         return GridView.count(
           crossAxisCount: cols,
           shrinkWrap: true,
@@ -160,6 +178,24 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
       builder: (BuildContext ctx, BoxConstraints constraints) {
         final int cols =
             OverviewGridBreakpoints.columnsForWidth(constraints.maxWidth);
+        if (cols == 1) {
+          // Single column: stack natural-height cards. A fixed `childAspectRatio`
+          // grid cell would force a ~288 px square at 320 px viewports and
+          // overflow for taller cards such as Identity (UI-3 found 48 px).
+          final List<Widget> cards = _cards(context, o);
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                for (int i = 0; i < cards.length; i++) ...<Widget>[
+                  if (i > 0) const SizedBox(height: 12),
+                  cards[i],
+                ],
+              ],
+            ),
+          );
+        }
         return GridView.count(
           crossAxisCount: cols,
           shrinkWrap: true,
@@ -206,7 +242,8 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
 
   Widget _identity(BuildContext context, SystemOverview o) {
     final List<Widget> rows = <Widget>[];
-    void add(String label, String? value) => rows.add(_kv(context, label, value));
+    void add(String label, String? value) =>
+        rows.add(_kv(context, label, value));
     add('Manufacturer', o.manufacturer);
     add('Model', o.model);
     add('Serial', o.serialNumber);
@@ -267,8 +304,9 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
   Widget _memory(BuildContext context, SystemOverview o) {
     if (!o.hasMemory) return const NotExposed();
     final double gib = o.memorySummary.totalGiB!;
-    final String text =
-        gib == gib.roundToDouble() ? gib.round().toString() : gib.toStringAsFixed(1);
+    final String text = gib == gib.roundToDouble()
+        ? gib.round().toString()
+        : gib.toStringAsFixed(1);
     return Text(
       '$text GiB',
       style: Theme.of(context).textTheme.bodyMedium,
@@ -291,8 +329,7 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
   }
 
   Widget _errorState(BuildContext context, Object e) {
-    final String message =
-        e is RedfishException ? e.message : e.toString();
+    final String message = e is RedfishException ? e.message : e.toString();
     final ColorScheme scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 32, 16, 32),

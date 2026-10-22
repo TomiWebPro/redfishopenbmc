@@ -625,3 +625,60 @@
 **Issues touched:**
 - none opened/closed this run (EMULATOR extension + UI-3 increment; no issue
   status change). #017/#022/#015 got emulator-level contract notes.
+
+## 2026-10-22 — agent:redfish-automation — DOCS-2 schema refresh + UI-3 completion
+
+**Done:**
+- DOCS-2 primary: refreshed six versioned DMTF schemas to current upstream after
+  a live schema-index audit (`https://redfish.dmtf.org/schemas/v1/`, 14,259
+  entries). New versions: `ComputerSystem.v1_29_0` (GraphicalConsole one-time
+  password/URL actions, ProductionDate, ConsoleAccessMode),
+  `Chassis.v1_29_0` (ProductionDate, OpenRack/OpenRackWide ChassisType),
+  `Sensor.v1_14_0` (ReadingType Turbidity/LiquidConductivity/pH, Oem),
+  `AccountService.v1_19_0` (KerberosKeytabSet/PasswordSet/TokenSet, LDAP
+  STARTTLS note), `EthernetInterface.v1_12_6` (SLAAC wording),
+  `SoftwareInventory.v1_15_0` (ImageState enum + target-state links). All six
+  mirrored into `test/fixtures/redfish/schemas/` and
+  `documentations/external/redfish/schemas/v1/`; hashes + bytes + deltas
+  recorded in the external README "DOCS-2 refresh" table. 619,774 bytes of new
+  downloads (within DOCS-6 budget).
+- Audit result: **no client code change required** — every delta is additive
+  (new fields/enums the client doesn't parse; `ReadingType` is stored as a
+  generic string; ChassisType as free string). REQUIREMENTS.md gained a
+  "DOCS-2 — versioned-schema refresh audit" trace table; the reference README
+  versioned-file list was updated; superseded versioned files retained.
+- Mockup payload verified current: `DMTF/Redfish-Mockup-Server` HEAD still
+  `23d21f9a` (the pinned commit), so no fixture mockup refresh was needed.
+- UI-3 **completed**: added 320/800/1300 px no-overflow tests for the last two
+  views (DashboardView +3, OverviewView +3). The new tests caught and the fixes
+  resolved two genuine responsive bugs:
+  1. `DashboardView` overflowed 28 px vertically at 320 px — the single-column
+     grid tile (1.6 ratio → 180 px tall) was too short for `SystemCard`;
+     now uses ratio 1.25 for the 1-column layout (committed in
+     `lib/features/systems/views/dashboard_view.dart`).
+  2. `OverviewView` overflowed 48 px at 320 px — `GridView.count`'s fixed-ratio
+     288 px square cell squeezed the tall Identity card; single-column now
+     stacks natural-height cards with 12 px gaps (loading skeleton + data grid
+     both; `lib/features/overview/views/overview_view.dart`).
+- Emulator re-run green (16/16) after the fixture change.
+
+**Decisions:**
+- Kept superseded versioned schema files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
+  `v1_12_5`, `v1_14_0`) in both mirrors so any historical reference/doc
+  pointing at a specific version stays valid; the aggregator is self-contained
+  so nothing depends on the filename.
+- No production schema-related code change: verified each delta against the
+  client's parse paths first (grep across `lib/`) before concluding "no change".
+- Responsive fixes chosen to preserve existing 2/3-column grid behaviour: only
+  the single-column layout diverges (natural-height stack / taller tile).
+
+**Next:**
+- Push 15+1 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod, safe logout URI, session reuse/expiry) —
+  unit-level with the in-process mock server.
+- #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag, or #008/#020:
+  bmcweb HTTP-push firmware upload path (emulator asserts HttpPushUri).
+
+**Issues touched:**
+- none opened/closed this run (DOCS-2 refresh + UI-3 completion; no issue status
+  change).

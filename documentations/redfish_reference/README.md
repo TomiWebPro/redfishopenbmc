@@ -32,11 +32,11 @@ source code. The raw API payloads that back every example here live under
     `LogService.json`, `EventService.json`, `TaskService.json`, `Resource.json`,
     `RedfishError` (see gaps), `Odata.json`, `AttributeRegistry.json`.
   - Versioned definition files (latest, used for property tables):
-    `ComputerSystem.v1_28_0.json`, `Chassis.v1_28_0.json`, `Manager.v1_25_0.json`,
-    `Power.v1_7_3.json`, `Thermal.v1_7_3.json`, `Sensor.v1_13_0.json`,
-    `UpdateService.v1_17_1.json`, `SoftwareInventory.v1_14_0.json`,
-    `AccountService.v1_18_1.json`, `SessionService.v1_2_0.json`,
-    `EthernetInterface.v1_12_5.json`, `EventService.v1_12_0.json`,
+    `ComputerSystem.v1_29_0.json`, `Chassis.v1_29_0.json`, `Manager.v1_25_0.json`,
+    `Power.v1_7_3.json`, `Thermal.v1_7_3.json`, `Sensor.v1_14_0.json`,
+    `UpdateService.v1_17_1.json`, `SoftwareInventory.v1_15_0.json`,
+    `AccountService.v1_19_0.json`, `SessionService.v1_2_0.json`,
+    `EthernetInterface.v1_12_6.json`, `EventService.v1_12_0.json`,
     `LogService.v1_9_0.json`, plus `odata.4.0.0.json`.
 
 ## Gaps / notes
@@ -63,6 +63,11 @@ source code. The raw API payloads that back every example here live under
 > index shows 14,259 JSON/YAML entries as of 2026-10-22) is tracked as
 > `DOCS-2` in `FUTUREWORK.md`; the authoritative live docs corpus now lives in
 > `documentations/external/redfish/` with per-file hashes.
+> **2026-10-22 21:51 UTC:** six versioned DMTF schemas refreshed to the current
+> upstream (ComputerSystem/Chassis v1_29_0, Sensor v1_14_0,
+> AccountService v1_19_0, EthernetInterface v1_12_6,
+> SoftwareInventory v1_15_0); superseded files retained; see
+> `documentations/external/README.md` "DOCS-2 refresh".
 
 ## Directory layout
 ```

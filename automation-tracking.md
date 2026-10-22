@@ -459,3 +459,50 @@ Append-only run log for the `redfish-automation` scheduler job.
   `ResetActionInfo` allow-list fallback + PATCH/etag (the emulator now documents
   the manager- vs system-level Reset allow-list sources), or #008/#020: bmcweb
   HTTP-push firmware upload path.
+
+## 2026-10-22 19:59 — DOCS
+
+- **Baseline:** analyze 0; tests 259 passed / 1 skipped; starting commit af735cf;
+  issues validate OK; branch `main` clean but ahead 15 of origin (15 commits
+  unpushed — GitHub push blocked: no credentials, see earlier entries).
+- **Primary work:** DOCS-2 — refreshed the DMTF versioned-schema fixture to the
+  current upstream. A live `https://redfish.dmtf.org/schemas/v1/` index scan
+  (14,259 entries, 3.4 MB listing at 21:45 UTC) showed six versioned definition
+  files had advanced since the 2026-10-21 snapshot. Re-downloaded and diffed all
+  six, then mirrored the new versions into both `test/fixtures/redfish/schemas/`
+  and `documentations/external/redfish/schemas/v1/` with hashes + deltas in the
+  manifest; no client code change was needed (all deltas are additive fields the
+  client doesn't parse).
+- **Docs:** new downloads this run 619,774 bytes (6 versioned schemas — inside
+  the DOCS-6 50 MB budget). Manifest updated in `documentations/external/README.md`
+  ("DOCS-2 refresh" table with SHA-256 + bytes + notable deltas per file);
+  `documentations/redfish_reference/README.md` versioned-file list and snapshot
+  note updated; REQUIREMENTS.md gained a "DOCS-2 — versioned-schema refresh
+  audit" section mapping each refreshed schema to client impact and trace.
+  Superseded versioned files retained for history. Mockup payload still matches
+  the pinned upstream (`DMTF/Redfish-Mockup-Server @ 23d21f9a`, verified HEAD),
+  so no mockup refresh was needed.
+- **Emulator:** re-ran `tool/emulator/run_tests.sh` after touching the fixture
+  tree — 16/16 pass over HTTPS; no stray process.
+- **Code/tests:** no production logic change from the schema refresh. The UI-3
+  increment (below) produced two small responsive fixes.
+- **UI:** UI-3 **completed** — added no-overflow tests at 320/800/1300 px for the
+  two remaining views. `dashboard_view_test.dart` (+3): caught and fixed a real
+  28 px vertical overflow at 320 px — `SystemCard` content no longer fits the
+  1.6-ratio single-column tile; the dashboard grid now uses a taller 1.25 ratio
+  for the 1-column layout (2/3 columns stay 1.6). `overview_view_test.dart` (+3):
+  caught and fixed a real 48 px overflow at 320 px — `GridView.count`'s
+  fixed-ratio 288 px square cell squeezed the tall Identity card; single-column
+  overview now stacks natural-height cards (loading skeleton + data grid both),
+  2/3 columns keep the grid. All prior views (Power/Sensors/Firmware/KVM) were
+  already covered → **UI-3 done, all views covered**.
+- **Verification:** analyze 0; tests 265 passed / 1 skipped; emulator 16/16;
+  issues validate OK; `git diff --check` clean; secret scan clean. Repo-wide
+  `dart format` churn avoided again — formatted only the touched files.
+- **Commit:** pending — message `auto: DOCS — DOCS-2 versioned schema refresh (6 files), UI-3 dashboard+overview breakpoints & overflow fixes (run 2026-10-22 19:59)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried. Commits queued locally before this run: 15.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (16 queued); 2) P1 #015 AuthManager (authMethod, safe logout URI,
+  session reuse/expiry) — unit-level with in-process mock server (emulator
+  asserts the SessionService URI is discoverable — #017 contract); 3) #016/#022:
+  `ResetActionInfo` allow-list fallback + PATCH/etag, or #008/#020: bmcweb
+  HTTP-push firmware upload path (emulator asserts `HttpPushUri`).
