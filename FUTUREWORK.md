@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-22 14:01 (EMULATOR run)
-- **Current focus:** emulator harness live (EMU-1..4); next DOCS-3 DSP0266 audit + P1 #014/#015
+- **Last updated:** 2026-10-22 (DOCS run — DSP0266 eventing/tasks audit, DOCS-7 decision)
+- **Current focus:** DOCS-3 + DOCS-7 done (eventing/tasks audit; events out-of-scope this milestone with rationale); next P1 code: #014/#015 or EMU-5 richer emulator
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -49,25 +49,35 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `documentations/redfish_reference/` and `test/fixtures/redfish/`; verify the
       provenance section in `documentations/redfish_reference/README.md` is current.
       (provenance note added 2026-10-22; full fixture refresh pending)
-- [ ] **DOCS-3** Audit the latest Redfish specification (DSP0266, currently linked
+- [x] **DOCS-3** Audit the latest Redfish specification (DSP0266, currently linked
       from `https://redfish.dmtf.org/`) against the client's discovery, auth,
       error, PATCH/ETag, task, and subscription behaviour. Record gaps with
       section numbers and source URLs.
-      (14-row trace started in `documentations/external/redfish/REQUIREMENTS.md`
-      2026-10-22; continue auditing EventService/Subscriptions and TaskService)
+      (run 2026-10-22 — audit complete against DSP0266 1.25.0; corrected the
+      Eventing citation to §12.1 and Tasks to §12.2 "Asynchronous operations" in
+      REQUIREMENTS.md; added task-monitor polling + event-subscription + SSE +
+      bmcweb vendor rows; remaining gaps are code issues #016/#008/#020/#022 + the
+      DOCS-7 events decision)
 - [ ] **DOCS-4** Audit OpenBMC bmcweb's `docs/Redfish.md`,
       `docs/REDFISH_CHECKLIST.md`, and `docs/OEM_SCHEMAS.md`; document where our
       feature detection differs from bmcweb's actual behaviour.
+      (partial 2026-10-22: bmcweb EventService + TaskService field sets audited
+      and recorded in REQUIREMENTS.md "bmcweb field notes"; full
+      feature-detection diff still pending)
 - [ ] **DOCS-5** Map every `SystemFeatures` flag to a spec citation and a test.
       Add a table under `documentations/redfish_reference/` or
       `documentations/external/redfish/REQUIREMENTS.md`.
 - [ ] **DOCS-6** Keep the downloaded corpus bounded: max 25 MB per file and 50 MB
       of new downloads per run. For larger artifacts store the URL + hash +
       extracted notes instead of the binary.
-- [ ] **DOCS-7** Event subscription support: client has no EventService /
-      Subscriptions implementation yet; DSP0266 §14 "Eventing" + `EventService.json`
-      now mirrored (schemas/v1/EventService.json). Decide: implement subscribe +
-      SSE/webhook handling, or document as out-of-scope with rationale.
+- [x] **DOCS-7** Event subscription support: client has no EventService /
+      Subscriptions implementation yet; DSP0266 §12.1 "Eventing" +
+      `EventService.json` are mirrored. **Decision (2026-10-22): out-of-scope
+      this milestone** — no event consumer (telemetry/firmware tasks are
+      poll-based), no SSE transport in `pubspec.yaml`, no test bed that can push
+      events. Rationale + spec citations recorded in REQUIREMENTS.md
+      "DOCS-7 decision". Revisit when telemetry (#007/#019) or task monitoring
+      (#008/#020/#022) lands.
 
 ## P1 — emulator and integration tests
 
@@ -121,6 +131,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 
 - [ ] **#006** System overview adaptive cards.
 - [ ] **#007 / #019** Sensor monitoring, real-time telemetry, retry.
+- [ ] **Events** Event subscription + SSE client — DOCS-7 decided out-of-scope this
+      milestone (see P1 docs section); revisit when telemetry (#007/#019) or task
+      monitoring (#008/#020/#022) creates a receiver. Spec: DSP0266 §12.1,
+      bmcweb field set audited in REQUIREMENTS.md "bmcweb field notes".
 - [ ] **#008 / #020** Firmware update management, upload progress, task timeline.
 - [ ] **#009 / #021** Remote KVM capability detection and console rendering.
 - [ ] **#010** Hardening: secure storage, theming, accessibility, coverage.
@@ -134,6 +148,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       to cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.
+      (PowerView no-overflow tests at 320/800/1300 px added 2026-10-22 — this
+      run; extend to dashboard/sensors/firmware/KVM)
 - [ ] **UI-4** Visual consistency for cards, badges, health/power colors, spacing.
 - [ ] **UI-5** Power confirmation dialog: clearer destructive-action copy and
       disabled/busy states.

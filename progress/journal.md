@@ -363,3 +363,42 @@
 **Issues touched:**
 - none opened/closed this run (EMU-1..4, EMU-6, UI-5, UI-2 partial; FUTUREWORK
   updated with run markers).
+
+## 2026-10-22 — agent:redfish-automation — DOCS run (DOCS-3 + DOCS-7)
+
+**Done:**
+- DOCS-3: completed the DSP0266 1.25.0 audit of eventing + tasks against the
+  client. Corrected two wrong section citations in REQUIREMENTS.md (Eventing is
+  §12.1, not §14; Tasks/async ops is §12.2 "Asynchronous operations", not
+  §13.4). Added 5 new trace rows: event-subscription lifecycle, SSE
+  `ServerSentEventUri`, EventType deprecation note, task-monitor polling
+  contract, and 2 bmcweb vendor rows (EventService/TaskService field sets from
+  `Redfish.md` @ `0128851e`).
+- DOCS-7: recorded the event-subscription scope decision — **out-of-scope this
+  milestone** — with rationale (no consumer, no SSE transport in pubspec, no
+  push-capable test bed) and spec citations in REQUIREMENTS.md; FUTUREWORK
+  updated (DOCS-7 `[x]` + new P2 "Events" item gated on telemetry/task work).
+- UI-3 first slice: 3 new widget tests asserting PowerView renders without
+  overflow at 320/800/1300 px (no production change needed — layout already
+  wraps correctly; regression protection added).
+
+**Decisions:**
+- Event subscriptions are poll-free for now; telemetry (#007/#019), firmware
+  task monitoring (#008/#020), power task handling (#022) stay poll-based and
+  are the revisit point for events.
+- Kept the diff focused: repo-wide `dart format` would touch ~50 files and
+  reintroduce the known `curly_braces` lint in `kvm_view.dart`; formatted only
+  the touched test file (matches EMULATOR-run precedent; format-cleanliness
+  remains FUTUREWORK P2).
+- No new doc downloads this run (audit used the mirrored DSP0266 PDF + corpus).
+
+**Next:**
+- Push queued local commits once GitHub credentials are available (5 total).
+- P1 code: #014 (RedfishError ExtendedInfo) or #015 (AuthManager session URI)
+  using the in-process mock server.
+- EMU-5 evaluation if richer error paths (403/409/400 ExtendedInfo) are needed
+  for #014/#015 test coverage.
+
+**Issues touched:**
+- none opened/closed this run (docs audit + DOCS-7 decision + UI-3 tests;
+  FUTUREWORK updated).

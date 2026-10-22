@@ -159,3 +159,55 @@ Append-only run log for the `redfish-automation` scheduler job.
   assert client error mapping for 405/501 actions if a richer emulator is
   added (EMU-5 evaluation).
 
+
+## 2026-10-22 16:10 — DOCS
+
+- **Baseline:** analyze 0; tests 234 passed / 1 skipped; starting commit ed2e943;
+  issues validate OK; branch `main` clean but ahead 4 of origin (c8dc7e1 DOCS,
+  0c526fa, 81dfb8f EMULATOR, ed2e943 — all unpushed, GitHub push blocked: no
+  credentials, see earlier entries).
+- **Primary work:** DOCS-3 + DOCS-7 — audited DSP0266 1.25.0 Eventing (§12.1)
+  and Asynchronous operations / TaskService (§12.2) against the client's
+  task/event behaviour; made and recorded the DOCS-7 event-subscription scope
+  decision. Also landed a small tested UI increment (UI-3).
+- **Docs:**
+  - Corrected stale citations in `REQUIREMENTS.md`: Eventing was cited as §14
+    (wrong — it is DSP0266 §12.1 "Eventing", PDF p.157–161) and Tasks as §13.4
+    (wrong — §12.2 "Asynchronous operations", p.162–164). Both fixed; grep
+    confirms no other wrong §14/§13.4 references remain in the repo.
+  - Added 5 REQUIREMENTS rows: event subscription lifecycle (POST → 201 +
+    `Location`, DELETE to unsubscribe, §12.1.1–§12.1.2), SSE
+    `ServerSentEventUri` (§12.1.3), EventType deprecation + RegistryPrefix/
+    ResourceType/MessageIds filtering (§12.1.4–§12.1.5, note for future impl),
+    task-monitor polling contract (202 + `Location` + `Retry-After`; GET monitor
+    202-while-running then final body; DELETE cancel; 404/410 after completion,
+    §12.2 — client reads `Location` but does not poll: Partial/GAP #008/#020/
+    #022), plus two bmcweb vendor rows (EventService + TaskService field sets,
+    cited `Redfish.md` §EventService/§TaskService @ `0128851e`).
+  - DOCS-7 decision recorded in REQUIREMENTS.md "DOCS-7 decision" section:
+    **event subscriptions/SSE out-of-scope this milestone** — no event consumer
+    (telemetry + firmware/power tasks are poll-based), no SSE transport in
+    `pubspec.yaml`, no push-capable test bed (static mockup cannot push; richer
+    emulator EMU-5 or live BMC needed). Revisit when #007/#019/#008/#020/#022
+    lands. No new downloads this run (0 bytes — corpus budget untouched).
+- **Emulator:** none this run (DOCS run).
+- **Code/tests:** no production code changes (docs audit only — remaining gaps
+  are tracked code issues #016/#008/#020/#022).
+- **UI:** UI-3 first slice — added a "responsive layout" widget-test group to
+  `test/features/power/power_view_test.dart` asserting PowerView renders without
+  overflow at 320 / 800 / 1300 px logical widths (sets `tester.view.physicalSize`
+  + `devicePixelRatio` 1.0, asserts `takeException()` null, verifies the power
+  UI still renders). +3 tests. Note: repo-wide `dart format` still churns ~50
+  files and reintroduces the pre-existing `curly_braces` lint in `kvm_view.dart`
+  — kept the diff focused (formatted only the touched test file), consistent
+  with the EMULATOR-run precedent; repo-wide format stays a FUTUREWORK P2 item.
+- **Verification:** analyze 0; tests 237 passed / 1 skipped; issues validate OK;
+  `git diff --check` clean; secret scan clean (no tokens/credentials in diff).
+- **Commit:** pending — `auto: DOCS — DSP0266 §12.1/§12.2 eventing+tasks audit, DOCS-7 decision, PowerView breakpoint tests (run 2026-10-22 16:10)`; pushed: no
+  (expected — same GitHub credential blocker as the previous 4 commits; will
+  record exact error at push time).
+- **Next:** 1) Push the 4 queued local commits (c8dc7e1, 0c526fa, 81dfb8f,
+  ed2e943 + this one) from a machine with GitHub credentials; 2) P1 code:
+  #014 (RedfishError ExtendedInfo parsing) or #015 (AuthManager session URI
+  discovery) — unit-level work with the in-process mock server; 3) EMU-5
+  evaluation if 403/409/400 extended-info paths are needed for #014/#015 tests.

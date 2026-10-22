@@ -257,6 +257,36 @@ void main() {
       expect(find.text('Confirm Force Off?'), findsNothing);
     });
   });
+
+  group('PowerView — responsive layout (UI-3)', () {
+    Future<void> pumpAtWidth(WidgetTester tester, double width) async {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'Rack BMC 1'),
+      );
+      await manager.connect('bmc1');
+      await tester.pumpWidget(
+        harness(manager: manager, controller: _fakeController()),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    for (final double width in <double>[320, 800, 1300]) {
+      testWidgets('renders without overflow at ${width.toInt()} px',
+          (tester) async {
+        await pumpAtWidth(tester, width);
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'PowerView must not overflow at $width px',
+        );
+        expect(find.text('Power On'), findsOneWidget);
+      });
+    }
+  });
 }
 
 PowerController _fakeController() => PowerController(
