@@ -203,9 +203,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   with the EMULATOR-run precedent; repo-wide format stays a FUTUREWORK P2 item.
 - **Verification:** analyze 0; tests 237 passed / 1 skipped; issues validate OK;
   `git diff --check` clean; secret scan clean (no tokens/credentials in diff).
-- **Commit:** pending — `auto: DOCS — DSP0266 §12.1/§12.2 eventing+tasks audit, DOCS-7 decision, PowerView breakpoint tests (run 2026-10-22 16:10)`; pushed: no
-  (expected — same GitHub credential blocker as the previous 4 commits; will
-  record exact error at push time).
+- **Commit:** 980189f — `auto: DOCS — DSP0266 §12.1/§12.2 eventing+tasks audit, DOCS-7 decision, PowerView breakpoint tests (run 2026-10-22 16:10)`; pushed: **no** — `git push origin main` failed with `fatal: could not read Username for 'https://github.com': No such device or address` (same GitHub credential blocker as the previous 4 commits — no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key). Local commit kept; not retried. 5 commits now queued locally: c8dc7e1, 0c526fa, 81dfb8f, ed2e943, 980189f.
 - **Next:** 1) Push the 4 queued local commits (c8dc7e1, 0c526fa, 81dfb8f,
   ed2e943 + this one) from a machine with GitHub credentials; 2) P1 code:
   #014 (RedfishError ExtendedInfo parsing) or #015 (AuthManager session URI
