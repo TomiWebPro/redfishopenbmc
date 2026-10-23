@@ -981,6 +981,63 @@ void main() {
       expect(mem['TotalSystemMemoryGiB'], 96);
     });
 
+    test(
+        'query behavior: \$filter/\$select are advertised but NOT applied '
+        'by the mockup — the #018 pass must filter/select client-side',
+        () async {
+      // ProtocolFeaturesSupported advertises FilterQuery/SelectQuery (asserted
+      // above), but the pinned DMTF mockup serves static fixture files and
+      // does NOT apply OData query options server-side. `$filter=Id eq 'NOPE'`
+      // on the Roles collection (3 members) still returns all 3 members;
+      // `$select=Model` on a system resource returns the FULL resource body.
+      // A #018 lightweight discovery pass must therefore never assume
+      // server-side filtering/field selection — it must filter client-side
+      // and use `$expand` (which IS applied; pinned in the next test) for
+      // payload shaping.
+      final Map<String, dynamic> filtered = await client.getJson(
+          '/redfish/v1/AccountService/Roles?\$filter=Id%20eq%20%27NOPE%27');
+      expect(filtered['Members@odata.count'], 3,
+          reason: '#018: \$filter is advertised but not applied — the mockup '
+              'returns the unfiltered Roles collection; a discovery pass must '
+              'filter client-side and never rely on server-side filtering');
+      final Map<String, dynamic> selected = await client
+          .getJson('/redfish/v1/Systems/437XR1138R2?\$select=Model');
+      expect(selected['Model'], '3500');
+      expect(selected['Actions'], isA<Map<dynamic, dynamic>>(),
+          reason: '#018: \$select is advertised but not applied — the full '
+              'resource body comes back, not just the selected field');
+    });
+
+    test(
+        'query behavior: \$expand=* (ExpandAll) also serves inlined full '
+        'member bodies for the #018 discovery pass', () async {
+      // The 17:07 pin used `$expand=.($levels=1)`; the mockup ALSO applies
+      // the `$expand=*` (ExpandAll) form — matching the advertised
+      // ExpandQuery{ExpandAll, Levels}. Both forms inline the full
+      // ComputerSystem bodies (identity, PowerState, reset allow-list incl.
+      // Nmi, ProcessorSummary/MemorySummary) in one round trip. The #018
+      // lightweight discovery pass can rely on either form; the contract is
+      // that the inlined payload carries the same fields as a direct GET.
+      final Map<String, dynamic> systems =
+          await client.getJson('/redfish/v1/Systems?\$expand=*');
+      expect(systems['@odata.type'], startsWith('#ComputerSystemCollection.'));
+      final List<dynamic> members = systems['Members'] as List<dynamic>;
+      expect(members, isNotEmpty);
+      final Map<dynamic, dynamic> member =
+          members.first as Map<dynamic, dynamic>;
+      expect(member['@odata.id'], '/redfish/v1/Systems/437XR1138R2');
+      expect(member['Model'], '3500');
+      expect(member['PowerState'], 'On');
+      final Map<dynamic, dynamic> actions =
+          member['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> reset =
+          actions['#ComputerSystem.Reset'] as Map<dynamic, dynamic>;
+      expect(reset['ResetType@Redfish.AllowableValues'], contains('Nmi'));
+      final Map<dynamic, dynamic> proc =
+          member['ProcessorSummary'] as Map<dynamic, dynamic>;
+      expect(proc['Count'], 2);
+    });
+
     test('account service: lockout policy + Roles link contract (#015/#026)',
         () async {
       // #015 AuthManager (logout/expiry reasoning) and #026 (duplicate auth

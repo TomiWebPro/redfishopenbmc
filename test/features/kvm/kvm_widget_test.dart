@@ -132,6 +132,44 @@ void main() {
       expect(find.bySemanticsLabel('Serial Console, disabled'), findsOneWidget,
           reason: 'disabled console header announces one merged label');
     });
+
+    testWidgets(
+        'view header announces one merged semantics node — title + subtitle '
+        '(UI-2)', (WidgetTester tester) async {
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(
+          consoles: <KvmConsole>[
+            KvmConsole(
+              type: KvmConsoleType.graphical,
+              managerId: 'BMC',
+              connectTypesSupported: <String>['KVMIP'],
+              serviceEnabled: true,
+              sourceManagerUri: '/redfish/v1/Managers/BMC',
+            ),
+          ],
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: const KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.bySemanticsLabel('Remote KVM / Consoles, consoles exposed by '
+            'the system managers'),
+        findsOneWidget,
+        reason: 'the view title + subtitle announce as one merged node, not '
+            'two detached text nodes',
+      );
+      // The visible texts are preserved for sighted users.
+      expect(find.text('Remote KVM / Consoles'), findsOneWidget);
+      expect(find.text('Consoles exposed by the system managers.'),
+          findsOneWidget);
+    });
   });
 
   group('KvmView — responsive layout (UI-3)', () {

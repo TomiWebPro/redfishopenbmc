@@ -60,14 +60,29 @@ class _KvmViewState extends ConsumerState<KvmView> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
-        Text(
-          'Remote KVM / Consoles',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Consoles exposed by the system managers.',
-          style: Theme.of(context).textTheme.bodySmall,
+        Semantics(
+          // UI-2: the view header (title + subtitle) announces as ONE merged
+          // node, the established header-row pattern — a screen reader gets
+          // the view purpose in one concise summary instead of two detached
+          // text nodes. The visible texts are preserved for sighted users.
+          container: true,
+          excludeSemantics: true,
+          label: 'Remote KVM / Consoles, consoles exposed by the system '
+              'managers',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'Remote KVM / Consoles',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Consoles exposed by the system managers.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         if (ui.error != null)
