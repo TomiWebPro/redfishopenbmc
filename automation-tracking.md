@@ -893,9 +893,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   (no repo-wide churn — prior-run precedent: repo-wide `dart format`
   reintroduces the `curly_braces` lint and was reverted this run; the churn it
   caused is fully restored via `git checkout`).
-- **Commit:** (see 7.4) — pushed: **no** — same GitHub credential blocker (no
-  credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this
-  machine); local commit kept, not retried.
+- **Commit:** bea5e7c — `auto: EMULATOR — suite +3 (OverviewService end-to-end hydration #006, LogService/LogEntry contract incl. nextLink), UI-2 InfoCard merged header semantics (run 2026-10-23 06:10)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
 - **Next:** 1) Push the queued local commits from a machine with GitHub
   credentials (30 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
   logout URI, token rehydrate, SessionTimeout expiry) — emulator pins the full
