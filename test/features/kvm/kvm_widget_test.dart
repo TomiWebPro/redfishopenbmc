@@ -73,6 +73,65 @@ void main() {
       expect(find.text('Manager: BMC'), findsOneWidget);
       expect(find.text('Copy connect info'), findsOneWidget);
     });
+
+    testWidgets(
+        'console card header announces one merged semantics node — '
+        'enabled (UI-2)', (WidgetTester tester) async {
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(
+          consoles: <KvmConsole>[
+            KvmConsole(
+              type: KvmConsoleType.graphical,
+              managerId: 'BMC',
+              connectTypesSupported: <String>['KVMIP'],
+              serviceEnabled: true,
+              sourceManagerUri: '/redfish/v1/Managers/BMC',
+            ),
+          ],
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: const KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+          find.bySemanticsLabel('Graphical Console, enabled'), findsOneWidget,
+          reason: 'enabled console header announces one merged label');
+    });
+
+    testWidgets(
+        'console card header announces one merged semantics node — '
+        'disabled (UI-2)', (WidgetTester tester) async {
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(
+          consoles: <KvmConsole>[
+            KvmConsole(
+              type: KvmConsoleType.serial,
+              managerId: 'BMC',
+              connectTypesSupported: <String>['SSH'],
+              serviceEnabled: false,
+              sourceManagerUri: '/redfish/v1/Managers/BMC',
+            ),
+          ],
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: const KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsLabel('Serial Console, disabled'), findsOneWidget,
+          reason: 'disabled console header announces one merged label');
+    });
   });
 
   group('KvmView — responsive layout (UI-3)', () {

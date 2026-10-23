@@ -32,13 +32,16 @@ class _KvmViewState extends ConsumerState<KvmView> {
     // Trigger the first load once the frame is laid out so we don't call
     // ref.read during build (which would throw in some Riverpod versions).
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) ref.read(kvmControllerProvider(widget.systemId).notifier).load();
+      if (mounted) {
+        ref.read(kvmControllerProvider(widget.systemId).notifier).load();
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final SystemHandle? handle = ref.watch(systemHandleProvider(widget.systemId));
+    final SystemHandle? handle =
+        ref.watch(systemHandleProvider(widget.systemId));
     final SystemFeatures? features = handle?.features;
 
     if (handle == null) {
@@ -115,21 +118,38 @@ class _ConsoleCard extends StatelessWidget {
             Row(
               children: <Widget>[
                 Expanded(
-                  child: Text(
-                    console.type.label,
-                    style: Theme.of(context).textTheme.titleMedium,
+                  child: Semantics(
+                    // UI-2: the header (title + Enabled/Disabled chip) announces
+                    // as ONE merged node, the same pattern as the
+                    // SystemCard/InfoCard/chassis/sensor/firmware card headers.
+                    // The chips' status text and the title become a single
+                    // concise summary instead of two separate announcements.
+                    container: true,
+                    excludeSemantics: true,
+                    label: '${console.type.label}, '
+                        '${console.serviceEnabled ? 'enabled' : 'disabled'}',
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            console.type.label,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                        if (console.serviceEnabled)
+                          const Chip(
+                            label: Text('Enabled'),
+                            visualDensity: VisualDensity.compact,
+                          )
+                        else
+                          const Chip(
+                            label: Text('Disabled'),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-                if (console.serviceEnabled)
-                  const Chip(
-                    label: Text('Enabled'),
-                    visualDensity: VisualDensity.compact,
-                  )
-                else
-                  const Chip(
-                    label: Text('Disabled'),
-                    visualDensity: VisualDensity.compact,
-                  ),
               ],
             ),
             const SizedBox(height: 4),

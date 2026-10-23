@@ -962,3 +962,71 @@ Append-only run log for the `redfish-automation` scheduler job.
   or #008/#020: bmcweb HTTP-push firmware upload — both push URIs +
   `HttpPushUriOptions` apply-time modes + `SimpleUpdateActionInfo` + the now
   fully-mirrored LogEntry collection contract for the task timeline.
+
+## 2026-10-23 09:14 — EMULATOR (Task resource contract pin) + UI-2 KvmConsole header
+
+- **Baseline:** analyze 0; tests 285 passed / 1 skipped; starting commit ca57787
+  (branch `main` ahead 33 of origin); issues validate OK; working tree clean;
+  emulator pin `23d21f9a` re-verified unchanged upstream.
+- **Primary work:** EMULATOR — pinned the **Task resource contract** the
+  future #008/#020/#022 poller must parse, using the DMTF mockup's only Task
+  (545, `Task.v1_7_3`): `TaskState` (`Completed`), `TaskStatus` (`OK`),
+  RFC3339 `StartTime`/`EndTime`, and `Messages[]` shape (`MessageId` `Base.*`,
+  `Message`, `MessageArgs[]`, `Severity`). Crucially, the fixture publishes
+  **no `PercentComplete`** — the poller must treat a missing `PercentComplete`
+  as unknown progress, never crash (Task.v1_7_4.json makes it optional).
+  Also pinned the `TaskService.v1_2_0` surface a poller/cleanup pass may
+  consult: `CompletedTaskOverWritePolicy=Manual`,
+  `LifeCycleEventOnTaskStateChange=true`, and the enumerable `Tasks` collection
+  (already asserted in the discovery contract).
+- **Docs:** no new downloads (DOCS-6 budget untouched). Updated
+  `documentations/external/redfish/REQUIREMENTS.md`: emulator test-platform note
+  "30 tests" → "32 tests" with the new task-resource group listed; DOCS-10 rows
+  for `Task.TaskState`/`Messages[]`/`TaskService` policy fields now cite the
+  live-mockup pin (incl. PercentComplete-absent note); "Last audited" bumped.
+- **Emulator:** suite 30 → 32 tests, all green over HTTPS (32/32 re-run
+  against the final tree); server killed by exact-PID after each run (no stray
+  process, port 8443 free); pin `23d21f9a` unchanged;
+  `tool/emulator/run_tests.sh` unchanged.
+- **Code/tests:** no production service-code change this run — test-only pins
+  via raw `getJson` against the live mockup (the Task resource contract is for
+  the TO-BUILD poller, not yet read by client code). Emulator suite +2
+  (`emulator_suite_test.dart` "task resource: TaskState/TaskStatus/Messages
+  shape ... incl. absent PercentComplete" + "task service:
+  CompletedTaskOverWritePolicy + LifeCycle event fields"). UI-2 increment:
+  `KvmConsole` card header (title + Enabled/Disabled chip) now announces as
+  **one merged semantics node** — `Semantics(container: true,
+  excludeSemantics: true, label: '<type>, enabled|disabled')` wrapping the
+  header row, the same pattern as the SystemCard/InfoCard/chassis/sensor/
+  firmware card headers; the copy button and chips below stay interactive/
+  sibling semantics (no a11y regression). Fixed a `dart format`-reintroduced
+  `curly_braces_in_flow_control_structures` lint in `kvm_view.dart` (known
+  prior-run precedent). No new dependencies; no issue status change.
+- **UI:** KvmConsole card header merged semantics label (UI-2). Rationale: the
+  KVM console cards were the last card header in regular use without the merged
+  pattern; the Enabled/Disabled chip previously announced as a separate bare
+  node. Widget tests assert the merged label for both states (enabled +
+  disabled, split into two testWidgets because a second `ProviderScope` pump at
+  the same tree position reuses the first container — the established
+  single-pump per test pattern).
+- **Verification:** analyze 0; tests 287 passed / 1 skipped (baseline 285 →
+  +2: the two KVM semantics tests; the +2 emulator cases live in the emulator
+  suite which is skipped in plain `flutter test`); emulator 32/32; issues
+  validate OK; `git diff --check` clean; secret scan clean (no tokens/creds in
+  diff). Formatted only the 3 touched Dart files (no repo-wide churn —
+  prior-run precedent).
+- **Commit:** TBD — `auto: EMULATOR — Task resource contract pinned (TaskState/
+  TaskStatus/Messages incl. absent PercentComplete for #008/#020 poller), UI-2
+  KvmConsole card header merged semantics (run 2026-10-23 09:14)`; pushed:
+  **no** — the same GitHub credential blocker (no credential helper, no
+  GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local
+  commit kept, not retried. Commits queued locally before this run: 33.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (34 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
+  logout URI, token rehydrate, SessionTimeout expiry) — emulator pins the full
+  session + AccountService surface; implement unit-level with the in-process
+  mock server; 3) #008/#020: build the task poller now that the Task resource
+  contract is pinned end-to-end (GET-on-monitor, `TaskState` 13-value parse,
+  `PercentComplete` optional/absent handling, `Messages[]` timeline) and the
+  bmcweb HTTP-push firmware upload path (both push URIs + `HttpPushUriOptions`
+  apply-time modes + `SimpleUpdateActionInfo` already asserted).

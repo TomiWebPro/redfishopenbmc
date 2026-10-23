@@ -7,28 +7,33 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 (DOCS-11 run — mirrored the missing `LogEntry`
-  schema corpus + `LogService.v1_9_0.json` (LogEntry.json aggregator +
-  v1_22_0 newest + v1_16_0 mockup-pinned + LogEntryCollection.json + LogService
-  v1_9_0; 171,095 bytes, inside DOCS-6 budget); UI-2 increment: SystemCard
-  merged-header semantics label)
-- **Current focus:** EMULATOR suite at **30 tests** (OverviewService
-  end-to-end hydration #006 — identity/health/power/processor-memory
-  summaries/indicator-LED/leading-thermal — and LogService + LogEntry
-  collection contract incl. ClearLog + `@odata.nextLink`, pinned 06:10 run);
-  DOCS-10 done (Task resource corpus + DSP0266 §12.2 task-monitor contract
-  audit — `UpdateTask` now carries the optional 202 `Retry-After` poll hint);
-  DOCS-9 freshness re-check done (no anchors moved; corpus current); DOCS-2
-  schema refresh done (ComputerSystem/Chassis v1_29_0, Sensor v1_14_0,
+- **Last updated:** 2026-10-23 (EMULATOR run — **Task resource contract pinned
+  end-to-end**: the mockup's Task 545 publishes `TaskState Completed`,
+  `TaskStatus OK`, RFC3339 Start/EndTime, `Messages[]`
+  (MessageId/Message/MessageArgs/Severity) — and **no `PercentComplete`**, so
+  the #008/#020 poller must treat it as unknown; TaskService
+  `CompletedTaskOverWritePolicy=Manual` + `LifeCycleEventOnTaskStateChange`
+  pinned; emulator suite 30 → **32 tests**; UI-2 increment: KvmConsole card
+  header merged semantics label; DOCS-6 budget untouched)
+- **Current focus:** EMULATOR suite at **32 tests** (Task resource contract
+  pin, 09:14 run — the #008/#020 task poller now has its full parse surface
+  pinned: TaskState/TaskStatus/Messages/absent-PercentComplete, plus
+  TaskService policy fields; OverviewService end-to-end hydration #006 and the
+  LogService/LogEntry collection contract incl. ClearLog + `@odata.nextLink`
+  pinned 06:10 run); DOCS-10 done (Task resource corpus + DSP0266 §12.2
+  task-monitor contract audit — `UpdateTask` now carries the optional 202
+  `Retry-After` poll hint); DOCS-11 done (LogEntry corpus mirror); DOCS-9
+  freshness re-check done (no anchors moved; corpus current); DOCS-2 schema
+  refresh done (ComputerSystem/Chassis v1_29_0, Sensor v1_14_0,
   AccountService v1_19_0, EthernetInterface v1_12_6, SoftwareInventory
   v1_15_0); UI-3 fully done (all views covered); **UI-1 done** (dashboard
   error summary + Retry); **UI-2 increments** (InfoCard merged header semantics,
-  06:10 run; SystemCard merged header semantics, 07:xx run); next P1: #015
-  (AuthManager) — emulator now pins the full session contract + the
-  AccountService surface + overview hydration; #016/#022 (ActionInfo/etag) or
-  #008/#020 (HTTP-push firmware, Tasks URI + push apply-time modes + both push
-  URIs + SimpleUpdateActionInfo + LogEntry collection) all have emulator
-  assertions
+  06:10 run; SystemCard merged header semantics, 07:xx run; KvmConsole card
+  header merged semantics, 09:14 run); next P1: #015 (AuthManager) — emulator
+  now pins the full session contract + the AccountService surface + overview
+  hydration; #016/#022 (ActionInfo/etag) or #008/#020 (HTTP-push firmware,
+  Tasks URI + push apply-time modes + both push URIs + SimpleUpdateActionInfo +
+  LogEntry collection + **Task resource**) all have emulator assertions
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -155,7 +160,9 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       SimpleUpdateActionInfo #008/#020 — 2026-10-23 03:02) → **30 tests
       (OverviewService end-to-end hydration #006 + LogService/LogEntry
       collection contract incl. ClearLog + `@odata.nextLink` pagination —
-      2026-10-23 06:10)**)
+      2026-10-23 06:10) → 32 tests (Task resource contract: TaskState/
+      TaskStatus/Start-EndTime/Messages incl. absent PercentComplete, + TaskService
+      CompletedTaskOverWritePolicy/LifeCycle fields — 2026-10-23 09:14)**)
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -270,7 +277,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       contract for `startSimpleUpdate` on BMCs that DO expose SimpleUpdate;
       `startSimpleUpdate` now returns an `UpdateTask` handle with the 202
       `Location` task-monitor URI + optional `Retry-After` seconds (DSP0266
-      §12.2; `Task.v1_7_4.json` mirrored as DOCS-10) — the poller only lacks
+      §12.2; `Task.v1_7_4.json` mirrored as DOCS-10); **Task resource contract
+      pinned 2026-10-23 09:14**: GET `/TaskService/Tasks/545` returns
+      `TaskState Completed`/`TaskStatus OK`/RFC3339 Start-EndTime/`Messages[]`
+      and **no `PercentComplete`** (poller must treat it as unknown), and
+      TaskService publishes `CompletedTaskOverWritePolicy=Manual` +
+      `LifeCycleEventOnTaskStateChange=true` — the poller only lacks
       GET-on-monitor + TaskState parsing)
 - [ ] **#009 / #021** Remote KVM capability detection and console rendering.
 - [ ] **#010** Hardening: secure storage, theming, accessibility, coverage.
@@ -300,7 +312,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       semantics label (`<name>, connected|connecting|connection error|
       disconnected`) done 2026-10-23 07:xx — Semantics on the title+status-icon
       row only, PopupMenuButton keeps its own semantics, +widget test across all
-      four connection states; extend to remaining cards, dialogs, tables)
+      four connection states; KvmConsole card header merged semantics label
+      (`<type>, enabled|disabled`) done 2026-10-23 09:14 — Semantics on the
+      title+Enabled/Disabled-chip row, widget tests for both states; extend to
+      remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.
       (PowerView no-overflow tests added 2026-10-22; SensorsView no-overflow

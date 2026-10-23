@@ -656,6 +656,56 @@ void main() {
     });
 
     test(
+        'task resource: TaskState/TaskStatus/Messages shape the #008/#020 '
+        'poller must parse (incl. absent PercentComplete)', () async {
+      // The UpdateTask handle carries the 202 Location task-monitor URI; the
+      // poller (TO-BUILD, #008/#020/#022) GETs that URI and must parse the
+      // Task resource: TaskState (13 values per Task.v1_7_4.json), TaskStatus,
+      // StartTime/EndTime RFC3339, and Messages (MessageId/Message/MessageArgs/
+      // Severity) for normalized error info. The DMTF mockup's only task
+      // (545) is Completed with no PercentComplete — the poller must treat a
+      // missing PercentComplete as unknown, never throw.
+      final Map<String, dynamic> task =
+          await client.getJson('/redfish/v1/TaskService/Tasks/545');
+      expect(task['@odata.type'], startsWith('#Task.'));
+      expect(task['Id'], '545');
+      expect(task['TaskState'], 'Completed');
+      expect(task['TaskStatus'], 'OK');
+      expect(task['StartTime'], isA<String>());
+      expect(task['EndTime'], isA<String>());
+      // Start/End are RFC3339-ish timestamps the client can parse.
+      expect(DateTime.tryParse(task['StartTime'] as String), isNotNull);
+      expect(DateTime.tryParse(task['EndTime'] as String), isNotNull);
+      // Messages: the normalized task-error surface (MessageId + Severity).
+      final List<dynamic> messages = task['Messages'] as List<dynamic>;
+      expect(messages, isNotEmpty);
+      final Map<dynamic, dynamic> message =
+          messages.first as Map<dynamic, dynamic>;
+      expect(message['MessageId'], startsWith('Base.'));
+      expect(message['Message'], isA<String>());
+      expect(message['Severity'], isA<String>());
+      expect(message['MessageArgs'], isA<List<dynamic>>());
+      // The mockup fixture does not publish PercentComplete; the poller must
+      // treat it as absent (unknown progress), not crash.
+      expect(task.containsKey('PercentComplete'), isFalse,
+          reason: '#008: PercentComplete is optional on Task; the poller must '
+              'handle a task that never publishes it');
+    });
+
+    test(
+        'task service: CompletedTaskOverWritePolicy + LifeCycle event fields '
+        'are published (#008/#020)', () async {
+      // TaskService.v1_2_0 shape a task-poller/cleanup pass may consult: how
+      // completed tasks are retained and whether the service fires lifecycle
+      // events on state change.
+      final Map<String, dynamic> svc =
+          await client.getJson('/redfish/v1/TaskService');
+      expect(svc['ServiceEnabled'], isTrue);
+      expect(svc['CompletedTaskOverWritePolicy'], 'Manual');
+      expect(svc['LifeCycleEventOnTaskStateChange'], isA<bool>());
+    });
+
+    test(
         'event service: subscriptions collection + SubmitTestEvent action are '
         'exposed (DOCS-7 bed for #019)', () async {
       final Map<String, dynamic> svc =

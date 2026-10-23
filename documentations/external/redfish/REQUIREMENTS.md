@@ -6,12 +6,16 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-23 (DOCS-11 — mirrored the missing `LogEntry` corpus +
+Last audited: 2026-10-23 (EMULATOR run — Task resource contract pinned end-to-end:
+`TaskState`/`TaskStatus`/`Start`-`EndTime`/`Messages[]` on the mockup's Task 545,
+incl. the **absent `PercentComplete`** the #008/#020 poller must treat as unknown,
+plus `TaskService.CompletedTaskOverWritePolicy`/`LifeCycleEventOnTaskStateChange`;
+DOCS-11 was the prior audit — mirrored the missing `LogEntry` corpus +
 `LogService.v1_9_0.json` after the emulator pinned `LogEntry.v1_16_0` shapes;
 upstream anchors re-verified: bmcweb `27e0930b`, Redfish-Mockup-Server
-`23d21f9a`, DSP0266 1.25.0, schema index current. DOCS-10 was the prior audit —
-task-monitor contract + `Task` corpus + `UpdateTask.Retry-After`; DOCS-9 — all
-anchors unchanged; DOCS-8 — bmcweb pin moved `0128851e` → `27e0930b`).
+`23d21f9a`, DSP0266 1.25.0, schema index current. DOCS-10 — task-monitor
+contract + `Task` corpus + `UpdateTask.Retry-After`; DOCS-8 — bmcweb pin moved
+`0128851e` → `27e0930b`).
 Sources:
 
 - DSP0266 1.25.0 — `redfish/spec/DSP0266_1.25.0.pdf`
@@ -31,9 +35,9 @@ Mirrored the official DMTF `Task` schemas (`Task.json` aggregator,
 | Task monitor URI format `/redfish/v1/TaskService/TaskMonitors/<TaskMonitorId>` | DSP0266 §12.2 (task monitor "should be in the format") | n/a — client treats the `Location` value as opaque | emulator asserts client accepts the mockup's task URI | Note for #008/#020/#022 |
 | GET on the task monitor returns 202 while in process, then the final status + headers + body of the initial operation | DSP0266 §12.2 | not implemented — no task poller | — | GAP: #008/#020 (firmware), #022 (power) |
 | DELETE task monitor or Task resource cancels; subsequent GET → 410 Gone / 404 Not Found | DSP0266 §12.2 | not implemented | — | GAP: #008/#020 (upload cancel) |
-| `Task.TaskState` (13 values incl. `Cancelled`/`Cancelling`/`Exception`); `TaskStatus` (Health) set only at completion; `PercentComplete` 0–100 (0 before start) | `Task.v1_7_4.json` `TaskState`/`TaskStatus`/`PercentComplete`; DSP0266 §12.2 | `UpdateTask` model captures `taskUri` + `retryAfterSeconds` only (no TaskState parsing yet) | `firmware_model_test.dart` | Partial: state machine comes with the #008/#020 poller |
-| `Task.Messages[]` carries task-associated messages (e.g. `ManagerGoingOfflineTemporarily` for service reboot during firmware update) | `Task.v1_7_4.json` `Messages`; DSP0266 §12.2 | not parsed | — | GAP: #008/#020 task timeline |
-| `TaskService.CompletedTaskOverWritePolicy`, `LifeCycleEventOnTaskStateChange`, `Tasks` collection | `TaskService.v1_2_1.json` | not read (client only uses `SessionService` etc.) | — | vendor/feature row for #008/#020 task timeline |
+| `Task.TaskState` (13 values incl. `Cancelled`/`Cancelling`/`Exception`); `TaskStatus` (Health) set only at completion; `PercentComplete` 0–100 (0 before start) | `Task.v1_7_4.json` `TaskState`/`TaskStatus`/`PercentComplete`; DSP0266 §12.2 | `UpdateTask` model captures `taskUri` + `retryAfterSeconds` only (no TaskState parsing yet) | `firmware_model_test.dart`; **emulator pins the mockup Task resource end-to-end: `TaskState Completed`, `TaskStatus OK`, RFC3339 Start/EndTime — and PercentComplete is ABSENT on the fixture, so the poller must treat it as unknown** (pinned 2026-10-23) | Partial: state machine comes with the #008/#020 poller |
+| `Task.Messages[]` carries task-associated messages (e.g. `ManagerGoingOfflineTemporarily` for service reboot during firmware update) | `Task.v1_7_4.json` `Messages`; DSP0266 §12.2 | not parsed | **emulator pins the mockup Task `Messages[]` shape: `MessageId` (`Base.*`), `Message`, `MessageArgs[]`, `Severity`** (pinned 2026-10-23) | GAP: #008/#020 task timeline |
+| `TaskService.CompletedTaskOverWritePolicy`, `LifeCycleEventOnTaskStateChange`, `Tasks` collection | `TaskService.v1_2_1.json` | not read (client only uses `SessionService` etc.) | **emulator pins `CompletedTaskOverWritePolicy=Manual`, `LifeCycleEventOnTaskStateChange=true`, and the enumerable `Tasks` collection** (pinned 2026-10-23) | vendor/feature row for #008/#020 task timeline |
 | `Retry-After` on the 202 tells the client how long to wait before polling; services may go offline (firmware update) and shall include `ManagerGoingOfflineTemporarily` + `Retry-After` | DSP0266 §12.2 | `FirmwareService.startSimpleUpdate` parses `Retry-After` (seconds or HTTP-date) into `UpdateTask.retryAfterSeconds` | `firmware_service_test.dart` | Partial: captured but not yet used to schedule the poll (that is #008/#020/#022) |
 
 Folded into code this run:
@@ -91,7 +95,7 @@ Folded into code this run:
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 30 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 32 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -105,7 +109,11 @@ Folded into code this run:
      **OverviewService end-to-end hydration (#006: identity/health/power/
      processor-memory summaries/indicator-LED/leading-thermal), LogService +
      LogEntry collection incl. ClearLog action + `@odata.nextLink` pagination
-     (LogService.v1_6/LogEntry.v1_16 contract, pinned 2026-10-23 06:10).**
+     (LogService.v1_6/LogEntry.v1_16 contract, pinned 2026-10-23 06:10), Task
+     resource contract (TaskState/TaskStatus/Start-EndTime/Messages;
+     PercentComplete absent on the fixture — the #008/#020 poller must treat it
+     as unknown) + TaskService CompletedTaskOverWritePolicy/LifeCycle fields
+     (pinned 2026-10-23 08:xx).**
   Both cover the rows above end-to-end against authentic payload shapes.
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)

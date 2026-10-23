@@ -1091,3 +1091,47 @@
 - none opened/closed this run (DOCS corpus + UI-2 label; no issue status
   change). The LogEntry contract remains a contract pin only — no log feature
   is queued; recorded so a future run doesn't re-derive the shape.
+## 2026-10-23 — agent:redfish-automation — EMULATOR (Task resource pin) + UI-2 KvmConsole header
+
+**Done:**
+- EMULATOR suite 30 → 32 tests against the pinned DMTF Redfish-Mockup-Server
+  (`23d21f9a`, HTTPS): (1) **Task resource contract pin (#008/#020/#022)** —
+  the mockup's only Task (545, `Task.v1_7_3`) publishes `TaskState Completed`,
+  `TaskStatus OK`, RFC3339 `StartTime`/`EndTime`, and `Messages[]`
+  (`MessageId` `Base.*`, `Message`, `MessageArgs[]`, `Severity`) — and
+  **no `PercentComplete`**. The future #008/#020 poller's parse surface is now
+  pinned end-to-end: TaskState 13-value parse, optional/absent PercentComplete
+  must be treated as unknown, Messages timeline. (2) **TaskService surface** —
+  `CompletedTaskOverWritePolicy=Manual`, `LifeCycleEventOnTaskStateChange=true`
+  pinned. (3) REQUIREMENTS.md emulator note 30 → 32 tests + DOCS-10 rows now
+  cite the live-mockup pin.
+- UI-2 increment: `KvmConsole` card header (title + Enabled/Disabled chip)
+  announces as one merged semantics node (`<type>, enabled|disabled`), the same
+  pattern as SystemCard/InfoCard/chassis/sensor/firmware headers; 2 new widget
+  tests (enabled + disabled). Fixed the `dart format`-reintroduced
+  `curly_braces` lint in `kvm_view.dart` (known prior-run precedent).
+- Docs: no new downloads (DOCS-6 budget untouched); REQUIREMENTS.md updated.
+
+**Decisions:**
+- Kept this run test-only for the service layer — the Task contract is for the
+  TO-BUILD poller (#008/#020); pinning the exact live payload first (incl. the
+  absent-PercentComplete edge) is the spec-conformant way to build the parser.
+- Split the KVM semantics widget test into two testWidgets (enabled/disabled)
+  after learning a second `ProviderScope` pump at the same tree position reuses
+  the first container — the established single-pump-per-test pattern.
+- Only the 3 touched Dart files formatted (no repo-wide `dart format` —
+  prior-run precedent: reintroduces the known `curly_braces` lint).
+
+**Next:**
+- Push 34 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout expiry) — implement unit-level with the in-process mock server.
+- #008/#020: build the task poller — GET-on-monitor, `TaskState` 13-value
+  parse, `PercentComplete` optional/absent handling, `Messages[]` task
+  timeline; then the bmcweb HTTP-push firmware upload path (both push URIs,
+  apply-time modes; `SimpleUpdateActionInfo` + Task contract already pinned).
+
+**Issues touched:**
+- none opened/closed this run (emulator contract pin + UI-2 label; no issue
+  status change). #008/#020 got the Task resource contract pin recorded in
+  FUTUREWORK — the poller's parse surface is now fully pinned.
