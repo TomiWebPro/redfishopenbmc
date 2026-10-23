@@ -1234,8 +1234,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   `git diff --check` clean; secret scan clean (no tokens/creds in diff —
   new files are public DMTF schemas). Formatted only the 2 touched Dart files
   (no repo-wide churn — prior-run precedent).
-- **Commit:** <PENDING> — pushed: no (expected — no GitHub credentials on this
-  machine; recorded, not retried).
+- **Commit:** 9d55b29 — `auto: DOCS — DOCS-13 auth/network/ActionInfo corpus mirror (Session/ManagerAccount/Role/ManagerNetworkProtocol/ActionInfo/ServiceRoot versioned defs + Task mockup-served), UI-2 FirmwareView header merged semantics (run 2026-10-23 12:50)`; pushed: **no** — `fatal: could not read Username for 'https://github.com': No such device or address` (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried. Commits queued locally before this run: 40 (now 41 with this commit).
 - **Next:** 1) Push the queued local commits from a machine with GitHub
   credentials; 2) P1 #015 AuthManager (authMethod dispatch, safe logout URI,
   token rehydrate, SessionTimeout expiry — the Session/ManagerAccount/Role
