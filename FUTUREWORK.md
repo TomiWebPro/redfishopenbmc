@@ -7,14 +7,26 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 22:45 (EMULATOR run — **EMU-2 now 40 tests**:
-  the 19:25 `getJson(path, query:)` map-form transport unit test is joined
-  with the live pins — the map-form `$expand=.($levels=1)` round-trip
-  against the pinned mockup returns the SAME inlined full member bodies as
-  the URL-string form (Model/PowerState/Reset allow-list incl. Nmi/
-  ProcessorSummary), closing the seam a #018 discovery pass will call;
-  **UI-2 increment: KVM console card connect-URI row (`Connect URI: <uri>`)
-  merged semantics label** + 1 widget test; suite 303 → 304 tests)
+- **Last updated:** 2026-10-23 23:40 (DOCS run — **DOCS-16 done: DSP0266
+  citation audit** — the REQUIREMENTS.md rows cited an older spec layout;
+  corrected every stale clause against the mirrored 1.25.0 PDF (`§8.3` →
+  `§7.2.3`, `§8.4/§8.10/§8.14` → schemas + `§9`, `§12.3/§12.4` → `§13.3.3/§
+  13.3.4`, `§12.7` → `§8.6`, `§9.7` → `§12.7`, `§12.2 Actions` →
+  `§9.6.14`), pinned the §9.9 payload-annotation contract with +2 unit tests
+  (AllowableValues list parse + unrecognized-annotation tolerance §9.9.1),
+  UI-2 OverviewView error-state merged semantics +1 widget test; suite 304 →
+  307; anchors re-verified (bmcweb `fbb307a`, mockup `23d21f9a`, DSP0266
+  1.25.0, schema index 200); **EMU-2 suite at 40 tests**; **map-form
+  `getJson(path, query:)` `$expand` round-trip pinned live 22:45 — same
+  inlined bodies as the URL-string form, closing the seam for the #018
+  pass**; next P1: #015 (AuthManager) — emulator
+  pins the full auth
+  contract + the Session/ManagerAccount/Role schemas are mirrored
+  (#015/#017/#026); #022/#016: Annotation allow-list fallback landed (16:05
+  run) — remaining: `ResetActionInfo` ActionInfo resource crawl (bmcweb-style
+  BMCs; NOT pinable on the DMTF mockup — it serves only the annotation form);
+  #018: query-capability surface + live `$expand` contract pinned (17:07) —
+  remaining: build the lightweight discovery pass + the cache fixes
 - **Current focus:** **DOCS-15 done (DSP0266 §7.3 query-parameters audit —
   the #018 pass must gate `$expand` on `ProtocolFeaturesSupported` and filter/
   project client-side; `getJson` query transport pinned);** EMU-2 suite at
@@ -197,6 +209,27 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       bmcweb `fbb307a`, mockup `23d21f9a`, DSP0266 1.25.0, schema index 200;
       +1 transport unit test; no corpus refresh needed — corpus complete for
       all 16 client-mapped families)
+
+- [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
+      against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across
+      DOCS-3/4/5/10/13 cited an older spec layout) and correct every stale
+      clause; pin the §9.9 "Payload annotations" contract with unit tests.
+      (run 2026-10-23 23:40 — stale→correct map in REQUIREMENTS.md
+      "DOCS-16": `§8.3 Service Root` → `§7.2.3`; `§8.4 ComputerSystem` /
+      `§8.10 Thermal` / `§8.14 Software inventory` → versioned schemas +
+      `§9` data model (DSP0266 does not enumerate per-resource property
+      lists); `§9.2 HTTP protocol` (ETag) → `§6.5`+`§7.2`; `§12.2 Actions`
+      → `§9.6.14`+`§7.11`; `§12.3 Basic auth` → `§13.3.3`; `§12.4 Sessions`
+      /timeout → `§13.3.4`/`§13.3.4.3`; `§12.7 Error responses` → `§8.6`;
+      `§9.7 Firmware update` → `§12.7`; clauses already correct left
+      unchanged (`§12.1` Eventing, `§12.2` async ops, `§7.3` queries,
+      `§9.6.11/12`, `§9.6.2`, `§9.1`); `feature_rules.dart` doc comment
+      fixed (`§9.3` → `§9.9`); +2 unit tests pin the §9.9.2
+      `@Redfish.AllowableValues` list parse and the §9.9.1
+      unrecognized-annotation tolerance; anchors re-verified 23:32 UTC
+      (bmcweb `fbb307a`, mockup `23d21f9a`, DSP0266 1.25.0 — the
+      `redfish.dmtf.org` PDF path 404s, hub links `www.dmtf.org`; schema
+      index 200); no corpus refresh needed)
 
 ## P1 — emulator and integration tests
 
@@ -482,7 +515,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       connect-URI row merged semantics label (`Connect URI: <uri>`) done
       2026-10-23 22:45 — Semantics(container + excludeSemantics) wraps the
       label + SelectableText in a row, widget test asserts the merged node +
-      both visible texts; extend to
+      both visible texts; **OverviewView error state merged semantics label
+      (`Unable to load overview. <message>`) done 2026-10-23 23:40 —
+      Semantics(container + excludeSemantics) wraps the icon + title +
+      detail column, Retry button keeps its own control node, widget test
+      asserts the merged label + visible texts + separately-announced Retry;
+      extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.

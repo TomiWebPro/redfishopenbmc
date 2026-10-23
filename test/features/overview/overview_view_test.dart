@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -246,6 +247,28 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Retry'));
       await tester.pumpAndSettle();
       expect(find.text('Unable to load overview'), findsOneWidget);
+    });
+
+    testWidgets('error state announces as one merged semantics node (UI-2)',
+        (tester) async {
+      await tester.pumpWidget(scopeWith(sample: emptySample(), error: true));
+      await tester.pumpAndSettle();
+
+      // The icon + title + detail merge into one node carrying both strings;
+      // the Retry button keeps its own semantics (it is a control).
+      final Finder merged = find.bySemanticsLabel(
+        'Unable to load overview. boom',
+      );
+      expect(merged, findsOneWidget);
+      final SemanticsNode? node = tester.getSemantics(merged);
+      expect(node?.label, contains('Unable to load overview'));
+      expect(node?.label, contains('boom'));
+
+      // The Retry control is still separately focusable/announced.
+      expect(
+        find.bySemanticsLabel(RegExp('^Retry')),
+        findsWidgets,
+      );
     });
   });
 }

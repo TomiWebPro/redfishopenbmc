@@ -113,12 +113,15 @@ class FeatureRules {
   /// Extracts the `ResetType@Redfish.AllowableValues` annotation from a
   /// system's `#ComputerSystem.Reset` action, or an empty list when absent.
   ///
-  /// The OData annotation (per DSP0266 §9.3 "Annotations" / the `ActionInfo`
-  /// contract) enumerates exactly the `ResetType` values the BMC accepts for
-  /// that action. bmcweb documents its allow-list as a `ResetActionInfo`
-  /// ActionInfo resource (`Parameters/AllowableValues`) and serves no
-  /// system-level `SupportedResetTypes`; the mockup publishes the annotation
-  /// directly on the action. Both are captured by this fallback.
+  /// The OData annotation (per DSP0266 §9.9 "Payload annotations",
+  /// §9.9.2 "Allowable values for strings" — annotation names follow
+  /// `PropertyName`@`Namespace`.`TermName`, where `Redfish` is the
+  /// `RedfishExtensions.v1_0_0` namespace alias) enumerates
+  /// exactly the `ResetType` values the BMC accepts for that action. bmcweb
+  /// documents its allow-list as a `ResetActionInfo` ActionInfo resource
+  /// (`Parameters/AllowableValues`) and serves no system-level
+  /// `SupportedResetTypes`; the mockup publishes the annotation directly on
+  /// the action. Both are captured by this fallback.
   static List<String> resetTypesFromAction(Map<String, dynamic> system) {
     final dynamic action = ODataResource(system).actions[computerSystemReset];
     if (action is! Map<dynamic, dynamic>) return const <String>[];

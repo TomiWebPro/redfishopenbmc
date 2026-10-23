@@ -1818,3 +1818,67 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commits kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **63** (61 before this run + 2;
   live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-23 23:40 — DOCS (DSP0266 citation audit + §9.9 annotation pin) + UI-2 OverviewView error state
+
+- **Baseline:** analyze 0; tests 304 passed / 1 skipped; starting commit 7764644
+  (branch `main` ahead 64 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** DOCS (alternation: EMULATOR 22:45 → DOCS next). Audited the
+  DSP0266 clause citations in `REQUIREMENTS.md` against the **mirrored
+  `DSP0266_1.25.0.pdf`** (pdftotext of the actual PDF, TOC + body) and found
+  the requirement rows added across DOCS-3/4/5/10/13 cited an **older spec
+  layout**: `§8.3 Service Root` (→ `§7.2.3`), `§8.4 ComputerSystem` /
+  `§8.10 Thermal` / `§8.14 Software inventory` (→ schema files + `§9` data
+  model — DSP0266 does not enumerate per-resource property lists),
+  `§9.2 HTTP and the Redfish protocol` (→ `§6.5 ETags` + `§7.2 GET`),
+  `§12.2 Actions` (→ `§9.6.14` + `§7.11`), `§12.3 Basic authentication`
+  (→ `§13.3.3`), `§12.4 Sessions`/`Session timeout` (→ `§13.3.4` /
+  `§13.3.4.3`), `§12.7 Error responses` (→ `§8.6`), `§9.7 Firmware update`
+  (→ `§12.7`). Corrected every stale row inline + added a DOCS-16 section with
+  the stale→correct mapping table. Clauses already correct stayed unchanged
+  (`§12.1 Eventing`, `§12.2 Asynchronous operations`, `§7.3 Query parameters`,
+  `§9.6.11/9.6.12`, `§9.6.2`, `§9.1`). Also fixed the `feature_rules.dart`
+  doc comment that cited "DSP0266 §9.3 Annotations" (→ §9.9 Payload
+  annotations, §9.9.2 Allowable values for strings) and the EMU-5 decision's
+  "Response messages" placeholder (→ §8.6).
+- **Docs:** no new downloads (corpus complete; DOCS-6 budget untouched).
+  Anchors re-verified live 23:32 UTC: bmcweb `fbb307a` (unchanged), mockup
+  `23d21f9a` (unchanged), DSP0266 1.25.0 PDF (www.dmtf.org URL; content-length
+  1,243,359 bytes — unchanged; the `redfish.dmtf.org/sites/...` path 404s, the
+  hub links `www.dmtf.org`), schema index 200 OK. Manifest anchors note + the
+  DSP0266 row note updated.
+- **Code/tests:** `feature_rules_test.dart` +2 (pins the §9.9.2
+  `@Redfish.AllowableValues` list parse and the §9.9.1 unrecognized-annotation
+  tolerance — code already implemented both; the tests make the spec link
+  explicit). `feature_rules.dart` doc-comment citation fix only (no behavior
+  change). No issue IDs opened/closed.
+- **UI:** UI-2 increment — the **OverviewView error state** (cloud-off icon +
+  "Unable to load overview" title + detail message) announced as a bare icon
+  plus detached sentences; it now announces as ONE merged semantics node
+  (`Semantics(container: true, excludeSemantics: true, label: 'Unable to load
+  overview. <message>')` — the established error-state pattern), with the
+  Retry button keeping its own control node. One new widget test in
+  `overview_view_test.dart` asserts the merged label + visible texts + a
+  separately-announced Retry control.
+- **Verification:** analyze 0; tests 307 passed / 1 skipped (baseline 304 →
+  +3: two feature_rules annotation-contract tests + one OverviewView
+  error-state merged-label widget test); issues validate OK; `git diff
+  --check` clean; secret scan clean (only schema-field names `X-Auth-Token`/
+  `Password` in the docs diff). `dart format` on the 4 touched Dart files:
+  2 changed (overview_view.dart + overview_view_test.dart, wrapping only).
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** — same GitHub
+  credential blocker expected (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/
+  GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
+  Commits ahead of origin/main: **64** before push attempt.
+- **Next:** 1) Push the queued local commits (64) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager (authMethod dispatch, safe logout URI,
+  token rehydrate, SessionTimeout + AbsoluteSessionTimeout* expiry — full
+  auth surface pinned + schemas mirrored + session clauses now cited as
+  §13.3.4); 3) #018: build the lightweight discovery pass on the fully pinned
+  contract — `getJson(query: {'\$expand': '.($levels=1)'})` collection fetch
+  (transport + live round-trip pinned), gate on
+  `ProtocolFeaturesSupported.ExpandQuery`, filter/project client-side, map
+  501/507 + the forceRefresh/`_error` cache fixes; or #008/#020: task poller
+  + bmcweb HTTP-push firmware upload path.

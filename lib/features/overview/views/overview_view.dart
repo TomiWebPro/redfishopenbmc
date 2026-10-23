@@ -337,17 +337,32 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.cloud_off_outlined, size: 40, color: scheme.outline),
-            const SizedBox(height: 12),
-            Text(
-              'Unable to load overview',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall,
+            // UI-2: the icon + title + detail announce as ONE node, so a
+            // screen reader gets the error in context instead of a bare icon
+            // plus detached sentences (the established error-state pattern).
+            // The Retry button keeps its own node (it is a control).
+            Semantics(
+              container: true,
+              excludeSemantics: true,
+              label: 'Unable to load overview. $message',
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(Icons.cloud_off_outlined,
+                      size: 40, color: scheme.outline),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Unable to load overview',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
             FilledButton.icon(

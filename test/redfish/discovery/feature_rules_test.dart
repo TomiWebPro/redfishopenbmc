@@ -138,6 +138,72 @@ void main() {
         isEmpty,
       );
     });
+
+    test(
+        'resetTypesFromAction reads the @Redfish.AllowableValues annotation '
+        'per DSP0266 §9.9.2 (DOCS-16)', () {
+      // DSP0266 §9.9.2 "Allowable values for strings": the annotation is a
+      // JSON array of strings that define the allowable values for the action
+      // parameter; namespace `Redfish` is the RedfishExtensions.v1_0_0 alias
+      // (§9.9.1). The client parses `<PropertyName>@Redfish.AllowableValues`
+      // on the `#ComputerSystem.Reset` action body.
+      final Map<String, dynamic> system = <String, dynamic>{
+        'Actions': <String, dynamic>{
+          '#ComputerSystem.Reset': <String, dynamic>{
+            'target': '/redfish/v1/Systems/1/Actions/ComputerSystem.Reset',
+            'ResetType@Redfish.AllowableValues': <String>[
+              'On',
+              'ForceOff',
+              'GracefulShutdown',
+              'ForceRestart',
+            ],
+          },
+        },
+      };
+      expect(
+        FeatureRules.resetTypesFromAction(system),
+        <String>['On', 'ForceOff', 'GracefulShutdown', 'ForceRestart'],
+      );
+    });
+
+    test(
+        'resetTypesFromAction ignores unrecognized annotations '
+        '(DSP0266 §9.9.1 tolerance, DOCS-16)', () {
+      // §9.9.1: "should not fail reading the resource due to unrecognized
+      // annotations". An unrelated annotation beside the allow-list must not
+      // disturb the parse, and a non-list value is ignored (empty result).
+      final Map<String, dynamic> system = <String, dynamic>{
+        'Actions': <String, dynamic>{
+          '#ComputerSystem.Reset': <String, dynamic>{
+            'target': '/x',
+            'ResetType@Redfish.AllowablePattern': 'On|ForceOff',
+            'ResetType@Oem.Vendor.AllowableValues': <String>['Bogus'],
+          },
+        },
+      };
+      expect(FeatureRules.resetTypesFromAction(system), isEmpty);
+
+      // A non-list value for the allow-list itself is tolerated as absent.
+      final Map<String, dynamic> system2 = <String, dynamic>{
+        'Actions': <String, dynamic>{
+          '#ComputerSystem.Reset': <String, dynamic>{
+            'target': '/x',
+            'ResetType@Redfish.AllowableValues': 'On',
+          },
+        },
+      };
+      expect(FeatureRules.resetTypesFromAction(system2), isEmpty);
+
+      // A string annotation intended for a *string property* (not the action
+      // parameter) does not leak into the reset allow-list.
+      final Map<String, dynamic> system3 = <String, dynamic>{
+        'Actions': <String, dynamic>{
+          '#ComputerSystem.Reset': <String, dynamic>{'target': '/x'},
+        },
+        'AssetTag@Redfish.AllowablePattern': '^[\\w:-]{0,31}\$',
+      };
+      expect(FeatureRules.resetTypesFromAction(system3), isEmpty);
+    });
   });
 
   group('FeatureRules — kvm', () {

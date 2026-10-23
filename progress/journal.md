@@ -1704,3 +1704,80 @@
 - none opened/closed this run. #018 got the map-form `$expand` live pin (40th
   emulator test); EMU-2/UI-2 got count/scope updates — all recorded in
   FUTUREWORK; issues remain open.
+## 2026-10-23 — agent:redfish-automation — DOCS (DSP0266 citation audit + §9.9 annotation pin) + UI-2 OverviewView error state
+
+**Done:**
+- DOCS primary workstream (alternation: EMULATOR 22:45 → DOCS next). Audited
+  every DSP0266 clause citation in REQUIREMENTS.md against the **mirrored
+  `DSP0266_1.25.0.pdf`** (pdftotext of the actual PDF — TOC + body) and found
+  the requirement rows added across DOCS-3/4/5/10/13 cited an **older spec
+  layout** that does not match the mirrored PDF:
+  - `§8.3 "Service Root"` → `§7.2.3 "Service root request"` (service-root
+    request clause lives in the Service requests chapter; §8 is Service
+    responses).
+  - `§8.4 ComputerSystem` / `§8.10 Thermal` / `§8.14 "Software inventory"`
+    → DSP0266 does not enumerate per-resource property lists; those are
+    versioned schemas (`ComputerSystem.v1_29_0.json`, `Thermal.v1_7_3.json`,
+    `SoftwareInventory.json`) + the `§9 Data model` clauses (`§9.1 Resources`,
+    `§9.5 Common data types`, `§9.6 Properties`, `§9.6.13 Links`).
+  - `§9.2 "HTTP and the Redfish protocol"` (ETag/304) → `§6.5 "ETags"` +
+    `§7.2 "GET (read requests)"`.
+  - `§12.2 "Actions"` → `§9.6.14 "Actions property"` + `§7.11 "POST (action)"`.
+  - `§12.3 "Basic authentication"` → `§13.3.3 "HTTP Basic authentication"`.
+  - `§12.4 "Sessions"` / "Session timeout" → `§13.3.4 "Redfish session login
+    authentication"` (+ `§13.3.4.3 "Session lifetime"`).
+  - `§12.7 "Error responses"` → `§8.6 "Error responses"`.
+  - `§9.7 "Firmware update"` → `§12.7 "Update service"` (`§12.7.2.1`).
+  - EMU-5 decision's "Response messages" placeholder → `§8.6`.
+- Kept the clauses that were already correct unchanged and documented that in
+  the audit (`§12.1 Eventing` + `§12.1.1–12.1.5`, `§12.2 Asynchronous
+  operations`, `§7.3 Query parameters`, `§9.6.11/§9.6.12`, `§9.6.2`,
+  `§9.1 Resources`). Also reverted one over-eager edit (Eventing rows) after
+  re-verifying the TOC — good thing the audit verified against the body.
+- Pinned the payload-annotation contract in test form: +2 unit tests
+  (`feature_rules_test.dart`) asserting the §9.9.2 `@Redfish.AllowableValues`
+  list parse on `#ComputerSystem.Reset` and the §9.9.1 tolerance for
+  unrecognized annotations (unrelated annotation keys / non-list values do
+  not disturb the parse). Code already implemented both; no behavior change.
+  `feature_rules.dart` doc comment citation fixed `§9.3` → `§9.9`.
+- Anchors re-verified live 23:32 UTC (bmcweb `fbb307a`, mockup `23d21f9a`,
+  DSP0266 1.25.0 PDF at the `www.dmtf.org` URL — the `redfish.dmtf.org`
+  path 404s and the hub links the `www.dmtf.org` URL, content-length
+  1,243,359 bytes unchanged; schema index 200). Manifest anchors note + the
+  DSP0266 row note updated.
+- UI-2 increment: **OverviewView error state** (cloud-off icon + "Unable to
+  load overview" + detail message) now announces as ONE merged semantics node
+  (`Semantics(container: true, excludeSemantics: true, label: 'Unable to load
+  overview. <message>')`), Retry button keeps its own control node. One new
+  widget test (`overview_view_test.dart`) asserts the merged label + both
+  visible texts + separately-announced Retry.
+
+**Decisions:**
+- DOCS selected per alternation. Within DOCS, chose a citation-correctness
+  audit over another corpus fetch: the corpus is complete for all 16
+  client-mapped families + OData base vocabulary and all anchors were
+  unchanged (verified live), but the traceability document cited the wrong
+  DSP0266 clauses — a real correctness gap for anyone using REQUIREMENTS.md
+  to implement #015/#016/#018/#022.
+- Kept the code delta minimal and test-only: the annotation reader already
+  implements §9.9; the run pinned the contract rather than changing
+  behaviour (DOCS §2.3 "small, safe fixes with tests"; UI §5 one small
+  increment).
+- Corrected rather than rewritten: fixed the stale citations in place and
+  added the DOCS-16 mapping table so future runs can see what changed and
+  why — no requirement dropped, no new requirement invented.
+
+**Next:**
+- Push 64 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout + AbsoluteSessionTimeout* expiry — full auth surface pinned
+  + schemas mirrored + session clauses now cited correctly as §13.3.4).
+- #018: build the lightweight discovery pass on the fully pinned contract
+  (`getJson(query: {'\$expand': '.($levels=1)'})` collection fetch; gate on
+  `ProtocolFeaturesSupported.ExpandQuery`; filter/project client-side; map
+  501/507) + the forceRefresh/`_error` cache fixes; or #008/#020: task
+  poller + bmcweb HTTP-push upload path.
+
+**Issues touched:**
+- none opened/closed this run. DOCS-16 recorded in FUTUREWORK; UI-2 got the
+  OverviewView error-state increment; issues remain open.
