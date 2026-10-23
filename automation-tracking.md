@@ -1373,7 +1373,14 @@ Append-only run log for the `redfish-automation` scheduler job.
   `tool/emulator/run_tests.sh`; issues validate OK; `git diff --check` clean;
   secret scan clean (no tokens/creds in diff). Formatted only the 4 touched
   Dart files (no repo-wide churn — prior-run precedent).
-- **Commit:** <PENDING> — `auto: DOCS — reset allow-list annotation fallback (FeatureRules.supportedResetTypes unions SupportedResetTypes + ResetType@Redfish.AllowableValues, manager-list conflation guard), UI-2 dialog 48px touch targets (run 2026-10-23 16:05)`; pushed: see §7.4 outcome (GitHub credential blocker historically: `fatal: could not read Username for 'https://github.com'`).
+- **Commit:** 23b2993 — `auto: DOCS — reset allow-list annotation fallback
+  (FeatureRules.supportedResetTypes unions SupportedResetTypes +
+  ResetType@Redfish.AllowableValues, manager-list conflation guard), UI-2
+  dialog 48px touch targets (run 2026-10-23 16:05)`; pushed: **no** — same
+  GitHub credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN
+  env, no SSH key on this machine); local commit kept, not retried. Commits
+  queued locally before this run: 46 (now 47 with this commit).
 - **Next:** 1) Push the queued local commits from a machine with GitHub
   credentials (46 queued before this run); 2) P1 #015 AuthManager (authMethod
   dispatch, safe logout URI, token rehydrate, SessionTimeout +
@@ -1384,3 +1391,12 @@ Append-only run log for the `redfish-automation` scheduler job.
   annotation-form fallback lands; or #008/#020: build the task poller
   (GET-on-monitor, TaskState parse, PercentComplete optional, Messages[]
   timeline) + bmcweb HTTP-push firmware upload path.
+
+## 2026-10-23 16:10 — PUSH RECORD (no code change)
+
+- Attempted `git push origin main` once after run 2026-10-23 16:05 (commit
+  23b2993 auto + tracking): failed with
+  `fatal: could not read Username for 'https://github.com': No such device or
+  address` — no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no
+  SSH key on this machine. Local commits kept; not retried (runbook §7.4).
+- Queued local commits ahead of origin/main: **47** (46 before this run + 1).
