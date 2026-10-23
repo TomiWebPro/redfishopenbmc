@@ -162,20 +162,29 @@ class _AggregatedBanner extends StatelessWidget {
         border: Border.all(color: color),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        children: <Widget>[
-          Icon(Icons.monitor_heart_outlined, color: color),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              agg.summary,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(color: color),
+      // UI-2: the banner announces as ONE merged semantics node ("Health: 2 OK,
+      // 1 Warning") so screen readers hear the summary with context, not a
+      // bare icon + disjoint text nodes. The visible summary stays for sighted
+      // users (same pattern as SystemCard/HealthBanner/PowerView headers).
+      child: Semantics(
+        container: true,
+        excludeSemantics: true,
+        label: 'Health: ${agg.summary}',
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.monitor_heart_outlined, color: color),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                agg.summary,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(color: color),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

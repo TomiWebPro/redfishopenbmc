@@ -131,8 +131,8 @@ versions (`Task.v1_7_3`, `TaskService.v1_2_0`) that DOCS-10 had not mirrored
 | Requirement | Source (section/URL) | Code | Test | Status |
 |---|---|---|---|---|
 | Session resource: `X-Auth-Token` created on session POST; session carries `UserName`/`Password`/`Oem`; session-lifetime contract | DSP0266 §12.4 "Sessions"; `Session.json` + `Session.v1_9_0.json` (newest) + `Session.v1_7_1.json` (mockup-served) | `lib/redfish/models/session.dart`, `lib/redfish/client/auth_manager.dart` | `auth_manager_test.dart`; emulator session-lifecycle group pins `#Session.v1_7_1.Session` | OK (see #015/#017/#026 — URI discovery + expiry hardening) |
-| ManagerAccount (user account): `UserName`, `RoleId`, `Enabled`, `Password`, `AccountTypes`; Accounts collection under AccountService | `AccountService.json` + `ManagerAccount.json` + `ManagerAccount.v1_14_2.json` (newest) + `ManagerAccount.v1_12_0.json` (mockup-served) | not parsed yet (auth surface TO-BUILD) | emulator AccountService group pins `#ManagerAccount.v1_12_0.ManagerAccount` (UserName/RoleId) | Partial — #015/#026 |
-| Role: `RoleId`, `AssignedPrivileges`, `OemPrivileges`; Roles collection under AccountService | `Role.json` + `Role.v1_3_3.json` (newest) + `Role.v1_3_1.json` (mockup-served) | not parsed yet | emulator Roles-surface pin (emulator AccountService group) | Partial — #015/#026 |
+| ManagerAccount (user account): `UserName`, `RoleId`, `Enabled`, `Password`, `AccountTypes`; Accounts collection under AccountService | `AccountService.json` + `ManagerAccount.json` + `ManagerAccount.v1_14_2.json` (newest) + `ManagerAccount.v1_12_0.json` (mockup-served) | not parsed yet (auth surface TO-BUILD) | emulator AccountService group pins `#ManagerAccount.v1_12_0.ManagerAccount` detail — `AccountTypes`/`PasswordChangeRequired`/`Locked`/`Enabled`/`Links.Role` + `#ManagerAccount.ChangePassword` target, and `Password` masked on the wire (12:xx run) | Partial — #015/#026 |
+| Role: `RoleId`, `AssignedPrivileges`, `OemPrivileges`; Roles collection under AccountService | `Role.json` + `Role.v1_3_3.json` (newest) + `Role.v1_3_1.json` (mockup-served) | not parsed yet | emulator Roles group pins the collection (3 predefined roles) + `#Role.v1_3_1.Role` `IsPredefined`/`AssignedPrivileges`/`OemPrivileges` (12:xx run) | Partial — #015/#026 |
 | ManagerNetworkProtocol: service endpoint table (`KVMIP` port, `HTTPS`, `SSH`, …) the #009/#021 console renderer resolves | `ManagerNetworkProtocol.json` + `ManagerNetworkProtocol.v1_14_0.json` (newest) + `ManagerNetworkProtocol.v1_10_0.json` (mockup-served) | not parsed yet (console endpoint TO-BUILD) | emulator "manager network" group pins `#ManagerNetworkProtocol.v1_10_0.ManagerNetworkProtocol` KVMIP 5288 / HTTPS 443 / SSH 22 (11:39 run) | Partial — #009/#021 must resolve the endpoint from the advertised KVMIP port |
 | ActionInfo: `Parameters[].AllowableValues` (bmcweb `ResetActionInfo` is the reset-type allow-list source on OpenBMC) | OpenBMC `Redfish.md` §ComputerSystem; `ActionInfo.json` + `ActionInfo.v1_6_0.json` (newest) + `ActionInfo.v1_4_1.json` (mockup-served); DSP0266 § "ActionInfo" | `FeatureRules.supportedResetTypes` reads `SupportedResetTypes` directly (empty on bmcweb) | `feature_rules_test.dart`; emulator pins `#ActionInfo.v1_4_1.ActionInfo` shapes | Partial — add ActionInfo fallback in #022/#016 |
 | ServiceRoot: service links + `ProtocolFeaturesSupported` (Expand/Excerpt/Filter/Select) the discovery pass must use | DSP0266 §8.3; `ServiceRoot.json` + `ServiceRoot.v1_22_0.json` (newest) + `ServiceRoot.v1_16_1.json` (mockup-served) | `lib/redfish/discovery/discovery_engine.dart` + `feature_rules.dart` (root crawl) | `discovery_engine_test.dart`; emulator service-root group pins `#ServiceRoot.v1_16_1.ServiceRoot` | OK (query-capability surface used by #018) |
@@ -174,7 +174,7 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 34 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 36 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -194,7 +194,14 @@ client-relevant families.
      as unknown) + TaskService CompletedTaskOverWritePolicy/LifeCycle fields
      (pinned 2026-10-23 08:xx), Manager NetworkProtocol + EthernetInterfaces
      surface (KVMIP/SSH/HTTPS service endpoints for the #009/#021 KVM console
-     renderer + NIC MAC/IP/VLAN fields — pinned 2026-10-23 11:xx).**
+     renderer + NIC MAC/IP/VLAN fields — pinned 2026-10-23 11:xx), account-
+     service auth surface: AccountService lockout/password-policy fields +
+     Roles link (AccountService.v1_15_0), Roles collection (3 predefined roles
+     Administrator/Operator/ReadOnly with AssignedPrivileges +
+     OemPrivileges — Role.v1_3_1), ManagerAccount detail
+     (AccountTypes/PasswordChangeRequired/Locked/Enabled/Links.Role +
+     #ManagerAccount.ChangePassword target — ManagerAccount.v1_12_0,
+     pinned 2026-10-23 12:xx; the #015/#026 auth surface, DOCS-13 schemas).**
   Both cover the rows above end-to-end against authentic payload shapes.
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)

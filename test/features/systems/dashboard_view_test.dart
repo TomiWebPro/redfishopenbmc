@@ -111,6 +111,75 @@ void main() {
     expect(manager.state.selectedId, 'bmc1');
   });
 
+  group('DashboardView — aggregated banner semantics (UI-2)', () {
+    testWidgets(
+        'aggregated banner announces one merged semantics node incl. the '
+        'health summary', (tester) async {
+      final SystemManager manager = seededManager();
+      final GoRouter router = GoRouter(
+        initialLocation: '/systems',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/systems',
+            builder: (BuildContext c, GoRouterState s) => const DashboardView(),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [systemManagerProvider.overrideWith((ref) => manager)],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The banner (icon + summary) is one merged node: "Health: 1 OK, 1
+      // Warning" — same pattern as the SystemCard/HealthBanner/PowerView
+      // header labels.
+      expect(
+        find.bySemanticsLabel(RegExp('^Health: 1 OK, 1 Warning')),
+        findsOneWidget,
+        reason: 'the aggregated banner must announce as a single merged node',
+      );
+      // The visible summary text is still present for sighted users.
+      expect(find.text('1 OK, 1 Warning'), findsOneWidget);
+    });
+
+    testWidgets('merged banner label reflects the "No systems" state',
+        (tester) async {
+      final SystemManager manager = SystemManager(
+        repository: InMemoryProfileRepository(),
+        storage: InMemoryStorage(),
+      );
+      manager.state = const SystemState(
+        systems: <String, SystemHandle>{},
+        selectedId: null,
+      );
+      final GoRouter router = GoRouter(
+        initialLocation: '/systems',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/systems',
+            builder: (BuildContext c, GoRouterState s) => const DashboardView(),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [systemManagerProvider.overrideWith((ref) => manager)],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+          find.bySemanticsLabel(RegExp('^Health: No systems')), findsOneWidget);
+      expect(find.text('No systems'), findsWidgets);
+    });
+  });
+
   group('DashboardView — responsive layout (UI-3)', () {
     Future<void> pumpAtWidth(WidgetTester tester, double width) async {
       tester.view.physicalSize = Size(width, 800);

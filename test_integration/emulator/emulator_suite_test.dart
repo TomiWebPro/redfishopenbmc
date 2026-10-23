@@ -943,27 +943,122 @@ void main() {
       expect(protocol['SelectQuery'], isA<bool>());
     });
 
-    test(
-        'account service: Accounts collection is enumerable and readable '
-        '(#015/#026)', () async {
-      // #015 authMethod / #026 duplicate-auth-fields both depend on reading
-      // the account surface; the mockup ships a readable Accounts collection.
+    test('account service: lockout policy + Roles link contract (#015/#026)',
+        () async {
+      // #015 AuthManager (logout/expiry reasoning) and #026 (duplicate auth
+      // fields) both start from the AccountService surface: the lockout/
+      // password policy the client may surface to the user, and the two
+      // discoverable sub-collections (Accounts + Roles). AccountService
+      // v1_15_0 is what the pinned mockup serves (mirrored corpus DOCS-2/13
+      // lineage); bmcweb serves the same shape (bmcweb Redfish.md, DOCS-4).
       final Map<String, dynamic> svc =
           await client.getJson('/redfish/v1/AccountService');
+      expect(svc['@odata.type'], startsWith('#AccountService.'));
       expect(svc['ServiceEnabled'], isTrue);
       expect(svc['MinPasswordLength'], isA<int>());
-      final String accountsUri =
-          (svc['Accounts'] as Map<dynamic, dynamic>)['@odata.id'] as String;
-      final Map<String, dynamic> accounts = await client.getJson(accountsUri);
-      final List<dynamic> members = accounts['Members'] as List<dynamic>;
-      expect(members, isNotEmpty);
-      for (final dynamic member in members) {
-        final String uri =
-            (member as Map<dynamic, dynamic>)['@odata.id'] as String;
-        final Map<String, dynamic> account = await client.getJson(uri);
-        expect(account['UserName'], isA<String>());
-        expect(account['RoleId'], isA<String>());
-      }
+      // Account lockout policy fields (AccountService.v1_15_0) — a settings
+      // screen or a #015 login-attempt error could cite these.
+      expect(svc['AuthFailureLoggingThreshold'], isA<int>());
+      expect(svc['AccountLockoutThreshold'], isA<int>());
+      expect(svc['AccountLockoutDuration'], isA<int>());
+      expect(svc['AccountLockoutCounterResetAfter'], isA<int>());
+      expect(svc['AccountLockoutCounterResetEnabled'], isA<bool>());
+      expect(svc['LocalAccountAuth'], 'Enabled');
+      expect(svc['RequireChangePasswordAction'], isA<bool>());
+      // The two discoverable sub-collections (#015 reads Accounts; Roles is
+      // the RoleId → AssignedPrivileges surface).
+      expect(
+        (svc['Accounts'] as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/AccountService/Accounts',
+      );
+      expect(
+        (svc['Roles'] as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/AccountService/Roles',
+      );
+    });
+
+    test(
+        'roles: Roles collection enumerates the predefined role set + '
+        'AssignedPrivileges (#015/#026)', () async {
+      // The Role schema corpus (Role.v1_3_1 served; v1_3_3 newest — DOCS-13)
+      // defines RoleId → AssignedPrivileges/OemPrivileges. The mockup ships
+      // the three standard predefined roles; a client that needs to explain
+      // an account's RoleId (or gate on privileges) reads this surface.
+      final Map<String, dynamic> collection =
+          await client.getJson('/redfish/v1/AccountService/Roles');
+      expect(collection['@odata.type'], startsWith('#RoleCollection.'));
+      expect(collection['Members@odata.count'], 3);
+      final List<dynamic> members = collection['Members'] as List<dynamic>;
+      expect(
+        members.map((dynamic m) => (m as Map<dynamic, dynamic>)['@odata.id']),
+        containsAll(<String>[
+          '/redfish/v1/AccountService/Roles/Administrator',
+          '/redfish/v1/AccountService/Roles/Operator',
+          '/redfish/v1/AccountService/Roles/ReadOnly',
+        ]),
+      );
+
+      final Map<String, dynamic> role = await client
+          .getJson('/redfish/v1/AccountService/Roles/Administrator');
+      expect(role['@odata.type'], startsWith('#Role.'));
+      expect(role['IsPredefined'], isTrue);
+      final List<dynamic> assigned =
+          role['AssignedPrivileges'] as List<dynamic>? ?? <dynamic>[];
+      expect(
+        assigned,
+        containsAll(<String>[
+          'Login',
+          'ConfigureManager',
+          'ConfigureUsers',
+          'ConfigureSelf',
+          'ConfigureComponents',
+        ]),
+        reason: '#015: RoleId maps to a concrete privilege set the client '
+            'could use for capability gating',
+      );
+      expect(role['OemPrivileges'], isA<List<dynamic>>());
+    });
+
+    test(
+        'manager account: detail contract — AccountTypes/PasswordChangeRequired/'
+        'Locked/Links.Role/ChangePassword (#015/#026)', () async {
+      // The AccountService test above only walks the collection; this pins the
+      // ManagerAccount resource shape (v1_12_0 served; v1_14_2 newest —
+      // DOCS-13) that #015 (auth method) and #026 (duplicate auth fields)
+      // reason about: enabled/locked/PasswordChangeRequired flags, the
+      // AccountTypes list, the RoleId link, and the ChangePassword action
+      // target. Password must be masked/absent on the wire (never logged).
+      final Map<String, dynamic> account =
+          await client.getJson('/redfish/v1/AccountService/Accounts/1');
+      expect(account['@odata.type'], startsWith('#ManagerAccount.'));
+      expect(account['Enabled'], isTrue);
+      expect(account['Locked'], isFalse);
+      expect(account['PasswordChangeRequired'], isA<bool>());
+      final List<dynamic> accountTypes =
+          account['AccountTypes'] as List<dynamic>? ?? <dynamic>[];
+      expect(accountTypes, isNotEmpty);
+      expect(accountTypes, contains('Redfish'),
+          reason: '#026: AccountTypes disambiguates the Redfish auth surface '
+              'from auxiliary account types (SNMP/…)');
+      expect(account['UserName'], 'Administrator');
+      expect(account['RoleId'], 'Administrator');
+      expect(
+        (account['Links'] as Map<dynamic, dynamic>)['Role']['@odata.id'],
+        '/redfish/v1/AccountService/Roles/Administrator',
+      );
+      final Map<dynamic, dynamic> actions =
+          account['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> changePassword =
+          actions['#ManagerAccount.ChangePassword'] as Map<dynamic, dynamic>;
+      expect(
+        changePassword['target'],
+        '/redfish/v1/AccountService/Accounts/1/Actions/'
+        'ManagerAccount.ChangePassword',
+      );
+      // Password must never be exposed by the service; the client must not
+      // rely on reading it back.
+      expect(account.containsKey('Password'), isTrue);
+      expect(account['Password'], isNull);
     });
 
     test(
