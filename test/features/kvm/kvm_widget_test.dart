@@ -75,6 +75,44 @@ void main() {
     });
 
     testWidgets(
+        'console card announces the connect URI as one merged semantics '
+        'node (UI-2)', (WidgetTester tester) async {
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(
+          consoles: <KvmConsole>[
+            KvmConsole(
+              type: KvmConsoleType.graphical,
+              managerId: 'BMC',
+              connectTypesSupported: <String>['KVMIP'],
+              serviceEnabled: true,
+              connectUri: 'https://bmc.example.com:5288',
+              sourceManagerUri: '/redfish/v1/Managers/BMC',
+            ),
+          ],
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The label + value announce as ONE node, not two detached texts.
+      expect(
+        find.bySemanticsLabel('Connect URI: https://bmc.example.com:5288'),
+        findsOneWidget,
+        reason: 'UI-2: the connect-URI row announces one merged label',
+      );
+      // Visible texts are preserved for sighted users.
+      expect(find.text('Connect URI:'), findsOneWidget);
+      expect(find.text('https://bmc.example.com:5288'), findsOneWidget);
+    });
+
+    testWidgets(
         'console card header announces one merged semantics node — '
         'enabled (UI-2)', (WidgetTester tester) async {
       final KvmController controller = _StubController()

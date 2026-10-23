@@ -182,7 +182,7 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 39 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 40 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -204,6 +204,11 @@ client-relevant families.
       collection for `$filter=Id eq 'NOPE'` and the full system body for
       `$select=Model`) — the #018 lightweight discovery pass must filter/
       select client-side and rely only on `$expand` for payload shaping,
+      **`getJson(path, query:)` map-form `$expand` round-trip pinned live
+      (2026-10-23 22:xx)** — the 19:25 transport unit test (query map forwards
+      to the wire) + the URL-string pins above are joined: a #018 pass calling
+      `getJson('/redfish/v1/Systems', query: {'\$expand': '.($levels=1)'})`
+      receives the same inlined full member bodies as the URL-string form,
      **OverviewService end-to-end hydration (#006: identity/health/power/
      processor-memory summaries/indicator-LED/leading-thermal), LogService +
      LogEntry collection incl. ClearLog action + `@odata.nextLink` pagination

@@ -1650,3 +1650,57 @@
 - none opened/closed this run. #018 got the DSP0266 §7.3 normative contract
   (DOCS-15), EMU-2/UI-2 got scope updates — all recorded in FUTUREWORK;
   issues remain open.
+## 2026-10-23 — agent:redfish-automation — EMULATOR (map-form getJson query round-trip for #018) + UI-2 KVM connect-URI row
+
+**Done:**
+- EMULATOR primary workstream (alternation: DOCS 19:25 → EMULATOR next).
+  Pinned the **map-form `getJson(path, query:)` `$expand` round-trip** against
+  the live pinned mockup (`23d21f9a`), joining the 19:25 transport unit test
+  (query map forwards to the wire) with the URL-string live pins (17:07
+  `$levels=1`, 18:36 `$expand=*`):
+  - New emulator test calls `client.getJson('/redfish/v1/Systems', query:
+    {'\$expand': '.($levels=1)'})` — the exact call shape the #018
+    lightweight discovery pass will make — and asserts the SAME inlined full
+    ComputerSystem member bodies the URL-string form returns (Model 3500 /
+    Manufacturer Contoso / PowerState On / Actions.Reset allow-list incl.
+    Nmi / ProcessorSummary Count 2) in one round trip. Suite 39 → **40
+    tests**, all green on the pin.
+- REQUIREMENTS.md "Test platforms" note updated (39 → 40 + map-form
+  paragraph).
+- UI-2 increment: **KVM console card connect-URI row** (`Connect URI:` label
+  + the SelectableText URI) — announced as two detached text nodes; now ONE
+  merged semantics node (`Semantics(container: true, excludeSemantics: true,
+  label: 'Connect URI: <uri>')`, the established row pattern), with the label
+  + URI kept visible in a Row. One new widget test asserts the merged label +
+  both visible texts.
+- Process hygiene: emulator suite run once via `run_tests.sh` (40/40), server
+  stop verified (port 8443 closed); `dart format` reflowed 29 pre-existing
+  files (formatter drift) — reverted, only this run's 4 touched files kept.
+
+**Decisions:**
+- EMULATOR selected per alternation. Within it, chose the map-form query
+  round-trip pin because #018's remaining open gap is "build the lightweight
+  discovery pass" — the pass will call `getJson(path, query:)`, and the naive
+  assumption that the unit-tested forwarding works identically on the live
+  server was the last unpinned seam.
+- Reverted the `dart format` reflow of 29 unrelated files: cosmetic formatter
+  drift not belonging to this run's workstream; keeping the diff to the 4
+  intended files preserves the one-increment rule.
+- UI increment kept to the established merged-label pattern (no new deps, no
+  layout change).
+
+**Next:**
+- Push 61 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout + AbsoluteSessionTimeout* expiry) — full auth surface pinned
+  + schemas mirrored; 401 bad-login path unit-level.
+- #018: build the lightweight discovery pass on the now fully pinned contract
+  (`getJson(query: {'\$expand': '.($levels=1)'})` collection fetch; gate on
+  `ProtocolFeaturesSupported.ExpandQuery`; filter/project client-side; map
+  501/507) + the forceRefresh/`_error` cache fixes; or #008/#020: task
+  poller + bmcweb HTTP-push upload path.
+
+**Issues touched:**
+- none opened/closed this run. #018 got the map-form `$expand` live pin (40th
+  emulator test); EMU-2/UI-2 got count/scope updates — all recorded in
+  FUTUREWORK; issues remain open.

@@ -202,10 +202,27 @@ class _ConsoleCard extends StatelessWidget {
             ],
             if (console.connectUri != null) ...<Widget>[
               const SizedBox(height: 8),
-              const Text('Connect URI:'),
-              SelectableText(
-                console.connectUri!,
-                style: Theme.of(context).textTheme.bodyMedium,
+              // UI-2: the label + value announce as ONE merged node — the
+              // established row pattern — so a screen reader hears
+              // "Connect URI: <uri>" in context instead of two detached
+              // nodes.
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: 'Connect URI: ${console.connectUri}',
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const Text('Connect URI:'),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: SelectableText(
+                        console.connectUri!,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
             const SizedBox(height: 12),

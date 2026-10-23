@@ -7,23 +7,22 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 19:25 (DOCS run — **DOCS-15: DSP0266 §7.3
-  query-parameters audit folded into #018**: processing order `$filter`→`$skip`
-  →`$top`→pagination→`$expand`→`excerpt`→`$select`; `$expand` options
-  (`*`/`$levels` default 1/`.`/`~`) + `MaxLevels` + 507 oversized-payload;
-  `$select`/`$filter` are GET-only subset semantics with 400/501/
-  QueryNotSupportedOnResource mapping — the pinned mockup applies `$expand`
-  but NOT `$filter`/`$select`, so the #018 pass must gate `$expand` on
-  `ProtocolFeaturesSupported.ExpandQuery` and filter/project client-side;
-  `getJson` query-forwarding transport contract pinned by unit test; **UI-2
-  increment: SystemOverviewPage connection header (name + URL) merged into one
-  semantics node** + 1 widget test; suite 301 → 303 tests)
+- **Last updated:** 2026-10-23 22:45 (EMULATOR run — **EMU-2 now 40 tests**:
+  the 19:25 `getJson(path, query:)` map-form transport unit test is joined
+  with the live pins — the map-form `$expand=.($levels=1)` round-trip
+  against the pinned mockup returns the SAME inlined full member bodies as
+  the URL-string form (Model/PowerState/Reset allow-list incl. Nmi/
+  ProcessorSummary), closing the seam a #018 discovery pass will call;
+  **UI-2 increment: KVM console card connect-URI row (`Connect URI: <uri>`)
+  merged semantics label** + 1 widget test; suite 303 → 304 tests)
 - **Current focus:** **DOCS-15 done (DSP0266 §7.3 query-parameters audit —
   the #018 pass must gate `$expand` on `ProtocolFeaturesSupported` and filter/
   project client-side; `getJson` query transport pinned);** EMU-2 suite at
-  **39 tests** — **query-behavior contract pinned 18:36: `$expand=*` inlines
+  **40 tests** — **query-behavior contract pinned 18:36: `$expand=*` inlines
   full bodies, `$filter`/`$select` advertised but NOT applied (client-side
-  only)**; next P1: #015 (AuthManager) — emulator
+  only)**; **map-form `getJson(path, query:)` `$expand` round-trip pinned
+  live 22:45 — same inlined bodies as the URL-string form, closing the seam
+  for the #018 pass**; next P1: #015 (AuthManager) — emulator
   pins the full auth
   contract + the Session/ManagerAccount/Role schemas are mirrored
   (#015/#017/#026); #022/#016: Annotation allow-list fallback landed (16:05
@@ -240,7 +239,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `$select` are advertised but NOT applied (Roles collection unfiltered
       for `$filter=Id eq 'NOPE'`, full system body for `$select=Model`) — the
       #018 discovery pass must filter/select client-side and rely only on
-      `$expand` for payload shaping)**)
+      `$expand` for payload shaping)** → **40 tests (map-form
+      `getJson(path, query:)` `$expand` round-trip pinned 2026-10-23 22:45:
+      the 19:25 unit test proved the query map forwards to the wire; the live
+      emulator now proves the map-form `$expand=.($levels=1)` on the Systems
+      collection returns the SAME inlined full member bodies as the URL-string
+      pins — Model/PowerState/Reset allow-list incl. Nmi/ProcessorSummary —
+      the exact call shape a #018 discovery pass will make)**)
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -341,7 +346,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `RedfishClient.getJson(path, query:)` transport contract is now pinned
       by unit test — the pass can fetch collections with
       `query: {'\$expand': '.($levels=1)'}` without touching the ETag/304
-      machinery)
+      machinery; **map-form round-trip pinned live 2026-10-23 22:45** —
+      `getJson('/redfish/v1/Systems', query: {'\$expand': '.($levels=1)'})`
+      against the live mockup returns the same inlined full member bodies as
+      the URL-string form — the exact call shape the #018 pass will make,
+      end-to-end verified)
 - [ ] **#022** Power: task polling, races, and error fixes.
       (bmcweb `ResetActionInfo` ActionInfo `Parameters/AllowableValues` is the
       allow-list source on OpenBMC; add fallback — DOCS-4. **Annotation-form
@@ -469,7 +478,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       2026-10-23 19:25 — Semantics(container + excludeSemantics) wraps the
       title+URL column, conditional connection-error text keeps its own node,
       widget test asserts the merged label + both visible texts;
-      `connectedHandle` helper gained a `port` param; extend to
+      `connectedHandle` helper gained a `port` param; **KVM console card
+      connect-URI row merged semantics label (`Connect URI: <uri>`) done
+      2026-10-23 22:45 — Semantics(container + excludeSemantics) wraps the
+      label + SelectableText in a row, widget test asserts the merged node +
+      both visible texts; extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.

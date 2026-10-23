@@ -1038,6 +1038,41 @@ void main() {
       expect(proc['Count'], 2);
     });
 
+    test(
+        'query transport: getJson(path, query:) forwards the map and the '
+        'live mockup applies the \$expand round-trip (#018)', () async {
+      // The 19:25 unit test pins that RedfishClient.getJson forwards its
+      // `query:` map to the wire as queryParameters; the URL-string pins
+      // above prove the mockup applies `$expand`. This test closes the seam
+      // between those two: a #018 discovery pass that calls
+      // `getJson('/redfish/v1/Systems', query: {'\$expand': '.($levels=1)'})`
+      // must receive the SAME inlined full member bodies the URL-string form
+      // returns — one round trip, no N+1 GETs.
+      final Map<String, dynamic> systems = await client.getJson(
+        '/redfish/v1/Systems',
+        query: <String, dynamic>{'\$expand': '.(\$levels=1)'},
+      );
+      expect(systems['@odata.type'], startsWith('#ComputerSystemCollection.'));
+      final List<dynamic> members = systems['Members'] as List<dynamic>;
+      expect(members, isNotEmpty);
+      final Map<dynamic, dynamic> member =
+          members.first as Map<dynamic, dynamic>;
+      expect(member['@odata.id'], '/redfish/v1/Systems/437XR1138R2');
+      // The same full resource body the direct GET (and the URL-string form)
+      // serves, proving the map-form round-trips end-to-end.
+      expect(member['Model'], '3500');
+      expect(member['Manufacturer'], 'Contoso');
+      expect(member['PowerState'], 'On');
+      final Map<dynamic, dynamic> actions =
+          member['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> reset =
+          actions['#ComputerSystem.Reset'] as Map<dynamic, dynamic>;
+      expect(reset['ResetType@Redfish.AllowableValues'], contains('Nmi'));
+      final Map<dynamic, dynamic> proc =
+          member['ProcessorSummary'] as Map<dynamic, dynamic>;
+      expect(proc['Count'], 2);
+    });
+
     test('account service: lockout policy + Roles link contract (#015/#026)',
         () async {
       // #015 AuthManager (logout/expiry reasoning) and #026 (duplicate auth

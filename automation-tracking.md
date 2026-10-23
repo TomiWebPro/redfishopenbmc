@@ -1748,3 +1748,63 @@ Append-only run log for the `redfish-automation` scheduler job.
   attempt + 1 tracking commit bfc5fd3; live `git rev-list --count
   origin/main..HEAD`). Root cause of the push blocker unchanged (no GitHub
   credentials on this machine).
+
+## 2026-10-23 22:45 — EMULATOR (map-form getJson query round-trip for #018) + UI-2 KVM connect-URI row
+
+- **Baseline:** analyze 0; tests 303 passed / 1 skipped; starting commit ceb84c4
+  (branch `main` ahead 61 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR (alternation: DOCS 19:25 → EMULATOR next). Pinned
+  the **map-form `getJson(path, query:)` `$expand` round-trip** against the
+  live DMTF mockup (`23d21f9a`) — the seam between the 19:25 transport unit
+  test (query map forwards to the wire as `queryParameters`) and the
+  URL-string live pins (17:07 `$levels=1`, 18:36 `$expand=*`). New emulator
+  test calls `client.getJson('/redfish/v1/Systems', query: {'\$expand':
+  '.($levels=1)'})` — the exact call shape the #018 lightweight discovery
+  pass will make — and asserts the SAME inlined full ComputerSystem member
+  bodies the URL-string form returns (Model 3500 / Manufacturer Contoso /
+  PowerState On / Actions.Reset allow-list incl. Nmi / ProcessorSummary
+  Count 2) in one round trip. Emulator suite 39 → **40 tests**, all green on
+  the pin via `tool/emulator/run_tests.sh` (server stopped by trap; port
+  8443 closed).
+- **Docs:** none this run (corpus complete; no new downloads). REQUIREMENTS.md
+  "Test platforms" note updated: 39 → 40 tests + the map-form `$expand`
+  paragraph (pinned 2026-10-23 22:45).
+- **Emulator:** suite green 40/40; pin `23d21f9a` unchanged; self-signed
+  cert regenerated under /tmp (test-only TLS, EMU-6 intact).
+- **Code/tests:** `test_integration/emulator/emulator_suite_test.dart` +1
+  test (map-form query round-trip). No production code change — the transport
+  already forwards `query:`; the new test proves the live server behaviour.
+- **UI:** UI-2 increment — the **KVM console card connect-URI row**
+  (`Connect URI:` label + the SelectableText URI) announced as two detached
+  text nodes; it now announces as ONE merged semantics node
+  (`Semantics(container: true, excludeSemantics: true, label: 'Connect URI:
+  <uri>')` — the established row pattern, with the label + URI kept visible
+  in a Row). One new widget test in `kvm_widget_test.dart` asserts the
+  merged label + both visible texts preserved.
+- **Verification:** analyze 0; tests 304 passed / 1 skipped (baseline 303 →
+  +1: KVM connect-URI merged-label widget test; the emulator +1 test only
+  runs under `REDFISH_EMULATOR_URL`); emulator suite 40/40 via run_tests.sh;
+  issues validate OK; `git diff --check` clean; secret scan clean. `dart
+  format` reflowed 29 pre-existing files (formatter drift) — those were
+  reverted; only this run's 4 touched files are staged (kvm_view.dart,
+  kvm_widget_test.dart, emulator_suite_test.dart, REQUIREMENTS.md).
+- **Commit:** TBD — `auto: EMULATOR — pin map-form getJson(path, query:)
+  $expand round-trip live for #018 (same inlined bodies as the URL-string
+  form; 40 emulator tests) + UI-2 KVM connect-URI merged semantics label
+  (run 2026-10-23 22:45)`; pushed: **no** — same GitHub credential blocker
+  (`fatal: could not read Username for 'https://github.com'`; no credential
+  helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this
+  machine); local commit kept, not retried. Commits ahead of origin/main:
+  **61** before push attempt (+1 auto +1 tracking = 63 after, live
+  `git rev-list --count origin/main..HEAD`).
+- **Next:** 1) Push the queued local commits (61) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager (authMethod dispatch, safe logout URI,
+  token rehydrate, SessionTimeout + AbsoluteSessionTimeout* expiry — full
+  auth surface pinned + schemas mirrored; 401 bad-login path stays
+  unit-level); 3) #018: build the lightweight discovery pass on the now fully
+  pinned contract — `getJson(query: {'\$expand': '.($levels=1)'})` collection
+  fetch (transport + live round-trip both pinned this run), gate on
+  `ProtocolFeaturesSupported.ExpandQuery`, filter/project client-side, map
+  501/507 + the forceRefresh/`_error` cache fixes; or #008/#020: task poller
+  + bmcweb HTTP-push firmware upload path.
