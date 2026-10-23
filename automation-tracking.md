@@ -952,7 +952,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   +1); issues validate OK; `git diff --check` clean; secret scan clean (no
   tokens/creds in diff). Formatted only the 2 touched Dart files (no repo-wide
   churn — prior-run precedent).
-- **Commit:** <SHA — filled after commit> — `auto: DOCS — DOCS-11 LogEntry schema corpus mirrored, UI-2 SystemCard merged header semantics (run 2026-10-23 07:58)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried. Commits queued locally before this run: 31.
+- **Commit:** ab39a7c — `auto: DOCS — DOCS-11 LogEntry schema corpus mirrored, UI-2 SystemCard merged header semantics (run 2026-10-23 07:58)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried. Commits queued locally before this run: 31.
 - **Next:** 1) Push the queued local commits from a machine with GitHub
   credentials (32 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
   logout URI, token rehydrate, SessionTimeout expiry) — emulator pins the full
