@@ -1789,7 +1789,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   format` reflowed 29 pre-existing files (formatter drift) — those were
   reverted; only this run's 4 touched files are staged (kvm_view.dart,
   kvm_widget_test.dart, emulator_suite_test.dart, REQUIREMENTS.md).
-- **Commit:** TBD — `auto: EMULATOR — pin map-form getJson(path, query:)
+- **Commit:** 7515efa — `auto: EMULATOR — pin map-form getJson(path, query:)
   $expand round-trip live for #018 (same inlined bodies as the URL-string
   form; 40 emulator tests) + UI-2 KVM connect-URI merged semantics label
   (run 2026-10-23 22:45)`; pushed: **no** — same GitHub credential blocker
