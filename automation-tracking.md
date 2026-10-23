@@ -1165,3 +1165,12 @@ Append-only run log for the `redfish-automation` scheduler job.
   poller (GET-on-monitor, TaskState 13-value parse, PercentComplete
   optional/absent, Messages[] timeline) + the bmcweb HTTP-push firmware upload
   path (both push URIs + apply-time modes + SimpleUpdateActionInfo asserted).
+
+## 2026-10-23 11:41 — PUSH RECORD (no code change)
+
+- Attempted `git push origin main` once after run 2026-10-23 11:39 (commit
+  130ae16 + hash-record ef9d5be): failed with
+  `fatal: could not read Username for 'https://github.com': No such device or
+  address` — no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no
+  SSH key on this machine. Local commits kept; not retried (runbook §7.4).
+- Queued local commits ahead of origin/main: **40** (38 before this run + 2).
