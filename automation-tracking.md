@@ -1655,3 +1655,89 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commits kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **57** (55 before this run + 2;
   live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-23 19:25 — DOCS (DSP0266 §7.3 query-parameters audit for #018) + UI-2 SystemOverviewPage header
+
+- **Baseline:** analyze 0; tests 301 passed / 1 skipped; starting commit e59f474
+  (branch `main` ahead 58 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** DOCS (alternation: EMULATOR 18:36, before that DOCS 17:30 —
+  DOCS next). Audited DSP0266 1.25.0 §7.3.1–§7.3.5 **"Query parameters"** — the
+  last unaudited normative clause set that directly governs the #018
+  lightweight discovery pass (`$expand` collection fetch). Extracted and traced
+  to the client:
+  - **Processing order** `$filter` → `$skip` → `$top` → server-side pagination →
+    `$expand` → `excerpt` → `$select`; query parameters are GET-only.
+  - **`$expand` options** (`*` all-hyperlinks incl. payload annotations,
+    `$levels` default 1, `.` all-but-links, `~` links-only), `MaxLevels` cap,
+    privileges-do-not-fail-expansion, **507 Insufficient Storage** on oversized
+    payloads, partial collection expansion → 200 + `@odata.id` + extended info.
+  - **`$select`** subset semantics (slash paths, no array indices, keep
+    `@odata.id`/`@odata.type`, omit unsupported requested props).
+  - **`$filter`** built-in operators `() and or not eq ne ge gt le lt` with
+    fixed precedence; strings in single quotes.
+  - **`clientcontext`** stateless incremental retrieval (LogEntryCollection),
+    `@Redfish.ClientContextStatus`, eviction → NotFound.
+  - **Status codes** 501 for unsupported `$`-params + extended error, 400 for
+    invalid values, `QueryNotSupportedOnResource`.
+  - **ProtocolFeaturesSupported** gating (`ExpandQuery{ExpandAll,Levels}`,
+    `FilterQuery`, `SelectQuery`, `ExcerptQuery`).
+  Bottom line for #018 (folded into FUTUREWORK + REQUIREMENTS.md "DOCS-15"):
+  the pinned mockup **applies `$expand` (`*` and `$levels=1`) but NOT
+  `$filter`/`$select`** — the pass must gate `$expand` on
+  `ProtocolFeaturesSupported` and filter/project **client-side**; map 501/507.
+- **Docs:** no new files downloaded (corpus complete; anchors re-verified:
+  bmcweb master still `fbb307a`, mockup still `23d21f9a`, DSP0266 still 1.25.0,
+  schema index 200 OK — live `curl -sSIL` + `git ls-remote`). Manifest README
+  anchors note updated to 19:20 UTC + DOCS-15 section; REQUIREMENTS.md got the
+  full DOCS-15 audit table (9 requirement rows) + "Last audited" header bump.
+- **Emulator:** none this run (the 18:36 query-behavior pin is the input the
+  audit reasons about; no server work needed).
+- **Code/tests:** `test/redfish/client/redfish_client_extra_test.dart` +1 test
+  pinning the **transport contract**: `RedfishClient.getJson(path,
+  query: {...})` forwards the map to the wire as `queryParameters`
+  (`$expand=.($levels=1)` round-trips) — the seam #018 will use. No production
+  code change (transport already supports query; nothing passes it yet).
+- **UI:** UI-2 increment — the **SystemOverviewPage connection header** (system
+  name + `scheme://host:port` in the top card) was announced as two detached
+  text nodes; it now announces as ONE merged semantics node
+  (`Semantics(container: true, excludeSemantics: true, label: '<name>,
+  <scheme>://<host>:<port>')` — the established header pattern). The
+  conditional connection-error text stays its own node. One new widget test
+  asserts the merged label + both visible texts preserved; `connectedHandle`
+  helper gained a `port` param for the test.
+- **Verification:** analyze 0; tests 303 passed / 1 skipped (baseline 301 →
+  +2: getJson query-forwarding unit test + SystemOverviewPage merged-header
+  widget test); issues validate OK; `git diff --check` clean; secret scan
+  clean. `dart format` on the 3 touched Dart files: 1 changed
+  (`redfish_client_extra_test.dart`, whitespace only).
+- **Commit:** 59bfb28 — `auto: DOCS — DSP0266 §7.3 query-parameters audit for
+  #018 ($expand gating on ProtocolFeaturesSupported, client-side filter/
+  select, 400/501/507 mapping; $levels default 1), pin getJson query
+  forwarding + UI-2 SystemOverviewPage header merged semantics (run
+  2026-10-23 19:25)`; pushed: **no** — same GitHub credential blocker
+  (`fatal: could not read Username for 'https://github.com'`; no credential
+  helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this
+  machine); local commit kept, not retried. Commits ahead of origin/main:
+  **59** before push attempt (58 + 1 auto), live `git rev-list --count
+  origin/main..HEAD`).
+- **Next:** 1) Push the queued local commits (59) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager (authMethod dispatch, safe logout URI,
+  token rehydrate, SessionTimeout + AbsoluteSessionTimeout* expiry — full
+  auth surface pinned + schemas mirrored; 401 bad-login path stays
+  unit-level); 3) #018: build the lightweight discovery pass on the now-pinned
+  contract — gate `$expand` on `ProtocolFeaturesSupported.ExpandQuery`, use
+  `getJson(query: {'\$expand': ...})` (transport pinned this run), filter/
+  project client-side, map 501/507; or #008/#020: task poller
+  (GET-on-monitor, TaskState parse, PercentComplete optional, Messages[]
+  timeline) + bmcweb HTTP-push firmware upload path.
+
+## 2026-10-23 19:30 — PUSH RECORD (no code change)
+
+- Attempted `git push origin main` once after run 2026-10-23 19:25 (commit
+  59bfb28): failed with
+  `fatal: could not read Username for 'https://github.com': No such device or
+  address` — no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no
+  SSH key on this machine. Local commit kept; not retried (runbook §7.4).
+- Queued local commits ahead of origin/main: **59** (58 before this run + 1;
+  live `git rev-list --count origin/main..HEAD`).

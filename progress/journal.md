@@ -1593,3 +1593,60 @@
 - none opened/closed this run. #018 got the query-behavior contract pin
   ($expand=* works; filter/select advertised-but-ignored), EMU-2/EMU-3 got
   count/scope updates — all recorded in FUTUREWORK; issues remain open.
+## 2026-10-23 — agent:redfish-automation — DOCS (DSP0266 §7.3 query-parameters audit for #018) + UI-2 SystemOverviewPage header
+
+**Done:**
+- DOCS primary workstream (alternation: EMULATOR 18:36 → DOCS next). Audited
+  DSP0266 1.25.0 §7.3.1–§7.3.5 "Query parameters" — the last unaudited
+  normative clause set governing the #018 lightweight discovery pass. Extracted
+  and traced to the client in REQUIREMENTS.md "DOCS-15" (9-row audit table):
+  processing order (`$filter`→`$skip`→`$top`→pagination→`$expand`→`excerpt`→
+  `$select`), `$expand` options (`*`, `$levels` default 1, `.`, `~`) +
+  `MaxLevels` + 507 oversized-payload + privilege-no-fail + partial-expansion
+  200, `$select` subset semantics, `$filter` built-in operators + precedence,
+  `clientcontext` incremental retrieval, 400/501/QueryNotSupportedOnResource.
+- Folded the bottom line into FUTUREWORK #018: the pinned mockup applies
+  `$expand` (`*` and `$levels=1`) but NOT `$filter`/`$select` → the pass must
+  gate `$expand` on `ProtocolFeaturesSupported.ExpandQuery` and filter/project
+  client-side; map 501/507.
+- Pinned the transport contract: `RedfishClient.getJson(path, query:)`
+  forwards the map to the wire as `queryParameters` (+1 unit test in
+  `redfish_client_extra_test.dart`) — the seam the #018 pass will use without
+  touching the ETag/304 machinery.
+- Anchors re-verified live (curl + git ls-remote): bmcweb `fbb307a`, mockup
+  `23d21f9a`, DSP0266 1.25.0, schema index 200 — all unchanged; manifest
+  anchors note bumped to 19:20 UTC + DOCS-15 section added.
+- UI-2 increment: **SystemOverviewPage connection header** (system name +
+  `scheme://host:port` in the top card) now announces as ONE merged semantics
+  node (`Semantics(container: true, excludeSemantics: true, label: '<name>,
+  <scheme>://<host>:<port>')`), the established header pattern; the
+  conditional connection-error text keeps its own node. One new widget test
+  asserts the merged label + both visible texts; `connectedHandle` helper
+  gained a `port` param.
+
+**Decisions:**
+- DOCS selected per alternation. Within DOCS, picked the §7.3 audit (the last
+  unaudited normative clause set) over another corpus fetch — anchors were
+  re-verified 16:45/17:30 and the corpus is complete for all 16 client-mapped
+  families; DOCS-15 closes the final spec-audit gap.
+- Kept the code delta to a test-only transport pin: `getJson` already supports
+  `query` (nothing passes it yet); wiring `$expand` into the discovery crawl
+  is #018's build, not a docs-run change.
+- UI increment kept to the established merged-label pattern (no new deps, no
+  layout change).
+
+**Next:**
+- Push 59 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout + AbsoluteSessionTimeout* expiry) — full auth surface pinned
+  + schemas mirrored; 401 bad-login path unit-level.
+- #018: build the lightweight discovery pass on the now-pinned contract —
+  gate `$expand` on `ProtocolFeaturesSupported.ExpandQuery`, use
+  `getJson(query: {'\$expand': ...})` (transport pinned this run), filter/
+  project client-side, map 501/507 + the forceRefresh/`_error` cache fixes;
+  or #008/#020: task poller + bmcweb HTTP-push upload path.
+
+**Issues touched:**
+- none opened/closed this run. #018 got the DSP0266 §7.3 normative contract
+  (DOCS-15), EMU-2/UI-2 got scope updates — all recorded in FUTUREWORK;
+  issues remain open.

@@ -7,21 +7,23 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 18:36 (EMULATOR run — **EMU-2 at 39 tests:
-  query-behavior contract pinned for #018** — `$expand=*` (ExpandAll) also
-  serves inlined full member bodies, while `$filter`/`$select` are
-  **advertised but NOT applied** by the pinned mockup (Roles collection
-  unfiltered for `$filter=Id eq 'NOPE'`, full system body for `$select=Model`)
-  → the #018 lightweight discovery pass must filter/select client-side and
-  rely only on `$expand` for payload shaping; 401 bad-login error mapping
-  probed and recorded as unit-only (mockup without `-u` accepts any
-  credentials, 204 — consistent with EMU-5); **UI-2 increment: KvmView view
-  header (title + subtitle) now one merged semantics node** + 1 widget test;
-  suite 300 → 301 tests)
-- **Current focus:** EMU-2 suite at **39 tests** — **query-behavior contract
-  pinned 18:36: `$expand=*` inlines full bodies, `$filter`/`$select` advertised
-  but NOT applied (client-side only)**; DOCS-14 done (OData base vocabulary
-  mirror + anchor re-verification); next P1: #015 (AuthManager) — emulator
+- **Last updated:** 2026-10-23 19:25 (DOCS run — **DOCS-15: DSP0266 §7.3
+  query-parameters audit folded into #018**: processing order `$filter`→`$skip`
+  →`$top`→pagination→`$expand`→`excerpt`→`$select`; `$expand` options
+  (`*`/`$levels` default 1/`.`/`~`) + `MaxLevels` + 507 oversized-payload;
+  `$select`/`$filter` are GET-only subset semantics with 400/501/
+  QueryNotSupportedOnResource mapping — the pinned mockup applies `$expand`
+  but NOT `$filter`/`$select`, so the #018 pass must gate `$expand` on
+  `ProtocolFeaturesSupported.ExpandQuery` and filter/project client-side;
+  `getJson` query-forwarding transport contract pinned by unit test; **UI-2
+  increment: SystemOverviewPage connection header (name + URL) merged into one
+  semantics node** + 1 widget test; suite 301 → 303 tests)
+- **Current focus:** **DOCS-15 done (DSP0266 §7.3 query-parameters audit —
+  the #018 pass must gate `$expand` on `ProtocolFeaturesSupported` and filter/
+  project client-side; `getJson` query transport pinned);** EMU-2 suite at
+  **39 tests** — **query-behavior contract pinned 18:36: `$expand=*` inlines
+  full bodies, `$filter`/`$select` advertised but NOT applied (client-side
+  only)**; next P1: #015 (AuthManager) — emulator
   pins the full auth
   contract + the Session/ManagerAccount/Role schemas are mirrored
   (#015/#017/#026); #022/#016: Annotation allow-list fallback landed (16:05
@@ -182,6 +184,21 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       1.25.0; schema index 200 OK; manifest row + REQUIREMENTS.md DOCS-14
       audit section added)
 
+- [x] **DOCS-15** Audit DSP0266 §7.3 "Query parameters" (§7.3.1–7.3.5:
+      processing order, `$expand` options `*`/`$levels` default 1/`.`/`~` +
+      `MaxLevels` + 507 oversized-payload, `$select`, `$filter` built-in
+      operators + precedence, `clientcontext` incremental retrieval, 400/501/
+      QueryNotSupportedOnResource) against the client's query transport and
+      the emulator-pinned query contract; fold the bottom line into #018
+      (gate `$expand` on `ProtocolFeaturesSupported`, filter/project
+      client-side) and pin the `getJson(path, query:)` forwarding contract
+      with a unit test.
+      (run 2026-10-23 — REQUIREMENTS.md "DOCS-15" audit table (9 rows) +
+      manifest anchors note updated to 19:20 UTC; anchors re-verified:
+      bmcweb `fbb307a`, mockup `23d21f9a`, DSP0266 1.25.0, schema index 200;
+      +1 transport unit test; no corpus refresh needed — corpus complete for
+      all 16 client-mapped families)
+
 ## P1 — emulator and integration tests
 
 - [x] **EMU-1** Stand up the official DMTF Redfish-Mockup-Server over HTTPS using
@@ -313,7 +330,18 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       bodies, but `$filter`/`$select` are **advertised but NOT applied** by
       the pinned mockup (Roles collection unfiltered for `$filter=Id eq
       'NOPE'`, full system body for `$select=Model`) — the pass must filter/
-      select client-side and rely only on `$expand` for payload shaping)
+      select client-side and rely only on `$expand` for payload shaping;
+      **DOCS-15 spec audit folded 2026-10-23 19:25** — DSP0266 §7.3.1–7.3.5
+      now traced in REQUIREMENTS.md: the pass must (a) gate `$expand` on the
+      advertised `ExpandQuery.Levels`/`ExpandAll` (`*`/`$levels` default 1
+      are the pinned forms; `MaxLevels` caps depth), (b) filter/project
+      client-side (`$select`/`$filter` are GET-only subset semantics the
+      mockup ignores), (c) map 501 (unsupported `$`-params) + 507 (oversized
+      expanded payload) + `QueryNotSupportedOnResource`; the
+      `RedfishClient.getJson(path, query:)` transport contract is now pinned
+      by unit test — the pass can fetch collections with
+      `query: {'\$expand': '.($levels=1)'}` without touching the ETag/304
+      machinery)
 - [ ] **#022** Power: task polling, races, and error fixes.
       (bmcweb `ResetActionInfo` ActionInfo `Parameters/AllowableValues` is the
       allow-list source on OpenBMC; add fallback — DOCS-4. **Annotation-form
@@ -436,7 +464,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       excludeSemantics) wraps the icon+text row revealed by the "Allow
       self-signed certificate" switch, widget test asserts the merged node +
       visible text — remaining UI-2: focus order, remaining
-      non-card labels); extend to
+      non-card labels); **SystemOverviewPage connection header (name + URL)
+      merged semantics label (`<name>, <scheme>://<host>:<port>`) done
+      2026-10-23 19:25 — Semantics(container + excludeSemantics) wraps the
+      title+URL column, conditional connection-error text keeps its own node,
+      widget test asserts the merged label + both visible texts;
+      `connectedHandle` helper gained a `port` param; extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.
