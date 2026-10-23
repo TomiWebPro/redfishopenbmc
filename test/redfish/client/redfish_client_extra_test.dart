@@ -57,6 +57,43 @@ void main() {
     });
   });
 
+  group('RedfishClient.getJson query parameters', () {
+    test('forwards the query map to the wire as queryParameters (DSP0266 §7.3)',
+        () async {
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://bmc1:443'));
+      final DioAdapter adapter =
+          DioAdapter(dio: dio, matcher: const _PathMatcher());
+      final List<RequestOptions> seen = <RequestOptions>[];
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+            seen.add(options);
+            handler.next(options);
+          },
+        ),
+      );
+      adapter.onGet(
+        '/redfish/v1/Systems',
+        (server) => server.reply(
+          200,
+          <String, dynamic>{'Members': <dynamic>[]},
+          headers: _jsonContentType,
+        ),
+      );
+      final RedfishClient client = RedfishClient(
+          profile: const ConnectionProfile(host: 'bmc1'), dio: dio);
+      final Map<String, dynamic> body = await client.getJson(
+        '/redfish/v1/Systems',
+        query: <String, dynamic>{r'$expand': r'.($levels=1)'},
+      );
+      expect(body, <String, dynamic>{'Members': <dynamic>[]});
+      expect(seen, hasLength(1));
+      expect(seen.single.queryParameters,
+          <String, dynamic>{r'$expand': r'.($levels=1)'});
+    });
+  });
+
   group('AuthManager.withAuth', () {
     test('throws StateError when the system never logged in', () {
       final AuthManager manager = AuthManager(storage: InMemoryStorage());
@@ -69,7 +106,8 @@ void main() {
     test('runs the action with the authenticated client (session token)',
         () async {
       final Dio dio = Dio(BaseOptions(baseUrl: 'https://bmc1:443'));
-      final DioAdapter adapter = DioAdapter(dio: dio, matcher: const _PathMatcher());
+      final DioAdapter adapter =
+          DioAdapter(dio: dio, matcher: const _PathMatcher());
       adapter.onPost(
         '/redfish/v1/SessionService/Sessions',
         (server) => server.reply(
@@ -92,7 +130,8 @@ void main() {
       );
       final AuthManager manager = AuthManager(
         storage: InMemoryStorage(),
-        createClient: (ConnectionProfile p) => RedfishClient(profile: p, dio: dio),
+        createClient: (ConnectionProfile p) =>
+            RedfishClient(profile: p, dio: dio),
       );
       await manager.login(
         'bmc1',
@@ -106,7 +145,8 @@ void main() {
       final List<Map<String, dynamic>> seen = <Map<String, dynamic>>[];
       dio.interceptors.add(
         InterceptorsWrapper(
-          onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
             seen.add(Map<String, dynamic>.from(options.headers));
             handler.next(options);
           },

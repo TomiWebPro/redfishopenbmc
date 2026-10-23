@@ -143,7 +143,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-23 12:40 UTC — DOCS-13 auth/network/ActionInfo corpus mirror; prior: DOCS-11/12 re-check 07:40/08:10 UTC)
+## Current upstream anchors (verified 2026-10-23 19:20 UTC — DOCS-15 query-parameter audit run; prior: DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing)
@@ -153,9 +153,23 @@ redirection), so no fixture referencing a specific version is affected.
 - Redfish Mockup Server — <https://github.com/DMTF/Redfish-Mockup-Server>
   (default branch `main` @ `23d21f9a` — unchanged; README saved to `redfish/mockup/`)
 - OpenBMC bmcweb docs — <https://github.com/openbmc/bmcweb/tree/master/docs>
-  (master `fbb307a`, was `27e0930b`; Redfish.md, REDFISH_CHECKLIST.md,
-  OEM_SCHEMAS.md, CLIENTS.md saved; all four docs are byte-identical
-  at the new HEAD — re-verified 2026-10-23 16:45 UTC)
+  (master `fbb307a` — unchanged since DOCS-14; Redfish.md, REDFISH_CHECKLIST.md,
+  OEM_SCHEMAS.md, CLIENTS.md saved; re-verified 2026-10-23 19:20 UTC)
+
+### DOCS-15 — DSP0266 §7.3 query-parameters audit (2026-10-23 19:20 UTC)
+
+No new files mirrored this run (corpus is complete for all 16 client-mapped
+families + OData base vocabulary; anchors all unchanged). The audit instead
+extracted the **normative query-parameter clauses** (DSP0266 §7.3.1–§7.3.5:
+`$expand` options incl. `$levels` default 1 / `MaxLevels`, `$select`,
+`$filter` built-in operators + precedence, `clientcontext` incremental
+retrieval, processing order, 400/501/507 semantics) and traced them to the
+client's transport + the emulator-pinned query contract in `REQUIREMENTS.md`
+"DOCS-15". Bottom line for #018: the pinned mockup applies `$expand`
+(`*` and `$levels=1`) but NOT `$filter`/`$select` (advertised-but-ignored), so
+the #018 discovery pass must gate `$expand` on `ProtocolFeaturesSupported`
+and filter/project client-side. `RedfishClient.getJson` already supports a
+`query` map; the forwarding contract is now pinned by unit test.
 
 ### DOCS-11 LogEntry corpus mirror (2026-10-23 07:37 UTC)
 

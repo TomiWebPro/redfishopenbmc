@@ -41,15 +41,27 @@ class SystemOverviewPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    handle.displayName,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${handle.profile.scheme}://${handle.profile.host}:'
-                    '${handle.profile.port}',
-                    style: Theme.of(context).textTheme.bodySmall,
+                  Semantics(
+                    container: true,
+                    excludeSemantics: true,
+                    label: '${handle.displayName}, '
+                        '${handle.profile.scheme}://${handle.profile.host}:'
+                        '${handle.profile.port}',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          handle.displayName,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${handle.profile.scheme}://${handle.profile.host}:'
+                          '${handle.profile.port}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
                   ),
                   if (handle.status == ConnectionStatus.error &&
                       handle.lastError != null) ...<Widget>[

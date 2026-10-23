@@ -38,6 +38,7 @@ SystemHandle connectedHandle({
   required String id,
   String name = 'Lab',
   String host = '1.2.3.4',
+  int port = 443,
   Health health = Health.ok,
   PowerState power = PowerState.on,
   SystemFeatures? features,
@@ -48,7 +49,7 @@ SystemHandle connectedHandle({
   String? lastError,
 }) {
   return SystemHandle(
-    profile: ConnectionProfile(id: id, name: name, host: host),
+    profile: ConnectionProfile(id: id, name: name, host: host, port: port),
     status: status,
     session: status == ConnectionStatus.connected
         ? Session(systemId: id, token: 't', location: '', username: '')
@@ -541,6 +542,31 @@ void main() {
       final SystemManager m = seededManager(systems: <String, SystemHandle>{});
       await pumpOverviewDirect(tester, m, 'ghost');
       expect(find.text('System not found'), findsOneWidget);
+    });
+
+    testWidgets(
+        'connection header announces one merged semantics node — name + URL '
+        '(UI-2)', (tester) async {
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(
+            id: 'bmc1',
+            name: 'Lab BMC',
+            host: '10.0.0.7',
+            port: 8443,
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+      await pumpOverviewDirect(tester, m, 'bmc1');
+      expect(
+        find.bySemanticsLabel('Lab BMC, https://10.0.0.7:8443'),
+        findsOneWidget,
+        reason: 'expected the merged name + URL header node',
+      );
+      // Visible texts preserved.
+      expect(find.text('Lab BMC'), findsOneWidget);
+      expect(find.text('https://10.0.0.7:8443'), findsOneWidget);
     });
   });
 

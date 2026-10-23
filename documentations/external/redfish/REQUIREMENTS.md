@@ -6,13 +6,20 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-23 (DOCS-13 run — mirrored the missing versioned
-definitions for the emulator-pinned auth/network/ActionInfo resources —
-`Session`, `ManagerAccount`, `Role`, `ManagerNetworkProtocol`, `ActionInfo`
-(aggregator + newest + mockup-served each) plus versioned `ServiceRoot` and the
-mockup-served `Task.v1_7_3`/`TaskService.v1_2_0`; audit table below; no client
-code change needed this run (property deltas recorded in the DOCS-13 section).
-Prior: DOCS-12 — mirrored the missing **versioned** definitions for the six
+Last audited: 2026-10-23 (DOCS-15 run — audited DSP0266 §7.3 "Query parameters"
+against the client transport + the emulator-pinned query contract; folded the
+normative §7.3.1–§7.3.5 clauses (processing order, `$expand` options incl.
+`$levels` default 1 / `MaxLevels`, `$select`, `$filter` operators + precedence,
+`clientcontext`, 400/501/507 semantics) into the audit table below; the #018
+discovery pass must gate `$expand` on `ProtocolFeaturesSupported` and filter/
+project client-side because the pinned mockup applies `$expand` but not
+`$filter`/`$select`; pinned the `getJson` query-forwarding transport contract
+with a unit test. Prior: DOCS-13 run — mirrored the missing versioned
+definitions for the emulator-pinned auth/network/ActionInfo resources
+(`Session`, `ManagerAccount`, `Role`, `ManagerNetworkProtocol`, `ActionInfo`,
+plus versioned `ServiceRoot` and mockup-served `Task.v1_7_3`/
+`TaskService.v1_2_0`). Prior: DOCS-12 — mirrored the missing **versioned**
+definitions for the six
 aggregator-only families — `UpdateService`/`EventService`/
 `SessionService`/`Manager`/`Power`/`Thermal` — newest + mockup-served versions,
 so the rows below now cite real mirror files; no client code change needed
@@ -32,7 +39,7 @@ Sources:
 - DSP0266 1.25.0 — `redfish/spec/DSP0266_1.25.0.pdf`
 - DMTF schema index — `redfish/schemas/v1-index.html` + `redfish/schemas/v1/*.json`
 - bmcweb — `redfish/openbmc/Redfish.md`, `REDFISH_CHECKLIST.md`, `OEM_SCHEMAS.md`,
-  `CLIENTS.md` (bmcweb master `fbb307a`, re-verified 2026-10-23 16:45 UTC —
+  `CLIENTS.md` (bmcweb master `fbb307a`, re-verified 2026-10-23 19:20 UTC —
   byte-identical to `27e0930b`)
 
 ## DOCS-10 — task-monitor contract audit (2026-10-23)
@@ -458,3 +465,30 @@ every corpus anchor:
 4. **DMTF schema index 200 OK**; hub still links `DSP0266_1.25.0.pdf`
    (1.26.0 → 404) — no spec refresh.
 5. No client code change this run — corpus-only audit + provenance.
+
+## DOCS-15 — DSP0266 §7.3 "Query parameters" audit (2026-10-23)
+
+Audited DSP0266 1.25.0 §7.3.1–§7.3.5 (query-parameter clauses) against the
+client's HTTP transport and the emulator-pinned query contract (#018). This is
+the normative basis for the #018 lightweight discovery pass (`$expand`
+collection fetch) and for how the client must treat `$filter`/`$select` on the
+pinned mockup.
+
+| Requirement | Source (section/URL) | Code | Test | Status |
+|---|---|---|---|---|
+| Query parameters apply only to **GET** operations; service shall process them in order `$filter` → `$skip` → `$top` → server-side pagination → `$expand` → `excerpt` → `$select` | DSP0266 §7.3.1 "Query parameter overview" | `RedfishClient.getJson` accepts `query` (Dio `queryParameters`) — GET only; no feature passes a query today | (new, this run) `redfish_client_extra_test.dart` pins `getJson` forwards `query` to the wire | OK — transport ready for #018 |
+| Service **shall** advertise query support via `ProtocolFeaturesSupported` in the service root; service **may** support `$expand`/`$filter`/`$select`, **should** support `$top`/`$skip`/`only`/`excerpt` | DSP0266 §7.3.1; `ServiceRoot.v1_22_0.json` `ProtocolFeaturesSupported` (mirrored DOCS-13) | `FeatureRules` reads the service root (discovery crawl) but does not yet gate query usage on the advertised flags | emulator service-root group asserts `ProtocolFeaturesSupported` publishes `ExpandQuery{ExpandAll,Levels}` + `FilterQuery`/`SelectQuery` | GAP: #018 must gate its `$expand` usage on `ExpandQuery` (Levels/ExpandAll) and assume NO `$filter`/`$select` application |
+| Service shall return **501 Not Implemented** for unsupported `$`-prefixed query parameters, with an extended error naming the unsupported parameter; **400 Bad Request** for invalid values; **400 QueryNotSupportedOnResource** for implemented-but-unsupported-on-resource params | DSP0266 §7.3.1; `Base` Message Registry `QueryNotSupportedOnResource` | `RedfishException.fromDioException` normalizes 400/501 into typed errors | `redfish_error_test` / `models_test.dart` cover error envelope; no query-specific 400/501 unit fixture yet | Partial: generic error mapping OK; #018 should add a unit fixture for the query-501 path |
+| `$expand` options: `*` (all hyperlinks incl. payload annotations), `$levels` (default 1), `.` (all but `links` properties), `~` (only `links` properties); when `$levels` advertised, `MaxLevels` caps the depth; combine with `$select` using full property path | DSP0266 §7.3.2 "The $expand query parameter"; `ServiceRoot.v1_22_0.json` `Expand` definition | none (client does not send `$expand` today) | emulator pins: `$expand=.($levels=1)` **and** `$expand=*` both inline full member bodies (17:07 + 18:36 runs) | OK pinned on the mockup; #018 may use either form (`*` or `$levels=1`) for collection fetch |
+| Service shall not expand referenced resources the client lacks privileges for (no request failure); **507 Insufficient Storage** when the expanded payload exceeds service limits; partial collection expansion → 200 + `@odata.id` for unexpandable members + extended info | DSP0266 §7.3.2 | none | — | Note for #018 (payload-growth guard + 507 mapping) |
+| `$select`: returns a subset of properties per the comma-separated expression; `/` separates nested property paths; array indices not allowed; response keeps `@odata.id`/`@odata.type` (and `@odata.context`/`@odata.etag` when supported) with the same values as an unselected response; unsupported requested properties are omitted | DSP0266 §7.3.3 "The $select query parameter" | none (client sends no `$select`) | emulator pins `$select=Model` is **advertised but NOT applied** by the mockup (full body returned, 18:36) | GAP: #018 must do projection client-side — never rely on server-side `$select` |
+| `$filter`: subset of collection members per built-in operators `() and or not eq ne ge gt le lt` with fixed operator precedence; strings in single quotes | DSP0266 §7.3.4 "The $filter query parameter" | none (client sends no `$filter`) | emulator pins `$filter=Id eq 'NOPE'` returns **all** members (advertised but NOT applied, 18:36) | GAP: #018 must filter client-side — never rely on server-side `$filter` |
+| `clientcontext`: stateless incremental retrieval of collection entries (currently defined for `LogEntryCollection`); service **shall never silently ignore** it (responds `@Redfish.ClientContextStatus`); unknown key = first-use; NotFound for evicted keys | DSP0266 §7.3.5 "The clientcontext query parameter"; `ServiceRoot.v1_22_0.json` `ClientContextQuery` | not used (no log reader) | emulator log-service group pins `@odata.nextLink` (`$skiptoken`) pagination — different mechanism | Note for future log reader; not #018 |
+
+**Bottom line for #018** (folded into FUTUREWORK): the pinned mockup advertises
+`$filter`/`$select`/`$expand` but **applies only `$expand`**. The #018
+lightweight discovery pass must (a) gate `$expand` usage on the advertised
+`ExpandQuery.Levels`/`ExpandAll`, (b) do all filtering/projection client-side,
+and (c) map `501`/`507` from query requests. `RedfishClient.getJson` already
+supports a `query` map — the transport contract is now pinned by unit test
+(added this run). No production code change this run.
