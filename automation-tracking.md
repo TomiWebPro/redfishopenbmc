@@ -1551,3 +1551,12 @@ Append-only run log for the `redfish-automation` scheduler job.
   fixes; or #022/#016: the `ResetActionInfo` ActionInfo-*resource* crawl
   (`Parameters[].AllowableValues` — bmcweb-style BMCs; the DMTF mockup serves
   only the annotation form, pinned 17:07).
+
+## 2026-10-23 17:40 — PUSH RECORD (no code change)
+
+- Attempted `git push origin main` once after run 2026-10-23 17:30 (commits
+  4504e46 auto + 0d3e360 tracking): failed with
+  `fatal: could not read Username for 'https://github.com': No such device or
+  address` — no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no
+  SSH key on this machine. Local commits kept; not retried (runbook §7.4).
+- Queued local commits ahead of origin/main: **50** (49 before this run + 1).
