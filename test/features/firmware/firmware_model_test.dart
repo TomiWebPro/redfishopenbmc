@@ -160,4 +160,23 @@ void main() {
       });
     });
   });
+
+  group('UpdateTask', () {
+    test('carries the task URI + optional Retry-After (DSP0266 §12.2)', () {
+      const UpdateTask task = UpdateTask(
+        taskUri: '/redfish/v1/TaskService/TaskMonitors/42',
+        retryAfterSeconds: 30,
+      );
+      expect(task.taskUri, '/redfish/v1/TaskService/TaskMonitors/42');
+      expect(task.retryAfterSeconds, 30);
+      expect(task.toString(), contains('retryAfterSeconds=30'));
+    });
+
+    test('leaves Retry-After null when the 202 omits it', () {
+      const UpdateTask task =
+          UpdateTask(taskUri: '/redfish/v1/TaskService/Tasks/1');
+      expect(task.taskUri, '/redfish/v1/TaskService/Tasks/1');
+      expect(task.retryAfterSeconds, isNull);
+    });
+  });
 }

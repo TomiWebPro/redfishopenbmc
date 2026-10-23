@@ -947,3 +947,58 @@
 - none opened/closed this run (EMULATOR contract pins + UI-2 label; no issue
   status change). #007/#008/#016/#019/#020/#022 got emulator-level contract
   notes in FUTUREWORK.
+
+## 2026-10-23 — agent:redfish-automation — REPAIR run (recovered crashed DOCS-10 WIP)
+
+**Done:**
+- Recovered a crashed DOCS-10 run from the working tree instead of discarding
+  it: the WIP (Task schema corpus + `UpdateTask` Retry-After + banner semantics)
+  was sound but red — a leftover scratch probe
+  (`test/features/firmware/sem_probe_test.dart`, no assertions, broken
+  `SemanticsNode` import) caused 4 analyze errors and 3 tests failed.
+- Fixed: removed the scratch probe (real coverage already in
+  `firmware_widget_test.dart`); `_retryAfterSeconds` no longer checks
+  `date != null` after a successful `HttpDate.parse`; added the JSON
+  content-type header to the DioAdapter 202 reply (mirrors `auth_manager_test`
+  `_jsonContentType` — headers override drops the default encode type, causing
+  the transport cast error); added `excludeSemantics: true` to the queued-banner
+  `Semantics` (the documented UI-2 pattern — the child Text otherwise merges
+  into the label).
+- Landed DOCS-10: `Task.json` + `Task.v1_7_4.json` + `TaskService.v1_2_1.json`
+  mirrored (SHA-256 verified against the manifest); DSP0266 §12.2 audit table in
+  REQUIREMENTS.md; `UpdateTask.retryAfterSeconds` from the 202 `Retry-After`
+  header (seconds or HTTP-date, clamped ≥ 0); `startSimpleUpdate` returns an
+  `UpdateTask` handle; `FirmwareUiState.lastTask` replaces `lastTaskUri`;
+  queued-update banner shows the URI + `retry after Ns` with one merged
+  semantics label (UI-2).
+- Tests: `firmware_model_test.dart` +2, `firmware_service_test.dart` +2,
+  `firmware_widget_test.dart` +2. Full suite green: analyze 0, 284 passed /
+  1 skipped; emulator 27/27 (safety re-run after the model change).
+
+**Decisions:**
+- Crashed-WIP recovery beats stashing: the WIP was clearly the previous
+  automation's DOCS-10 work, ~95% complete; the failures were 2 small code bugs
+  + 1 scratch file — cheaper and better to finish than to stash and redo.
+- Kept the crashed run's docs provenance (manifest rows + sha256 + DOCS-10
+  section) after verifying the hashes match the downloaded files.
+- Deleted the untracked scratch probe `sem_probe_test.dart` (automation debris,
+  not user work; superseded by the widget tests it was probing for).
+- Formatted only the touched Dart files — no repo-wide `dart format` (prior-run
+  precedent: reintroduces the `curly_braces` lint).
+
+**Next:**
+- Push 28 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout expiry) — emulator pins session lifecycle + AccountService;
+  implement unit-level with the in-process mock server.
+- #008/#020: bmcweb HTTP-push firmware upload — `UpdateTask` now carries the
+  task-monitor URI + `Retry-After`, so build the poller (GET-on-monitor,
+  `TaskState` 13 values, `PercentComplete`) and the push path
+  (`HttpPushUri`/`MultipartHttpPushUri` apply-time selection).
+- #016/#022: `ResetActionInfo` allow-list fallback (system-level, incl. `Nmi`)
+  + PATCH/etag.
+
+**Issues touched:**
+- none opened/closed this run (REPAIR of crashed DOCS-10 WIP; no issue status
+  change). #008/#020 got a note that `UpdateTask` now carries the task-monitor
+  URI + retry-after; DOCS-10 marked done in FUTUREWORK.

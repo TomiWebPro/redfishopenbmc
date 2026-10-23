@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 
 import 'package:redfishopenbmc/features/firmware/models/firmware_models.dart';
@@ -99,7 +101,8 @@ class FirmwareService {
       for (final String memberId in ODataResource(collection).memberIds()) {
         try {
           final Map<String, dynamic> member = await c.getJson(memberId);
-          items.add(FirmwareInventoryItem.fromJson(member, id: _lastSegment(memberId)));
+          items.add(FirmwareInventoryItem.fromJson(member,
+              id: _lastSegment(memberId)));
         } on RedfishException {
           // Skip members that cannot be read rather than failing the whole list.
         }
@@ -121,10 +124,12 @@ class FirmwareService {
   /// Starts a firmware update via the `#UpdateService.SimpleUpdate` action.
   ///
   /// Resolves the action target (discovery cache → live body → known URI),
-  /// POSTs [req.toJson()], and on a 202 response returns the `Location` task
-  /// URI (or `''` when the BMC omitted it). Throws [RedfishException] when not
-  /// connected or when the BMC rejects the request (403 / 409 / 400 etc.).
-  Future<String> startSimpleUpdate(SimpleUpdateRequest req) async {
+  /// POSTs [req.toJson()], and on a 202 response returns an [UpdateTask]
+  /// carrying the `Location` task URI and the optional `Retry-After` seconds
+  /// (DSP0266 §12.2 — the delay the service wants the client to wait before
+  /// polling the task monitor). Throws [RedfishException] when not connected
+  /// or when the BMC rejects the request (403 / 409 / 400 etc.).
+  Future<UpdateTask> startSimpleUpdate(SimpleUpdateRequest req) async {
     final RedfishClient? c = client;
     if (c == null) {
       throw RedfishException(
@@ -140,15 +145,44 @@ class FirmwareService {
         target,
         data: req.toJson(),
       );
-      if (response.statusCode == 202) {
-        final String? task = response.headers.value('location');
-        return task ?? '';
-      }
-      final String? task = response.headers.value('location');
-      return task ?? '';
+      return UpdateTask(
+        taskUri: _headerValue(response.headers, 'location'),
+        retryAfterSeconds: _retryAfterSeconds(response.headers),
+      );
     } on DioException catch (e) {
       throw _toFriendly(e);
     }
+  }
+
+  /// Returns the first value of a response header (case-insensitive), trimmed,
+  /// or `null` when the header is absent.
+  static String? _headerValue(Headers headers, String name) {
+    final String? value = headers.value(name);
+    if (value == null) return null;
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  /// Parses the `Retry-After` response header per RFC 7231 / DSP0266 §12.2.
+  ///
+  /// Accepts either a decimal number of seconds or an HTTP-date (converted to
+  /// a whole number of seconds from now, clamped to `>= 0`). Returns `null`
+  /// when the header is absent or unparseable.
+  static int? _retryAfterSeconds(Headers headers) {
+    final String? raw = _headerValue(headers, 'retry-after');
+    if (raw == null) return null;
+    final int? seconds = int.tryParse(raw);
+    if (seconds != null) {
+      return seconds >= 0 ? seconds : 0;
+    }
+    final DateTime date;
+    try {
+      date = HttpDate.parse(raw);
+    } catch (_) {
+      return null;
+    }
+    final int diff = date.difference(DateTime.now()).inSeconds;
+    return diff >= 0 ? diff : 0;
   }
 
   /// Resolves the `UpdateService` resource URI.
@@ -198,7 +232,9 @@ class FirmwareService {
       final dynamic value = entry.value;
       if (value is Map<String, dynamic>) {
         final ODataResource res = ODataResource(value);
-        if (res.isType('updateservice') && res.id != null && res.id!.isNotEmpty) {
+        if (res.isType('updateservice') &&
+            res.id != null &&
+            res.id!.isNotEmpty) {
           return res.id;
         }
       }

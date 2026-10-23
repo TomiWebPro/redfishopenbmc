@@ -7,20 +7,24 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 (EMULATOR run — suite 24→27: Sensors collection
-  end-to-end #007/#019, system-level Reset allow-list incl. `Nmi` #022/#016,
-  SimpleUpdateActionInfo #008/#020; UI-2 chassis-card header semantics label)
-- **Current focus:** EMULATOR suite at 27 tests (Sensors collection #007/#019,
-  system Reset allow-list incl. `Nmi` #022/#016, SimpleUpdateActionInfo
-  #008/#020 pinned this run); DOCS-9 freshness re-check done (no anchors moved;
-  corpus current); DOCS-2 schema refresh done (ComputerSystem/Chassis v1_29_0,
-  Sensor v1_14_0, AccountService v1_19_0, EthernetInterface v1_12_6,
-  SoftwareInventory v1_15_0); UI-3 fully done (all views covered); **UI-1 done**
-  (dashboard error summary + Retry); **UI-2 increment** (chassis-card header
-  semantics label, 03:02 run); next P1: #015 (AuthManager) — emulator now pins
-  the full session contract + the AccountService surface; #016/#022
-  (ActionInfo/etag) or #008/#020 (HTTP-push firmware, Tasks URI + push apply-time
-  modes + both push URIs + SimpleUpdateActionInfo) all have emulator assertions
+- **Last updated:** 2026-10-23 (REPAIR/DOCS-10 run — recovered crashed DOCS-10
+  WIP: mirrored `Task.json`/`Task.v1_7_4.json`/`TaskService.v1_2_1.json`,
+  `UpdateTask.retryAfterSeconds` from the 202 `Retry-After` header, UI-2
+  queued-update banner semantics label)
+- **Current focus:** DOCS-10 done (Task resource corpus + DSP0266 §12.2
+  task-monitor contract audit — `UpdateTask` now carries the optional 202
+  `Retry-After` poll hint); EMULATOR suite at 27 tests (Sensors collection
+  #007/#019, system Reset allow-list incl. `Nmi` #022/#016,
+  SimpleUpdateActionInfo #008/#020 pinned 03:02 run); DOCS-9 freshness
+  re-check done (no anchors moved; corpus current); DOCS-2 schema refresh done
+  (ComputerSystem/Chassis v1_29_0, Sensor v1_14_0, AccountService v1_19_0,
+  EthernetInterface v1_12_6, SoftwareInventory v1_15_0); UI-3 fully done (all
+  views covered); **UI-1 done** (dashboard error summary + Retry); **UI-2
+  increment** (queued-update banner semantics label, 04:05 run); next P1:
+  #015 (AuthManager) — emulator now pins the full session contract + the
+  AccountService surface; #016/#022 (ActionInfo/etag) or #008/#020 (HTTP-push
+  firmware, Tasks URI + push apply-time modes + both push URIs +
+  SimpleUpdateActionInfo) all have emulator assertions
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -103,6 +107,15 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       events. Rationale + spec citations recorded in REQUIREMENTS.md
       "DOCS-7 decision". Revisit when telemetry (#007/#019) or task monitoring
       (#008/#020/#022) lands.
+- [x] **DOCS-10** Mirror the official DMTF `Task` schemas (`Task.json`
+      aggregator, `Task.v1_7_4.json`, `TaskService.v1_2_1.json` — fetched
+      2026-10-23, 32,950 bytes total, inside the DOCS-6 budget) and audit
+      DSP0266 §12.2 "Asynchronous operations" against the client's async
+      handling; fold the optional 202 `Retry-After` into `UpdateTask`.
+      (run 2026-10-23 — manifest rows + audit table in REQUIREMENTS.md
+      "DOCS-10"; `FirmwareService.startSimpleUpdate` now returns `UpdateTask`
+      with `taskUri` + `retryAfterSeconds`; task *polling* stays #008/#020
+      (firmware) + #022 (power))
 
 ## P1 — emulator and integration tests
 
@@ -231,7 +244,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       must offer apply-time selection instead of assuming Immediate;
       `SimpleUpdateActionInfo` pinned 2026-10-23 03:02: `ImageURI` Required +
       `TransferProtocol` AllowableValues (HTTP/HTTPS/SFTP…) — the parameter
-      contract for `startSimpleUpdate` on BMCs that DO expose SimpleUpdate)
+      contract for `startSimpleUpdate` on BMCs that DO expose SimpleUpdate;
+      `startSimpleUpdate` now returns an `UpdateTask` handle with the 202
+      `Location` task-monitor URI + optional `Retry-After` seconds (DSP0266
+      §12.2; `Task.v1_7_4.json` mirrored as DOCS-10) — the poller only lacks
+      GET-on-monitor + TaskState parsing)
 - [ ] **#009 / #021** Remote KVM capability detection and console rendering.
 - [ ] **#010** Hardening: secure storage, theming, accessibility, coverage.
 

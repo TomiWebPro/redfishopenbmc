@@ -774,3 +774,58 @@ Append-only run log for the `redfish-automation` scheduler job.
   PATCH/etag, or #008/#020: bmcweb HTTP-push firmware upload (both push URIs +
   `HttpPushUriOptions` apply-time modes + `SimpleUpdateActionInfo` contract now
   surfaced).
+
+## 2026-10-23 04:05 — REPAIR/DOCS-10 (recovered crashed WIP)
+
+- **Baseline:** analyze **RED** (4 errors in a scratch probe test + 1 warning in
+  `firmware_service.dart`); tests 3 failing (284 would-be / 1 skipped); starting
+  commit 2024623; dirty tree from a crashed DOCS-10 run (firmware `UpdateTask`
+  work + 3 new Task schemas + docs manifest/audit edits + a leftover debug probe
+  `test/features/firmware/sem_probe_test.dart`); branch `main` ahead 27 of
+  origin (GitHub push still blocked — no credentials, see earlier entries).
+- **Primary work:** REPAIR of the crashed DOCS-10 WIP → finished, tested
+  increment. Removed the scratch `sem_probe_test.dart` (no assertions, broken
+  `SemanticsNode` import — the real coverage landed in `firmware_widget_test.dart`
+  instead); fixed the always-true `date != null` warning after `HttpDate.parse`
+  in `_retryAfterSeconds`; fixed the 3 failing tests (missing JSON content-type
+  header when the DioAdapter reply overrides `headers` — mirrors the
+  `auth_manager_test.dart` `_jsonContentType` pattern — and missing
+  `excludeSemantics: true` on the queued-banner `Semantics`, the documented
+  UI-2 pattern from the 06:10 run). The WIP itself was sound: DOCS-10 Task
+  corpus + `UpdateTask.retryAfterSeconds` + banner semantics.
+- **Docs:** DOCS-10 landed — `Task.json` + `Task.v1_7_4.json` +
+  `TaskService.v1_2_1.json` mirrored from `https://redfish.dmtf.org/schemas/v1/`
+  (32,950 bytes total; manifest rows + SHA-256 verified `sha256sum` match;
+  `README.md` DOCS-10 section + `REQUIREMENTS.md` §12.2 audit table added by the
+  crashed run, kept). No new downloads this run; DOCS-6 budget untouched.
+- **Emulator:** none this run (no emulator code touched; pin `23d21f9a`
+  unchanged). Safety re-run of the 27-test suite after the firmware-model change
+  — 27/27 green over HTTPS, server stopped via trap.
+- **Code/tests:** `UpdateTask` + `retryAfterSeconds` (202 `Retry-After`, seconds
+  or HTTP-date, clamped ≥ 0); `FirmwareService.startSimpleUpdate` now returns an
+  `UpdateTask` handle (taskUri + retry-after) instead of a bare `String`;
+  `FirmwareUiState.lastTask` replaces `lastTaskUri`; queued-update banner shows
+  `retry after Ns` and announces one merged semantics label (UI-2). Tests:
+  `firmware_model_test.dart` +2 (UpdateTask), `firmware_service_test.dart` +2
+  (Retry-After parse via DioAdapter, absent Location), `firmware_widget_test.dart`
+  +2 (banner label + absent-URI fallback). No issue status change.
+- **UI:** queued-update banner now carries a `Semantics(container: true,
+  excludeSemantics: true, label: ...)` with one concise summary
+  (`Update queued, <task monitor URI>, retry after N seconds`) — same pattern as
+  the firmware cards / sensor tiles; widget tests assert the merged label and
+  the absent-URI fallback.
+- **Verification:** analyze 0; tests 284 passed / 1 skipped (would-be baseline
+  281 → +3 after removing the probe; net +3 real tests this run); emulator
+  27/27; issues validate OK; `git diff --check` clean; secret scan clean (no
+  tokens/creds in diff). Formatted only the touched Dart files (no repo-wide
+  churn — prior-run precedent).
+- **Commit:** pending — `auto: REPAIR/DOCS-10 — recover crashed WIP (Task corpus mirrored, UpdateTask Retry-After, queued-banner semantics, 3 failing tests fixed) (run 2026-10-23 04:05)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (28 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
+  logout URI, token rehydrate, SessionTimeout expiry) — emulator pins the full
+  session + AccountService surface; implement unit-level with the in-process
+  mock server; 3) #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag,
+  or #008/#020: bmcweb HTTP-push firmware upload — `UpdateTask` now carries the
+  task-monitor URI + `Retry-After`, so the poller needs GET-on-monitor,
+  `TaskState` parsing, and push-upload (`HttpPushUri`/`MultipartHttpPushUri`)
+  apply-time modes.

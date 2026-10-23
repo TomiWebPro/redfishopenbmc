@@ -133,13 +133,18 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                     ),
                   ),
                 _InventoryList(info: ui.info),
-                if (ui.lastTaskUri != null)
+                if (ui.lastTask != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 12),
-                    child: Text(
-                      'Update queued: ${ui.lastTaskUri!.isEmpty ? '(no task URI returned)' : ui.lastTaskUri}',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
+                    child: Semantics(
+                      container: true,
+                      excludeSemantics: true,
+                      label: _queuedLabel(ui.lastTask!),
+                      child: Text(
+                        _queuedText(ui.lastTask!),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
                     ),
                   ),
@@ -229,6 +234,31 @@ class _ServiceSummary extends StatelessWidget {
       style: Theme.of(context).textTheme.bodySmall,
     );
   }
+}
+
+/// Human-readable queued-update text for the firmware banner.
+///
+/// Shows the task monitor URI from the 202 `Location` header and, when the
+/// service sent a `Retry-After` delay (DSP0266 §12.2), the wait hint.
+String _queuedText(UpdateTask task) {
+  final String uri = task.taskUri == null || task.taskUri!.isEmpty
+      ? '(no task URI returned)'
+      : task.taskUri!;
+  final String retry = task.retryAfterSeconds != null
+      ? ' · retry after ${task.retryAfterSeconds}s'
+      : '';
+  return 'Update queued: $uri$retry';
+}
+
+/// Concise accessibility label for the queued-update banner (UI-2).
+String _queuedLabel(UpdateTask task) {
+  final String uri = task.taskUri == null || task.taskUri!.isEmpty
+      ? 'no task URI'
+      : task.taskUri!;
+  final String retry = task.retryAfterSeconds != null
+      ? ', retry after ${task.retryAfterSeconds} seconds'
+      : '';
+  return 'Update queued, $uri$retry';
 }
 
 /// Renders the firmware inventory cards for a [FirmwareUiState.info].

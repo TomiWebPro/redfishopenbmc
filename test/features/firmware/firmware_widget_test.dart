@@ -25,8 +25,8 @@ class FakeFirmwareService extends FirmwareService {
       info ?? const UpdateServiceInfo();
 
   @override
-  Future<String> startSimpleUpdate(SimpleUpdateRequest req) async =>
-      'http://task/1';
+  Future<UpdateTask> startSimpleUpdate(SimpleUpdateRequest req) async =>
+      const UpdateTask(taskUri: 'http://task/1');
 }
 
 /// A [FakeFirmwareService] that fails on the first fetch, then succeeds —
@@ -191,6 +191,73 @@ void main() {
       expect(find.text('boom'), findsNothing);
       expect(find.text('Retry'), findsNothing);
       expect(find.textContaining('9.9.9'), findsWidgets);
+    });
+
+    testWidgets(
+        'queued update banner announces one merged accessibility label '
+        '(UI-2, DOCS-10)', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(),
+        initialState: const FirmwareUiState(
+          lastTask: UpdateTask(
+            taskUri: '/redfish/v1/TaskService/TaskMonitors/42',
+            retryAfterSeconds: 30,
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Screen readers get one concise summary of the queued update including
+      // the Retry-After wait hint from the 202 (DSP0266 §12.2).
+      expect(
+        find.bySemanticsLabel(
+          'Update queued, /redfish/v1/TaskService/TaskMonitors/42, '
+          'retry after 30 seconds',
+        ),
+        findsOneWidget,
+      );
+      // The visible text carries the URI and the wait hint.
+      expect(
+        find.textContaining('Update queued: '
+            '/redfish/v1/TaskService/TaskMonitors/42'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('retry after 30s'), findsOneWidget);
+    });
+
+    testWidgets('queued update banner handles an absent task URI (UI-1)',
+        (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(),
+        initialState: const FirmwareUiState(
+          lastTask: UpdateTask(),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.bySemanticsLabel('Update queued, no task URI'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('(no task URI returned)'), findsOneWidget);
     });
   });
 

@@ -223,11 +223,18 @@ class SimpleUpdateRequest {
 
 /// A SimpleUpdate task monitor handle returned after a queued update (issue #008).
 ///
-/// A real BMC responds 202 `Location: <task URI>`; [taskUri] captures that and
-/// [statusText] carries any human-readable message from the response.
+/// A real BMC responds 202 `Location: <task URI>`; [taskUri] captures that,
+/// [statusText] carries any human-readable message from the response, and
+/// [retryAfterSeconds] captures the optional `Retry-After` header the service
+/// sends on the 202 so the client knows how long to wait before polling the
+/// task monitor (DSP0266 §12.2 "Asynchronous operations"; `Task.v1_7_4.json`).
 class UpdateTask {
   /// Creates an [UpdateTask].
-  const UpdateTask({this.taskUri, this.statusText});
+  const UpdateTask({
+    this.taskUri,
+    this.statusText,
+    this.retryAfterSeconds,
+  });
 
   /// The task monitor URI returned in the 202 `Location` header, or `null`
   /// when the BMC did not provide one.
@@ -236,8 +243,17 @@ class UpdateTask {
   /// Optional human-readable status / message.
   final String? statusText;
 
+  /// Optional `Retry-After` seconds from the 202 response (DSP0266 §12.2).
+  ///
+  /// The service may send a delay the client should honor before querying the
+  /// task monitor URI; the value is parsed from the `Retry-After` header
+  /// (integer seconds, or an HTTP-date that is converted to a duration).
+  /// `null` when the service did not send the header.
+  final int? retryAfterSeconds;
+
   @override
-  String toString() => 'UpdateTask(taskUri=$taskUri, statusText=$statusText)';
+  String toString() => 'UpdateTask(taskUri=$taskUri, statusText=$statusText, '
+      'retryAfterSeconds=$retryAfterSeconds)';
 }
 
 /// Returns [value] as a [String] or `null` when it is not a string.

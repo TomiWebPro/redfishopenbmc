@@ -8,15 +8,15 @@ import 'package:redfishopenbmc/redfish/models/system_features.dart';
 /// Immutable UI state for the firmware & update screen (issue #008).
 ///
 /// Tracks whether an operation is in flight ([loading]), the latest
-/// [UpdateServiceInfo] snapshot, the most recent queued [lastTaskUri], and the
-/// most recent [error] message. Kept as a value type so Riverpod rebuilds only
-/// dependents when something actually changes.
+/// [UpdateServiceInfo] snapshot, the most recent queued [lastTask] handle,
+/// and the most recent [error] message. Kept as a value type so Riverpod
+/// rebuilds only dependents when something actually changes.
 class FirmwareUiState {
   /// Creates a [FirmwareUiState].
   const FirmwareUiState({
     this.loading = false,
     this.info,
-    this.lastTaskUri,
+    this.lastTask,
     this.error,
   });
 
@@ -26,8 +26,9 @@ class FirmwareUiState {
   /// The latest [UpdateServiceInfo] snapshot, or `null` before the first load.
   final UpdateServiceInfo? info;
 
-  /// The task URI returned by the most recent `SimpleUpdate`, or `null`.
-  final String? lastTaskUri;
+  /// The [UpdateTask] handle returned by the most recent `SimpleUpdate`
+  /// (task monitor URI + optional `Retry-After`), or `null`.
+  final UpdateTask? lastTask;
 
   /// Last error message, or `null` when the last operation succeeded.
   final String? error;
@@ -36,24 +37,22 @@ class FirmwareUiState {
   FirmwareUiState copyWith({
     bool? loading,
     UpdateServiceInfo? info,
-    String? lastTaskUri,
-    bool clearLastTaskUri = false,
+    UpdateTask? lastTask,
+    bool clearLastTask = false,
     String? error,
     bool clearError = false,
   }) =>
       FirmwareUiState(
         loading: loading ?? this.loading,
         info: info ?? this.info,
-        lastTaskUri: clearLastTaskUri
-            ? null
-            : (lastTaskUri ?? this.lastTaskUri),
+        lastTask: clearLastTask ? null : (lastTask ?? this.lastTask),
         error: clearError ? null : (error ?? this.error),
       );
 
   @override
   String toString() =>
       'FirmwareUiState(loading=$loading, info=${info != null}, '
-      'lastTaskUri=$lastTaskUri, error=$error)';
+      'lastTask=$lastTask, error=$error)';
 }
 
 /// Riverpod controller driving the firmware & update screen.
@@ -98,14 +97,16 @@ class FirmwareController extends StateNotifier<FirmwareUiState> {
 
   /// Starts a firmware update via [FirmwareService.startSimpleUpdate].
   ///
-  /// On success the returned task URI is stored in [FirmwareUiState.lastTaskUri]
-  /// and any prior error is cleared. On failure the error is recorded.
+  /// On success the returned [UpdateTask] handle (task URI + optional
+  /// `Retry-After`) is stored in [FirmwareUiState.lastTask] and any prior
+  /// error is cleared. On failure the error is recorded.
   Future<void> startUpdate(SimpleUpdateRequest req) async {
-    state = state.copyWith(loading: true, clearError: true, clearLastTaskUri: true);
+    state =
+        state.copyWith(loading: true, clearError: true, clearLastTask: true);
     try {
-      final String taskUri = await service.startSimpleUpdate(req);
+      final UpdateTask task = await service.startSimpleUpdate(req);
       if (!mounted) return;
-      state = state.copyWith(loading: false, lastTaskUri: taskUri);
+      state = state.copyWith(loading: false, lastTask: task);
     } on RedfishException catch (e) {
       if (!mounted) return;
       state = state.copyWith(loading: false, error: e.message);

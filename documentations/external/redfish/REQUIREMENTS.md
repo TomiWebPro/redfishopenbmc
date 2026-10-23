@@ -6,17 +6,45 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-23 (DOCS-9 upstream-freshness re-check — all anchors
-unchanged: bmcweb master still `27e0930b`, Redfish-Mockup-Server still
-`23d21f9a`, DSP0266 1.25.0 still the latest published PDF, schema index shows no
-version advanced for the 13 tracked families; DOCS-8 was the prior audit —
-bmcweb pin moved `0128851e` → `27e0930b`).
+Last audited: 2026-10-23 (DOCS-10 task-monitor contract audit — mirrored
+`Task.json` + `Task.v1_7_4.json` + `TaskService.v1_2_1.json`; added the
+§12.2 async-operation rows below and surfaced `Retry-After` in `UpdateTask`.
+DOCS-9 was the prior audit — all anchors unchanged: bmcweb master still
+`27e0930b`, Redfish-Mockup-Server still `23d21f9a`, DSP0266 1.25.0 still the
+latest published PDF, schema index shows no version advanced for the 13 tracked
+families; DOCS-8 was the audit before that — bmcweb pin moved `0128851e` →
+`27e0930b`).
 Sources:
 
 - DSP0266 1.25.0 — `redfish/spec/DSP0266_1.25.0.pdf`
 - DMTF schema index — `redfish/schemas/v1-index.html` + `redfish/schemas/v1/*.json`
 - bmcweb — `redfish/openbmc/Redfish.md`, `REDFISH_CHECKLIST.md`, `OEM_SCHEMAS.md`,
   `CLIENTS.md` (bmcweb master `27e0930b`)
+
+## DOCS-10 — task-monitor contract audit (2026-10-23)
+
+Mirrored the official DMTF `Task` schemas (`Task.json` aggregator,
+`Task.v1_7_4.json`, `TaskService.v1_2_1.json`) and audited DSP0266 §12.2
+"Asynchronous operations" against the client's async handling:
+
+| Requirement | Source (section/URL) | Code | Test | Status |
+|---|---|---|---|---|
+| Async operation → 202 Accepted + `Location` task monitor URI (may also include `Retry-After`) | DSP0266 §12.2; `Task.json` | `FirmwareService.startSimpleUpdate` + `PowerService.reset` read `Location`; `FirmwareService` now also reads `Retry-After` into `UpdateTask.retryAfterSeconds` (DOCS-10) | `firmware_service_test.dart` (+1 Retry-After parse), `firmware_model_test.dart` (+1 UpdateTask), emulator firmware row | Partial: 202 accepted + Location captured; task *polling* still #008/#020 (firmware) + #022 (power) |
+| Task monitor URI format `/redfish/v1/TaskService/TaskMonitors/<TaskMonitorId>` | DSP0266 §12.2 (task monitor "should be in the format") | n/a — client treats the `Location` value as opaque | emulator asserts client accepts the mockup's task URI | Note for #008/#020/#022 |
+| GET on the task monitor returns 202 while in process, then the final status + headers + body of the initial operation | DSP0266 §12.2 | not implemented — no task poller | — | GAP: #008/#020 (firmware), #022 (power) |
+| DELETE task monitor or Task resource cancels; subsequent GET → 410 Gone / 404 Not Found | DSP0266 §12.2 | not implemented | — | GAP: #008/#020 (upload cancel) |
+| `Task.TaskState` (13 values incl. `Cancelled`/`Cancelling`/`Exception`); `TaskStatus` (Health) set only at completion; `PercentComplete` 0–100 (0 before start) | `Task.v1_7_4.json` `TaskState`/`TaskStatus`/`PercentComplete`; DSP0266 §12.2 | `UpdateTask` model captures `taskUri` + `retryAfterSeconds` only (no TaskState parsing yet) | `firmware_model_test.dart` | Partial: state machine comes with the #008/#020 poller |
+| `Task.Messages[]` carries task-associated messages (e.g. `ManagerGoingOfflineTemporarily` for service reboot during firmware update) | `Task.v1_7_4.json` `Messages`; DSP0266 §12.2 | not parsed | — | GAP: #008/#020 task timeline |
+| `TaskService.CompletedTaskOverWritePolicy`, `LifeCycleEventOnTaskStateChange`, `Tasks` collection | `TaskService.v1_2_1.json` | not read (client only uses `SessionService` etc.) | — | vendor/feature row for #008/#020 task timeline |
+| `Retry-After` on the 202 tells the client how long to wait before polling; services may go offline (firmware update) and shall include `ManagerGoingOfflineTemporarily` + `Retry-After` | DSP0266 §12.2 | `FirmwareService.startSimpleUpdate` parses `Retry-After` (seconds or HTTP-date) into `UpdateTask.retryAfterSeconds` | `firmware_service_test.dart` | Partial: captured but not yet used to schedule the poll (that is #008/#020/#022) |
+
+Folded into code this run:
+
+- `UpdateTask` (the currently-dead handle model) now carries the spec's
+  optional poll hint: `retryAfterSeconds` (from the 202 `Retry-After` header,
+  seconds or HTTP-date form). `FirmwareService.startSimpleUpdate` builds the
+  handle instead of returning a bare `String`, so a future task poller has the
+  wait hint without guessing.
 
 | Requirement | Source (section/URL) | Code | Test | Status |
 |---|---|---|---|---|

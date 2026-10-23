@@ -42,6 +42,9 @@ documentations/external/
 | `redfish/schemas/v1-index.html` | https://redfish.dmtf.org/schemas/v1/ | 2026-10-22 12:17 | `e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86` | 3,448,133 | n/a | Full DMTF schema index listing (14,259 JSON/YAML entries) |
 | `redfish/schemas/v1/<16 schemas>.json` | https://redfish.dmtf.org/schemas/v1/<Name>.json | 2026-10-22 12:34 | see `sha256sum` in run notes | 106,322 (total) | latest per aggregator | Base aggregator stubs for the 16 resources the client maps |
 | `redfish/schemas/v1/<6 versioned>.json` | https://redfish.dmtf.org/schemas/v1/<Name>.json | 2026-10-22 21:51 | see below | 619,774 (total) | DMTF 2026.2 | DOCS-2 refresh: versioned defs advanced upstream (ComputerSystem/Chassis/Sensor/AccountService/EthernetInterface/SoftwareInventory) |
+| `redfish/schemas/v1/Task.json` | https://redfish.dmtf.org/schemas/v1/Task.json | 2026-10-23 04:05 | `e60eb1a6e77614e8fa71c63bfe816ee711f50c80994e75f9599bf1d781559a77` | 2,286 | latest per aggregator | Task resource aggregator (TaskState/PercentComplete/Messages) — DOCS-10 |
+| `redfish/schemas/v1/Task.v1_7_4.json` | https://redfish.dmtf.org/schemas/v1/Task.v1_7_4.json | 2026-10-23 04:05 | `9c29cb7f7a11d4aed869ae651d4388c87d637a3a2b322c7d4ffd023bc8fdcc04` | 21,126 | DMTF 2026.2 | Newest versioned Task defs (TaskState enum 13 values, TaskMonitor URI, PercentComplete 0–100) — DOCS-10 |
+| `redfish/schemas/v1/TaskService.v1_2_1.json` | https://redfish.dmtf.org/schemas/v1/TaskService.v1_2_1.json | 2026-10-23 04:05 | `1340438e259a9b77be82900a5b4eeb9c88025d75f9269ab1583749bd6064655a` | 9,538 | DMTF 2026.2 | Versioned TaskService defs (CompletedTaskOverWritePolicy, LifeCycleEventOnTaskStateChange, Tasks) — DOCS-10 |
 
 ### Downloaded schema set (16 base aggregator files)
 
@@ -51,6 +54,12 @@ documentations/external/
 `MessageRegistry`. Each bare `<Name>.json` is the DMTF "latest" aggregator that
 `$ref`s the newest versioned definitions; SHA-256 hashes are listed in the
 run notes in `automation-tracking.md`.
+
+DOCS-10 added the `Task` resource to the corpus: `Task.json` (aggregator) +
+`Task.v1_7_4.json` + `TaskService.v1_2_1.json` (see manifest rows above) so the
+DSP0266 §12.2 asynchronous-operations contract (`TaskState`,
+`PercentComplete`, `TaskMonitor`, `CompletedTaskOverWritePolicy`, …) is
+traceable to schema definitions.
 
 ### DOCS-2 refresh (2026-10-22 21:51 UTC) — versioned schemas now current
 
@@ -72,7 +81,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-23 06:05 UTC — DOCS-9 re-check)
+## Current upstream anchors (verified 2026-10-23 06:05 UTC — DOCS-9 re-check; schema index probed again 2026-10-23 04:05 UTC — DOCS-10 Task addition)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing)
@@ -117,6 +126,26 @@ here so the next audit doesn't re-evaluate them.
 > user-agent, the `webfetch` tool, or the `redfish.dmtf.org` mirror, and record
 > the URL that actually returned 200. (PDF download from `www.dmtf.org` worked
 > with a browser UA this run.)
+
+### DOCS-10 — Task resource corpus + task-monitor contract audit (2026-10-23 04:05 UTC)
+
+Mirrored the official DMTF **Task** schemas so the asynchronous-operations
+contract (DSP0266 §12.2) can be traced to schema definitions:
+
+- `Task.json` (aggregator) + `Task.v1_7_4.json` — `TaskState` enum (13 values:
+  `New`, `Starting`, `Running`, `Suspended`, `Interrupted`, `Pending`,
+  `Stopping`, `Completed`, `Killed`, `Exception`, `Service`, `Cancelling`,
+  `Cancelled`), `TaskStatus` (Resource `Health`), `PercentComplete` (0–100,
+  zero before start), `StartTime`/`EndTime`, `Messages[]`, and `TaskMonitor`
+  (the monitor URI, added v1_2_0).
+- `TaskService.v1_2_1.json` — `ServiceEnabled`, `DateTime`,
+  `CompletedTaskOverWritePolicy` (overwrite policy for completed tasks),
+  `LifeCycleEventOnTaskStateChange`, and the `Tasks` collection link.
+
+Both versioned files probe 200 from `redfish.dmtf.org/schemas/v1/` (download
+time 04:05 UTC). Total new bytes 32,950 — inside the DOCS-6 budget. The audit
+table is in `REQUIREMENTS.md` under "DOCS-10"; the client reads the 202
+`Location` + optional `Retry-After` and surfaces them via `UpdateTask`.
 
 ## Emulator harness (DMTF Redfish-Mockup-Server)
 
