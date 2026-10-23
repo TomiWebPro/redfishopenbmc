@@ -764,7 +764,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   scan clean (only the expected X-Auth-Token/MinPasswordLength references).
   Formatted only the 3 touched Dart files (no repo-wide churn — prior-run
   precedent).
-- **Commit:** <TBD> — `auto: EMULATOR — suite +3 (Sensors collection #007/#019, system Reset allow-list #022/#016, SimpleUpdateActionInfo #008/#020), UI-2 chassis-card header semantics (run 2026-10-23 03:02)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
+- **Commit:** 0685dd1 — `auto: EMULATOR — suite +3 (Sensors collection #007/#019, system Reset allow-list #022/#016, SimpleUpdateActionInfo #008/#020), UI-2 chassis-card header semantics (run 2026-10-23 03:02)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
 - **Next:** 1) Push the queued local commits from a machine with GitHub
   credentials (26 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
   logout URI, token rehydrate, SessionTimeout expiry) — emulator pins the full
