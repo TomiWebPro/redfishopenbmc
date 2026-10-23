@@ -1560,3 +1560,13 @@ Append-only run log for the `redfish-automation` scheduler job.
   address` — no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no
   SSH key on this machine. Local commits kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **50** (49 before this run + 1).
+
+## 2026-10-23 17:45 — CORRECTION (no code change)
+
+- The "queued local commits" counts in recent tracking entries undercounted:
+  `git rev-list --count origin/main..HEAD` shows **54** commits ahead of
+  origin/main after this run (baseline at run start was 51 ahead, +3 commits
+  this run = 54). The "49 queued before this run" figure in the 17:30 entry
+  was inherited from stale prior-run prose; the authoritative count is the
+  live `git rev-list` number. Root cause of the push blocker unchanged (no
+  GitHub credentials on this machine).
