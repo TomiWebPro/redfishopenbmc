@@ -1532,7 +1532,11 @@ Append-only run log for the `redfish-automation` scheduler job.
   the 2 touched Dart files — a stray repo-wide `dart format lib/ test/` churn
   (30 files) was detected and reverted before verification (only the 2
   intended Dart files remain modified; 17:07-run precedent).
-- **Commit:** <TO FILL AFTER COMMIT>; pushed: **no** — same GitHub credential
+- **Commit:** 4504e46 — `auto: DOCS — mirror OData base vocabulary
+  odata.4.0.0.json (closes REQUIREMENTS row-65 citation, byte-verified vs
+  fixture; bmcweb anchor 27e0930b→fbb307a docs byte-identical), UI-2
+  self-signed warning merged semantics (run 2026-10-23 17:30)`; pushed:
+  **no** — same GitHub credential
   blocker (`fatal: could not read Username for 'https://github.com'`; no
   credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on
   this machine); local commit kept, not retried. Commits queued locally before
