@@ -1570,3 +1570,77 @@ Append-only run log for the `redfish-automation` scheduler job.
   was inherited from stale prior-run prose; the authoritative count is the
   live `git rev-list` number. Root cause of the push blocker unchanged (no
   GitHub credentials on this machine).
+
+## 2026-10-23 18:36 — EMULATOR (query-behavior contract for #018) + UI-2 KVM view header
+
+- **Baseline:** analyze 0; tests 300 passed / 1 skipped; starting commit 8916578
+  (branch `main` ahead 54 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers; emulator suite 37/37 on pin `23d21f9a`.
+- **Primary work:** EMULATOR (alternation: last run DOCS 17:30, before that
+  EMULATOR 17:07 — EMULATOR next). Probed the live mockup and pinned the
+  **query-behavior contract** the #018 lightweight discovery pass must build
+  on (the 17:07 run pinned the payload shape; this run pins which OData query
+  options the server actually applies):
+  - **`$filter`/`$select` are advertised but NOT applied.** Live probes: on a
+    static-fixture mockup, `$filter=Id eq 'NOPE'` on the Roles collection (3
+    members) still returns all 3 members, and `$select=Model` on the system
+    resource returns the FULL body — despite `ProtocolFeaturesSupported`
+    advertising `FilterQuery`/`SelectQuery` (`emulator_suite_test.dart` line
+    942-943 asserts those flags exist). New test pins both behaviours: the
+    #018 pass must filter/select **client-side** and never rely on
+    server-side query application.
+  - **`$expand=*` (ExpandAll) IS applied.** The 17:07 pin used
+    `$expand=.($levels=1)`; the mockup ALSO inlines full ComputerSystem bodies
+    for `$expand=*` (members carry Model 3500 / PowerState On / Actions.Reset
+    allow-list incl. Nmi / ProcessorSummary 2 / MemorySummary 96 — same fields
+    as a direct GET). New test pins this second form; the #018 pass can rely
+    on either form for payload shaping.
+  - Also probed and recorded (not pinned): the mockup run WITHOUT the `-u`
+    auth flag accepts any credentials — `POST Sessions` with a wrong password
+    returns 204, so the 401 bad-login error-mapping path stays a unit-test
+    concern (consistent with the EMU-5 decision); no session-auth change.
+  - Suite 37 → **39 tests**, all passing on pin `23d21f9a`. No fixture or
+    tooling change; no production code change from the emulator work.
+- **Docs:** none fetched this run. `REQUIREMENTS.md` "test platform" note
+  updated: 37 → 39 tests + the query-behavior paragraph (expand-* works;
+  filter/select advertised-but-ignored for #018).
+- **Emulator:** 39 tests green on `23d21f9a` (run via `tool/emulator/run_
+  tests.sh` once for the baseline, then the live probe server for the pin
+  verification — probe server stopped + port verified closed before tracking).
+- **Code/tests:** `test_integration/emulator/emulator_suite_test.dart` (+2
+  tests); `lib/features/kvm/views/kvm_view.dart` + `test/features/kvm/
+  kvm_widget_test.dart` (UI-2, below); no issue open/close.
+- **UI:** UI-2 increment — the **KvmView view header** ("Remote KVM /
+  Consoles" title + "Consoles exposed by the system managers." subtitle) was
+  the last unmerged view-level non-card label group (card headers were already
+  merged). It now announces as ONE merged semantics node
+  (`Semantics(container: true, excludeSemantics: true, label: 'Remote KVM /
+  Consoles, consoles exposed by the system managers')` — the established
+  header pattern), so a screen reader gets the view purpose in one concise
+  summary instead of two detached text nodes. Visible texts preserved. One new
+  widget test asserts the merged label node + both visible texts
+  (`kvm_widget_test.dart` "view header announces one merged semantics node —
+  title + subtitle (UI-2)").
+- **Verification:** analyze 0; tests 301 passed / 1 skipped (baseline 300 →
+  +1: the KVM header semantics widget test; emulator suite separately 39/39);
+  issues validate OK; `git diff --check` clean; secret scan clean. `dart
+  format` on the 3 touched Dart files: 0 changed (already formatted).
+- **Commit:** c412733 — `auto: EMULATOR — pin the #018 query-behavior
+  contract ($filter/$select advertised but NOT applied → filter client-side;
+  $expand=* also serves inlined bodies), UI-2 KVM view header merged semantics
+  (run 2026-10-23 18:36)`; pushed: **no** — same GitHub credential blocker
+  (`fatal: could not read Username for 'https://github.com'`; no credential
+  helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this
+  machine); local commit kept, not retried. Commits ahead of origin/main
+  before this run: **54** (live `git rev-list --count origin/main..HEAD`;
+  +1 auto +1 tracking = 56 after).
+- **Next:** 1) Push the queued local commits (54 before this run) from a
+  machine with GitHub credentials; 2) P1 #015 AuthManager (authMethod
+  dispatch, safe logout URI, token rehydrate, SessionTimeout +
+  AbsoluteSessionTimeout* expiry — full auth surface pinned + schemas
+  mirrored; 401 bad-login path stays unit-level per the EMU-5 decision);
+  3) #018: build the lightweight discovery pass on the pinned query contract
+  — `$expand=*` (or `$levels=1`) collection fetch instead of N+1 GETs,
+  filtering/selection done client-side (mockup ignores `$filter`/`$select`);
+  or #008/#020: task poller (GET-on-monitor, TaskState parse, PercentComplete
+  optional, Messages[] timeline) + bmcweb HTTP-push firmware upload path.

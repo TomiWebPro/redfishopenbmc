@@ -7,19 +7,22 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 17:30 (DOCS run — **DOCS-14: OData base
-  vocabulary `odata.4.0.0.json` mirrored**, closing the last un-mirrored
-  REQUIREMENTS.md source citation (row 65 `Odata.json`); upstream anchors
-  re-verified: bmcweb advanced `27e0930b` → `fbb307a` with all four mirrored
-  docs **byte-identical** (no refresh), mockup still `23d21f9a`, DSP0266 still
-  1.25.0, schema index 200 OK; **UI-2 increment: self-signed certificate
-  warning banner in SystemProfileForm is now one merged semantics node** +
-  1 widget test; suite 299 → 300 tests)
-- **Current focus:** DOCS-14 done (OData base vocabulary mirror + anchor
-  re-verification); EMULATOR suite at **37 tests** (the live `$expand`
-  round-trip pin, 17:07 run); DOCS-13 done (auth/network/ActionInfo corpus
-  mirror); DOCS-12 done (versioned corpus complete for all 16 client-mapped
-  families); next P1: #015 (AuthManager) — emulator pins the full auth
+- **Last updated:** 2026-10-23 18:36 (EMULATOR run — **EMU-2 at 39 tests:
+  query-behavior contract pinned for #018** — `$expand=*` (ExpandAll) also
+  serves inlined full member bodies, while `$filter`/`$select` are
+  **advertised but NOT applied** by the pinned mockup (Roles collection
+  unfiltered for `$filter=Id eq 'NOPE'`, full system body for `$select=Model`)
+  → the #018 lightweight discovery pass must filter/select client-side and
+  rely only on `$expand` for payload shaping; 401 bad-login error mapping
+  probed and recorded as unit-only (mockup without `-u` accepts any
+  credentials, 204 — consistent with EMU-5); **UI-2 increment: KvmView view
+  header (title + subtitle) now one merged semantics node** + 1 widget test;
+  suite 300 → 301 tests)
+- **Current focus:** EMU-2 suite at **39 tests** — **query-behavior contract
+  pinned 18:36: `$expand=*` inlines full bodies, `$filter`/`$select` advertised
+  but NOT applied (client-side only)**; DOCS-14 done (OData base vocabulary
+  mirror + anchor re-verification); next P1: #015 (AuthManager) — emulator
+  pins the full auth
   contract + the Session/ManagerAccount/Role schemas are mirrored
   (#015/#017/#026); #022/#016: Annotation allow-list fallback landed (16:05
   run) — remaining: `ResetActionInfo` ActionInfo resource crawl (bmcweb-style
@@ -214,7 +217,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `$expand=.($levels=1)` round-trip pin: Systems collection inlines full
       member bodies — Model/PowerState/Actions.Reset allow-list incl. Nmi +
       Processor/MemorySummary — the N+1-avoiding discovery shape #018 can
-      rely on — 2026-10-23 17:07)**)
+      rely on — 2026-10-23 17:07** → **39 tests (query-behavior contract
+      pinned 2026-10-23 18:36: `$expand=*` (ExpandAll) also serves inlined
+      full member bodies — same fields as `$levels=1` — while `$filter`/
+      `$select` are advertised but NOT applied (Roles collection unfiltered
+      for `$filter=Id eq 'NOPE'`, full system body for `$select=Model`) — the
+      #018 discovery pass must filter/select client-side and rely only on
+      `$expand` for payload shaping)**)
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -226,7 +235,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       list) added 2026-10-23 → 27 tests;
       remaining: 403/409/400 extended info paths need a richer emulator — see
       EMU-5: decision is to keep covering error mapping with spec-conformant
-      unit fixtures, so EMU-3 is effectively complete)
+      unit fixtures, so EMU-3 is effectively complete; **probed 2026-10-23
+      18:36: the mockup without `-u` accepts ANY credentials — `POST Sessions`
+      with a wrong password returns 204, so the 401 bad-login error-mapping
+      path also stays unit-level (consistent with EMU-5)**)
 - [x] **EMU-4** Add `tool/emulator/run_tests.sh` that starts the server, waits for
       health, runs the integration tests, and always stops the server via `trap`.
       Pin the emulator commit and document it.
@@ -296,7 +308,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `$expand=.($levels=1)` on the Systems collection inlines full member
       bodies (Model/PowerState/Actions.Reset allow-list incl. Nmi +
       Processor/MemorySummary) in one round trip — the N+1-avoiding discovery
-      shape the #018 pass can build on)
+      shape the #018 pass can build on; **query-behavior contract pinned
+      2026-10-23 18:36**: `$expand=*` (ExpandAll) serves the same inlined
+      bodies, but `$filter`/`$select` are **advertised but NOT applied** by
+      the pinned mockup (Roles collection unfiltered for `$filter=Id eq
+      'NOPE'`, full system body for `$select=Model`) — the pass must filter/
+      select client-side and rely only on `$expand` for payload shaping)
 - [ ] **#022** Power: task polling, races, and error fixes.
       (bmcweb `ResetActionInfo` ActionInfo `Parameters/AllowableValues` is the
       allow-list source on OpenBMC; add fallback — DOCS-4. **Annotation-form

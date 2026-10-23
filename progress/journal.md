@@ -1534,3 +1534,62 @@
 **Issues touched:**
 - none opened/closed this run (corpus mirror + anchor verification + UI-2
   label; no issue status change).
+## 2026-10-23 — agent:redfish-automation — EMULATOR (query-behavior contract for #018) + UI-2 KVM view header
+
+**Done:**
+- EMULATOR primary workstream (alternation: DOCS 17:30 → EMULATOR next).
+  Probed the live pinned mockup (`23d21f9a`) and pinned the **query-behavior
+  contract** the #018 lightweight discovery pass must build on:
+  - **`$filter`/`$select` are advertised but NOT applied.** Live probes: on a
+    static-fixture mockup, `$filter=Id eq 'NOPE'` on the Roles collection (3
+    members) still returns all 3 members, and `$select=Model` on the system
+    resource returns the FULL body — despite `ProtocolFeaturesSupported`
+    advertising `FilterQuery`/`SelectQuery`. New test pins both behaviours:
+    the #018 pass must filter/select **client-side**, never rely on
+    server-side query application.
+  - **`$expand=*` (ExpandAll) IS applied** — inlines full ComputerSystem
+    bodies (Model 3500 / PowerState On / Actions.Reset allow-list incl. Nmi /
+    ProcessorSummary 2 / MemorySummary 96), same fields as the pinned
+    `$expand=.($levels=1)` (17:07). New test pins this second form.
+  - Probed + recorded (not pinned): without `-u`, the mockup accepts ANY
+    credentials — `POST Sessions` with a wrong password returns 204 — so the
+    401 bad-login error-mapping path stays a unit-test concern (consistent
+    with the EMU-5 decision). Suite 37 → **39 tests**, all green on the pin.
+- REQUIREMENTS.md "test platform" note updated (37 → 39 + query-behavior
+  paragraph).
+- UI-2 increment: **KvmView view header** (title + subtitle) — the last
+  unmerged view-level non-card label group — now announces as ONE merged
+  semantics node (`Semantics(container: true, excludeSemantics: true,
+  label: 'Remote KVM / Consoles, consoles exposed by the system managers')`),
+  the established header pattern; visible texts preserved. One new widget
+  test asserts the merged label + both visible texts.
+- Process hygiene: emulator baseline run once via `run_tests.sh` (37/37),
+  then a live probe server for pin verification — stop verified (port 8443
+  closed); `dart format` on the 3 touched Dart files changed nothing.
+
+**Decisions:**
+- EMULATOR selected per alternation. Within it, this run's increment = the
+  query-application contract, because #018's open gap is "the client
+  currently ignores the query-capability surface" and the naive assumption
+  (advertised `$filter`/`$select` work server-side) is exactly what would
+  silently corrupt a discovery pass.
+- Recorded — rather than pinned — the 401 bad-login path: the DMTF mockup
+  without `-u` accepts any credentials, so there is no conformant fixture to
+  pin it against; keep it unit-level (EMU-5 precedent).
+- Kept the UI increment to the established merged-label pattern (no new
+  dependencies, no layout change).
+
+**Next:**
+- Push 54 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout + AbsoluteSessionTimeout* expiry) — full auth surface pinned
+  + schemas mirrored; 401 bad-login path unit-level.
+- #018: build the lightweight discovery pass on the pinned query contract
+  (`$expand=*`/`$levels=1` collection fetch instead of N+1 GETs; filtering/
+  selection client-side) + the forceRefresh/`_error` cache fixes; or
+  #008/#020: task poller + bmcweb HTTP-push upload path.
+
+**Issues touched:**
+- none opened/closed this run. #018 got the query-behavior contract pin
+  ($expand=* works; filter/select advertised-but-ignored), EMU-2/EMU-3 got
+  count/scope updates — all recorded in FUTUREWORK; issues remain open.
