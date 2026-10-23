@@ -1015,7 +1015,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   validate OK; `git diff --check` clean; secret scan clean (no tokens/creds in
   diff). Formatted only the 3 touched Dart files (no repo-wide churn —
   prior-run precedent).
-- **Commit:** TBD — `auto: EMULATOR — Task resource contract pinned (TaskState/
+- **Commit:** e2c1279 — `auto: EMULATOR — Task resource contract pinned (TaskState/
   TaskStatus/Messages incl. absent PercentComplete for #008/#020 poller), UI-2
   KvmConsole card header merged semantics (run 2026-10-23 09:14)`; pushed:
   **no** — the same GitHub credential blocker (no credential helper, no
