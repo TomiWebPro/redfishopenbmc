@@ -7,22 +7,20 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 (DOCS run — DOCS-9 freshness re-check: no
-  upstream anchor moved since DOCS-8; `UpdateServiceInfo` now surfaces bmcweb's
-  `MultipartHttpPushUri` alongside `HttpPushUri` — both push URIs available to
-  #008/#020; UI-2 extended to sensor tiles with merged accessibility labels)
-- **Current focus:** DOCS-9 freshness re-check done (no anchors moved; corpus
-  current); DOCS-2 schema refresh done (ComputerSystem/Chassis v1_29_0,
+- **Last updated:** 2026-10-23 (EMULATOR run — suite 24→27: Sensors collection
+  end-to-end #007/#019, system-level Reset allow-list incl. `Nmi` #022/#016,
+  SimpleUpdateActionInfo #008/#020; UI-2 chassis-card header semantics label)
+- **Current focus:** EMULATOR suite at 27 tests (Sensors collection #007/#019,
+  system Reset allow-list incl. `Nmi` #022/#016, SimpleUpdateActionInfo
+  #008/#020 pinned this run); DOCS-9 freshness re-check done (no anchors moved;
+  corpus current); DOCS-2 schema refresh done (ComputerSystem/Chassis v1_29_0,
   Sensor v1_14_0, AccountService v1_19_0, EthernetInterface v1_12_6,
-  SoftwareInventory v1_15_0); UI-3 fully done (all views covered);
-  emulator at 24 tests (session lifecycle #015/#017, SessionTimeout,
-  TaskService, EventService, ProtocolFeaturesSupported #018, Accounts #015/#026,
-  push apply-time #008/#020); **UI-1 done** (dashboard error summary + Retry;
-  firmware error+retry from 20:51 run); **UI-2 increment** (sensors tiles merged
-  labels, 06:10 run); next P1: #015 (AuthManager) — emulator now pins the full
-  session contract + the AccountService surface; #016/#022 (ActionInfo/etag) or
-  #008/#020 (HTTP-push firmware, Tasks URI + push apply-time modes + both push
-  URIs) both have emulator assertions
+  SoftwareInventory v1_15_0); UI-3 fully done (all views covered); **UI-1 done**
+  (dashboard error summary + Retry); **UI-2 increment** (chassis-card header
+  semantics label, 03:02 run); next P1: #015 (AuthManager) — emulator now pins
+  the full session contract + the AccountService surface; #016/#022
+  (ActionInfo/etag) or #008/#020 (HTTP-push firmware, Tasks URI + push apply-time
+  modes + both push URIs + SimpleUpdateActionInfo) all have emulator assertions
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -123,7 +121,9 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       HttpPushUri) → 16 tests (SessionService URI, Manager detail + allow-list,
       Chassis detail) → 21 tests (session lifecycle #015/#017, SessionTimeout,
       TaskService, EventService contracts) → 24 tests (ProtocolFeaturesSupported
-      #018, Accounts #015/#026, push apply-time #008/#020 — 2026-10-23))
+      #018, Accounts #015/#026, push apply-time #008/#020 — 2026-10-23) → 27
+      tests (Sensors collection #007/#019, system Reset allow-list #022/#016,
+      SimpleUpdateActionInfo #008/#020 — 2026-10-23 03:02))
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -131,6 +131,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       systems-detail + HttpPushUri tests added 2026-10-22 → 13 emulator tests;
       session lifecycle + logout-target (DELETE session 204 / collection 405) +
       SessionTimeout added 2026-10-22 → 21 tests;
+      system-level Reset allow-list (incl. `Nmi`, distinct from the manager
+      list) added 2026-10-23 → 27 tests;
       remaining: 403/409/400 extended info paths need a richer emulator — see
       EMU-5: decision is to keep covering error mapping with spec-conformant
       unit fixtures, so EMU-3 is effectively complete)
@@ -177,7 +179,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       (bmcweb ResetActionInfo → supportedResetTypes fallback also folds here —
       DOCS-4; emulator notes: the DMTF mockup serves no `@odata.etag` on
       resources — etag behaviour cannot be pinned on this fixture, keep it in
-      unit tests — 2026-10-23)
+      unit tests — 2026-10-23; the system-level `#ComputerSystem.Reset`
+      `ResetType@Redfish.AllowableValues` (On/ForceOff/GracefulShutdown/
+      GracefulRestart/ForceRestart/Nmi/ForceOn/PushPowerButton) is pinned — the
+      allow-list fallback must read the system list, never the manager list —
+      2026-10-23 03:02)
 - [ ] **#017** Discover the SessionService URI instead of assuming it.
       (emulator test asserts `SessionService.@odata.id` is discoverable from the
       service root and serves a conformant SessionService — run 2026-10-22)
@@ -191,7 +197,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       allow-list source on OpenBMC; add fallback — DOCS-4. Emulator asserts the
       DMTF mockup's `#Manager.Reset` carries its own
       `ResetType@Redfish.AllowableValues` — the fallback must not conflate
-      manager- vs system-level Reset actions — run 2026-10-22)
+      manager- vs system-level Reset actions — run 2026-10-22; system-level
+      allow-list pinned incl. `Nmi` (NMI-stabilize) + `ForceOn` +
+      `PushPowerButton`, and the mockup does NOT advertise `PowerCycle` — the
+      gate must use exactly the advertised values — run 2026-10-23 03:02)
 - [ ] **#024** `profile_repository.clear()` orphaned passwords.
 - [ ] **#026** Resolve duplicate auth fields.
 
@@ -199,6 +208,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 
 - [ ] **#006** System overview adaptive cards.
 - [ ] **#007 / #019** Sensor monitoring, real-time telemetry, retry.
+      (emulator pins the 41-member Sensors collection end-to-end — typed
+      readings (Cel/V …) + thresholds parse through `SensorsService.fetchAll()`
+      — run 2026-10-23 03:02; the real-time poll/EventService receiver still
+      needs building)
 - [ ] **Events** Event subscription + SSE client — DOCS-7 decided out-of-scope this
       milestone (see P1 docs section); revisit when telemetry (#007/#019) or task
       monitoring (#008/#020/#022) creates a receiver. Spec: DSP0266 §12.1,
@@ -215,7 +228,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `ApplyTime == 'Immediate'` + AllowableValues (Immediate/OnReset/
       AtMaintenanceWindowStart/InMaintenanceWindowOnReset) + MaintenanceWindow
       start time; `UpdateServiceInfo` now parses both — the push-upload flow
-      must offer apply-time selection instead of assuming Immediate)
+      must offer apply-time selection instead of assuming Immediate;
+      `SimpleUpdateActionInfo` pinned 2026-10-23 03:02: `ImageURI` Required +
+      `TransferProtocol` AllowableValues (HTTP/HTTPS/SFTP…) — the parameter
+      contract for `startSimpleUpdate` on BMCs that DO expose SimpleUpdate)
 - [ ] **#009 / #021** Remote KVM capability detection and console rendering.
 - [ ] **#010** Hardening: secure storage, theming, accessibility, coverage.
 
@@ -234,8 +250,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       with concise summary (component, version, health, updateable/locked) +
       widget test; sensors temperature/fan/generic tiles merged a11y labels
       done 2026-10-23 — Semantics container + excludeSemantics, one concise
-      summary per tile (name, value, health) + widget test; extend to remaining
-      cards, dialogs, tables)
+      summary per tile (name, value, health) + widget test; chassis card header
+      merged summary label (`Chassis 1U, 1 temperatures, 1 fans, 1 sensors`)
+      done 2026-10-23 03:02 — Semantics container on the title, tile labels
+      preserved + widget test; extend to remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.
       (PowerView no-overflow tests added 2026-10-22; SensorsView no-overflow

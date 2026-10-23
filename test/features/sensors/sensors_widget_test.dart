@@ -105,6 +105,29 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('chassis card header exposes a merged summary label (UI-2)',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_FakeSensorsService()),
+          ],
+          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The chassis card header announces one concise summary instead of a
+      // bare title (UI-2 pattern: container + excludeSemantics + label).
+      expect(
+        find.bySemanticsLabel('Chassis 1U, 1 temperatures, 1 fans, 1 sensors'),
+        findsOneWidget,
+      );
+    });
   });
 
   group('SensorsView — responsive layout (UI-3)', () {

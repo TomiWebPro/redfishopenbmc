@@ -716,3 +716,61 @@ Append-only run log for the `redfish-automation` scheduler job.
   mock server; 3) #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag,
   or #008/#020: bmcweb HTTP-push firmware upload (both push URIs +
   `HttpPushUriOptions` apply-time modes + Tasks now surfaced).
+
+## 2026-10-23 03:02 — EMULATOR
+
+- **Baseline:** analyze 0; tests 277 passed / 1 skipped; starting commit 9d99c48;
+  issues validate OK; branch `main` clean but ahead 25 of origin (25 commits
+  unpushed — GitHub push blocked: no credentials, see earlier entries).
+- **Primary work:** EMULATOR — extended the pinned DMTF Redfish-Mockup-Server
+  suite **24 → 27 tests** with three contract pins that de-risk queued issues,
+  plus a small tested UI-2 increment:
+  1. Sensors collection end-to-end (— #007/#019): the mockup's 41-member
+     `/Chassis/1U/Sensors` collection is enumerated and parsed by the client's
+     `SensorReading` model — CPU1Temp (`ReadingUnits Cel`, `Reading 37.0`,
+     `UpperCritical` threshold 45.0) and PS1InputVoltage (`ReadingType Voltage`,
+     `V`, 119.27) both resolve through `SensorsService.fetchAll()`; thresholds
+     parse for the UI highlight (#007).
+  2. System-level Reset allow-list (— #022/#016): the `#ComputerSystem.Reset`
+     action advertises the full `ResetType@Redfish.AllowableValues` set
+     (`On/ForceOff/GracefulShutdown/GracefulRestart/ForceRestart/Nmi/ForceOn/
+     PushPowerButton`), which includes `Nmi` (NMI-stabilize #022) and is
+     **distinct from the manager-level list** (ForceRestart + GracefulRestart,
+     already pinned) — the #022/#016 fallback must read the system list, and it
+     does not publish `PowerCycle` (the client enum has it — the gate must use
+     exactly the advertised values).
+  3. UpdateService `SimpleUpdateActionInfo` (— #008/#020): the mockup publishes
+     `#ActionInfo.v1_4_1` with `ImageURI` (Required: true) + `TransferProtocol`
+     AllowableValues (`HTTP/HTTPS/SFTP` …) — the parameter contract for the
+     client's `startSimpleUpdate` when a BMC does expose SimpleUpdate (bmcweb
+     is HTTP-push — DOCS-4).
+- **Docs:** none this run (no new downloads; DOCS-6 budget untouched). The three
+  contracts were probed live (`curl -k https://127.0.0.1:8443/...`) before
+  pinning.
+- **Emulator:** suite 24 → 27 tests, all green over HTTPS; server killed by
+  exact-PID after the run (no stray process, port 8443 free); pin `23d21f9a`
+  unchanged.
+- **Code/tests:** no production code change this run (test-only pins — the
+  client already parsed the Sensors collection and Reset allow-list surfaces).
+  Emulator suite +3 (`emulator_suite_test.dart`). UI-2 increment: the Sensors
+  chassis card header now announces one merged summary
+  (`Chassis 1U, 1 temperatures, 1 fans, 1 sensors`) via
+  `Semantics(container: true, excludeSemantics: true, label: ...)` on the title;
+  `test/features/sensors/sensors_widget_test.dart` +1 asserts
+  `find.bySemanticsLabel('Chassis 1U, 1 temperatures, 1 fans, 1 sensors')`.
+  No new dependencies; no issue status change.
+- **Verification:** analyze 0; tests 278 passed / 1 skipped (baseline 277 →
+  +1); emulator 27/27; issues validate OK; `git diff --check` clean; secret
+  scan clean (only the expected X-Auth-Token/MinPasswordLength references).
+  Formatted only the 3 touched Dart files (no repo-wide churn — prior-run
+  precedent).
+- **Commit:** <TBD> — `auto: EMULATOR — suite +3 (Sensors collection #007/#019, system Reset allow-list #022/#016, SimpleUpdateActionInfo #008/#020), UI-2 chassis-card header semantics (run 2026-10-23 03:02)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (26 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
+  logout URI, token rehydrate, SessionTimeout expiry) — emulator pins the full
+  session + AccountService surface; implement unit-level with the in-process
+  mock server; 3) #016/#022: `ResetActionInfo` allow-list fallback (emulator
+  now pins the system-level `ResetType@Redfish.AllowableValues` incl. `Nmi`) +
+  PATCH/etag, or #008/#020: bmcweb HTTP-push firmware upload (both push URIs +
+  `HttpPushUriOptions` apply-time modes + `SimpleUpdateActionInfo` contract now
+  surfaced).

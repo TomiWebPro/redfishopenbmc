@@ -105,6 +105,10 @@ class _ChassisCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String title = chassis.chassisName ?? chassis.chassisId;
+    final String summaryLabel =
+        'Chassis ${chassis.chassisId}, ${chassis.thermal.length} '
+        'temperatures, ${chassis.fans.length} fans, '
+        '${chassis.sensors.length} sensors';
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
@@ -112,7 +116,15 @@ class _ChassisCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
+            Semantics(
+              container: true,
+              excludeSemantics: true,
+              label: summaryLabel,
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
             const SizedBox(height: 12),
             if (chassis.thermal.isNotEmpty) ...<Widget>[
               Text('Temperatures',

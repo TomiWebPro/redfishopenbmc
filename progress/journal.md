@@ -895,3 +895,55 @@
 - none opened/closed this run (DOCS-9 audit + model increment + UI-2 labels; no
   issue status change). #008/#020 got a note that `multipartHttpPushUri` is now
   surfaced; UI-2 noted the sensors-tile labels in FUTUREWORK.
+
+## 2026-10-23 — agent:redfish-automation — EMULATOR run (suite 24→27, three contract pins, UI-2 chassis header semantics)
+
+**Done:**
+- EMULATOR primary: extended the pinned DMTF Redfish-Mockup-Server suite
+  **24 → 27 tests** with three contract pins that de-risk queued issues:
+  1. Sensors collection end-to-end (#007/#019): the 41-member
+     `/Chassis/1U/Sensors` collection enumerates through the client's
+     `SensorsService.fetchAll()` and `SensorReading` parses typed readings —
+     CPU1Temp (`ReadingUnits Cel`, `Reading 37.0`, `UpperCritical` 45.0) and
+     PS1InputVoltage (`ReadingType Voltage`, `V`, 119.27) with thresholds.
+  2. System-level Reset allow-list (#022/#016): `#ComputerSystem.Reset`
+     `ResetType@Redfish.AllowableValues` = On/ForceOff/GracefulShutdown/
+     GracefulRestart/ForceRestart/Nmi/ForceOn/PushPowerButton — includes
+     `Nmi` (NMI-stabilize) and is distinct from the manager-level list
+     (ForceRestart + GracefulRestart); `PowerCycle` is NOT advertised so the
+     gate must use exactly the published values.
+  3. `SimpleUpdateActionInfo` (#008/#020): `#ActionInfo.v1_4_1` with
+     `ImageURI` (Required true) + `TransferProtocol` AllowableValues
+     (HTTP/HTTPS/SFTP …) — the parameter contract for `startSimpleUpdate`
+     on BMCs that do expose SimpleUpdate.
+- UI (UI-2): Sensors chassis card header now announces one merged summary
+  (`Chassis 1U, 1 temperatures, 1 fans, 1 sensors`) via
+  `Semantics(container: true, excludeSemantics: true, label: ...)` on the
+  title; per-tile labels preserved. New widget test asserts the label.
+
+**Decisions:**
+- Followed the DOCS/EMULATOR alternation (last run DOCS — EMULATOR next).
+- Test-only pins: the client already parsed the Sensors collection and the
+  Reset allow-list surfaces, so no production code changed — the pins lock the
+  contracts for #007/#019/#022/#016/#008/#020 work to come.
+- Probed every contract live with `curl -k` before pinning (sensors, reset
+  allow-list, action info); no silent skipping.
+- Formatted only the 3 touched Dart files; no repo-wide `dart format`
+  (prior-run precedent: it reintroduces the known `curly_braces` lint).
+- Emulator server killed via exact-PID after the run — no stray process, port
+  8443 free.
+
+**Next:**
+- Push 25 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout expiry) — emulator pins session lifecycle + AccountService
+  surface; implement unit-level with the in-process mock server.
+- #016/#022: `ResetActionInfo` allow-list fallback (emulator now pins the
+  system-level `ResetType@Redfish.AllowableValues` incl. `Nmi`) + PATCH/etag,
+  or #008/#020: bmcweb HTTP-push firmware upload (both push URIs +
+  `HttpPushUriOptions` apply-time modes + SimpleUpdateActionInfo contract).
+
+**Issues touched:**
+- none opened/closed this run (EMULATOR contract pins + UI-2 label; no issue
+  status change). #007/#008/#016/#019/#020/#022 got emulator-level contract
+  notes in FUTUREWORK.

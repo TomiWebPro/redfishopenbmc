@@ -245,6 +245,42 @@ void main() {
       expect(chassis.fans, isNotEmpty);
     });
 
+    test(
+        'sensors: Sensors collection parses typed readings incl. voltages '
+        '(#007/#019)', () async {
+      // The DMTF mockup ships a 41-member Sensors collection under
+      // /Chassis/1U/Sensors; the client's SensorReading model must parse the
+      // typed readings (reading type/units, thresholds) end-to-end — the
+      // surface a future #019 real-time telemetry receiver would poll.
+      final List<ChassisSensors> all =
+          await SensorsService(client: client, systemId: 'em1').fetchAll();
+      expect(all, isNotEmpty);
+      final ChassisSensors chassis = all.first;
+      expect(chassis.sensors, isNotEmpty,
+          reason: 'the Sensors collection must be enumerated and parsed');
+
+      // A temperature sensor from the collection (CPU1Temp).
+      final List<SensorReading> cpuTemps = chassis.sensors
+          .where((SensorReading s) => s.name == 'CPU #1 Temperature')
+          .toList();
+      expect(cpuTemps, isNotEmpty);
+      final SensorReading cpu = cpuTemps.first;
+      expect(cpu.readingUnits, 'Cel');
+      expect(cpu.reading, 37.0);
+      expect(cpu.thresholds['UpperCritical'], 45.0,
+          reason: '#007: thresholds must be parsed for the UI highlight');
+
+      // A voltage sensor from the collection (PS1InputVoltage).
+      final List<SensorReading> volts = chassis.sensors
+          .where((SensorReading s) => s.name == 'Power Supply #1 Input Voltage')
+          .toList();
+      expect(volts, isNotEmpty);
+      final SensorReading voltage = volts.first;
+      expect(voltage.readingType, 'Voltage');
+      expect(voltage.readingUnits, 'V');
+      expect(voltage.reading, 119.27);
+    });
+
     test('firmware: UpdateService + FirmwareInventory enumerate inventory',
         () async {
       final FirmwareService svc = FirmwareService(
@@ -302,6 +338,43 @@ void main() {
       expect(reset['ResetType@Redfish.AllowableValues'], isA<List<dynamic>>());
     });
 
+    test(
+        'power: system-level Reset allow-list pins Nmi + full set, distinct '
+        'from the manager list (#022/#016)', () async {
+      // The system-level #ComputerSystem.Reset advertises its own
+      // ResetType@Redfish.AllowableValues; the #022/#016 fallback must read
+      // THIS list (which includes Nmi / ForceOn / PushPowerButton), never
+      // conflate it with the manager-level list (ForceRestart +
+      // GracefulRestart, asserted in the managers group).
+      final Map<String, dynamic> sys =
+          await client.getJson('/redfish/v1/Systems/437XR1138R2');
+      final Map<dynamic, dynamic> actions =
+          sys['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> reset =
+          actions['#ComputerSystem.Reset'] as Map<dynamic, dynamic>;
+      final List<dynamic> allowed =
+          reset['ResetType@Redfish.AllowableValues'] as List<dynamic>;
+      expect(
+        allowed,
+        containsAll(<String>[
+          'On',
+          'ForceOff',
+          'GracefulShutdown',
+          'GracefulRestart',
+          'ForceRestart',
+          'Nmi',
+          'ForceOn',
+          'PushPowerButton',
+        ]),
+      );
+      expect(allowed, contains('Nmi'),
+          reason: '#022: the NMI-stabilize path needs Nmi advertised on the '
+              'system-level reset action');
+      // The client enum also knows PowerCycle but the mockup does not publish
+      // it — the allow-list gate must use exactly the advertised values.
+      expect(allowed, isNot(contains('PowerCycle')));
+    });
+
     test('firmware: UpdateServiceInfo exposes the HTTP-push URI (DOCS-4)',
         () async {
       final FirmwareService svc = FirmwareService(
@@ -315,6 +388,43 @@ void main() {
               'firmware updates are HTTP-push (HttpPushUri), not SimpleUpdate '
               '(DOCS-4, FUTUREWORK #008/#020)');
       expect(info.inventory, isNotEmpty);
+    });
+
+    test(
+        'firmware: SimpleUpdateActionInfo publishes ImageURI + TransferProtocol '
+        'contract (#008/#020)', () async {
+      // The client's startSimpleUpdate POSTs to the discovered
+      // #UpdateService.SimpleUpdate target. The ActionInfo documents the
+      // parameters (ImageURI required; TransferProtocol allow-list) — the
+      // contract a spec-conformant upload path must satisfy when the BMC does
+      // expose SimpleUpdate (bmcweb does not — it is HTTP-push, DOCS-4).
+      final Map<String, dynamic> info = await client
+          .getJson('/redfish/v1/UpdateService/SimpleUpdateActionInfo');
+      expect(info['@odata.type'], startsWith('#ActionInfo.'));
+      final List<dynamic> params =
+          info['Parameters'] as List<dynamic>? ?? <dynamic>[];
+      expect(params, isNotEmpty);
+
+      final List<dynamic> imageUris = params
+          .where((dynamic p) =>
+              p is Map<dynamic, dynamic> && p['Name'] == 'ImageURI')
+          .toList();
+      expect(imageUris, isNotEmpty,
+          reason: '#008: ImageURI is the SimpleUpdate upload source parameter');
+      expect(
+        (imageUris.first as Map<dynamic, dynamic>)['Required'],
+        isTrue,
+      );
+
+      final List<dynamic> protocols = params
+          .where((dynamic p) =>
+              p is Map<dynamic, dynamic> && p['Name'] == 'TransferProtocol')
+          .toList();
+      expect(protocols, isNotEmpty);
+      final List<dynamic> protocolValues = (protocols.first
+              as Map<dynamic, dynamic>)['AllowableValues'] as List<dynamic>? ??
+          <dynamic>[];
+      expect(protocolValues, containsAll(<String>['HTTP', 'HTTPS', 'SFTP']));
     });
   });
 
