@@ -819,7 +819,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   27/27; issues validate OK; `git diff --check` clean; secret scan clean (no
   tokens/creds in diff). Formatted only the touched Dart files (no repo-wide
   churn — prior-run precedent).
-- **Commit:** pending — `auto: REPAIR/DOCS-10 — recover crashed WIP (Task corpus mirrored, UpdateTask Retry-After, queued-banner semantics, 3 failing tests fixed) (run 2026-10-23 04:05)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
+- **Commit:** 29e0f93 — `auto: REPAIR/DOCS-10 — recover crashed WIP (Task corpus mirrored, UpdateTask Retry-After, queued-banner semantics, 3 failing tests fixed) (run 2026-10-23 04:05)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
 - **Next:** 1) Push the queued local commits from a machine with GitHub
   credentials (28 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
   logout URI, token rehydrate, SessionTimeout expiry) — emulator pins the full
