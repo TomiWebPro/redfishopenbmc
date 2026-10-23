@@ -496,6 +496,41 @@ void main() {
       );
     });
   });
+
+  group('PowerView — card header semantics (UI-2)', () {
+    testWidgets('announces one merged header node incl. the power state',
+        (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      final PowerController controller = PowerController(
+        service: _FakePowerService(),
+        features: SystemFeatures(
+          systemId: 'bmc1',
+          powerControl: true,
+          supportedResetTypes: const <String>['On'],
+        ),
+        initialState: const PowerUiState(powerState: PowerState.off),
+        pollInterval: const Duration(seconds: 60),
+        pollTimeout: const Duration(milliseconds: 1),
+      );
+
+      await tester.pumpWidget(
+        harness(manager: manager, controller: controller),
+      );
+      await tester.pumpAndSettle();
+
+      // The header (display name + power badge) is one merged semantics node.
+      expect(
+        find.bySemanticsLabel(RegExp('^A, power Off')),
+        findsOneWidget,
+        reason: 'the card header must announce as a single merged node',
+      );
+    });
+  });
 }
 
 PowerController _fakeController() => PowerController(

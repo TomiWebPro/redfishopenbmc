@@ -7,16 +7,25 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 (EMULATOR run — **Task resource contract pinned
-  end-to-end**: the mockup's Task 545 publishes `TaskState Completed`,
-  `TaskStatus OK`, RFC3339 Start/EndTime, `Messages[]`
+- **Last updated:** 2026-10-23 (DOCS run — **DOCS-12 done**: mirrored the
+  missing **versioned** definitions for the six aggregator-only families —
+  `UpdateService`/`EventService`/`SessionService`/`Manager`/`Power`/`Thermal` —
+  newest + mockup-served versions (12 files, 553,772 bytes, inside DOCS-6
+  budget); REQUIREMENTS.md rows for those families now cite real mirror files;
+  no client code change (deltas audited: SessionService
+  `AbsoluteSessionTimeout*`, UpdateService `LocalImageStore*`/`Stage`/`Activate`
+  noted for #015/#008/#020); UI-2 increment: PowerView card header merged
+  semantics label (`<name>, power <state>`) + widget test; EMULATOR run 09:14
+  pinned Task resource contract end-to-end — Task 545 publishes `TaskState
+  Completed`, `TaskStatus OK`, RFC3339 Start/EndTime, `Messages[]`
   (MessageId/Message/MessageArgs/Severity) — and **no `PercentComplete`**, so
   the #008/#020 poller must treat it as unknown; TaskService
   `CompletedTaskOverWritePolicy=Manual` + `LifeCycleEventOnTaskStateChange`
-  pinned; emulator suite 30 → **32 tests**; UI-2 increment: KvmConsole card
-  header merged semantics label; DOCS-6 budget untouched)
-- **Current focus:** EMULATOR suite at **32 tests** (Task resource contract
-  pin, 09:14 run — the #008/#020 task poller now has its full parse surface
+  pinned; emulator suite 30 → **32 tests**)
+- **Current focus:** DOCS-12 done (versioned corpus now complete for all 16
+  client-mapped families — aggregator + newest + mockup-served provenance);
+  EMULATOR suite at **32 tests** (Task resource contract pin, 09:14 run — the
+  #008/#020 task poller now has its full parse surface
   pinned: TaskState/TaskStatus/Messages/absent-PercentComplete, plus
   TaskService policy fields; OverviewService end-to-end hydration #006 and the
   LogService/LogEntry collection contract incl. ClearLog + `@odata.nextLink`
@@ -29,7 +38,9 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
   v1_15_0); UI-3 fully done (all views covered); **UI-1 done** (dashboard
   error summary + Retry); **UI-2 increments** (InfoCard merged header semantics,
   06:10 run; SystemCard merged header semantics, 07:xx run; KvmConsole card
-  header merged semantics, 09:14 run); next P1: #015 (AuthManager) — emulator
+  header merged semantics, 09:14 run; **PowerView card header merged semantics,
+  this run** — remaining UI-2: OverviewView banner/HealthBanner, FirmwareView
+  header row, dialog touch-targets); next P1: #015 (AuthManager) — emulator
   now pins the full session contract + the AccountService surface + overview
   hydration; #016/#022 (ActionInfo/etag) or #008/#020 (HTTP-push firmware,
   Tasks URI + push apply-time modes + both push URIs + SimpleUpdateActionInfo +
@@ -137,6 +148,24 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       upstream anchors re-verified: bmcweb `27e0930b`, mockup `23d21f9a`,
       DSP0266 1.25.0, schema index current — no version advanced for the
       other tracked families)
+- [x] **DOCS-12** Mirror the missing **versioned** definitions for the six
+      aggregator-only families the client maps — `UpdateService`,
+      `EventService`, `SessionService`, `Manager`, `Power`, `Thermal` — newest
+      versioned file (what each aggregator `$ref`s) **plus** the version the
+      pinned DMTF mockup serves (`UpdateService.v1_13_0`,
+      `EventService.v1_10_1`, `SessionService.v1_1_8`, `Manager.v1_19_0`,
+      `Power.v1_7_2`, `Thermal.v1_7_2`), the DOCS-11 LogEntry precedent.
+      (run 2026-10-23 — 12 files, 553,772 bytes total, inside the DOCS-6
+      budget; manifest rows + SHA-256s verified; the six mockup-served versions
+      also copied into `test/fixtures/redfish/schemas/` so every `@odata.type`
+      the mockup publishes has a versioned schema in the fixture; the six
+      newest versions were already in the fixture and verified byte-identical
+      to upstream; REQUIREMENTS.md rows + trace note now cite the real mirror
+      files; audited deltas — `SessionService.v1_2_0` adds
+      `AbsoluteSessionTimeout*` (note for #015), `UpdateService.v1_17_1` adds
+      `LocalImageStore*`/`Stage`/`Activate` (note for #008/#020), `Manager
+      v1_25_0` adds `SecurityMode`/`ReadyToRemove`, Power/Thermal no deltas —
+      no client code change this run)
 
 ## P1 — emulator and integration tests
 
@@ -314,7 +343,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       row only, PopupMenuButton keeps its own semantics, +widget test across all
       four connection states; KvmConsole card header merged semantics label
       (`<type>, enabled|disabled`) done 2026-10-23 09:14 — Semantics on the
-      title+Enabled/Disabled-chip row, widget tests for both states; extend to
+      title+Enabled/Disabled-chip row, widget tests for both states; PowerView
+      card header merged semantics label (`<name>, power <state>`) done
+      2026-10-23 — Semantics on the title+PowerBadge row, widget test for the
+      merged node; extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.

@@ -1030,3 +1030,68 @@ Append-only run log for the `redfish-automation` scheduler job.
   `PercentComplete` optional/absent handling, `Messages[]` timeline) and the
   bmcweb HTTP-push firmware upload path (both push URIs + `HttpPushUriOptions`
   apply-time modes + `SimpleUpdateActionInfo` already asserted).
+
+## 2026-10-23 10:2x — DOCS (DOCS-12 six-family versioned mirror) + UI-2 PowerView header
+
+- **Baseline:** analyze 0; tests 287 passed / 1 skipped; starting commit e2c1279
+  (branch `main` ahead 34 of origin); issues validate OK; working tree clean;
+  emulator pin `23d21f9a` re-verified unchanged upstream.
+- **Primary work:** DOCS-12 — closed the last "aggregator-only" corpus gap:
+  `UpdateService`, `EventService`, `SessionService`, `Manager`, `Power`,
+  `Thermal` had **no versioned definitions** in
+  `documentations/external/redfish/schemas/v1/` (the client maps all six and
+  the fixture snapshot already ships the newest versions). Mirrored, per
+  family, the **newest** versioned file (what the aggregator `$ref`s) **plus**
+  the version the pinned DMTF mockup serves as `@odata.type` (the DOCS-11
+  LogEntry precedent — newest + mockup-served + fixture provenance):
+  `UpdateService.v1_17_1` + `v1_13_0`, `EventService.v1_12_0` + `v1_10_1`,
+  `SessionService.v1_2_0` + `v1_1_8`, `Manager.v1_25_0` + `v1_19_0`,
+  `Power.v1_7_3` + `v1_7_2`, `Thermal.v1_7_3` + `v1_7_2` — 12 files,
+  553,772 bytes total, inside the DOCS-6 budget (50 MB/run). SHA-256s verified
+  after download; manifest rows added.
+- **Docs:** new downloads this run (553,772 bytes — 0.55 MB, DOCS-6 budget
+  untouched). Manifest rows + DOCS-12 section in
+  `documentations/external/README.md`; REQUIREMENTS.md "Last audited" bumped to
+  DOCS-12, six family rows + trace note now cite the real mirrored versioned
+  files, and a new "DOCS-12 — six-family versioned schema mirror audit" section
+  records the newest-vs-served property deltas; the six mockup-served versions
+  were also copied into `test/fixtures/redfish/schemas/` so every `@odata.type`
+  the mockup publishes has a versioned schema in the fixture (the six newest
+  versions were already there and verified byte-identical to upstream);
+  `documentations/redfish_reference/README.md` DOCS-12 note added. Upstream
+  anchors re-verified: bmcweb `27e0930b`, mockup `23d21f9a`, DSP0266 1.25.0,
+  live schema index (all 12 URLs 200 OK before download).
+- **Emulator:** none this run (no emulator code touched; pin `23d21f9a`
+  re-verified unchanged upstream; the six mockup-served versions copied into
+  fixtures are provenance only — no emulator suite change).
+- **Code/tests:** UI-2 increment only — `PowerView` card header (display name +
+  PowerBadge) now announces as **one merged semantics node**
+  (`Semantics(container: true, excludeSemantics: true, label: '<name>, power
+  <state>')`), the same pattern as the SystemCard/InfoCard/chassis/sensor/
+  firmware/KVM card headers; the reset buttons stay interactive/sibling
+  semantics (no a11y regression). New widget test
+  `test/features/power/power_view_test.dart` +1 asserts the merged label
+  ("A, power Off"). No production logic change; no issue status change; no new
+  dependencies.
+- **UI:** PowerView card header merged semantics label (UI-2). Rationale: the
+  power screen's header was the last primary card header without the merged
+  pattern; the PowerBadge otherwise announced as a separate bare node
+  ("Power Off") right after the system name. Widget test covers the merged
+  node; all existing PowerView tests still pass.
+- **Verification:** analyze 0; tests 288 passed / 1 skipped (baseline 287 →
+  +1); issues validate OK; `git diff --check` clean; secret scan clean (no
+  tokens/creds in diff). Formatted only the 2 touched Dart files (no repo-wide
+  churn — prior-run precedent).
+- **Commit:** TBD — `auto: DOCS — DOCS-12 six-family versioned schema mirror (UpdateService/EventService/SessionService/Manager/Power/Thermal newest + mockup-served), UI-2 PowerView card header merged semantics (run 2026-10-23 10:34)`; pushed: **no** — the same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried (hash recorded by the follow-up `chore: record run hash` commit). Commits queued locally before this run: 35.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (N queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
+  logout URI, token rehydrate, SessionTimeout expiry — now also
+  `AbsoluteSessionTimeout*` per `SessionService.v1_2_0.json` DOCS-12) —
+  emulator pins the full session + AccountService surface; implement
+  unit-level with the in-process mock server; 3) #008/#020: build the task
+  poller now that the Task resource contract is pinned end-to-end
+  (GET-on-monitor, `TaskState` 13-value parse, `PercentComplete`
+  optional/absent handling, `Messages[]` timeline) and the bmcweb HTTP-push
+  firmware upload path (both push URIs + `HttpPushUriOptions` apply-time modes
+  + `SimpleUpdateActionInfo` already asserted; `LocalImageStore*`/`Stage`/
+  `Activate` per `UpdateService.v1_17_1.json` DOCS-12 are upstream context).

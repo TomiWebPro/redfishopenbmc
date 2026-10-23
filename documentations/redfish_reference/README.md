@@ -43,6 +43,14 @@ source code. The raw API payloads that back every example here live under
     `LogEntryCollection.json` also mirrored into `test/fixtures/redfish/schemas/`
     for fixture/corpus consistency; newest version `LogEntry.v1_22_0.json` lives
     in `documentations/external/redfish/schemas/v1/`.
+  - DOCS-12 additions (2026-10-23): the **mockup-served** versioned defs for the
+    six families the pinned mockup publishes older `@odata.type` versions for
+    were added to `test/fixtures/redfish/schemas/` (and to the external corpus
+    with their newest counterparts):
+    `UpdateService.v1_13_0.json`, `EventService.v1_10_1.json`,
+    `SessionService.v1_1_8.json`, `Manager.v1_19_0.json`,
+    `Power.v1_7_2.json`, `Thermal.v1_7_2.json`. The newest versions for these
+    families were already present and verified byte-identical to upstream.
 
 ## Gaps / notes
 - `SimpleUpdate` has **no standalone JSON schema** — it is an Action defined inside

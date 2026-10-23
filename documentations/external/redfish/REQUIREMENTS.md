@@ -6,7 +6,12 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-23 (EMULATOR run — Task resource contract pinned end-to-end:
+Last audited: 2026-10-23 (DOCS-12 run — mirrored the missing **versioned**
+definitions for the six aggregator-only families — `UpdateService`/`EventService`/
+`SessionService`/`Manager`/`Power`/`Thermal` — newest + mockup-served versions,
+so the rows below now cite real mirror files; no client code change needed
+(property deltas audited in the DOCS-12 section). Prior: EMULATOR run pinned the
+Task resource contract end-to-end:
 `TaskState`/`TaskStatus`/`Start`-`EndTime`/`Messages[]` on the mockup's Task 545,
 incl. the **absent `PercentComplete`** the #008/#020 poller must treat as unknown,
 plus `TaskService.CompletedTaskOverWritePolicy`/`LifeCycleEventOnTaskStateChange`;
@@ -56,22 +61,22 @@ Folded into code this run:
 | Conditional GET re-crawl via `If-None-Match` / ETag (304 short-circuit) | DSP0266 §9.2 "HTTP and the Redfish protocol"; `ComputerSystem.json` | `lib/redfish/discovery/discovery_engine.dart` (`_fetchUri` etag map) | `test/redfish/discovery/discovery_engine_test.dart` | OK |
 | PATCH write support with `If-Match` / `@odata.etag` | DSP0266 §9.2 (ETag); §12 "Modifying resources" | **not implemented** | — | GAP: #016 |
 | Error envelope: `error.code`, `error.message`, `error.@Message.ExtendedInfo[]` | DSP0266 §12.7 "Error responses"; `redfish_error.md` | `lib/redfish/models/redfish_error.dart` | `test/redfish/models/models_test.dart` | OK (see #014: ExtendedInfo parsing hardening) |
-| Session auth: `POST SessionService/Sessions` → `X-Auth-Token`, session reuse | DSP0266 §12.4 "Sessions"; `SessionService.json` | `lib/redfish/client/auth_manager.dart` | `test/redfish/client/auth_manager_test.dart` | OK (see #015: discover session URI instead of hardcoding) |
+| Session auth: `POST SessionService/Sessions` → `X-Auth-Token`, session reuse | DSP0266 §12.4 "Sessions"; `SessionService.json` + `SessionService.v1_2_0.json` (newest, DOCS-12) | `lib/redfish/client/auth_manager.dart` | `test/redfish/client/auth_manager_test.dart` | OK (see #015: discover session URI instead of hardcoding) |
 | Basic auth fallback | DSP0266 §12.3 "Basic authentication" | `lib/redfish/client/auth_manager.dart` | `test/redfish/client/auth_manager_test.dart` | OK |
 | No plaintext password at rest; token in secure storage | DSP0266 §12.4; OpenBMC `Redfish.md` | `lib/core/storage/secure_storage.dart`, `AuthManager` | `test/redfish/client/auth_manager_test.dart` | OK |
 | Power control: `ComputerSystem.Reset` action with `ResetType` body; 202+`Location` accepted | DSP0266 §12.2 "Actions"; `ComputerSystem.json` `Actions` | `lib/features/power/power_service.dart` | `test/features/power/` | OK |
-| Sensor telemetry: `Chassis[*].Thermal` / `Sensors`, reading + units | DSP0266 §8.10; `Sensor.json`, `Thermal.json` | `lib/features/sensors/sensors_controller.dart` | `test/features/sensors/` | OK |
+| Sensor telemetry: `Chassis[*].Thermal` / `Sensors`, reading + units | DSP0266 §8.10; `Sensor.json` + `Thermal.json` + `Thermal.v1_7_3.json` (newest, DOCS-12) | `lib/features/sensors/sensors_controller.dart` | `test/features/sensors/` | OK |
 | System overview: `ComputerSystem` identity (`Manufacturer`/`Model`/`SKU`/`SerialNumber`/`PartNumber`/`BiosVersion`), `PowerState`, `Status.Health`(+Rollup), `ProcessorSummary`/`MemorySummary`, `IndicatorLED`, leading `Chassis` thermal | DSP0266 §8.4 ComputerSystem + §8.10 Thermal; `ComputerSystem.v1_29_0.json` | `lib/features/overview/overview_service.dart` (+ `models/system_overview.dart`) hydrates system + best-effort chassis thermal | `test/features/overview/overview_provider_test.dart` + `overview_view_test.dart`; **emulator suite now pins the full hydrate end-to-end** against the DMTF mockup (#006) | OK |
 | Firmware inventory: `UpdateService` / `SoftwareInventory` collection | DSP0266 §8.14 "Software inventory"; `SoftwareInventory.json` | `lib/features/firmware/firmware_models.dart` | `test/features/firmware/` | OK |
-| Firmware update: `UpdateService.SimpleUpdate` (entity-upload mode TBD); `UpdateService.ServiceEnabled` gates the capability | DSP0266 §9.7 "Firmware update"; `UpdateService.json` (`ServiceEnabled`); OpenBMC `Redfish.md` §UpdateService | `lib/features/firmware/firmware_service.dart`; `FeatureRules.firmwareUpdate` honors `ServiceEnabled` (DOCS-5) | `test/features/firmware/`; `feature_rules_test.dart` (ServiceEnabled case) | Partial — task monitoring in #008/#020 |
-| KVM capability: `Manager.GraphicalConsole` / OEM console detection | OpenBMC `Redfish.md`; `Manager.json` | `lib/redfish/discovery/feature_rules.dart` (`kvm`, `kvmType`) | `test/redfish/discovery/feature_rules_test.dart` | OK (rendering gated in #009/#021) |
-| Event subscription: `EventService.Subscriptions` — POST → 201 + `Location`; DELETE to unsubscribe | DSP0266 §12.1.1–§12.1.2 "Eventing"; `EventService.json` | **not implemented** | — | GAP: DOCS-7 — decision recorded below (out-of-scope this milestone) |
+| Firmware update: `UpdateService.SimpleUpdate` (entity-upload mode TBD); `UpdateService.ServiceEnabled` gates the capability | DSP0266 §9.7 "Firmware update"; `UpdateService.json` (`ServiceEnabled`) + `UpdateService.v1_17_1.json` (newest, DOCS-12); OpenBMC `Redfish.md` §UpdateService | `lib/features/firmware/firmware_service.dart`; `FeatureRules.firmwareUpdate` honors `ServiceEnabled` (DOCS-5) | `test/features/firmware/`; `feature_rules_test.dart` (ServiceEnabled case) | Partial — task monitoring in #008/#020 |
+| KVM capability: `Manager.GraphicalConsole` / OEM console detection | OpenBMC `Redfish.md`; `Manager.json` + `Manager.v1_25_0.json` (newest, DOCS-12) | `lib/redfish/discovery/feature_rules.dart` (`kvm`, `kvmType`) | `test/redfish/discovery/feature_rules_test.dart` | OK (rendering gated in #009/#021) |
+| Event subscription: `EventService.Subscriptions` — POST → 201 + `Location`; DELETE to unsubscribe | DSP0266 §12.1.1–§12.1.2 "Eventing"; `EventService.json` + `EventService.v1_12_0.json` (newest, DOCS-12) | **not implemented** | — | GAP: DOCS-7 — decision recorded below (out-of-scope this milestone) |
 | SSE event stream: GET `EventService.ServerSentEventUri` | DSP0266 §12.1.3 "Open an SSE connection"; `EventService.v1_6_9+` | **not implemented** (no SSE transport dependency in `pubspec.yaml`) | — | GAP: DOCS-7 — revisit when telemetry/eventing lands (#007/#019) |
 | EventType-based eventing deprecated; filter subscriptions by `RegistryPrefixes` / `ResourceTypes` / `MessageIds` | DSP0266 §12.1.4–§12.1.5 | n/a (no subscriber yet) | — | Note for a future implementation |
 | Task monitor: 202 + `Location` + optional `Retry-After`; GET monitor → 202 while running, then final status + body; DELETE cancels; 404/410 after completion | DSP0266 §12.2 "Asynchronous operations"; `TaskService.json` | `lib/features/firmware/firmware_service.dart` + `lib/features/power/power_service.dart` read `Location`, store the task URI, do **not** poll | tests cover 202+`Location` acceptance | Partial/GAP: #008/#020 (firmware), #022 (power) |
 | bmcweb `EventService`: `SubmitTestEvent`, `DeliveryRetryAttempts` (default 3), `DeliveryRetryIntervalSeconds`, `EventFormatTypes`, `SSEFilterPropertiesSupported` | OpenBMC `Redfish.md` §EventService | not implemented | — | vendor row (bmcweb) |
 | bmcweb `TaskService`: `CompletedTaskOverWritePolicy`, `LifeCycleEventOnTaskStateChange`, `Tasks` collection | OpenBMC `Redfish.md` §TaskService | not implemented (202 accepted only) | — | vendor row (bmcweb) |
-| Session timeout handling (`SessionService.SessionTimeout`) | DSP0266 §12.4; `SessionService.json` | `lib/redfish/models/session.dart` (expiry) | `test/redfish/client/auth_manager_test.dart` | OK |
+| Session timeout handling (`SessionService.SessionTimeout`) | DSP0266 §12.4; `SessionService.json` + `SessionService.v1_2_0.json` (newest, DOCS-12) | `lib/redfish/models/session.dart` (expiry) | `test/redfish/client/auth_manager_test.dart` | OK |
 | bmcweb firmware update: `HttpPushUri` / `MultipartHttpPushUri` upload (no `SimpleUpdate` action) | OpenBMC `Redfish.md` §UpdateService (bmcweb `27e0930b`); `UpdateService.v1_17_1.json` `MultipartHttpPushUri` | `UpdateServiceInfo` exposes `httpPushUri` **and** `multipartHttpPushUri` (DOCS-9); `startSimpleUpdate` POSTs `#UpdateService.SimpleUpdate` — **will not match bmcweb** | unit: `test/features/firmware/firmware_model_test.dart` (+3 DOCS-9: multipart parse, absent fallback, copyWithInventory); emulator: `emulator_suite_test.dart` asserts `UpdateServiceInfo.httpPushUri == '/FWUpdate'` on the DMTF mockup | Partial: push *upload path* still #008/#020, but both push URIs now surfaced |
 | bmcweb reset types: `ResetActionInfo` ActionInfo (`Parameters/AllowableValues`) instead of system-level `SupportedResetTypes` | OpenBMC `Redfish.md` §ComputerSystem (`ResetActionInfo` resource) | `FeatureRules.supportedResetTypes` reads `SupportedResetTypes` directly | `feature_rules_test.dart` | Partial: empty list on bmcweb → power UI treats empty as "all allowed" (safe), but the true allow-list is not surfaced; add ActionInfo fallback in #022/#016 |
 | bmcweb serial console lives on the ComputerSystem (`SerialConsole/SSH|IPMI`), not the Manager | OpenBMC `Redfish.md` §ComputerSystem (`SerialConsole` fields) | `FeatureRules._managerConsoleType` only checks `Manager.GraphicalConsole/SerialConsole/Oem` | `feature_rules_test.dart` | Partial: GraphicalConsole detection still correct; System-level SerialConsole not yet mapped (see #009/#021 KVM) |
@@ -79,11 +84,43 @@ Folded into code this run:
 | bmcweb telemetry: `TelemetryService` with `MetricReports` / `Triggers` / `MetricReportDefinitions` | OpenBMC `Redfish.md` §TelemetryService | n/a — sensors poll `Thermal`/`Sensors` directly | sensors tests | Note: alternative telemetry source for #007/#019 |
 | Log service: `ComputerSystem.LogServices` → `LogService` (`ClearLog` action, `ServiceEnabled`) → `Entries` collection; `LogEntry` (`EntryType` SEL/Event, `Severity`, `Created` RFC3339, `Message`, `Links.OriginOfCondition`); `@odata.nextLink` pagination | `LogService.json` + `LogService.v1_9_0.json` + `LogEntry.json` + `LogEntry.v1_22_0.json` + `LogEntryCollection.json` (mirrored DOCS-11; `LogEntry.v1_16_0.json` kept for the mockup's pinned shapes); DSP0266 §9.6.12 (`Members@odata.nextLink`) + §9.6.11 (`Members`) define the paginated collection contract; emulator pins LogService.v1_6_0 + LogEntry.v1_16_0 shapes | not implemented — no log reader feature yet (future #010 hardening / diagnostics) | emulator: `emulator_suite_test.dart` "log service" group asserts collection → ClearLog target → Entries fields + nextLink (`\u0024skiptoken`) | Contract pin only; feature work not queued — revisit via FUTUREWORK if a log view is planned |
 
+## DOCS-12 — six-family versioned schema mirror audit (2026-10-23)
+
+Closed the "aggregator-only" corpus gap: `UpdateService`, `EventService`,
+`SessionService`, `Manager`, `Power`, and `Thermal` had **no versioned
+definitions** in the external mirror (`documentations/external/redfish/
+schemas/v1/`), even though the client maps them and the fixture snapshot ships
+the newest versions. Mirrored, for each family, the **newest** versioned file
+(what the aggregator `$ref`s) **and** the **mockup-served** version (what the
+pinned `23d21f9a` fixture publishes as `@odata.type`) — the DOCS-11 LogEntry
+precedent. 12 files, 553,772 bytes total (inside DOCS-6 budget); SHA-256s in the
+manifest (`documentations/external/README.md`). The six mockup-served versions
+were also copied into `test/fixtures/redfish/schemas/` so every `@odata.type`
+the mockup publishes has a versioned schema in the fixture.
+
+| Family | Newest (mirrored) | Mockup-served (mirrored) | Newest-vs-served notable deltas | Client impact |
+|---|---|---|---|---|
+| `UpdateService` | `v1_17_1` | `v1_13_0` | `LocalImageStore*` (local image repo), `Stage`/`Activate` actions, `UpdateServiceCapabilities` | none this run — #008/#020 push flow uses `HttpPushUri`/`MultipartHttpPushUri` (parsed since DOCS-9); `SimpleUpdate` remains the entity-upload path for non-bmcweb |
+| `EventService` | `v1_12_0` | `v1_10_1` | `OriginResourcesSupported`, `SSEIncludeOriginOfConditionSupported` | none — events out-of-scope (DOCS-7); note for when #007/#019 lands |
+| `SessionService` | `v1_2_0` | `v1_1_8` | `AbsoluteSessionTimeout` + `AbsoluteSessionTimeoutEnabled` | #015 could honor absolute timeout when a service publishes it (in addition to `SessionTimeout`) |
+| `Manager` | `v1_25_0` | `v1_19_0` | `SecurityMode`/`OEMSecurityMode`, `ReadyToRemove`, `DateTimeSource`, `#Manager.UpdateSecurityMode`, `ServiceUseNotification` | none — KVM detection (`GraphicalConsole`) unchanged |
+| `Power` | `v1_7_3` | `v1_7_2` | no property deltas | none |
+| `Thermal` | `v1_7_3` | `v1_7_2` | no property deltas | none |
+
+The table rows above now cite the real mirrored files for the six families
+(e.g. `SessionService.v1_2_0.json`, `UpdateService.v1_17_1.json`,
+`Manager.v1_25_0.json`, `Thermal.v1_7_3.json`). All upstream anchors
+re-verified this run (see `documentations/external/README.md`).
+
 ## Trace notes
 
 - The 16 base aggregator schemas under `redfish/schemas/v1/` are the DMTF
-  "latest" entry points the app maps; versioned definitions live upstream and are
-  re-resolvable via the index listing (`v1-index.html`).
+  "latest" entry points the app maps; versioned definitions are also mirrored
+  under `redfish/schemas/v1/` for every client-mapped family (ComputerSystem,
+  Chassis, Sensor, AccountService, EthernetInterface, SoftwareInventory, Task,
+  TaskService, LogEntry, LogService + DOCS-12's UpdateService, EventService,
+  SessionService, Manager, Power, Thermal), with the aggregator-`$ref`ed newest
+  plus the mockup-served versions for emulator provenance.
 - GAP rows are tracked in `FUTUREWORK.md`; do not re-file them in the issue
   tracker unless acceptance criteria are added.
 - bmcweb-specific behaviour (OEM schemas, console types) is cited from
@@ -240,11 +277,11 @@ defined in `lib/redfish/models/system_features.dart`, computed by
 |---|---|---|---|---|
 | `powerControl` | `Systems[*].Actions.#ComputerSystem.Reset` present | DSP0266 §12.2 "Actions"; `ComputerSystem.json` (`Actions`) | `FeatureRules.powerControl` | `feature_rules_test.dart` "powerControl true/false" |
 | `supportedResetTypes` | union of `SupportedResetTypes` across systems | DSP0266 `ComputerSystem.json`; OpenBMC `Redfish.md` §ComputerSystem (bmcweb uses `ResetActionInfo` instead — DOCS-4, gap #022/#016) | `FeatureRules.supportedResetTypes` | `feature_rules_test.dart` "unions across systems and sorts" |
-| `kvm` | any Manager exposes enabled console (`GraphicalConsole` / `SerialConsole` / strict OEM console) | DSP0266 `Manager.json`; OpenBMC `Redfish.md` §Manager + OEM_SCHEMAS (DOCS-4: bare `Oem` is vendor metadata, not a console) | `FeatureRules.kvm` / `_managerConsoleType` | `feature_rules_test.dart` "detects GraphicalConsole", "ignores bare Oem", "Oem Kvm marker" |
+| `kvm` | any Manager exposes enabled console (`GraphicalConsole` / `SerialConsole` / strict OEM console) | DSP0266 `Manager.json` + `Manager.v1_25_0.json`; OpenBMC `Redfish.md` §Manager + OEM_SCHEMAS (DOCS-4: bare `Oem` is vendor metadata, not a console) | `FeatureRules.kvm` / `_managerConsoleType` | `feature_rules_test.dart` "detects GraphicalConsole", "ignores bare Oem", "Oem Kvm marker" |
 | `kvmType` | first detected console kind (`GraphicalConsole`/`SerialConsole`/`Oem`) | same as `kvm` | `FeatureRules.kvmType` | same tests |
 | `sensorMonitoring` | any `Chassis[*].(Thermal \|\| Sensors \|\| Power)` link | DSP0266 §8.10; `Chassis.json` | `FeatureRules.sensorMonitoring` | `feature_rules_test.dart` "sensorMonitoring true via Thermal link" |
-| `sensorCount` | temps + fans + voltages + sensor members | DSP0266 `Thermal.json` / `Sensor.json` | `FeatureRules.sensorCount` | `feature_rules_test.dart` "sums temperatures + fans + voltages + sensor members" |
-| `firmwareUpdate` | `UpdateService` present **and not explicitly disabled** | DSP0266 `UpdateService.json` `ServiceEnabled` ("This property shall indicate whether this service is enabled"); OpenBMC `Redfish.md` §UpdateService lists `ServiceEnabled` | `FeatureRules.firmwareUpdate` (honors `ServiceEnabled` — **fixed this run**) | `feature_rules_test.dart` "firmware_update presence…" + "firmwareUpdate honors ServiceEnabled (DOCS-5)"; `discovery_engine_test.dart` happy path |
+| `sensorCount` | temps + fans + voltages + sensor members | DSP0266 `Thermal.json` (`Thermal.v1_7_3.json`) / `Sensor.json` | `FeatureRules.sensorCount` | `feature_rules_test.dart` "sums temperatures + fans + voltages + sensor members" |
+| `firmwareUpdate` | `UpdateService` present **and not explicitly disabled** | DSP0266 `UpdateService.json` (`UpdateService.v1_17_1.json`) `ServiceEnabled` ("This property shall indicate whether this service is enabled"); OpenBMC `Redfish.md` §UpdateService lists `ServiceEnabled` | `FeatureRules.firmwareUpdate` (honors `ServiceEnabled` — **fixed this run**) | `feature_rules_test.dart` "firmware_update presence…" + "firmwareUpdate honors ServiceEnabled (DOCS-5)"; `discovery_engine_test.dart` happy path |
 | `updateServiceVersion` | `Version` → `Id` fallback (vendor `FirmwareVersion` in OpenBMC fixture) | DMTF `UpdateService.v1_13_0.json` — **no** `FirmwareVersion` property (vendor field in the OpenBMC fixture only); `Id` is the conformant fallback | `FeatureRules.updateServiceVersion` | `feature_rules_test.dart` "version preference"; `discovery_engine_test.dart` expects `2.14.0` from the OpenBMC fixture |
 | `managers` | count of discovered `Manager` resources | DSP0266 §8.3 ServiceRoot `Managers` link | `DiscoveryEngine._crawl` (classify) | `discovery_engine_test.dart` "discovers the full capability map" (`managers == 1`) |
 | `chassis` | count of discovered `Chassis` resources | DSP0266 §8.3 ServiceRoot `Chassis` link | `DiscoveryEngine._crawl` (classify) | `discovery_engine_test.dart` ("`chassis == 1`") |

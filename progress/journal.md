@@ -1135,3 +1135,62 @@
 - none opened/closed this run (emulator contract pin + UI-2 label; no issue
   status change). #008/#020 got the Task resource contract pin recorded in
   FUTUREWORK — the poller's parse surface is now fully pinned.
+## 2026-10-23 — agent:redfish-automation — DOCS-12 (six-family versioned mirror) + UI-2 PowerView header
+
+**Done:**
+- DOCS-12 — closed the last "aggregator-only" corpus gap. `UpdateService`,
+  `EventService`, `SessionService`, `Manager`, `Power`, `Thermal` had no
+  versioned definitions in `documentations/external/redfish/schemas/v1/` even
+  though the client maps all six and the fixture snapshot already ships the
+  newest versions. Mirrored newest + mockup-served per family (12 files,
+  553,772 bytes, DOCS-6 budget OK): `UpdateService.v1_17_1`+`v1_13_0`,
+  `EventService.v1_12_0`+`v1_10_1`, `SessionService.v1_2_0`+`v1_1_8`,
+  `Manager.v1_25_0`+`v1_19_0`, `Power.v1_7_3`+`v1_7_2`, `Thermal.v1_7_3`+
+  `v1_7_2`. Manifest rows + SHA-256s + README DOCS-12 section;
+  REQUIREMENTS.md rows/trace-note now cite the real mirrored files, plus a
+  DOCS-12 audit table of newest-vs-served property deltas. Copied the six
+  mockup-served versions into `test/fixtures/redfish/schemas/` so every
+  `@odata.type` the pinned mockup publishes has a versioned schema in the
+  fixture; the six newest versions were already there and verified
+  byte-identical to upstream. `documentations/redfish_reference/README.md`
+  note added.
+- Audited deltas (no client code change): `SessionService.v1_2_0` adds
+  `AbsoluteSessionTimeout`/`AbsoluteSessionTimeoutEnabled` (note for #015);
+  `UpdateService.v1_17_1` adds `LocalImageStore*`, `Stage`/`Activate` actions,
+  `UpdateServiceCapabilities` (upstream context for #008/#020); `Manager
+  v1_25_0` adds `SecurityMode`/`ReadyToRemove`/`DateTimeSource`; Power/Thermal
+  v1_7_3 have no property deltas vs v1_7_2.
+- UI-2 increment: `PowerView` card header now announces as ONE merged
+  semantics node (`<name>, power <state>`) via
+  `Semantics(container: true, excludeSemantics: true, label: ...)` on the
+  title+PowerBadge row — the pattern already used by SystemCard/InfoCard/
+  chassis/sensor/firmware/KVM headers; reset buttons stay sibling semantics.
+  New widget test asserts the merged label ("A, power Off").
+- Upstream anchors re-verified this run: bmcweb `27e0930b`, mockup `23d21f9a`,
+  DSP0266 1.25.0, live schema index (all 12 URLs 200 OK pre-download).
+
+**Decisions:**
+- DOCS workstream selected per alternation (last run EMULATOR 09:14).
+- Followed the DOCS-11 LogEntry precedent: mirror BOTH the newest versioned
+  file and the mockup-served version — newest for spec citations, mockup-served
+  for emulator provenance — and keep fixture + external corpus consistent.
+- Copied only the mockup-served (older) versions into fixtures; the newest
+  versions were already present and byte-identical, so no overwrite.
+- Only the 2 touched Dart files formatted (no repo-wide `dart format` —
+  prior-run precedent: reintroduces the known `curly_braces` lint).
+
+**Next:**
+- Push 37 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout expiry — now also `AbsoluteSessionTimeout*` per
+  `SessionService.v1_2_0.json` DOCS-12) — unit-level with the in-process mock
+  server.
+- #008/#020: build the task poller — GET-on-monitor, `TaskState` 13-value
+  parse, `PercentComplete` optional/absent handling, `Messages[]` timeline;
+  plus the bmcweb HTTP-push firmware upload path (both push URIs, apply-time
+  modes; `SimpleUpdateActionInfo` + Task contract + `UpdateService.v1_17_1`
+  LocalImageStore/Stage/Activate context all available).
+
+**Issues touched:**
+- none opened/closed this run (DOCS corpus + UI-2 label; no issue status
+  change). #015/#008/#020 got DOCS-12 schema-provenance notes in FUTUREWORK.

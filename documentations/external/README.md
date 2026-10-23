@@ -50,6 +50,18 @@ documentations/external/
 | `redfish/schemas/v1/LogEntry.v1_16_0.json` | https://redfish.dmtf.org/schemas/v1/LogEntry.v1_16_0.json | 2026-10-23 07:37 | `33148ba726c2e27198a38d8d580b6ffad3338d348630c8d7e90e1ae569797385` | 54,373 | DMTF 2025.1 | Version served by the pinned DMTF mockup fixture (emulator pins `#LogEntry.v1_16_0.LogEntry` shapes) — DOCS-11 |
 | `redfish/schemas/v1/LogEntryCollection.json` | https://redfish.dmtf.org/schemas/v1/LogEntryCollection.json | 2026-10-23 07:37 | `1224d575c747c7ef33c53b2140b585490a754e4d32572e23d985549553d84f54` | 5,842 | latest per aggregator | LogEntry collection (Members + `@odata.nextLink` pagination contract) — DOCS-11 |
 | `redfish/schemas/v1/LogService.v1_9_0.json` | https://redfish.dmtf.org/schemas/v1/LogService.v1_9_0.json | 2026-10-23 07:37 | `97dd7bc08b2cb3e974c21a02fcc1ee59696fb106b410a7fb29051b11e376681a` | 45,352 | DMTF 2026.2 | Newest versioned LogService defs (ServiceEnabled, OverWritePolicy, ClearLog action, Entries link) — DOCS-11 |
+| `redfish/schemas/v1/UpdateService.v1_17_1.json` | https://redfish.dmtf.org/schemas/v1/UpdateService.v1_17_1.json | 2026-10-23 08:10 | `cfe7b2b5a8de8e61b2c9b439944985add679610cbee9c101f2160ed418be0ac7` | 58,992 | DMTF 2026.2 | Newest versioned UpdateService defs (MultipartHttpPushUri, HttpPushUriOptions, SimpleUpdate ActionInfo...) — DOCS-12 |
+| `redfish/schemas/v1/UpdateService.v1_13_0.json` | https://redfish.dmtf.org/schemas/v1/UpdateService.v1_13_0.json | 2026-10-23 08:10 | `42c82718d7f2e2800e6c313e663625783b255de6ec14e8d0bd7eb961bb20898f` | 46,973 | DMTF 2024.x | Version served by the pinned DMTF mockup fixture (emulator pins `#UpdateService.v1_13_0.UpdateService`, `HttpPushUri=/FWUpdate`) — DOCS-12 |
+| `redfish/schemas/v1/EventService.v1_12_0.json` | https://redfish.dmtf.org/schemas/v1/EventService.v1_12_0.json | 2026-10-23 08:10 | `edb6ab8a2b2137ae8667958e77aaef531c7ee03d3fa47fd738fab9a4b0f6fd1f` | 39,549 | DMTF 2026.2 | Newest versioned EventService defs (EventTypesForSubscription, Subscriptions, SSE...) — DOCS-12 |
+| `redfish/schemas/v1/EventService.v1_10_1.json` | https://redfish.dmtf.org/schemas/v1/EventService.v1_10_1.json | 2026-10-23 08:10 | `695eca5e89d396cfabb17a68b5ffb13303c36358d6e0982126f7caaa2fc50502` | 37,853 | DMTF 2024.x | Version served by the pinned DMTF mockup fixture (emulator pins `#EventService.v1_10_1.EventService`) — DOCS-12 |
+| `redfish/schemas/v1/SessionService.v1_2_0.json` | https://redfish.dmtf.org/schemas/v1/SessionService.v1_2_0.json | 2026-10-23 08:10 | `6d8aa4e4459127691785847a583509819f37e8f70b6195ceac42448acdfc8654` | 9,476 | DMTF 2026.2 | Newest versioned SessionService defs (SessionTimeout, Sessions, AbsoluteSessionTimeout...) — DOCS-12 |
+| `redfish/schemas/v1/SessionService.v1_1_8.json` | https://redfish.dmtf.org/schemas/v1/SessionService.v1_1_8.json | 2026-10-23 08:10 | `a9b41d137de64a21c3174f21ff6a5f0c4e036ca040b27c27ed9ba4bb890f3768` | 8,106 | DMTF 2022.x | Version served by the pinned DMTF mockup fixture (emulator pins `#SessionService.v1_1_8.SessionService`, SessionTimeout=30) — DOCS-12 |
+| `redfish/schemas/v1/Manager.v1_25_0.json` | https://redfish.dmtf.org/schemas/v1/Manager.v1_25_0.json | 2026-10-23 08:10 | `8c25ce19275b23715d32dd8565f377fc8a57ff2e6553b311397c907993e0b002` | 73,719 | DMTF 2026.2 | Newest versioned Manager defs (GraphicalConsole, SerialConsole, DateTimeSource, SecurityMode...) — DOCS-12 |
+| `redfish/schemas/v1/Manager.v1_19_0.json` | https://redfish.dmtf.org/schemas/v1/Manager.v1_19_0.json | 2026-10-23 08:10 | `614aa8139d03cdbfe6746ea66bcfa7876bb91ae3cba980f30de067dd3daa15d4` | 62,336 | DMTF 2023.x | Version served by the pinned DMTF mockup fixture (emulator pins `#Manager.v1_19_0.Manager`) — DOCS-12 |
+| `redfish/schemas/v1/Power.v1_7_3.json` | https://redfish.dmtf.org/schemas/v1/Power.v1_7_3.json | 2026-10-23 08:10 | `b952d8d535dc0f7f6ec2a663bf75fc8664e0e861ca2f3b008c19a7029d4416be` | 64,130 | DMTF 2026.2 | Newest versioned Power defs (PowerControl, Redundancy, Voltages...) — DOCS-12 |
+| `redfish/schemas/v1/Power.v1_7_2.json` | https://redfish.dmtf.org/schemas/v1/Power.v1_7_2.json | 2026-10-23 08:10 | `58d2873de1ca54fb7bbecb0c7590e4d73e0ba6fdf7df31bd26ab80d9774890a8` | 64,038 | DMTF 2023.x | Version served by the pinned DMTF mockup fixture (emulator pins `#Power.v1_7_2.Power`) — DOCS-12 |
+| `redfish/schemas/v1/Thermal.v1_7_3.json` | https://redfish.dmtf.org/schemas/v1/Thermal.v1_7_3.json | 2026-10-23 08:10 | `4ed660f95f9b69750c46d14e85c7ed55b80a21ea5052cfa57399f9f7ebcecbf9` | 44,362 | DMTF 2026.2 | Newest versioned Thermal defs (Temperatures, Fans, Redundancy...) — DOCS-12 |
+| `redfish/schemas/v1/Thermal.v1_7_2.json` | https://redfish.dmtf.org/schemas/v1/Thermal.v1_7_2.json | 2026-10-23 08:10 | `342c69b50ad4ff050771a0f45e13a177e482422814e08a78dc2335911a0eba9e` | 44,238 | DMTF 2023.x | Version served by the pinned DMTF mockup fixture (emulator pins `#Thermal.v1_7_2.Thermal`) — DOCS-12 |
 
 ### Downloaded schema set (16 base aggregator files)
 
@@ -65,6 +77,13 @@ DOCS-10 added the `Task` resource to the corpus: `Task.json` (aggregator) +
 DSP0266 §12.2 asynchronous-operations contract (`TaskState`,
 `PercentComplete`, `TaskMonitor`, `CompletedTaskOverWritePolicy`, …) is
 traceable to schema definitions.
+
+DOCS-12 (2026-10-23) added the missing **versioned** definitions for the six
+families that were aggregator-only in the external mirror — `UpdateService`
+(v1_17_1 newest + v1_13_0 mockup-served), `EventService` (v1_12_0 + v1_10_1),
+`SessionService` (v1_2_0 + v1_1_8), `Manager` (v1_25_0 + v1_19_0), `Power`
+(v1_7_3 + v1_7_2), `Thermal` (v1_7_3 + v1_7_2). See the DOCS-12 section below
+and the manifest rows.
 
 ### DOCS-2 refresh (2026-10-22 21:51 UTC) — versioned schemas now current
 
@@ -123,6 +142,45 @@ into `test/fixtures/redfish/schemas/` so the fixture snapshot and the external
 corpus stay consistent (DOCS-2 precedent). SHA-256s verified via `sha256sum`
 after download; manifest rows above. All upstream anchors re-verified during
 this run: bmcweb `27e0930b`, mockup `23d21f9a`, DSP0266 1.25.0, schema index —
+
+### DOCS-12 six-family versioned mirror (2026-10-23 08:10 UTC)
+
+Closed the remaining "aggregator-only" corpus gap for the six client-mapped
+families that still had **no versioned definitions** in the external mirror
+(`UpdateService`, `EventService`, `SessionService`, `Manager`, `Power`,
+`Thermal`). Mirrored both the **newest** versioned file (what the aggregator
+`$ref`s) and the **mockup-served** version (what the pinned `23d21f9a` fixture
+actually publishes) for each — the DOCS-11 LogEntry precedent (newest +
+mockup-served + fixture provenance).
+
+Downloaded 12 files, 553,772 bytes total (inside the DOCS-6 budget):
+`UpdateService.v1_17_1` + `.v1_13_0`, `EventService.v1_12_0` + `.v1_10_1`,
+`SessionService.v1_2_0` + `.v1_1_8`, `Manager.v1_25_0` + `.v1_19_0`,
+`Power.v1_7_3` + `.v1_7_2`, `Thermal.v1_7_3` + `.v1_7_2`.
+
+The six **mockup-served** versions (`UpdateService.v1_13_0`,
+`EventService.v1_10_1`, `SessionService.v1_1_8`, `Manager.v1_19_0`,
+`Power.v1_7_2`, `Thermal.v1_7_2`) were also copied into
+`test/fixtures/redfish/schemas/` — the fixture snapshot now has a versioned
+schema for every `@odata.type` the mockup publishes (the six **newest**
+versions already existed in the fixture, byte-identical to upstream — verified
+by SHA-256 during this run, e.g. `UpdateService.v1_17_1`,
+`Manager.v1_25_0`).
+
+SHA-256s verified via `sha256sum` after download; manifest rows above. Notable
+newest-vs-mockup-served property deltas (audited, no client code change needed
+this run — recorded in `REQUIREMENTS.md` "DOCS-12"):
+
+| Family | Newest adds vs mockup-served | Client impact |
+|---|---|---|
+| `UpdateService.v1_17_1` | `LocalImageStore*` (local image repository), `Stage`/`Activate` actions, `UpdateServiceCapabilities` | none now — #008/#020 push flow uses `HttpPushUri`/`MultipartHttpPushUri` (already parsed) |
+| `EventService.v1_12_0` | `OriginResourcesSupported`, `SSEIncludeOriginOfConditionSupported` | none — events out-of-scope (DOCS-7) |
+| `SessionService.v1_2_0` | `AbsoluteSessionTimeout`, `AbsoluteSessionTimeoutEnabled` | #015 session expiry could honor absolute timeout when published |
+| `Manager.v1_25_0` | `SecurityMode`/`OEMSecurityMode`/`ReadyToRemove`/`DateTimeSource`, `#Manager.UpdateSecurityMode` | none — KVM detection unchanged |
+| `Power.v1_7_3` / `Thermal.v1_7_3` | no property deltas (2026.2 release notes only) | none |
+
+REQUIREMENTS.md rows now cite the real mirrored versioned files for these six
+families (previously they cited fixture files or bare aggregators).
 no version advanced for the other tracked families.
 
 ### DOCS-9 upstream-freshness re-check (2026-10-23 06:05 UTC)
