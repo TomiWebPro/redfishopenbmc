@@ -62,8 +62,27 @@ documentations/external/
 | `redfish/schemas/v1/Power.v1_7_2.json` | https://redfish.dmtf.org/schemas/v1/Power.v1_7_2.json | 2026-10-23 08:10 | `58d2873de1ca54fb7bbecb0c7590e4d73e0ba6fdf7df31bd26ab80d9774890a8` | 64,038 | DMTF 2023.x | Version served by the pinned DMTF mockup fixture (emulator pins `#Power.v1_7_2.Power`) — DOCS-12 |
 | `redfish/schemas/v1/Thermal.v1_7_3.json` | https://redfish.dmtf.org/schemas/v1/Thermal.v1_7_3.json | 2026-10-23 08:10 | `4ed660f95f9b69750c46d14e85c7ed55b80a21ea5052cfa57399f9f7ebcecbf9` | 44,362 | DMTF 2026.2 | Newest versioned Thermal defs (Temperatures, Fans, Redundancy...) — DOCS-12 |
 | `redfish/schemas/v1/Thermal.v1_7_2.json` | https://redfish.dmtf.org/schemas/v1/Thermal.v1_7_2.json | 2026-10-23 08:10 | `342c69b50ad4ff050771a0f45e13a177e482422814e08a78dc2335911a0eba9e` | 44,238 | DMTF 2023.x | Version served by the pinned DMTF mockup fixture (emulator pins `#Thermal.v1_7_2.Thermal`) — DOCS-12 |
+| `redfish/schemas/v1/Session.json` | https://redfish.dmtf.org/schemas/v1/Session.json | 2026-10-23 12:38 | `7d5351611865cf26955d83a8ea3b653c78e9fbdebdd5cba5ad7b20305e2cd192` | 2,497 | latest per aggregator | Session resource aggregator (X-Auth-Token/UserName/Password, session-lifetime contract) — DOCS-13 |
+| `redfish/schemas/v1/Session.v1_9_0.json` | https://redfish.dmtf.org/schemas/v1/Session.v1_9_0.json | 2026-10-23 12:38 | `abf6d08a8e401c3396d8e972e62fdf920e8a06bed9691dd4efc1a8033a95ab40` | 18,500 | DMTF 2026.2 | Newest versioned Session defs — DOCS-13 |
+| `redfish/schemas/v1/Session.v1_7_1.json` | https://redfish.dmtf.org/schemas/v1/Session.v1_7_1.json | 2026-10-23 12:38 | `d319694c2852f8df63f02363304808c4fdd671d82a98ccce6725294e0e0c9352` | 17,249 | DMTF 2024.x | Version served by the pinned DMTF mockup fixture (emulator pins `#Session.v1_7_1.Session` session lifecycle) — DOCS-13 |
+| `redfish/schemas/v1/ManagerAccount.json` | https://redfish.dmtf.org/schemas/v1/ManagerAccount.json | 2026-10-23 12:38 | `873bf48a4221ac3e3bb86d4cef61b9959f4b1aa6bd5967ed0c81d8fde6e72859` | 7,419 | latest per aggregator | ManagerAccount (user account) aggregator — DOCS-13 |
+| `redfish/schemas/v1/ManagerAccount.v1_14_2.json` | https://redfish.dmtf.org/schemas/v1/ManagerAccount.v1_14_2.json | 2026-10-23 12:38 | `c6ccbaf3e4fec96510d74b2eaa6a8c5d1fa02902b8dc0ec8c475a299dd6c92ae` | 40,947 | DMTF 2026.2 | Newest versioned ManagerAccount defs (UserName/RoleId/Enabled/Password/AccountTypes) — DOCS-13 |
+| `redfish/schemas/v1/ManagerAccount.v1_12_0.json` | https://redfish.dmtf.org/schemas/v1/ManagerAccount.v1_12_0.json | 2026-10-23 12:38 | `12d1cbc39afe30dc790fc803f985aadafa47c8e39c81221b1dc95fa9eef0cda0` | 33,171 | DMTF 2023.x | Version served by the pinned DMTF mockup fixture (emulator pins `#ManagerAccount.v1_12_0.ManagerAccount` Accounts surface) — DOCS-13 |
+| `redfish/schemas/v1/Role.json` | https://redfish.dmtf.org/schemas/v1/Role.json | 2026-10-23 12:38 | `3242a2b9f7e2c49f489ffade1f7b6a7146d84f4245748d6c90b6f85ec637b658` | 1,656 | latest per aggregator | Role resource aggregator — DOCS-13 |
+| `redfish/schemas/v1/Role.v1_3_3.json` | https://redfish.dmtf.org/schemas/v1/Role.v1_3_3.json | 2026-10-23 12:38 | `c22d150cc01664c21234e70f47b7579847f23d6876631c3c7d6952851603eff4` | 8,921 | DMTF 2026.2 | Newest versioned Role defs (RoleId/AssignedPrivileges/OemPrivileges) — DOCS-13 |
+| `redfish/schemas/v1/Role.v1_3_1.json` | https://redfish.dmtf.org/schemas/v1/Role.v1_3_1.json | 2026-10-23 12:38 | `d6387251724c4d1c5d3a25385481911f9626ea5a4ac582de472bdba1c079e6ad` | 8,785 | DMTF 2023.x | Version served by the pinned DMTF mockup fixture (emulator pins `#Role.v1_3_1.Role` Roles surface) — DOCS-13 |
+| `redfish/schemas/v1/ManagerNetworkProtocol.json` | https://redfish.dmtf.org/schemas/v1/ManagerNetworkProtocol.json | 2026-10-23 12:38 | `350a49ec74becc5d00cfe2c041624037115d6c158f8c716b89bf51cf11ef91a7` | 3,683 | latest per aggregator | ManagerNetworkProtocol aggregator (KVMIP/SSH/HTTPS endpoints) — DOCS-13 |
+| `redfish/schemas/v1/ManagerNetworkProtocol.v1_14_0.json` | https://redfish.dmtf.org/schemas/v1/ManagerNetworkProtocol.v1_14_0.json | 2026-10-23 12:38 | `ece08d46c966f57208a41a41c5878a1a0c472c809a718999f177420a05a65234` | 68,645 | DMTF 2026.2 | Newest versioned ManagerNetworkProtocol defs — DOCS-13 |
+| `redfish/schemas/v1/ManagerNetworkProtocol.v1_10_0.json` | https://redfish.dmtf.org/schemas/v1/ManagerNetworkProtocol.v1_10_0.json | 2026-10-23 12:38 | `23388f641fcab3393d1d54e8f449f0a46bda822fb29edc4150bbf64877ffc43a` | 50,900 | DMTF 2023.x | Version served by the pinned DMTF mockup fixture (emulator pins `#ManagerNetworkProtocol.v1_10_0.ManagerNetworkProtocol` KVMIP/HTTPS/SSH endpoints — 11:39 run) — DOCS-13 |
+| `redfish/schemas/v1/ActionInfo.json` | https://redfish.dmtf.org/schemas/v1/ActionInfo.json | 2026-10-23 12:38 | `cbe1ab23c5693ae433dc8e8a69f064cc6debff9f77a5c4e1cac19d4c02f282e3` | 3,796 | latest per aggregator | ActionInfo aggregator (Parameters/AllowableValues — bmcweb `ResetActionInfo`) — DOCS-13 |
+| `redfish/schemas/v1/ActionInfo.v1_6_0.json` | https://redfish.dmtf.org/schemas/v1/ActionInfo.v1_6_0.json | 2026-10-23 12:38 | `77fbb308be4d21cfd454c692a11c8545a4d06d90eae6c2203a379f9cb93b9af2` | 15,229 | DMTF 2026.2 | Newest versioned ActionInfo defs (Parameters AllowableValues + Required, ActionCapabilities) — DOCS-13 |
+| `redfish/schemas/v1/ActionInfo.v1_4_1.json` | https://redfish.dmtf.org/schemas/v1/ActionInfo.v1_4_1.json | 2026-10-23 12:38 | `ddbd7b4d0e8dd6db226969d867eda42a10ecc889c61c55aa91d20da6fd6eecc3` | 13,340 | DMTF 2023.x | Version served by the pinned DMTF mockup fixture (emulator pins `#ActionInfo.v1_4_1.ActionInfo`) — DOCS-13 |
+| `redfish/schemas/v1/ServiceRoot.v1_22_0.json` | https://redfish.dmtf.org/schemas/v1/ServiceRoot.v1_22_0.json | 2026-10-23 12:38 | `42fbd21cd81839129ae43647a3ec5b52ade95bc8630378e7340d689a55d4f998` | 38,857 | DMTF 2026.2 | Newest versioned ServiceRoot defs (ProtocolFeaturesSupported/Expand/Excerpt/SSE…) — DOCS-13 |
+| `redfish/schemas/v1/ServiceRoot.v1_16_1.json` | https://redfish.dmtf.org/schemas/v1/ServiceRoot.v1_16_1.json | 2026-10-23 12:38 | `d8dbb8748ec06e43c03a972e0f7d398286fe95ea908f9b184e8d5a8da391b519` | 33,397 | DMTF 2023.x | Version served by the pinned DMTF mockup fixture (emulator pins `#ServiceRoot.v1_16_1.ServiceRoot` discovery) — DOCS-13 |
+| `redfish/schemas/v1/Task.v1_7_3.json` | https://redfish.dmtf.org/schemas/v1/Task.v1_7_3.json | 2026-10-23 12:38 | `543f48ea207844f06cf1656d81d3b814ba54e2b6bc4b8c5859d316607331ccaf` | 21,070 | DMTF 2023.x | Version served by the pinned DMTF mockup fixture (emulator pins `#Task.v1_7_3.Task` resource — 09:14 run) — DOCS-13 |
+| `redfish/schemas/v1/TaskService.v1_2_0.json` | https://redfish.dmtf.org/schemas/v1/TaskService.v1_2_0.json | 2026-10-23 12:38 | `18bc5f213b16e8d5fffc6b045e1d308a6553d865dc8b20a487ceb41ed298f519` | 9,510 | DMTF 2022.x | Version served by the pinned DMTF mockup fixture (emulator pins `#TaskService.v1_2_0.TaskService`) — DOCS-13 |
 
-### Downloaded schema set (16 base aggregator files)
+### Downloaded schema set (21 base aggregator files)
 
 `ServiceRoot`, `ComputerSystem`, `Chassis`, `Sensor`, `Power`, `Thermal`,
 `SessionService`, `AccountService`, `UpdateService`, `SoftwareInventory`,
@@ -71,6 +90,14 @@ documentations/external/
 `MessageRegistry`. Each bare `<Name>.json` is the DMTF "latest" aggregator that
 `$ref`s the newest versioned definitions; SHA-256 hashes are listed in the
 run notes in `automation-tracking.md`.
+
+DOCS-13 (2026-10-23) extended the corpus with the five remaining client-relevant
+resource families: `Session`, `ManagerAccount`, `Role`, `ManagerNetworkProtocol`,
+`ActionInfo` (aggregator + newest versioned + mockup-served version each, see
+manifest rows), plus versioned `ServiceRoot` (`v1_22_0` newest + `v1_16_1`
+mockup-served) and the mockup-served `Task.v1_7_3` / `TaskService.v1_2_0`
+(which the pinned fixture publishes — DOCS-10 had mirrored only the newest
+`Task.v1_7_4` / `TaskService.v1_2_1`).
 
 DOCS-10 added the `Task` resource to the corpus: `Task.json` (aggregator) +
 `Task.v1_7_4.json` + `TaskService.v1_2_1.json` (see manifest rows above) so the
@@ -105,7 +132,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-23 07:40 UTC — DOCS-11 LogEntry mirror; DOCS-9 re-check 2026-10-23 06:05 UTC; schema index probed again 2026-10-23 04:05 UTC — DOCS-10 Task addition)
+## Current upstream anchors (verified 2026-10-23 12:40 UTC — DOCS-13 auth/network/ActionInfo corpus mirror; prior: DOCS-11/12 re-check 07:40/08:10 UTC)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing)
@@ -113,7 +140,7 @@ redirection), so no fixture referencing a specific version is affected.
   (1.24 MB, linked from the hub at `DSP0266_1.25.0.pdf`; probe of `DSP0266_1.26.0.pdf`
   → 404 — 1.25.0 is still the current release)
 - Redfish Mockup Server — <https://github.com/DMTF/Redfish-Mockup-Server>
-  (master `23d21f9a` — unchanged; README saved to `redfish/mockup/`)
+  (default branch `main` @ `23d21f9a` — unchanged; README saved to `redfish/mockup/`)
 - OpenBMC bmcweb docs — <https://github.com/openbmc/bmcweb/tree/master/docs>
   (master `27e0930b`, was `0128851e`; Redfish.md, REDFISH_CHECKLIST.md,
   OEM_SCHEMAS.md, CLIENTS.md saved; the three original docs are byte-identical
@@ -182,6 +209,46 @@ this run — recorded in `REQUIREMENTS.md` "DOCS-12"):
 REQUIREMENTS.md rows now cite the real mirrored versioned files for these six
 families (previously they cited fixture files or bare aggregators).
 no version advanced for the other tracked families.
+
+### DOCS-13 auth/network/ActionInfo corpus mirror (2026-10-23 12:38 UTC)
+
+Closed the corpus gap for the resources the **emulator pins but the reference
+corpus had no versioned definitions for**: the auth surface (`Session`,
+`ManagerAccount`, `Role` — exercised by the session-lifecycle + Accounts/Roles
+emulator tests and the #015/#017/#026 auth work), the Manager **network
+surface** (`ManagerNetworkProtocol` — the 11:39 run pins its KVMIP/HTTPS/SSH
+endpoints for the #009/#021 console renderer), **`ActionInfo`** (bmcweb's
+`ResetActionInfo` — the allow-list source for #022/#016), and versioned
+`ServiceRoot` (the discovery contract for #018). Also completed the Task-family
+provenance: the pinned mockup serves `#Task.v1_7_3.Task` and
+`#TaskService.v1_2_0.TaskService`, but DOCS-10 had mirrored only the newest
+`Task.v1_7_4` / `TaskService.v1_2_1` — the served versions are now mirrored too.
+
+Downloaded 19 files, **397,572 bytes total** (inside the DOCS-6 budget), all
+probed 200 from `redfish.dmtf.org/schemas/v1/` with a browser UA; SHA-256s
+verified via `sha256sum` and recorded in the manifest. For each of the six
+families: aggregator + **newest** versioned (what the aggregator `$ref`s) +
+**mockup-served** version (what the fixture publishes) — the DOCS-11/12
+precedent.
+
+The six **mockup-served** versions (`Session.v1_7_1`, `ManagerAccount.v1_12_0`,
+`Role.v1_3_1`, `ManagerNetworkProtocol.v1_10_0`, `ActionInfo.v1_4_1`,
+`ServiceRoot.v1_16_1`) **plus** `Task.v1_7_3` / `TaskService.v1_2_0` were copied
+into `test/fixtures/redfish/schemas/` — every `@odata.type` the pinned mockup
+publishes for these client-relevant families now has a versioned schema in the
+fixture snapshot.
+
+Notable newest-vs-mockup-served property deltas (audited in REQUIREMENTS.md
+"DOCS-13"; no client code change needed this run):
+
+| Family | Newest vs mockup-served | Client impact |
+|---|---|---|
+| `Session.v1_9_0` | adds `OriginOfSession`, `SessionType*, ``OemSessionPolicy*`-ish expansion | #015: token/session model fields; no field the current code reads changed |
+| `ManagerAccount.v1_14_2` | `PasswordExpiration`, `RemoteRole`, `StrictAccountTypes`-era account types | #015/#026 auth negotiation context only |
+| `Role.v1_3_3` | no property deltas vs v1_3_1 (release-notes only) | none |
+| `ManagerNetworkProtocol.v1_14_0` | adds `NTPProtocolEnabled`, `NTPservers[]`, `Kerberos*` | #009/#021 console endpoint resolution unchanged (KVMIP stable) |
+| `ActionInfo.v1_6_0` | adds `ActionCapabilities` (Action supported/stateful), `Parameters.AllowableValueDescriptions` + `Required` | #022/#016: bmcweb `ResetActionInfo` `Parameters/AllowableValues` unchanged |
+| `ServiceRoot.v1_22_0` | adds `Tasks` link, `SessionService` changes-era links, `ProtocolFeaturesSupported` unchanged locations | #018: discovery query-capability surface (Expand/Excerpt/Filter/Select) stable |
 
 ### DOCS-9 upstream-freshness re-check (2026-10-23 06:05 UTC)
 

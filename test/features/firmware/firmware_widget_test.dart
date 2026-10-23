@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53,6 +55,14 @@ class _FlakyFirmwareService extends FakeFirmwareService {
     }
     return info ?? const UpdateServiceInfo();
   }
+}
+
+/// A [FirmwareService] double that never completes — the in-flight shape the
+/// header's loading semantics describe.
+class _NeverCompletingFirmwareService extends FakeFirmwareService {
+  @override
+  Future<UpdateServiceInfo> fetchUpdateService() =>
+      Completer<UpdateServiceInfo>().future;
 }
 
 SystemHandle makeHandle({required bool firmwareUpdate}) {
@@ -121,6 +131,68 @@ void main() {
       await tester.pumpAndSettle();
       // The loaded version string should appear in the inventory card.
       expect(find.textContaining('3.2.1'), findsWidgets);
+    });
+
+    testWidgets(
+        'header announces one merged semantics label with the loading state '
+        '(UI-2)', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: _NeverCompletingFirmwareService(),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      // The post-frame auto-load starts; the fetch never completes, so the
+      // header stays in the in-flight state with the merged semantics label.
+      await tester.pump();
+      expect(
+        find.bySemanticsLabel('Firmware and update management, loading'),
+        findsOneWidget,
+      );
+      // The visible title text still renders for sighted users.
+      expect(find.text('Firmware & update management'), findsOneWidget);
+    });
+
+    testWidgets('header announces one merged semantics label when idle (UI-2)',
+        (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(
+          info: const UpdateServiceInfo(
+            serviceEnabled: true,
+            version: '9.9.9',
+            inventory: <FirmwareInventoryItem>[
+              FirmwareInventoryItem(id: 'BMC', version: '9.9.9'),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Idle header announces as one concise node without a status suffix.
+      expect(
+        find.bySemanticsLabel('Firmware and update management'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Firmware and update management, loading'),
+        findsNothing,
+      );
     });
 
     testWidgets('inventory card exposes a merged accessibility label (UI-2)',

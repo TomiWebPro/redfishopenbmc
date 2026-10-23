@@ -7,38 +7,32 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 (EMULATOR run — **EMU-2 suite 32 → 34 tests**:
-  Manager **NetworkProtocol** + **EthernetInterfaces** surface pinned —
-  KVMIP/SSH/HTTPS service endpoints (KVMIP port 5288, the #009/#021 console
-  renderer's endpoint source) + NIC MAC/IP/VLAN fields; REQUIREMENTS.md
-  test-platform note updated to 34; UI-2 increment: **OverviewView
-  HealthBanner merged semantics label** (`Health: <state>` as one node) +
-  widget test)
-- **Current focus:** DOCS-12 done (versioned corpus now complete for all 16
-  client-mapped families — aggregator + newest + mockup-served provenance);
-  EMULATOR suite at **32 tests** (Task resource contract pin, 09:14 run — the
-  #008/#020 task poller now has its full parse surface
-  pinned: TaskState/TaskStatus/Messages/absent-PercentComplete, plus
-  TaskService policy fields; OverviewService end-to-end hydration #006 and the
-  LogService/LogEntry collection contract incl. ClearLog + `@odata.nextLink`
-  pinned 06:10 run); DOCS-10 done (Task resource corpus + DSP0266 §12.2
-  task-monitor contract audit — `UpdateTask` now carries the optional 202
-  `Retry-After` poll hint); DOCS-11 done (LogEntry corpus mirror); DOCS-9
-  freshness re-check done (no anchors moved; corpus current); DOCS-2 schema
-  refresh done (ComputerSystem/Chassis v1_29_0, Sensor v1_14_0,
-  AccountService v1_19_0, EthernetInterface v1_12_6, SoftwareInventory
-  v1_15_0); UI-3 fully done (all views covered); **UI-1 done** (dashboard
-  error summary + Retry); **UI-2 increments** (InfoCard merged header semantics,
-  06:10 run; SystemCard merged header semantics, 07:xx run; KvmConsole card
-  header merged semantics, 09:14 run; PowerView card header merged semantics,
-  10:34 run; **OverviewView HealthBanner merged semantics label
-  (`Health: <state>`), 11:39 run** — remaining UI-2: FirmwareView
-  header row, dialog touch-targets); next P1: #015 (AuthManager) — emulator
-  now pins the full session contract + the AccountService surface + overview
-  hydration (+ Manager NetworkProtocol/EthernetInterfaces surface, 11:39);
-  #016/#022 (ActionInfo/etag) or #008/#020 (HTTP-push firmware,
-  Tasks URI + push apply-time modes + both push URIs + SimpleUpdateActionInfo +
-  LogEntry collection + **Task resource**) all have emulator assertions
+- **Last updated:** 2026-10-23 (DOCS run — **DOCS-13 auth/network/ActionInfo
+  corpus mirror**: 19 files / 397,572 bytes for the emulator-pinned-but-
+  unmirrored resources — `Session`/`ManagerAccount`/`Role` (auth surface #015/
+  #017/#026), `ManagerNetworkProtocol` (KVMIP/HTTPS/SSH endpoints for #009/#021),
+  `ActionInfo` (ResetActionInfo allow-list for #022/#016), versioned
+  `ServiceRoot` (#018) + mockup-served `Task.v1_7_3`/`TaskService.v1_2_0`;
+  REQUIREMENTS.md DOCS-13 audit table; anchors re-verified unchanged
+  (bmcweb `27e0930b`, mockup `23d21f9a`, DSP0266 1.25.0); **UI-2 increment:
+  FirmwareView header row merged semantics label** (`Firmware and update
+  management[, loading]`) + 2 widget tests — remaining UI-2: dialog
+  touch-targets)
+- **Current focus:** DOCS-13 done (auth/network/ActionInfo corpus mirror —
+  Session/ManagerAccount/Role/ManagerNetworkProtocol/ActionInfo/ServiceRoot
+  versioned defs + Task/TaskService mockup-served versions; REQUIREMENTS.md
+  DOCS-13 audit; no code change needed); DOCS-12 done (versioned corpus
+  complete for all 16 client-mapped families — aggregator + newest +
+  mockup-served provenance); EMULATOR suite at **34 tests** (Task resource
+  contract pin, 09:14 run — the #008/#020 task poller has its full parse
+  surface pinned; Manager NetworkProtocol/EthernetInterfaces surface, 11:39
+  run; OverviewService end-to-end hydration #006 and the LogService/LogEntry
+  collection contract incl. ClearLog + `@odata.nextLink` pinned 06:10 run);
+  DOCS-10/11 done (Task + LogEntry corpus mirrors); next P1: #015
+  (AuthManager) — emulator pins the full session contract + the AccountService
+  surface, and the Session/ManagerAccount/Role schemas are now mirrored
+  (#015/#017/#026); #022/#016: `ResetActionInfo` ActionInfo allow-list fallback
+  contract now mirrored + emulator-pinned
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -160,6 +154,24 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `LocalImageStore*`/`Stage`/`Activate` (note for #008/#020), `Manager
       v1_25_0` adds `SecurityMode`/`ReadyToRemove`, Power/Thermal no deltas —
       no client code change this run)
+- [x] **DOCS-13** Mirror the versioned definitions for the six remaining
+      client-relevant resources the pinned mockup serves / the emulator pins but
+      the external corpus had no versioned defs for: `Session`
+      (`v1_9_0` newest + `v1_7_1` mockup-served — auth surface #015/#017/#026),
+      `ManagerAccount` (`v1_14_2` + `v1_12_0`), `Role` (`v1_3_3` + `v1_3_1`),
+      `ManagerNetworkProtocol` (`v1_14_0` + `v1_10_0` — KVMIP/HTTPS/SSH console
+      endpoints for #009/#021), `ActionInfo` (`v1_6_0` + `v1_4_1` — bmcweb
+      `ResetActionInfo` allow-list source for #022/#016), `ServiceRoot`
+      (`v1_22_0` + `v1_16_1` — discovery contract for #018), plus the
+      mockup-served `Task.v1_7_3`/`TaskService.v1_2_0` (DOCS-10 had mirrored
+      only the newest). (run 2026-10-23 — 19 files, 397,572 bytes total,
+      inside the DOCS-6 budget; manifest rows + SHA-256s verified; the eight
+      mockup-served versions also copied into `test/fixtures/redfish/schemas/`
+      so every `@odata.type` the mockup publishes for these families has a
+      versioned schema in the fixture; REQUIREMENTS.md DOCS-13 audit table +
+      Trace-notes count 16 → 21; audited newest-vs-served deltas — no client
+      code change needed; upstream anchors re-verified: bmcweb `27e0930b`,
+      mockup `23d21f9a`, DSP0266 1.25.0, schema index 200 OK)
 
 ## P1 — emulator and integration tests
 
@@ -351,7 +363,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       merged node; OverviewView HealthBanner merged semantics label
       (`Health: <state>`) done 2026-10-23 11:39 — Semantics(container +
       excludeSemantics) wraps the icon+label row, widget test asserts the
-      merged node + visible text; extend to
+      merged node + visible text; FirmwareView header row merged semantics
+      label (`Firmware and update management[, loading]`) done 2026-10-23 —
+      Semantics wraps the title+in-flight-spinner row, widget tests for both
+      the loading and idle states; extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.

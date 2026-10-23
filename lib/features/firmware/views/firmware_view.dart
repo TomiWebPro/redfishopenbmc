@@ -78,19 +78,31 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        'Firmware & update management',
-                        style: Theme.of(context).textTheme.titleLarge,
+                // UI-2: the header row announces as ONE merged semantics node
+                // (title + in-flight spinner), same pattern as the
+                // SystemCard/InfoCard/KVM/PowerView/HealthBanner headers. The
+                // CircularProgressIndicator otherwise announces a bare
+                // progress node next to the title.
+                Semantics(
+                  container: true,
+                  excludeSemantics: true,
+                  label: ui.loading
+                      ? 'Firmware and update management, loading'
+                      : 'Firmware and update management',
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          'Firmware & update management',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
                       ),
-                    ),
-                    if (ui.loading)
-                      const SizedBox.square(
-                          dimension: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2)),
-                  ],
+                      if (ui.loading)
+                        const SizedBox.square(
+                            dimension: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2)),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 4),
                 _ServiceSummary(info: ui.info),

@@ -1174,3 +1174,74 @@ Append-only run log for the `redfish-automation` scheduler job.
   address` — no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no
   SSH key on this machine. Local commits kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **40** (38 before this run + 2).
+
+## 2026-10-23 12:50 — DOCS (auth/network/ActionInfo corpus mirror) + UI-2 FirmwareView header
+
+- **Baseline:** analyze 0; tests 289 passed / 1 skipped; starting commit c51363b
+  (branch `main` ahead 41 of origin); issues validate OK; working tree clean.
+- **Primary work:** DOCS — closed the corpus gap for the **emulator-pinned but
+  unmirrored** resources: the auth surface (`Session`, `ManagerAccount`, `Role` —
+  the session-lifecycle + Accounts/Roles emulator pins and the #015/#017/#026
+  work), the Manager **network surface** (`ManagerNetworkProtocol` — the 11:39
+  run pins its KVMIP/HTTPS/SSH endpoints for the #009/#021 console renderer),
+  **`ActionInfo`** (bmcweb's `ResetActionInfo` — the #022/#016 allow-list
+  source), and versioned `ServiceRoot` (the #018 discovery contract). Also
+  completed the Task-family provenance: the pinned mockup serves
+  `#Task.v1_7_3.Task` + `#TaskService.v1_2_0.TaskService`, which DOCS-10 had
+  not mirrored (only the newest v1_7_4/v1_2_1). Mirrored, per family, the
+  aggregator + **newest** versioned file (what the aggregator `$ref`s) + the
+  **mockup-served** version (what the pinned `23d21f9a` fixture publishes as
+  `@odata.type`) — the DOCS-11/12 precedent.
+- **Docs:** 19 files, 397,572 bytes total (inside the DOCS-6 50 MB budget), all
+  probed 200 from `redfish.dmtf.org/schemas/v1/` with a browser UA; SHA-256s
+  verified and recorded in `documentations/external/README.md` manifest rows +
+  a new "DOCS-13" section (newest-vs-served deltas audited: Session v1_9_0
+  expands session-type/OEM fields, ManagerAccount v1_14_2 adds
+  PasswordExpiration/RemoteRole/account-types, Role v1_3_3 no deltas,
+  ManagerNetworkProtocol v1_14_0 adds NTP* + Kerberos*, ActionInfo v1_6_0 adds
+  ActionCapabilities + AllowableValueDescriptions, ServiceRoot v1_22_0 adds
+  Tasks — **no client code change needed**). `REQUIREMENTS.md` got a DOCS-13
+  audit table (7 rows traced to code/tests/status) + updated "Last audited" +
+  Trace-notes aggregator count 16 → 21; `documentations/redfish_reference/
+  README.md` notes the DOCS-13 fixture additions. Upstream anchors re-verified:
+  bmcweb `27e0930b` (GitHub API), mockup default-branch `main` @ `23d21f9a`
+  (GitHub API), DSP0266 1.25.0 still latest (1.26.0 → 404), live schema index
+  200 OK — no anchor moved. The six mockup-served versions +
+  `Task.v1_7_3`/`TaskService.v1_2_0` copied into `test/fixtures/redfish/
+  schemas/` — every `@odata.type` the mockup publishes for these
+  client-relevant families now has a versioned schema in the fixture.
+- **Emulator:** none this run — no emulator code touched; the fixture `schemas/`
+  additions are provenance JSON only (the emulator suite reads `dmtf_mockup`,
+  not `schemas/`); pin `23d21f9a` re-verified unchanged upstream.
+- **Code/tests:** UI-2 increment only — `FirmwareView` header row (title +
+  in-flight spinner) now announces as **one merged semantics node**
+  (`Semantics(container: true, excludeSemantics: true, label: 'Firmware and
+  update management[, loading]')`), the same pattern as the
+  SystemCard/InfoCard/KVM/PowerView/HealthBanner headers; the visible
+  "Firmware & update management" text remains for sighted users (no a11y
+  regression). Two new widget tests in `test/features/firmware/
+  firmware_widget_test.dart`: loading-state label via a never-completing
+  service double, and the idle label (asserting the loading suffix is absent
+  once settled). No production logic change; no issue status change; no new
+  dependencies.
+- **UI:** FirmwareView header row merged semantics label (UI-2). Rationale: the
+  firmware screen's header was the last primary card header without the merged
+  pattern — the loading spinner otherwise announced as a bare progress node
+  next to the title. Remaining UI-2: dialog touch-targets. Widget tests cover
+  both header states; all existing FirmwareView tests still pass.
+- **Verification:** analyze 0; tests 291 passed / 1 skipped (baseline 289 →
+  +2: the two FirmwareView header semantics tests); issues validate OK;
+  `git diff --check` clean; secret scan clean (no tokens/creds in diff —
+  new files are public DMTF schemas). Formatted only the 2 touched Dart files
+  (no repo-wide churn — prior-run precedent).
+- **Commit:** <PENDING> — pushed: no (expected — no GitHub credentials on this
+  machine; recorded, not retried).
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager (authMethod dispatch, safe logout URI,
+  token rehydrate, SessionTimeout expiry — the Session/ManagerAccount/Role
+  schemas are now mirrored, incl. `Session.v1_9_0.json` +
+  `SessionService.v1_2_0.json` AbsoluteSessionTimeout* per DOCS-12/13);
+  implement unit-level with the in-process mock server; 3) #022/#016: add the
+  `ResetActionInfo` (ActionInfo `Parameters/AllowableValues`) fallback to
+  `FeatureRules.supportedResetTypes` — the contract is now mirrored
+  (`ActionInfo.v1_6_0.json` newest + v1_4_1 mockup-served) and emulator-pinned.

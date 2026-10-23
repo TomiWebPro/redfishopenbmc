@@ -51,6 +51,13 @@ source code. The raw API payloads that back every example here live under
     `SessionService.v1_1_8.json`, `Manager.v1_19_0.json`,
     `Power.v1_7_2.json`, `Thermal.v1_7_2.json`. The newest versions for these
     families were already present and verified byte-identical to upstream.
+  - DOCS-13 additions (2026-10-23): **mockup-served** versioned defs for the
+    auth/network/ActionInfo resources the emulator pins + the Task-family served
+    versions were added to `test/fixtures/redfish/schemas/` (and to the external
+    corpus with their newest counterparts):
+    `Session.v1_7_1.json`, `ManagerAccount.v1_12_0.json`, `Role.v1_3_1.json`,
+    `ManagerNetworkProtocol.v1_10_0.json`, `ActionInfo.v1_4_1.json`,
+    `ServiceRoot.v1_16_1.json`, `Task.v1_7_3.json`, `TaskService.v1_2_0.json`.
 
 ## Gaps / notes
 - `SimpleUpdate` has **no standalone JSON schema** — it is an Action defined inside

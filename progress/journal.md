@@ -1246,3 +1246,60 @@
   status change). #009/#021 got the NetworkProtocol/EthernetInterfaces pin
   recorded in FUTUREWORK — the console renderer's endpoint surface is now
   pinned.
+## 2026-10-23 — agent:redfish-automation — DOCS-13 (auth/network/ActionInfo mirror) + UI-2 FirmwareView header
+
+**Done:**
+- DOCS-13 — mirrored the versioned definitions for the six emulator-pinned /
+  client-relevant resources the external corpus had no versioned defs for:
+  `Session` (v1_9_0 + v1_7_1), `ManagerAccount` (v1_14_2 + v1_12_0), `Role`
+  (v1_3_3 + v1_3_1), `ManagerNetworkProtocol` (v1_14_0 + v1_10_0),
+  `ActionInfo` (v1_6_0 + v1_4_1), `ServiceRoot` (v1_22_0 + v1_16_1), plus the
+  mockup-served `Task.v1_7_3` / `TaskService.v1_2_0` (DOCS-10 mirrored only
+  the newest). 19 files, 397,572 bytes (DOCS-6 budget OK), aggregator + newest
+  + mockup-served per family (DOCS-11/12 precedent). Manifest rows + SHA-256s
+  in `documentations/external/README.md` (+ DOCS-13 section with
+  newest-vs-served delta table); REQUIREMENTS.md DOCS-13 audit table (7 rows)
+  + Last-audited + Trace-notes count 16 → 21; redfish_reference README note.
+  The eight mockup-served versions copied into `test/fixtures/redfish/schemas/`
+  — every `@odata.type` the mockup publishes for these families now has a
+  versioned schema in the fixture.
+- Upstream anchors re-verified (GitHub API + DMTF): bmcweb `27e0930b` and
+  mockup `23d21f9a` unchanged; DSP0266 1.25.0 still latest; schema index 200 OK.
+- Audited newest-vs-served deltas — no client code change needed this run:
+  `Session.v1_9_0` (session-type/OEM expansion), `ManagerAccount.v1_14_2`
+  (`PasswordExpiration`/`RemoteRole`/account-types — #015/#026 context),
+  `Role.v1_3_3` (no deltas), `ManagerNetworkProtocol.v1_14_0` (NTP* +
+  Kerberos*), `ActionInfo.v1_6_0` (`ActionCapabilities` +
+  `AllowableValueDescriptions` — `Parameters/AllowableValues` stable for
+  #022/#016), `ServiceRoot.v1_22_0` (Tasks link).
+- UI-2 increment: `FirmwareView` header row (title + in-flight spinner) now
+  announces as ONE merged semantics node —
+  `Semantics(container: true, excludeSemantics: true, label: 'Firmware and
+  update management[, loading]')` — matching the SystemCard/InfoCard/KVM/
+  PowerView/HealthBanner pattern. Two new widget tests: loading-state label
+  (never-completing service double) + idle label (loading suffix absent).
+
+**Decisions:**
+- DOCS workstream selected per alternation (last run EMULATOR 11:39).
+- Followed the DOCS-11/12 precedent: mirror aggregator + newest + mockup-served
+  per family, and copy mockup-served versions into the fixture for provenance.
+- Included Task.v1_7_3/TaskService.v1_2_0 as a small provenance completion
+  within the same workstream (DOCS-10 had mirrored only the newest versions).
+- Only the 2 touched Dart files formatted (no repo-wide `dart format` —
+  prior-run precedent: reintroduces the known `curly_braces` lint).
+- Emulator suite not re-run: no emulator code touched; `schemas/` additions are
+  provenance JSON only (the suite reads `dmtf_mockup`).
+
+**Next:**
+- Push 42 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout expiry — Session/ManagerAccount/Role schemas now mirrored,
+  incl. `Session.v1_9_0` + `SessionService.v1_2_0` AbsoluteSessionTimeout*).
+- #022/#016: add the `ResetActionInfo` (ActionInfo `Parameters/AllowableValues`)
+  fallback to `FeatureRules.supportedResetTypes` — contract mirrored +
+  emulator-pinned; or #008/#020 task poller (Task contract pinned end-to-end).
+
+**Issues touched:**
+- none opened/closed this run (DOCS corpus + UI-2 label; no issue status
+  change). #015/#017/#026/#009/#021/#022/#016/#018 got DOCS-13 corpus
+  provenance notes in FUTUREWORK.

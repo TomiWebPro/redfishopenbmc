@@ -6,8 +6,14 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-23 (DOCS-12 run — mirrored the missing **versioned**
-definitions for the six aggregator-only families — `UpdateService`/`EventService`/
+Last audited: 2026-10-23 (DOCS-13 run — mirrored the missing versioned
+definitions for the emulator-pinned auth/network/ActionInfo resources —
+`Session`, `ManagerAccount`, `Role`, `ManagerNetworkProtocol`, `ActionInfo`
+(aggregator + newest + mockup-served each) plus versioned `ServiceRoot` and the
+mockup-served `Task.v1_7_3`/`TaskService.v1_2_0`; audit table below; no client
+code change needed this run (property deltas recorded in the DOCS-13 section).
+Prior: DOCS-12 — mirrored the missing **versioned** definitions for the six
+aggregator-only families — `UpdateService`/`EventService`/
 `SessionService`/`Manager`/`Power`/`Thermal` — newest + mockup-served versions,
 so the rows below now cite real mirror files; no client code change needed
 (property deltas audited in the DOCS-12 section). Prior: EMULATOR run pinned the
@@ -112,15 +118,51 @@ The table rows above now cite the real mirrored files for the six families
 `Manager.v1_25_0.json`, `Thermal.v1_7_3.json`). All upstream anchors
 re-verified this run (see `documentations/external/README.md`).
 
+## DOCS-13 — auth/network/ActionInfo corpus mirror audit (2026-10-23)
+
+Closed the corpus gap for the resources the emulator pins but the external
+mirror had no versioned definitions for. For each family, mirrored the
+aggregator + the **newest** versioned file (what the aggregator `$ref`s) + the
+**mockup-served** version (what the pinned `23d21f9a` fixture publishes as
+`@odata.type`) — the DOCS-11/12 precedent; plus the mockup-served Task-family
+versions (`Task.v1_7_3`, `TaskService.v1_2_0`) that DOCS-10 had not mirrored
+(DOCS-10 mirrored only the newest `Task.v1_7_4` / `TaskService.v1_2_1`).
+
+| Requirement | Source (section/URL) | Code | Test | Status |
+|---|---|---|---|---|
+| Session resource: `X-Auth-Token` created on session POST; session carries `UserName`/`Password`/`Oem`; session-lifetime contract | DSP0266 §12.4 "Sessions"; `Session.json` + `Session.v1_9_0.json` (newest) + `Session.v1_7_1.json` (mockup-served) | `lib/redfish/models/session.dart`, `lib/redfish/client/auth_manager.dart` | `auth_manager_test.dart`; emulator session-lifecycle group pins `#Session.v1_7_1.Session` | OK (see #015/#017/#026 — URI discovery + expiry hardening) |
+| ManagerAccount (user account): `UserName`, `RoleId`, `Enabled`, `Password`, `AccountTypes`; Accounts collection under AccountService | `AccountService.json` + `ManagerAccount.json` + `ManagerAccount.v1_14_2.json` (newest) + `ManagerAccount.v1_12_0.json` (mockup-served) | not parsed yet (auth surface TO-BUILD) | emulator AccountService group pins `#ManagerAccount.v1_12_0.ManagerAccount` (UserName/RoleId) | Partial — #015/#026 |
+| Role: `RoleId`, `AssignedPrivileges`, `OemPrivileges`; Roles collection under AccountService | `Role.json` + `Role.v1_3_3.json` (newest) + `Role.v1_3_1.json` (mockup-served) | not parsed yet | emulator Roles-surface pin (emulator AccountService group) | Partial — #015/#026 |
+| ManagerNetworkProtocol: service endpoint table (`KVMIP` port, `HTTPS`, `SSH`, …) the #009/#021 console renderer resolves | `ManagerNetworkProtocol.json` + `ManagerNetworkProtocol.v1_14_0.json` (newest) + `ManagerNetworkProtocol.v1_10_0.json` (mockup-served) | not parsed yet (console endpoint TO-BUILD) | emulator "manager network" group pins `#ManagerNetworkProtocol.v1_10_0.ManagerNetworkProtocol` KVMIP 5288 / HTTPS 443 / SSH 22 (11:39 run) | Partial — #009/#021 must resolve the endpoint from the advertised KVMIP port |
+| ActionInfo: `Parameters[].AllowableValues` (bmcweb `ResetActionInfo` is the reset-type allow-list source on OpenBMC) | OpenBMC `Redfish.md` §ComputerSystem; `ActionInfo.json` + `ActionInfo.v1_6_0.json` (newest) + `ActionInfo.v1_4_1.json` (mockup-served); DSP0266 § "ActionInfo" | `FeatureRules.supportedResetTypes` reads `SupportedResetTypes` directly (empty on bmcweb) | `feature_rules_test.dart`; emulator pins `#ActionInfo.v1_4_1.ActionInfo` shapes | Partial — add ActionInfo fallback in #022/#016 |
+| ServiceRoot: service links + `ProtocolFeaturesSupported` (Expand/Excerpt/Filter/Select) the discovery pass must use | DSP0266 §8.3; `ServiceRoot.json` + `ServiceRoot.v1_22_0.json` (newest) + `ServiceRoot.v1_16_1.json` (mockup-served) | `lib/redfish/discovery/discovery_engine.dart` + `feature_rules.dart` (root crawl) | `discovery_engine_test.dart`; emulator service-root group pins `#ServiceRoot.v1_16_1.ServiceRoot` | OK (query-capability surface used by #018) |
+| Task/TaskService mockup-served versions: `#Task.v1_7_3.Task`, `#TaskService.v1_2_0.TaskService` | `Task.v1_7_3.json` + `TaskService.v1_2_0.json` (mirrored DOCS-13; newest v1_7_4/v1_2_1 from DOCS-10) | `UpdateTask` model (taskUri + retryAfterSeconds) | emulator Task group pins the served shapes (09:14 run) | Partial — #008/#020 poller |
+
+Notable newest-vs-mockup-served deltas (audited, no client code change this
+run): `Session.v1_9_0` expands session-type/OEM fields (no field the current
+code reads changed); `ManagerAccount.v1_14_2` adds `PasswordExpiration`/
+`RemoteRole`/account-types (context for #015/#026); `Role.v1_3_3` no property
+deltas; `ManagerNetworkProtocol.v1_14_0` adds `NTPProtocolEnabled`/
+`NTPservers[]`/`Kerberos*` (console endpoint resolution unchanged);
+`ActionInfo.v1_6_0` adds `ActionCapabilities` + `AllowableValueDescriptions`
+(the `Parameters/AllowableValues` contract for #022/#016 is stable);
+`ServiceRoot.v1_22_0` adds `Tasks` + link-era changes (`ProtocolFeaturesSupported`
+locations stable for #018). The six mockup-served versions + Task/TaskService
+served versions were copied into `test/fixtures/redfish/schemas/` so the fixture
+has a versioned schema for every `@odata.type` the mockup publishes across these
+client-relevant families.
+
 ## Trace notes
 
-- The 16 base aggregator schemas under `redfish/schemas/v1/` are the DMTF
+- The 21 base aggregator schemas under `redfish/schemas/v1/` are the DMTF
   "latest" entry points the app maps; versioned definitions are also mirrored
   under `redfish/schemas/v1/` for every client-mapped family (ComputerSystem,
   Chassis, Sensor, AccountService, EthernetInterface, SoftwareInventory, Task,
   TaskService, LogEntry, LogService + DOCS-12's UpdateService, EventService,
-  SessionService, Manager, Power, Thermal), with the aggregator-`$ref`ed newest
-  plus the mockup-served versions for emulator provenance.
+  SessionService, Manager, Power, Thermal + DOCS-13's Session, ManagerAccount,
+  Role, ManagerNetworkProtocol, ActionInfo, ServiceRoot), with the
+  aggregator-`$ref`ed newest plus the mockup-served versions for emulator
+  provenance.
 - GAP rows are tracked in `FUTUREWORK.md`; do not re-file them in the issue
   tracker unless acceptance criteria are added.
 - bmcweb-specific behaviour (OEM schemas, console types) is cited from
