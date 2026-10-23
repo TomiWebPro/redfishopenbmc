@@ -49,24 +49,38 @@ class SystemCard extends StatelessWidget {
               Row(
                 children: <Widget>[
                   Expanded(
-                    child: Text(
-                      handle.displayName,
-                      style: Theme.of(context).textTheme.titleMedium,
-                      overflow: TextOverflow.ellipsis,
+                    child: Semantics(
+                      container: true,
+                      excludeSemantics: true,
+                      label: _headerLabel(handle),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              handle.displayName,
+                              style: Theme.of(context).textTheme.titleMedium,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (handle.status == ConnectionStatus.connecting)
+                            const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          else if (handle.status == ConnectionStatus.error)
+                            const Icon(Icons.cloud_off,
+                                size: 16, color: Colors.red)
+                          else if (handle.status == ConnectionStatus.connected)
+                            const Icon(Icons.cloud_done,
+                                size: 16, color: Colors.green)
+                          else
+                            const Icon(Icons.cloud,
+                                size: 16, color: Colors.grey),
+                        ],
+                      ),
                     ),
                   ),
-                  if (handle.status == ConnectionStatus.connecting)
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else if (handle.status == ConnectionStatus.error)
-                    const Icon(Icons.cloud_off, size: 16, color: Colors.red)
-                  else if (handle.status == ConnectionStatus.connected)
-                    const Icon(Icons.cloud_done, size: 16, color: Colors.green)
-                  else
-                    const Icon(Icons.cloud, size: 16, color: Colors.grey),
                   if (onMenuAction != null) _menu(context),
                 ],
               ),
@@ -129,5 +143,19 @@ class SystemCard extends StatelessWidget {
       if (snapshot.model != null) snapshot.model!,
     ];
     return parts.isEmpty ? null : parts.join(' · ');
+  }
+
+  /// One concise merged semantics label for the card header: the display name
+  /// plus the connection state (UI-2 pattern — the status icon carries no
+  /// intrinsic meaning for screen readers, and the raw text + icon would
+  /// otherwise announce as separate nodes).
+  String _headerLabel(SystemHandle handle) {
+    final String state = switch (handle.status) {
+      ConnectionStatus.connecting => 'connecting',
+      ConnectionStatus.connected => 'connected',
+      ConnectionStatus.error => 'connection error',
+      ConnectionStatus.disconnected => 'disconnected',
+    };
+    return '${handle.displayName}, $state';
   }
 }

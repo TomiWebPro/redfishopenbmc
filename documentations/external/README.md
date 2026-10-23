@@ -45,6 +45,11 @@ documentations/external/
 | `redfish/schemas/v1/Task.json` | https://redfish.dmtf.org/schemas/v1/Task.json | 2026-10-23 04:05 | `e60eb1a6e77614e8fa71c63bfe816ee711f50c80994e75f9599bf1d781559a77` | 2,286 | latest per aggregator | Task resource aggregator (TaskState/PercentComplete/Messages) — DOCS-10 |
 | `redfish/schemas/v1/Task.v1_7_4.json` | https://redfish.dmtf.org/schemas/v1/Task.v1_7_4.json | 2026-10-23 04:05 | `9c29cb7f7a11d4aed869ae651d4388c87d637a3a2b322c7d4ffd023bc8fdcc04` | 21,126 | DMTF 2026.2 | Newest versioned Task defs (TaskState enum 13 values, TaskMonitor URI, PercentComplete 0–100) — DOCS-10 |
 | `redfish/schemas/v1/TaskService.v1_2_1.json` | https://redfish.dmtf.org/schemas/v1/TaskService.v1_2_1.json | 2026-10-23 04:05 | `1340438e259a9b77be82900a5b4eeb9c88025d75f9269ab1583749bd6064655a` | 9,538 | DMTF 2026.2 | Versioned TaskService defs (CompletedTaskOverWritePolicy, LifeCycleEventOnTaskStateChange, Tasks) — DOCS-10 |
+| `redfish/schemas/v1/LogEntry.json` | https://redfish.dmtf.org/schemas/v1/LogEntry.json | 2026-10-23 07:37 | `a7ea43ecc0d07809cc6dbcf576828ea986d69356eb70f97330bf4748776fc80a` | 5,749 | latest per aggregator | LogEntry resource aggregator (EntryType/Severity/Created/Message/Links.OriginOfCondition) — DOCS-11 |
+| `redfish/schemas/v1/LogEntry.v1_22_0.json` | https://redfish.dmtf.org/schemas/v1/LogEntry.v1_22_0.json | 2026-10-23 07:37 | `055bee0449e596eabc7ff5820702b9cdbb29728d07b223844b50d0a5db1a220b` | 59,779 | DMTF 2026.2 | Newest versioned LogEntry defs (EntryType 11 values, CPER, ResolutionSteps, OriginAddress...) — DOCS-11 |
+| `redfish/schemas/v1/LogEntry.v1_16_0.json` | https://redfish.dmtf.org/schemas/v1/LogEntry.v1_16_0.json | 2026-10-23 07:37 | `33148ba726c2e27198a38d8d580b6ffad3338d348630c8d7e90e1ae569797385` | 54,373 | DMTF 2025.1 | Version served by the pinned DMTF mockup fixture (emulator pins `#LogEntry.v1_16_0.LogEntry` shapes) — DOCS-11 |
+| `redfish/schemas/v1/LogEntryCollection.json` | https://redfish.dmtf.org/schemas/v1/LogEntryCollection.json | 2026-10-23 07:37 | `1224d575c747c7ef33c53b2140b585490a754e4d32572e23d985549553d84f54` | 5,842 | latest per aggregator | LogEntry collection (Members + `@odata.nextLink` pagination contract) — DOCS-11 |
+| `redfish/schemas/v1/LogService.v1_9_0.json` | https://redfish.dmtf.org/schemas/v1/LogService.v1_9_0.json | 2026-10-23 07:37 | `97dd7bc08b2cb3e974c21a02fcc1ee59696fb106b410a7fb29051b11e376681a` | 45,352 | DMTF 2026.2 | Newest versioned LogService defs (ServiceEnabled, OverWritePolicy, ClearLog action, Entries link) — DOCS-11 |
 
 ### Downloaded schema set (16 base aggregator files)
 
@@ -81,7 +86,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-23 06:05 UTC — DOCS-9 re-check; schema index probed again 2026-10-23 04:05 UTC — DOCS-10 Task addition)
+## Current upstream anchors (verified 2026-10-23 07:40 UTC — DOCS-11 LogEntry mirror; DOCS-9 re-check 2026-10-23 06:05 UTC; schema index probed again 2026-10-23 04:05 UTC — DOCS-10 Task addition)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing)
@@ -94,6 +99,31 @@ redirection), so no fixture referencing a specific version is affected.
   (master `27e0930b`, was `0128851e`; Redfish.md, REDFISH_CHECKLIST.md,
   OEM_SCHEMAS.md, CLIENTS.md saved; the three original docs are byte-identical
   at the new HEAD)
+
+### DOCS-11 LogEntry corpus mirror (2026-10-23 07:37 UTC)
+
+The DMTF mockup fixture serves `#LogEntry.v1_16_0.LogEntry` SEL entries and the
+emulator suite pins their fields (`EntryType`, `Severity`, `Created` RFC3339,
+`Message`, `Links.OriginOfCondition`) plus the collection's `@odata.nextLink`
+pagination marker — but the reference corpus had **no `LogEntry` schema at all**
+(only the `LogService` aggregator). Mirrored the missing files (171,095 bytes
+total, inside the DOCS-6 budget):
+
+- `LogEntry.json` (aggregator; `$ref`s newest versioned defs)
+- `LogEntry.v1_22_0.json` (newest versioned — `EntryType` 11 values, `CPER`,
+  `ResolutionSteps`, `OriginAddress`, `EventGroupId`, `FirstOverflowTimestamp`…)
+- `LogEntry.v1_16_0.json` (the version the pinned mockup serves — kept for
+  emulator provenance)
+- `LogEntryCollection.json` (Members + `@odata.nextLink` pagination contract)
+- `LogService.v1_9_0.json` (newest versioned LogService defs — the external
+  corpus only had the aggregator)
+
+Also mirrored `LogEntry.json` + `LogEntry.v1_16_0.json` + `LogEntryCollection.json`
+into `test/fixtures/redfish/schemas/` so the fixture snapshot and the external
+corpus stay consistent (DOCS-2 precedent). SHA-256s verified via `sha256sum`
+after download; manifest rows above. All upstream anchors re-verified during
+this run: bmcweb `27e0930b`, mockup `23d21f9a`, DSP0266 1.25.0, schema index —
+no version advanced for the other tracked families.
 
 ### DOCS-9 upstream-freshness re-check (2026-10-23 06:05 UTC)
 

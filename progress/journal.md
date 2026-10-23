@@ -1047,3 +1047,47 @@
   status change). #006 got an emulator-level contract note in FUTUREWORK;
   #008/#020/#022 have the LogEntry collection contract pinned for the task
   timeline.
+## 2026-10-23 — agent:redfish-automation — DOCS-11 (LogEntry corpus) + UI-2 SystemCard
+
+**Done:**
+- DOCS-11 — closed a corpus gap: the external mirror had **no `LogEntry` schema**
+  despite REQUIREMENTS.md + the emulator suite referencing `LogEntry`
+  (`LogEntry.v1_16_0` shapes pinned by the mockup). Mirrored official DMTF files
+  (171,095 bytes, DOCS-6 budget untouched): `LogEntry.json` aggregator,
+  `LogEntry.v1_22_0.json` (newest — EntryType 11 values, CPER, ResolutionSteps,
+  OriginAddress), `LogEntry.v1_16_0.json` (mockup-pinned version),
+  `LogEntryCollection.json` (`@odata.nextLink` pagination), `LogService.v1_9_0.json`
+  (newest versioned LogService). Mirrored LogEntry aggregator/v1_16_0/collection
+  into `test/fixtures/redfish/schemas/` too. SHA-256s verified, manifest rows +
+  DOCS-11 section in README.md, REQUIREMENTS.md log row now cites real files,
+  `documentations/redfish_reference/` README + log_service.md updated.
+- Corrected a speculative DSP0266 §8.19 citation to the real spec references
+  (§9.6.11 `Members`, §9.6.12 `Members@odata.nextLink`).
+- Re-verified upstream anchors: bmcweb `27e0930b`, mockup `23d21f9a`, DSP0266
+  1.25.0 (1.26.0 → 404), schema index current for all other tracked families.
+- UI-2 increment: `SystemCard` header now announces as one merged semantics node
+  (`<name>, connected|connecting|connection error|disconnected`) using the same
+  `Semantics(container: true, excludeSemantics: true, label: ...)` pattern as
+  the firmware/sensor/chassis/InfoCard headers; the PopupMenuButton stays
+  outside the merge. New widget test covers all four connection states.
+
+**Decisions:**
+- DOCS workstream selected per alternation (last run was EMULATOR 06:10).
+- Kept the LogEntry mirror in BOTH the external corpus and the fixture schemas
+  dir (DOCS-2 precedent — fixture + corpus stay consistent).
+- Only the two touched Dart files formatted (no repo-wide `dart format` —
+  prior-run precedent: reintroduces the known `curly_braces` lint).
+
+**Next:**
+- Push 32 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout expiry) — implement unit-level with the in-process mock server.
+- #016/#022: `ResetActionInfo` allow-list fallback (system-level, incl. `Nmi`)
+  + PATCH/etag, or #008/#020: bmcweb HTTP-push firmware upload (both push URIs,
+  apply-time modes, UpdateTask poller GET-on-monitor + TaskState parsing; the
+  LogEntry collection contract is now fully mirrored for the task timeline).
+
+**Issues touched:**
+- none opened/closed this run (DOCS corpus + UI-2 label; no issue status
+  change). The LogEntry contract remains a contract pin only — no log feature
+  is queued; recorded so a future run doesn't re-derive the shape.

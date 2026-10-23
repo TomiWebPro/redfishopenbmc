@@ -903,3 +903,62 @@ Append-only run log for the `redfish-automation` scheduler job.
   or #008/#020: bmcweb HTTP-push firmware upload — both push URIs +
   `HttpPushUriOptions` apply-time modes + `SimpleUpdateActionInfo` + `LogEntry`
   collection contract for the task timeline.
+## 2026-10-23 07:58 — DOCS (DOCS-11 LogEntry corpus mirror) + UI-2 SystemCard
+
+- **Baseline:** analyze 0; tests 284 passed / 1 skipped; starting commit bea5e7c
+  (branch `main` ahead 31 of origin); issues validate OK; working tree clean.
+- **Primary work:** DOCS-11 — closed a real corpus gap: REQUIREMENTS.md and the
+  emulator suite both reference `LogEntry`, but the external mirror had **no
+  `LogEntry` schema** (only the `LogService` aggregator). Mirrored 5 official
+  DMTF files from `https://redfish.dmtf.org/schemas/v1/` (171,095 bytes total,
+  inside the DOCS-6 budget): `LogEntry.json` (aggregator), `LogEntry.v1_22_0.json`
+  (newest versioned — EntryType 11 values, CPER, ResolutionSteps,
+  OriginAddress...), `LogEntry.v1_16_0.json` (the version the pinned mockup
+  serves, kept for emulator provenance), `LogEntryCollection.json` (the
+  `@odata.nextLink` pagination contract), and `LogService.v1_9_0.json` (newest
+  versioned LogService — the external corpus only had the aggregator). Also
+  mirrored the LogEntry aggregator/`v1_16_0`/collection into
+  `test/fixtures/redfish/schemas/` (DOCS-2 precedent keeps fixtures + corpus
+  consistent). All `sha256sum`s verified and recorded in the manifest.
+- **Docs:** new downloads this run (171,095 bytes, DOCS-6 budget untouched —
+  annual budget is 50 MB/run; this is 0.17 MB). Manifest rows added to
+  `documentations/external/README.md` + DOCS-11 section; `REQUIREMENTS.md`
+  log row source now cites the real mirror files and "Last audited" bumped to
+  DOCS-11; `documentations/redfish_reference/README.md` + `log_service.md`
+  updated. Upstream freshest re-verified during the run: bmcweb `27e0930b`,
+  Redfish-Mockup-Server `23d21f9a`, DSP0266 1.25.0 (1.26.0 probe → 404), live
+  DMTF schema index — no version advanced for the other tracked families.
+  Corrected a speculative DSP0266 §8.19 citation to the real spec references
+  (§9.6.11 `Members` / §9.6.12 `Members@odata.nextLink`).
+- **Emulator:** none this run (no emulator code touched; pin `23d21f9a`
+  re-verified unchanged upstream). The ref'd LogService/LogEntry emulator
+  contract tests were not re-run (no code touched); corpus rows updated only.
+- **Code/tests:** UI-2 increment only — `SystemCard` header (display name +
+  status icon row) now announces as **one merged semantics node**
+  (`Semantics(container: true, excludeSemantics: true, label: '<name>,
+  connected|connecting|connection error|disconnected')`), the same pattern as
+  the chassis/sensor/firmware/InfoCard headers; the `PopupMenuButton` stays a
+  sibling outside the merge so its own semantics/tap target are preserved (no
+  a11y regression). New widget test
+  `test/features/systems/ui_widget_test.dart` +1 asserts the merged label for
+  all four connection states. No production logic change; no issue status
+  change; no new dependencies.
+- **UI:** SystemCard merged-header semantics label (UI-2). Rationale:
+  dashboard cards were the last unmerged card header in regular use; the status
+  icon (cloud/cloud_done/cloud_off) has no intrinsic text and otherwise
+  announced as a bare node. Widget test covers all four connection states; the
+  existing SystemCard text/tap/menu tests still pass.
+- **Verification:** analyze 0; tests 285 passed / 1 skipped (baseline 284 →
+  +1); issues validate OK; `git diff --check` clean; secret scan clean (no
+  tokens/creds in diff). Formatted only the 2 touched Dart files (no repo-wide
+  churn — prior-run precedent).
+- **Commit:** <SHA — filled after commit> — `auto: DOCS — DOCS-11 LogEntry schema corpus mirrored, UI-2 SystemCard merged header semantics (run 2026-10-23 07:58)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried. Commits queued locally before this run: 31.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (32 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
+  logout URI, token rehydrate, SessionTimeout expiry) — emulator pins the full
+  session + AccountService surface, and now the overview hydration too;
+  implement unit-level with the in-process mock server; 3) #016/#022:
+  `ResetActionInfo` allow-list fallback (system-level, incl. `Nmi`) + PATCH/etag,
+  or #008/#020: bmcweb HTTP-push firmware upload — both push URIs +
+  `HttpPushUriOptions` apply-time modes + `SimpleUpdateActionInfo` + the now
+  fully-mirrored LogEntry collection contract for the task timeline.

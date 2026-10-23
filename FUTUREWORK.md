@@ -7,10 +7,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 (EMULATOR run — suite 27 → 30 tests:
-  OverviewService end-to-end hydration pin #006 + LogService/LogEntry contract
-  incl. `@odata.nextLink` pagination; UI-2 InfoCard merged-header semantics
-  label)
+- **Last updated:** 2026-10-23 (DOCS-11 run — mirrored the missing `LogEntry`
+  schema corpus + `LogService.v1_9_0.json` (LogEntry.json aggregator +
+  v1_22_0 newest + v1_16_0 mockup-pinned + LogEntryCollection.json + LogService
+  v1_9_0; 171,095 bytes, inside DOCS-6 budget); UI-2 increment: SystemCard
+  merged-header semantics label)
 - **Current focus:** EMULATOR suite at **30 tests** (OverviewService
   end-to-end hydration #006 — identity/health/power/processor-memory
   summaries/indicator-LED/leading-thermal — and LogService + LogEntry
@@ -21,12 +22,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
   schema refresh done (ComputerSystem/Chassis v1_29_0, Sensor v1_14_0,
   AccountService v1_19_0, EthernetInterface v1_12_6, SoftwareInventory
   v1_15_0); UI-3 fully done (all views covered); **UI-1 done** (dashboard
-  error summary + Retry); **UI-2 increment** (InfoCard merged header semantics,
-  06:10 run); next P1: #015 (AuthManager) — emulator now pins the full session
-  contract + the AccountService surface + overview hydration; #016/#022
-  (ActionInfo/etag) or #008/#020 (HTTP-push firmware, Tasks URI + push
-  apply-time modes + both push URIs + SimpleUpdateActionInfo + LogEntry
-  collection) all have emulator assertions
+  error summary + Retry); **UI-2 increments** (InfoCard merged header semantics,
+  06:10 run; SystemCard merged header semantics, 07:xx run); next P1: #015
+  (AuthManager) — emulator now pins the full session contract + the
+  AccountService surface + overview hydration; #016/#022 (ActionInfo/etag) or
+  #008/#020 (HTTP-push firmware, Tasks URI + push apply-time modes + both push
+  URIs + SimpleUpdateActionInfo + LogEntry collection) all have emulator
+  assertions
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -118,6 +120,18 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       "DOCS-10"; `FirmwareService.startSimpleUpdate` now returns `UpdateTask`
       with `taskUri` + `retryAfterSeconds`; task *polling* stays #008/#020
       (firmware) + #022 (power))
+- [x] **DOCS-11** Mirror the missing DMTF `LogEntry` schema corpus
+      (`LogEntry.json` aggregator, `LogEntry.v1_22_0.json` newest, plus
+      `LogEntry.v1_16_0.json` — the version the pinned mockup serves — and
+      `LogEntryCollection.json`), and add the newest `LogService.v1_9_0.json`
+      (external corpus only had the aggregator).
+      (run 2026-10-23 — 171,095 bytes total, inside the DOCS-6 budget;
+      manifest rows + SHA-256s verified; also mirrored LogEntry
+      aggregator/v1_16_0/collection into `test/fixtures/redfish/schemas/`;
+      REQUIREMENTS.md log row source cites now resolve to real mirror files;
+      upstream anchors re-verified: bmcweb `27e0930b`, mockup `23d21f9a`,
+      DSP0266 1.25.0, schema index current — no version advanced for the
+      other tracked families)
 
 ## P1 — emulator and integration tests
 
@@ -282,8 +296,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       preserved + widget test; overview InfoCard header merged semantics label
       (`Identity`/`Processors`/`Memory`/`Temperatures`/`Indicator LED` as one
       node via `Semantics(container: true, excludeSemantics: true, label:
-      title)` + widget test) done 2026-10-23 06:10; extend to remaining cards,
-      dialogs, tables)
+      title)` + widget test) done 2026-10-23 06:10; SystemCard header merged
+      semantics label (`<name>, connected|connecting|connection error|
+      disconnected`) done 2026-10-23 07:xx — Semantics on the title+status-icon
+      row only, PopupMenuButton keeps its own semantics, +widget test across all
+      four connection states; extend to remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.
       (PowerView no-overflow tests added 2026-10-22; SensorsView no-overflow

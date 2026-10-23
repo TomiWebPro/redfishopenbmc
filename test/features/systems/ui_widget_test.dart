@@ -297,6 +297,32 @@ void main() {
         expect(find.byType(SystemCard), findsOneWidget);
       }
     });
+
+    testWidgets('card header announces one merged semantics label (UI-2)',
+        (tester) async {
+      for (final (ConnectionStatus status, String word)
+          in const <(ConnectionStatus, String)>[
+        (ConnectionStatus.connected, 'connected'),
+        (ConnectionStatus.connecting, 'connecting'),
+        (ConnectionStatus.error, 'connection error'),
+        (ConnectionStatus.disconnected, 'disconnected'),
+      ]) {
+        final SystemHandle handle = connectedHandle(
+          id: 'bmc1',
+          name: 'Lab BMC',
+          status: status,
+          health: Health.unknown,
+        );
+        await tester.pumpWidget(
+          MaterialApp(home: Scaffold(body: SystemCard(handle: handle))),
+        );
+        expect(
+          find.bySemanticsLabel('Lab BMC, $word'),
+          findsOneWidget,
+          reason: 'expected merged header label for $status',
+        );
+      }
+    });
   });
 
   group('SystemProfileForm', () {

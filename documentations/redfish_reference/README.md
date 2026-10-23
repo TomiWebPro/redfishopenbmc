@@ -38,6 +38,11 @@ source code. The raw API payloads that back every example here live under
     `AccountService.v1_19_0.json`, `SessionService.v1_2_0.json`,
     `EthernetInterface.v1_12_6.json`, `EventService.v1_12_0.json`,
     `LogService.v1_9_0.json`, plus `odata.4.0.0.json`.
+  - LogEntry additions (DOCS-11, 2026-10-23): `LogEntry.json` +
+    `LogEntry.v1_16_0.json` (the version the mockup serves) +
+    `LogEntryCollection.json` also mirrored into `test/fixtures/redfish/schemas/`
+    for fixture/corpus consistency; newest version `LogEntry.v1_22_0.json` lives
+    in `documentations/external/redfish/schemas/v1/`.
 
 ## Gaps / notes
 - `SimpleUpdate` has **no standalone JSON schema** — it is an Action defined inside

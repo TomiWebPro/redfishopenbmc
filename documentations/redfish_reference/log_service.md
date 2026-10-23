@@ -2,9 +2,16 @@
 
 A log (system log, event log, SEL). Contains Entries collection. Found under Managers/*/LogServices and Systems/*/LogServices.
 
-**Schema definition:** `LogService`  
+**Schema definition:** `LogService` (newest `LogService.v1_9_0.json` mirrored DOCS-11)
 
 **Example source (DMTF mockup):** `Managers/BMC/LogServices/Log/index.json`
+
+> LogEntry: the mockup serves `#LogEntry.v1_16_0.LogEntry` SEL entries
+> (`EntryType`, `Severity`, `Created` RFC3339, `Message`,
+> `Links.OriginOfCondition`) with `@odata.nextLink` pagination on the Entries
+> collection; schemas mirrored as DOCS-11 (`LogEntry.json`,
+> `LogEntry.v1_22_0.json`, `LogEntry.v1_16_0.json`, `LogEntryCollection.json` —
+> see `documentations/external/README.md`).
 
 
 ## Example payload
