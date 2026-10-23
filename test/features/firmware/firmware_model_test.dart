@@ -84,6 +84,56 @@ void main() {
       expect(info.httpPushApplyTimes, isEmpty);
     });
 
+    test(
+        'parses MultipartHttpPushUri (bmcweb / DMTF v1_17_1, DOCS-4 #008/#020)',
+        () {
+      final UpdateServiceInfo info = UpdateServiceInfo.fromJson(
+        <String, dynamic>{
+          'Id': 'UpdateService',
+          'ServiceEnabled': true,
+          'HttpPushUri': '/FWUpdate',
+          'MultipartHttpPushUri': '/upload/image',
+        },
+      );
+      expect(info.httpPushUri, '/FWUpdate');
+      expect(info.multipartHttpPushUri, '/upload/image');
+    });
+
+    test('multipartHttpPushUri is null when absent', () {
+      final File file = File(
+        'test/fixtures/redfish/dmtf_mockup/UpdateService/index.json',
+      );
+      final Map<String, dynamic> body =
+          jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+      // The DMTF mockup publishes only HttpPushUri, not MultipartHttpPushUri.
+      final UpdateServiceInfo info = UpdateServiceInfo.fromJson(body);
+      expect(info.httpPushUri, '/FWUpdate');
+      expect(info.multipartHttpPushUri, isNull);
+    });
+
+    test('copyWithInventory preserves multipartHttpPushUri', () {
+      final UpdateServiceInfo info = UpdateServiceInfo.fromJson(
+        <String, dynamic>{
+          'Id': 'UpdateService',
+          'ServiceEnabled': true,
+          'HttpPushUri': '/FWUpdate',
+          'MultipartHttpPushUri': '/upload/image',
+        },
+        inventory: const <FirmwareInventoryItem>[
+          FirmwareInventoryItem(id: 'BMC'),
+        ],
+      );
+      final UpdateServiceInfo copied = info.copyWithInventory(
+        const <FirmwareInventoryItem>[
+          FirmwareInventoryItem(id: 'BMC'),
+          FirmwareInventoryItem(id: 'SS'),
+        ],
+      );
+      expect(copied.multipartHttpPushUri, '/upload/image');
+      expect(copied.httpPushUri, '/FWUpdate');
+      expect(copied.inventory.length, 2);
+    });
+
     test('parses an explicitly disabled UpdateService (DOCS-5)', () {
       final UpdateServiceInfo info = UpdateServiceInfo.fromJson(
         <String, dynamic>{

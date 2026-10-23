@@ -7,20 +7,22 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 (EMULATOR run — emulator suite 24 tests: pins
-  `ProtocolFeaturesSupported` (#018), AccountService/Accounts (#015/#026),
-  UpdateService push apply-time modes (#008/#020); `UpdateServiceInfo` now
-  parses `HttpPushUriOptions` apply-time; UI-2 firmware card semantics label)
-- **Current focus:** DOCS-2 schema refresh done (ComputerSystem/Chassis v1_29_0,
+- **Last updated:** 2026-10-23 (DOCS run — DOCS-9 freshness re-check: no
+  upstream anchor moved since DOCS-8; `UpdateServiceInfo` now surfaces bmcweb's
+  `MultipartHttpPushUri` alongside `HttpPushUri` — both push URIs available to
+  #008/#020; UI-2 extended to sensor tiles with merged accessibility labels)
+- **Current focus:** DOCS-9 freshness re-check done (no anchors moved; corpus
+  current); DOCS-2 schema refresh done (ComputerSystem/Chassis v1_29_0,
   Sensor v1_14_0, AccountService v1_19_0, EthernetInterface v1_12_6,
   SoftwareInventory v1_15_0); UI-3 fully done (all views covered);
   emulator at 24 tests (session lifecycle #015/#017, SessionTimeout,
   TaskService, EventService, ProtocolFeaturesSupported #018, Accounts #015/#026,
   push apply-time #008/#020); **UI-1 done** (dashboard error summary + Retry;
-  firmware error+retry from 20:51 run); next P1: #015 (AuthManager) — emulator
-  now pins the full session contract + the AccountService surface; #016/#022
-  (ActionInfo/etag) or #008/#020 (HTTP-push firmware, Tasks URI + push
-  apply-time modes) both have emulator assertions
+  firmware error+retry from 20:51 run); **UI-2 increment** (sensors tiles merged
+  labels, 06:10 run); next P1: #015 (AuthManager) — emulator now pins the full
+  session contract + the AccountService surface; #016/#022 (ActionInfo/etag) or
+  #008/#020 (HTTP-push firmware, Tasks URI + push apply-time modes + both push
+  URIs) both have emulator assertions
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -205,8 +207,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       (bmcweb: update is HTTP-push via `HttpPushUri`/`MultipartHttpPushUri`, no
       `SimpleUpdate` — our `startSimpleUpdate` would 405 on OpenBMC; add push
       path — DOCS-4, REQUIREMENTS.md; emulator asserts `UpdateServiceInfo.
-      httpPushUri == '/FWUpdate'` on the DMTF mockup — run 2026-10-22; emulator
-      test added 2026-10-23: `HttpPushUriOptions.HttpPushUriApplyTime` publishes
+      httpPushUri == '/FWUpdate'` on the DMTF mockup — run 2026-10-22;
+      **both push URIs are now surfaced**: `multipartHttpPushUri` added to
+      `UpdateServiceInfo` (DOCS-9, run 2026-10-23) — the upload flow must pick
+      the right URI (multipart for bmcweb); emulator test added 2026-10-23:
+      `HttpPushUriOptions.HttpPushUriApplyTime` publishes
       `ApplyTime == 'Immediate'` + AllowableValues (Immediate/OnReset/
       AtMaintenanceWindowStart/InMaintenanceWindowOnReset) + MaintenanceWindow
       start time; `UpdateServiceInfo` now parses both — the push-upload flow
@@ -227,7 +232,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       destructive power dialog label done 2026-10-22 — commit 81dfb8f; firmware
       inventory cards merged a11y label done 2026-10-23 — Semantics container
       with concise summary (component, version, health, updateable/locked) +
-      widget test; extend to remaining cards, dialogs, tables)
+      widget test; sensors temperature/fan/generic tiles merged a11y labels
+      done 2026-10-23 — Semantics container + excludeSemantics, one concise
+      summary per tile (name, value, health) + widget test; extend to remaining
+      cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.
       (PowerView no-overflow tests added 2026-10-22; SensorsView no-overflow

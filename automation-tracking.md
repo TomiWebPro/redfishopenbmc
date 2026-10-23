@@ -666,3 +666,53 @@ Append-only run log for the `redfish-automation` scheduler job.
   server; 3) #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag, or
   #008/#020: bmcweb HTTP-push firmware upload (emulator asserts `HttpPushUri`
   + `HttpPushUriOptions` apply-time modes + Tasks).
+
+## 2026-10-23 06:10 — DOCS
+
+- **Baseline:** analyze 0; tests 273 passed / 1 skipped; starting commit 32f36ec;
+  issues validate OK; branch `main` clean but ahead 23 of origin (23 commits
+  unpushed — GitHub push blocked: no credentials, see earlier entries).
+- **Primary work:** DOCS-9 — upstream-freshness re-check of the mirrored corpus
+  (about 6h after the DOCS-8 audit). **No anchor moved**: bmcweb master still
+  `27e0930b` (`git ls-remote`), DMTF Redfish-Mockup-Server still `23d21f9a`,
+  DSP0266 1.25.0 still the latest published PDF (probe of 1.26.0 → 404), and the
+  live DMTF schema index (`redfish.dmtf.org/schemas/v1/`, 3.4 MB re-fetched to
+  /tmp) shows no version advanced for the 13 tracked families — all current
+  versions still present, all next-higher versions absent. Corpus stays current
+  with zero new downloads (DOCS-6 budget untouched).
+- **Docs:** no downloads this run (all anchors unchanged). `external/README.md`
+  gained a DOCS-9 section + updated "Current upstream anchors" timestamp;
+  `REQUIREMENTS.md` "Last audited" header updated to DOCS-9. Docs-driven code
+  fix: bmcweb `Redfish.md` §UpdateService lists `MultipartHttpPushUri` next to
+  `HttpPushUri`; `UpdateService.v1_17_1.json` defines it (`versionAdded v1_6_0`)
+  — `UpdateServiceInfo` now parses it and the REQUIREMENTS row was upgraded from
+  GAP to Partial (push URIs surfaced; upload path still #008/#020).
+- **Emulator:** none this run (no emulator code touched; mockup pin `23d21f9a`
+  re-verified unchanged upstream). As a safety check the 24-test suite was run
+  anyway after the firmware-model change — 24/24 green over HTTPS, server
+  stopped via trap.
+- **Code/tests:** `UpdateServiceInfo` + `multipartHttpPushUri` (parse in
+  `fromJson`, preserved in `copyWithInventory`); unit tests
+  `test/features/firmware/firmware_model_test.dart` +3 (multipart parse, absent
+  fallback against the DMTF mockup fixture, copyWithInventory preserves). No
+  issue status change.
+- **UI:** UI-2 increment — sensor tiles (temperature/fan/generic) now each sit
+  in a `Semantics(container: true, excludeSemantics: true, label: ...)` that
+  announces one concise summary (`Temperature CPU1 Temp, 41.0°C, Unknown`) —
+  same pattern as the firmware cards from the 05:00 run; `excludeSemantics`
+  needed because ListTile's internal merge otherwise appends the tile text to
+  the label. Widget test
+  `test/features/sensors/sensors_widget_test.dart` +1 asserts all three merged
+  labels; fixture gained a fan + a generic sensor.
+- **Verification:** analyze 0; tests 277 passed / 1 skipped (baseline 273 →
+  +4); emulator 24/24; issues validate OK; `git diff --check` clean; secret
+  scan clean (no tokens/creds in diff). Formatted only the 4 touched Dart files
+  (no repo-wide churn — prior-run precedent).
+- **Commit:** pending — `auto: DOCS — DOCS-9 freshness re-check (no anchors moved), UpdateServiceInfo.MultipartHttpPushUri, UI-2 sensor-tile semantics (run 2026-10-23 06:10)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (24 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
+  logout URI, token rehydrate, SessionTimeout expiry) — emulator pins the full
+  session + AccountService surface; implement unit-level with the in-process
+  mock server; 3) #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag,
+  or #008/#020: bmcweb HTTP-push firmware upload (both push URIs +
+  `HttpPushUriOptions` apply-time modes + Tasks now surfaced).

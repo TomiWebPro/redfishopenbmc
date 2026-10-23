@@ -106,6 +106,7 @@ class UpdateServiceInfo {
     this.serviceEnabled = false,
     this.version,
     this.httpPushUri,
+    this.multipartHttpPushUri,
     this.httpPushApplyTime,
     this.httpPushApplyTimes = const <String>[],
     this.inventory = const <FirmwareInventoryItem>[],
@@ -130,6 +131,12 @@ class UpdateServiceInfo {
 
   /// URI used for an HTTP/HTTPS push update (`HttpPushUri`, e.g. `/FWUpdate`).
   final String? httpPushUri;
+
+  /// URI used for a Redfish-defined multipart HTTP/HTTPS push update
+  /// (`MultipartHttpPushUri`, e.g. `/upload/image`). bmcweb publishes this in
+  /// addition to [httpPushUri] (bmcweb `Redfish.md` §UpdateService;
+  /// `UpdateService.v1_17_1.json` `MultipartHttpPushUri` — DOCS-4, #008/#020).
+  final String? multipartHttpPushUri;
 
   /// Current push-apply-time mode (`HttpPushUriOptions.HttpPushUriApplyTime.
   /// ApplyTime`, e.g. `Immediate`), or `null` when the service does not
@@ -161,6 +168,7 @@ class UpdateServiceInfo {
       serviceEnabled: body['ServiceEnabled'] as bool? ?? false,
       version: _asString(body['Version']) ?? _asString(body['Id']),
       httpPushUri: _asString(body['HttpPushUri']),
+      multipartHttpPushUri: _asString(body['MultipartHttpPushUri']),
       httpPushApplyTime: _applyTime(body),
       httpPushApplyTimes: _applyTimes(body),
       inventory: inventory ?? const <FirmwareInventoryItem>[],
@@ -175,6 +183,7 @@ class UpdateServiceInfo {
         serviceEnabled: serviceEnabled,
         version: version,
         httpPushUri: httpPushUri,
+        multipartHttpPushUri: multipartHttpPushUri,
         httpPushApplyTime: httpPushApplyTime,
         httpPushApplyTimes: httpPushApplyTimes,
         inventory: inventory,

@@ -40,13 +40,15 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
 
   void _load() {
     Future<void>.microtask(
-      () => ref.read(sensorsControllerProvider(widget.systemId).notifier).load(),
+      () =>
+          ref.read(sensorsControllerProvider(widget.systemId).notifier).load(),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final SystemHandle? handle = ref.watch(systemHandleProvider(widget.systemId));
+    final SystemHandle? handle =
+        ref.watch(systemHandleProvider(widget.systemId));
     final SystemFeatures? features = handle?.features;
 
     // Discovery not complete yet (or tab shown before capability gate).
@@ -61,7 +63,8 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
       return const SizedBox.shrink();
     }
 
-    final SensorsUiState ui = ref.watch(sensorsControllerProvider(widget.systemId));
+    final SensorsUiState ui =
+        ref.watch(sensorsControllerProvider(widget.systemId));
 
     if (ui.loading) {
       return const Center(child: CircularProgressIndicator());
@@ -112,9 +115,11 @@ class _ChassisCard extends StatelessWidget {
             Text(title, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
             if (chassis.thermal.isNotEmpty) ...<Widget>[
-              Text('Temperatures', style: Theme.of(context).textTheme.titleSmall),
+              Text('Temperatures',
+                  style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 4),
-              for (final ThermalReading t in chassis.thermal) _TemperatureTile(t),
+              for (final ThermalReading t in chassis.thermal)
+                _TemperatureTile(t),
               const SizedBox(height: 12),
             ],
             if (chassis.fans.isNotEmpty) ...<Widget>[
@@ -149,14 +154,22 @@ class _TemperatureTile extends StatelessWidget {
         ? '—'
         : '${reading.readingCelsius!.toStringAsFixed(1)}°C';
     final List<String> thresholds = <String>[
-      if (reading.upperCaution != null) 'caution ${reading.upperCaution!.toStringAsFixed(0)}',
-      if (reading.upperCritical != null) 'crit ${reading.upperCritical!.toStringAsFixed(0)}',
+      if (reading.upperCaution != null)
+        'caution ${reading.upperCaution!.toStringAsFixed(0)}',
+      if (reading.upperCritical != null)
+        'crit ${reading.upperCritical!.toStringAsFixed(0)}',
     ];
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(reading.name),
-      subtitle: thresholds.isNotEmpty ? Text(thresholds.join(' / ')) : null,
-      trailing: _HealthChip(health: reading.status.healthEnum, label: value),
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label:
+          'Temperature ${reading.name}, $value, ${_healthLabel(reading.status.healthEnum)}',
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(reading.name),
+        subtitle: thresholds.isNotEmpty ? Text(thresholds.join(' / ')) : null,
+        trailing: _HealthChip(health: reading.status.healthEnum, label: value),
+      ),
     );
   }
 }
@@ -174,13 +187,19 @@ class _FanTile extends StatelessWidget {
     final String value = reading.reading == null
         ? '—'
         : '${reading.reading!.toStringAsFixed(0)} RPM';
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(reading.name),
-      subtitle: reading.physicalContext != null
-          ? Text(reading.physicalContext!)
-          : null,
-      trailing: _HealthChip(health: reading.status.healthEnum, label: value),
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label:
+          'Fan ${reading.name}, $value, ${_healthLabel(reading.status.healthEnum)}',
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(reading.name),
+        subtitle: reading.physicalContext != null
+            ? Text(reading.physicalContext!)
+            : null,
+        trailing: _HealthChip(health: reading.status.healthEnum, label: value),
+      ),
     );
   }
 }
@@ -197,21 +216,38 @@ class _SensorTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final String value = reading.reading == null
         ? '—'
-        : '${reading.reading!.toStringAsFixed(2)} ${reading.readingUnits ?? ''}'.trim();
+        : '${reading.reading!.toStringAsFixed(2)} ${reading.readingUnits ?? ''}'
+            .trim();
     final List<String> thresholds = reading.thresholds.entries
-        .map((MapEntry<String, double> e) => '${e.key} ${e.value.toStringAsFixed(1)}')
+        .map((MapEntry<String, double> e) =>
+            '${e.key} ${e.value.toStringAsFixed(1)}')
         .toList();
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(reading.name),
-      subtitle: Text(<String>[
-        if (reading.readingType != null) reading.readingType!,
-        if (thresholds.isNotEmpty) thresholds.join(' / '),
-      ].join(' · ')),
-      trailing: _HealthChip(health: reading.status.healthEnum, label: value),
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label:
+          'Sensor ${reading.name}, $value, ${_healthLabel(reading.status.healthEnum)}',
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(reading.name),
+        subtitle: Text(<String>[
+          if (reading.readingType != null) reading.readingType!,
+          if (thresholds.isNotEmpty) thresholds.join(' / '),
+        ].join(' · ')),
+        trailing: _HealthChip(health: reading.status.healthEnum, label: value),
+      ),
     );
   }
 }
+
+/// Human-readable health label used in merged accessibility summaries
+/// (matches the dashboard `HealthBanner` wording — UI-2).
+String _healthLabel(Health health) => switch (health) {
+      Health.ok => 'OK',
+      Health.warning => 'Warning',
+      Health.critical => 'Critical',
+      Health.unknown => 'Unknown',
+    };
 
 /// A compact health-tinted chip showing a reading value.
 class _HealthChip extends StatelessWidget {

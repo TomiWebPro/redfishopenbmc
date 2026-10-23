@@ -844,3 +844,54 @@
 - none opened/closed this run (EMULATOR extension + model increment + UI-2
   label; no issue status change). #015/#016/#018/#020/#026 got emulator-level
   contract notes in FUTUREWORK.
+
+## 2026-10-23 — agent:redfish-automation — DOCS-9 freshness re-check + MultipartHttpPushUri + UI-2 sensor-tile semantics
+
+**Done:**
+- DOCS-9 primary: re-verified every mirrored upstream anchor against live
+  sources (~6h after DOCS-8). bmcweb master still `27e0930b` (git ls-remote),
+  DMTF Redfish-Mockup-Server still `23d21f9a`, DSP0266 1.25.0 still the latest
+  published PDF (1.26.0 → 404), and a fresh 3.4 MB schema-index fetch shows no
+  version advanced for the 13 tracked families (current versions present,
+  next-higher versions absent). Zero new downloads — DOCS-6 budget untouched.
+- Docs-driven code fix: bmcweb `Redfish.md` §UpdateService lists
+  `MultipartHttpPushUri` beside `HttpPushUri`, and `UpdateService.v1_17_1.json`
+  defines it (`versionAdded v1_6_0`, URI for the Redfish-defined multipart
+  HTTP/S push POST). `UpdateServiceInfo` now parses it into
+  `multipartHttpPushUri` (with `fromJson` + `copyWithInventory`), so both push
+  URIs a firmware-upload flow needs are surfaced — the #008/#020 upload path
+  still needs building, but the bmcweb-specific multipart endpoint is no longer
+  invisible. REQUIREMENTS.md row upgraded GAP → Partial; +3 unit tests
+  (multipart parse, absent fallback against the DMTF mockup fixture,
+  copyWithInventory preserves).
+- UI (UI-2): each sensor tile (temperature/fan/generic) now renders inside a
+  `Semantics(container: true, excludeSemantics: true, label: ...)` announcing
+  one concise summary — `Temperature CPU1 Temp, 41.0°C, Unknown`. Reused the
+  firmware-card label pattern; `excludeSemantics: true` is required because the
+  ListTile's internal MergeSemantics would otherwise append the raw tile text to
+  the label. Widget test asserts all three merged labels; fixture gained a fan
+  + generic sensor row. No new dependencies; UI-2 remains open.
+
+**Decisions:**
+- DOCS next in the DOCS/EMULATOR alternation (last run EMULATOR).
+- No emulator-driven code change this run, but the emulator suite (24 tests)
+  was re-run as a safety check after the firmware-model change — all green,
+  server trap-stopped.
+- Kept the label wording consistent with the dashboard HealthBanner
+  (`OK`/`Warning`/`Critical`/`Unknown`) rather than enum `.name` lowercase.
+- Formatted only the 4 touched Dart files; no repo-wide `dart format` (prior-run
+  precedent: it reintroduces the known `curly_braces` lint).
+
+**Next:**
+- Push 23 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout expiry) — emulator pins session lifecycle + AccountService
+  surface; implement unit-level with the in-process mock server.
+- #016/#022: `ResetActionInfo` allow-list fallback + PATCH/etag, or #008/#020:
+  bmcweb HTTP-push firmware upload (both push URIs + HttpPushUriOptions
+  apply-time modes + Tasks now surfaced).
+
+**Issues touched:**
+- none opened/closed this run (DOCS-9 audit + model increment + UI-2 labels; no
+  issue status change). #008/#020 got a note that `multipartHttpPushUri` is now
+  surfaced; UI-2 noted the sensors-tile labels in FUTUREWORK.

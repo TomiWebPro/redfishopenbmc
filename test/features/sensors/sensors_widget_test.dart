@@ -22,8 +22,12 @@ class _FakeSensorsService extends SensorsService {
           thermal: <ThermalReading>[
             ThermalReading(name: 'CPU1 Temp', readingCelsius: 41.0),
           ],
-          fans: const <FanReading>[],
-          sensors: const <SensorReading>[],
+          fans: const <FanReading>[
+            FanReading(name: 'Fan0', reading: 5400),
+          ],
+          sensors: const <SensorReading>[
+            SensorReading(name: 'PSU1', reading: 12.5, readingUnits: 'V'),
+          ],
         ),
       ];
 }
@@ -69,6 +73,37 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('CPU1 Temp'), findsWidgets);
+      expect(find.text('Fan0'), findsWidgets);
+      expect(find.text('PSU1'), findsWidgets);
+    });
+
+    testWidgets('sensor tiles expose merged accessibility labels (UI-2)',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_FakeSensorsService()),
+          ],
+          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.bySemanticsLabel('Temperature CPU1 Temp, 41.0°C, Unknown'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Fan Fan0, 5400 RPM, Unknown'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Sensor PSU1, 12.50 V, Unknown'),
+        findsOneWidget,
+      );
     });
   });
 

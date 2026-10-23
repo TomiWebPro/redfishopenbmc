@@ -72,7 +72,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-22 23:43 UTC)
+## Current upstream anchors (verified 2026-10-23 06:05 UTC — DOCS-9 re-check)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing)
@@ -85,6 +85,18 @@ redirection), so no fixture referencing a specific version is affected.
   (master `27e0930b`, was `0128851e`; Redfish.md, REDFISH_CHECKLIST.md,
   OEM_SCHEMAS.md, CLIENTS.md saved; the three original docs are byte-identical
   at the new HEAD)
+
+### DOCS-9 upstream-freshness re-check (2026-10-23 06:05 UTC)
+
+Re-verified every corpus anchor against live upstream again (about 6h after the
+DOCS-8 audit). **No anchor moved**: bmcweb master still `27e0930b`
+(`git ls-remote`), Redfish-Mockup-Server still `23d21f9a`, DSP0266 1.25.0 still
+the latest published PDF (1.26.0 → 404), and the live DMTF schema index shows no
+version advanced for the 13 tracked families (probed the current versions still
+present and the next-higher versions all absent). No new downloads — corpus
+stays inside the DOCS-6 budget. Docs-driven code fix this run: `UpdateServiceInfo`
+now parses bmcweb's `MultipartHttpPushUri` (see REQUIREMENTS.md "bmcweb firmware
+update" row — DOCS-9).
 
 ### DOCS-8 upstream-freshness audit (2026-10-22 23:43 UTC)
 
