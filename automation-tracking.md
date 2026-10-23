@@ -708,7 +708,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   +4); emulator 24/24; issues validate OK; `git diff --check` clean; secret
   scan clean (no tokens/creds in diff). Formatted only the 4 touched Dart files
   (no repo-wide churn — prior-run precedent).
-- **Commit:** pending — `auto: DOCS — DOCS-9 freshness re-check (no anchors moved), UpdateServiceInfo.MultipartHttpPushUri, UI-2 sensor-tile semantics (run 2026-10-23 06:10)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
+- **Commit:** 37f6e1a — `auto: DOCS — DOCS-9 freshness re-check (no anchors moved), UpdateServiceInfo.MultipartHttpPushUri, UI-2 sensor-tile semantics (run 2026-10-23 06:10)`; pushed: **no** — same GitHub credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
 - **Next:** 1) Push the queued local commits from a machine with GitHub
   credentials (24 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
   logout URI, token rehydrate, SessionTimeout expiry) — emulator pins the full
