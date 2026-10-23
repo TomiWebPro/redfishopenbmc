@@ -283,6 +283,13 @@ class _ConfirmResetDialogState extends State<ConfirmResetDialog> {
       ),
       actions: <Widget>[
         TextButton(
+          // UI-2: explicit ≥48px touch target for the dialog actions; the
+          // Material default visible height is 36dp (tap target padded to
+          // 48dp only for gestures, not for the visual affordance).
+          style: TextButton.styleFrom(
+            minimumSize: const Size(48, 48),
+            tapTargetSize: MaterialTapTargetSize.padded,
+          ),
           onPressed: _busy ? null : () => Navigator.of(context).pop(false),
           child: const Text('Cancel'),
         ),
@@ -295,12 +302,16 @@ class _ConfirmResetDialogState extends State<ConfirmResetDialog> {
                   : 'Confirm ${widget.action.label}',
           button: true,
           child: FilledButton(
-            style: destructive
-                ? FilledButton.styleFrom(
-                    backgroundColor: scheme.error,
-                    foregroundColor: scheme.onError,
-                  )
-                : null,
+            style: (destructive
+                    ? FilledButton.styleFrom(
+                        backgroundColor: scheme.error,
+                        foregroundColor: scheme.onError,
+                      )
+                    : FilledButton.styleFrom())
+                .copyWith(
+              minimumSize: const WidgetStatePropertyAll<Size>(Size(48, 48)),
+              tapTargetSize: MaterialTapTargetSize.padded,
+            ),
             onPressed: _busy ? null : _confirm,
             child: _busy
                 ? const SizedBox.square(

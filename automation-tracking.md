@@ -1323,3 +1323,64 @@ Append-only run log for the `redfish-automation` scheduler job.
   address` — no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no
   SSH key on this machine. Local commits kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **45** (43 before this run + 2).
+
+## 2026-10-23 16:05 — DOCS (reset allow-list annotation fallback) + UI-2 dialog touch targets
+
+- **Baseline:** analyze 0; tests 293 passed / 1 skipped; starting commit 9a1d1f6
+  (branch `main` ahead 46 of origin); issues validate OK; working tree clean.
+- **Primary work:** DOCS — closed the documented reset-allow-list gap
+  (REQUIREMENTS.md rows "bmcweb reset types via ResetActionInfo" / DOCS-13
+  ActionInfo row / DOCS-5 `supportedResetTypes` map row: "Partial — add
+  ActionInfo fallback in #022/#016"). `FeatureRules.supportedResetTypes` now
+  unions **both** documented sources: `SupportedResetTypes` (DSP0266
+  `ComputerSystem.json`) and the `ResetType@Redfish.AllowableValues` annotation
+  on each system's `#ComputerSystem.Reset` action — the form the pinned DMTF
+  mockup serves (the emulator pins the 8-value list incl. `Nmi`/`ForceOn`/
+  `PushPowerButton`) and bmcweb-style ActionInfo BMCs publish. New public
+  helper `FeatureRules.resetTypesFromAction` (pure, unit-testable). The fallback
+  reads only ComputerSystem payloads — never the manager-level `#Manager.Reset`
+  list (emulator-pinned conflation guard: system list ≠ manager list). Prior to
+  this fix the allow-list was empty on mockup/bmcweb shapes, which the power UI
+  safely treated as "all allowed"; now the true allow-list is surfaced and the
+  gate uses exactly the advertised values.
+- **Docs:** none this run (no new downloads). REQUIREMENTS.md updated: the three
+  reset-allow-list rows now cite the fallback + its tests and read OK, and the
+  DOCS-4 finding #3 paragraph records the annotation fallback while noting the
+  `ResetActionInfo` *resource* crawl stays folded into #022/#016. Upstream
+  anchors not re-fetched (verified 12:40 UTC this same day — DOCS-13 run);
+  no anchor movement expected inside 5h, recorded per DOCS-9 precedent.
+- **Emulator:** re-ran `tool/emulator/run_tests.sh` (pin `23d21f9a`) — **36/36
+  passing** (the system-level reset allow-list pin + conflation guard are the
+  exact contract this fix implements). No emulator code change; `allowSelfSigned`
+  remains test-profile only (EMU-6).
+- **Code/tests:** `lib/redfish/discovery/feature_rules.dart` (+`resetTypesFromAction`,
+  `supportedResetTypes` now unions annotation + property, dedupes + sorts);
+  `test/redfish/discovery/feature_rules_test.dart` (+4 tests: annotation fallback
+  on the mockup shape, union+dedupe of both sources, manager-list conflation
+  guard, empty-action/no-annotation). No issue status change (the gap was tracked
+  inline in REQUIREMENTS.md + FUTUREWORK #022/#016); no new dependencies.
+- **UI:** UI-2 increment — `ConfirmResetDialog` action buttons now carry explicit
+  **48×48px minimum size** (Cancel `TextButton.styleFrom(minimumSize:
+  Size(48,48))`, Confirm `FilledButton.styleFrom(...).copyWith(minimumSize:
+  WidgetStatePropertyAll(Size(48,48)))` + `tapTargetSize: padded`). Material
+  pads the gesture target to 48dp but the visible button is 36dp; the explicit
+  min makes the visual affordance meet the WCAG touch-target minimum too. One
+  new widget test asserts both dialog action buttons render ≥48px tall
+  (`power_view_test.dart` "dialog action buttons meet the 48px touch-target
+  minimum (UI-2)").
+- **Verification:** analyze 0; tests 298 passed / 1 skipped (baseline 293 →
+  +5: 4 feature_rules + 1 power dialog touch-target); emulator 36/36 via
+  `tool/emulator/run_tests.sh`; issues validate OK; `git diff --check` clean;
+  secret scan clean (no tokens/creds in diff). Formatted only the 4 touched
+  Dart files (no repo-wide churn — prior-run precedent).
+- **Commit:** <PENDING> — `auto: DOCS — reset allow-list annotation fallback (FeatureRules.supportedResetTypes unions SupportedResetTypes + ResetType@Redfish.AllowableValues, manager-list conflation guard), UI-2 dialog 48px touch targets (run 2026-10-23 16:05)`; pushed: see §7.4 outcome (GitHub credential blocker historically: `fatal: could not read Username for 'https://github.com'`).
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (46 queued before this run); 2) P1 #015 AuthManager (authMethod
+  dispatch, safe logout URI, token rehydrate, SessionTimeout +
+  AbsoluteSessionTimeout* expiry — full auth surface now pinned + schemas
+  mirrored); implement unit-level with the in-process mock server; 3) #022/#016:
+  the `ResetActionInfo` ActionInfo-*resource* crawl (fetch
+  `Parameters[].AllowableValues` from the discovered ActionInfo URI) now that the
+  annotation-form fallback lands; or #008/#020: build the task poller
+  (GET-on-monitor, TaskState parse, PercentComplete optional, Messages[]
+  timeline) + bmcweb HTTP-push firmware upload path.

@@ -79,7 +79,20 @@ class FeatureRules {
             ODataResource(s).actionTarget(computerSystemReset) != null,
       );
 
-  /// Union of every `SupportedResetTypes` value across all systems.
+  /// Union of every reset-type value across all systems.
+  ///
+  /// Reads both documented sources, so the allow-list is surfaced even on
+  /// BMCs that omit `SupportedResetTypes`:
+  ///  1. `SupportedResetTypes` (DSP0266 `ComputerSystem.json`);
+  ///  2. the `ResetType@Redfish.AllowableValues` annotation on the
+  ///     `#ComputerSystem.Reset` action (the form the DMTF mockup and
+  ///     bmcweb-style ActionInfo BMCs publish — DOCS-4/13, #022/#016).
+  ///
+  /// The annotation is read **only from ComputerSystem payloads** (`systems`),
+  /// never from Manager payloads — the system-level allow-list includes
+  /// `Nmi` / `ForceOn` / `PushPowerButton` and must not be conflated with the
+  /// manager-level `#Manager.Reset` list (`ForceRestart`/`GracefulRestart`),
+  /// per the emulator-pinned contract.
   static List<String> supportedResetTypes(
     List<Map<String, dynamic>> systems,
   ) {
@@ -91,8 +104,27 @@ class FeatureRules {
           types.add(e.toString());
         }
       }
+      final List<String> annotated = resetTypesFromAction(s);
+      types.addAll(annotated);
     }
     return types.toList()..sort();
+  }
+
+  /// Extracts the `ResetType@Redfish.AllowableValues` annotation from a
+  /// system's `#ComputerSystem.Reset` action, or an empty list when absent.
+  ///
+  /// The OData annotation (per DSP0266 §9.3 "Annotations" / the `ActionInfo`
+  /// contract) enumerates exactly the `ResetType` values the BMC accepts for
+  /// that action. bmcweb documents its allow-list as a `ResetActionInfo`
+  /// ActionInfo resource (`Parameters/AllowableValues`) and serves no
+  /// system-level `SupportedResetTypes`; the mockup publishes the annotation
+  /// directly on the action. Both are captured by this fallback.
+  static List<String> resetTypesFromAction(Map<String, dynamic> system) {
+    final dynamic action = ODataResource(system).actions[computerSystemReset];
+    if (action is! Map<dynamic, dynamic>) return const <String>[];
+    final dynamic allowed = action['ResetType@Redfish.AllowableValues'];
+    if (allowed is! List<dynamic>) return const <String>[];
+    return allowed.map((dynamic e) => e.toString()).toList();
   }
 
   // ---------------------------------------------------------------------------

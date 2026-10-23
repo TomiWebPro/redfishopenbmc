@@ -7,27 +7,27 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 (EMULATOR run — **account-service auth surface
-  pinned**: AccountService lockout/password-policy fields + Roles link
-  (`#AccountService.v1_15_0`), Roles collection contract (3 predefined roles
-  Administrator/Operator/ReadOnly with `AssignedPrivileges`/`OemPrivileges`/
-  `IsPredefined` — `#Role.v1_3_1`, DOCS-13 mirrored), ManagerAccount detail
-  contract (`AccountTypes`/`PasswordChangeRequired`/`Locked`/`Enabled`/
-  `Links.Role` + `#ManagerAccount.ChangePassword` target + `Password` masked
-  on the wire — `#ManagerAccount.v1_12_0`); emulator suite 34 → **36 tests**;
-  **UI-2 increment: DashboardView aggregated banner merged semantics label**
-  (`Health: <summary>` incl. "No systems") + 2 widget tests — remaining UI-2:
-  dialog touch-targets)
-- **Current focus:** EMULATOR account-service auth surface done (the #015/#026
-  surface is now fully pinned end-to-end: session lifecycle + SessionTimeout,
-  AccountService lockout policy, Roles/privileges, ManagerAccount detail);
-  DOCS-13 done (auth/network/ActionInfo corpus mirror); EMULATOR suite at **36
-  tests** (account-service auth surface, 13:58 run); DOCS-12 done (versioned
-  corpus complete for all 16 client-mapped families); next P1: #015
-  (AuthManager) — emulator pins the full auth contract + the
-  Session/ManagerAccount/Role schemas are mirrored (#015/#017/#026);
-  #022/#016: `ResetActionInfo` ActionInfo allow-list fallback contract now
-  mirrored + emulator-pinned
+- **Last updated:** 2026-10-23 16:05 (DOCS run — **reset allow-list annotation
+  fallback**: `FeatureRules.supportedResetTypes` now unions
+  `SupportedResetTypes` **+** the `ResetType@Redfish.AllowableValues`
+  annotation on `#ComputerSystem.Reset` (the DMTF mockup / bmcweb-style shape;
+  emulator-pinned 8-value list incl. Nmi/ForceOn/PushPowerButton) with the
+  manager-list conflation guard; new `resetTypesFromAction` helper + 4 unit
+  tests; REQUIREMENTS.md rows flipped Partial → OK, DOCS-4 finding #3 updated —
+  `ResetActionInfo` *resource* crawl stays #022/#016; **UI-2 increment: dialog
+  action buttons explicit 48×48px touch targets** + 1 widget test; emulator
+  36/36; suite 293 → 298 tests)
+- **Current focus:** DOCS reset allow-list annotation fallback done (the
+  `ResetType@Redfish.AllowableValues` on `#ComputerSystem.Reset` now feeds
+  `supportedResetTypes` — the DMTF mockup / bmcweb-style empty-
+  `SupportedResetTypes` case is covered and emulator-pinned; `ResetActionInfo`
+  *resource* crawl stays #022/#016); EMULATOR suite at **36 tests**
+  (account-service auth surface, 13:58 run); DOCS-13 done (auth/network/
+  ActionInfo corpus mirror); DOCS-12 done (versioned corpus complete for all
+  16 client-mapped families); next P1: #015 (AuthManager) — emulator pins the
+  full auth contract + the Session/ManagerAccount/Role schemas are mirrored
+  (#015/#017/#026); #022/#016: Annotation allow-list fallback landed (this
+  run) — remaining: `ResetActionInfo` ActionInfo resource crawl
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -258,13 +258,17 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       this repo; DEVELOPMENT.md Toolchain documents the setup)
 - [ ] **#016** PATCH / `If-Match` / `@odata.etag` support.
       (bmcweb ResetActionInfo → supportedResetTypes fallback also folds here —
-      DOCS-4; emulator notes: the DMTF mockup serves no `@odata.etag` on
-      resources — etag behaviour cannot be pinned on this fixture, keep it in
-      unit tests — 2026-10-23; the system-level `#ComputerSystem.Reset`
-      `ResetType@Redfish.AllowableValues` (On/ForceOff/GracefulShutdown/
-      GracefulRestart/ForceRestart/Nmi/ForceOn/PushPowerButton) is pinned — the
-      allow-list fallback must read the system list, never the manager list —
-      2026-10-23 03:02)
+      DOCS-4; **annotation-form allow-list fallback landed 2026-10-23 16:05** —
+      `supportedResetTypes` now unions `SupportedResetTypes` +
+      `ResetType@Redfish.AllowableValues` on `#ComputerSystem.Reset` (the
+      bmcweb/mockup shape), conflation-guarded; remaining: crawl the
+      `ResetActionInfo` ActionInfo *resource*. Emulator notes: the DMTF mockup
+      serves no `@odata.etag` on resources — etag behaviour cannot be pinned on
+      this fixture, keep it in unit tests — 2026-10-23; the system-level
+      `#ComputerSystem.Reset` `ResetType@Redfish.AllowableValues`
+      (On/ForceOff/GracefulShutdown/GracefulRestart/ForceRestart/Nmi/ForceOn/
+      PushPowerButton) is pinned — the allow-list fallback must read the system
+      list, never the manager list — 2026-10-23 03:02)
 - [ ] **#017** Discover the SessionService URI instead of assuming it.
       (emulator test asserts `SessionService.@odata.id` is discoverable from the
       service root and serves a conformant SessionService — run 2026-10-22)
@@ -275,13 +279,19 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       discovery pass must use; the client currently ignores it)
 - [ ] **#022** Power: task polling, races, and error fixes.
       (bmcweb `ResetActionInfo` ActionInfo `Parameters/AllowableValues` is the
-      allow-list source on OpenBMC; add fallback — DOCS-4. Emulator asserts the
-      DMTF mockup's `#Manager.Reset` carries its own
-      `ResetType@Redfish.AllowableValues` — the fallback must not conflate
-      manager- vs system-level Reset actions — run 2026-10-22; system-level
-      allow-list pinned incl. `Nmi` (NMI-stabilize) + `ForceOn` +
-      `PushPowerButton`, and the mockup does NOT advertise `PowerCycle` — the
-      gate must use exactly the advertised values — run 2026-10-23 03:02)
+      allow-list source on OpenBMC; add fallback — DOCS-4. **Annotation-form
+      fallback landed 2026-10-23 16:05**: `FeatureRules.supportedResetTypes`
+      unions `SupportedResetTypes` + the `ResetType@Redfish.AllowableValues`
+      annotation on `#ComputerSystem.Reset` (the DMTF mockup / bmcweb-style
+      shape), with the manager-list conflation guard — emulator-pinned; the
+      remaining piece is crawling the `ResetActionInfo` *resource* itself
+      (`Parameters[].AllowableValues`). Emulator asserts the DMTF mockup's
+      `#Manager.Reset` carries its own `ResetType@Redfish.AllowableValues` —
+      the fallback must not conflate manager- vs system-level Reset actions —
+      run 2026-10-22; system-level allow-list pinned incl. `Nmi` (NMI-stabilize)
+      + `ForceOn` + `PushPowerButton`, and the mockup does NOT advertise
+      `PowerCycle` — the gate must use exactly the advertised values — run
+      2026-10-23 03:02)
 - [ ] **#024** `profile_repository.clear()` orphaned passwords.
 - [ ] **#026** Resolve duplicate auth fields.
 
@@ -374,7 +384,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       semantics label (`Health: <summary>`, incl. the "No systems" empty
       state) done 2026-10-23 13:58 — Semantics(container + excludeSemantics)
       wraps the icon+summary row, widget tests assert the merged node +
-      visible text; extend to
+      visible text; **dialog action buttons explicit 48×48px touch targets done
+      2026-10-23 16:05 — `ConfirmResetDialog` Cancel/Confirm get
+      `minimumSize: Size(48,48)` + padded tap target, widget test asserts both
+      buttons render ≥48px tall — remaining UI-2: focus order, remaining
+      non-card labels); extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.

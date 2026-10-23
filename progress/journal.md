@@ -1371,3 +1371,58 @@
 - none opened/closed this run (emulator contract pin + UI-2 label; no issue
   status change). #015/#026 got the full account-service auth-surface pin
   recorded in FUTUREWORK.
+## 2026-10-23 — agent:redfish-automation — DOCS (reset allow-list annotation fallback) + UI-2 dialog touch targets
+
+**Done:**
+- DOCS primary workstream (alternation: last DOCS run 12:50, last EMULATOR
+  13:58 — DOCS next). Closed the documented reset-allow-list gap: the DMTF
+  mockup / bmcweb-style BMCs publish the reset allow-list as the
+  `ResetType@Redfish.AllowableValues` annotation on `#ComputerSystem.Reset`
+  (no system-level `SupportedResetTypes` — REQUIREMENTS.md rows 87/137/330
+  were "Partial — add ActionInfo fallback in #022/#016"). `FeatureRules.
+  supportedResetTypes` now unions `SupportedResetTypes` + the annotation, with
+  a new pure helper `FeatureRules.resetTypesFromAction`; the fallback reads
+  only ComputerSystem payloads — never the manager-level `#Manager.Reset` list
+  (the emulator-pinned conflation guard: system list = 8 values incl.
+  Nmi/ForceOn/PushPowerButton, manager list = ForceRestart/GracefulRestart).
+  The power gate (`PowerService.reset`, `PowerController`, `PowerView`) now
+  receives the true allow-list on mockup/bmcweb shapes instead of an empty
+  list ("all allowed" fallback).
+- 4 new unit tests in `test/redfish/discovery/feature_rules_test.dart`:
+  annotation fallback on the mockup shape, union+dedupe of both sources,
+  manager-list conflation guard, empty-action/no-annotation → empty.
+- REQUIREMENTS.md updated (3 rows Partial → OK + DOCS-4 finding #3 paragraph).
+- UI-2 increment: `ConfirmResetDialog` action buttons get explicit 48×48px
+  minimum size + padded tap target (Material's visible default is 36dp; the
+  gesture target is padded but the visual affordance wasn't). New widget test
+  asserts both buttons render ≥48px tall.
+- Emulator suite re-run: 36/36 passing on pin `23d21f9a` (the system reset
+  allow-list + conflation pin is the exact contract implemented).
+
+**Decisions:**
+- DOCS selected per alternation. Within DOCS, picked the highest-value small
+  safe code gap called out by REQUIREMENTS.md + the tracking "Next" list
+  (annotation-form allow-list fallback), rather than a large re-fetch (anchors
+  re-verified 12:40 UTC today — DOCS-13; per DOCS-9 precedent no re-fetch
+  inside 5h).
+- Left the `ResetActionInfo` ActionInfo-*resource* crawl in #022/#016: it needs
+  discovery to fetch an extra URI + parse `Parameters[].AllowableValues`; the
+  annotation form covers the mockup and the bmcweb-style shape now.
+- Kept the manager-list conflation guard because the emulator pins both lists
+  and the gate must use exactly the advertised system-level values.
+- Formatted only the 4 touched Dart files (prior-run precedent).
+
+**Next:**
+- Push 46 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout + AbsoluteSessionTimeout* expiry) — full auth surface pinned +
+  schemas mirrored; implement unit-level with the in-process mock server.
+- #022/#016: crawl the `ResetActionInfo` ActionInfo resource
+  (`Parameters[].AllowableValues`) now that the annotation fallback lands; or
+  #008/#020: task poller (GET-on-monitor, TaskState parse, PercentComplete
+  optional, Messages[] timeline) + bmcweb HTTP-push upload path.
+
+**Issues touched:**
+- none opened/closed this run. #022/#016 got the annotation-fallback progress
+  recorded in FUTUREWORK; the gap is still open (ActionInfo resource crawl +
+  task polling remain).

@@ -287,6 +287,52 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Confirm Force Off?'), findsNothing);
     });
+
+    testWidgets(
+        'dialog action buttons meet the 48px touch-target minimum (UI-2)',
+        (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      await tester.pumpWidget(
+        harness(manager: manager, controller: _fakeController()),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Force Off'));
+      await tester.pumpAndSettle();
+
+      final Finder dialog = find.byType(AlertDialog);
+      expect(dialog, findsOneWidget);
+
+      // Both dialog actions announce an explicit ≥48px hit area; the widget
+      // sizes must not shrink below the AudioCue/accessibility minimum
+      // (Material's default visible button is 36dp tall).
+      final Finder cancel = find.descendant(
+        of: dialog,
+        matching: find.widgetWithText(TextButton, 'Cancel'),
+      );
+      final Finder confirm = find.descendant(
+        of: dialog,
+        matching: find.widgetWithText(FilledButton, 'Force'),
+      );
+      expect(cancel, findsOneWidget);
+      expect(confirm, findsOneWidget);
+
+      final Size cancelSize = tester.getSize(cancel);
+      final Size confirmSize = tester.getSize(confirm);
+      expect(cancelSize.height, greaterThanOrEqualTo(48),
+          reason: 'Cancel must meet the 48px touch-target minimum');
+      expect(confirmSize.height, greaterThanOrEqualTo(48),
+          reason: 'Confirm must meet the 48px touch-target minimum');
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.text('Confirm Force Off?'), findsNothing);
+    });
   });
 
   group('PowerView — responsive layout (UI-3)', () {

@@ -37,6 +37,107 @@ void main() {
         <String>['ForceOff', 'GracefulRestart', 'On'],
       );
     });
+
+    test(
+        'supportedResetTypes falls back to the ResetType@Redfish.AllowableValues '
+        'annotation when SupportedResetTypes is absent (DOCS-4/13, #022/#016)',
+        () {
+      // The DMTF mockup / bmcweb-style shape: no `SupportedResetTypes`, the
+      // allow-list lives on the #ComputerSystem.Reset action annotation.
+      final List<Map<String, dynamic>> systems = <Map<String, dynamic>>[
+        <String, dynamic>{
+          'Actions': <String, dynamic>{
+            '#ComputerSystem.Reset': <String, dynamic>{
+              'target': '/redfish/v1/Systems/1/Actions/ComputerSystem.Reset',
+              'ResetType@Redfish.AllowableValues': <String>[
+                'On',
+                'ForceOff',
+                'GracefulShutdown',
+                'GracefulRestart',
+                'ForceRestart',
+                'Nmi',
+                'ForceOn',
+                'PushPowerButton',
+              ],
+            },
+          },
+        },
+      ];
+      expect(
+        FeatureRules.supportedResetTypes(systems),
+        <String>[
+          'ForceOff',
+          'ForceOn',
+          'ForceRestart',
+          'GracefulRestart',
+          'GracefulShutdown',
+          'Nmi',
+          'On',
+          'PushPowerButton',
+        ],
+      );
+    });
+
+    test('supportedResetTypes unions + dedupes both sources', () {
+      final List<Map<String, dynamic>> systems = <Map<String, dynamic>>[
+        <String, dynamic>{
+          'SupportedResetTypes': <String>['On', 'ForceOff'],
+          'Actions': <String, dynamic>{
+            '#ComputerSystem.Reset': <String, dynamic>{
+              'target': '/x',
+              'ResetType@Redfish.AllowableValues': <String>[
+                'On',
+                'GracefulRestart',
+              ],
+            },
+          },
+        },
+      ];
+      expect(
+        FeatureRules.supportedResetTypes(systems),
+        <String>['ForceOff', 'GracefulRestart', 'On'],
+      );
+    });
+
+    test(
+        'supportedResetTypes never reads the manager-level #Manager.Reset '
+        'allow-list (emulator-pinned conflation guard, #022/#016)', () {
+      // The manager list is ForceRestart/GracefulRestart on the pinned mockup;
+      // only #ComputerSystem.Reset annotations from ComputerSystem payloads
+      // may feed the system allow-list.
+      final Map<String, dynamic> managerLike = <String, dynamic>{
+        'Actions': <String, dynamic>{
+          '#Manager.Reset': <String, dynamic>{
+            'target': '/redfish/v1/Managers/BMC/Actions/Manager.Reset',
+            'ResetType@Redfish.AllowableValues': <String>[
+              'ForceRestart',
+              'GracefulRestart',
+            ],
+          },
+        },
+      };
+      expect(
+        FeatureRules.resetTypesFromAction(managerLike),
+        isEmpty,
+      );
+      expect(
+          FeatureRules.supportedResetTypes(<Map<String, dynamic>>[
+            managerLike,
+          ]),
+          isEmpty);
+    });
+
+    test('resetTypesFromAction returns empty when no action/annotation', () {
+      expect(FeatureRules.resetTypesFromAction(<String, dynamic>{}), isEmpty);
+      expect(
+        FeatureRules.resetTypesFromAction(<String, dynamic>{
+          'Actions': <String, dynamic>{
+            '#ComputerSystem.Reset': <String, dynamic>{'target': '/x'},
+          },
+        }),
+        isEmpty,
+      );
+    });
   });
 
   group('FeatureRules — kvm', () {
