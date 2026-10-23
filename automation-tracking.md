@@ -829,3 +829,79 @@ Append-only run log for the `redfish-automation` scheduler job.
   task-monitor URI + `Retry-After`, so the poller needs GET-on-monitor,
   `TaskState` parsing, and push-upload (`HttpPushUri`/`MultipartHttpPushUri`)
   apply-time modes.
+
+## 2026-10-23 06:10 — EMULATOR (#006 overview hydration + LogService/LogEntry contracts) + UI-2 InfoCard
+
+- **Baseline:** analyze 0; tests 284 passed / 1 skipped; starting commit 458966c;
+  issues validate OK; working tree clean; branch `main` ahead 29 of origin
+  (GitHub push still blocked — no credentials, see earlier entries).
+- **Primary work:** EMULATOR — extended the pinned DMTF Redfish-Mockup-Server
+  suite **27 → 30 tests** with three contract pins that de-risk queued issues:
+  1. **OverviewService end-to-end hydration (— #006)**: the client's own
+     `OverviewService.fetchOverview()` against the live mockup resolves the full
+     `SystemOverview` — identity (`Manufacturer Contoso`, `Model 3500`,
+     `SKU 8675309`, `SerialNumber 437XR1138R2`, `PartNumber 224071-J23`,
+     `BiosVersion P79 v1.45 (12/06/2017)`), `PowerState on`, `Health ok` +
+     `HealthRollup ok`, `ProcessorSummary` (Count 2, Model contains Xeon),
+     `MemorySummary` (96.0 GiB), `IndicatorLed.off`, leading temperature 41.0 °C
+     from the chassis Thermal chain (`Links.Chassis[0] → /Thermal`), and
+     `resourceUri`. This is the first pin that drives the overview UI's data
+     contract through the production hydration path rather than raw JSON.
+  2. **LogService + LogEntry contracts (future log reader)**: the mockup's
+     `/Systems/437XR1138R2/LogServices` collection is discoverable; `Log1`
+     exposes `ServiceEnabled`, `OverWritePolicy WrapsWhenFull`, the
+     `#LogService.ClearLog` action target, and an Entries collection whose
+     `LogEntry.v1_16_0` members carry `EntryType SEL`, `Severity Critical`,
+     `Created` RFC3339, `SensorType Temperature`, `Message`, and
+     `Links.OriginOfCondition → /Chassis/1U/Thermal`; the collection also emits
+     the `@odata.nextLink` pagination marker (`$skiptoken=2`) — the contract a
+     future log feature must follow instead of assuming all entries are in one
+     page. Mirrors `LogService.json` (schema corpus present); a REQUIREMENTS.md
+     row traces it.
+  3. The 30-test suite count is now documented in REQUIREMENTS.md (was stale at
+     "16 tests" — it had drifted across the EMU-2/EMU-3 runs).
+- **Docs:** none this run (no new downloads; DOCS-6 budget untouched). Updated
+  `documentations/external/redfish/REQUIREMENTS.md`: emulator test-platform note
+  rewritten (16 → 30 tests, listing every pinned group), +overview requirement
+  row (ComputerSystem identity/PowerState/health/summaries/IndicatorLED/leading
+  thermal → OverviewService + emulator pin, #006), +LogService/LogEntry row
+  (contract pin; feature not queued yet).
+- **Emulator:** suite 27 → 30 tests, all green over HTTPS (30/30 re-run against
+  the final tree); server killed by exact-PID after each run (no stray process,
+  port 8443 free); pin `23d21f9a` unchanged; `tool/emulator/run_tests.sh`
+  unchanged.
+- **Code/tests:** no production service-code change this run — test-only pins
+  via `OverviewService` (existing code) against the live mockup. Emulator suite
+  +3 (`emulator_suite_test.dart` "overview hydration (#006) + log-service
+  contract" group). UI-2 increment: `InfoCard` header (icon + title) now
+  announces as **one merged semantics node** — `Semantics(container: true,
+  excludeSemantics: true, label: title)` wrapping the header row, the same
+  pattern as the chassis/sensor/firmware card headers; `overview_view_test.dart`
+  +5 asserts (`find.bySemanticsLabel('Identity'|'Processors'|'Memory'|
+  'Temperatures'|'Indicator LED')`). No new dependencies; no issue status
+  change.
+- **UI:** InfoCard merged-header semantics label (UI-2). Rationale: this was the
+  second-largest a11y gap after the card headers already fixed in prior runs;
+  the overview cards now announce `Identity`, `Processors`, `Memory`,
+  `Temperatures`, `Indicator LED` each as one node. Widget tests assert the
+  merged labels + prior text assertions still pass.
+- **Verification:** analyze 0; tests 284 passed / 1 skipped (baseline 284 →
+  +0: the +5 semantics assertions extend an existing test; the +3 new cases
+  live in the emulator suite which is skipped in plain `flutter test`);
+  emulator 30/30; issues validate OK; `git diff --check` clean; secret scan
+  clean (no tokens/creds in diff). Formatted only the 3 touched Dart files
+  (no repo-wide churn — prior-run precedent: repo-wide `dart format`
+  reintroduces the `curly_braces` lint and was reverted this run; the churn it
+  caused is fully restored via `git checkout`).
+- **Commit:** (see 7.4) — pushed: **no** — same GitHub credential blocker (no
+  credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this
+  machine); local commit kept, not retried.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (30 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
+  logout URI, token rehydrate, SessionTimeout expiry) — emulator pins the full
+  session + AccountService surface, and now the overview hydration too;
+  implement unit-level with the in-process mock server; 3) #016/#022:
+  `ResetActionInfo` allow-list fallback (system-level, incl. `Nmi`) + PATCH/etag,
+  or #008/#020: bmcweb HTTP-push firmware upload — both push URIs +
+  `HttpPushUriOptions` apply-time modes + `SimpleUpdateActionInfo` + `LogEntry`
+  collection contract for the task timeline.

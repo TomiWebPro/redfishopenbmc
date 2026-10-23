@@ -6,10 +6,12 @@ import 'package:redfishopenbmc/features/firmware/firmware_service.dart';
 import 'package:redfishopenbmc/features/firmware/models/firmware_models.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_service.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
-import 'package:redfishopenbmc/features/power/models/power_state.dart';
+import 'package:redfishopenbmc/features/overview/models/system_overview.dart';
+import 'package:redfishopenbmc/features/overview/overview_service.dart';
 import 'package:redfishopenbmc/features/power/power_service.dart';
 import 'package:redfishopenbmc/features/sensors/models/sensor_models.dart';
 import 'package:redfishopenbmc/features/sensors/sensors_service.dart';
+import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
 import 'package:redfishopenbmc/redfish/client/auth_manager.dart';
 import 'package:redfishopenbmc/redfish/client/redfish_client.dart';
 import 'package:redfishopenbmc/redfish/discovery/discovery_engine.dart';
@@ -671,6 +673,118 @@ void main() {
       final Map<dynamic, dynamic> submit =
           actions['#EventService.SubmitTestEvent'] as Map<dynamic, dynamic>;
       expect(submit['target'], isA<String>());
+    });
+  });
+
+  group('emulator: overview hydration (#006) + log-service contract', () {
+    late AuthManager manager;
+    late RedfishClient client;
+
+    setUpAll(() async {
+      manager = AuthManager(storage: InMemoryStorage());
+      await manager.login('em-ovw', emulatorProfile());
+      client = manager.clientFor('em-ovw')!;
+    });
+
+    tearDownAll(() async {
+      await manager.logout('em-ovw');
+    });
+
+    test(
+        'overview: OverviewService hydrates the full SystemOverview from the '
+        'live system + chassis thermal (#006)', () async {
+      // Issue #006: the overview dashboard must derive manufacturer/model/sku/
+      // serial/part number, BIOS version, power state, health (incl. rollup),
+      // processor + memory summaries, indicator LED, and the leading chassis
+      // temperature — end-to-end through the client's own hydration path.
+      final SystemOverview overview =
+          await OverviewService(client).fetchOverview();
+      expect(overview.manufacturer, 'Contoso');
+      expect(overview.model, '3500');
+      expect(overview.sku, '8675309');
+      expect(overview.serialNumber, '437XR1138R2');
+      expect(overview.partNumber, '224071-J23');
+      expect(overview.biosVersion, 'P79 v1.45 (12/06/2017)');
+      expect(overview.powerState, PowerState.on);
+      expect(overview.health, Health.ok);
+      expect(overview.healthRollup, Health.ok);
+      // Processor + memory summaries (ProcessorSummary / MemorySummary).
+      expect(overview.hasProcessors, isTrue);
+      expect(overview.processorSummary.count, 2);
+      expect(overview.processorSummary.model, contains('Xeon'));
+      expect(overview.hasMemory, isTrue);
+      expect(overview.memorySummary.totalGiB, 96.0);
+      // Indicator LED is a discrete off state, not Unknown.
+      expect(overview.indicatorLed, IndicatorLed.off);
+      // Leading temperature comes from the first chassis Thermal reading.
+      expect(overview.hasTemperature, isTrue,
+          reason: '#006: the overview card must show the chassis temperature');
+      expect(overview.leadingTemperatureCelsius, 41.0);
+      expect(overview.resourceUri, '/redfish/v1/Systems/437XR1138R2');
+      expect(overview.lastUpdated, isNotNull);
+    });
+
+    test('log service: LogService collection + ClearLog action are exposed',
+        () async {
+      // The client has no log feature yet, but LogService.json is mirrored in
+      // documentations/external; this pins the discovery contract a future
+      // log reader would use (collection → service → Entries).
+      final Map<String, dynamic> collection =
+          await client.getJson('/redfish/v1/Systems/437XR1138R2/LogServices');
+      final List<dynamic> members = collection['Members'] as List<dynamic>;
+      expect(members, isNotEmpty);
+      final String logUri =
+          (members.first as Map<dynamic, dynamic>)['@odata.id'] as String;
+      expect(logUri, '/redfish/v1/Systems/437XR1138R2/LogServices/Log1');
+
+      final Map<String, dynamic> service = await client.getJson(logUri);
+      expect(service['ServiceEnabled'], isTrue);
+      expect(service['OverWritePolicy'], 'WrapsWhenFull');
+      final Map<dynamic, dynamic> actions =
+          service['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> clear =
+          actions['#LogService.ClearLog'] as Map<dynamic, dynamic>;
+      expect(
+        clear['target'],
+        '/redfish/v1/Systems/437XR1138R2/LogServices/Log1/Actions/'
+        'LogService.ClearLog',
+      );
+      expect(
+        (service['Entries'] as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/Systems/437XR1138R2/LogServices/Log1/Entries',
+      );
+    });
+
+    test(
+        'log service: LogEntry collection parses SEL entries + nextLink '
+        'pagination marker', () async {
+      // LogEntry.v1_16_0 fields a log reader must normalize: EntryType (SEL),
+      // Severity, Created (RFC3339), SensorType/EntryCode, Message, and the
+      // @odata.nextLink pagination marker the mockup emits.
+      final Map<String, dynamic> entries = await client
+          .getJson('/redfish/v1/Systems/437XR1138R2/LogServices/Log1/Entries');
+      expect(entries['@odata.type'], startsWith('#LogEntryCollection.'));
+      expect(entries['Members@odata.count'], 2);
+      final List<dynamic> members = entries['Members'] as List<dynamic>;
+      expect(members, hasLength(2));
+      final Map<dynamic, dynamic> first =
+          members.first as Map<dynamic, dynamic>;
+      expect(first['EntryType'], 'SEL');
+      expect(first['Severity'], 'Critical');
+      expect(first['Created'], isA<String>());
+      expect(first['Message'], isA<String>());
+      expect(first['SensorType'], 'Temperature');
+      final Map<dynamic, dynamic> links =
+          first['Links'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> origin =
+          links['OriginOfCondition'] as Map<dynamic, dynamic>;
+      expect(origin['@odata.id'], '/redfish/v1/Chassis/1U/Thermal');
+      // Pagination: the mockup emits a nextLink when more entries remain.
+      expect(entries['@odata.nextLink'], isA<String>());
+      expect(
+        entries['@odata.nextLink'],
+        contains('\$skiptoken='),
+      );
     });
   });
 

@@ -139,6 +139,13 @@ void main() {
       expect(find.text('2 processor(s)'), findsOneWidget);
       // Nothing should be flagged "not exposed" when data is present.
       expect(find.text('Not exposed by this BMC'), findsNothing);
+      // UI-2: each InfoCard header announces one merged semantics label
+      // (icon + title) instead of separate unlabeled nodes.
+      expect(find.bySemanticsLabel('Identity'), findsOneWidget);
+      expect(find.bySemanticsLabel('Processors'), findsOneWidget);
+      expect(find.bySemanticsLabel('Memory'), findsOneWidget);
+      expect(find.bySemanticsLabel('Temperatures'), findsOneWidget);
+      expect(find.bySemanticsLabel('Indicator LED'), findsOneWidget);
     });
 
     testWidgets('renders without errors in dark mode', (tester) async {

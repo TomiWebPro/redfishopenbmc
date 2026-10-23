@@ -7,24 +7,26 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 (REPAIR/DOCS-10 run — recovered crashed DOCS-10
-  WIP: mirrored `Task.json`/`Task.v1_7_4.json`/`TaskService.v1_2_1.json`,
-  `UpdateTask.retryAfterSeconds` from the 202 `Retry-After` header, UI-2
-  queued-update banner semantics label)
-- **Current focus:** DOCS-10 done (Task resource corpus + DSP0266 §12.2
-  task-monitor contract audit — `UpdateTask` now carries the optional 202
-  `Retry-After` poll hint); EMULATOR suite at 27 tests (Sensors collection
-  #007/#019, system Reset allow-list incl. `Nmi` #022/#016,
-  SimpleUpdateActionInfo #008/#020 pinned 03:02 run); DOCS-9 freshness
-  re-check done (no anchors moved; corpus current); DOCS-2 schema refresh done
-  (ComputerSystem/Chassis v1_29_0, Sensor v1_14_0, AccountService v1_19_0,
-  EthernetInterface v1_12_6, SoftwareInventory v1_15_0); UI-3 fully done (all
-  views covered); **UI-1 done** (dashboard error summary + Retry); **UI-2
-  increment** (queued-update banner semantics label, 04:05 run); next P1:
-  #015 (AuthManager) — emulator now pins the full session contract + the
-  AccountService surface; #016/#022 (ActionInfo/etag) or #008/#020 (HTTP-push
-  firmware, Tasks URI + push apply-time modes + both push URIs +
-  SimpleUpdateActionInfo) all have emulator assertions
+- **Last updated:** 2026-10-23 (EMULATOR run — suite 27 → 30 tests:
+  OverviewService end-to-end hydration pin #006 + LogService/LogEntry contract
+  incl. `@odata.nextLink` pagination; UI-2 InfoCard merged-header semantics
+  label)
+- **Current focus:** EMULATOR suite at **30 tests** (OverviewService
+  end-to-end hydration #006 — identity/health/power/processor-memory
+  summaries/indicator-LED/leading-thermal — and LogService + LogEntry
+  collection contract incl. ClearLog + `@odata.nextLink`, pinned 06:10 run);
+  DOCS-10 done (Task resource corpus + DSP0266 §12.2 task-monitor contract
+  audit — `UpdateTask` now carries the optional 202 `Retry-After` poll hint);
+  DOCS-9 freshness re-check done (no anchors moved; corpus current); DOCS-2
+  schema refresh done (ComputerSystem/Chassis v1_29_0, Sensor v1_14_0,
+  AccountService v1_19_0, EthernetInterface v1_12_6, SoftwareInventory
+  v1_15_0); UI-3 fully done (all views covered); **UI-1 done** (dashboard
+  error summary + Retry); **UI-2 increment** (InfoCard merged header semantics,
+  06:10 run); next P1: #015 (AuthManager) — emulator now pins the full session
+  contract + the AccountService surface + overview hydration; #016/#022
+  (ActionInfo/etag) or #008/#020 (HTTP-push firmware, Tasks URI + push
+  apply-time modes + both push URIs + SimpleUpdateActionInfo + LogEntry
+  collection) all have emulator assertions
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -136,7 +138,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       TaskService, EventService contracts) → 24 tests (ProtocolFeaturesSupported
       #018, Accounts #015/#026, push apply-time #008/#020 — 2026-10-23) → 27
       tests (Sensors collection #007/#019, system Reset allow-list #022/#016,
-      SimpleUpdateActionInfo #008/#020 — 2026-10-23 03:02))
+      SimpleUpdateActionInfo #008/#020 — 2026-10-23 03:02) → **30 tests
+      (OverviewService end-to-end hydration #006 + LogService/LogEntry
+      collection contract incl. ClearLog + `@odata.nextLink` pagination —
+      2026-10-23 06:10)**)
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -220,6 +225,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 ## P2 — feature completeness
 
 - [ ] **#006** System overview adaptive cards.
+      (emulator now pins the full `OverviewService.fetchOverview()` hydration
+      end-to-end — identity, health + rollup, power, processor/memory
+      summaries, IndicatorLED, leading chassis thermal 41.0 °C, resourceUri —
+      run 2026-10-23 06:10; the remaining work is UI polish: nothing blocks)
 - [ ] **#007 / #019** Sensor monitoring, real-time telemetry, retry.
       (emulator pins the 41-member Sensors collection end-to-end — typed
       readings (Cel/V …) + thresholds parse through `SensorsService.fetchAll()`
@@ -270,7 +279,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       summary per tile (name, value, health) + widget test; chassis card header
       merged summary label (`Chassis 1U, 1 temperatures, 1 fans, 1 sensors`)
       done 2026-10-23 03:02 — Semantics container on the title, tile labels
-      preserved + widget test; extend to remaining cards, dialogs, tables)
+      preserved + widget test; overview InfoCard header merged semantics label
+      (`Identity`/`Processors`/`Memory`/`Temperatures`/`Indicator LED` as one
+      node via `Semantics(container: true, excludeSemantics: true, label:
+      title)` + widget test) done 2026-10-23 06:10; extend to remaining cards,
+      dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.
       (PowerView no-overflow tests added 2026-10-22; SensorsView no-overflow

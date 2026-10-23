@@ -1002,3 +1002,48 @@
 - none opened/closed this run (REPAIR of crashed DOCS-10 WIP; no issue status
   change). #008/#020 got a note that `UpdateTask` now carries the task-monitor
   URI + retry-after; DOCS-10 marked done in FUTUREWORK.
+
+## 2026-10-23 — agent:redfish-automation — EMULATOR run (#006 overview hydration + LogService/LogEntry)
+
+**Done:**
+- EMULATOR suite 27 → 30 tests against the pinned DMTF Redfish-Mockup-Server
+  (`23d21f9a`, HTTPS): (1) **OverviewService end-to-end hydration pin (#006)** —
+  the production hydration path now resolves the full SystemOverview from the
+  live mockup: Contoso/3500/437XR1138R2 identity, SKU/PartNumber, BiosVersion,
+  PowerState on, Health ok + rollup, ProcessorSummary Count 2 (Xeon), 96 GiB
+  MemorySummary, IndicatorLed off, leading 41.0 °C from the chassis Thermal
+  chain, resourceUri; (2) **LogService + LogEntry contract** — LogServices
+  collection → Log1 (ServiceEnabled, WrapsWhenFull, ClearLog action target) →
+  Entries with `LogEntry.v1_16_0` fields (EntryType SEL, Severity, Created,
+  Message, OriginOfCondition) and the `@odata.nextLink` pagination marker
+  (`$skiptoken=2`); (3) REQUESTS.md emulator note rewritten 16 → 30 tests
+  (was stale from EMU-2).
+- UI-2 increment: `InfoCard` header (icon + title) announces as one merged
+  semantics node (`Semantics(container: true, excludeSemantics: true, label:
+  title)`), matching the chassis/sensor/firmware card pattern; 5 new widget
+  assertions via `find.bySemanticsLabel`.
+- Docs: no new downloads (DOCS-6 budget untouched); REQUIREMENTS.md + overview
+  requirement row (#006) + LogService/LogEntry contract row.
+
+**Decisions:**
+- Kept this run test-only for the service layer (OverviewService already worked;
+  the value is pinning its real-world contract, not changing it).
+- Reverted repo-wide `dart format` churn (31 files) — it reintroduced the
+  `curly_braces_in_flow_control_structures` lint (same precedent as prior
+  runs). Only the 3 touched Dart files were formatted.
+- LogService is pinned as a contract only; no log feature is queued in
+  FUTUREWORK — recorded explicitly so a future run doesn't re-derive the shape.
+
+**Next:**
+- Push 30 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout expiry) — implement unit-level with the in-process mock server.
+- #016/#022: system-level `ResetActionInfo` allow-list fallback (incl. `Nmi`)
+  + PATCH/etag; or #008/#020 bmcweb HTTP-push firmware upload (both push URIs,
+  apply-time modes, UpdateTask poller GET-on-monitor + TaskState parsing).
+
+**Issues touched:**
+- none opened/closed this run (emulator contract pins + UI-2 label; no issue
+  status change). #006 got an emulator-level contract note in FUTUREWORK;
+  #008/#020/#022 have the LogEntry collection contract pinned for the task
+  timeline.

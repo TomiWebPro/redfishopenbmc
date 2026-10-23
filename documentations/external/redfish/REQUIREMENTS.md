@@ -59,6 +59,7 @@ Folded into code this run:
 | No plaintext password at rest; token in secure storage | DSP0266 §12.4; OpenBMC `Redfish.md` | `lib/core/storage/secure_storage.dart`, `AuthManager` | `test/redfish/client/auth_manager_test.dart` | OK |
 | Power control: `ComputerSystem.Reset` action with `ResetType` body; 202+`Location` accepted | DSP0266 §12.2 "Actions"; `ComputerSystem.json` `Actions` | `lib/features/power/power_service.dart` | `test/features/power/` | OK |
 | Sensor telemetry: `Chassis[*].Thermal` / `Sensors`, reading + units | DSP0266 §8.10; `Sensor.json`, `Thermal.json` | `lib/features/sensors/sensors_controller.dart` | `test/features/sensors/` | OK |
+| System overview: `ComputerSystem` identity (`Manufacturer`/`Model`/`SKU`/`SerialNumber`/`PartNumber`/`BiosVersion`), `PowerState`, `Status.Health`(+Rollup), `ProcessorSummary`/`MemorySummary`, `IndicatorLED`, leading `Chassis` thermal | DSP0266 §8.4 ComputerSystem + §8.10 Thermal; `ComputerSystem.v1_29_0.json` | `lib/features/overview/overview_service.dart` (+ `models/system_overview.dart`) hydrates system + best-effort chassis thermal | `test/features/overview/overview_provider_test.dart` + `overview_view_test.dart`; **emulator suite now pins the full hydrate end-to-end** against the DMTF mockup (#006) | OK |
 | Firmware inventory: `UpdateService` / `SoftwareInventory` collection | DSP0266 §8.14 "Software inventory"; `SoftwareInventory.json` | `lib/features/firmware/firmware_models.dart` | `test/features/firmware/` | OK |
 | Firmware update: `UpdateService.SimpleUpdate` (entity-upload mode TBD); `UpdateService.ServiceEnabled` gates the capability | DSP0266 §9.7 "Firmware update"; `UpdateService.json` (`ServiceEnabled`); OpenBMC `Redfish.md` §UpdateService | `lib/features/firmware/firmware_service.dart`; `FeatureRules.firmwareUpdate` honors `ServiceEnabled` (DOCS-5) | `test/features/firmware/`; `feature_rules_test.dart` (ServiceEnabled case) | Partial — task monitoring in #008/#020 |
 | KVM capability: `Manager.GraphicalConsole` / OEM console detection | OpenBMC `Redfish.md`; `Manager.json` | `lib/redfish/discovery/feature_rules.dart` (`kvm`, `kvmType`) | `test/redfish/discovery/feature_rules_test.dart` | OK (rendering gated in #009/#021) |
@@ -74,6 +75,7 @@ Folded into code this run:
 | bmcweb serial console lives on the ComputerSystem (`SerialConsole/SSH|IPMI`), not the Manager | OpenBMC `Redfish.md` §ComputerSystem (`SerialConsole` fields) | `FeatureRules._managerConsoleType` only checks `Manager.GraphicalConsole/SerialConsole/Oem` | `feature_rules_test.dart` | Partial: GraphicalConsole detection still correct; System-level SerialConsole not yet mapped (see #009/#021 KVM) |
 | bmcweb auth surface: `AccountService.Oem.OpenBMC.AuthMethods.*` (`BasicAuth`, `Cookie`, `SessionToken`, `TLS`, `XToken`) + `HTTPBasicAuth` | OpenBMC `Redfish.md` §AccountService | `AuthManager` prefers session, falls back to basic | `test/redfish/client/auth_manager_test.dart` | Partial: vendor auth-method negotiation is #015/#026 |
 | bmcweb telemetry: `TelemetryService` with `MetricReports` / `Triggers` / `MetricReportDefinitions` | OpenBMC `Redfish.md` §TelemetryService | n/a — sensors poll `Thermal`/`Sensors` directly | sensors tests | Note: alternative telemetry source for #007/#019 |
+| Log service: `ComputerSystem.LogServices` → `LogService` (`ClearLog` action, `ServiceEnabled`) → `Entries` collection; `LogEntry` (`EntryType` SEL/Event, `Severity`, `Created` RFC3339, `Message`, `Links.OriginOfCondition`); `@odata.nextLink` pagination | DSP0266 `LogService.json` / `LogEntry.json`; emulator pins LogService.v1_6_0 + LogEntry.v1_16_0 shapes | not implemented — no log reader feature yet (future #010 hardening / diagnostics) | emulator: `emulator_suite_test.dart` "log service" group asserts collection → ClearLog target → Entries fields + nextLink (`\u0024skiptoken`) | Contract pin only; feature work not queued — revisit via FUTUREWORK if a log view is planned |
 
 ## Trace notes
 
@@ -91,13 +93,21 @@ Folded into code this run:
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 16 tests: service root + BFS discovery
-     + discoverable `SessionService` URI (#017), sensors, firmware inventory +
-     `HttpPushUri`, KVM console, systems detail (ComputerSystem inventory
-     fields + `ResetType@Redfish.AllowableValues`), managers detail (console
-     capabilities + manager-level Reset allow-list, DOCS-4/#022), chassis
-     detail (inventory + Thermal/Power sub-resource chain + system link),
-     session + basic auth, power state/reset, and 404 error mapping.
+     `REDFISH_EMULATOR_URL` is defined. 30 tests: service root + BFS discovery
+     + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
+     Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
+     SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
+     (ComputerSystem inventory fields + `ResetType@Redfish.AllowableValues`),
+     managers detail (console capabilities + manager-level Reset allow-list,
+     DOCS-4/#022), chassis detail (inventory + Thermal/Power sub-resource chain
+     + system link), session + basic auth, power state/reset, 404/405 error
+     mapping, session lifecycle + SessionTimeout (#015/#017), TaskService +
+     EventService contracts (DOCS-7), query capabilities (#018), Accounts
+     collection (#015/#026), HttpPushUriApplyTime modes (#008/#020),
+     **OverviewService end-to-end hydration (#006: identity/health/power/
+     processor-memory summaries/indicator-LED/leading-thermal), LogService +
+     LogEntry collection incl. ClearLog action + `@odata.nextLink` pagination
+     (LogService.v1_6/LogEntry.v1_16 contract, pinned 2026-10-23 06:10).**
   Both cover the rows above end-to-end against authentic payload shapes.
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)
