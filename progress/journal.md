@@ -1303,3 +1303,71 @@
 - none opened/closed this run (DOCS corpus + UI-2 label; no issue status
   change). #015/#017/#026/#009/#021/#022/#016/#018 got DOCS-13 corpus
   provenance notes in FUTUREWORK.
+## 2026-10-23 — agent:redfish-automation — EMULATOR (account-service auth surface) + UI-2 Dashboard banner
+
+**Done:**
+- EMULATOR suite 34 → 36 tests against the pinned DMTF Redfish-Mockup-Server
+  (`23d21f9a`, HTTPS): pinned the **account-service auth surface** the #015/
+  #026 work reasons about (DOCS-13 just mirrored the exact schemas the mockup
+  serves — `ManagerAccount.v1_12_0`, `Role.v1_3_1`): (1) **AccountService
+  contract** — `#AccountService.v1_15_0.AccountService` publishes the lockout/
+  password-policy fields (`AuthFailureLoggingThreshold`,
+  `AccountLockoutThreshold/Duration/CounterResetAfter/CounterResetEnabled`,
+  `MinPasswordLength`, `LocalAccountAuth`, `RequireChangePasswordAction`) and
+  both discoverable sub-collection links (Accounts + Roles `@odata.id`). (2)
+  **Roles contract** — `AccountService/Roles` enumerates the 3 predefined
+  roles (Administrator/Operator/ReadOnly) and
+  `Roles/Administrator` (`#Role.v1_3_1.Role`) publishes `IsPredefined=true`,
+  `AssignedPrivileges` (Login/ConfigureManager/ConfigureUsers/ConfigureSelf/
+  ConfigureComponents) and `OemPrivileges` — the RoleId → privilege surface.
+  (3) **ManagerAccount detail contract** —
+  `Accounts/1` (`#ManagerAccount.v1_12_0.ManagerAccount`) publishes
+  `Enabled`/`Locked`/`PasswordChangeRequired`, `AccountTypes` containing
+  `Redfish` (#026 disambiguation), `Links.Role` → the Role resource, the
+  `#ManagerAccount.ChangePassword` action target, and keeps `Password`
+  masked (`null`) on the wire — the client must never read it back or log it.
+  Test-only raw-getJson pins (09:14/11:39 precedent); live payloads curl-
+  verified against the fixture before pinning. REQUIREMENTS.md test-platform
+  note 34 → 36 tests + ManagerAccount/Role rows cite the new pins.
+- UI-2 increment: `DashboardView` `_AggregatedBanner` (icon + health summary
+  row) now announces as ONE merged semantics node —
+  `Semantics(container: true, excludeSemantics: true, label: 'Health:
+  <summary>')` — the same pattern as the SystemCard/HealthBanner/PowerView
+  headers; the visible "1 OK, 1 Warning" text remains for sighted users. Two
+  new widget tests: the merged node ("Health: 1 OK, 1 Warning") + visible
+  text, and the "No systems" empty-state merged label.
+- No production service-code change; no new dependencies; no issue status
+  change. Formatted only the 3 touched Dart files (prior-run precedent: no
+  repo-wide `dart format`).
+
+**Decisions:**
+- EMULATOR selected per alternation (last run DOCS 12:50).
+- Chose the auth-surface pin because DOCS-13 just completed the schema corpus
+  for the exact versions the mockup serves — the emulator now pins the real
+  payload shapes for the same families (contract → schema provenance closes).
+- Followed the established test-only pin precedent: pin the exact live payload
+  shape before building the feature — #015/#026 now have their full reason-
+  about surface pinned (session lifecycle + AccountService policy + Roles +
+  ManagerAccount detail).
+- Dashboard banner merged label includes context ("Health: ...") so the
+  announcement is self-describing, matching the other card-header labels'
+  concise-summary style; the empty-state label ("Health: No systems") is
+  asserted too.
+
+**Next:**
+- Push 44 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout + AbsoluteSessionTimeout* expiry) — the full auth surface is
+  pinned: session lifecycle + SessionService timeout + AccountService lockout
+  policy + Roles/privileges + ManagerAccount detail (AccountTypes); implement
+  unit-level with the in-process mock server.
+- #022/#016: add the `ResetActionInfo` (ActionInfo `Parameters/AllowableValues`)
+  fallback to `FeatureRules.supportedResetTypes` — contract mirrored +
+  emulator-pinned; or #008/#020: build the task poller (GET-on-monitor,
+  TaskState parse, PercentComplete optional/absent, Messages[] timeline) + the
+  bmcweb HTTP-push firmware upload path.
+
+**Issues touched:**
+- none opened/closed this run (emulator contract pin + UI-2 label; no issue
+  status change). #015/#026 got the full account-service auth-surface pin
+  recorded in FUTUREWORK.

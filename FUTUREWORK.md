@@ -7,32 +7,27 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 (DOCS run — **DOCS-13 auth/network/ActionInfo
-  corpus mirror**: 19 files / 397,572 bytes for the emulator-pinned-but-
-  unmirrored resources — `Session`/`ManagerAccount`/`Role` (auth surface #015/
-  #017/#026), `ManagerNetworkProtocol` (KVMIP/HTTPS/SSH endpoints for #009/#021),
-  `ActionInfo` (ResetActionInfo allow-list for #022/#016), versioned
-  `ServiceRoot` (#018) + mockup-served `Task.v1_7_3`/`TaskService.v1_2_0`;
-  REQUIREMENTS.md DOCS-13 audit table; anchors re-verified unchanged
-  (bmcweb `27e0930b`, mockup `23d21f9a`, DSP0266 1.25.0); **UI-2 increment:
-  FirmwareView header row merged semantics label** (`Firmware and update
-  management[, loading]`) + 2 widget tests — remaining UI-2: dialog
-  touch-targets)
-- **Current focus:** DOCS-13 done (auth/network/ActionInfo corpus mirror —
-  Session/ManagerAccount/Role/ManagerNetworkProtocol/ActionInfo/ServiceRoot
-  versioned defs + Task/TaskService mockup-served versions; REQUIREMENTS.md
-  DOCS-13 audit; no code change needed); DOCS-12 done (versioned corpus
-  complete for all 16 client-mapped families — aggregator + newest +
-  mockup-served provenance); EMULATOR suite at **34 tests** (Task resource
-  contract pin, 09:14 run — the #008/#020 task poller has its full parse
-  surface pinned; Manager NetworkProtocol/EthernetInterfaces surface, 11:39
-  run; OverviewService end-to-end hydration #006 and the LogService/LogEntry
-  collection contract incl. ClearLog + `@odata.nextLink` pinned 06:10 run);
-  DOCS-10/11 done (Task + LogEntry corpus mirrors); next P1: #015
-  (AuthManager) — emulator pins the full session contract + the AccountService
-  surface, and the Session/ManagerAccount/Role schemas are now mirrored
-  (#015/#017/#026); #022/#016: `ResetActionInfo` ActionInfo allow-list fallback
-  contract now mirrored + emulator-pinned
+- **Last updated:** 2026-10-23 (EMULATOR run — **account-service auth surface
+  pinned**: AccountService lockout/password-policy fields + Roles link
+  (`#AccountService.v1_15_0`), Roles collection contract (3 predefined roles
+  Administrator/Operator/ReadOnly with `AssignedPrivileges`/`OemPrivileges`/
+  `IsPredefined` — `#Role.v1_3_1`, DOCS-13 mirrored), ManagerAccount detail
+  contract (`AccountTypes`/`PasswordChangeRequired`/`Locked`/`Enabled`/
+  `Links.Role` + `#ManagerAccount.ChangePassword` target + `Password` masked
+  on the wire — `#ManagerAccount.v1_12_0`); emulator suite 34 → **36 tests**;
+  **UI-2 increment: DashboardView aggregated banner merged semantics label**
+  (`Health: <summary>` incl. "No systems") + 2 widget tests — remaining UI-2:
+  dialog touch-targets)
+- **Current focus:** EMULATOR account-service auth surface done (the #015/#026
+  surface is now fully pinned end-to-end: session lifecycle + SessionTimeout,
+  AccountService lockout policy, Roles/privileges, ManagerAccount detail);
+  DOCS-13 done (auth/network/ActionInfo corpus mirror); EMULATOR suite at **36
+  tests** (account-service auth surface, 13:58 run); DOCS-12 done (versioned
+  corpus complete for all 16 client-mapped families); next P1: #015
+  (AuthManager) — emulator pins the full auth contract + the
+  Session/ManagerAccount/Role schemas are mirrored (#015/#017/#026);
+  #022/#016: `ResetActionInfo` ActionInfo allow-list fallback contract now
+  mirrored + emulator-pinned
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -200,7 +195,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       CompletedTaskOverWritePolicy/LifeCycle fields — 2026-10-23 09:14) → **34
       tests (Manager NetworkProtocol + EthernetInterfaces surface: KVMIP/SSH/
       HTTPS endpoints for the #009/#021 console renderer + NIC MAC/IP/VLAN —
-      2026-10-23 11:39)**)
+      2026-10-23 11:39) → **36 tests (account-service auth surface #015/#026:
+      AccountService lockout/password-policy + Roles link, Roles collection +
+      AssignedPrivileges/OemPrivileges, ManagerAccount detail incl.
+      AccountTypes/PasswordChangeRequired/Locked/Links.Role/ChangePassword +
+      Password masked on the wire — 2026-10-23 13:58)**)
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -246,7 +245,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       DELETE session 204 vs DELETE collection 405, SessionTimeout=30 published —
       run 2026-10-22; emulator AccountService test added 2026-10-23: Accounts
       collection discoverable + readable with UserName/RoleId, MinPasswordLength
-      published — the auth-surface contract #015/#026 reason about)
+      published — the auth-surface contract #015/#026 reason about; **full
+      account-service auth surface pinned 2026-10-23 13:58**: AccountService
+      lockout/password-policy fields + Roles link, Roles collection (3
+      predefined roles with AssignedPrivileges/OemPrivileges), ManagerAccount
+      detail (AccountTypes/PasswordChangeRequired/Locked/Enabled/Links.Role/
+      ChangePassword target + Password masked on the wire))
 - [x] **#027** Verify the Flutter toolchain issue is stale; close it with evidence
       if `flutter analyze`/`flutter test` work, otherwise fix it.
       (run 2026-10-22 — closed with evidence: `~/flutter/bin/flutter` on PATH,
@@ -366,7 +370,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       merged node + visible text; FirmwareView header row merged semantics
       label (`Firmware and update management[, loading]`) done 2026-10-23 —
       Semantics wraps the title+in-flight-spinner row, widget tests for both
-      the loading and idle states; extend to
+      the loading and idle states; DashboardView aggregated banner merged
+      semantics label (`Health: <summary>`, incl. the "No systems" empty
+      state) done 2026-10-23 13:58 — Semantics(container + excludeSemantics)
+      wraps the icon+summary row, widget tests assert the merged node +
+      visible text; extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.

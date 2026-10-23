@@ -1244,3 +1244,73 @@ Append-only run log for the `redfish-automation` scheduler job.
   `ResetActionInfo` (ActionInfo `Parameters/AllowableValues`) fallback to
   `FeatureRules.supportedResetTypes` — the contract is now mirrored
   (`ActionInfo.v1_6_0.json` newest + v1_4_1 mockup-served) and emulator-pinned.
+
+## 2026-10-23 13:58 — EMULATOR (account-service auth surface) + UI-2 Dashboard banner
+
+- **Baseline:** analyze 0; tests 291 passed / 1 skipped; starting commit d83835c
+  (branch `main` ahead 43 of origin); issues validate OK; working tree clean.
+- **Primary work:** EMULATOR — pinned the **account-service auth surface** the
+  #015/#026 work reasons about, complementing the DOCS-13 schema mirror
+  (`ManagerAccount.v1_12_0`/`Role.v1_3_1` are exactly what the pinned mockup
+  serves). The suite previously only walked the Accounts collection
+  (UserName/RoleId); it now pins the full surface end-to-end over HTTPS:
+  (1) **AccountService** lockout/password policy + both discoverable
+  sub-collection links (`AuthFailureLoggingThreshold`,
+  `AccountLockoutThreshold/Duration/CounterResetAfter/CounterResetEnabled`,
+  `LocalAccountAuth`, `RequireChangePasswordAction`, `Accounts`+`Roles`
+  `@odata.id` — `#AccountService.v1_15_0.AccountService`); (2) **Roles**
+  collection contract (3 predefined roles Administrator/Operator/ReadOnly, and
+  `#Role.v1_3_1.Role` `IsPredefined`/`AssignedPrivileges`
+  (Login/ConfigureManager/ConfigureUsers/ConfigureSelf/ConfigureComponents)/
+  `OemPrivileges`); (3) **ManagerAccount detail** contract
+  (`Enabled`/`Locked`/`PasswordChangeRequired`, `AccountTypes` containing
+  `Redfish` for #026 disambiguation, `Links.Role` → the Role resource, and the
+  `#ManagerAccount.ChangePassword` action target) — plus the wire contract
+  that `Password` must stay masked (`null`) and never be logged/read back.
+  Test-only raw-getJson pins, the 09:14/11:39 precedent; no client model
+  exists yet (auth surface TO-BUILD), so no production code change.
+- **Docs:** none this run (no new downloads). REQUIREMENTS.md updated:
+  test-platform note 34 → 36 tests with the auth-surface pin described, and
+  the ManagerAccount/Role rows now cite the detail/collection pins.
+- **Emulator:** server `23d21f9a` re-pinned by `tool/emulator/run_tests.sh`;
+  suite 34 → **36 tests, all passing** (account service lockout/Roles link,
+  Roles collection + privileges, ManagerAccount detail + Password-masked).
+  Live payloads curl-verified against the fixture before pinning. No emulator
+  code change; `allowSelfSigned` remains test-profile only (EMU-6).
+- **Code/tests:** `test_integration/emulator/emulator_suite_test.dart` (+2
+  tests, one deepened); `test/features/systems/dashboard_view_test.dart` (+2
+  widget tests); `lib/features/systems/views/dashboard_view.dart` (UI-2 label).
+  No issue status change; no new dependencies.
+- **UI:** UI-2 increment — `DashboardView` `_AggregatedBanner` (icon + health
+  summary row) now announces as **one merged semantics node**
+  (`Semantics(container: true, excludeSemantics: true, label: 'Health: <summary>')`),
+  the same pattern as the SystemCard/HealthBanner/PowerView headers; the
+  visible summary text remains for sighted users (no a11y regression). This
+  was the last primary dashboard header without the merged pattern. Two new
+  widget tests: the merged node ("Health: 1 OK, 1 Warning") + visible text,
+  and the "No systems" empty-state label.
+- **Verification:** analyze 0; tests 293 passed / 1 skipped (baseline 291 →
+  +2: the dashboard banner semantics tests; the +2 emulator cases live in the
+  emulator suite, skipped in plain `flutter test`); emulator 36/36 via
+  `tool/emulator/run_tests.sh`; issues validate OK; `git diff --check` clean;
+  secret scan clean (no tokens/creds in diff). Formatted only the 3 touched
+  Dart files (no repo-wide churn — prior-run precedent).
+- **Commit:** c577ca8 — `auto: EMULATOR — account-service auth surface pinned
+  (AccountService lockout policy + Roles collection/privileges + ManagerAccount
+  detail incl. Password masked), UI-2 DashboardView banner merged semantics
+  (run 2026-10-23 13:58)`; pushed: **no** — same GitHub
+  credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN
+  env, no SSH key on this machine); local commit kept, not retried. Commits
+  queued locally before this run: 43 (now 44 with this commit).
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (44 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
+  logout URI, token rehydrate, SessionTimeout + AbsoluteSessionTimeout*
+  expiry) — the full auth surface is now pinned: session lifecycle +
+  SessionService timeout + AccountService lockout policy + Roles/privileges +
+  ManagerAccount detail (AccountTypes); implement unit-level with the
+  in-process mock server; 3) #022/#016: add the `ResetActionInfo` (ActionInfo
+  `Parameters/AllowableValues`) fallback to `FeatureRules.supportedResetTypes`
+  — contract mirrored + emulator-pinned; or #008/#020: build the task poller
+  (GET-on-monitor, TaskState parse, PercentComplete optional, Messages[]
+  timeline) + the bmcweb HTTP-push firmware upload path.
