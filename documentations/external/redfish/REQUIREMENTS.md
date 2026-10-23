@@ -132,7 +132,7 @@ re-verified this run (see `documentations/external/README.md`).
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 32 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 34 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -150,7 +150,9 @@ re-verified this run (see `documentations/external/README.md`).
      resource contract (TaskState/TaskStatus/Start-EndTime/Messages;
      PercentComplete absent on the fixture — the #008/#020 poller must treat it
      as unknown) + TaskService CompletedTaskOverWritePolicy/LifeCycle fields
-     (pinned 2026-10-23 08:xx).**
+     (pinned 2026-10-23 08:xx), Manager NetworkProtocol + EthernetInterfaces
+     surface (KVMIP/SSH/HTTPS service endpoints for the #009/#021 KVM console
+     renderer + NIC MAC/IP/VLAN fields — pinned 2026-10-23 11:xx).**
   Both cover the rows above end-to-end against authentic payload shapes.
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)

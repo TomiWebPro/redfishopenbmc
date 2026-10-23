@@ -1095,3 +1095,73 @@ Append-only run log for the `redfish-automation` scheduler job.
   firmware upload path (both push URIs + `HttpPushUriOptions` apply-time modes
   + `SimpleUpdateActionInfo` already asserted; `LocalImageStore*`/`Stage`/
   `Activate` per `UpdateService.v1_17_1.json` DOCS-12 are upstream context).
+
+## 2026-10-23 11:39 — EMULATOR (Manager network surface pin) + UI-2 OverviewView HealthBanner
+
+- **Baseline:** analyze 0; tests 288 passed / 1 skipped; starting commit 57110cb
+  (branch `main` ahead 38 of origin); issues validate OK; working tree clean;
+  emulator pin `23d21f9a` verified unchanged (git rev-parse on the pinned
+  checkout).
+- **Primary work:** EMULATOR — pinned the **Manager network surface** the
+  #009/#021 KVM console renderer and future NIC features consume:
+  `GET /redfish/v1/Managers/BMC/NetworkProtocol` exposes
+  `#ManagerNetworkProtocol.` with HostName/FQDN and the service endpoint table
+  — `KVMIP` (ProtocolEnabled true + port 5288, the KVM-over-IP service the
+  GraphicalConsole connect type resolves), `HTTPS` (443) and `SSH` (22);
+  `GET /redfish/v1/Managers/BMC/EthernetInterfaces/{eth0}` enumerates the NIC
+  surface — InterfaceEnabled, MACAddress, SpeedMbps, MTUSize, IPv4Addresses
+  (Address/SubnetMask/AddressOrigin/Gateway) and VLAN (VLANEnable/VLANId).
+  Test-only raw-getJson pins (same precedent as the 09:14 Task contract pin);
+  no production service-code change. The client must resolve the console
+  endpoint from the advertised KVMIP port, never hardcode ports.
+- **Docs:** no new downloads (DOCS-6 budget untouched). Updated
+  `documentations/external/redfish/REQUIREMENTS.md`: emulator test-platform note
+  "32 tests" → "34 tests" with the new network-surface group listed; "Last
+  audited" already DOCS-12 (this run is test-only, no REQUIREMENTS row change).
+- **Emulator:** suite 32 → 34 tests, all green over HTTPS (34/34 re-run after
+  `dart format` against the final tree); server killed by exact-PID after each
+  run (port 8443 free, no stray process); pin `23d21f9a` unchanged;
+  `tool/emulator/run_tests.sh` unchanged.
+- **Code/tests:** no production service-code change this run — test-only pins
+  via raw `getJson` against the live mockup (the network surface is for the
+  TO-BUILD #009/#021 console renderer). Emulator suite +2
+  (`emulator_suite_test.dart` "manager network: NetworkProtocol exposes the
+  KVMIP/SSH/HTTPS service endpoints a console renderer resolves (#009/#021)" +
+  "manager network: EthernetInterfaces collection enumerates the NIC MAC/IP/
+  VLAN surface"). UI-2 increment: `OverviewView` `HealthBanner` (icon + label
+  row) now announces as **one merged semantics node** —
+  `Semantics(container: true, excludeSemantics: true, label: 'Health: <state>')`
+  wrapping the banner row, the same pattern as the InfoCard/SystemCard/KVM/
+  PowerView headers; the visible "Healthy" text remains for sighted users (no
+  a11y regression). New widget test asserts the merged label
+  ("Health: Healthy"). No new dependencies; no issue status change.
+- **UI:** OverviewView HealthBanner merged semantics label (UI-2). Rationale:
+  the overview banner was the last primary overview header without the merged
+  pattern — the icon previously announced as a separate unlabeled node before
+  the bare "Healthy" text. Widget test asserts the merged node + that the
+  visible label text still renders; all existing OverviewView tests (loading/
+  data/dark/adaptive/responsive/error) still pass.
+- **Verification:** analyze 0; tests 289 passed / 1 skipped (baseline 288 →
+  +1: the HealthBanner semantics test; the +2 emulator cases live in the
+  emulator suite which is skipped in plain `flutter test`); emulator 34/34;
+  issues validate OK; `git diff --check` clean; secret scan clean (no tokens/
+  creds in diff). Formatted only the 3 touched Dart files (no repo-wide churn
+  — prior-run precedent).
+- **Commit:** TBD — `auto: EMULATOR — Manager NetworkProtocol +
+  EthernetInterfaces contract pinned (KVMIP/SSH/HTTPS endpoints for #009/#021
+  console renderer + NIC MAC/IP/VLAN), UI-2 OverviewView HealthBanner merged
+  semantics (run 2026-10-23 11:39)`; pushed: **no** — the same GitHub
+  credential blocker (no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN
+  env, no SSH key on this machine); local commit kept, not retried (hash
+  recorded by the follow-up `chore: record run hash` commit). Commits
+  queued locally before this run: 38.
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (39 queued); 2) P1 #015 AuthManager (authMethod dispatch, safe
+  logout URI, token rehydrate, SessionTimeout expiry — SessionService
+  v1_2_0 AbsoluteSessionTimeout* per DOCS-12) — emulator pins the full session
+  + AccountService + Roles surface; implement unit-level with the in-process
+  mock server; 3) #009/#021: the NetworkProtocol KVMIP port is now pinned — a
+  KVM console launch can resolve the endpoint; or #008/#020: build the task
+  poller (GET-on-monitor, TaskState 13-value parse, PercentComplete
+  optional/absent, Messages[] timeline) + the bmcweb HTTP-push firmware upload
+  path (both push URIs + apply-time modes + SimpleUpdateActionInfo asserted).

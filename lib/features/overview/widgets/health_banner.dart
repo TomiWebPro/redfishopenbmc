@@ -36,21 +36,29 @@ class HealthBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
-      child: Row(
-        children: <Widget>[
-          Icon(icon, color: color, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
+      // UI-2: the banner (icon + label) announces as ONE merged semantics node
+      // ("Health: Healthy") — the same pattern as the card headers — so screen
+      // readers get a concise banner summary instead of a bare label.
+      child: Semantics(
+        container: true,
+        excludeSemantics: true,
+        label: 'Health: $label',
+        child: Row(
+          children: <Widget>[
+            Icon(icon, color: color, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

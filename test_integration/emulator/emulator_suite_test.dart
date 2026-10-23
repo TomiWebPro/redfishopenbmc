@@ -217,6 +217,75 @@ void main() {
         isTrue,
       );
     });
+
+    test(
+        'manager network: NetworkProtocol exposes the KVMIP/SSH/HTTPS service '
+        'endpoints a console renderer resolves (#009/#021)', () async {
+      // The KVM console (#009/#021) requires more than
+      // GraphicalConsole.ServiceEnabled — a renderer must resolve the actual
+      // network endpoint. The DMTF mockup publishes the manager network
+      // protocol table: KVMIP (the KVM-over-IP service the GraphicalConsole
+      // connect type refers to), plus the SSH/HTTPS/IPMI ports. The client
+      // must read these from the discovered Manager.NetworkProtocol, never
+      // hardcode ports.
+      final Map<String, dynamic> proto =
+          await client.getJson('/redfish/v1/Managers/BMC/NetworkProtocol');
+      expect(proto['@odata.type'], startsWith('#ManagerNetworkProtocol.'));
+      expect(proto['HostName'], isA<String>());
+      expect(proto['FQDN'], isA<String>());
+      final Map<dynamic, dynamic> kvmip =
+          proto['KVMIP'] as Map<dynamic, dynamic>;
+      expect(kvmip['ProtocolEnabled'], isTrue,
+          reason: '#009: the KVM-over-IP service must be enabled for the '
+              'GraphicalConsole to be reachable');
+      expect(kvmip['Port'], isA<int>(),
+          reason: '#009: the client resolves the console endpoint from the '
+              'KVMIP port advertised in NetworkProtocol');
+      // HTTPS/SSH remain the out-of-band management endpoints the app itself
+      // uses; pinning them guards against the fixture drifting silently.
+      final Map<dynamic, dynamic> https =
+          proto['HTTPS'] as Map<dynamic, dynamic>;
+      expect(https['ProtocolEnabled'], isTrue);
+      expect(https['Port'], 443);
+      final Map<dynamic, dynamic> ssh = proto['SSH'] as Map<dynamic, dynamic>;
+      expect(ssh['ProtocolEnabled'], isTrue);
+      expect(ssh['Port'], 22);
+    });
+
+    test(
+        'manager network: EthernetInterfaces collection enumerates the NIC '
+        'MAC/IP/VLAN surface', () async {
+      // A manager network surface a future NIC feature (and the discovery
+      // graph) can consume: the EthernetInterfaces collection is enumerable
+      // and each interface publishes MAC, speed, MTU, IPv4 addressing and
+      // optional VLAN — all fields bmcweb also serves (bmcweb docs
+      // Redfish.md; DOCS-4 audit).
+      final Map<String, dynamic> collection =
+          await client.getJson('/redfish/v1/Managers/BMC/EthernetInterfaces');
+      final List<dynamic> members = collection['Members'] as List<dynamic>;
+      expect(members, isNotEmpty);
+      final String ethUri =
+          (members.first as Map<dynamic, dynamic>)['@odata.id'] as String;
+      final Map<String, dynamic> eth = await client.getJson(ethUri);
+      expect(eth['@odata.type'], startsWith('#EthernetInterface.'));
+      expect(eth['InterfaceEnabled'], isTrue);
+      expect(eth['MACAddress'], isA<String>());
+      expect(eth['SpeedMbps'], isA<int>());
+      expect(eth['MTUSize'], isA<int>());
+      final List<dynamic> ipv4 =
+          eth['IPv4Addresses'] as List<dynamic>? ?? <dynamic>[];
+      expect(ipv4, isNotEmpty);
+      final Map<dynamic, dynamic> address = ipv4.first as Map<dynamic, dynamic>;
+      expect(address['Address'], isA<String>());
+      expect(address['SubnetMask'], isA<String>());
+      expect(address['AddressOrigin'], isA<String>());
+      expect(address.containsKey('Gateway'), isTrue);
+      final Map<dynamic, dynamic>? vlan = eth['VLAN'] as Map<dynamic, dynamic>?;
+      if (vlan != null) {
+        expect(vlan.containsKey('VLANEnable'), isTrue);
+        expect(vlan.containsKey('VLANId'), isTrue);
+      }
+    });
   });
 
   group('emulator: feature services', () {

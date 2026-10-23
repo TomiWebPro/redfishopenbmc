@@ -1194,3 +1194,55 @@
 **Issues touched:**
 - none opened/closed this run (DOCS corpus + UI-2 label; no issue status
   change). #015/#008/#020 got DOCS-12 schema-provenance notes in FUTUREWORK.
+## 2026-10-23 — agent:redfish-automation — EMULATOR (Manager network pin) + UI-2 HealthBanner
+
+**Done:**
+- EMULATOR suite 32 → 34 tests against the pinned DMTF Redfish-Mockup-Server
+  (`23d21f9a`, HTTPS): (1) **Manager NetworkProtocol contract (#009/#021)** —
+  `GET /redfish/v1/Managers/BMC/NetworkProtocol` publishes
+  `#ManagerNetworkProtocol.` with HostName/FQDN and the endpoint table:
+  `KVMIP` (ProtocolEnabled + port 5288 — the KVM-over-IP service a console
+  renderer resolves), `HTTPS` (443) and `SSH` (22). (2) **EthernetInterfaces
+  contract** — `Managers/BMC/EthernetInterfaces/{eth0}` enumerates
+  InterfaceEnabled, MACAddress, SpeedMbps, MTUSize, IPv4Addresses
+  (Address/SubnetMask/AddressOrigin/Gateway) and VLAN (VLANEnable/VLANId).
+  Test-only raw-getJson pins (09:14 Task-contract precedent); the client must
+  resolve the console endpoint from the advertised KVMIP port, never hardcode
+  ports. REQUIREMENTS.md test-platform note 32 → 34 tests.
+- UI-2 increment: `OverviewView` `HealthBanner` (icon + label row) now
+  announces as ONE merged semantics node — `Semantics(container: true,
+  excludeSemantics: true, label: 'Health: <state>')` — the same pattern as the
+  InfoCard/SystemCard/KVM/PowerView headers; the visible "Healthy" text remains
+  for sighted users. New widget test asserts the merged node ("Health:
+  Healthy") + visible text; all existing OverviewView tests still green.
+- No production service-code change; no new dependencies; no issue status
+  change. Formatted only the 3 touched Dart files (prior-run precedent: no
+  repo-wide `dart format` — reintroduces the known `curly_braces` lint).
+
+**Decisions:**
+- EMULATOR selected per alternation (last run DOCS 10:34).
+- Followed the established test-only pin precedent: pin the exact live payload
+  shape before building the feature — the NetworkProtocol KVMIP port is the
+  endpoint source the TO-BUILD #009/#021 console renderer requires.
+- HealthBanner merged label includes context ("Health: ...") so the
+  announcement is self-describing, matching the other card-header labels'
+  concise-summary style.
+
+**Next:**
+- Push 39 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout expiry — now also `AbsoluteSessionTimeout*` per
+  `SessionService.v1_2_0.json` DOCS-12) — unit-level with the in-process mock
+  server.
+- #009/#021: KVM console launch — resolve the endpoint from the now-pinned
+  `NetworkProtocol.KVMIP` (port 5288) + EthernetInterfaces; or #008/#020:
+  build the task poller (GET-on-monitor, TaskState 13-value parse,
+  PercentComplete optional/absent, Messages[] timeline) + the bmcweb HTTP-push
+  firmware upload path (both push URIs, apply-time modes, SimpleUpdateActionInfo
+  already asserted).
+
+**Issues touched:**
+- none opened/closed this run (emulator contract pin + UI-2 label; no issue
+  status change). #009/#021 got the NetworkProtocol/EthernetInterfaces pin
+  recorded in FUTUREWORK — the console renderer's endpoint surface is now
+  pinned.

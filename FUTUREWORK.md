@@ -7,21 +7,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 (DOCS run — **DOCS-12 done**: mirrored the
-  missing **versioned** definitions for the six aggregator-only families —
-  `UpdateService`/`EventService`/`SessionService`/`Manager`/`Power`/`Thermal` —
-  newest + mockup-served versions (12 files, 553,772 bytes, inside DOCS-6
-  budget); REQUIREMENTS.md rows for those families now cite real mirror files;
-  no client code change (deltas audited: SessionService
-  `AbsoluteSessionTimeout*`, UpdateService `LocalImageStore*`/`Stage`/`Activate`
-  noted for #015/#008/#020); UI-2 increment: PowerView card header merged
-  semantics label (`<name>, power <state>`) + widget test; EMULATOR run 09:14
-  pinned Task resource contract end-to-end — Task 545 publishes `TaskState
-  Completed`, `TaskStatus OK`, RFC3339 Start/EndTime, `Messages[]`
-  (MessageId/Message/MessageArgs/Severity) — and **no `PercentComplete`**, so
-  the #008/#020 poller must treat it as unknown; TaskService
-  `CompletedTaskOverWritePolicy=Manual` + `LifeCycleEventOnTaskStateChange`
-  pinned; emulator suite 30 → **32 tests**)
+- **Last updated:** 2026-10-23 (EMULATOR run — **EMU-2 suite 32 → 34 tests**:
+  Manager **NetworkProtocol** + **EthernetInterfaces** surface pinned —
+  KVMIP/SSH/HTTPS service endpoints (KVMIP port 5288, the #009/#021 console
+  renderer's endpoint source) + NIC MAC/IP/VLAN fields; REQUIREMENTS.md
+  test-platform note updated to 34; UI-2 increment: **OverviewView
+  HealthBanner merged semantics label** (`Health: <state>` as one node) +
+  widget test)
 - **Current focus:** DOCS-12 done (versioned corpus now complete for all 16
   client-mapped families — aggregator + newest + mockup-served provenance);
   EMULATOR suite at **32 tests** (Task resource contract pin, 09:14 run — the
@@ -38,11 +30,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
   v1_15_0); UI-3 fully done (all views covered); **UI-1 done** (dashboard
   error summary + Retry); **UI-2 increments** (InfoCard merged header semantics,
   06:10 run; SystemCard merged header semantics, 07:xx run; KvmConsole card
-  header merged semantics, 09:14 run; **PowerView card header merged semantics,
-  this run** — remaining UI-2: OverviewView banner/HealthBanner, FirmwareView
+  header merged semantics, 09:14 run; PowerView card header merged semantics,
+  10:34 run; **OverviewView HealthBanner merged semantics label
+  (`Health: <state>`), 11:39 run** — remaining UI-2: FirmwareView
   header row, dialog touch-targets); next P1: #015 (AuthManager) — emulator
   now pins the full session contract + the AccountService surface + overview
-  hydration; #016/#022 (ActionInfo/etag) or #008/#020 (HTTP-push firmware,
+  hydration (+ Manager NetworkProtocol/EthernetInterfaces surface, 11:39);
+  #016/#022 (ActionInfo/etag) or #008/#020 (HTTP-push firmware,
   Tasks URI + push apply-time modes + both push URIs + SimpleUpdateActionInfo +
   LogEntry collection + **Task resource**) all have emulator assertions
 - **Run cadence:** `0 */5 * * *`
@@ -191,7 +185,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       collection contract incl. ClearLog + `@odata.nextLink` pagination —
       2026-10-23 06:10) → 32 tests (Task resource contract: TaskState/
       TaskStatus/Start-EndTime/Messages incl. absent PercentComplete, + TaskService
-      CompletedTaskOverWritePolicy/LifeCycle fields — 2026-10-23 09:14)**)
+      CompletedTaskOverWritePolicy/LifeCycle fields — 2026-10-23 09:14) → **34
+      tests (Manager NetworkProtocol + EthernetInterfaces surface: KVMIP/SSH/
+      HTTPS endpoints for the #009/#021 console renderer + NIC MAC/IP/VLAN —
+      2026-10-23 11:39)**)
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -314,6 +311,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `LifeCycleEventOnTaskStateChange=true` — the poller only lacks
       GET-on-monitor + TaskState parsing)
 - [ ] **#009 / #021** Remote KVM capability detection and console rendering.
+      (emulator now pins the manager network surface the console renderer
+      needs: `Manager.NetworkProtocol.KVMIP` ProtocolEnabled + port 5288, plus
+      HTTPS/SSH endpoints, and EthernetInterfaces MAC/IP/VLAN — run
+      2026-10-23 11:39; #009 must resolve the console endpoint from the
+      advertised KVMIP port, never hardcode ports)
 - [ ] **#010** Hardening: secure storage, theming, accessibility, coverage.
 
 ## P2 — UI improvements (one small, tested increment per green run)
@@ -346,7 +348,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       title+Enabled/Disabled-chip row, widget tests for both states; PowerView
       card header merged semantics label (`<name>, power <state>`) done
       2026-10-23 — Semantics on the title+PowerBadge row, widget test for the
-      merged node; extend to
+      merged node; OverviewView HealthBanner merged semantics label
+      (`Health: <state>`) done 2026-10-23 11:39 — Semantics(container +
+      excludeSemantics) wraps the icon+label row, widget test asserts the
+      merged node + visible text; extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
       widget tests for each breakpoint.

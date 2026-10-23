@@ -169,6 +169,22 @@ void main() {
     });
 
     testWidgets(
+        'health banner announces one merged semantics node incl. the state '
+        '(UI-2)', (tester) async {
+      await tester.pumpWidget(scopeWith(sample: fullSample()));
+      await tester.pumpAndSettle();
+      // The banner (icon + label) is one merged node: "Health: Healthy" —
+      // same pattern as the InfoCard/SystemCard/PowerView header labels.
+      expect(
+        find.bySemanticsLabel(RegExp('^Health: Healthy')),
+        findsOneWidget,
+        reason: 'the health banner must announce as a single merged node',
+      );
+      // The visible label text is still present for sighted users.
+      expect(find.text('Healthy'), findsOneWidget);
+    });
+
+    testWidgets(
         'omits the temperature card and shows "not exposed" for missing fields',
         (tester) async {
       await tester.pumpWidget(scopeWith(sample: emptySample()));
