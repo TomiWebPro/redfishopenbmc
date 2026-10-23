@@ -7,18 +7,16 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 17:07 (EMULATOR run — **live `$expand`
-  round-trip pin for the #018 lightweight discovery pass**:
-  `GET /redfish/v1/Systems?$expand=.($levels=1)` inlines full member bodies
-  (Model/PowerState/Actions.Reset allow-list incl. Nmi + Processor/Memory
-  summaries) in ONE round trip — the N+1-avoiding shape the #018 discovery
-  pass can rely on; recorded negative: the DMTF mockup ships **no**
-  `ResetActionInfo` ActionInfo resource for `#ComputerSystem.Reset` (only the
-  annotation form, 16:05 run), so the ActionInfo-*resource* crawl stays
-  #022/#016 as a bmcweb-style code task; **UI-2 increment: SensorsView
-  section headers merged labels** (`Temperatures, N`/`Fans, N`/`Sensors, N`)
-  + 1 widget test; emulator 37/37; suite 298 → 299 tests)
-- **Current focus:** EMULATOR suite at **37 tests** (the live `$expand`
+- **Last updated:** 2026-10-23 17:30 (DOCS run — **DOCS-14: OData base
+  vocabulary `odata.4.0.0.json` mirrored**, closing the last un-mirrored
+  REQUIREMENTS.md source citation (row 65 `Odata.json`); upstream anchors
+  re-verified: bmcweb advanced `27e0930b` → `fbb307a` with all four mirrored
+  docs **byte-identical** (no refresh), mockup still `23d21f9a`, DSP0266 still
+  1.25.0, schema index 200 OK; **UI-2 increment: self-signed certificate
+  warning banner in SystemProfileForm is now one merged semantics node** +
+  1 widget test; suite 299 → 300 tests)
+- **Current focus:** DOCS-14 done (OData base vocabulary mirror + anchor
+  re-verification); EMULATOR suite at **37 tests** (the live `$expand`
   round-trip pin, 17:07 run); DOCS-13 done (auth/network/ActionInfo corpus
   mirror); DOCS-12 done (versioned corpus complete for all 16 client-mapped
   families); next P1: #015 (AuthManager) — emulator pins the full auth
@@ -167,6 +165,19 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       Trace-notes count 16 → 21; audited newest-vs-served deltas — no client
       code change needed; upstream anchors re-verified: bmcweb `27e0930b`,
       mockup `23d21f9a`, DSP0266 1.25.0, schema index 200 OK)
+
+- [x] **DOCS-14** Mirror the OData base vocabulary (`odata.4.0.0.json` —
+      the canonical lowercase file; bare `Odata.json` 404s upstream) so the
+      last un-mirrored REQUIREMENTS.md source citation (row 65,
+      `@odata.id` link traversal) resolves to a real mirror file; byte-verify
+      against `test/fixtures/redfish/schemas/Odata.json`; re-verify all corpus
+      anchors (bmcweb HEAD, mockup pin, DSP0266 version, schema index).
+      (run 2026-10-23 — 1,834 bytes, inside the DOCS-6 budget; byte-identical
+      to the fixture copy (fixture proven current); bmcweb advanced
+      `27e0930b` → `fbb307a` with all four mirrored docs byte-identical (no
+      refresh needed, anchors updated); mockup still `23d21f9a`; DSP0266 still
+      1.25.0; schema index 200 OK; manifest row + REQUIREMENTS.md DOCS-14
+      audit section added)
 
 ## P1 — emulator and integration tests
 
@@ -401,7 +412,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       visible text; **dialog action buttons explicit 48×48px touch targets done
       2026-10-23 16:05 — `ConfirmResetDialog` Cancel/Confirm get
       `minimumSize: Size(48,48)` + padded tap target, widget test asserts both
-      buttons render ≥48px tall — remaining UI-2: focus order, remaining
+      buttons render ≥48px tall; **SystemProfileForm self-signed certificate
+      warning banner merged semantics label (`Warning: self-signed
+      certificates disable TLS verification. Only enable for trusted, isolated
+      management networks.`) done 2026-10-23 17:30 — Semantics(container +
+      excludeSemantics) wraps the icon+text row revealed by the "Allow
+      self-signed certificate" switch, widget test asserts the merged node +
+      visible text — remaining UI-2: focus order, remaining
       non-card labels); extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

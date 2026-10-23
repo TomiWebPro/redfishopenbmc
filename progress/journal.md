@@ -1483,3 +1483,54 @@
 - none opened/closed this run. #018 got the live `$expand` contract pin,
   #022/#016 got the ActionInfo-resource negative finding, both recorded in
   FUTUREWORK; issues remain open.
+## 2026-10-23 — agent:redfish-automation — DOCS (OData base vocabulary mirror + anchor re-verification) + UI-2 self-signed warning semantics
+
+**Done:**
+- DOCS primary workstream (alternation: EMULATOR 17:07 → DOCS next). Closed the
+  last un-mirrored REQUIREMENTS.md source citation: row 65 (`@odata.id` link
+  traversal) cited `Odata.json`, but the external corpus had no OData schema.
+  The bare `Odata.json` 404s on the DMTF schema index (verified live); the
+  canonical file is the lowercase `odata.4.0.0.json` (OData 4.0.0 base
+  vocabulary: `context`/`id`/`idRef`). Mirrored it (1,834 bytes, SHA-256
+  `c73cce02…`, inside DOCS-6) and **byte-verified it is identical to
+  `test/fixtures/redfish/schemas/Odata.json`** — proving the fixture copy is
+  current. Manifest row added in `documentations/external/README.md`; row 65
+  citation updated; DOCS-14 audit section appended to REQUIREMENTS.md.
+- Re-verified every corpus anchor: **bmcweb advanced `27e0930b` → `fbb307a`**
+  — re-fetched all four mirrored docs at the new HEAD, **all byte-identical**
+  (no corpus refresh; manifest + standing Sources note updated);
+  **`DMTF/Redfish-Mockup-Server` still `23d21f9a`** (default branch `main`;
+  `master` ref 422s — corrected API call); **DSP0266 still 1.25.0**;
+  **schema index 200 OK**. No spec refresh needed.
+- UI-2 increment: the **self-signed certificate warning banner** in
+  `SystemProfileForm` (conditional orange icon+text row revealed by the
+  "Allow self-signed certificate" switch) was announced as detached nodes
+  (bare icon + sentence). Now ONE merged semantics node
+  (`Semantics(container: true, excludeSemantics: true, label: 'Warning:
+  …')` — the HealthBanner pattern). New widget test asserts the merged label +
+  visible text preserved.
+- Process hygiene: a stray repo-wide `dart format lib/ test/` churn (30
+  unrelated files) was detected and reverted — only the 2 intended Dart files
+  + 3 docs files remain modified (17:07-run precedent).
+
+**Decisions:**
+- DOCS selected per alternation. Within DOCS, picked the small corpus-
+  completeness fix (row-65 citation gap) over a large re-fetch — anchors were
+  just re-verified 16:05/17:07 and the corpus is complete for all 16
+  client-mapped families; DOCS-14 is the last open citation.
+- Kept the `ResetActionInfo` ActionInfo-*resource* crawl in #022/#016: it is
+  a code task (bmcweb-style BMCs) and this is a corpus/provenance run.
+- Formatted only the 2 touched Dart files (prior-run precedent).
+
+**Next:**
+- Push 49 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout + AbsoluteSessionTimeout* expiry) — full auth surface pinned +
+  schemas mirrored; implement unit-level with the in-process mock server.
+- #018: build the lightweight discovery pass on the now-pinned `$expand`
+  contract (collection fetch instead of N+1 GETs) + the forceRefresh/`_error`
+  cache fixes; or #022/#016: the `ResetActionInfo` ActionInfo-*resource* crawl.
+
+**Issues touched:**
+- none opened/closed this run (corpus mirror + anchor verification + UI-2
+  label; no issue status change).

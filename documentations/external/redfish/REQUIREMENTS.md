@@ -32,7 +32,8 @@ Sources:
 - DSP0266 1.25.0 — `redfish/spec/DSP0266_1.25.0.pdf`
 - DMTF schema index — `redfish/schemas/v1-index.html` + `redfish/schemas/v1/*.json`
 - bmcweb — `redfish/openbmc/Redfish.md`, `REDFISH_CHECKLIST.md`, `OEM_SCHEMAS.md`,
-  `CLIENTS.md` (bmcweb master `27e0930b`)
+  `CLIENTS.md` (bmcweb master `fbb307a`, re-verified 2026-10-23 16:45 UTC —
+  byte-identical to `27e0930b`)
 
 ## DOCS-10 — task-monitor contract audit (2026-10-23)
 
@@ -62,7 +63,7 @@ Folded into code this run:
 | Requirement | Source (section/URL) | Code | Test | Status |
 |---|---|---|---|---|
 | Service root at `/redfish/v1/` with `Systems`, `Managers`, `Chassis`, `UpdateService`, `SessionService` links | DSP0266 §8.3 "Service Root"; `ServiceRoot.json` | `lib/redfish/discovery/discovery_engine.dart` (`_crawl`, root seed `redfish/v1/`) | `test/redfish/discovery/discovery_engine_test.dart` | OK |
-| `@odata.id` link traversal is cycle-safe and depth-bounded (≤3) | DSP0266 §8.5 "Redfish object model"; `Odata.json` | `lib/redfish/discovery/discovery_engine.dart` (visited `Set<uri>`, maxDepth) | `test/redfish/discovery/discovery_engine_test.dart` | OK |
+| `@odata.id` link traversal is cycle-safe and depth-bounded (≤3) | DSP0266 §8.5 "Redfish object model"; `odata.4.0.0.json` (mirrored DOCS-14; the bare `Odata.json` 404s upstream) | `lib/redfish/discovery/discovery_engine.dart` (visited `Set<uri>`, maxDepth) | `test/redfish/discovery/discovery_engine_test.dart` | OK |
 | Feature detection "nothing is assumed": every UI feature gated on discovered capability | OpenBMC `Redfish.md`; DSP0266 §8.5 | `lib/redfish/discovery/feature_rules.dart` → `SystemFeatures` | `test/redfish/discovery/feature_rules_test.dart` | OK |
 | Conditional GET re-crawl via `If-None-Match` / ETag (304 short-circuit) | DSP0266 §9.2 "HTTP and the Redfish protocol"; `ComputerSystem.json` | `lib/redfish/discovery/discovery_engine.dart` (`_fetchUri` etag map) | `test/redfish/discovery/discovery_engine_test.dart` | OK |
 | PATCH write support with `If-Match` / `@odata.etag` | DSP0266 §9.2 (ETag); §12 "Modifying resources" | **not implemented** | — | GAP: #016 |
@@ -426,3 +427,27 @@ mirror file or fixture needs a refresh; provenance + hashes in
    architecture) are internal contributor docs with no client-facing Redfish
    contract. Skipping avoids junk in the corpus; recorded so the next audit
    does not re-evaluate them.
+
+## DOCS-14 — OData base vocabulary mirror + anchor re-verification (2026-10-23)
+
+Closed the last un-mirrored REQUIREMENTS.md source citation and re-verified
+every corpus anchor:
+
+1. **`odata.4.0.0.json` mirrored (new).** Row 65 (`@odata.id` link traversal)
+   cited `Odata.json` but the external corpus had no OData schema. The bare
+   `Odata.json` 404s on the DMTF schema index (verified live); the canonical
+   file is the lowercase `odata.4.0.0.json` (OData 4.0.0 base vocabulary:
+   `context`/`id`/`idRef`). Fetched 2026-10-23 16:40 UTC, 1,834 bytes, SHA-256
+   `c73cce029ca4cc01a54d341389742f60a4f48e05691ee81934ca9ba513dc6b7c` — **byte-
+   identical to `test/fixtures/redfish/schemas/Odata.json`**, which proves the
+   fixture copy is current. Manifest row added; row 65 citation updated.
+   Within the DOCS-6 budget.
+2. **bmcweb master advanced `27e0930b` → `fbb307a`.** Re-fetched all four
+   mirrored docs at the new HEAD (`Redfish.md`, `REDFISH_CHECKLIST.md`,
+   `OEM_SCHEMAS.md`, `CLIENTS.md`): **byte-identical** (same SHA-256s) — no
+   corpus refresh needed, manifest anchors updated to `fbb307a`.
+3. **`DMTF/Redfish-Mockup-Server` still `23d21f9a`** (default branch `main`;
+   the `master` ref 422s — corrected the API call, pin unchanged).
+4. **DMTF schema index 200 OK**; hub still links `DSP0266_1.25.0.pdf`
+   (1.26.0 → 404) — no spec refresh.
+5. No client code change this run — corpus-only audit + provenance.

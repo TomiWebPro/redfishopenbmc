@@ -34,10 +34,10 @@ documentations/external/
 | File | Source URL | Fetched (UTC) | SHA-256 | Bytes | Upstream version/commit | Notes |
 |---|---|---|---|---|---|---|
 | `redfish/spec/DSP0266_1.25.0.pdf` | https://www.dmtf.org/sites/default/files/standards/documents/DSP0266_1.25.0.pdf | 2026-10-22 12:17 | `385ee6d0039a2dbc610c7af9fa9bba304fc2a461ceb5a8eda0adb33630c82149` | 1,243,359 | DSP0266 1.25.0 | Redfish specification PDF; linked from redfish.dmtf.org hub |
-| `redfish/openbmc/Redfish.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/Redfish.md | 2026-10-22 12:31 (re-verified 23:43 UTC @ `27e0930b`) | `9be2748b017c1657631565b747ff38fc3e74afaaeae1f39cdb6b3a519d786105` | 25,689 | bmcweb master `27e0930b` (was `0128851e`) | OpenBMC Redfish overview — byte-identical at new HEAD |
-| `redfish/openbmc/REDFISH_CHECKLIST.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/REDFISH_CHECKLIST.md | 2026-10-22 12:31 (re-verified 23:43 UTC @ `27e0930b`) | `98ff60be5d6592dd592b267a36f86224c121aba7ad23c34d8e93ceb2f8cdb5ce` | 1,761 | bmcweb master `27e0930b` | OpenBMC compliance checklist — byte-identical at new HEAD |
-| `redfish/openbmc/OEM_SCHEMAS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/OEM_SCHEMAS.md | 2026-10-22 12:31 (re-verified 23:43 UTC @ `27e0930b`) | `7d651fd19bc715b64497fdd466fae03cf043acd50c9efacbacb4a5def469d726` | 5,687 | bmcweb master `27e0930b` | OpenBMC OEM schema extensions — byte-identical at new HEAD |
-| `redfish/openbmc/CLIENTS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/CLIENTS.md | 2026-10-22 23:40 | `cfea5163ec820bb4edaba449ef837c9906ce3a2b690e22c4ce16132e526a735f` | 2,695 | bmcweb master `27e0930b` | Client-compat map: DMTF validators, python-redfish-library, redfishtool, fwupd |
+| `redfish/openbmc/Redfish.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/Redfish.md | 2026-10-22 12:31 (re-verified 16:45 UTC @ `fbb307a`) | `9be2748b017c1657631565b747ff38fc3e74afaaeae1f39cdb6b3a519d786105` | 25,689 | bmcweb master `fbb307a` (was `27e0930b`) | OpenBMC Redfish overview — byte-identical at new HEAD |
+| `redfish/openbmc/REDFISH_CHECKLIST.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/REDFISH_CHECKLIST.md | 2026-10-22 12:31 (re-verified 16:45 UTC @ `fbb307a`) | `98ff60be5d6592dd592b267a36f86224c121aba7ad23c34d8e93ceb2f8cdb5ce` | 1,761 | bmcweb master `fbb307a` | OpenBMC compliance checklist — byte-identical at new HEAD |
+| `redfish/openbmc/OEM_SCHEMAS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/OEM_SCHEMAS.md | 2026-10-22 12:31 (re-verified 16:45 UTC @ `fbb307a`) | `7d651fd19bc715b64497fdd466fae03cf043acd50c9efacbacb4a5def469d726` | 5,687 | bmcweb master `fbb307a` | OpenBMC OEM schema extensions — byte-identical at new HEAD |
+| `redfish/openbmc/CLIENTS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/CLIENTS.md | 2026-10-22 23:40 (re-verified 16:45 UTC @ `fbb307a`) | `cfea5163ec820bb4edaba449ef837c9906ce3a2b690e22c4ce16132e526a735f` | 2,695 | bmcweb master `fbb307a` | Client-compat map: DMTF validators, python-redfish-library, redfishtool, fwupd |
 | `redfish/mockup/README-mockup-server.md` | https://raw.githubusercontent.com/DMTF/Redfish-Mockup-Server/master/README.md | 2026-10-22 12:31 | `b3af2ff369dcfd78c75f156bd1ddedfca46750d185c59eefdffaa2f11c289431` | 7,318 | Redfish-Mockup-Server `23d21f9a` | Mockup server usage + DSP2043 link |
 | `redfish/schemas/v1-index.html` | https://redfish.dmtf.org/schemas/v1/ | 2026-10-22 12:17 | `e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86` | 3,448,133 | n/a | Full DMTF schema index listing (14,259 JSON/YAML entries) |
 | `redfish/schemas/v1/<16 schemas>.json` | https://redfish.dmtf.org/schemas/v1/<Name>.json | 2026-10-22 12:34 | see `sha256sum` in run notes | 106,322 (total) | latest per aggregator | Base aggregator stubs for the 16 resources the client maps |
@@ -81,6 +81,7 @@ documentations/external/
 | `redfish/schemas/v1/ServiceRoot.v1_16_1.json` | https://redfish.dmtf.org/schemas/v1/ServiceRoot.v1_16_1.json | 2026-10-23 12:38 | `d8dbb8748ec06e43c03a972e0f7d398286fe95ea908f9b184e8d5a8da391b519` | 33,397 | DMTF 2023.x | Version served by the pinned DMTF mockup fixture (emulator pins `#ServiceRoot.v1_16_1.ServiceRoot` discovery) — DOCS-13 |
 | `redfish/schemas/v1/Task.v1_7_3.json` | https://redfish.dmtf.org/schemas/v1/Task.v1_7_3.json | 2026-10-23 12:38 | `543f48ea207844f06cf1656d81d3b814ba54e2b6bc4b8c5859d316607331ccaf` | 21,070 | DMTF 2023.x | Version served by the pinned DMTF mockup fixture (emulator pins `#Task.v1_7_3.Task` resource — 09:14 run) — DOCS-13 |
 | `redfish/schemas/v1/TaskService.v1_2_0.json` | https://redfish.dmtf.org/schemas/v1/TaskService.v1_2_0.json | 2026-10-23 12:38 | `18bc5f213b16e8d5fffc6b045e1d308a6553d865dc8b20a487ceb41ed298f519` | 9,510 | DMTF 2022.x | Version served by the pinned DMTF mockup fixture (emulator pins `#TaskService.v1_2_0.TaskService`) — DOCS-13 |
+| `redfish/schemas/v1/odata.4.0.0.json` | https://redfish.dmtf.org/schemas/v1/odata.4.0.0.json | 2026-10-23 16:40 | `c73cce029ca4cc01a54d341389742f60a4f48e05691ee81934ca9ba513dc6b7c` | 1,834 | OData 4.0.0 | OData base vocabulary (context/id/idRef) — closes the REQUIREMENTS.md row-65 source citation (bare `Odata.json` 404s upstream; lowercase `odata` is canonical). Byte-identical to `test/fixtures/redfish/schemas/Odata.json` — DOCS-14 |
 
 ### Downloaded schema set (21 base aggregator files)
 
@@ -98,6 +99,16 @@ manifest rows), plus versioned `ServiceRoot` (`v1_22_0` newest + `v1_16_1`
 mockup-served) and the mockup-served `Task.v1_7_3` / `TaskService.v1_2_0`
 (which the pinned fixture publishes — DOCS-10 had mirrored only the newest
 `Task.v1_7_4` / `TaskService.v1_2_1`).
+
+DOCS-14 (2026-10-23) closed the last un-mirrored REQUIREMENTS.md source
+citation: `Odata.json` (row 65 — `@odata.id` link traversal). The bare
+`Odata.json` 404s on the DMTF schema index; the canonical file is the lowercase
+`odata.4.0.0.json` (OData 4.0.0 base vocabulary: `context`/`id`/`idRef`), now
+mirrored and byte-verified against `test/fixtures/redfish/schemas/Odata.json`.
+Upstream anchors re-verified same run: bmcweb moved `27e0930b` → `fbb307a`
+(all four mirrored bmcweb docs byte-identical at the new HEAD — no refresh
+needed),`Redfish-Mockup-Server` still `23d21f9a`, DMTF schema index 200 OK,
+DSP0266 still 1.25.0.
 
 DOCS-10 added the `Task` resource to the corpus: `Task.json` (aggregator) +
 `Task.v1_7_4.json` + `TaskService.v1_2_1.json` (see manifest rows above) so the
@@ -142,9 +153,9 @@ redirection), so no fixture referencing a specific version is affected.
 - Redfish Mockup Server — <https://github.com/DMTF/Redfish-Mockup-Server>
   (default branch `main` @ `23d21f9a` — unchanged; README saved to `redfish/mockup/`)
 - OpenBMC bmcweb docs — <https://github.com/openbmc/bmcweb/tree/master/docs>
-  (master `27e0930b`, was `0128851e`; Redfish.md, REDFISH_CHECKLIST.md,
-  OEM_SCHEMAS.md, CLIENTS.md saved; the three original docs are byte-identical
-  at the new HEAD)
+  (master `fbb307a`, was `27e0930b`; Redfish.md, REDFISH_CHECKLIST.md,
+  OEM_SCHEMAS.md, CLIENTS.md saved; all four docs are byte-identical
+  at the new HEAD — re-verified 2026-10-23 16:45 UTC)
 
 ### DOCS-11 LogEntry corpus mirror (2026-10-23 07:37 UTC)
 
@@ -168,7 +179,7 @@ Also mirrored `LogEntry.json` + `LogEntry.v1_16_0.json` + `LogEntryCollection.js
 into `test/fixtures/redfish/schemas/` so the fixture snapshot and the external
 corpus stay consistent (DOCS-2 precedent). SHA-256s verified via `sha256sum`
 after download; manifest rows above. All upstream anchors re-verified during
-this run: bmcweb `27e0930b`, mockup `23d21f9a`, DSP0266 1.25.0, schema index —
+this run: bmcweb `fbb307a`, mockup `23d21f9a`, DSP0266 1.25.0, schema index —
 
 ### DOCS-12 six-family versioned mirror (2026-10-23 08:10 UTC)
 

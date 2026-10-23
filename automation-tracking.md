@@ -1478,3 +1478,72 @@ Append-only run log for the `redfish-automation` scheduler job.
   address` — no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no
   SSH key on this machine. Local commits kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **49** (48 before this run + 1).
+
+## 2026-10-23 17:30 — DOCS (OData base vocabulary mirror + anchor re-verification) + UI-2 self-signed warning semantics
+
+- **Baseline:** analyze 0; tests 299 passed / 1 skipped; starting commit 91ff04f
+  (branch `main` ahead 51 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** DOCS (alternation: last run EMULATOR 17:07, before that
+  DOCS 16:05 — DOCS next). Closed the last un-mirrored REQUIREMENTS.md source
+  citation and re-verified every corpus anchor:
+  - **`odata.4.0.0.json` mirrored (new).** Row 65 (`@odata.id` link traversal)
+    cited `Odata.json` but the external corpus had no OData schema. The bare
+    `Odata.json` 404s on the DMTF schema index (verified live); the canonical
+    file is the lowercase `odata.4.0.0.json` (OData 4.0.0 base vocabulary:
+    `context`/`id`/`idRef`). Fetched 16:40 UTC, 1,834 bytes, SHA-256
+    `c73cce02…` — **byte-identical to `test/fixtures/redfish/schemas/Odata.
+    json`**, which proves the fixture copy is current. Manifest row added;
+    REQUIREMENTS.md row 65 citation updated from `Odata.json` →
+    `odata.4.0.0.json` (mirrored DOCS-14). Inside the DOCS-6 budget.
+  - **bmcweb master advanced `27e0930b` → `fbb307a`.** Re-fetched all four
+    mirrored docs at the new HEAD (`Redfish.md`, `REDFISH_CHECKLIST.md`,
+    `OEM_SCHEMAS.md`, `CLIENTS.md`): **all byte-identical** (same SHA-256s) —
+    no corpus refresh needed; manifest anchors + standing Sources note updated
+    to `fbb307a`.
+  - **`DMTF/Redfish-Mockup-Server` still `23d21f9a`** (default branch `main`;
+    the `master` ref 422s — corrected the API call, pin unchanged).
+  - **DMTF schema index 200 OK**; hub still links `DSP0266_1.25.0.pdf`
+    (1.26.0 → 404) — no spec refresh.
+- **Docs:** URL fetched: `https://redfish.dmtf.org/schemas/v1/odata.4.0.0.json`
+  (1 new file, 1,834 bytes); 4 bmcweb docs re-fetched at the new HEAD for
+  byte-identity verification (no content change). Files added:
+  `documentations/external/redfish/schemas/v1/odata.4.0.0.json`. Requirements
+  touched: row 65 citation fixed (DOCS-14); DOCS-14 audit section appended to
+  REQUIREMENTS.md + README.md manifest/DOCS-14 notes.
+- **Emulator:** none this run (no fixture/test change; anchors re-verified).
+- **Code/tests:** no production behavior change. `lib/features/systems/views/
+  system_profile_form.dart` (UI-2, below) + `test/features/systems/
+  ui_widget_test.dart` (+1 widget test). No issue status change.
+- **UI:** UI-2 increment — the **self-signed certificate warning banner** (the
+  conditional orange icon+text row in `SystemProfileForm`, shown when the
+  "Allow self-signed certificate" switch is on) announced as separate nodes
+  (bare icon + detached sentence). It is now ONE merged semantics node
+  (`Semantics(container: true, excludeSemantics: true, label: 'Warning:
+  self-signed certificates disable TLS verification. Only enable for trusted,
+  isolated management networks.')` — the established HealthBanner pattern), so
+  a screen reader gets the warning in context. The visible text is preserved
+  for sighted users (no a11y regression). One new widget test asserts the
+  merged label node + visible text (`ui_widget_test.dart` "self-signed warning
+  announces as one merged semantics node (UI-2)").
+- **Verification:** analyze 0; tests 300 passed / 1 skipped (baseline 299 →
+  +1: the self-signed semantics widget test); issues validate OK; `git diff
+  --check` clean; secret scan clean (no tokens/creds in diff). Formatted only
+  the 2 touched Dart files — a stray repo-wide `dart format lib/ test/` churn
+  (30 files) was detected and reverted before verification (only the 2
+  intended Dart files remain modified; 17:07-run precedent).
+- **Commit:** <TO FILL AFTER COMMIT>; pushed: **no** — same GitHub credential
+  blocker (`fatal: could not read Username for 'https://github.com'`; no
+  credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on
+  this machine); local commit kept, not retried. Commits queued locally before
+  this run: 49 (now 50 with this commit).
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (49 queued before this run); 2) P1 #015 AuthManager (authMethod
+  dispatch, safe logout URI, token rehydrate, SessionTimeout +
+  AbsoluteSessionTimeout* expiry — full auth surface pinned + schemas
+  mirrored); implement unit-level with the in-process mock server; 3) #018:
+  build the lightweight discovery pass on the now-pinned `$expand` contract
+  (collection fetch instead of N+1 GETs) + the forceRefresh/`_error` cache
+  fixes; or #022/#016: the `ResetActionInfo` ActionInfo-*resource* crawl
+  (`Parameters[].AllowableValues` — bmcweb-style BMCs; the DMTF mockup serves
+  only the annotation form, pinned 17:07).

@@ -213,17 +213,28 @@ class _SystemProfileFormState extends State<SystemProfileForm> {
                 border: Border.all(color: Colors.orange),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Row(
-                children: <Widget>[
-                  Icon(Icons.warning_amber_outlined, color: Colors.orange),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Self-signed certificates disable TLS verification. '
-                      'Only enable for trusted, isolated management networks.',
+              // UI-2: the icon+text warning announces as ONE node — a screen
+              // reader gets the warning in context instead of a bare icon plus
+              // a detached sentence (the established HealthBanner pattern).
+              child: Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: 'Warning: self-signed certificates disable TLS '
+                    'verification. Only enable for trusted, isolated '
+                    'management networks.',
+                child: const Row(
+                  children: <Widget>[
+                    Icon(Icons.warning_amber_outlined, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Self-signed certificates disable TLS verification. '
+                        'Only enable for trusted, isolated management '
+                        'networks.',
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           if (widget.showButtons) ...<Widget>[

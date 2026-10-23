@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -389,6 +390,34 @@ void main() {
         find.textContaining('Self-signed certificates disable'),
         findsOneWidget,
       );
+    });
+
+    testWidgets(
+        'self-signed warning announces as one merged semantics node '
+        '(UI-2)', (tester) async {
+      await tester.pumpWidget(
+        _formScreen(
+          SystemProfileForm(onSubmit: (_) {}),
+        ),
+      );
+      await tester.tap(switchTile('Allow self-signed certificate'));
+      await tester.pumpAndSettle();
+
+      final Finder banner = find.bySemanticsLabel(
+        'Warning: self-signed certificates disable TLS verification. '
+        'Only enable for trusted, isolated management networks.',
+      );
+      expect(banner, findsOneWidget);
+
+      // The visible text is preserved for sighted users (no a11y regression).
+      expect(
+        find.textContaining('Self-signed certificates disable'),
+        findsOneWidget,
+      );
+      // The icon is excluded from the semantics tree — one node only.
+      final SemanticsNode? node = tester.getSemantics(banner);
+      expect(node?.label, contains('self-signed certificates disable TLS'));
+      expect(node?.label, contains('isolated management networks'));
     });
 
     testWidgets('TLS off flips scheme to http and basic auth is selectable',
