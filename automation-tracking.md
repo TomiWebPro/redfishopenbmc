@@ -1632,8 +1632,9 @@ Append-only run log for the `redfish-automation` scheduler job.
   (`fatal: could not read Username for 'https://github.com'`; no credential
   helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no SSH key on this
   machine); local commit kept, not retried. Commits ahead of origin/main
-  before this run: **54** (live `git rev-list --count origin/main..HEAD`;
-  +1 auto +1 tracking = 56 after).
+  before this run: **55** (preflight `git status --short --branch` showed
+  `ahead 55`; +1 auto +1 tracking = **57** after — live
+  `git rev-list --count origin/main..HEAD`).
 - **Next:** 1) Push the queued local commits (54 before this run) from a
   machine with GitHub credentials; 2) P1 #015 AuthManager (authMethod
   dispatch, safe logout URI, token rehydrate, SessionTimeout +
@@ -1644,3 +1645,13 @@ Append-only run log for the `redfish-automation` scheduler job.
   filtering/selection done client-side (mockup ignores `$filter`/`$select`);
   or #008/#020: task poller (GET-on-monitor, TaskState parse, PercentComplete
   optional, Messages[] timeline) + bmcweb HTTP-push firmware upload path.
+
+## 2026-10-23 18:40 — PUSH RECORD (no code change)
+
+- Attempted `git push origin main` once after run 2026-10-23 18:36 (commits
+  c412733 auto + b366838 tracking): failed with
+  `fatal: could not read Username for 'https://github.com': No such device or
+  address` — no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no
+  SSH key on this machine. Local commits kept; not retried (runbook §7.4).
+- Queued local commits ahead of origin/main: **57** (55 before this run + 2;
+  live `git rev-list --count origin/main..HEAD`).
