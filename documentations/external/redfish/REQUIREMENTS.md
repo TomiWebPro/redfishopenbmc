@@ -174,7 +174,7 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 36 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 37 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -183,7 +183,11 @@ client-relevant families.
      DOCS-4/#022), chassis detail (inventory + Thermal/Power sub-resource chain
      + system link), session + basic auth, power state/reset, 404/405 error
      mapping, session lifecycle + SessionTimeout (#015/#017), TaskService +
-     EventService contracts (DOCS-7), query capabilities (#018), Accounts
+     EventService contracts (DOCS-7), query capabilities (#018) incl. a live
+     `$expand=.($levels=1)` round-trip pin — the Systems collection inlines
+     full bodies (Model/PowerState/Actions.Reset allow-list +
+     Processor/MemorySummary) for a lightweight discovery pass (pinned
+     2026-10-23 17:xx), Accounts
      collection (#015/#026), HttpPushUriApplyTime modes (#008/#020),
      **OverviewService end-to-end hydration (#006: identity/health/power/
      processor-memory summaries/indicator-LED/leading-thermal), LogService +

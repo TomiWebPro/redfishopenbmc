@@ -127,21 +127,41 @@ class _ChassisCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             if (chassis.thermal.isNotEmpty) ...<Widget>[
-              Text('Temperatures',
-                  style: Theme.of(context).textTheme.titleSmall),
+              // UI-2: section headers announce as one self-describing node
+              // (title + count), same merged pattern as the card headers —
+              // the counts are context a sighted user gets visually.
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: 'Temperatures, ${chassis.thermal.length}',
+                child: Text('Temperatures',
+                    style: Theme.of(context).textTheme.titleSmall),
+              ),
               const SizedBox(height: 4),
               for (final ThermalReading t in chassis.thermal)
                 _TemperatureTile(t),
               const SizedBox(height: 12),
             ],
             if (chassis.fans.isNotEmpty) ...<Widget>[
-              Text('Fans', style: Theme.of(context).textTheme.titleSmall),
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: 'Fans, ${chassis.fans.length}',
+                child:
+                    Text('Fans', style: Theme.of(context).textTheme.titleSmall),
+              ),
               const SizedBox(height: 4),
               for (final FanReading f in chassis.fans) _FanTile(f),
               const SizedBox(height: 12),
             ],
             if (chassis.sensors.isNotEmpty) ...<Widget>[
-              Text('Sensors', style: Theme.of(context).textTheme.titleSmall),
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: 'Sensors, ${chassis.sensors.length}',
+                child: Text('Sensors',
+                    style: Theme.of(context).textTheme.titleSmall),
+              ),
               const SizedBox(height: 4),
               for (final SensorReading s in chassis.sensors) _SensorTile(s),
             ],

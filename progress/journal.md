@@ -1426,3 +1426,60 @@
 - none opened/closed this run. #022/#016 got the annotation-fallback progress
   recorded in FUTUREWORK; the gap is still open (ActionInfo resource crawl +
   task polling remain).
+## 2026-10-23 — agent:redfish-automation — EMULATOR ($expand round-trip pin) + UI-2 sensors section headers
+
+**Done:**
+- EMULATOR primary workstream (alternation: last run DOCS 16:05). Pinned the
+  **live `$expand` round-trip contract** for #018: the 13:58 run pinned that
+  the service root *advertises* `ExpandQuery{ExpandAll,Levels}`, but the flag
+  alone doesn't prove the payload shape. New emulator test:
+  `GET /redfish/v1/Systems?$expand=.($levels=1)` returns the collection with
+  **full inlined member bodies in one round trip** — Model/PowerState/
+  Actions.Reset `ResetType@Redfish.AllowableValues` (incl. Nmi) +
+  ProcessorSummary.Count=2 + MemorySummary.TotalSystemMemoryGiB=96 — the
+  N+1-avoiding discovery shape a #018 lightweight pass can build on. Suite
+  36 → **37 tests, all passing** on pin `23d21f9a`.
+- Recorded negative for #022/#016: curl + fixture scan confirm the DMTF
+  mockup ships **no** `ResetActionInfo` ActionInfo resource for the system
+  Reset action (only the `ResetType@Redfish.AllowableValues` annotation form
+  the 16:05 run implemented); the ActionInfo-*resource* crawl stays a
+  bmcweb-style (OpenBMC) code task, not pinable on this fixture. Noted in
+  FUTUREWORK #022/#016.
+- REQUIREMENTS.md test-platform note 36 → 37 tests with the `$expand` pin
+  described.
+- UI-2 increment: SensorsView `_ChassisCard` section headers
+  (`Temperatures`/`Fans`/`Sensors`) — the remaining non-card labels — now
+  announce as one merged node each with the count (`Temperatures, 1` etc.),
+  the established card-header pattern; visible titles preserved. One new
+  widget test asserts the three merged labels + visible texts.
+- Process hygiene: the manual probe server was stopped after verification;
+  a stray repo-wide `dart format lib/ test/` churn (30 unrelated files) was
+  detected and reverted — only the 3 intended files remain modified.
+
+**Decisions:**
+- EMULATOR selected per alternation (DOCS 16:05 → EMULATOR next).
+- Chose the `$expand` pin over re-pinning other surfaces because #018 is the
+  P1 whose "client currently ignores the query-capability surface" gap is
+  directly servable by an emulator-verifiable contract — and because the
+  mockup server genuinely implements `$expand` (verified live before
+  writing the test), unlike filter/select which it only advertises.
+- Followed the established raw-getJson pin precedent (task/log/account
+  pins): no client model yet, no production code change — pin the exact
+  payload shape before building the feature.
+- Recorded — rather than code-fixed — the #022/#016 ActionInfo-resource
+  gap: on this fixture there is nothing to pin; the crawl is a bmcweb-style
+  code task for a #022/#016 implementation run.
+
+**Next:**
+- Push 48 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout + AbsoluteSessionTimeout* expiry) — full auth surface pinned
+  + schemas mirrored; implement unit-level with the in-process mock server.
+- #018: build the lightweight discovery pass on the now-pinned `$expand`
+  contract (collection fetch instead of N+1 GETs) + the forceRefresh/`_error`
+  cache fixes; or #008/#020: task poller + bmcweb HTTP-push upload path.
+
+**Issues touched:**
+- none opened/closed this run. #018 got the live `$expand` contract pin,
+  #022/#016 got the ActionInfo-resource negative finding, both recorded in
+  FUTUREWORK; issues remain open.

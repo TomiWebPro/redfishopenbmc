@@ -128,6 +128,36 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+        'section headers announce one merged node with the count (UI-2)',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_FakeSensorsService()),
+          ],
+          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Each non-card section header is now a self-describing node: the
+      // visible title + the count the card layout conveys visually.
+      expect(
+        find.bySemanticsLabel('Temperatures, 1'),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel('Fans, 1'), findsOneWidget);
+      expect(find.bySemanticsLabel('Sensors, 1'), findsOneWidget);
+      // The visible titles remain for sighted users (no a11y regression).
+      expect(find.text('Temperatures'), findsOneWidget);
+      expect(find.text('Fans'), findsOneWidget);
+      expect(find.text('Sensors'), findsOneWidget);
+    });
   });
 
   group('SensorsView — responsive layout (UI-3)', () {

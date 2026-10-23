@@ -7,27 +7,27 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 16:05 (DOCS run — **reset allow-list annotation
-  fallback**: `FeatureRules.supportedResetTypes` now unions
-  `SupportedResetTypes` **+** the `ResetType@Redfish.AllowableValues`
-  annotation on `#ComputerSystem.Reset` (the DMTF mockup / bmcweb-style shape;
-  emulator-pinned 8-value list incl. Nmi/ForceOn/PushPowerButton) with the
-  manager-list conflation guard; new `resetTypesFromAction` helper + 4 unit
-  tests; REQUIREMENTS.md rows flipped Partial → OK, DOCS-4 finding #3 updated —
-  `ResetActionInfo` *resource* crawl stays #022/#016; **UI-2 increment: dialog
-  action buttons explicit 48×48px touch targets** + 1 widget test; emulator
-  36/36; suite 293 → 298 tests)
-- **Current focus:** DOCS reset allow-list annotation fallback done (the
-  `ResetType@Redfish.AllowableValues` on `#ComputerSystem.Reset` now feeds
-  `supportedResetTypes` — the DMTF mockup / bmcweb-style empty-
-  `SupportedResetTypes` case is covered and emulator-pinned; `ResetActionInfo`
-  *resource* crawl stays #022/#016); EMULATOR suite at **36 tests**
-  (account-service auth surface, 13:58 run); DOCS-13 done (auth/network/
-  ActionInfo corpus mirror); DOCS-12 done (versioned corpus complete for all
-  16 client-mapped families); next P1: #015 (AuthManager) — emulator pins the
-  full auth contract + the Session/ManagerAccount/Role schemas are mirrored
-  (#015/#017/#026); #022/#016: Annotation allow-list fallback landed (this
-  run) — remaining: `ResetActionInfo` ActionInfo resource crawl
+- **Last updated:** 2026-10-23 17:07 (EMULATOR run — **live `$expand`
+  round-trip pin for the #018 lightweight discovery pass**:
+  `GET /redfish/v1/Systems?$expand=.($levels=1)` inlines full member bodies
+  (Model/PowerState/Actions.Reset allow-list incl. Nmi + Processor/Memory
+  summaries) in ONE round trip — the N+1-avoiding shape the #018 discovery
+  pass can rely on; recorded negative: the DMTF mockup ships **no**
+  `ResetActionInfo` ActionInfo resource for `#ComputerSystem.Reset` (only the
+  annotation form, 16:05 run), so the ActionInfo-*resource* crawl stays
+  #022/#016 as a bmcweb-style code task; **UI-2 increment: SensorsView
+  section headers merged labels** (`Temperatures, N`/`Fans, N`/`Sensors, N`)
+  + 1 widget test; emulator 37/37; suite 298 → 299 tests)
+- **Current focus:** EMULATOR suite at **37 tests** (the live `$expand`
+  round-trip pin, 17:07 run); DOCS-13 done (auth/network/ActionInfo corpus
+  mirror); DOCS-12 done (versioned corpus complete for all 16 client-mapped
+  families); next P1: #015 (AuthManager) — emulator pins the full auth
+  contract + the Session/ManagerAccount/Role schemas are mirrored
+  (#015/#017/#026); #022/#016: Annotation allow-list fallback landed (16:05
+  run) — remaining: `ResetActionInfo` ActionInfo resource crawl (bmcweb-style
+  BMCs; NOT pinable on the DMTF mockup — it serves only the annotation form);
+  #018: query-capability surface + live `$expand` contract pinned (17:07) —
+  remaining: build the lightweight discovery pass + the cache fixes
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -199,7 +199,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       AccountService lockout/password-policy + Roles link, Roles collection +
       AssignedPrivileges/OemPrivileges, ManagerAccount detail incl.
       AccountTypes/PasswordChangeRequired/Locked/Links.Role/ChangePassword +
-      Password masked on the wire — 2026-10-23 13:58)**)
+      Password masked on the wire — 2026-10-23 13:58) → **37 tests (live
+      `$expand=.($levels=1)` round-trip pin: Systems collection inlines full
+      member bodies — Model/PowerState/Actions.Reset allow-list incl. Nmi +
+      Processor/MemorySummary — the N+1-avoiding discovery shape #018 can
+      rely on — 2026-10-23 17:07)**)
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -276,7 +280,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       (emulator test added 2026-10-23: service root `ProtocolFeaturesSupported`
       advertises `ExcerptQuery` + `ExpandQuery{ExpandAll,Levels}` and publishes
       `FilterQuery`/`SelectQuery` — the query-capability surface a lightweight
-      discovery pass must use; the client currently ignores it)
+      discovery pass must use; the client currently ignores it; **live
+      `$expand` round-trip pin added 2026-10-23 17:07** —
+      `$expand=.($levels=1)` on the Systems collection inlines full member
+      bodies (Model/PowerState/Actions.Reset allow-list incl. Nmi +
+      Processor/MemorySummary) in one round trip — the N+1-avoiding discovery
+      shape the #018 pass can build on)
 - [ ] **#022** Power: task polling, races, and error fixes.
       (bmcweb `ResetActionInfo` ActionInfo `Parameters/AllowableValues` is the
       allow-list source on OpenBMC; add fallback — DOCS-4. **Annotation-form
@@ -285,7 +294,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       annotation on `#ComputerSystem.Reset` (the DMTF mockup / bmcweb-style
       shape), with the manager-list conflation guard — emulator-pinned; the
       remaining piece is crawling the `ResetActionInfo` *resource* itself
-      (`Parameters[].AllowableValues`). Emulator asserts the DMTF mockup's
+      (`Parameters[].AllowableValues`). **Emulator negative finding 2026-10-23
+      17:07**: the DMTF mockup fixture ships NO `ResetActionInfo` ActionInfo
+      resource for `#ComputerSystem.Reset` — it serves only the annotation
+      form (= the 16:05 fallback); the ActionInfo-resource crawl is a
+      bmcweb-style (OpenBMC) code task for #022/#016, not pinable on this
+      fixture. Emulator asserts the DMTF mockup's
       `#Manager.Reset` carries its own `ResetType@Redfish.AllowableValues` —
       the fallback must not conflate manager- vs system-level Reset actions —
       run 2026-10-22; system-level allow-list pinned incl. `Nmi` (NMI-stabilize)

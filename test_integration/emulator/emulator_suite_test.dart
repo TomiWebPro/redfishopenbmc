@@ -943,6 +943,44 @@ void main() {
       expect(protocol['SelectQuery'], isA<bool>());
     });
 
+    test(
+        'service root: \$expand actually serves inlined payloads for a '
+        'lightweight discovery pass (#018)', () async {
+      // #018's discovery pass can use the advertised ExpandQuery capability
+      // (asserted above) to fetch the Systems collection WITH inlined bodies
+      // in one round trip instead of N+1 GETs. The flag alone doesn't prove
+      // the payload shape — this pins the real server behaviour.
+      final Map<String, dynamic> systems =
+          await client.getJson('/redfish/v1/Systems?\$expand=.(\$levels=1)');
+      expect(systems['@odata.type'], startsWith('#ComputerSystemCollection.'));
+      final List<dynamic> members = systems['Members'] as List<dynamic>;
+      expect(members, isNotEmpty);
+      final Map<dynamic, dynamic> member =
+          members.first as Map<dynamic, dynamic>;
+      expect(member['@odata.id'], '/redfish/v1/Systems/437XR1138R2');
+      // Full resource body inline (not a bare @odata.id link).
+      expect(member['Model'], '3500');
+      expect(member['Manufacturer'], 'Contoso');
+      expect(member['SerialNumber'], isA<String>());
+      expect(member['PowerState'], 'On');
+      expect(member['Actions'], isA<Map<dynamic, dynamic>>());
+      // The reset allow-list (the #022/#016 gate source) must be visible
+      // through the expanded payload too.
+      final Map<dynamic, dynamic> actions =
+          member['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> reset =
+          actions['#ComputerSystem.Reset'] as Map<dynamic, dynamic>;
+      expect(reset['ResetType@Redfish.AllowableValues'], contains('Nmi'));
+      // The exact ProcessorSummary/MemorySummary bodies OverviewService (#006)
+      // hydrates are present inline as well.
+      final Map<dynamic, dynamic> proc =
+          member['ProcessorSummary'] as Map<dynamic, dynamic>;
+      expect(proc['Count'], 2);
+      final Map<dynamic, dynamic> mem =
+          member['MemorySummary'] as Map<dynamic, dynamic>;
+      expect(mem['TotalSystemMemoryGiB'], 96);
+    });
+
     test('account service: lockout policy + Roles link contract (#015/#026)',
         () async {
       // #015 AuthManager (logout/expiry reasoning) and #026 (duplicate auth

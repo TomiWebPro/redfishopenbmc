@@ -1400,3 +1400,69 @@ Append-only run log for the `redfish-automation` scheduler job.
   address` — no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no
   SSH key on this machine. Local commits kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **47** (46 before this run + 1).
+
+## 2026-10-23 17:07 — EMULATOR ($expand round-trip pin) + UI-2 sensors section headers
+
+- **Baseline:** analyze 0; tests 298 passed / 1 skipped; starting commit f99becf
+  (branch `main` ahead 48 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR (alternation: last run DOCS 16:05) — pinned the
+  **live `$expand` round-trip contract** for #018's lightweight discovery
+  pass. The service root advertises `ExpandQuery{ExpandAll,Levels}` (pinned
+  13:58 run), but the flag alone doesn't prove the payload shape; this run
+  asserts the real server behaviour: `GET /redfish/v1/Systems?$expand=.($levels=1)`
+  returns the collection with **full inlined member bodies in one round trip**
+  (Manufacturer/Model/SerialNumber/PowerState/Actions incl. the
+  `#ComputerSystem.Reset` `ResetType@Redfish.AllowableValues` allow-list
+  with `Nmi`, plus ProcessorSummary.Count=2 / MemorySummary.TotalSystemMemoryGiB=96 —
+  the exact bodies OverviewService (#006) hydrates). This is the N+1-avoiding
+  discovery shape a #018 cache/discovery pass can rely on. Also verified
+  (recorded in FUTUREWORK #022/#016): the DMTF mockup fixture ships **no**
+  `ResetActionInfo` ActionInfo resource for `#ComputerSystem.Reset` — only the
+  annotation form (16:05 run implemented the annotation fallback); the
+  ActionInfo-*resource* crawl remains a bmcweb-style code task, not pinable
+  on this fixture.
+- **Docs:** none this run (no new downloads). REQUIREMENTS.md updated:
+  test-platform note 36 → 37 tests with the `$expand` round-trip pin described.
+- **Emulator:** server `23d21f9a` re-pinned by `tool/emulator/run_tests.sh`;
+  suite 36 → **37 tests, all passing** (+1 `$expand` test in the #018 query-
+  capabilities group). Live payloads curl-verified against the fixture before
+  pinning; the manually started probe server was stopped after the run
+  (no leftover background process; runbook §3 trap precedent). No emulator
+  code change; `allowSelfSigned` remains test-profile only (EMU-6).
+- **Code/tests:** `test_integration/emulator/emulator_suite_test.dart` (+1
+  test); `lib/features/sensors/views/sensors_view.dart` +
+  `test/features/sensors/sensors_widget_test.dart` (+1 widget test, UI-2
+  increment below). No issue status change; no new dependencies.
+- **UI:** UI-2 increment — SensorsView `_ChassisCard` section headers
+  (`Temperatures`/`Fans`/`Sensors`) are the remaining non-card labels that
+  announced as bare titles; each is now ONE merged semantics node
+  (`Semantics(container: true, excludeSemantics: true, label:
+  'Temperatures, <count>')`), the established card-header pattern — a screen
+  reader gets the per-section count context a sighted user sees, and the
+  visible titles remain for sighted users (no a11y regression). One new
+  widget test asserts the three merged labels (`Temperatures, 1`/`Fans, 1`/
+  `Sensors, 1`) + the visible texts.
+- **Verification:** analyze 0; tests 299 passed / 1 skipped (baseline 298 →
+  +1: the sensors section-header semantics test; the +1 emulator case lives
+  in the emulator suite, skipped in plain `flutter test`); emulator 37/37 via
+  `tool/emulator/run_tests.sh`; issues validate OK; `git diff --check` clean;
+  secret scan clean (no tokens/creds in diff). Formatted only the 3 touched
+  Dart files — a stray repo-wide `dart format lib/ test/` churn was detected
+  and reverted before commit (30 unrelated files restored; only the 3
+  intended files remain modified).
+- **Commit:** <PENDING> — `auto: EMULATOR — live $expand round-trip pin for the
+  #018 lightweight discovery pass (Systems collection inlines full bodies +
+  reset allow-list), UI-2 SensorsView section-header merged labels
+  (run 2026-10-23 17:07)`; pushed: see §7.4 outcome (GitHub credential blocker
+  historically: `fatal: could not read Username for 'https://github.com'`).
+- **Next:** 1) Push the queued local commits from a machine with GitHub
+  credentials (48 queued before this run); 2) P1 #015 AuthManager
+  (authMethod dispatch, safe logout URI, token rehydrate, SessionTimeout +
+  AbsoluteSessionTimeout* expiry — full auth surface pinned + schemas
+  mirrored); implement unit-level with the in-process mock server; 3) #018:
+  now that the `$expand` contract is pinned, build the lightweight discovery
+  pass (collection fetch with `$expand=.($levels=1)` instead of N+1 GETs)
+  with the forceRefresh/`_error` cache fixes; or #008/#020: task poller
+  (GET-on-monitor, TaskState parse, PercentComplete optional, Messages[]
+  timeline) + bmcweb HTTP-push firmware upload path.
