@@ -3696,13 +3696,30 @@ Append-only run log for the `redfish-automation` scheduler job.
   → +1 widget); emulator 66/66; issues validate OK; `git diff --check` clean;
   secret scan: Dart tests + docs prose only, no credentials. `dart format`
   clean on the touched files (no unrelated drift).
-- **Commit:** (after §7.2/§7.3 below) — pushed: expected no (known GitHub
-  credential blocker; local commit kept, not retried).
-- **Next:** 1) Push the queued local commits (110) from a machine with GitHub
-  credentials; 2) DOCS per alternation — **DOCS-28** (mirror the Heater +
+- **Commit:** d5fa17c — pushed: **yes** (the GitHub credential blocker cleared
+  this run; `1245931..d5fa17c` pushed, origin/main fully synced — all 109
+  previously-queued local commits went up with it).
+- **Next:** 1) DOCS per alternation — **DOCS-28** (mirror the Heater +
+  HeaterMetrics served `v1_0_1` + newest `v1_0_2` + aggregators +
+  `HeaterCollection.json`, 7 files / external corpus only, the DOCS-24/25/26
+  precedent — the corpus mirror queue is DOCS-28, the only un-mirrored
+  EMU-pinned family pair); 2) P1 #015 AuthManager — wire
+  `Session.expiryFromService` into login, re-auth on `isExpired`,
+  token/location from create RESPONSE HEADERS only; 3) keep pushing every
+  run (credentials now work — verify once per run, no more queued commits) (mirror the Heater +
   HeaterMetrics served `v1_0_1` + newest `v1_0_2` + aggregators +
   `HeaterCollection.json`, 7 files / external corpus only, the DOCS-24/25/26
   precedent — the corpus mirror queue is DOCS-28, the only un-mirrored
   EMU-pinned family pair); 3) P1 #015 AuthManager — wire
   `Session.expiryFromService` into login, re-auth on `isExpired`,
   token/location from create RESPONSE HEADERS only.
+
+## 2026-10-25 01:36 — PUSH RECORD (success)
+
+- `git push origin main` after the run above (commit d5fa17c auto) **succeeded**:
+  `1245931..d5fa17c  main -> main`. The GitHub credential blocker that forced
+  the last nine PUSH RECORDs is gone (credentials/helper now configured on
+  this machine) — all **109 previously-queued local commits** were pushed in
+  the same operation. `git rev-list --count origin/main..HEAD` = 0 (fully
+  synced), working tree clean.
+- Queued local commits ahead of origin/main: **0**.
