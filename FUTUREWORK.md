@@ -7,57 +7,65 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (DOCS run — **DOCS-27 corpus freshness audit**:
-  zero version advances across all 38 mirrored families — 120/120 schema
-  files byte-identical to the live index, registries/index/PDF byte-identical,
-  all anchors re-verified (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
-  1.25.0, schema index 200) — plus one provenance fix (the mockup README
-  manifest row recorded the upstream SHA while the committed blob is DOCS-1's
-  whitespace-normalised copy; the row now records the actual committed SHA
-  with a byte-identical-apart-from-2-byte-whitespace note); UI-2 landed the
-  Identity card key/value-row merged semantics (label + value announce as one
-  node, `Manufacturer: Acme` / `BIOS: 1.0`, missing values merge as
-  `<label>: Not exposed by this BMC`, +2 widget tests, suite 349→351); next
-  P1: #015 (AuthManager — `expiryFromService` + the Sessions pin are ready,
-  wire the discovered SessionService body into login + re-auth on
-  `isExpired`); #016: the PATCH transport + If-Match boundary are pinned on
-  all three live seams (Boot/IndicatorLED, Control SetPoint, Bios/Settings),
-  remaining is the actual If-Match/`@odata.etag` wiring in a Boot/IndicatorLED
-  PATCH flow + unit tests for the 412 path; #022/#016: `ResetActionInfo`
-  ActionInfo resource crawl (bmcweb-style BMCs; NOT pinable on the DMTF
-  mockup) + the Control SetPoint AllowableMin/Max pre-validation rule; #018:
-  query-capability surface + live `$expand` contract pinned — remaining:
-  build the lightweight discovery pass + the cache fixes; **new feature
-  candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
-  served versions move into `test/fixtures/redfish/schemas/` + the
-  corpus-invariant family list gains `Bios`/`Settings`; the Bios/Settings
-  PATCH round-trip seam is now pinned); corpus mirror queue: **EMPTY** — the
-  2026-10-25 DOCS-27 audit confirmed it stays empty (no advances)
-- **Current focus:** **DOCS (2026-10-25)** — DOCS-27 corpus freshness audit
-  found ZERO version advances (all 38 families current, 120/120 byte-
-  identical) + fixed the mockup README provenance (manifest recorded the
-  upstream SHA while the repo holds DOCS-1's whitespace-normalised copy; the
-  row now records the actual committed SHA with a note); UI-2 Identity KV-row
-  merge landed (suite 349→351); next P1: #015
-  (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the
-  discovered SessionService body into login + re-auth on `isExpired`; #016:
-  the PATCH transport landed (`patchJson`) + the If-Match boundary is pinned
-  on all three live seams (Boot/IndicatorLED, Control SetPoint, Bios/Settings
-  — the mockup ignores preconditions, the client must send the settings-
-  object ETag `9234ac83b9700123cc32` itself, EMU 53/60/63/64), remaining is
-  the actual If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH flow
-  + unit tests for the 412 path; #022/#016: `ResetActionInfo` ActionInfo
-  resource crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it
-  serves only the annotation form and now provably ignores ResetType/
-  ResetKeysType values; the Control SetPoint PATCH pin adds the
-  AllowableMin/Max pre-validation rule for power capping); #018:
-  query-capability surface + live `$expand` contract pinned — remaining:
-  build the lightweight discovery pass + the cache fixes; **new feature
-  candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
-  served versions move into `test/fixtures/redfish/schemas/` + the
-  corpus-invariant family list gains `Bios`/`Settings`); corpus mirror queue:
-  **EMPTY** — all EMU-pinned families (incl. Control via DOCS-26) have real
-  mirror files, and the DOCS-27 audit confirmed none advanced
+- **Last updated:** 2026-10-25 (EMULATOR run — **EMU 64→66**: the
+  ThermalSubsystem **Heaters** surface pinned live (`#HeaterCollection` →
+  `#Heater.v1_0_1` CPU1Heater detail incl. PhysicalContext/Links.Processors
+  → CPU1/Metrics link → `#HeaterMetrics.v1_0_1` pre-power-on+runtime heating
+  seconds, PowerWatts.Reading 200.3, TemperatureReadingsCelsius 2.5 °C; the
+  advertised `#HeaterMetrics.ResetMetrics` target has NO `/Actions/`
+  segment → POST 404 + empty body — the PowerSupply.Reset advertised-as-
+  candidate rule, probed live) + the **Manager.Reset live POST round-trip**
+  (204 through the `/Actions/` framework; bogus ResetType also 204s — the
+  mockup never validates action bodies, so the 400 path stays unit-level and
+  the #022/#016 client must pre-validate against the manager's OWN
+  allow-list ForceRestart/GracefulRestart); new corpus mirror duty recorded
+  as **DOCS-28** (`Heater`/`HeaterMetrics` served `v1_0_1` + newest `v1_0_2`
+  + aggregators + `HeaterCollection.json`, 7 files — neither family is
+  client-mapped, external corpus only); UI-2 landed the **Processors card
+  count+model merge** (`2 processor(s), P9` as one node, +1 widget test,
+  suite 351→352); next P1: #015 (AuthManager — `expiryFromService` + the
+  Sessions pin are ready, wire the discovered SessionService body into login
+  + re-auth on `isExpired`); #016: the PATCH transport + If-Match boundary
+  are pinned on all live seams (Boot/IndicatorLED, Control SetPoint,
+  Bios/Settings, now also Manager.Reset), remaining is the actual
+  If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit
+  tests for the 412 path; #022/#016: `ResetActionInfo` ActionInfo resource
+  crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup) + the Control
+  SetPoint AllowableMin/Max pre-validation rule; #018: query-capability
+  surface + live `$expand` contract pinned — remaining: build the
+  lightweight discovery pass + the cache fixes; **new feature candidate
+  #028:** BIOS-config editor (Bios/Settings become client-mapped → served
+  versions move into `test/fixtures/redfish/schemas/` + the corpus-invariant
+  family list gains `Bios`/`Settings`; the Bios/Settings PATCH round-trip
+  seam is now pinned); corpus mirror queue: **DOCS-28** (Heater +
+  HeaterMetrics — the only un-mirrored EMU-pinned family pair)
+- **Current focus:** **EMULATOR (2026-10-25)** — EMU 64→66 pinned the
+  ThermalSubsystem Heaters surface + the Manager.Reset live POST round-trip
+  (see above); UI-2 Processors card merge landed (suite 351→352); next
+  primary is DOCS per alternation — **DOCS-28** (mirror
+  `Heater.v1_0_1`/`HeaterMetrics.v1_0_1` served + `v1_0_2` newest +
+  aggregators + `HeaterCollection.json`, 7 files / external corpus only —
+  both families stay NOT client-mapped, no fixture duty, corpus-invariant
+  list unchanged); then P1 #015 (AuthManager) — `expiryFromService` + the
+  Sessions pin are ready, wire the discovered SessionService body into
+  login + re-auth on `isExpired`; #016: the PATCH transport landed
+  (`patchJson`) + the If-Match boundary is pinned on all live seams
+  (Boot/IndicatorLED, Control SetPoint, Bios/Settings — the mockup ignores
+  preconditions, the client must send the settings-object ETag
+  `9234ac83b9700123cc32` itself, EMU 53/60/63/64 — now also the
+  Manager.Reset 204 round-trip), remaining is the actual
+  If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit
+  tests for the 412 path; #022/#016: `ResetActionInfo` ActionInfo resource
+  crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only
+  the annotation form and now provably ignores ResetType/ResetKeysType
+  values; the Control SetPoint PATCH pin adds the AllowableMin/Max
+  pre-validation rule for power capping); #018: query-capability surface +
+  live `$expand` contract pinned — remaining: build the lightweight
+  discovery pass + the cache fixes; **new feature candidate #028:** BIOS-
+  config editor (Bios/Settings become client-mapped → served versions move
+  into `test/fixtures/redfish/schemas/` + the corpus-invariant family list
+  gains `Bios`/`Settings`); corpus mirror queue: **DOCS-28** (Heater +
+  HeaterMetrics)
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -471,6 +479,27 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       emulator corpus-invariant list untouched — no family became
       client-mapped)
 
+- [ ] **DOCS-28** Mirror the **Heater** family pair the EMU run pinned live
+      (EMU 64→66, 2026-10-25) — the external corpus has no schema for
+      `#Heater.v1_0_1.Heater` (the modern thermal-heater read surface:
+      PhysicalContext/Manufacturer/Model/SerialNumber/HotPluggable/
+      LocationIndicatorActive/Status + `Links.Processors` + `Metrics` link)
+      or for `#HeaterMetrics.v1_0_1.HeaterMetrics` (pre-power-on/runtime
+      heating seconds, PowerWatts.Reading, TemperatureReadingsCelsius +
+      the advertised `#HeaterMetrics.ResetMetrics` action — a no-`/Actions/`-
+      segment candidate, never a contract). Mirror the **mockup-served**
+      versions (`Heater.v1_0_1` + `HeaterMetrics.v1_0_1`) plus the **newest**
+      published versions (`Heater.v1_0_2` + `HeaterMetrics.v1_0_2`, verified
+      on the live schema index 2026-10-25) plus the aggregators +
+      `HeaterCollection.json` (the DOCS-12/13/19/20/21/23/24/25/26 "newest +
+      served" pair precedent) into `documentations/external/redfish/schemas/
+      v1/` only — Heaters stays NOT client-mapped (no fixture duty; the
+      corpus-invariant family list unchanged). Source:
+      `https://redfish.dmtf.org/schemas/v1/Heater.json` (+
+      `HeaterMetrics.json`, `HeaterCollection.json`). Keep inside the DOCS-6
+      budget. (recorded 2026-10-25 EMU run — the only un-mirrored EMU-pinned
+      family pair; corpus mirror queue is DOCS-28)
+
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across
       DOCS-3/4/5/10/13 cited an older spec layout) and correct every stale
@@ -695,7 +724,28 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       fixture byte-identical); the mockup IGNORES the If-Match precondition
       on the settings object too — a stale etag still 204s AND persists, so
       412 enforcement stays unit-level and the #016/#028 client must send the
-      settings-object ETag itself; restored in `finally`)**
+      settings-object ETag itself; restored in `finally`)** → **66 tests
+      (ThermalSubsystem Heaters surface + Manager.Reset live round-trip
+      pinned 2026-10-25: (1) `#HeaterCollection` → `#Heater.v1_0_1.Heater`
+      CPU1Heater detail — PhysicalContext CPU / Manufacturer Contoso Heaters /
+      Model CPUHeater / SerialNumber SNDHM0123456789 / HotPluggable /
+      LocationIndicatorActive / Status OK + `Links.Processors[0]` resolving
+      live to `#Processor.v1_19_0` CPU1 + Metrics link → `#HeaterMetrics.
+      v1_0_1.HeaterMetrics` — PrePowerOnHeatingTimeSeconds 600 /
+      RuntimeHeatingTimeSeconds 3600 / PowerWatts.Reading 200.3 /
+      TemperatureReadingsCelsius[1] (DeviceName 'Heater Average Temperature',
+      Reading 2.5) — the thermal-UI surface next to the fan subsystem; the
+      advertised `#HeaterMetrics.ResetMetrics` target has NO `/Actions/`
+      segment → POST **404 with an empty body** (probed live; the
+      PowerSupply.Reset advertised-as-candidate rule, #022/#006 — never a
+      contract on this fixture; corpus mirror duty recorded as DOCS-28);
+      (2) `#Manager.Reset` **live POST round-trip** — the target IS under
+      `/Actions/` so the framework serves it: POST GracefulRestart → 204
+      (empty body, no task-monitor Location) AND a bogus `ResetType` also
+      204s — the mockup never validates action bodies, so the 400
+      `ResetTypeInvalid` path stays unit-level and the #022/#016 client must
+      pre-validate against the manager's OWN allow-list
+      (ForceRestart/GracefulRestart, never the system list))
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -1095,6 +1145,14 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       a screen reader hears the field and its value together instead of a
       detached label next to a detached value text, +2 widget tests assert
       the merged labels + visible texts + the missing-value form;
+      **OverviewView Processors card body merged semantics node done
+      2026-10-25 — the count + model texts (`2 processor(s)`, `P9`)
+      previously announced as two detached nodes under the merged
+      "Processors" header; they now render inside ONE
+      `Semantics(container + excludeSemantics)` node (`2 processor(s), P9`)
+      — one self-describing card-body announcement, visible texts preserved
+      (the established card-row pattern), +1 widget test asserts the merged
+      label + both visible texts;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

@@ -3197,3 +3197,81 @@
 **Issues touched:**
 - none opened/closed this run. DOCS-27 done; UI-2 advanced (Identity
   key/value-row merge); #015 remains the next P1.
+
+## 2026-10-25 — agent:redfish-automation — EMULATOR (ThermalSubsystem Heaters + Manager.Reset round-trip) + UI-2 Processors merge
+
+**Done:**
+- EMULATOR primary workstream (alternation: DOCS 00:20 → EMU due). Suite 64 →
+  **66 tests, 66/66 passed** (+2) against the official DMTF
+  Redfish-Mockup-Server @ pinned `23d21f9a` (HTTPS 8443, self-signed cert,
+  short-form fixture `-S`).
+  - **ThermalSubsystem Heaters surface pinned live:** `#HeaterCollection`
+    (1 member) → `#Heater.v1_0_1.Heater` CPU1Heater detail —
+    PhysicalContext CPU, Manufacturer Contoso Heaters, Model CPUHeater,
+    SerialNumber SNDHM0123456789, HotPluggable, LocationIndicatorActive,
+    Status Health OK, `Links.Processors[0]` → resolves live to
+    `#Processor.v1_19_0` CPU1 (the discovery-graph shape #018/#006 can rely
+    on), `Metrics` link → `#HeaterMetrics.v1_0_1.HeaterMetrics` —
+    PrePowerOnHeatingTimeSeconds 600, RuntimeHeatingTimeSeconds 3600,
+    PowerWatts.Reading 200.3, TemperatureReadingsCelsius[1] (DeviceName
+    'Heater Average Temperature', Reading 2.5). The advertised
+    `#HeaterMetrics.ResetMetrics` target has NO `/Actions/` segment → live
+    POST **404 with an empty body** (probed first; the PowerSupply.Reset
+    advertised-as-candidate rule — #022/#006: never a contract on this
+    fixture). Heaters stays NOT client-mapped; corpus mirror duty recorded as
+    **DOCS-28**.
+  - **Manager.Reset live POST round-trip pinned:** the target IS under
+    `/Actions/`, so the framework serves it — POST GracefulRestart → **204**
+    (empty body, no task-monitor Location), and a bogus `ResetType` **also
+    204s** (probed live) — the mockup never validates action bodies; the 400
+    `ResetTypeInvalid` path stays unit-level and the #022/#016 client must
+    pre-validate against the manager's OWN allow-list
+    (ForceRestart/GracefulRestart — never the system list).
+  - Live-probed the exact shapes first (collection/detail/metrics GETs,
+    ResetMetrics POST 404, Manager.Reset POST 204 + bogus 204, CPU1 link 200).
+    Server stopped after the run; on-disk fixture byte-identical.
+- UI-2 increment: the OverviewView **Processors card body** (count + model)
+  was the last remaining detached-text surface on the overview cards; the
+  body now renders inside a `Semantics(container + excludeSemantics)` merged
+  node (`2 processor(s), P9` — one self-describing announcement; count-only
+  and model-only forms merge the single fact; visible texts preserved).
+  +1 widget test in `test/features/overview/overview_view_test.dart`. Suite
+  351 → **352** passed / 1 skipped.
+
+**Decisions:**
+- EMULATOR per alternation (DOCS ran 00:20, most recently; EMU due). Within
+  it chose the Heater surface because (a) it is the thermal subsystem's
+  second read surface — the fan pin (EMU 48) has a natural sibling, and no
+  schema for `Heater`/`HeaterMetrics` exists in the external corpus yet, so
+  the pin creates a concrete next-DOCS duty (DOCS-28) instead of a no-op
+  run; (b) the `#HeaterMetrics.ResetMetrics` target gives a second data
+  point for the no-`/Actions/`-segment rule (only PowerSupply.Reset had
+  pinned it); (c) the Manager.Reset round-trip closes the last
+  manager-action question (annotation was pinned 2026-10-22; live POST
+  behaviour was not).
+- UI increment: targeted the last detached-text surface on the overview
+  cards with the established merged-node pattern — small, pattern-
+  consistent, fully tested; did not rush the open-ended focus-order hunt
+  (the only open UI-2 item left).
+- No new dependencies, no TLS change, no production behaviour change beyond
+  the semantics merge; no corpus downloads (EMU stream); no fixture changes.
+- Emulator suite additions only in `test_integration/emulator/` so plain
+  `flutter test` never needs the emulator.
+
+**Next:**
+- Push 110 queued local commits once GitHub credentials are available.
+- DOCS next per alternation: **DOCS-28** — mirror `Heater.v1_0_1` +
+  `HeaterMetrics.v1_0_1` (mockup-served) + newest `v1_0_2` pair + aggregators
+  + `HeaterCollection.json` (7 files, external corpus only; both families
+  stay NOT client-mapped; newest versions verified live on the schema index
+  this run).
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 64 → 66; #016 advanced (Manager.Reset
+  live round-trip — the manager action is served 204; bogus ResetType also
+  204s, 400 path stays unit-level); #022 advanced (the no-`/Actions/`-
+  segment advertised-as-candidate rule now pinned on a SECOND action —
+  HeaterMetrics.ResetMetrics, alongside PowerSupply.Reset); DOCS-28 recorded
+  (Heater corpus duty); UI-2 advanced (Processors card body merge).

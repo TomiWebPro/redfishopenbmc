@@ -188,6 +188,28 @@ void main() {
       expect(allowed, containsAll(<String>['ForceRestart', 'GracefulRestart']));
     });
 
+    test(
+        'managers: Manager.Reset live POST round-trip — 204 through the '
+        '/Actions/ framework, bogus ResetType also 204s (#022/#016)', () async {
+      // The annotation (target + allow-list) is pinned above; this closes the
+      // round-trip question. The target lives under '/Actions/', so the
+      // mockup's action framework DOES serve it — POST answers 204 with an
+      // empty body (normalized to a placeholder map, never an error), exactly
+      // like #ComputerSystem.Reset. Negative: the mockup never validates
+      // action bodies — a bogus ResetType ALSO answers 204 (probed live this
+      // run), so the 400 ResetTypeInvalid path stays unit-level and the
+      // #022/#016 client must pre-validate against the manager's OWN
+      // allow-list (ForceRestart / GracefulRestart — never the system list).
+      final Map<String, dynamic> ok = await client.postJson(
+          '/redfish/v1/Managers/BMC/Actions/Manager.Reset',
+          body: <String, dynamic>{'ResetType': 'GracefulRestart'});
+      expect(ok['value'], '');
+      final Map<String, dynamic> bogus = await client.postJson(
+          '/redfish/v1/Managers/BMC/Actions/Manager.Reset',
+          body: <String, dynamic>{'ResetType': 'Bogus'});
+      expect(bogus['value'], '');
+    });
+
     test('chassis: Chassis exposes inventory + thermal/power sub-resources',
         () async {
       final Map<String, dynamic> chassis =
@@ -1755,6 +1777,93 @@ void main() {
           metrics['TemperatureReadingsCelsius'] as List<dynamic>? ??
               <dynamic>[];
       expect(readings, hasLength(2));
+    });
+
+    test(
+        'ThermalSubsystem heaters: Heater + HeaterMetrics read surface — '
+        'ResetMetrics advertised-as-candidate (#006/#007/#019/#022)', () async {
+      // The thermal subsystem continues past the fans into the heater
+      // surface: #HeaterCollection → #Heater.v1_0_1.Heater (CPU1Heater:
+      // PhysicalContext CPU, identity, HotPluggable, LocationIndicatorActive,
+      // Status, Links.Processors → CPU1, Metrics link) →
+      // #HeaterMetrics.v1_0_1.HeaterMetrics (pre-power-on/runtime heating
+      // seconds, PowerWatts.Reading, TemperatureReadingsCelsius with
+      // DeviceName + Reading). A future thermal UI (or the #006 overview)
+      // reads this the same way it reads the fan subsystem. Heaters stays
+      // NOT client-mapped — no fixture-schema duty; corpus mirror duty
+      // recorded as DOCS-28.
+      final Map<String, dynamic> coll = await client
+          .getJson('/redfish/v1/Chassis/1U/ThermalSubsystem/Heaters');
+      expect(coll['@odata.type'], startsWith('#HeaterCollection.'));
+      expect(coll['Members@odata.count'], 1);
+      final String heaterUri = ((coll['Members'] as List<dynamic>).first
+          as Map<dynamic, dynamic>)['@odata.id'] as String;
+      expect(heaterUri,
+          '/redfish/v1/Chassis/1U/ThermalSubsystem/Heaters/CPU1Heater');
+
+      final Map<String, dynamic> heater = await client.getJson(heaterUri);
+      expect(heater['@odata.type'], startsWith('#Heater.'));
+      expect(heater['Id'], 'CPU1Heater');
+      expect(heater['PhysicalContext'], 'CPU');
+      expect(heater['Manufacturer'], 'Contoso Heaters');
+      expect(heater['Model'], 'CPUHeater');
+      expect(heater['SerialNumber'], 'SNDHM0123456789');
+      expect(heater['HotPluggable'], isTrue);
+      expect(heater['LocationIndicatorActive'], isFalse);
+      expect((heater['Status'] as Map<dynamic, dynamic>)['Health'], 'OK');
+
+      // The physical-link wiring: the heater links back to the CPU it heats,
+      // and the link resolves to a real Processor resource (not a dangling
+      // id) — the discovery-graph shape #018/#006 can rely on.
+      final List<dynamic> processors = (heater['Links']
+              as Map<dynamic, dynamic>)['Processors'] as List<dynamic>? ??
+          <dynamic>[];
+      expect(processors, isNotEmpty);
+      final String processorUri =
+          (processors.first as Map<dynamic, dynamic>)['@odata.id'] as String;
+      final Map<String, dynamic> processor = await client.getJson(processorUri);
+      expect(processor['@odata.type'], startsWith('#Processor.'));
+
+      final String metricsUri =
+          (heater['Metrics'] as Map<dynamic, dynamic>)['@odata.id'] as String;
+      final Map<String, dynamic> metrics = await client.getJson(metricsUri);
+      expect(metrics['@odata.type'], startsWith('#HeaterMetrics.'));
+      expect(metrics['PrePowerOnHeatingTimeSeconds'], 600);
+      expect(metrics['RuntimeHeatingTimeSeconds'], 3600);
+      final Map<dynamic, dynamic> power =
+          metrics['PowerWatts'] as Map<dynamic, dynamic>;
+      expect(power['Reading'], 200.3);
+      final List<dynamic> temps =
+          metrics['TemperatureReadingsCelsius'] as List<dynamic>? ??
+              <dynamic>[];
+      expect(temps, hasLength(1));
+      expect((temps.first as Map<dynamic, dynamic>)['DeviceName'],
+          'Heater Average Temperature');
+      expect((temps.first as Map<dynamic, dynamic>)['Reading'], 2.5);
+
+      // Action-target classification: the advertised
+      // #HeaterMetrics.ResetMetrics target has NO '/Actions/' segment — the
+      // same shape as #PowerSupply.Reset — so the mockup's action framework
+      // does not serve it: POST returns 404 with an empty body (probed live
+      // this run). #022/#006 must treat advertised targets as candidates,
+      // never contracts, on this fixture.
+      final Map<dynamic, dynamic> actions =
+          metrics['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> resetMetrics =
+          actions['#HeaterMetrics.ResetMetrics'] as Map<dynamic, dynamic>;
+      expect(
+        resetMetrics['target'],
+        '/redfish/v1/Chassis/1U/ThermalSubsystem/Heaters/CPU1Heater/Metrics/'
+        'HeaterMetrics.ResetMetrics',
+      );
+      try {
+        await client.postJson(resetMetrics['target'] as String,
+            body: <String, dynamic>{});
+        fail('expected a RedfishException for the unimplemented '
+            '#HeaterMetrics.ResetMetrics target');
+      } on RedfishException catch (e) {
+        expect(e.statusCode, 404);
+      }
     });
 
     test(

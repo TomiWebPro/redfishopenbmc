@@ -210,6 +210,24 @@ void main() {
     });
 
     testWidgets(
+        'processors card count + model announce as one merged semantics node '
+        '(UI-2)', (tester) async {
+      await tester.pumpWidget(scopeWith(sample: fullSample()));
+      await tester.pumpAndSettle();
+      // The count and model previously announced as two detached nodes under
+      // the merged "Processors" header; they now announce as ONE node
+      // carrying both facts: "2 processor(s), P9".
+      expect(
+        find.bySemanticsLabel('2 processor(s), P9'),
+        findsOneWidget,
+        reason: 'the processor count + model must announce as a single node',
+      );
+      // The visible texts stay for sighted users.
+      expect(find.text('2 processor(s)'), findsOneWidget);
+      expect(find.text('P9'), findsOneWidget);
+    });
+
+    testWidgets(
         'health banner announces one merged semantics node incl. the state '
         '(UI-2)', (tester) async {
       await tester.pumpWidget(scopeWith(sample: fullSample()));

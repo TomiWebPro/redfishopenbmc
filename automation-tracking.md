@@ -3634,3 +3634,75 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **108** (107 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-25 01:34 — EMULATOR (ThermalSubsystem Heaters surface + Manager.Reset live round-trip) — UI-2 Processors merge
+
+- **Baseline:** analyze 0; tests 351 passed / 1 skipped; starting commit 1245931
+  (branch `main` ahead 109 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR per alternation (last runs: DOCS 00:20 → EMU 23:50
+  → DOCS 22:33 → EMU 21:53; EMU due). Suite 64 → **66 tests, 66/66 passed**
+  (+2). Pinned live on the official DMTF Redfish-Mockup-Server @ pinned
+  `23d21f9a` (HTTPS 8443, self-signed /tmp cert, `-S` short-form fixture):
+  1) **ThermalSubsystem Heaters surface** (the thermal subsystem's second
+  surface next to the fan pin, EMU 48) — `#HeaterCollection` →
+  `#Heater.v1_0_1.Heater` CPU1Heater detail (PhysicalContext CPU /
+  Manufacturer Contoso Heaters / Model CPUHeater / SerialNumber
+  SNDHM0123456789 / HotPluggable / LocationIndicatorActive / Status Health
+  OK) + `Links.Processors[0]` resolving live to `#Processor.v1_19_0` CPU1 +
+  Metrics link → `#HeaterMetrics.v1_0_1.HeaterMetrics`
+  (PrePowerOnHeatingTimeSeconds 600 / RuntimeHeatingTimeSeconds 3600 /
+  PowerWatts.Reading 200.3 / TemperatureReadingsCelsius[1] DeviceName
+  'Heater Average Temperature' Reading 2.5). Action-target classification:
+  the advertised `#HeaterMetrics.ResetMetrics` target has **no `/Actions/`
+  segment** → live POST **404 with an empty body** (probed first, the
+  PowerSupply.Reset advertised-as-candidate rule — #022/#006 treats it as a
+  candidate, never a contract). 2) **Manager.Reset live POST round-trip** —
+  the target IS under `/Actions/` so the framework serves it: POST
+  GracefulRestart → **204** (empty body, no task-monitor Location) AND a
+  bogus `ResetType` **also 204s** (probed live) — the mockup never validates
+  action bodies, so the 400 `ResetTypeInvalid` path stays unit-level and the
+  #022/#016 client must pre-validate against the manager's OWN allow-list
+  (ForceRestart/GracefulRestart — never the system list). Probed the exact
+  shapes first (collection/detail/metrics GETs, ResetMetrics POST 404,
+  Manager.Reset POST 204 + bogus 204, CPU1 link 200). Server started from
+  pinned `23d21f9a`, healthy on 8443, stopped after the run (no background
+  process left). On-disk fixture byte-identical (`git status` clean apart
+  from the 4 intended files).
+- **Docs:** none this run (EMU stream). New corpus mirror duty recorded as
+  **DOCS-28** in FUTUREWORK: mirror `Heater.v1_0_1` + `HeaterMetrics.v1_0_1`
+  (mockup-served) + newest `v1_0_2` pair + aggregators + `HeaterCollection.json`
+  (7 files) into the external corpus only — neither family is client-mapped,
+  so no fixture duty and the corpus-invariant family list stays untouched;
+  newest versions verified live on the schema index this run.
+- **Emulator:** server prepared from the pinned `23d21f9a`, healthy on 8443,
+  suite **64 → 66 tests, 66/66 passed** (+1 Heaters surface +1 Manager.Reset
+  round-trip). Server stopped; no in-memory mutations (all probes were GETs
+  or 404s; the two 204 POSTs carried no persisted changes on the mockup).
+- **Code/tests:** no lib/ production change for the EMU stream (emulator-only
+  pins in `test_integration/emulator/emulator_suite_test.dart`). Plain
+  `flutter test` suite unaffected (emulator tests skip without
+  `REDFISH_EMULATOR_URL`).
+- **UI:** one small tested UI-2 increment — the OverviewView **Processors card
+  body** (count + model) was the last remaining detached-text surface on the
+  overview cards (the Identity `_kv` rows merged 00:20; the Processors body
+  still announced `2 processor(s)` and `P9` as two separate nodes). The body
+  now renders inside a `Semantics(container + excludeSemantics)` merged node
+  (`2 processor(s), P9` — one self-describing announcement, visible texts
+  preserved; count-only and model-only forms merge the single fact). +1 widget
+  test in `test/features/overview/overview_view_test.dart` asserts the merged
+  label + both visible texts. Suite 351 → **352** passed / 1 skipped.
+- **Verification:** analyze 0; tests **352 passed / 1 skipped** (baseline 351
+  → +1 widget); emulator 66/66; issues validate OK; `git diff --check` clean;
+  secret scan: Dart tests + docs prose only, no credentials. `dart format`
+  clean on the touched files (no unrelated drift).
+- **Commit:** (after §7.2/§7.3 below) — pushed: expected no (known GitHub
+  credential blocker; local commit kept, not retried).
+- **Next:** 1) Push the queued local commits (110) from a machine with GitHub
+  credentials; 2) DOCS per alternation — **DOCS-28** (mirror the Heater +
+  HeaterMetrics served `v1_0_1` + newest `v1_0_2` + aggregators +
+  `HeaterCollection.json`, 7 files / external corpus only, the DOCS-24/25/26
+  precedent — the corpus mirror queue is DOCS-28, the only un-mirrored
+  EMU-pinned family pair); 3) P1 #015 AuthManager — wire
+  `Session.expiryFromService` into login, re-auth on `isExpired`,
+  token/location from create RESPONSE HEADERS only.

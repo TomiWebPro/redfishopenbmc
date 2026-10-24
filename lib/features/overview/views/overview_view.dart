@@ -295,22 +295,35 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
 
   Widget _processors(BuildContext context, SystemOverview o) {
     if (!o.hasProcessors) return const NotExposed();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        if (o.processorSummary.count != null)
-          Text(
-            '${o.processorSummary.count} processor(s)',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        if (o.processorSummary.model != null) ...<Widget>[
-          const SizedBox(height: 4),
-          Text(
-            o.processorSummary.model!,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+    final String? countText = o.processorSummary.count == null
+        ? null
+        : '${o.processorSummary.count} processor(s)';
+    final String? model = o.processorSummary.model;
+    if (countText == null && model == null) {
+      // Preserve the historical all-null shape: nothing rendered.
+      return const SizedBox.shrink();
+    }
+    // UI-2: the count and model announce as ONE merged node (e.g. "2
+    // processor(s), P9") instead of two detached texts under the merged
+    // "Processors" header — the established card-body pattern. The visible
+    // texts stay for sighted users.
+    final String announced =
+        <String?>[countText, model].whereType<String>().join(', ');
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: announced,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (countText != null)
+            Text(countText, style: Theme.of(context).textTheme.bodyMedium),
+          if (model != null) ...<Widget>[
+            const SizedBox(height: 4),
+            Text(model, style: Theme.of(context).textTheme.bodyMedium),
+          ],
         ],
-      ],
+      ),
     );
   }
 
