@@ -60,7 +60,7 @@ rather than the richer emulator. Results: `flutter analyze` 0, `flutter test`
 - Coverage: `redfish/client/` **89.8%** (target 80), `redfish/discovery/` **91.0%** (target 85), `features/systems/` **88.1%** (target 80), `features/power/` **87.4%** (target 80)
 - `flutter analyze`: **0 issues**
 - `flutter test`: **245 passed / 1 skipped** (live-BMC integration stub; emulator suite skipped without `REDFISH_EMULATOR_URL`)
-- Issues: 20 open / 7 closed — `python3 issues/issues.py stats`
+- Issues: 21 open / 7 closed — `python3 issues/issues.py stats`
 
 **Risks & Decisions:**
 - Choice of Riverpod vs Bloc deferred to #001 (document rationale in DEVELOPMENT.md)

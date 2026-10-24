@@ -7,29 +7,27 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 (EMULATOR run — **Bios `@Redfish.Settings` ETag
-  surface pinned live (EMU 52→53)**: the DMTF mockup's `/Bios` resource carries
-  the DSP0266 §9.9 `@Redfish.Settings` annotation with the fixture's **only
-  ETag-ish token** — a settings-object ETag (no resource-level
-  `@odata.etag`/HTTP ETag header), refining the old "etag not pinable" note (a
-  #016 PATCH/If-Match flow CAN pin the settings ETag); pin also covers the
-  pending-settings compare (EmbeddedSata Raid→Ahci, ProcTurboMode
-  Enabled→Disabled), failed-apply Messages/RelatedProperties,
-  `#Bios.ResetBios` POST 204, `#Bios.ChangePassword` advertised-only); next
-  P1: #015 (AuthManager)
-- **Current focus:** **EMULATOR (2026-10-24)** — Bios `@Redfish.Settings` ETag
-  surface pinned live (the only ETag-ish token on the fixture — a #016
-  PATCH/If-Match input); next P1: #015 (AuthManager) — `expiryFromService` +
-  the Sessions pin are ready, wire the discovered SessionService body into
-  login + re-auth on `isExpired`; #022/#016: `ResetActionInfo` ActionInfo
-  resource crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves
-  only the annotation form and now provably ignores ResetType values); #018:
+- **Last updated:** 2026-10-24 (DOCS run — **Bios/Settings corpus mirror,
+  DOCS-23**: the EMU-2 Bios-`@Redfish.Settings` pin's two published types
+  (`#Bios.v1_2_2.Bios`, `#Settings.v1_3_5.Settings`) were reached by the
+  corpus-invariant crawl but had no versioned schema in the external corpus —
+  now mirrored (served + newest: `Bios.v1_2_2`/`v1_3_0`,
+  `Settings.v1_3_5`/`v1_5_0`, 67,020 bytes, inside DOCS-6); delta audit
+  additive-only (Bios v1_3_0 adds `Passwords`, Settings v1_5_0 property
+  no-op); **client-mapped decision: Bios/Settings stay NOT client-mapped**
+  (client reads only `ComputerSystem.BiosVersion`, no BIOS-config editor) —
+  recorded as candidate #028; next P1: #015 (AuthManager)
+- **Current focus:** **DOCS (2026-10-24)** — Bios/Settings corpus closed;
+  next P1: #015 (AuthManager) — `expiryFromService` + the Sessions pin are
+  ready, wire the discovered SessionService body into login + re-auth on
+  `isExpired`; #022/#016: `ResetActionInfo` ActionInfo resource crawl
+  (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only the
+  annotation form and now provably ignores ResetType values); #018:
   query-capability surface + live `$expand` contract pinned — remaining: build
-  the lightweight discovery pass + the cache fixes; **new DOCS candidate:**
-  mirror served `Bios.v1_2_2.json` + `Settings.v1_3_5.json` and decide whether
-  a BIOS-config feature makes `Bios`/`Settings` client-mapped (which would pull
-  them into the DOCS-19/20/21 fixture invariant — the corpus crawl already
-  reaches both published types)
+  the lightweight discovery pass + the cache fixes; **new feature candidate
+  #028:** BIOS-config editor (Bios/Settings become client-mapped → served
+  versions move into `test/fixtures/redfish/schemas/` + the corpus-invariant
+  family list gains `Bios`/`Settings`)
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -322,6 +320,24 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       live byte-identical; remaining 25 families unchanged; all anchors
       re-verified: bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0,
       schema index 200)
+
+- [x] **DOCS-23** Mirror the two published types the EMU-2 Bios
+      `@Redfish.Settings` pin (EMU 52→53) reads — `#Bios.v1_2_2.Bios` and
+      `#Settings.v1_3_5.Settings` — into the external corpus (served + newest
+      pair, the DOCS-12/13/19/20/21 precedent). Source:
+      `https://redfish.dmtf.org/schemas/v1/Bios.v1_2_2.json` (+ `Bios.v1_3_0`
+      newest), `Settings.v1_3_5.json` (+ `Settings.v1_5_0` newest).
+      **Done (run 2026-10-24, 4 files / 67,020 bytes, inside DOCS-6;
+      SHA-256s + manifest rows verified; delta audit additive-only — Bios
+      v1_3_0 adds `Passwords` (a #015/#026 input: the password-management
+      resource superseding action-based ChangePassword), Settings v1_5_0 is a
+      property no-op (6→6); client-mapped decision: Bios/Settings stay NOT
+      client-mapped — the client reads only `ComputerSystem.BiosVersion` (the
+      overview firmware line), no BIOS-config editor exists; if one lands it is
+      **#028** and the served versions must move into
+      `test/fixtures/redfish/schemas/` + the emulator corpus-invariant family
+      list; anchors re-verified: bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
+      1.25.0, schema index 200).**
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across
@@ -652,6 +668,16 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       HTTPS/SSH endpoints, and EthernetInterfaces MAC/IP/VLAN — run
       2026-10-23 11:39; #009 must resolve the console endpoint from the
       advertised KVMIP port, never hardcode ports)
+- [ ] **#028** BIOS configuration editor — Bios/Settings surface (candidate
+      feature, DOCS-23 2026-10-24). The EMU-2 Bios `@Redfish.Settings` pin +
+      the DOCS-23 corpus mirror give the full served/newest pair; a BIOS-config
+      editor makes `Bios`/`Settings` client-mapped, which pulls them into the
+      DOCS-19/20/21 fixture invariant (copy served `Bios.v1_2_2.json` +
+      `Settings.v1_3_5.json` into `test/fixtures/redfish/schemas/` and add both
+      families to the emulator corpus-invariant list). PATCH/If-Match with the
+      settings-object ETag folds #016; `Bios.v1_3_0` `Passwords` + the
+      `ChangePassword` action are a #015/#026 password-management input. See
+      `issues/open/028-*` for acceptance criteria.
 - [ ] **#010** Hardening: secure storage, theming, accessibility, coverage.
 
 ## P2 — UI improvements (one small, tested increment per green run)

@@ -119,6 +119,10 @@ documentations/external/
 | `redfish/schemas/v1/TaskService.v1_3_0.json` | https://redfish.dmtf.org/schemas/v1/TaskService.v1_3_0.json | 2026-10-24 12:47 | `0ff595276fedaef23cb6840757d93473d6fce3acf6bc7bd9480de269cc2b613d` | 11,802 | DMTF 2026.x | Newest TaskService — adds `#TaskService.DeleteAllCompletedTasks` action + TaskMonitorAutoExpirySeconds (additive vs v1_2_1) — DOCS-22 |
 | `redfish/schemas/v1/ThermalMetrics.v1_3_3.json` | https://redfish.dmtf.org/schemas/v1/ThermalMetrics.v1_3_3.json | 2026-10-24 12:47 | `8618fcf00538422383eba106cca40c68767e3e294c2c77f1e13845314b7f704b` | 19,245 | DMTF 2026.x | Newest ThermalMetrics — structural no-op vs v1_3_1 (copyright/anyOf-normalization only) — DOCS-22 |
 | `redfish/schemas/v1/ThermalSubsystem.v1_5_0.json` | https://redfish.dmtf.org/schemas/v1/ThermalSubsystem.v1_5_0.json | 2026-10-24 12:47 | `ba191747b75c257efc50e1d3d387c291625d83eb0f7e1a5eca5fc0a390e48e75` | 11,555 | DMTF 2026.x | Newest ThermalSubsystem — adds FansFullSpeedOverrideEnable/Filters (additive vs served v1_3_1) — DOCS-22 |
+| `redfish/schemas/v1/Bios.v1_2_2.json` | https://redfish.dmtf.org/schemas/v1/Bios.v1_2_2.json | 2026-10-24 15:17 | `404e8a17d50a6cbf00d5027b63b0c5f23087ba93f16a60d2491577c3f4b65028` | 16,485 | DMTF 2019.x | **Mockup-served** `#Bios.v1_2_2.Bios` — the Bios resource the EMU-2 pin reads (`@Redfish.Settings` ETag, pending-settings compare, ResetBios/ChangePassword) — DOCS-23 |
+| `redfish/schemas/v1/Bios.v1_3_0.json` | https://redfish.dmtf.org/schemas/v1/Bios.v1_3_0.json | 2026-10-24 15:17 | `65beebaa0f689693b4175eaaacbbae27eac767c2ed74e9c55fd1c312a01075f8` | 20,646 | DMTF 2026.x | Newest Bios — adds `Passwords` resource (additive vs served v1_2_2) — DOCS-23 |
+| `redfish/schemas/v1/Settings.v1_3_5.json` | https://redfish.dmtf.org/schemas/v1/Settings.v1_3_5.json | 2026-10-24 15:17 | `c05bc148013fd9d5270192da71d7c5a0362ab81d8cc54f3f527939f18d791ea9` | 15,194 | DMTF 2020.x | **Mockup-served** `#Settings.v1_3_5.Settings` — the `@Redfish.Settings` annotation type pinned by EMU-2 (SettingsObject/Messages) — DOCS-23 |
+| `redfish/schemas/v1/Settings.v1_5_0.json` | https://redfish.dmtf.org/schemas/v1/Settings.v1_5_0.json | 2026-10-24 15:17 | `8d481104a194fbcdf474fb9c068704f28a98de6dffc899f3fc538d2b7351d616` | 15,695 | DMTF 2026.x | Newest Settings — **no property delta** vs served v1_3_5 (structural/description-level only) — DOCS-23 |
 
 ### Downloaded schema set (23 base aggregator files)
 
@@ -209,7 +213,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-24 12:47 UTC — DOCS-22 freshness audit; prior: DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
+## Current upstream anchors (verified 2026-10-24 15:17 UTC — DOCS-23 Bios/Settings mirror; prior: DOCS-22 12:47 UTC, DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing)
@@ -255,6 +259,32 @@ change** (newest versions are only mirrored to the external corpus, not the
 fixture; the fixture keeps the mockup-served versions per the DOCS-21
 precedent). Manifest rows + anchors updated above; the 33-family list in the
 emulator corpus-invariant test stays in sync (served versions unchanged).
+
+### DOCS-23 — Bios + Settings corpus mirror for the EMU Bios-Settings pin (2026-10-24 15:17 UTC)
+
+The EMU-2 run (16:30 local, 53 tests) pinned the **Bios `@Redfish.Settings`
+surface** live; the two published types it reads — `#Bios.v1_2_2.Bios`
+(`/Systems/437XR1138R2/Bios`) and `#Settings.v1_3_5.Settings` (the
+`@Redfish.Settings` annotation type) — were reachable by the corpus-invariant
+crawl but had **no versioned schema in the external corpus**. Mirrored the
+**mockup-served** versions (`Bios.v1_2_2.json`, `Settings.v1_3_5.json`) per the
+DOCS-11/12/13/19/20/21 "newest + served" pair precedent, plus the **newest**
+published versions (`Bios.v1_3_0.json`, `Settings.v1_5_0.json`) found on the
+live schema index — 4 files / **67,020 bytes** total (16,485 + 20,646 + 15,194
++ 15,695), inside the DOCS-6 budget; SHA-256s + manifest rows above. Deltas
+audited against the served versions: **Bios v1_2_2 → v1_3_0 adds only the
+`Passwords` property** (13 → 14 props; the newer password-management surface
+that supersedes the action-based ChangePassword flow — a #015/#026 input, not a
+code change); **Settings v1_3_5 → v1_5_0 is a property no-op** (6 → 6).
+**Client-mapped decision: Bios/Settings stay NOT client-mapped** — the client
+reads only `ComputerSystem.BiosVersion` (the overview firmware line); there is
+no BIOS-config editor in the app, so the corpus-invariant family list in the
+emulator test is untouched and no fixture-schema duty attaches. If a BIOS-config
+feature ever lands (FUTUREWORK candidate), Bios/Settings join the client-mapped
+lists and the served versions must also be copied into
+`test/fixtures/redfish/schemas/` (DOCS-19/20/21 invariant). Anchors re-verified
+same run: bmcweb `63a18f4` (still HEAD, docs byte-identical), mockup
+`23d21f9a`, DSP0266 1.25.0, schema index 200.
 
 ### DOCS-15 — DSP0266 §7.3 query-parameters audit (2026-10-23 19:20 UTC)
 

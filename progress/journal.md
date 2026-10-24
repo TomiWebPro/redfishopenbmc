@@ -2622,3 +2622,67 @@
 - none opened/closed this run. EMU-2 52 → 53 recorded (Bios Settings pin +
   refinements to the etag-pinability note); UI-2 got the shell not-found
   increment; issues remain open (#015 next P1).
+
+## 2026-10-24 — agent:redfish-automation — DOCS-23 Bios/Settings corpus + not-found fallback unification
+
+**Done:**
+- DOCS primary workstream (alternation: EMU 16:30 → DOCS next). Closed the
+  corpus gap the EMU Bios-`@Redfish.Settings` pin (EMU 52→53) exposed:
+  `#Bios.v1_2_2.Bios` + `#Settings.v1_3_5.Settings` were published by the
+  mockup and reached by the corpus-invariant crawl, but had no versioned schema
+  in the external mirror. Mirrored the served versions + the newest published
+  versions (`Bios.v1_3_0.json`, `Settings.v1_5_0.json` — found on the live
+  schema index) — 4 files / 67,020 bytes, inside DOCS-6; SHA-256s + manifest
+  rows verified. Delta audit: Bios v1_2_2→v1_3_0 adds only `Passwords` (13→14
+  props — the password-management resource superseding action-based
+  ChangePassword; a #015/#026 input); Settings v1_3_5→v1_5_0 is a property
+  no-op (6→6). Anchors re-verified: bmcweb `63a18f4` (still HEAD), mockup
+  `23d21f9a`, DSP0266 1.25.0, schema index 200.
+- **Client-mapped decision: Bios/Settings stay NOT client-mapped.** The client
+  reads only `ComputerSystem.BiosVersion` (overview firmware line); no
+  BIOS-config editor exists, so the corpus-invariant family list in the emulator
+  test is untouched and no fixture-schema duty attaches. Recorded the candidate
+  feature as **issue #028** (BIOS configuration editor, P2) with acceptance
+  criteria that spell out the exact fixture duty (copy served versions into
+  `test/fixtures/redfish/schemas/` + add the families to the invariant list)
+  and the #016 If-Match fold.
+- REQUIREMENTS.md: DOCS-23 section added (delta table + decision); the trace
+  note "Bios `@Redfish.Settings` surface (pinned EMU 52→53)" now cites the real
+  mirror files. README manifest + anchors section updated.
+- UI-2 increment: **PowerView, SensorsView, KvmView "System not found"
+  fallbacks** converted from the bare `Center(child: Text(...))` to the
+  established merged `Semantics(container + excludeSemantics,
+  label: 'System not found')` node + `Icons.search_off_outlined` (no Retry).
+  +1 widget test per view (merged `bySemanticsLabel` node + visible text + icon
+  + 320 px no-overflow via `addTearDown`). Unit suite 337 → **340**.
+
+**Decisions:**
+- DOCS per alternation; within it chose the EMU-pinned Bios/Settings gap
+  because the FUTUREWORK note (from the 16:30 EMU run) explicitly scheduled it
+  as the next DOCS candidate and it is small, self-contained, and closes the
+  only corpus gap a 2026-10-24 pin left open.
+- Newest+served mirroring, external corpus only (fixture untouched) — the
+  DOCS-21 precedent; the corpus-invariant test asserts served versions, and the
+  decision that Bios/Settings are NOT client-mapped keeps the 33-family list
+  intact.
+- Filing #028 instead of just a FUTUREWORK line: the decision needs a home with
+  acceptance criteria so a future run can execute the fixture duty mechanically;
+  the issue file records it (the "not client-mapped until #028" invariant).
+- UI increment stayed pattern-consistent (merged node, no Retry). The three
+  views were the last bare `Text('System not found')` fallbacks in the feature
+  views, so the not-found pattern is now uniform across the app.
+- No new dependencies, no TLS change, no production behaviour change.
+
+**Next:**
+- Push 91 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, persist token/location from create RESPONSE HEADERS
+  only (the fixture echoes the password in session bodies).
+- EMULATOR next per alternation: re-run the corpus-invariant crawl after any
+  future family additions, or pin a remaining un-pinned surface; #028 is the
+  new P2 candidate (BIOS-config editor with the exact fixture duty recorded).
+
+**Issues touched:**
+- opened: #028 (BIOS configuration editor — candidate feature making
+  Bios/Settings client-mapped). DOCS-23 done; no issues closed; #015 remains
+  the next P1.

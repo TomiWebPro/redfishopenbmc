@@ -6,8 +6,19 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (EMULATOR run — **Bios `@Redfish.Settings` surface
-pinned live, EMU 52→53**: the DMTF mockup's `/Bios` resource carries the
+Last audited: 2026-10-24 (DOCS run — **Bios + Settings corpus mirror,
+DOCS-23**: mirrored the mockup-served `Bios.v1_2_2.json` +
+`Settings.v1_3_5.json` (the two published types the EMU Bios-`@Redfish.Settings`
+pin reads) plus the newest `Bios.v1_3_0.json` + `Settings.v1_5_0.json` into the
+external corpus; delta audit additive-only — Bios v1_3_0 adds `Passwords`,
+Settings v1_5_0 is a property no-op; **client-mapped decision: Bios/Settings
+stay NOT client-mapped** (client reads only `ComputerSystem.BiosVersion`; no
+BIOS-config editor) so no fixture-schema duty). UI-2: Power/Sensors/KVM
+not-found fallbacks now announce one merged `System not found` semantics node
+(the SystemShell/SystemOverviewPage pattern), +3 widget tests. Prior runs
+below.)
+Prior: EMULATOR run — **Bios `@Redfish.Settings` surface pinned live, EMU 52→53**:
+the DMTF mockup's `/Bios` resource carries the
 DSP0266 §9.9 `@Redfish.Settings` payload annotation with a real settings-object
 **ETag** — the only ETag-ish token this fixture serves (no resource-level
 `@odata.etag`/HTTP ETag header), refining the older note "etag behaviour cannot
@@ -446,7 +457,9 @@ client-relevant families.
    RelatedProperties from the last failed apply, and the `#Bios.ResetBios`
    action (POST 204 via the mockup's `/Actions/` framework) with
    `#Bios.ChangePassword` advertised (credential-bearing action — never
-   round-tripped with real secrets in this suite).
+   round-tripped with real secrets in this suite). (Schema citations for the
+    pinned surface now resolve to the mirrored
+    `Bios.v1_2_2.json` + `Settings.v1_3_5.json` — DOCS-23, 2026-10-24.)
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)
 
@@ -963,3 +976,50 @@ byte-identical at HEAD (re-verified live, SHA-256 match), mockup pin
 index 200. **No client code change**: every delta is additive, none of the new
 fields sit on the current reader surface; the newest-version corpus stays a
 reference for future telemetry/task work (#007/#019/#008/#020).
+
+## DOCS-23 — Bios + Settings corpus mirror for the EMU Bios-Settings pin (2026-10-24)
+
+The EMU-2 run (EMU 52→53, 2026-10-24) pinned the **Bios `@Redfish.Settings`
+surface** live against the `23d21f9a` mockup. The two published types that pin
+reads — `#Bios.v1_2_2.Bios` (`/Systems/437XR1138R2/Bios`) and
+`#Settings.v1_3_5.Settings` (the `@Redfish.Settings` payload annotation type) —
+were reachable by the corpus-invariant crawl but had **no versioned schema in
+the external corpus**. This run mirrored the **mockup-served** versions plus
+the **newest** published versions (the DOCS-12/13/19/20/21 "newest + served"
+pair precedent):
+
+| File | Served/newest | Bytes | Mirror destination |
+|---|---|---|---|
+| `Bios.v1_2_2.json` | **served** (`#Bios.v1_2_2.Bios`) | 16,485 | external corpus only |
+| `Bios.v1_3_0.json` | newest (live index) | 20,646 | external corpus only |
+| `Settings.v1_3_5.json` | **served** (`#Settings.v1_3_5.Settings`) | 15,194 | external corpus only |
+| `Settings.v1_5_0.json` | newest (live index) | 15,695 | external corpus only |
+
+67,020 new bytes total — inside the DOCS-6 budget. SHA-256s in the manifest
+(`documentations/external/README.md` rows).
+
+**Delta audit (newest vs served, additive-only):**
+
+| Family | Served → newest | Delta | Client impact |
+|---|---|---|---|
+| `Bios` | `v1_2_2` → `v1_3_0` | adds `Passwords` (the newer password-management resource surface superseding the action-based `ChangePassword` flow) | none — no BIOS-config feature; note for #015/#026 when password management lands |
+| `Settings` | `v1_3_5` → `v1_5_0` | **property no-op** (6 → 6 top-level props; structural/description-level only) | none |
+
+**Client-mapped decision:** **Bios/Settings stay NOT client-mapped.** The
+client's only BIOS data point is `ComputerSystem.BiosVersion` (overview
+firmware line); no BIOS-config editor exists in the app, so the 33-family list
+in the emulator corpus-invariant test is untouched and no
+fixture-schema duty attaches (the crawl skips non-client-mapped families).
+If a BIOS-config feature ever lands, Bios/Settings join the client-mapped
+lists AND the served versions must be copied into
+`test/fixtures/redfish/schemas/` (the DOCS-19/20/21 "every published
+`@odata.type` for a client-mapped family has a served-version schema in the
+fixture" invariant). The trace-note Bios `@Redfish.Settings` paragraph (EMU-2
+pin record) now cites the real mirror files (`Bios.v1_2_2.json`,
+`Settings.v1_3_5.json`) instead of live schema-index URLs.
+
+Anchors re-verified this run (2026-10-24 15:17 UTC): bmcweb master
+`63a18f4e6188a77b713a8b22c8a95ab3d6c5a718` (still HEAD; all four mirrored docs
+byte-identical), mockup pin `23d21f9a`, DSP0266 1.25.0 (1.26.0 probe → 404),
+schema index 200. **No client code change** from the docs audit; UI-2 landed
+the not-found fallback unification separately (see tracking).

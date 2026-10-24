@@ -164,6 +164,33 @@ void main() {
 
       expect(find.text('Power On'), findsNothing);
     });
+
+    testWidgets(
+        'unknown system id announces one merged "System not found" node '
+        '(UI-2)', (tester) async {
+      // No profile connected → systemHandleProvider('bmc1') is null → the
+      // fallback renders the established merged node (icon + text, one
+      // self-describing announcement, no Retry).
+      final SystemManager manager = buildManager(powerControl: true);
+
+      await tester.pumpWidget(
+        harness(
+          manager: manager,
+          controller: _fakeController(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel('System not found'), findsOneWidget);
+      expect(find.text('System not found'), findsOneWidget);
+      expect(find.byIcon(Icons.search_off_outlined), findsOneWidget);
+      // 320 px no-overflow check via the addTearDown restore pattern.
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('PowerView — actions', () {

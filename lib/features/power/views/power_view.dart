@@ -29,8 +29,24 @@ class PowerView extends ConsumerWidget {
     final SystemFeatures? features = handle?.features;
 
     // Discovery not complete yet (or tab shown before capability gate).
+    // Established UI-2 pattern: one merged, self-describing announcement (no
+    // Retry — the system id does not exist, there is nothing to reload).
     if (handle == null) {
-      return const Center(child: Text('System not found'));
+      return Center(
+        child: Semantics(
+          container: true,
+          excludeSemantics: true,
+          label: 'System not found',
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.search_off_outlined, size: 40),
+              SizedBox(height: 8),
+              Text('System not found'),
+            ],
+          ),
+        ),
+      );
     }
     if (features == null) {
       return const Center(child: CircularProgressIndicator());

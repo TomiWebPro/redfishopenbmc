@@ -2961,3 +2961,69 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **90** (89 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 17:38 — DOCS (Bios/Settings corpus) + UI-2 not-found fallbacks
+
+- **Baseline:** analyze 0; tests 337 passed / 1 skipped; starting commit ee05b26
+  (branch `main` ahead 91 of origin); issues validate OK; working tree clean; no
+  stash, no crashed-run leftovers.
+- **Primary work:** DOCS per alternation (last substantive runs: EMU 16:30 →
+  DOCS 13:05; DOCS overdue). Closed the corpus gap the EMU Bios-`@Redfish.Settings`
+  pin (EMU 52→53) exposed: its two published types (`#Bios.v1_2_2.Bios`,
+  `#Settings.v1_3_5.Settings`) were reached by the corpus-invariant crawl but had
+  no versioned schema in the external mirror. Mirrored the **mockup-served**
+  versions (`Bios.v1_2_2.json`, `Settings.v1_3_5.json`) per the
+  DOCS-12/13/19/20/21 "newest + served" pair precedent, plus the **newest**
+  published versions (`Bios.v1_3_0.json`, `Settings.v1_5_0.json`) found on the
+  live schema index — 4 files / **67,020 bytes**, inside the DOCS-6 budget;
+  SHA-256s + manifest rows verified. Delta audit additive-only: **Bios
+  v1_2_2→v1_3_0 adds only `Passwords`** (13→14 props; the password-management
+  resource superseding the action-based ChangePassword — a #015/#026 input, no
+  code change); **Settings v1_3_5→v1_5_0 is a property no-op** (6→6).
+  **Client-mapped decision: Bios/Settings stay NOT client-mapped** — the client
+  reads only `ComputerSystem.BiosVersion` (overview firmware line); no
+  BIOS-config editor exists, so the emulator corpus-invariant family list is
+  untouched and no fixture-schema duty attaches. Filled the candidate feature as
+  **#028** (BIOS configuration editor) with full acceptance criteria incl. the
+  fixture duty that would make the families client-mapped.
+- **Docs:** https://redfish.dmtf.org/schemas/v1/ index (+4 rows in the README
+  manifest: Bios.v1_2_2/v1_3_0, Settings.v1_3_5/v1_5_0 with SHA-256s + fetched
+  15:17 UTC); REQUIREMENTS.md gained a DOCS-23 section (delta table + the
+  client-mapped decision) + the trace-note Bios paragraph now cites the real
+  mirror files; anchors re-verified: bmcweb `63a18f4` (still HEAD, docs
+  byte-identical), mockup `23d21f9a`, DSP0266 1.25.0 (1.26.0 probe → 404),
+  schema index 200.
+- **Emulator:** suite re-run **53/53** via `tool/emulator/run_tests.sh` —
+  includes the corpus-invariant live crawl, which green-lights the
+  "Bios/Settings stay not-client-mapped" decision (their published types are
+  visited but skipped, so the 33-family list stays in sync).
+- **Code/tests:** no production change from the docs audit. Issue #028 created
+  (P2 feature, `issues/open/028-*`). UI-2 increment: **PowerView, SensorsView,
+  KvmView "System not found" fallbacks** converted from the bare
+  `Center(child: Text(...))` to the established merged
+  `Semantics(container + excludeSemantics, label: 'System not found')` node with
+  `Icons.search_off_outlined` (one self-describing announcement; no Retry — a
+  nonexistent system id is not an error; matches SystemShell +
+  SystemOverviewPage fixed earlier today). +1 widget test per view (merged
+  `bySemanticsLabel` node + visible text + icon + 320 px no-overflow via
+  `addTearDown`). Suite 337 → **340**.
+- **Verification:** analyze 0; tests **340 passed / 1 skipped** (baseline 337 →
+  +3 widget); emulator suite 53/53; issues validate OK; `git diff --check`
+  clean; secret scan clean (Dart + docs prose + public DMTF schema JSONs; the
+  #028 issue mentions ChangePassword only as never-round-tripped, no
+  credentials). `dart format` touched 27 files; drift in 27 unrelated files
+  reverted via `git checkout --` to keep the diff on 9 files + 5 new files (the
+  established pattern).
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** (expected) — the known
+  GitHub credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN
+  env, no SSH key); local commit kept, not retried. Commits ahead of origin/main:
+  **91** before push attempt.
+- **Next:** 1) Push the queued local commits (92) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
+  login (set `expiresAt` from the discovered SessionService), re-auth on
+  `isExpired`, keep token/location from create headers only (the fixture echoes
+  Password in session bodies); 3) EMULATOR per alternation — candidates: re-run
+  the corpus-invariant crawl on future family additions, or pin a remaining
+  un-pinned surface; #028 (BIOS-config editor) is the new P2 candidate with the
+  exact fixture duty recorded in its issue file.
