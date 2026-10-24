@@ -7,49 +7,57 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 (EMU run — **EMU 63→64**: third live PATCH pin
-  (#016) — PATCH `/Bios/Settings` (the `@Redfish.Settings` SettingsObject
-  carrying the only ETag the mockup serves) answers 204 + persists for a
-  partial `Attributes` update, and a stale `If-Match` is IGNORED (412 stays
-  unit-level; the #028 BIOS editor must send the settings-object ETag
-  itself); first pending-settings PATCH round-trip (#028 input); UI-2 landed
-  the SystemCard detail line (Manufacturer · Model) merge (suite 348→349);
-  the corpus mirror queue is still EMPTY; next P1: #015 (AuthManager —
-  `expiryFromService` + the Sessions pin are ready, wire the discovered
-  SessionService body into login + re-auth on `isExpired`); #016: the PATCH
-  transport + If-Match boundary are pinned on all three live seams (Boot/
-  IndicatorLED, Control SetPoint, Bios/Settings), remaining is the actual
-  If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit
-  tests for the 412 path; #022/#016: `ResetActionInfo` ActionInfo resource
-  crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup) + the Control
-  SetPoint AllowableMin/Max pre-validation rule; #018: query-capability
-  surface + live `$expand` contract pinned — remaining: build the lightweight
-  discovery pass + the cache fixes; **new feature candidate #028:** BIOS-config
-  editor (Bios/Settings become client-mapped → served versions move into
-  `test/fixtures/redfish/schemas/` + the corpus-invariant family list gains
-  `Bios`/`Settings`; the Bios/Settings PATCH round-trip seam is now pinned)
-- **Current focus:** **EMULATOR (2026-10-24)** — EMU 63→64 closed the
-  Bios/Settings PATCH round-trip pin (third live PATCH pin; #016 If-Match-on-
-  Settings seam + #028 BIOS-editor input); UI-2 detail-line merge landed;
-  next P1: #015 (AuthManager) — `expiryFromService` + the Sessions pin are
-  ready, wire the discovered SessionService body into login + re-auth on
-  `isExpired`; #016: the PATCH transport landed (`patchJson`) + the If-Match
-  boundary is pinned on all three live seams (Boot/IndicatorLED, Control
-  SetPoint, Bios/Settings — the mockup ignores preconditions, the client
-  must send the settings-object ETag `9234ac83b9700123cc32` itself, EMU
-  53/60/63/64), remaining is the actual If-Match/`@odata.etag` wiring in a
-  Boot/IndicatorLED PATCH flow + unit tests for the 412 path; #022/#016:
-  `ResetActionInfo` ActionInfo resource crawl (bmcweb-style BMCs; NOT
-  pinable on the DMTF mockup — it serves only the annotation form and now
-  provably ignores ResetType/ResetKeysType values; the Control SetPoint PATCH
-  pin adds the AllowableMin/Max pre-validation rule for power capping); #018:
+- **Last updated:** 2026-10-25 (DOCS run — **DOCS-27 corpus freshness audit**:
+  zero version advances across all 38 mirrored families — 120/120 schema
+  files byte-identical to the live index, registries/index/PDF byte-identical,
+  all anchors re-verified (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
+  1.25.0, schema index 200) — plus one provenance fix (the mockup README
+  manifest row recorded the upstream SHA while the committed blob is DOCS-1's
+  whitespace-normalised copy; the row now records the actual committed SHA
+  with a byte-identical-apart-from-2-byte-whitespace note); UI-2 landed the
+  Identity card key/value-row merged semantics (label + value announce as one
+  node, `Manufacturer: Acme` / `BIOS: 1.0`, missing values merge as
+  `<label>: Not exposed by this BMC`, +2 widget tests, suite 349→351); next
+  P1: #015 (AuthManager — `expiryFromService` + the Sessions pin are ready,
+  wire the discovered SessionService body into login + re-auth on
+  `isExpired`); #016: the PATCH transport + If-Match boundary are pinned on
+  all three live seams (Boot/IndicatorLED, Control SetPoint, Bios/Settings),
+  remaining is the actual If-Match/`@odata.etag` wiring in a Boot/IndicatorLED
+  PATCH flow + unit tests for the 412 path; #022/#016: `ResetActionInfo`
+  ActionInfo resource crawl (bmcweb-style BMCs; NOT pinable on the DMTF
+  mockup) + the Control SetPoint AllowableMin/Max pre-validation rule; #018:
+  query-capability surface + live `$expand` contract pinned — remaining:
+  build the lightweight discovery pass + the cache fixes; **new feature
+  candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
+  served versions move into `test/fixtures/redfish/schemas/` + the
+  corpus-invariant family list gains `Bios`/`Settings`; the Bios/Settings
+  PATCH round-trip seam is now pinned); corpus mirror queue: **EMPTY** — the
+  2026-10-25 DOCS-27 audit confirmed it stays empty (no advances)
+- **Current focus:** **DOCS (2026-10-25)** — DOCS-27 corpus freshness audit
+  found ZERO version advances (all 38 families current, 120/120 byte-
+  identical) + fixed the mockup README provenance (manifest recorded the
+  upstream SHA while the repo holds DOCS-1's whitespace-normalised copy; the
+  row now records the actual committed SHA with a note); UI-2 Identity KV-row
+  merge landed (suite 349→351); next P1: #015
+  (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the
+  discovered SessionService body into login + re-auth on `isExpired`; #016:
+  the PATCH transport landed (`patchJson`) + the If-Match boundary is pinned
+  on all three live seams (Boot/IndicatorLED, Control SetPoint, Bios/Settings
+  — the mockup ignores preconditions, the client must send the settings-
+  object ETag `9234ac83b9700123cc32` itself, EMU 53/60/63/64), remaining is
+  the actual If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH flow
+  + unit tests for the 412 path; #022/#016: `ResetActionInfo` ActionInfo
+  resource crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it
+  serves only the annotation form and now provably ignores ResetType/
+  ResetKeysType values; the Control SetPoint PATCH pin adds the
+  AllowableMin/Max pre-validation rule for power capping); #018:
   query-capability surface + live `$expand` contract pinned — remaining:
   build the lightweight discovery pass + the cache fixes; **new feature
   candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
   served versions move into `test/fixtures/redfish/schemas/` + the
   corpus-invariant family list gains `Bios`/`Settings`); corpus mirror queue:
   **EMPTY** — all EMU-pinned families (incl. Control via DOCS-26) have real
-  mirror files; next DOCS run can do a freshness audit
+  mirror files, and the DOCS-27 audit confirmed none advanced
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -439,6 +447,29 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       real mirror files; anchors re-verified: bmcweb `63a18f4`, mockup
       `23d21f9a`, DSP0266 1.25.0, schema index 200 — the corpus mirror queue
       is now EMPTY)**
+
+- [x] **DOCS-27** Corpus freshness audit (the DOCS-22 precedent, now covering
+      **38 families**): extract the newest published version per family from
+      the live DMTF schema index and byte-verify every mirrored schema file,
+      registry, index page, and PDF; fix any provenance drift so every
+      manifest SHA is truthful. (run 2026-10-25 — **ZERO version advances**:
+      all 7,167 index entries compared, newest per family unchanged for all 38
+      mirrored families; **120/120 mirrored schema files byte-identical** to
+      re-downloaded live copies; registries (`Base.1.5.0` +
+      `Base.1.24.0`), index page, and the DSP0266 1.25.0 PDF all
+      byte-identical; **no new downloads, no corpus refresh, no client code
+      change**; anchors re-verified: bmcweb `63a18f4` (still HEAD), mockup
+      `23d21f9a` (still HEAD), DSP0266 1.25.0 (200), schema index 200; **one
+      provenance fix** — the manifest row for `redfish/mockup/
+      README-mockup-server.md` recorded the upstream SHA-256 (`b3af2ff3…`,
+      7,318 B) but the committed blob is the DOCS-1 normalised copy
+      (trailing whitespace stripped on the `cert = ` / `key = ` lines, 2
+      bytes; on-disk `0d79a165…`, 7,316 B) — the manifest claimed a hash the
+      repo did not contain; the row now records the actual committed SHA with
+      an explicit byte-identical-apart-from-whitespace note (restoring the
+      trailing whitespace would fail `git diff --check`); the 33-family
+      emulator corpus-invariant list untouched — no family became
+      client-mapped)
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across
@@ -1057,6 +1088,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       excludeSemantics)` node (one self-describing announcement, visible
       text preserved — the established card-row pattern), +1 widget test
       asserts the merged label + visible text;
+      **OverviewView Identity card key/value rows merged semantics node done
+      2026-10-25 — each `_kv` row (label + value) now announces as ONE node
+      (`Manufacturer: Acme`, `Model: Server-9`, `Serial: SN1`, `BIOS: 1.0`;
+      a missing value merges as `<label>: Not exposed by this BMC`) —
+      a screen reader hears the field and its value together instead of a
+      detached label next to a detached value text, +2 widget tests assert
+      the merged labels + visible texts + the missing-value form;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

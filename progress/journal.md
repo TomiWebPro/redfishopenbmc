@@ -3120,3 +3120,80 @@
   pin — Bios/Settings; If-Match boundary on the settings object); #028
   advanced (pending-settings PATCH round-trip seam pinned); UI-2 advanced
   (SystemCard detail-line merge).
+
+## 2026-10-25 — agent:redfish-automation — DOCS-27 corpus freshness audit + UI-2 Identity KV merge
+
+**Done:**
+- DOCS primary workstream (alternation: EMU 23:50 → DOCS due). Closed
+  **DOCS-27** — the named next DOCS duty from the EMU 63→64 run ("a freshness
+  audit (DOCS-22 precedent) is the natural DOCS duty next"):
+  - Re-verified all upstream anchors (2026-10-25 00:07–00:15 UTC): bmcweb
+    master `63a18f4` (still HEAD via GitHub API; all four mirrored docs
+    byte-identical at HEAD), mockup pin `23d21f9a` (still HEAD of `main` via
+    `git ls-remote`), DSP0266 1.25.0 (200 on the working `www.dmtf.org` URL),
+    schema index 200.
+  - Freshness audit across all **38 mirrored families** (the DOCS-22 33-list
+    plus Battery/BatteryMetrics/Bios/Settings/SecureBoot/SecureBootDatabase/
+    Control/EventDestination/VirtualMedia): extracted all 7,167 index
+    entries, compared the newest published version per family against the
+    mirrored "newest" files → **ZERO version advances**. Separately
+    re-downloaded **all 120 mirrored schema files** and byte-compared
+    SHA-256 → **120/120 byte-identical** (no drift). Registries
+    (`Base.1.5.0` + `Base.1.24.0`), index page, and the DSP0266 1.25.0 PDF
+    all byte-identical. **No new downloads, no corpus refresh, no client
+    code change.**
+  - **Provenance fix (the only diff):** the manifest row for the mirrored
+    `redfish/mockup/README-mockup-server.md` recorded the **upstream** SHA-256
+    (`b3af2ff3…`, 7,318 B) but the committed blob has been the DOCS-1
+    normalised copy ever since (trailing whitespace stripped on the `cert = `/
+    `key = ` lines — 2 bytes; on-disk SHA-256 `0d79a165…`, 7,316 B) — the
+    manifest claimed a hash the repo did not contain. Updated the manifest row
+    to record the **actual committed SHA** (`0d79a165…`, 7,316 B) with an
+    explicit note that the content is byte-identical to upstream apart from
+    that 2-byte whitespace normalisation (DOCS-1 wrote it that way, and
+    restoring the trailing whitespace would fail `git diff --check` on every
+    future run). Re-verified live: upstream is `b3af2ff3…` (7,318 B) at the
+    pinned `23d21f9a`, so the semantic content is current; the manifest is
+    now truthful about what the repo actually holds.
+  - REQUIREMENTS.md: "Last audited" rewritten (DOCS-27 done) + new DOCS-27
+    section; README: DOCS-27 note under anchors + anchors timestamp updated.
+- UI-2 increment: the **OverviewView Identity card key/value rows** were the
+  remaining non-card label surface on the overview page — each `_kv` row
+  (label + value) announced as two detached nodes ("Manufacturer", then
+  "Acme"). Each row now renders inside a
+  `Semantics(container + excludeSemantics)` merged node announcing
+  `<label>: <value>` (`Manufacturer: Acme`, `Model: Server-9`,
+  `Serial: SN1`, `BIOS: 1.0`); a missing value merges as
+  `<label>: Not exposed by this BMC`. Visible label + value texts preserved.
+  +2 widget tests in `test/features/overview/overview_view_test.dart`
+  (merged labels + visible texts; missing-value form). Suite 349 → **351**
+  passed / 1 skipped.
+
+**Decisions:**
+- DOCS per alternation (EMU 23:50 → DOCS due); within it chose DOCS-27
+  because the corpus mirror queue is EMPTY and the EMU 63→64 run explicitly
+  recorded "a freshness audit (DOCS-22 precedent) is the natural DOCS duty
+  next".
+- The audit found zero advances, so no downloads: DOCS-6 budget untouched
+  (0 new bytes). The only corpus change is the 2-byte provenance fix, which
+  makes the manifest truthful rather than changing content.
+- UI increment: targeted the last remaining non-card label surface on the
+  overview page (the Identity `_kv` rows) with the established merged-node
+  pattern — small, pattern-consistent, fully tested; did not rush the
+  open-ended focus-order hunt (the only open UI-2 item left, per the 22:33
+  DOCS run's rationale).
+- No new dependencies, no TLS change, no production behaviour change beyond
+  the semantics merge; no fixture or emulator changes (DOCS stream).
+
+**Next:**
+- Push 107 queued local commits once GitHub credentials are available.
+- EMULATOR next per alternation: corpus mirror queue is EMPTY and now
+  verified fresh; candidates: re-run the corpus-invariant crawl after future
+  family additions, or pin a remaining un-pinned surface; #028 remains the
+  P2 candidate (BIOS-config editor with the exact fixture duty recorded).
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+
+**Issues touched:**
+- none opened/closed this run. DOCS-27 done; UI-2 advanced (Identity
+  key/value-row merge); #015 remains the next P1.

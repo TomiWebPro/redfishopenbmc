@@ -38,7 +38,7 @@ documentations/external/
 | `redfish/openbmc/REDFISH_CHECKLIST.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/REDFISH_CHECKLIST.md | 2026-10-22 12:31 (re-verified 2026-10-24 12:45 UTC @ `63a18f4`) | `98ff60be5d6592dd592b267a36f86224c121aba7ad23c34d8e93ceb2f8cdb5ce` | 1,761 | bmcweb master `63a18f4` | OpenBMC compliance checklist — byte-identical at new HEAD |
 | `redfish/openbmc/OEM_SCHEMAS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/OEM_SCHEMAS.md | 2026-10-22 12:31 (re-verified 2026-10-24 12:45 UTC @ `63a18f4`) | `7d651fd19bc715b64497fdd466fae03cf043acd50c9efacbacb4a5def469d726` | 5,687 | bmcweb master `63a18f4` | OpenBMC OEM schema extensions — byte-identical at new HEAD |
 | `redfish/openbmc/CLIENTS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/CLIENTS.md | 2026-10-22 23:40 (re-verified 2026-10-24 12:45 UTC @ `63a18f4`) | `cfea5163ec820bb4edaba449ef837c9906ce3a2b690e22c4ce16132e526a735f` | 2,695 | bmcweb master `63a18f4` | Client-compat map: DMTF validators, python-redfish-library, redfishtool, fwupd |
-| `redfish/mockup/README-mockup-server.md` | https://raw.githubusercontent.com/DMTF/Redfish-Mockup-Server/master/README.md | 2026-10-22 12:31 | `b3af2ff369dcfd78c75f156bd1ddedfca46750d185c59eefdffaa2f11c289431` | 7,318 | Redfish-Mockup-Server `23d21f9a` | Mockup server usage + DSP2043 link |
+| `redfish/mockup/README-mockup-server.md` | https://raw.githubusercontent.com/DMTF/Redfish-Mockup-Server/master/README.md | 2026-10-22 12:31 (re-verified 2026-10-25 00:15 UTC @ `23d21f9a`) | `0d79a16595033b72b3dea70c14326fa31cfc1e8a2ac4e14bbf4c721222ba15ed` | 7,316 | Redfish-Mockup-Server `23d21f9a` | Mockup server usage + DSP2043 link; committed with trailing whitespace normalized on 2 `cert = `/`key = ` lines (2 bytes) — content identical to upstream `b3af2ff369dcfd78c75f156bd1ddedfca46750d185c59eefdffaa2f11c289431` (7,318 B) — DOCS-27 provenance fix |
 | `redfish/schemas/v1-index.html` | https://redfish.dmtf.org/schemas/v1/ | 2026-10-22 12:17 | `e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86` | 3,448,133 | n/a | Full DMTF schema index listing (14,259 JSON/YAML entries) |
 | `redfish/schemas/v1/<16 schemas>.json` | https://redfish.dmtf.org/schemas/v1/<Name>.json | 2026-10-22 12:34 | see `sha256sum` in run notes | 106,322 (total) | latest per aggregator | Base aggregator stubs for the 16 resources the client maps |
 | `redfish/schemas/v1/<6 versioned>.json` | https://redfish.dmtf.org/schemas/v1/<Name>.json | 2026-10-22 21:51 | see below | 619,774 (total) | DMTF 2026.2 | DOCS-2 refresh: versioned defs advanced upstream (ComputerSystem/Chassis/Sensor/AccountService/EthernetInterface/SoftwareInventory) |
@@ -260,7 +260,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-24 20:14 UTC — DOCS-26 Control mirror; prior: DOCS-25 18:52 UTC, DOCS-23 15:17 UTC, DOCS-22 12:47 UTC, DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
+## Current upstream anchors (verified 2026-10-25 00:15 UTC — DOCS-27 freshness audit; prior: DOCS-26 20:14 UTC, DOCS-25 18:52 UTC, DOCS-23 15:17 UTC, DOCS-22 12:47 UTC, DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing)
@@ -275,8 +275,29 @@ redirection), so no fixture referencing a specific version is affected.
   (master advanced `fbb307a` → `63a18f4e6188a77b713a8b22c8a95ab3d6c5a718` at
   2026-10-24 12:15 UTC; Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md,
   CLIENTS.md all byte-identical at the new HEAD — verified by SHA-256, no
-  refresh needed; re-verified 2026-10-24 12:45 UTC at `63a18f4` — still HEAD,
+  refresh needed; re-verified 2026-10-25 00:07 UTC at `63a18f4` — still HEAD,
   all four docs byte-identical)
+
+### DOCS-27 — corpus freshness audit + mockup README provenance fix (2026-10-25 00:15 UTC)
+
+Freshness audit against the live schema index (the DOCS-22 precedent, now
+covering **38 families** — the DOCS-22 list plus Battery/BatteryMetrics/Bios/
+Settings/SecureBoot/SecureBootDatabase/Control/EventDestination/VirtualMedia):
+extracted all 7,167 index entries and compared the newest version per family
+against the mirrored "newest" files, then byte-verified **all 120 mirrored
+schema files** against re-downloaded live copies. **ZERO version advances —
+120/120 byte-identical**; registries (`Base.1.5.0`, `Base.1.24.0`), index page,
+and the DSP0266 1.25.0 PDF all byte-identical; **no new downloads, no corpus
+refresh, no client code change**. One provenance fix: the manifest row for
+`redfish/mockup/README-mockup-server.md` recorded the **upstream** SHA-256
+(`b3af2ff3…`, 7,318 B) but the committed blob is the DOCS-1 normalised copy
+(trailing whitespace stripped on the `cert = ` / `key = ` lines, 2 bytes;
+on-disk `0d79a165…`, 7,316 B) — the manifest claimed a hash the repo did not
+contain. Updated the row to record the actual committed SHA with an explicit
+note that the content is byte-identical to upstream apart from the 2-byte
+whitespace normalisation (restoring the trailing whitespace would fail
+`git diff --check`). The 33-family emulator corpus-invariant list is
+untouched (no family became client-mapped).
 
 ### DOCS-22 — frequent-family newest-version freshness audit (2026-10-24 12:47 UTC)
 

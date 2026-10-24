@@ -3564,3 +3564,63 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **106** (105 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-25 00:20 — DOCS (corpus freshness audit + provenance fix) — UI-2 Identity KV merge
+
+- **Baseline:** analyze 0; tests 349 passed / 1 skipped; starting commit 1cbdda1
+  (branch `main` ahead 107 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** DOCS per alternation (last runs: EMU 23:50 → DOCS 22:33 →
+  EMU 21:53 → DOCS 20:14; DOCS due). Closed **DOCS-27** — the corpus
+  freshness audit (the DOCS-22 precedent, now covering 38 families). Re-
+  verified all upstream anchors (00:07–00:15 UTC): bmcweb `63a18f4` still
+  HEAD (all four mirrored docs byte-identical), mockup `23d21f9a` still HEAD,
+  DSP0266 1.25.0 (200), schema index 200. Downloaded the live index,
+  extracted all 7,167 entries, compared the newest version per family against
+  every mirrored "newest" file → **ZERO version advances**. Separately
+  re-downloaded **all 120 mirrored schema files** and byte-compared SHA-256 →
+  **120/120 byte-identical**; registries (`Base.1.5.0` + `Base.1.24.0`),
+  index page, and the DSP0266 1.25.0 PDF all byte-identical. **0 new bytes
+  downloaded** (DOCS-6 budget untouched), no corpus refresh, no client code
+  change. **One provenance fix:** the manifest row for
+  `redfish/mockup/README-mockup-server.md` recorded the **upstream** SHA-256
+  (`b3af2ff3…`, 7,318 B) but the committed blob has been the DOCS-1
+  normalised copy ever since (trailing whitespace stripped on the `cert = `/
+  `key = ` lines, 2 bytes; on-disk `0d79a165…`, 7,316 B) — the manifest
+  claimed a hash the repo did not contain. Updated the row to record the
+  actual committed SHA (`0d79a165…`, 7,316 B) with an explicit
+  byte-identical-apart-from-whitespace note (restoring the trailing
+  whitespace would fail `git diff --check`); upstream re-verified live as
+  `b3af2ff3…` (7,318 B) at the pinned `23d21f9a`, so the semantic content
+  is current and the manifest is truthful about what the repo holds.
+- **Docs:** DOCS-27 audit section + "Last audited" rewritten in
+  REQUIREMENTS.md; README DOCS-27 note + anchors timestamp; FUTUREWORK
+  DOCS-27 done + Last updated/Current focus rewritten. No new files mirrored
+  (audit-only run).
+- **Emulator:** none this run (DOCS stream). Emulator suite unaffected; the
+  33-family corpus-invariant list untouched (no family became client-mapped).
+- **Code/tests:** no lib/ production change for the DOCS stream beyond the
+  UI-2 semantics merge below. `overview_view.dart` `_kv` now wraps each
+  Identity key/value row in `Semantics(container + excludeSemantics)`.
+- **UI:** one small tested UI-2 increment — the OverviewView **Identity card
+  key/value rows** were the last remaining non-card label surface on the
+  overview page (each label + value announced as two detached nodes); each
+  `_kv` row now announces as ONE merged node (`Manufacturer: Acme`,
+  `Model: Server-9`, `Serial: SN1`, `BIOS: 1.0`), with a missing value
+  merging as `<label>: Not exposed by this BMC`; visible label + value texts
+  preserved. +2 widget tests in `test/features/overview/overview_view_test.dart`
+  assert the merged labels + visible texts + the missing-value form. Suite
+  349 → **351** passed / 1 skipped.
+- **Verification:** analyze 0; tests **351 passed / 1 skipped** (baseline 349
+  → +2 widget); issues validate OK; `git diff --check` clean; secret scan:
+  Dart + docs prose only, no credentials. `dart format` clean on the touched
+  files.
+- **Commit:** (after §7.2/§7.3 below) — pushed: expected no (known GitHub
+  credential blocker; local commit kept, not retried).
+- **Next:** 1) Push the queued local commits (107) from a machine with GitHub
+  credentials; 2) EMULATOR per alternation — corpus mirror queue is EMPTY and
+  now verified fresh; candidates: re-run the corpus-invariant crawl on future
+  family additions, or pin a remaining un-pinned surface (#028 BIOS-config
+  editor remains the P2 candidate with its fixture duty recorded); 3) P1
+  #015 AuthManager — wire `Session.expiryFromService` into login, re-auth on
+  `isExpired`, token/location from create RESPONSE HEADERS only.

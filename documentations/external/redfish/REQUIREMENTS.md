@@ -6,7 +6,29 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (EMULATOR run — **chassis Controls surface pinned,
+Last audited: 2026-10-25 (DOCS-27 run — **corpus freshness audit + provenance
+fix**): re-verified every upstream anchor — bmcweb master `63a18f4` (still
+HEAD via GitHub API; all four mirrored docs byte-identical at HEAD), mockup
+pin `23d21f9a` (still HEAD of `main`), DSP0266 1.25.0 (200 on the working
+`www.dmtf.org` URL), schema index 200 (3.44 MB). **Freshness audit (the
+DOCS-22 precedent) across all 38 mirrored families: ZERO version advances** —
+every mirrored "newest" file is still the live index's newest (extracted all
+7,167 index entries and compared the newest version per family; also
+byte-verified all 120 mirrored schema files against re-downloaded live
+copies: 120/120 byte-identical). Registries byte-identical (`Base.1.5.0` +
+`Base.1.24.0`); index page byte-identical; DSP0266 PDF byte-identical. **One
+provenance fix**: the manifest row for the mirrored
+`mockup/README-mockup-server.md` recorded the upstream SHA-256
+(`b3af2ff3…`, 7,318 B), but the committed blob is the DOCS-1 normalised copy
+(trailing whitespace stripped on the `cert = `/`key = ` lines — 2 bytes), so
+the manifest claimed a hash the repo did not contain. The manifest now
+records the actual committed SHA-256 (`0d79a165…`, 7,316 B) with an explicit
+note that the content is byte-identical to upstream apart from that 2-byte
+whitespace normalisation (the DOCS-1 commit wrote it that way; restoring
+upstream's trailing whitespace would fail `git diff --check`). **No client
+code change** from the audit; UI-2 increment (merged Identity key/value
+semantics) landed separately.
+Prior: 2026-10-24 (EMULATOR run — **chassis Controls surface pinned,
 EMU 60→63**): the mockup's `/Chassis/1U/Controls` publishes the modern control
 surface (`#ControlCollection.ControlCollection` → `#Control.v1_5_0.Control`):
 PowerLimit (ControlType Power, ControlMode Automatic, SetPoint 500 W,
@@ -1331,3 +1353,52 @@ Anchors re-verified this run (2026-10-24 20:14 UTC): bmcweb master
 URL, 1.24 MB), schema index 200. Freshness audit of the new family: newest
 on the live index is `Control.v1_8_1` (mirrored). **No client code change**
 from the docs audit.
+
+## DOCS-27 — corpus freshness audit + mockup README provenance fix (2026-10-25)
+
+Full freshness audit (the DOCS-22 precedent) against the live DMTF schema
+index (`https://redfish.dmtf.org/schemas/v1/`, 200 OK, 3,448,133 bytes —
+byte-identical to the mirrored `v1-index.html`).
+
+**Method:** downloaded the live index, extracted all 7,167 JSON entries, and
+compared the **newest published version per family** against the mirrored
+"newest" file for every family in the corpus (the DOCS-22 33-family list plus
+the families mirrored since: `Battery`, `BatteryMetrics`, `Bios`, `Settings`,
+`SecureBoot`, `SecureBootDatabase`, `Control`, `EventDestination`,
+`VirtualMedia` — 38 families total). Separately re-downloaded **all 120
+mirrored schema files** and byte-compared SHA-256.
+
+**Result: ZERO version advances.** Every mirrored "newest" file is still the
+live index's newest:
+
+- 120/120 mirrored schema files byte-identical to live (no drift, no
+  re-download needed).
+- Registries byte-identical: `Base.1.5.0` (`c10263417a076402…`) +
+  `Base.1.24.0` (`abe0b78bba184f4b…`).
+- Index page byte-identical (`e5a2979727a7fc03…`); DSP0266 1.25.0 PDF
+  byte-identical (`385ee6d0039a2dbc…`); bmcweb docs byte-identical at HEAD
+  (`Redfish.md` `9be2748b…`, `REDFISH_CHECKLIST.md` `98ff60be…`,
+  `OEM_SCHEMAS.md` `7d651fd1…`, `CLIENTS.md` `cfea5163…`).
+- **No new downloads, no corpus refresh, no client code change.**
+
+**Provenance fix (the only diff):** the manifest row for the mirrored
+`redfish/mockup/README-mockup-server.md` recorded the **upstream** SHA-256
+(`b3af2ff369dcfd78…`, 7,318 B), but the committed blob has been the DOCS-1
+normalised copy ever since — trailing whitespace stripped on the `cert = ` /
+`key = ` lines (2 bytes), so its on-disk SHA-256 is `0d79a16595033b72…`
+(7,316 B). The manifest claimed a hash the repo did not contain. Updated the
+manifest row to record the **actual committed SHA** (`0d79a165…`, 7,316 B)
+with an explicit note that the content is byte-identical to upstream apart
+from that 2-byte whitespace normalisation (DOCS-1 wrote it that way, and
+restoring upstream's trailing whitespace would fail `git diff --check` on
+every future run). Re-verified live: upstream is `b3af2ff3…` (7,318 B) at
+the pinned `23d21f9a`, so the semantic content is current; the manifest is
+now truthful about what the repo actually holds.
+
+Anchors re-verified this run (2026-10-25 00:07–00:15 UTC): bmcweb master
+`63a18f4e6188a77b713a8b22c8a95ab3d6c5a718` (still HEAD via GitHub API),
+mockup pin `23d21f9a3610f6b6fbb71ffc941296b159a524d2` (still HEAD of `main`
+via `git ls-remote`), DSP0266 1.25.0 (200 on the working `www.dmtf.org` URL),
+schema index 200. The 33-family corpus-invariant emulator list is untouched
+(no family became client-mapped). **No client code change** from the docs
+audit.

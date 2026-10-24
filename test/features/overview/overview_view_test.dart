@@ -170,6 +170,46 @@ void main() {
     });
 
     testWidgets(
+        'identity card key/value rows announce as one merged semantics node '
+        'each (UI-2)', (tester) async {
+      await tester.pumpWidget(scopeWith(sample: fullSample()));
+      await tester.pumpAndSettle();
+      // Each _kv row merges its label + value into one self-describing node:
+      // "Manufacturer: Acme", "Model: Server-9", "Serial: SN1", "BIOS: 1.0".
+      expect(
+        find.bySemanticsLabel('Manufacturer: Acme'),
+        findsOneWidget,
+        reason: 'the label + value must announce as a single merged node',
+      );
+      expect(find.bySemanticsLabel('Model: Server-9'), findsOneWidget);
+      expect(find.bySemanticsLabel('Serial: SN1'), findsOneWidget);
+      expect(find.bySemanticsLabel('BIOS: 1.0'), findsOneWidget);
+      // The visible texts are still present for sighted users.
+      expect(find.text('Manufacturer'), findsOneWidget);
+      expect(find.text('Acme'), findsOneWidget);
+      expect(find.text('BIOS'), findsOneWidget);
+    });
+
+    testWidgets(
+        'identity card missing-value rows merge label + "Not exposed" (UI-2)',
+        (tester) async {
+      await tester.pumpWidget(scopeWith(sample: emptySample()));
+      await tester.pumpAndSettle();
+      // With nothing exposed the rows still announce as one merged node each,
+      // carrying the field label plus the visible "Not exposed" text.
+      expect(
+        find.bySemanticsLabel('Manufacturer: Not exposed by this BMC'),
+        findsOneWidget,
+        reason: 'the label + "Not exposed" must announce as a single node',
+      );
+      expect(
+        find.bySemanticsLabel('Model: Not exposed by this BMC'),
+        findsOneWidget,
+      );
+      expect(find.text('Not exposed by this BMC'), findsWidgets);
+    });
+
+    testWidgets(
         'health banner announces one merged semantics node incl. the state '
         '(UI-2)', (tester) async {
       await tester.pumpWidget(scopeWith(sample: fullSample()));

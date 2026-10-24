@@ -259,23 +259,36 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
 
   Widget _kv(BuildContext context, String label, String? value) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            label,
-            style: Theme.of(context)
-                .textTheme
-                .labelSmall
-                ?.copyWith(color: scheme.outline),
-          ),
-          const SizedBox(height: 2),
-          value == null
-              ? const NotExposed()
-              : Text(value, style: Theme.of(context).textTheme.bodyMedium),
-        ],
+    // UI-2: each key/value row announces as ONE merged semantics node
+    // ("<label>: <value>") — a screen reader hears the field and its value
+    // together instead of a detached label next to a detached value text
+    // (the established card-row pattern). The visible label + value texts
+    // stay for sighted users. A missing value announces "<label>: Not
+    // exposed by this BMC" — the whole row is one self-describing node.
+    final String announced =
+        value == null ? '$label: Not exposed by this BMC' : '$label: $value';
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: announced,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              label,
+              style: Theme.of(context)
+                  .textTheme
+                  .labelSmall
+                  ?.copyWith(color: scheme.outline),
+            ),
+            const SizedBox(height: 2),
+            value == null
+                ? const NotExposed()
+                : Text(value, style: Theme.of(context).textTheme.bodyMedium),
+          ],
+        ),
       ),
     );
   }
