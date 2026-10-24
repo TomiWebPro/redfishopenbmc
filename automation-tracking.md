@@ -2370,3 +2370,85 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **76** (75 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 08:15 — EMULATOR (chassis metrics + subsystem contracts) + UI-2 KVM empty state
+
+- **Baseline:** analyze 0; tests 329 passed / 1 skipped; starting commit 0d2771b
+  (branch `main` ahead 76 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR (alternation: DOCS 06:45 → EMULATOR next). Pinned
+  the **chassis metrics + subsystem telemetry surface** the pinned `23d21f9a`
+  mockup serves but the suite had never exercised — the exact payload shapes a
+  #019 real-time telemetry receiver, the #006 overview power card, and a
+  PSU-health display consume:
+  1. `#EnvironmentMetrics.v1_3_1` at `/Chassis/1U/EnvironmentMetrics` — the
+     ONE-resource aggregate: `TemperatureCelsius.Reading 39` +
+     `PowerWatts.Reading 374` + `PowerLimitWatts.SetPoint 500` (with
+     AllowableMax/Min + ControlMode) + `FanSpeedsPercent[2]` (DeviceName/
+     Reading/SpeedRPM), every reading carrying a `DataSourceUri` that resolves
+     into the Sensors collection (the test follows one: the fan DataSourceUri →
+     `#Sensor` member with Reading 45 — the #007 surface is wired to the
+     aggregate).
+  2. `#ThermalSubsystem.v1_3_1` — Fans collection (4 members),
+     FanRedundancy NPlusM groups (MinNeededInGroup 1 / MaxSupportedInGroup 2 /
+     RedundancyGroup[2]), and `#ThermalMetrics.v1_3_1`
+     `TemperatureSummaryCelsius` (Intake/Exhaust/Internal/Ambient with
+     DataSourceUri → Sensors).
+  3. `#PowerSubsystem.v1_1_1` — PowerSupplies collection (2 members) +
+     `#PowerSupply.v1_5_3` Bay1 detail (Model/Manufacturer/FirmwareVersion/
+     Status/LineInputStatus, the `#PowerSupply.Reset` action target, Metrics
+     link) + the **documented negative**: the legacy `/Chassis/1U/Power`
+     embedded PowerSupplies member reports `Status.Health == 'Warning'` while
+     the current OverviewService rollup reads ComputerSystem/Chassis Status —
+     a future #006/#019 improvement should surface PSU health (recorded as a
+     REQUIREMENTS note; not a code change this run).
+  Emulator suite 45 → **48** (all via `tool/emulator/run_tests.sh`; run twice —
+  once manual-probe, once official script — both green; trap cleanup confirmed).
+- **Docs:** none fetched this run (EMULATOR alternation; corpus untouched).
+  REQUIREMENTS.md "Test platforms" section updated: 45 → 48 + the three pinned
+  contracts + the documented PSU-health negative + a **corpus note (DOCS-20)**:
+  the newly pinned families have NO versioned schema in the fixture/mirror yet
+  (`EnvironmentMetrics.v1_3_1`, `ThermalSubsystem.v1_3_1`,
+  `ThermalMetrics.v1_3_1`, `PowerSubsystem.v1_1_1`, `PowerSupply.v1_5_3`,
+  `FanCollection`, `PowerSupplyCollection`) — mirror them next DOCS run to
+  restore the "every published `@odata.type` for a client-relevant family has a
+  versioned schema in the fixture" invariant (this EMULATOR run provably
+  cannot: one primary workstream per run).
+- **Emulator:** 48/48 green against pin `23d21f9a` (server + venv + cert
+  already materialized in /tmp from the previous EMULATOR run; clock/fetch no
+  change). New group `emulator: chassis metrics + subsystem contracts
+  (#007/#019/#006)` with 3 tests.
+- **Code/tests:** only `test_integration/emulator/emulator_suite_test.dart`
+  changed for the primary work (no production code change — the pins document
+  the wire contract for future #007/#019/#006 work). New tests: 3 emulator.
+- **UI:** UI-2 increment — the **KVM empty state** ("No consoles found.") was
+  the last bare-`Text` empty surface after the SensorsView empty-state
+  conversion (06:45 run). A successful load with zero consoles now renders the
+  established pattern: icon (`Icons.videogame_asset_off_outlined`) + visible
+  text inside a `Semantics(container: true, excludeSemantics: true, label:
+  'No consoles found.')` merged node — one self-describing announcement. No
+  Retry: the load succeeded, there is nothing to retry (the SensorsView
+  precedent). +2 widget tests in `kvm_widget_test.dart` via a new
+  `_EmptyKvmService` double: (1) icon + visible text render; (2) merged
+  semantics node announces the label. Existing responsive no-overflow tests
+  unchanged (the empty state is a `Center` + `mainAxisSize.min` column — same
+  layout family as the SensorsView empty state; the 320/800/1300 happy-path
+  tests still pass).
+- **Verification:** analyze 0; tests **331 passed / 1 skipped** (baseline 329 →
+  +2 widget); emulator suite 48/48 via `--dart-define=REDFISH_EMULATOR_URL=...`
+  and via `tool/emulator/run_tests.sh`; issues validate OK; `git diff --check`
+  clean; secret scan clean (test creds are the standard mockup root/calvin,
+  already in the repo; no tokens). `dart format` on the 3 touched Dart files
+  only — no tree-wide drift.
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** — the known GitHub
+  credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/
+  GIT_TOKEN env, no SSH key); local commit kept, not retried. Commits ahead of
+  origin/main: **76** before push attempt.
+- **Next:** 1) Push the queued local commits (77) from a machine with GitHub
+  credentials; 2) DOCS-20 — mirror the 7 newly pinned chassis-metrics/
+  subsystem schemas (EnvironmentMetrics.v1_3_1, ThermalSubsystem.v1_3_1,
+  ThermalMetrics.v1_3_1, PowerSubsystem.v1_1_1, PowerSupply.v1_5_3,
+  FanCollection, PowerSupplyCollection) to restore the fixture invariant; 3) P1
+  #015 AuthManager — wire `Session.expiryFromService` into login, re-auth on
+  `isExpired`, keep token/location from create headers only.

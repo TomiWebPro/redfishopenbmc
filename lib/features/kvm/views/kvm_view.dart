@@ -105,6 +105,36 @@ class _KvmViewState extends ConsumerState<KvmView> {
       );
     }
 
+    // UI-2: a successful load with zero consoles renders the established
+    // empty-state pattern — one self-describing merged semantics node (icon +
+    // visible text), matching the SensorsView empty state. No Retry: the load
+    // succeeded, there is nothing to retry.
+    if (ui.consoles.isEmpty && ui.error == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Semantics(
+            container: true,
+            excludeSemantics: true,
+            label: 'No consoles found.',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(Icons.videogame_asset_off_outlined,
+                    size: 40, color: Theme.of(context).colorScheme.outline),
+                const SizedBox(height: 12),
+                Text(
+                  'No consoles found.',
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
@@ -137,11 +167,6 @@ class _KvmViewState extends ConsumerState<KvmView> {
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Center(child: CircularProgressIndicator()),
-          )
-        else if (ui.consoles.isEmpty && ui.error == null)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(child: Text('No consoles found.')),
           )
         else
           for (final KvmConsole console in ui.consoles)

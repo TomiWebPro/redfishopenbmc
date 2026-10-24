@@ -35,6 +35,14 @@ class _FailingKvmService extends KvmService {
   }
 }
 
+/// A [KvmService] double whose console fetch succeeds with zero consoles
+/// (empty-state tests).
+class _EmptyKvmService extends KvmService {
+  _EmptyKvmService() : super(client: null, systemId: 'bmc1');
+  @override
+  Future<List<KvmConsole>> fetchConsoles() async => <KvmConsole>[];
+}
+
 SystemHandle _handle({required bool kvm}) => SystemHandle(
       profile: const ConnectionProfile(id: 'bmc1', host: 'localhost'),
       features: SystemFeatures(systemId: 'bmc1', kvm: kvm),
@@ -283,6 +291,55 @@ void main() {
       expect(
         find.bySemanticsLabel('Unable to load KVM consoles. boom'),
         findsOneWidget,
+      );
+    });
+
+    testWidgets(
+        'empty state renders icon + visible text when a successful load '
+        'finds no consoles (UI-2)', (WidgetTester tester) async {
+      final KvmController controller =
+          KvmController(service: _EmptyKvmService());
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Visible empty-state text is preserved for sighted users…
+      expect(find.text('No consoles found.'), findsOneWidget);
+      // …and the empty state shows the established pattern icon.
+      expect(find.byIcon(Icons.videogame_asset_off_outlined), findsOneWidget);
+    });
+
+    testWidgets(
+        'empty state announces one merged semantics node — no consoles found '
+        '(UI-2)', (WidgetTester tester) async {
+      final KvmController controller =
+          KvmController(service: _EmptyKvmService());
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The icon + text announce as ONE self-describing node, the
+      // SensorsView empty-state pattern ('No sensor data available') — not a
+      // bare detached sentence.
+      expect(
+        find.bySemanticsLabel('No consoles found.'),
+        findsOneWidget,
+        reason: 'the empty state must announce in context, not as a bare '
+            'detached sentence',
       );
     });
   });

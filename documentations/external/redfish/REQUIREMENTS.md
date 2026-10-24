@@ -307,6 +307,26 @@ client-relevant families.
      #ManagerAccount.ChangePassword target — ManagerAccount.v1_12_0,
      pinned 2026-10-23 12:xx; the #015/#026 auth surface, DOCS-13 schemas).**
   Both cover the rows above end-to-end against authentic payload shapes.
+   **Chassis metrics + subsystem contracts (pinned 2026-10-24):** the
+   `#EnvironmentMetrics.v1_3_1` aggregate telemetry surface
+   (TemperatureCelsius/PowerWatts/PowerLimitWatts/FanSpeedsPercent with
+   `DataSourceUri` links into the Sensors collection — a #019 receiver or the
+   #006 power card can poll ONE resource), the `#ThermalSubsystem.v1_3_1`
+   surface (Fans collection + FanRedundancy NPlusM groups + `#ThermalMetrics.
+   v1_3_1` TemperatureSummaryCelsius Intake/Exhaust/Internal/Ambient), and the
+   `#PowerSubsystem.v1_1_1` surface (PowerSupplies collection +
+   `#PowerSupply.v1_5_3` detail incl. the `#PowerSupply.Reset` action target +
+   Metrics link). Documented negative: the legacy `/Chassis/1U/Power`
+   embedded PowerSupplies member reports `Status.Health == 'Warning'` while
+   the current OverviewService rollup reads ComputerSystem/Chassis Status —
+   a future #006/#019 improvement should surface PSU health from the legacy
+   Power surface or the subsystem PowerSupplies. **Corpus note (DOCS-20):**
+   the newly pinned families have NO versioned schema in the fixture/mirror
+   yet (`EnvironmentMetrics.v1_3_1`, `ThermalSubsystem.v1_3_1`,
+   `ThermalMetrics.v1_3_1`, `PowerSubsystem.v1_1_1`, `PowerSupply.v1_5_3`,
+   `FanCollection`, `PowerSupplyCollection`) — mirror them next DOCS run to
+   restore the "every published `@odata.type` for a client-relevant family has
+   a versioned schema in the fixture" invariant.
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)
 

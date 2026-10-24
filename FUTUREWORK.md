@@ -7,39 +7,40 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 06:45 (DOCS run — **DOCS-19 done**: mirrored the
-  **mockup-served** versioned schemas for the eight client-mapped families that
-  DOCS-2 had refreshed to newest-only — `Sensor.v1_8_1` (42/42 sensors),
-  `ComputerSystem.v1_22_0`, `Chassis.v1_25_0`, `AccountService.v1_15_0`,
-  `SoftwareInventory.v1_10_1`, `LogService.v1_6_0`,
-  `EthernetInterface.v1_12_0`, `MessageRegistry.v1_0_0` — plus newest
-  `MessageRegistry.v1_9_0`, 9 files / 560,665 bytes inside DOCS-6, into mirror
-  + `test/fixtures/redfish/schemas/` so every `@odata.type` the pinned mockup
-  publishes has a versioned schema in the fixture; all client-read fields
-  verified present in the served versions, no code change; anchors re-verified
-  bmcweb `fbb307a`, mockup `23d21f9a`, DSP0266 1.25.0, schema index 200);
-  next P1: #015
-  (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the
-  discovered SessionService body into login + re-auth on `isExpired`; #016/
-  #022: `ResetActionInfo` ActionInfo resource crawl (bmcweb-style BMCs; NOT
-  pinable on the DMTF mockup — it serves only the annotation form and now
-  provably ignores ResetType values); #018: query-capability surface + live
-  `$expand` contract pinned — remaining: build the lightweight discovery pass
-  + the cache fixes
-- **Current focus:** **every `@odata.type` the pinned DMTF mockup publishes for
-  a client-mapped family now has a versioned schema in the fixture (2026-10-24
-  06:45, DOCS-19: `Sensor.v1_8_1`, `ComputerSystem.v1_22_0`,
-  `Chassis.v1_25_0`, `AccountService.v1_15_0`,
-  `SoftwareInventory.v1_10_1`, `LogService.v1_6_0`,
-  `EthernetInterface.v1_12_0`, `MessageRegistry.v1_0_0` + newest
-  `MessageRegistry.v1_9_0` — no client code change needed)**; next P1:
-  #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire
-  the discovered SessionService body into login + re-auth on `isExpired`;
-  #022/#016: Annotation allow-list fallback landed (16:05 run) — remaining:
-  `ResetActionInfo` ActionInfo resource crawl (bmcweb-style BMCs; NOT pinable
-  on the DMTF mockup — it serves only the annotation form); #018:
-  query-capability surface + live `$expand` contract pinned (17:07) —
-  remaining: build the lightweight discovery pass + the cache fixes
+- **Last updated:** 2026-10-24 08:15 (EMULATOR run — **chassis metrics +
+  subsystem contracts pinned live**: `#EnvironmentMetrics.v1_3_1` aggregate
+  telemetry (Temperature/Power/Fan with `DataSourceUri` → Sensors), the
+  `#ThermalSubsystem.v1_3_1` surface (Fans + FanRedundancy NPlusM +
+  `#ThermalMetrics.v1_3_1` Intake/Exhaust/Internal/Ambient summary), and the
+  `#PowerSubsystem.v1_1_1` surface (`#PowerSupply.v1_5_3` detail +
+  `#PowerSupply.Reset` target + Metrics link) — emulator 45 → **48**; the
+  #019 receiver / #006 power card can poll ONE aggregate resource; documented
+  negative: legacy `/Chassis/1U/Power` PowerSupplies reports `Health:
+  Warning` while the overview rollup reads ComputerSystem/Chassis Status;
+  **corpus gap found (DOCS-20):** the newly pinned families
+  (`EnvironmentMetrics.v1_3_1`, `ThermalSubsystem.v1_3_1`,
+  `ThermalMetrics.v1_3_1`, `PowerSubsystem.v1_1_1`, `PowerSupply.v1_5_3`,
+  `FanCollection`, `PowerSupplyCollection`) have NO versioned schema in the
+  fixture/mirror yet — mirror next DOCS run to restore the invariant);
+  UI-2 KVM empty state converted to the merged-semantics pattern (+2 widget
+  tests, suite 329 → 331); next P1: #015 (AuthManager)
+- **Current focus:** **chassis metrics + subsystem contracts pinned live
+  (2026-10-24 08:15, EMULATOR 45 → 48)** — `EnvironmentMetrics.v1_3_1`
+  (Temperature/Power/Fan `DataSourceUri` → Sensors), `ThermalSubsystem.v1_3_1`
+  (Fans + FanRedundancy NPlusM + ThermalMetrics summaries), and
+  `PowerSubsystem.v1_1_1` (`PowerSupply.v1_5_3` detail +
+  `#PowerSupply.Reset` target) — the aggregate telemetry shapes a #019
+  receiver or #006 power card consume; documented negative: legacy
+  `/Chassis/1U/Power` PowerSupplies `Health: Warning` vs the overview rollup
+  reading ComputerSystem/Chassis Status; **new corpus gap (DOCS-20):** the
+  pinned families lack versioned schemas in the fixture/mirror — mirror next
+  DOCS run; next P1: #015 (AuthManager) — `expiryFromService` + the Sessions
+  pin are ready, wire the discovered SessionService body into login + re-auth
+  on `isExpired`; #022/#016: `ResetActionInfo` ActionInfo resource crawl
+  (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only the
+  annotation form and now provably ignores ResetType values); #018:
+  query-capability surface + live `$expand` contract pinned — remaining:
+  build the lightweight discovery pass + the cache fixes
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -276,6 +277,20 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       files; anchors re-verified: bmcweb `fbb307a`, mockup `23d21f9a`,
       DSP0266 1.25.0, schema index 200)
 
+- [ ] **DOCS-20** Mirror the newly pinned chassis-metrics/subsystem families
+      (emulator 45 → 48, 2026-10-24) into
+      `documentations/external/redfish/schemas/v1/` **and**
+      `test/fixtures/redfish/schemas/`: `EnvironmentMetrics.v1_3_1`,
+      `ThermalSubsystem.v1_3_1`, `ThermalMetrics.v1_3_1`,
+      `PowerSubsystem.v1_1_1`, `PowerSupply.v1_5_3`, `FanCollection`,
+      `PowerSupplyCollection` — the "every published `@odata.type` for a
+      client-relevant family has a versioned schema in the fixture" invariant
+      now covers the emulator-pinned surfaces (the 2026-10-24 EMULATOR run
+      pinned their wire contracts live but did not mirror the schemas —
+      EMULATOR mode stays one workstream). Source:
+      `https://redfish.dmtf.org/schemas/v1/<Name>.json`, keep inside the
+      DOCS-6 budget; verify SHA-256s + manifest rows.
+
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across
       DOCS-3/4/5/10/13 cited an older spec layout) and correct every stale
@@ -375,7 +390,21 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       EMPTY body (no `@Message.ExtendedInfo` envelope; connection closed;
       GET /FWUpdate 404s), so the #020 binary-push flow stays unit-level and
       the client normalizes it as `RedfishException` HTTP 400 with no error
-      code)**
+      code)** → **48 tests (chassis metrics + subsystem contracts pinned
+      2026-10-24: `EnvironmentMetrics.v1_3_1` aggregate telemetry —
+      TemperatureCelsius.Reading 39 + PowerWatts.Reading 374 +
+      PowerLimitWatts.SetPoint 500 + FanSpeedsPercent[2] all with
+      `DataSourceUri` links resolving into the Sensors collection; the
+      `ThermalSubsystem.v1_3_1` surface — Fans collection (4 members) +
+      FanRedundancy NPlusM (MinNeededInGroup 1 / MaxSupportedInGroup 2) +
+      `ThermalMetrics.v1_3_1` TemperatureSummaryCelsius
+      (Intake/Exhaust/Internal/Ambient with DataSourceUri → Sensors); the
+      `PowerSubsystem.v1_1_1` surface — PowerSupplies collection (2) +
+      `PowerSupply.v1_5_3` Bay1 detail (Model RKS-440DC /
+      FirmwareVersion 1.00 / LineInputStatus Normal / `#PowerSupply.Reset`
+      target / Metrics link) + legacy `/Chassis/1U/Power` embedded PSU
+      documenting `Status.Health == 'Warning'` vs the overview rollup
+      reading ComputerSystem/Chassis Status (#006/#019))**
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.

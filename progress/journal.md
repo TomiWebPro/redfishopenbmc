@@ -2153,3 +2153,76 @@
 **Issues touched:**
 - none opened/closed this run. DOCS-19 done; REQUIREMENTS.md trace rows
   updated; UI-2 got the SensorsView empty-state increment; issues remain open.
+
+## 2026-10-24 — agent:redfish-automation — EMULATOR (chassis metrics + subsystem contracts) + UI-2 KVM empty state
+
+**Done:**
+- EMULATOR primary workstream (alternation: DOCS 06:45 → EMULATOR next).
+  Pinned three aggregate telemetry surfaces the pinned `23d21f9a` mockup
+  serves, all previously unpinned — the exact wire shapes a #019 real-time
+  telemetry receiver / #006 power card / PSU-health display consume:
+  1. **EnvironmentMetrics.v1_3_1** (`/Chassis/1U/EnvironmentMetrics`): one-
+     resource aggregate with TemperatureCelsius.Reading 39,
+     PowerWatts.Reading 374, PowerLimitWatts.SetPoint 500 (+ AllowableMax/Min
+     + ControlMode), FanSpeedsPercent[2] — every reading carrying a
+     `DataSourceUri` that resolves into the Sensors collection (pinned by
+     following a fan DataSourceUri → `#Sensor` member with Reading 45).
+  2. **ThermalSubsystem.v1_3_1**: Fans collection (4), FanRedundancy NPlusM
+     (MinNeededInGroup 1 / MaxSupportedInGroup 2), ThermalMetrics.v1_3_1
+     TemperatureSummaryCelsius Intake/Exhaust/Internal/Ambient with
+     DataSourceUri → Sensors.
+  3. **PowerSubsystem.v1_1_1**: PowerSupplies collection (2) +
+     PowerSupply.v1_5_3 Bay1 detail (Model RKS-440DC / FirmwareVersion 1.00 /
+     LineInputStatus Normal / `#PowerSupply.Reset` target / Metrics link) —
+     plus the **documented negative**: legacy `/Chassis/1U/Power` embedded
+     PowerSupplies reports `Status.Health == 'Warning'` while the overview
+     rollup reads ComputerSystem/Chassis Status (a future #006/#019
+     improvement should surface PSU health).
+  Emulator 45 → **48** (3 new tests: `EnvironmentMetrics: aggregate telemetry
+  …`, `ThermalSubsystem: FanRedundancy + ThermalMetrics …`, `PowerSubsystem:
+  PowerSupplies collection + PowerSupply detail …`), green via
+  `tool/emulator/run_tests.sh` twice.
+- REQUIREMENTS.md "Test platforms" 45 → 48 + the three contracts + the
+  documented negative + the DOCS-20 corpus note (the pinned families have no
+  versioned schema in the fixture/mirror yet — next DOCS run should mirror
+  them to restore the invariant).
+- UI-2 increment: the **KVM empty state** ("No consoles found.") converted to
+  the established merged-semantics pattern — icon
+  (`Icons.videogame_asset_off_outlined`) + visible text inside a
+  `Semantics(container + excludeSemantics, label: 'No consoles found.')`
+  node, no Retry (nothing to retry). +2 widget tests via `_EmptyKvmService`
+  double: icon + visible text render; merged semantics label. Suite 329 → 331.
+
+**Decisions:**
+- EMULATOR per alternation; within it, chose the chassis metrics/subsystem
+  surface because (a) it is the last UNPINNED telemetry surface the top
+  sensor issue #007/#019 and the overview power work #006 must reason about —
+  the suite pinned the Sensors/Thermal/Power collections but never the
+  aggregate EnvironmentMetrics/ThermalMetrics/PowerSubsystem resources the
+  mockup also serves, and (b) the pins produced a crisp, reproducible
+  contract: one resource replaces an N+1 sensor crawl for the aggregate
+  values, with DataSourceUri wiring between the surfaces verified live.
+- No production code change: the pins document the wire contract for future
+  work. The PSU-health `Warning` mismatch is a discovered GAP (documented in
+  REQUIREMENTS, queued for #006/#019) — fixing it would have meant an
+  OverviewService change, which is a separate workstream.
+- New corpus gap DOCS-20 recorded in FUTUREWORK under P1 docs: EMULATOR mode
+  stays one workstream, so the schema mirror is queued for the next DOCS run.
+- UI increment stayed pattern-consistent (icon + merged node, no Retry — the
+  load succeeded, so there is nothing to retry). No new dependencies, no TLS
+  change.
+
+**Next:**
+- Push 77 queued local commits once GitHub credentials are available.
+- DOCS-20: mirror the 7 pinned chassis-metrics/subsystem schemas
+  (EnvironmentMetrics.v1_3_1, ThermalSubsystem.v1_3_1, ThermalMetrics.v1_3_1,
+  PowerSubsystem.v1_1_1, PowerSupply.v1_5_3, FanCollection,
+  PowerSupplyCollection) into the mirror + fixture schemas.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, persist token/location from create RESPONSE HEADERS
+  only (the fixture echoes the password in session bodies).
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 45 → 48 recorded; #007/#019/#006 got the
+  chassis metrics + subsystem contracts pins + the PSU-health gap note; UI-2
+  got the KVM empty-state increment; issues remain open.

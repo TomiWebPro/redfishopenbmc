@@ -1469,4 +1469,181 @@ void main() {
       expect(missing['NumberOfArgs'], 2);
     });
   });
+
+  group('emulator: chassis metrics + subsystem contracts (#007/#019/#006)', () {
+    late AuthManager manager;
+    late RedfishClient client;
+
+    setUpAll(() async {
+      manager = AuthManager(storage: InMemoryStorage());
+      await manager.login('em-metrics', emulatorProfile());
+      client = manager.clientFor('em-metrics')!;
+    });
+
+    tearDownAll(() async {
+      await manager.logout('em-metrics');
+    });
+
+    test(
+        'EnvironmentMetrics: aggregate telemetry — Temperature/Power/Fan '
+        'readings with DataSourceUri links (#007/#019)', () async {
+      // The DMTF mockup publishes the modern chassis telemetry summary at
+      // /Chassis/1U/EnvironmentMetrics (#EnvironmentMetrics.v1_3_1). A #019
+      // real-time telemetry receiver (or the #006 overview power card) can
+      // poll ONE resource for the aggregate chassis temperature, power
+      // consumption, power limit, and fan-speed surface instead of crawling
+      // the individual sensors. The DataSourceUri fields name the exact
+      // Sensor resources each aggregate reading comes from — the wiring a
+      // telemetry poller would follow to the raw per-sensor values.
+      final Map<String, dynamic> metrics =
+          await client.getJson('/redfish/v1/Chassis/1U/EnvironmentMetrics');
+      expect(metrics['@odata.type'], startsWith('#EnvironmentMetrics.'));
+      expect(metrics['Id'], 'EnvironmentMetrics');
+
+      final Map<dynamic, dynamic> temperature =
+          metrics['TemperatureCelsius'] as Map<dynamic, dynamic>;
+      expect(temperature['Reading'], 39);
+      expect(temperature['DataSourceUri'],
+          '/redfish/v1/Chassis/1U/Sensors/CPU1Temp');
+
+      final Map<dynamic, dynamic> power =
+          metrics['PowerWatts'] as Map<dynamic, dynamic>;
+      expect(power['Reading'], 374);
+      expect(
+          power['DataSourceUri'], '/redfish/v1/Chassis/1U/Sensors/TotalPower');
+
+      // The power-limit surface (SetPoint + control mode) a power capping UI
+      // would read before changing limits (#006/#022 power context).
+      final Map<dynamic, dynamic> limit =
+          metrics['PowerLimitWatts'] as Map<dynamic, dynamic>;
+      expect(limit['SetPoint'], 500);
+      expect(limit['ControlMode'], 'Automatic');
+      expect(limit['AllowableMax'], 1000);
+      expect(limit['AllowableMin'], 150);
+
+      final List<dynamic> fans =
+          metrics['FanSpeedsPercent'] as List<dynamic>? ?? <dynamic>[];
+      expect(fans, hasLength(2));
+      final Map<dynamic, dynamic> fan1 = fans.first as Map<dynamic, dynamic>;
+      expect(fan1['DeviceName'], 'Chassis Fan #1');
+      expect(fan1['Reading'], 45);
+      expect(fan1['SpeedRPM'], 1900);
+      expect(fan1['DataSourceUri'], '/redfish/v1/Chassis/1U/Sensors/FanBay1');
+
+      // The DataSourceUri links resolve to real Sensor members the client's
+      // SensorsService already parses (#007) — the two surfaces are wired.
+      final Map<String, dynamic> fanSensor =
+          await client.getJson(fan1['DataSourceUri'] as String);
+      expect(fanSensor['@odata.type'], startsWith('#Sensor.'));
+      expect(fanSensor['Reading'], 45);
+    });
+
+    test(
+        'ThermalSubsystem: FanRedundancy + ThermalMetrics temperature '
+        'summary surface (#007/#019)', () async {
+      // The mockup also publishes the structured thermal subsystem
+      // (#ThermalSubsystem.v1_3_1): the Fans collection, the redundancy
+      // groups (NPlusM, MinNeededInGroup) a fan-health display would reason
+      // about, and ThermalMetrics — the per-device temperature summary
+      // (Intake/Exhaust/Internal/Ambient) with DataSourceUri links into the
+      // Sensors collection.
+      final Map<String, dynamic> subsystem =
+          await client.getJson('/redfish/v1/Chassis/1U/ThermalSubsystem');
+      expect(subsystem['@odata.type'], startsWith('#ThermalSubsystem.'));
+      expect(subsystem['Status']['Health'], 'OK');
+
+      final Map<String, dynamic> fanColl = await client.getJson(
+          (subsystem['Fans'] as Map<dynamic, dynamic>)['@odata.id'] as String);
+      expect(fanColl['@odata.type'], startsWith('#FanCollection.'));
+      expect(fanColl['Members@odata.count'], 4);
+
+      // Redundancy: N+1 fan groups — a console/UI can derive 'n-1
+      // redundancy' from MinNeededInGroup without hardcoding.
+      final List<dynamic> redundancy =
+          subsystem['FanRedundancy'] as List<dynamic>? ?? <dynamic>[];
+      expect(redundancy, isNotEmpty);
+      final Map<dynamic, dynamic> group =
+          redundancy.first as Map<dynamic, dynamic>;
+      expect(group['RedundancyType'], 'NPlusM');
+      expect(group['MinNeededInGroup'], 1);
+      expect(group['MaxSupportedInGroup'], 2);
+      expect(group['RedundancyGroup'], hasLength(2));
+
+      final Map<String, dynamic> metrics = await client.getJson(
+          (subsystem['ThermalMetrics'] as Map<dynamic, dynamic>)['@odata.id']
+              as String);
+      expect(metrics['@odata.type'], startsWith('#ThermalMetrics.'));
+      final Map<dynamic, dynamic> summary =
+          metrics['TemperatureSummaryCelsius'] as Map<dynamic, dynamic>;
+      // The exact summary the #006 leading-temperature display could consume.
+      expect((summary['Internal'] as Map<dynamic, dynamic>)['DataSourceUri'],
+          '/redfish/v1/Chassis/1U/Sensors/CPU1Temp');
+      expect((summary['Internal'] as Map<dynamic, dynamic>)['Reading'], 39);
+      expect((summary['Exhaust'] as Map<dynamic, dynamic>)['Reading'], 40.5);
+      final List<dynamic> readings =
+          metrics['TemperatureReadingsCelsius'] as List<dynamic>? ??
+              <dynamic>[];
+      expect(readings, hasLength(2));
+    });
+
+    test(
+        'PowerSubsystem: PowerSupplies collection + PowerSupply detail incl. '
+        'the #PowerSupply.Reset action + legacy Power health warning (#006)',
+        () async {
+      // The modern power subsystem (#PowerSubsystem.v1_1_1) exposes the
+      // PowerSupplies collection and per-PSU detail (#PowerSupply.v1_5_3) —
+      // Model/Manufacturer/FirmwareVersion/Status/LineInputStatus + the
+      // #PowerSupply.Reset action target and Metrics link. The #006 overview
+      // power card and a future PSU-health display read this surface.
+      final Map<String, dynamic> subsystem =
+          await client.getJson('/redfish/v1/Chassis/1U/PowerSubsystem');
+      expect(subsystem['@odata.type'], startsWith('#PowerSubsystem.'));
+      expect(subsystem['CapacityWatts'], 2000);
+      final Map<dynamic, dynamic> allocation =
+          subsystem['Allocation'] as Map<dynamic, dynamic>;
+      expect(allocation['AllocatedWatts'], 1200);
+      expect(allocation['RequestedWatts'], 1500);
+
+      final Map<String, dynamic> collection = await client.getJson(
+          (subsystem['PowerSupplies'] as Map<dynamic, dynamic>)['@odata.id']
+              as String);
+      expect(collection['@odata.type'], startsWith('#PowerSupplyCollection.'));
+      expect(collection['Members@odata.count'], 2);
+
+      final Map<String, dynamic> psu = await client
+          .getJson('/redfish/v1/Chassis/1U/PowerSubsystem/PowerSupplies/Bay1');
+      expect(psu['@odata.type'], startsWith('#PowerSupply.'));
+      expect(psu['Model'], 'RKS-440DC');
+      expect(psu['Manufacturer'], 'Contoso Power');
+      expect(psu['FirmwareVersion'], '1.00');
+      expect((psu['Status'] as Map<dynamic, dynamic>)['State'], 'Enabled');
+      expect(psu['LineInputStatus'], 'Normal');
+      final Map<dynamic, dynamic> psuActions =
+          psu['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> reset =
+          psuActions['#PowerSupply.Reset'] as Map<dynamic, dynamic>;
+      expect(
+          reset['target'],
+          '/redfish/v1/Chassis/1U/PowerSubsystem/PowerSupplies/Bay1/'
+          'PowerSupply.Reset');
+
+      // Documented negative for the #006 health rollup: the LEGACY
+      // /Chassis/1U/Power embedded PowerSupplies member reports
+      // Status.Health == 'Warning' — while the current OverviewService rollup
+      // reports OK because it reads ComputerSystem/Chassis Status, not the
+      // embedded PSU health. A future #006/#019 improvement should surface
+      // PSU health (the overview's Power card) from this legacy Power surface
+      // or the subsystem PowerSupplies.
+      final Map<String, dynamic> legacyPower =
+          await client.getJson('/redfish/v1/Chassis/1U/Power');
+      final List<dynamic> legacyPsu =
+          legacyPower['PowerSupplies'] as List<dynamic>? ?? <dynamic>[];
+      expect(legacyPsu, isNotEmpty);
+      final Map<dynamic, dynamic> psu0 =
+          legacyPsu.first as Map<dynamic, dynamic>;
+      expect(psu0['Model'], '499253-B21');
+      expect(psu0['PowerCapacityWatts'], 800);
+      expect((psu0['Status'] as Map<dynamic, dynamic>)['Health'], 'Warning');
+    });
+  });
 }
