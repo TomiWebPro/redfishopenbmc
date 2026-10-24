@@ -2686,3 +2686,65 @@
 - opened: #028 (BIOS configuration editor — candidate feature making
   Bios/Settings client-mapped). DOCS-23 done; no issues closed; #015 remains
   the next P1.
+
+## 2026-10-24 — agent:redfish-automation — EMU Boot/PATCH/Links/VirtualMedia pins + #016 PATCH transport
+
+**Done:**
+- EMULATOR primary workstream (alternation: DOCS 17:38 → EMU next). Recloned
+  Redfish-Mockup-Server (pin `23d21f9a` confirmed), regenerated the /tmp
+  test-only self-signed cert, suite live **53 → 57**.
+- **ComputerSystem Boot override surface** pinned: `BootSourceOverrideEnabled
+  (Once)/Mode (UEFI)/Target (Pxe)` + `BootSourceOverrideTarget@Redfish.
+  AllowableValues` (10 values) + `UefiTargetBootSourceOverride` — the
+  annotation-form allow-list rule (#022/#016) for boot control.
+- **FIRST live PATCH pin (#016):** `RedfishClient.patchJson` (new transport)
+  PATCHes `Boot.BootSourceOverrideEnabled: Disabled` → 204 and PERSISTS (GET
+  confirms; mockup keeps PATCHes in memory, on-disk fixture byte-identical —
+  verified via `git status` before/after). Negative: the mockup applies ANY
+  PATCH body value unvalidated (`IndicatorLED: "Bogus"` persists) — client
+  pre-validates; 400 + `@Message.ExtendedInfo` path stays unit-level;
+  header-level ETags absent → If-Match stays unit-level.
+- **Discovery Links graph** pinned: Systems→Chassis→Manager traversal resolves
+  all three hops (System.Links.Chassis/ManagedBy, Chassis.Links.ComputerSystems/
+  ManagedBy/ManagersInChassis, Manager.Links.ManagerForServers/ManagerForChassis/
+  ManagerInChassis + ManagerType/FirmwareVersion/Model) — the #018/#006 walk
+  shape.
+- **VirtualMedia read surface** pinned (`#VirtualMedia.v1_6_3`, CD1 + Floppy1,
+  ConnectedVia/Image/MediaTypes/Inserted/WriteProtected); negative: no
+  InsertMedia/EjectMedia action targets → boot-media action round-trips stay
+  unit-level; VirtualMedia stays NOT client-mapped (no fixture duty).
+- `RedfishClient.patchJson` landed (DSP0266 §6.5.2 partial-update transport,
+  mirrors `postJson`; 204/200 normalized, non-2xx → `RedfishException`) + 3
+  unit tests in `auth_manager_test.dart`. Full suite 340 → **343 passed / 1
+  skipped**; emulator 57/57.
+- REQUIREMENTS.md: PATCH row Partial; "Last audited" rewritten; test-platforms
+  53 → 57 + four pin paragraphs. FUTUREWORK.md: EMU-2 52→57 chain, #016 +
+  #018 progress, header focus rewritten.
+
+**Decisions:**
+- EMULATOR per alternation; within it chose the Boot/PATCH/Links/VirtualMedia
+  group because (a) the live PATCH round-trip is a genuinely new, #016-relevant
+  capability pin (the suite had no PATCH test at all), (b) Boot + Links are the
+  next discovery/power surfaces #018/#022 consume, (c) VirtualMedia documents
+  the fixture's boot-media limits without adding a client-mapped family.
+- Adding `patchJson` to the client is the small, safe code increment the pin
+  needed (mirrors `postJson`, 3 unit tests) — advances #016 without a broad
+  refactor. If-Match/ETag wiring stays #016.
+- The PATCH test mutates in-memory mockup state, so every mutation restores in
+  `finally` (Boot → Once, IndicatorLED → Off); verified restored.
+- UI increment skipped: primary workstream consumed the budget; remaining UI-2
+  items need a deeper hunt. Recorded in tracking, not rushed.
+- No corpus downloads (EMU stream); no TLS change; no new dependencies.
+
+**Next:**
+- Push 93 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- #016 next: If-Match/`@odata.etag` wiring via `patchJson` + the settings-
+  object ETag `9234ac83b9700123cc32`; then Boot/IndicatorLED PATCH actions +
+  UI; DOCS after that per alternation (DOCS-22 repeatable).
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 53 → 57 recorded; #016 advanced (PATCH
+  transport + live pin); #018 gained the Links-graph pin; #015 remains the
+  next P1.

@@ -7,27 +7,27 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 (DOCS run — **Bios/Settings corpus mirror,
-  DOCS-23**: the EMU-2 Bios-`@Redfish.Settings` pin's two published types
-  (`#Bios.v1_2_2.Bios`, `#Settings.v1_3_5.Settings`) were reached by the
-  corpus-invariant crawl but had no versioned schema in the external corpus —
-  now mirrored (served + newest: `Bios.v1_2_2`/`v1_3_0`,
-  `Settings.v1_3_5`/`v1_5_0`, 67,020 bytes, inside DOCS-6); delta audit
-  additive-only (Bios v1_3_0 adds `Passwords`, Settings v1_5_0 property
-  no-op); **client-mapped decision: Bios/Settings stay NOT client-mapped**
-  (client reads only `ComputerSystem.BiosVersion`, no BIOS-config editor) —
-  recorded as candidate #028; next P1: #015 (AuthManager)
-- **Current focus:** **DOCS (2026-10-24)** — Bios/Settings corpus closed;
-  next P1: #015 (AuthManager) — `expiryFromService` + the Sessions pin are
-  ready, wire the discovered SessionService body into login + re-auth on
-  `isExpired`; #022/#016: `ResetActionInfo` ActionInfo resource crawl
-  (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only the
-  annotation form and now provably ignores ResetType values); #018:
-  query-capability surface + live `$expand` contract pinned — remaining: build
-  the lightweight discovery pass + the cache fixes; **new feature candidate
-  #028:** BIOS-config editor (Bios/Settings become client-mapped → served
-  versions move into `test/fixtures/redfish/schemas/` + the corpus-invariant
-  family list gains `Bios`/`Settings`)
+- **Last updated:** 2026-10-24 (EMULATOR run — **Boot override + live PATCH
+  round-trip + discovery Links graph + VirtualMedia pinned, EMU 53→57**;
+  `RedfishClient.patchJson` landed — the DSP0266 §6.5.2 PATCH transport for
+  #016: 204/200 normalized + non-2xx → `RedfishException`, 3 unit tests + a
+  live emulator pin proving PATCH persists (and that the mockup applies ANY
+  body value unvalidated); next P1: #015 (AuthManager) and #016
+  (If-Match/ETag wiring on top of the new transport)
+- **Current focus:** **EMULATOR (2026-10-24)** — Boot/Links/VirtualMedia
+  surfaces + live PATCH pinned; next P1: #015 (AuthManager) —
+  `expiryFromService` + the Sessions pin are ready, wire the discovered
+  SessionService body into login + re-auth on `isExpired`; #016: the PATCH
+  transport just landed (`patchJson`), remaining is If-Match/`@odata.etag`
+  wiring (settings-object ETag `9234ac83b9700123cc32` is the token, EMU 53)
+  + Boot/IndicatorLED PATCH actions; #022/#016: `ResetActionInfo` ActionInfo
+  resource crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it
+  serves only the annotation form and now provably ignores ResetType values);
+  #018: query-capability surface + live `$expand` contract pinned — remaining:
+  build the lightweight discovery pass + the cache fixes; **new feature
+  candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
+  served versions move into `test/fixtures/redfish/schemas/` + the
+  corpus-invariant family list gains `Bios`/`Settings`)
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -481,7 +481,43 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `EventService/Subscriptions` members pin the `#EventDestination.v1_14_0`
       detail — Redfish / SNMPv3 (HMAC_SHA96 + CFB128_AES128, key material
       null) / SMTP-OEM / SyslogTCP (SyslogFilters LogFacilities +
-      LowestSeverity) — the DOCS-7 bed for #019)**
+      LowestSeverity) — the DOCS-7 bed for #019)** → **53 tests
+      (Bios `@Redfish.Settings` ETag surface pinned live 2026-10-24 16:30:
+      `/Systems/437XR1138R2/Bios` carries the DSP0266 §9.9 `@Redfish.Settings`
+      payload annotation with a real settings-object **ETag**
+      (`9234ac83b9700123cc32` — the only ETag-ish token this fixture serves;
+      header-level `@odata.etag`/HTTP ETags are absent, so the optimistic-
+      concurrency token a #016 PATCH/If-Match flow sends is the settings-
+      object ETag); pending-settings resource (`Bios/Settings`,
+      `#Bios.v1_2_2.Bios`, attribute diff EmbeddedSata Raid→Ahci +
+      ProcTurboMode Enabled→Disabled), `Messages[0]`
+      `Base.1.0.SettingsFailed` + RelatedProperties,
+      `#Bios.ResetBios` POST → 204 (mockup `/Actions/` framework),
+      `#Bios.ChangePassword` advertised-only (never round-tripped with
+      secrets))** → **57 tests
+      (Boot override + live PATCH round-trip + discovery Links graph +
+      VirtualMedia pinned 2026-10-24 18:xx: (1) `#ComputerSystem.Boot`
+      publishes `BootSourceOverrideEnabled/Mode/Target` +
+      `BootSourceOverrideTarget@Redfish.AllowableValues` (10 values) +
+      `UefiTargetBootSourceOverride` — the annotation-form allow-list rule
+      (#022/#016) applies to boot control; (2) the **FIRST live PATCH pin** —
+      `RedfishClient.patchJson` (new #016 transport, 3 unit tests) PATCHes
+      `Boot.BootSourceOverrideEnabled: Disabled` → 204 and the change
+      **persists** (GET confirms; in-memory only — on-disk fixture
+      byte-identical); negative: the mockup applies ANY PATCH body value
+      unvalidated (`IndicatorLED: "Bogus"` 204s AND persists) so the client
+      must pre-validate against AllowableValues and the 400 +
+      `@Message.ExtendedInfo` validation-failure path stays unit-level;
+      (3) discovery graph — Systems→Chassis→Manager `Links` traversal
+      resolves all three hops (System.Links.Chassis/ManagedBy,
+      Chassis.Links.ComputerSystems/ManagedBy/ManagersInChassis,
+      Manager.Links.ManagerForServers/ManagerForChassis/ManagerInChassis +
+      ManagerType/FirmwareVersion/Model) for #018/#006; (4) VirtualMedia
+      read surface (`#VirtualMedia.v1_6_3`, 2 members, Inserted/
+      WriteProtected/MediaTypes/ConnectedVia) — boot-media UX input for
+      #028/#022; fixture publishes NO InsertMedia/EjectMedia action targets
+      (advertised-as-candidate rule); VirtualMedia stays NOT client-mapped —
+      no fixture-schema duty)**
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -553,7 +589,21 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       analyze 0 / tests 242 green every run, no orphaned flutter_tester from
       this repo; DEVELOPMENT.md Toolchain documents the setup)
 - [ ] **#016** PATCH / `If-Match` / `@odata.etag` support.
-      (bmcweb ResetActionInfo → supportedResetTypes fallback also folds here —
+      (**PATCH transport landed 2026-10-24 18:xx + live pin**: `RedfishClient.
+      patchJson(path, body:, headers:)` — the DSP0266 §6.5.2 partial-update
+      transport (204/200 normalized, non-2xx → `RedfishException`) — 3 unit
+      tests in `auth_manager_test.dart`; the emulator proves a PATCH on
+      `/Systems/437XR1138R2` (`Boot.BootSourceOverrideEnabled: Disabled`)
+      round-trips 204 AND persists (in-memory; on-disk fixture
+      byte-identical), while the mockup applies ANY body value unvalidated
+      (`IndicatorLED: "Bogus"` persists) — the client must pre-validate
+      against advertised `AllowableValues` (Boot-override + Reset list now
+      both pinned); remaining: (a) If-Match/`@odata.etag` wiring — the
+      settings-object ETag `9234ac83b9700123cc32` (EMU 53) is the only
+      pinable concurrency token on the fixture, header-level ETags stay
+      unit-level, (b) Boot/IndicatorLED PATCH actions in a service + UI,
+      (c) the `ResetActionInfo` ActionInfo *resource* crawl; bmcweb
+      ResetActionInfo → supportedResetTypes fallback also folds here —
       DOCS-4; **annotation-form allow-list fallback landed 2026-10-23 16:05** —
       `supportedResetTypes` now unions `SupportedResetTypes` +
       `ResetType@Redfish.AllowableValues` on `#ComputerSystem.Reset` (the
@@ -569,6 +619,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       (emulator test asserts `SessionService.@odata.id` is discoverable from the
       service root and serves a conformant SessionService — run 2026-10-22)
 - [ ] **#018** Fix discovery-cache stale replay/leak.
+      (**discovery-graph Links traversal pinned live 2026-10-24 18:xx**:
+      Systems→Chassis→Manager `Links` (System.Links.Chassis/ManagedBy,
+      Chassis.Links.ComputerSystems/ManagedBy/ManagersInChassis,
+      Manager.Links.ManagerForServers/ManagerForChassis/ManagerInChassis)
+      resolves all three hops — the #018 lightweight pass can walk the graph
+      from any seed without hardcoded URIs)
       (emulator test added 2026-10-23: service root `ProtocolFeaturesSupported`
       advertises `ExcerptQuery` + `ExpandQuery{ExpandAll,Levels}` and publishes
       `FilterQuery`/`SelectQuery` — the query-capability surface a lightweight

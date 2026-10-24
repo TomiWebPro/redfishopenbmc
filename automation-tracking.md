@@ -3037,3 +3037,76 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **92** (91 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 18:40 — EMULATOR (Boot override + live PATCH round-trip + discovery Links graph + VirtualMedia) + #016 PATCH transport
+
+- **Baseline:** analyze 0; tests 340 passed / 1 skipped; starting commit e45157a
+  (branch `main` ahead 93 of origin); issues validate OK; working tree clean; no
+  stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR per alternation (last substantive runs: DOCS 17:38 →
+  EMU 16:30; EMU overdue). Recloned the official Redfish-Mockup-Server (pin still
+  `23d21f9a3610f6b6fbb71ffc941296b159a524d2`, byte-identical fixture), regenerated
+  the /tmp self-signed test-only cert, ran the suite live → **57/57** (was 53).
+  Four new pins: (1) **ComputerSystem Boot override surface** —
+  `BootSourceOverrideEnabled (Once)/Mode (UEFI)/Target (Pxe)` +
+  `BootSourceOverrideTarget@Redfish.AllowableValues` (10 values:
+  None/Pxe/Cd/Usb/Hdd/BiosSetup/Utilities/Diags/SDCard/UefiTarget) +
+  `UefiTargetBootSourceOverride` — a boot-control UI must pre-validate against
+  the annotation allow-list (#022/#016 rule); (2) **FIRST live PATCH pin** —
+  `RedfishClient.patchJson` (new DSP0266 §6.5.2 transport) PATCHes
+  `Boot.BootSourceOverrideEnabled: Disabled` → 204 with no content and the
+  change **persists** into the served resource (GET confirms; the mockup keeps
+  PATCHes in memory — the on-disk fixture stays byte-identical, verified);
+  negative pin: the mockup applies ANY PATCH body value unvalidated
+  (`IndicatorLED: "Bogus"` 204s AND persists) — same advertised-not-enforced
+  rule as ResetType, so the client pre-validates and the 400+
+  `@Message.ExtendedInfo` validation path stays unit-level (header-level
+  `@odata.etag`/HTTP ETags remain absent → If-Match stays unit-level); (3)
+  **discovery Links graph** — Systems→Chassis→Manager traversal resolves all
+  three hops (System.Links.Chassis/ManagedBy, Chassis.Links.ComputerSystems/
+  ManagedBy/ManagersInChassis, Manager.Links.ManagerForServers/ManagerForChassis/
+  ManagerInChassis + ManagerType/FirmwareVersion/Model) for #018/#006; (4)
+  **VirtualMedia read surface** — `#VirtualMedia.v1_6_3` CD1 (Applet,
+  CD/DVD, Inserted, Image `redfish.dmtf.org/freeImages/freeOS.1.1.iso`) +
+  Floppy1 (URI, Floppy/USBStick) for a future boot-media UX; negative: no
+  InsertMedia/EjectMedia action targets on this fixture (advertised-as-candidate
+  rule); VirtualMedia stays NOT client-mapped (corpus-invariant list unchanged,
+  no fixture-schema duty). The PATCH test mutates the in-memory mockup, so both
+  mutations are restored in `finally` blocks (Boot → Once, IndicatorLED → Off;
+  verified restored after the run).
+- **Docs:** no corpus download this run (EMU stream). REQUIREMENTS.md updated:
+  PATCH row (185) status `not implemented` → `Partial — transport done;
+  If-Match + actions stay #016`; "Last audited" header rewritten for the EMU
+  run; test-platforms count 53 → 57 + four new pin paragraphs.
+- **Emulator:** suite live **57/57** via the manual server (fresh clone,
+  cert, `-S` form — the same command `tool/emulator/run_tests.sh` runs);
+  server stopped after (SIGKILL confirmed, no background process left);
+  on-disk fixture byte-identical before/after.
+- **Code/tests:** `lib/redfish/client/redfish_client.dart` gained
+  `patchJson(path, body:, headers:)` (mirrors `postJson` via `_dio.patch` —
+  204/200 normalized via `_asMap`, non-2xx → `RedfishException`). +3 unit tests
+  in `auth_manager_test.dart` "RedfishClient transports" (patchJson 204
+  no-content → empty map / 200 with body decodes / non-2xx throws). Suite 340 →
+  **343**.
+- **UI:** skipped — the primary workstream (EMU pins + the #016 PATCH transport)
+  consumed the budget; the remaining UI-2 candidates (focus order,
+  non-card labels) need a deeper hunt and a newly converted firmware empty/
+  loading states this cycle already covered every view. Recorded, not rushed.
+- **Verification:** analyze 0; tests **343 passed / 1 skipped** (baseline 340 →
+  +3 patchJson unit); emulator suite 57/57; issues validate OK; `git diff
+  --check` clean; secret scan clean (Dart + docs prose; the VirtualMedia Image
+  values are public DMTF fixture data, no credentials). `dart format` applied to
+  the 3 code files; drift only in the intended files (5 modified).
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** (expected) — the known
+  GitHub credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN
+  env, no SSH key); local commit kept, not retried. Commits ahead of origin/main:
+  **93** before push attempt.
+- **Next:** 1) Push the queued local commits (94) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
+  login (set `expiresAt` from the discovered SessionService), re-auth on
+  `isExpired`, keep token/location from create headers only; 3) #016 next step —
+  wire If-Match/`@odata.etag` using the new `patchJson` + the settings-object
+  ETag `9234ac83b9700123cc32` (the only pinable concurrency token), then a
+  Boot/IndicatorLED PATCH action + UI; DOCS after that per alternation (DOCS-22
+  freshness audit is repeatable).

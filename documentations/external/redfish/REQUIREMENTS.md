@@ -6,7 +6,27 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (DOCS run — **Bios + Settings corpus mirror,
+Last audited: 2026-10-24 (EMULATOR run — **ComputerSystem Boot override +
+live PATCH round-trip + discovery Links graph + VirtualMedia pinned, EMU
+53→57**): the mockup's `/Systems/437XR1138R2/Boot` publishes the full boot-
+override surface (BootSourceOverrideEnabled/Mode/Target +
+`BootSourceOverrideTarget@Redfish.AllowableValues` — 10 values incl.
+None/Pxe/Cd/Usb/Hdd/BiosSetup/Utilities/Diags/SDCard/UefiTarget +
+UefiTargetBootSourceOverride); the **first live PATCH pin**: PATCHing
+`Boot.BootSourceOverrideEnabled` returns 204 AND persists into the served
+resource (in-memory only; the on-disk fixture is untouched), while an invalid
+body (`IndicatorLED: "Bogus"`) is ALSO applied unvalidated — the same
+"advertised contract, not enforced" rule as ResetType; `RedfishClient` gained
+`patchJson` (the DSP0266 §6.5.2 transport for #016), which the live pin +
+3 unit tests cover. Discovery-graph pin: Systems→Chassis→Manager `Links`
+traversal resolves all three hops (System.Links.Chassis/ManagedBy,
+Chassis.Links.ComputerSystems/ManagedBy/ManagersInChassis,
+Manager.Links.ManagerForServers/ManagerForChassis/ManagerInChassis +
+ManagerType/FirmwareVersion/Model). VirtualMedia read surface
+(`#VirtualMedia.v1_6_3`, CD1 Applet//CD,DVD, Floppy1 URI/Floppy,USBStick) —
+a boot-media UX input; this fixture publishes NO InsertMedia/EjectMedia
+action targets. No corpus download this run (EMU stream). Prior runs below.)
+Prior: DOCS run — **Bios + Settings corpus mirror,
 DOCS-23**: mirrored the mockup-served `Bios.v1_2_2.json` +
 `Settings.v1_3_5.json` (the two published types the EMU Bios-`@Redfish.Settings`
 pin reads) plus the newest `Bios.v1_3_0.json` + `Settings.v1_5_0.json` into the
@@ -182,7 +202,7 @@ Folded into code this run:
 | `@odata.id` link traversal is cycle-safe and depth-bounded (≤3) | DSP0266 §9.6.2 "@odata.id property" + §9.1 "Resources"; `odata.4.0.0.json` (mirrored DOCS-14; the bare `Odata.json` 404s upstream) | `lib/redfish/discovery/discovery_engine.dart` (visited `Set<uri>`, maxDepth) | `test/redfish/discovery/discovery_engine_test.dart` | OK |
 | Feature detection "nothing is assumed": every UI feature gated on discovered capability | OpenBMC `Redfish.md`; DSP0266 §9.1 "Resources" (resource tree traversal) | `lib/redfish/discovery/feature_rules.dart` → `SystemFeatures` | `test/redfish/discovery/feature_rules_test.dart` | OK |
 | Conditional GET re-crawl via `If-None-Match` / ETag (304 short-circuit) | DSP0266 §6.5 "ETags" + §7.2 "GET (read requests)"; `ComputerSystem.json` | `lib/redfish/discovery/discovery_engine.dart` (`_fetchUri` etag map) | `test/redfish/discovery/discovery_engine_test.dart` | OK |
-| PATCH write support with `If-Match` / `@odata.etag` | DSP0266 §6.5 "ETags" (weak/strong validation, RFC7232); §7.6 "PATCH (update)" | **not implemented** | — | GAP: #016 |
+| PATCH write support with `If-Match` / `@odata.etag` | DSP0266 §6.5 "ETags" (weak/strong validation, RFC7232); §7.6 "PATCH (update)" | `lib/redfish/client/redfish_client.dart` `patchJson()` (partial update transport, landed 2026-10-24 — 204/200 normalized, non-2xx → `RedfishException`); If-Match header wiring + the settings-object ETag flow stay #016 | `test/redfish/client/auth_manager_test.dart` "patchJson 204 no-content / 200 with body / non-2xx" (+ emulator PATCH round-trip pin below) | Partial — transport done; If-Match + Boot/IndicatorLED PATCH actions stay #016 |
 | Error envelope: `error.code`, `error.message`, `error.@Message.ExtendedInfo[]`; message templates from the published `Base.*` MessageRegistry | DSP0266 §8.6 "Error responses" + §11.4 "Message registries"; `redfish_error.md`; `registries/Base.1.5.0.json` + `registries/Base.1.24.0.json` (mirrored DOCS-18 — the 1.5.0 payload is byte-identical to the pinned mockup's, so the emulator-pinned `Base.*` templates resolve against a real mirror file) | `lib/redfish/models/redfish_error.dart` | `test/redfish/models/models_test.dart`; emulator MessageRegistry group pins the Base.1.5.0 discovery + template surface | OK (see #014: ExtendedInfo parsing hardening) |
 | Session auth: `POST SessionService/Sessions` → `X-Auth-Token`, session reuse | DSP0266 §13.3.4 "Redfish session login authentication"; `SessionService.json` + `SessionService.v1_2_0.json` (newest, DOCS-12) | `lib/redfish/client/auth_manager.dart` | `test/redfish/client/auth_manager_test.dart` | OK (see #015: discover session URI instead of hardcoding) |
 | Basic auth fallback | DSP0266 §13.3.3 "HTTP Basic authentication" | `lib/redfish/client/auth_manager.dart` | `test/redfish/client/auth_manager_test.dart` | OK |
@@ -297,7 +317,7 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 53 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 57 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -460,6 +480,47 @@ client-relevant families.
    round-tripped with real secrets in this suite). (Schema citations for the
     pinned surface now resolve to the mirrored
     `Bios.v1_2_2.json` + `Settings.v1_3_5.json` — DOCS-23, 2026-10-24.)
+    **Boot override surface (pinned 2026-10-24, EMU 53→54):**
+    `#ComputerSystem.Boot` publishes `BootSourceOverrideEnabled` (Once),
+    `BootSourceOverrideMode` (UEFI), `BootSourceOverrideTarget` (Pxe) and the
+    **`BootSourceOverrideTarget@Redfish.AllowableValues` annotation** — 10
+    values (None/Pxe/Cd/Usb/Hdd/BiosSetup/Utilities/Diags/SDCard/UefiTarget)
+    — the same annotation-form allow-list pattern as `#ComputerSystem.Reset`;
+    a boot-control UI must pre-validate against it (#022/#016 rule),
+    **Live PATCH round-trip (#016, pinned 2026-10-24, EMU 54):** the FIRST
+    PATCH pin on this fixture — `patchJson` on `/Systems/437XR1138R2`
+    (`Boot.BootSourceOverrideEnabled: Disabled`) returns 204 with no content
+    and the change **persists** into the served resource (GET confirms; the
+    mockup keeps PATCHes in memory — the on-disk fixture stays byte-identical;
+    header-level `@odata.etag`/HTTP ETags remain absent, so If-Match
+    enforcement stays unit-level). Negative pin: the mockup applies ANY PATCH
+    body without validation (`IndicatorLED: "Bogus"` 204s AND persists) — the
+    client must pre-validate against AllowableValues; the 400-with-
+    `@Message.ExtendedInfo` validation-failure path stays unit-level.
+    `RedfishClient.patchJson` is the DSP0266 §6.5.2 transport (204/200
+    normalized; non-2xx → `RedfishException`) with 3 unit tests
+    (`auth_manager_test.dart` "RedfishClient transports").
+    **Discovery-graph pin (#018/#006, EMU 55):** Systems→Chassis→Manager
+    `Links` traversal (DSP0266 §7.2.3 link traversal) resolves all three hops
+    — `System.Links.Chassis`→`/Chassis/1U` + `ManagedBy`→`/Managers/BMC`,
+    `Chassis.Links.ComputerSystems`→the system + `ManagedBy` +
+    `ManagersInChassis`→the manager, `Manager.Links.ManagerForServers`→the
+    system + `ManagerForChassis`/`ManagerInChassis`→the chassis; the Manager
+    identity (ManagerType BMC / FirmwareVersion `1.45.455b66-rev4` / Model
+    `Joo Janta 200`) is pinned for the overview's BMC card. The #018
+    lightweight discovery pass can walk the graph from any seed without
+    hardcoded URIs.
+    **VirtualMedia read surface (EMU 56, boot-media UX input for #028/#022):**
+    `/Systems/437XR1138R2/VirtualMedia` publishes 2 members
+    (`#VirtualMediaCollection`); CD1 is `#VirtualMedia.v1_6_3.VirtualMedia`
+    (ConnectedVia Applet, Image `redfish.dmtf.org/freeImages/freeOS.1.1.iso`,
+    MediaTypes CD/DVD, Inserted, WriteProtected false) and Floppy1 (ConnectedVia
+    URI, Image `https://www.dmtf.org/freeImages/Sardine.img`, MediaTypes
+    Floppy/USBStick). Negative pin: the fixture publishes NO
+    `#VirtualMedia.InsertMedia`/`EjectMedia` action targets (no Actions map) —
+    boot-media action round-trips stay unit-level (advertised-as-candidate
+    rule). VirtualMedia is NOT client-mapped, so the corpus-invariant family
+    list is unchanged (no fixture-schema duty).
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)
 

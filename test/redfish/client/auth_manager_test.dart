@@ -38,6 +38,7 @@ String _sessionsUrl(String host) => '/redfish/v1/SessionService/Sessions';
 String _rootUrl(String host) => '/redfish/v1/';
 String _sessionLocUrl(String host, String id) =>
     '/redfish/v1/SessionService/Sessions/$id';
+String _systemUrl(String host) => '/redfish/v1/Systems/437XR1138R2';
 
 /// Builds an [AuthManager] with a **pre-created** per-host [Dio]+[DioAdapter]
 /// so mocks can be registered before `login`. The same adapter is reused by
@@ -734,6 +735,61 @@ void main() {
         thrown = e;
       }
       expect(thrown.statusCode, 401);
+    });
+
+    test('patchJson 204 no-content returns empty map (#016)', () async {
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
+      adapter.onPatch(
+        _systemUrl('bmc1'),
+        (server) => server.reply(204, <String, dynamic>{}),
+      );
+      final Map<String, dynamic> body = await client.patchJson(
+        _systemUrl('bmc1'),
+        body: <String, dynamic>{
+          'Boot': <String, dynamic>{'BootSourceOverrideEnabled': 'Disabled'},
+        },
+      );
+      expect(body, isEmpty);
+    });
+
+    test('patchJson 200 with body decodes to a map (#016)', () async {
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
+      adapter.onPatch(
+        _systemUrl('bmc1'),
+        (server) => server.reply(
+          200,
+          <String, dynamic>{'IndicatorLED': 'Blinking'},
+        ),
+      );
+      final Map<String, dynamic> body = await client.patchJson(
+        _systemUrl('bmc1'),
+        body: <String, dynamic>{'IndicatorLED': 'Blinking'},
+      );
+      expect(body['IndicatorLED'], 'Blinking');
+    });
+
+    test('patchJson non-2xx throws RedfishException (#016)', () async {
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
+      adapter.onPatch(
+        _systemUrl('bmc1'),
+        (server) => server.reply(
+          405,
+          <String, dynamic>{'Message': 'method not allowed'},
+        ),
+      );
+      late RedfishException thrown;
+      try {
+        await client.patchJson(
+          _systemUrl('bmc1'),
+          body: <String, dynamic>{'IndicatorLED': 'Off'},
+        );
+      } on RedfishException catch (e) {
+        thrown = e;
+      }
+      expect(thrown.statusCode, 405);
     });
 
     test('builds its own Dio from profile (default transport + TLS-first)',

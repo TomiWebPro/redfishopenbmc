@@ -2073,4 +2073,240 @@ void main() {
       expect(filter0['LogFacilities'], isA<List<dynamic>>());
     });
   });
+
+  group(
+      'emulator: ComputerSystem Boot override + live PATCH round-trip + '
+      'discovery Links graph + VirtualMedia (#016/#018/#022)', () {
+    late AuthManager manager;
+    late RedfishClient client;
+
+    setUpAll(() async {
+      manager = AuthManager(storage: InMemoryStorage());
+      await manager.login('em-boot', emulatorProfile());
+      client = manager.clientFor('em-boot')!;
+    });
+
+    tearDownAll(() async {
+      await manager.logout('em-boot');
+    });
+
+    test(
+        'ComputerSystem: Boot override surface publishes '
+        'BootSourceOverrideTarget@Redfish.AllowableValues (#022/#016)',
+        () async {
+      // A boot-control UI (boot-once-to-PXE etc.) reads this surface: the
+      // current override (Enabled/Mode/Target), the UEFI target detail, and
+      // the AllowableValues annotation — the same annotation-form allow-list
+      // pattern as #ComputerSystem.Reset. The #022/#016 rule applies: the UI
+      // pre-validates against the advertised list, never hardcodes targets.
+      final Map<String, dynamic> sys =
+          await client.getJson('/redfish/v1/Systems/437XR1138R2');
+      final Map<dynamic, dynamic> boot = sys['Boot'] as Map<dynamic, dynamic>;
+      expect(boot['BootSourceOverrideEnabled'], 'Once');
+      expect(boot['BootSourceOverrideMode'], 'UEFI');
+      expect(boot['BootSourceOverrideTarget'], 'Pxe');
+      expect(boot['UefiTargetBootSourceOverride'], '/0x31/0x33/0x01/0x01');
+      final List<dynamic> allowed =
+          boot['BootSourceOverrideTarget@Redfish.AllowableValues']
+              as List<dynamic>;
+      expect(
+        allowed,
+        containsAll(<String>[
+          'None',
+          'Pxe',
+          'Cd',
+          'Usb',
+          'Hdd',
+          'BiosSetup',
+          'Utilities',
+          'Diags',
+          'SDCard',
+          'UefiTarget',
+        ]),
+      );
+    });
+
+    test(
+        'PATCH round-trip: Boot override PATCH 204 + persists, invalid body '
+        'value NOT validated (#016)', () async {
+      // The FIRST live PATCH pin on this fixture: PATCHing a ComputerSystem
+      // partial update (Boot.BootSourceOverrideEnabled) returns 204 and the
+      // change PERSISTS into the served resource — the in-memory mockup keeps
+      // it (the on-disk fixture is untouched; verified). This is the DSP0266
+      // §6.5.2 PATCH surface the #016 flow sends. The mockup carries no
+      // resource-level @odata.etag / HTTP ETag, so If-Match enforcement
+      // cannot be pinned here — it stays unit-level (the long-held note).
+      try {
+        final Map<String, dynamic> patched = await client.patchJson(
+          '/redfish/v1/Systems/437XR1138R2',
+          body: <String, dynamic>{
+            'Boot': <String, dynamic>{
+              'BootSourceOverrideEnabled': 'Disabled',
+            },
+          },
+        );
+        // 204 with no content normalizes to a placeholder map (never an error).
+        expect(patched['value'], '');
+
+        final Map<String, dynamic> after =
+            await client.getJson('/redfish/v1/Systems/437XR1138R2');
+        expect(
+          (after['Boot'] as Map<dynamic, dynamic>)['BootSourceOverrideEnabled'],
+          'Disabled',
+          reason: '#016: a PATCHed partial update persists on this fixture',
+        );
+      } finally {
+        // Restore the fixture value so the in-memory server state is unchanged
+        // when the suite ends (best-effort; the mockup keeps PATCHes in memory
+        // only, and no later test reads Boot).
+        await client.patchJson(
+          '/redfish/v1/Systems/437XR1138R2',
+          body: <String, dynamic>{
+            'Boot': <String, dynamic>{
+              'BootSourceOverrideEnabled': 'Once',
+            },
+          },
+        );
+      }
+
+      // Negative pin: the mockup does NOT validate PATCH body values —
+      // `IndicatorLED: "Bogus"` answers 204 AND persists into the served
+      // resource (GET confirms), the same "advertised contract, not
+      // enforced" theme as ResetType. #016's client must pre-validate PATCH
+      // bodies against the advertised AllowableValues; the RedfishException
+      // error path for real validation failures (400 with
+      // @Message.ExtendedInfo) stays unit-level.
+      try {
+        final Map<String, dynamic> bogus = await client.patchJson(
+          '/redfish/v1/Systems/437XR1138R2',
+          body: <String, dynamic>{'IndicatorLED': 'Bogus'},
+        );
+        expect(bogus['value'], '');
+        final Map<String, dynamic> led =
+            await client.getJson('/redfish/v1/Systems/437XR1138R2');
+        expect(led['IndicatorLED'], 'Bogus',
+            reason: '#016: the mockup applies ANY PATCH value without '
+                'validation — the client must pre-validate against '
+                'AllowableValues');
+      } finally {
+        // Restore the fixture value so the in-memory server state is
+        // unchanged when the suite ends.
+        await client.patchJson(
+          '/redfish/v1/Systems/437XR1138R2',
+          body: <String, dynamic>{'IndicatorLED': 'Off'},
+        );
+      }
+    });
+
+    test(
+        'discovery graph: Systems → Chassis → Manager @odata.id Links '
+        'traversal resolves all three hops (#018/#006)', () async {
+      // The discovery graph the #018 lightweight pass and #006 overview rely
+      // on: every resource carries Links (DSP0266 §7.2.3 link traversal), so
+      // a system's chassis + managing manager (and the manager's managed
+      // servers/chassis) are resolvable without hardcoded URIs.
+      final Map<String, dynamic> sys =
+          await client.getJson('/redfish/v1/Systems/437XR1138R2');
+      final Map<dynamic, dynamic> sysLinks =
+          sys['Links'] as Map<dynamic, dynamic>;
+      expect(
+        ((sysLinks['Chassis'] as List<dynamic>).first
+            as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/Chassis/1U',
+      );
+      expect(
+        ((sysLinks['ManagedBy'] as List<dynamic>).first
+            as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/Managers/BMC',
+      );
+
+      final Map<String, dynamic> chassis =
+          await client.getJson('/redfish/v1/Chassis/1U');
+      final Map<dynamic, dynamic> chassisLinks =
+          chassis['Links'] as Map<dynamic, dynamic>;
+      expect(
+        ((chassisLinks['ComputerSystems'] as List<dynamic>).first
+            as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/Systems/437XR1138R2',
+      );
+      expect(
+        ((chassisLinks['ManagedBy'] as List<dynamic>).first
+            as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/Managers/BMC',
+      );
+      expect(
+        ((chassisLinks['ManagersInChassis'] as List<dynamic>).first
+            as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/Managers/BMC',
+      );
+
+      // The manager completes the triangle: ManagerForServers back to the
+      // system, ManagerForChassis + ManagerInChassis to the chassis. The
+      // Manager identity fields are pinned too (the overview's BMC card).
+      final Map<String, dynamic> mgr =
+          await client.getJson('/redfish/v1/Managers/BMC');
+      expect(mgr['ManagerType'], 'BMC');
+      expect(mgr['FirmwareVersion'], '1.45.455b66-rev4');
+      expect(mgr['Model'], 'Joo Janta 200');
+      final Map<dynamic, dynamic> mgrLinks =
+          mgr['Links'] as Map<dynamic, dynamic>;
+      expect(
+        ((mgrLinks['ManagerForServers'] as List<dynamic>).first
+            as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/Systems/437XR1138R2',
+      );
+      expect(
+        ((mgrLinks['ManagerForChassis'] as List<dynamic>).first
+            as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/Chassis/1U',
+      );
+      expect(
+        (mgrLinks['ManagerInChassis'] as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/Chassis/1U',
+      );
+    });
+
+    test(
+        'VirtualMedia: read surface for boot media (#VirtualMedia.v1_6_3), '
+        'NO InsertMedia/EjectMedia action targets on this fixture (#022/#028)',
+        () async {
+      // The system-published removable-media surface a future boot-media UX
+      // (#028 family, bmcweb boot-from-ISO flows) reads: the collection and
+      // per-device detail — ConnectedVia (Applet vs URI), the mounted Image,
+      // MediaTypes, Inserted/WriteProtected/VerifyCertificate. A plain string
+      // Image is NOT an @odata.id (the corpus crawl skips it by design).
+      final Map<String, dynamic> collection =
+          await client.getJson('/redfish/v1/Systems/437XR1138R2/VirtualMedia');
+      expect(collection['@odata.type'], startsWith('#VirtualMediaCollection.'));
+      expect(collection['Members@odata.count'], 2);
+      final List<dynamic> members =
+          collection['Members'] as List<dynamic>? ?? <dynamic>[];
+      expect(
+        (members.first as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/Systems/437XR1138R2/VirtualMedia/Floppy1',
+      );
+
+      final Map<String, dynamic> cd = await client
+          .getJson('/redfish/v1/Systems/437XR1138R2/VirtualMedia/CD1');
+      expect(cd['@odata.type'], '#VirtualMedia.v1_6_3.VirtualMedia');
+      expect(cd['ConnectedVia'], 'Applet');
+      expect(cd['Image'], 'redfish.dmtf.org/freeImages/freeOS.1.1.iso');
+      expect(cd['ImageName'], 'mymedia-read-only');
+      expect(cd['Inserted'], isTrue);
+      expect(cd['WriteProtected'], isFalse);
+      expect(cd['MediaTypes'], containsAll(<String>['CD', 'DVD']));
+
+      final Map<String, dynamic> floppy = await client
+          .getJson('/redfish/v1/Systems/437XR1138R2/VirtualMedia/Floppy1');
+      expect(floppy['ConnectedVia'], 'URI');
+      expect(floppy['Image'], 'https://www.dmtf.org/freeImages/Sardine.img');
+      expect(floppy['MediaTypes'], containsAll(<String>['Floppy', 'USBStick']));
+
+      // Negative pin: this fixture publishes NO #VirtualMedia.InsertMedia /
+      // EjectMedia action targets (no Actions map at all) — boot-media action
+      // round-trips stay unit-level, matching the advertised-as-candidate
+      // rule (#022/#006).
+      expect(cd['Actions'], isNull);
+    });
+  });
 }

@@ -49,8 +49,7 @@ class RedfishClient {
         validateStatus: (int? status) =>
             status != null && status >= 200 && status < 300,
       ),
-    )
-      ..httpClientAdapter = createHttpClientAdapter(profile.allowSelfSigned);
+    )..httpClientAdapter = createHttpClientAdapter(profile.allowSelfSigned);
     return dio;
   }
 
@@ -64,9 +63,7 @@ class RedfishClient {
       final response = await _dio.get<dynamic>(
         path,
         queryParameters: query,
-        options: headers == null
-            ? null
-            : Options(headers: headers),
+        options: headers == null ? null : Options(headers: headers),
       );
       return _asMap(response.data);
     } on DioException catch (e) {
@@ -86,6 +83,33 @@ class RedfishClient {
   }) async {
     try {
       final response = await _dio.post<dynamic>(
+        path,
+        data: body,
+        options: Options(headers: headers),
+      );
+      return _asMap(response.data);
+    } on DioException catch (e) {
+      throw RedfishException.fromDioException(
+        e,
+        uri: Uri.tryParse(profile.baseUrl + path),
+      );
+    }
+  }
+
+  /// PATCH [path] with an optional JSON [body]; returns the decoded body
+  /// (or an empty map for 204 with no content).
+  ///
+  /// The DSP0266 §6.5.2 PATCH surface (#016): a partial-update request whose
+  /// body carries only the properties being changed (e.g. a
+  /// `ComputerSystem.Boot` override or `IndicatorLED`). Successful responses
+  /// are 200-with-body or 204-no-content.
+  Future<Map<String, dynamic>> patchJson(
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, String>? headers,
+  }) async {
+    try {
+      final response = await _dio.patch<dynamic>(
         path,
         data: body,
         options: Options(headers: headers),
