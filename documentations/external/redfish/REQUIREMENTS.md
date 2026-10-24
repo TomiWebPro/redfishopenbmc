@@ -6,7 +6,17 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (DOCS-16 run — corrected the DSP0266 clause
+Last audited: 2026-10-24 (DOCS-17 run — audited the DSP0266 §13.3.4.3
+"Session lifetime" contract against the mirrored `SessionService.json` +
+`SessionService.v1_2_0.json` (DOCS-12); pinned the timeout contract with the
+new `Session.expiryFromService` model helper + 6 unit tests — `SessionTimeout`
+(inactivity TTL) is applied, `AbsoluteSessionTimeout` +
+`AbsoluteSessionTimeoutEnabled` (added v1_2_0) optionally bound the deadline to
+the *earlier* of the two so the client re-authenticates before the service can
+kill the session; the session-timeout trace row below is now model-level OK and
+the AuthManager wiring stays #015; UI-2 FirmwareView error state merged
+semantics `Unable to load firmware. <message>` + separate Retry control).
+Prior: DOCS-16 run — corrected the DSP0266 clause
 citations that pointed at an older spec layout against the mirrored
 `DSP0266_1.25.0.pdf`: `§8.3 Service Root` → `§7.2.3`, `§8.4/§8.10/§8.14`
 resource clauses → schema files + `§9.x` data-model clauses, `§12.2 Actions`
@@ -99,7 +109,7 @@ Folded into code this run:
 | Task monitor: 202 + `Location` + optional `Retry-After`; GET monitor → 202 while running, then final status + body; DELETE cancels; 404/410 after completion | DSP0266 §12.2 "Asynchronous operations"; `TaskService.json` | `lib/features/firmware/firmware_service.dart` + `lib/features/power/power_service.dart` read `Location`, store the task URI, do **not** poll | tests cover 202+`Location` acceptance | Partial/GAP: #008/#020 (firmware), #022 (power) |
 | bmcweb `EventService`: `SubmitTestEvent`, `DeliveryRetryAttempts` (default 3), `DeliveryRetryIntervalSeconds`, `EventFormatTypes`, `SSEFilterPropertiesSupported` | OpenBMC `Redfish.md` §EventService | not implemented | — | vendor row (bmcweb) |
 | bmcweb `TaskService`: `CompletedTaskOverWritePolicy`, `LifeCycleEventOnTaskStateChange`, `Tasks` collection | OpenBMC `Redfish.md` §TaskService | not implemented (202 accepted only) | — | vendor row (bmcweb) |
-| Session timeout handling (`SessionService.SessionTimeout`) | DSP0266 §13.3.4.3 "Session lifetime"; `SessionService.json` + `SessionService.v1_2_0.json` (newest, DOCS-12) | `lib/redfish/models/session.dart` (expiry) | `test/redfish/client/auth_manager_test.dart` | OK |
+| Session timeout handling (`SessionService.SessionTimeout` + v1_2_0 `AbsoluteSessionTimeout`/`AbsoluteSessionTimeoutEnabled`) | DSP0266 §13.3.4.3 "Session lifetime"; `SessionService.json` + `SessionService.v1_2_0.json` (newest, DOCS-12) | `lib/redfish/models/session.dart` — `Session.expiryFromService` computes the conservative *earlier* deadline (`createdAt + min(SessionTimeout, AbsoluteSessionTimeout)` when the absolute timeout is enabled, else `SessionTimeout`) — DOCS-17 | `test/redfish/models/models_test.dart` (+6 DOCS-17 expiry tests); emulator `SessionService.SessionTimeout == 30` published (#015) | Partial: model-level contract pinned; AuthManager has no SessionService fetch yet — wiring expiry into login is #015 |
 | bmcweb firmware update: `HttpPushUri` / `MultipartHttpPushUri` upload (no `SimpleUpdate` action) | OpenBMC `Redfish.md` §UpdateService (bmcweb `27e0930b`); `UpdateService.v1_17_1.json` `MultipartHttpPushUri` | `UpdateServiceInfo` exposes `httpPushUri` **and** `multipartHttpPushUri` (DOCS-9); `startSimpleUpdate` POSTs `#UpdateService.SimpleUpdate` — **will not match bmcweb** | unit: `test/features/firmware/firmware_model_test.dart` (+3 DOCS-9: multipart parse, absent fallback, copyWithInventory); emulator: `emulator_suite_test.dart` asserts `UpdateServiceInfo.httpPushUri == '/FWUpdate'` on the DMTF mockup | Partial: push *upload path* still #008/#020, but both push URIs now surfaced |
 | bmcweb reset types: `ResetActionInfo` ActionInfo (`Parameters/AllowableValues`) instead of system-level `SupportedResetTypes` | OpenBMC `Redfish.md` §ComputerSystem (`ResetActionInfo` resource) | `FeatureRules.supportedResetTypes` falls back to the `ResetType@Redfish.AllowableValues` annotation on `#ComputerSystem.Reset` (DOCS-4/13 fix, run 2026-10-23) | `feature_rules_test.dart` "falls back to the ResetType@Redfish.AllowableValues annotation" + "never reads the manager-level guard" | OK: empty-`SupportedResetTypes` BMCs now surface the true allow-list from the action annotation (mockup + ActionInfo-style); ActionInfo *resource* (`ResetActionInfo`) crawling stays #022/#016 |
 | bmcweb serial console lives on the ComputerSystem (`SerialConsole/SSH|IPMI`), not the Manager | OpenBMC `Redfish.md` §ComputerSystem (`SerialConsole` fields) | `FeatureRules._managerConsoleType` only checks `Manager.GraphicalConsole/SerialConsole/Oem` | `feature_rules_test.dart` | Partial: GraphicalConsole detection still correct; System-level SerialConsole not yet mapped (see #009/#021 KVM) |
@@ -549,3 +559,35 @@ Redfish-Mockup-Server `23d21f9a` (unchanged), DSP0266 1.25.0 PDF
 (www.dmtf.org URL; content-length 1,243,359 bytes — unchanged; the
 `redfish.dmtf.org` path 404s and the hub links the `www.dmtf.org` URL), schema
 index 200 OK. No corpus refresh needed.
+
+## DOCS-17 — DSP0266 §13.3.4.3 session-lifetime audit + expiry pin (2026-10-24)
+
+Audited the session-lifetime contract against the mirrored
+`SessionService.json` + `SessionService.v1_2_0.json` (DOCS-12 mirrored the
+newest + mockup-served versions) and DSP0266 §13.3.4.3 "Session lifetime".
+Found that the client's `Session.expiresAt` / `isExpired` machinery existed
+but **nothing ever populated the deadline** — the trace row above claimed
+"OK" while `AuthManager` never reads the SessionService resource. This run
+closed the model-level gap with a small, safe, tested helper (the AuthManager
+fetch + wiring stays #015):
+
+| Requirement | Source (section/URL) | Code | Test | Status |
+|---|---|---|---|---|
+| Session expiry derives from `SessionService.SessionTimeout` (seconds of *inactivity* before the service closes the session; schema range 30–86400) | DSP0266 §13.3.4.3; `SessionService.json` (`SessionTimeout`) | `Session.expiryFromService` — `createdAt + SessionTimeout` | `models_test.dart` "expiryFromService uses SessionTimeout only" + "ignores a disabled AbsoluteSessionTimeout" | OK (model-level; AuthManager wiring #015) |
+| v1_2_0 adds `AbsoluteSessionTimeout` — maximum seconds a session stays open *regardless of activity* — applied only when `AbsoluteSessionTimeoutEnabled` is `true`; the effective deadline is the earlier of the two so the client re-authenticates before the service can kill the session | `SessionService.v1_2_0.json` (`AbsoluteSessionTimeout`, `AbsoluteSessionTimeoutEnabled`, versionAdded v1_2_0); DSP0266 §13.3.4.3 | `Session.expiryFromService` takes `min(SessionTimeout, AbsoluteSessionTimeout)` when enabled; absolute-only services still get a deadline; malformed values are ignored | `models_test.dart` "takes the earlier of SessionTimeout and an enabled AbsoluteSessionTimeout" + "handles an absolute-only service" + "tolerates malformed timeout values" | OK (model-level; note for #015 — `AbsoluteSessionTimeoutEnabled` defaults absent/false) |
+| No usable SessionService body → no known TTL (`expiresAt` null, session treated long-lived until a 401) | DSP0266 §13.3.4.3 (timeout is optional); `Session.json` | `Session.expiryFromService` returns `null` | `models_test.dart` "returns null without a SessionService body" | OK |
+
+Notes for #015 (the open P1): the helper gives the deadline computation, but
+`AuthManager` still needs (a) a discovered SessionService fetch during login
+(or reuse of `DiscoveryContext.sessionService`), (b) `AbsoluteSessionTimeout*
+` handling only when the service publishes it (mockup serves `v1_1_8` which
+lacks the fields — `SessionTimeout=30` is the pinned emulator value), and
+(c) a re-auth trigger when `Session.isExpired` flips.
+
+UI-2 increment this run: the **FirmwareView error state** (errorContainer card
+with icon + message) now announces as ONE merged semantics node
+(`Semantics(container: true, excludeSemantics: true, label: 'Unable to load
+firmware. <message>')` — the established OverviewView/SensorsView error-state
+pattern), with the Retry button keeping its own control node. One new widget
+test in `firmware_widget_test.dart` asserts the merged label + visible message
+text + separately-announced Retry control.

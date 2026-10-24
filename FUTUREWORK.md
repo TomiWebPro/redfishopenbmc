@@ -7,30 +7,30 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 02:30 (EMULATOR run — **EMU-2 suite at 41
-  tests: MessageRegistry contract pinned — service root advertises
-  `Registries` -> `MessageRegistryFileCollection` (Base.1.5.0) ->
-  `Location[0].Uri` resolves to the `#MessageRegistry` JSON defining the 60
-  Base.* message templates (Message/Severity/NumberOfArgs) behind
-  `RedfishError.code`/`firstMessage` — the DSP0266 §8.6/§11.4 error surface
-  for the #014 model**; re-verified the reset action returns 204 with NO
-  task-monitor Location header and the live 404 closes the connection
-  without a body — both seams stay unit-level; emulator pin `23d21f9a`
-  unchanged; UI-2 increment: SensorsView error state merged semantics label
-  (`Unable to load sensors. <message>`) + working Retry, +2 widget tests;
-  suite 307 → 309); next P1: #015 (AuthManager) — emulator
-  pins the full auth
-  contract + the Session/ManagerAccount/Role schemas are mirrored
-  (#015/#017/#026); #022/#016: Annotation allow-list fallback landed (16:05
+- **Last updated:** 2026-10-24 03:09 (DOCS run — **DOCS-17: session-lifetime
+  audit done**: DSP0266 §13.3.4.3 + mirrored
+  `SessionService.v1_2_0.json` pinned via `Session.expiryFromService` —
+  `SessionTimeout` inactivity TTL + `AbsoluteSessionTimeout`/
+  `AbsoluteSessionTimeoutEnabled` (v1_2_0) bound to the *earlier* deadline so
+  the client re-authenticates before the service kills the session; 6 unit
+  tests; the trace row corrected from overstated OK to Partial — AuthManager
+  wiring stays #015; UI-2 increment: FirmwareView error state merged semantics
+  label + separate Retry control (+1 widget test); suite 309 → 316; anchors
+  re-verified 01:07 UTC all unchanged); next P1: #015 (AuthManager) —
+  `expiryFromService` is ready, wire the discovered SessionService body into
+  login + re-auth on `isExpired`; DOCS-18 queued: mirror the DMTF Base
+  message-registry payload (`Base.1.5.0.json`, mockup-served) so the §8.6/§11.4
+  MessageRegistry rows cite a real mirror file; #022/#016: Annotation
+  allow-list fallback landed (16:05
   run) — remaining: `ResetActionInfo` ActionInfo resource crawl (bmcweb-style
   BMCs; NOT pinable on the DMTF mockup — it serves only the annotation form);
   #018: query-capability surface + live `$expand` contract pinned (17:07) —
   remaining: build the lightweight discovery pass + the cache fixes
-- **Current focus:** **EMU-2 suite at 41 tests — MessageRegistry contract
-  pinned (2026-10-24): the §8.6 error-mapping surface (Base.* templates
-  behind `RedfishError.code`/`firstMessage`) is now pinned live; the
-  map-form `$expand` round-trip (22:45) + the registry resolver complete
-  the #018/error-mapping testable corpus**; next P1: #015 (AuthManager) —
+- **Current focus:** **DOCS-17 session-lifetime pin (2026-10-24): the
+  §13.3.4.3 timeout contract is now model-level pinned
+  (`Session.expiryFromService`) — the last overstated "OK" trace row is
+  corrected to Partial and the #015 AuthManager has its expiry primitive
+  ready**; next P1: #015 (AuthManager) —
   emulator
   pins the full auth
   contract + the Session/ManagerAccount/Role schemas are mirrored
@@ -206,6 +206,38 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       bmcweb `fbb307a`, mockup `23d21f9a`, DSP0266 1.25.0, schema index 200;
       +1 transport unit test; no corpus refresh needed — corpus complete for
       all 16 client-mapped families)
+
+- [x] **DOCS-17** Audit the DSP0266 §13.3.4.3 "Session lifetime" clause
+      against the client's session expiry handling, using the mirrored
+      `SessionService.json` + `SessionService.v1_2_0.json` (DOCS-12); pin the
+      timeout contract with unit tests (`SessionTimeout` inactivity TTL;
+      `AbsoluteSessionTimeout`/`AbsoluteSessionTimeoutEnabled` added v1_2_0 —
+      maximum seconds open regardless of activity, applied only when enabled;
+      the effective deadline is the *earlier* of the two so the client
+      re-authenticates before the service kills the session).
+      (run 2026-10-24 — REQUIREMENTS.md DOCS-17 trace table + the
+      session-timeout row corrected from overstated OK to Partial (model-level
+      pinned; AuthManager wiring stays #015); `Session.expiryFromService`
+      helper + 6 unit tests in `models_test.dart`; no corpus refresh —
+      anchors re-verified 01:07 UTC all unchanged: bmcweb `fbb307a`, mockup
+      `23d21f9a`, DSP0266 1.25.0, schema index 200; UI-2 increment:
+      FirmwareView error state merged semantics label + separate Retry control,
+      +1 widget test)
+
+- [ ] **DOCS-18** Mirror the DMTF **message-registry payload** the pinned
+      mockup serves (`Base.1.5.0.json` — the file behind
+      `MessageRegistryFile.Location[0].Uri`, pinned live by the EMU-2
+      MessageRegistry contract 2026-10-24: 60 Base.* templates with
+      Message/Severity/NumberOfArgs behind `RedfishError.code`/`firstMessage`)
+      so the §8.6 error-response / §11.4 message-registry rows in
+      REQUIREMENTS.md cite a real mirror file. Registry JSONs live on the DMTF
+      registries path (verify with `curl -sSIL`; the `redfish/schemas/v1/`
+      index carries only the `MessageRegistry.json` aggregator + versions —
+      the payloads are separate). Keep inside the DOCS-6 budget (Base registry
+      is ~50 KB). Also consider the newest `Base.*` published version for the
+      "newest vs mockup-served" delta note. Source:
+      <https://redfish.dmtf.org/registries/> (+ the mockup-served path
+      `/redfish/v1/Registries/Base.1.5.0.json` in the fixture).
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across

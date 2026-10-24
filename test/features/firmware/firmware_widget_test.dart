@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -263,6 +264,43 @@ void main() {
       expect(find.text('boom'), findsNothing);
       expect(find.text('Retry'), findsNothing);
       expect(find.textContaining('9.9.9'), findsWidgets);
+    });
+
+    testWidgets(
+        'error state announces as one merged semantics node with a separate '
+        'Retry control (UI-2)', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: _FlakyFirmwareService(), // fails with 'boom', error persists
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The icon + message merge into one node carrying the error text; the
+      // Retry button keeps its own semantics (it is a control).
+      final Finder merged =
+          find.bySemanticsLabel('Unable to load firmware. boom');
+      expect(merged, findsOneWidget);
+      final SemanticsNode? node = tester.getSemantics(merged);
+      expect(node?.label, contains('Unable to load firmware'));
+      expect(node?.label, contains('boom'));
+
+      // The visible message text is preserved.
+      expect(find.text('boom'), findsOneWidget);
+
+      // The Retry control is still separately focusable/announced.
+      expect(
+        find.bySemanticsLabel(RegExp('^Retry')),
+        findsWidgets,
+      );
     });
 
     testWidgets(

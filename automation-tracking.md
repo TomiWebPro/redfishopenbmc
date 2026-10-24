@@ -1972,3 +1972,64 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **68** (67 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 03:09 — DOCS (session-lifetime audit §13.3.4.3) + UI-2 FirmwareView error state
+
+- **Baseline:** analyze 0; tests 309 passed / 1 skipped; starting commit f574035
+  (branch `main` ahead 68 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** DOCS (alternation: EMULATOR 02:25 → DOCS next). **DOCS-17 —
+  DSP0266 §13.3.4.3 session-lifetime audit + expiry pin.** Audited the session
+  timeout contract against the mirrored `SessionService.json` +
+  `SessionService.v1_2_0.json` (DOCS-12) and found the trace row "Session
+  timeout handling … OK" was overstated: `Session.expiresAt`/`isExpired`
+  existed but **nothing ever populated the deadline** — `AuthManager` never
+  reads the SessionService resource. Closed the model-level gap with a small,
+  safe, tested helper `Session.expiryFromService(Map<String, dynamic>?
+  sessionService, {required DateTime createdAt})`:
+  `SessionTimeout` (inactivity TTL) applies; `AbsoluteSessionTimeout` +
+  `AbsoluteSessionTimeoutEnabled` (added v1_2_0) optionally bind the deadline
+  to the **earlier** of the two (conservative re-auth before the service kills
+  the session); absolute-only services still get a deadline; malformed values
+  ignored; no body → null TTL. Six new unit tests in
+  `test/redfish/models/models_test.dart`. The AuthManager fetch + wiring stays
+  #015 (recorded as notes in the DOCS-17 REQUIREMENTS.md section).
+- **Docs:** no new downloads (corpus complete; DOCS-6 budget untouched).
+  REQUIREMENTS.md DOCS-17 trace table added + the session-timeout row
+  corrected to Partial (model-level OK; wiring #015) + Last-audited header
+  updated. Manifest anchors note updated. Anchors re-verified live 01:07 UTC:
+  bmcweb master `fbb307a` (unchanged — `main` ref 422s, `master` is the
+  branch), mockup `23d21f9a` (unchanged), DSP0266 1.25.0 PDF 200 /
+  content-length 1,243,359 (unchanged), schema index 200. New FUTUREWORK item
+  DOCS-18: mirror the DMTF Base message-registry payload (`Base.1.5.0.json`,
+  the mockup-served version) so the §8.6/§11.4 MessageRegistry rows cite a
+  real mirror file.
+- **Emulator:** none this run (alternation; EMU-2 stays at 41 tests).
+- **Code/tests:** `lib/redfish/models/session.dart` +`expiryFromService`
+  helper; `test/redfish/models/models_test.dart` +6 expiry tests (309 → 315
+  unit suite); no issue opened/closed (support for #015; DOCS-17 recorded in
+  FUTUREWORK).
+- **UI:** UI-2 increment — the **FirmwareView error state** (errorContainer
+  card with icon + message) now announces as ONE merged semantics node
+  (`Semantics(container: true, excludeSemantics: true, label: 'Unable to load
+  firmware. <message>')` — the established OverviewView/SensorsView error-state
+  pattern), with the Retry button keeping its own control node. +1 widget test
+  in `firmware_widget_test.dart` asserts the merged label + visible message
+  text + separately-announced Retry control (315 → 316).
+- **Verification:** analyze 0; tests 316 passed / 1 skipped (baseline 309 →
+  +7); issues validate OK; `git diff --check` clean; secret scan clean (`dart
+  format` on 4 touched Dart files: 2 changed, wrapping only).
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** — same GitHub
+  credential blocker expected (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/
+  GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
+  Commits ahead of origin/main: **69** before push attempt.
+- **Next:** 1) Push the queued local commits (69) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — `Session.expiryFromService` is ready:
+  wire the discovered SessionService body (or `DiscoveryContext.sessionService`)
+  into login to set `expiresAt`, re-auth when `isExpired` flips, honor
+  `AbsoluteSessionTimeout*` only when published (mockup serves v1_1_8 —
+  `SessionTimeout=30` is the pinned emulator value); 3) DOCS-18: mirror
+  `Base.1.5.0.json` from the DMTF registries path so the §8.6/§11.4
+  MessageRegistry pin cites a real file; or #018 discovery pass on the pinned
+  `$expand` contract.

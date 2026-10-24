@@ -116,20 +116,37 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                         padding: const EdgeInsets.all(12),
                         child: Row(
                           children: <Widget>[
-                            Icon(
-                              Icons.error_outline,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onErrorContainer,
-                            ),
-                            const SizedBox(width: 12),
+                            // UI-2: the icon + message announce as ONE node,
+                            // so a screen reader gets the error in context
+                            // instead of a bare detached sentence (the
+                            // established OverviewView/SensorsView error-state
+                            // pattern). The Retry button keeps its own node
+                            // (it is a control).
                             Expanded(
-                              child: Text(
-                                ui.error!,
-                                style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onErrorContainer,
+                              child: Semantics(
+                                container: true,
+                                excludeSemantics: true,
+                                label: 'Unable to load firmware. ${ui.error}',
+                                child: Row(
+                                  children: <Widget>[
+                                    Icon(
+                                      Icons.error_outline,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onErrorContainer,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        ui.error!,
+                                        style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onErrorContainer,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),

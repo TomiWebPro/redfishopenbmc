@@ -1839,3 +1839,57 @@
 **Issues touched:**
 - none opened/closed this run. EMU-2 count 40 → 41 recorded in FUTUREWORK;
   UI-2 got the SensorsView error-state increment; issues remain open.
+## 2026-10-24 — agent:redfish-automation — DOCS-17 session-lifetime audit + UI-2 FirmwareView error state
+
+**Done:**
+- DOCS primary workstream (alternation: EMULATOR 02:25 → DOCS next). **DOCS-17 —
+  DSP0266 §13.3.4.3 "Session lifetime" audit + expiry pin.**
+  - Audited the timeout contract against the mirrored `SessionService.json` +
+    `SessionService.v1_2_0.json` (DOCS-12): `SessionTimeout` (inactivity TTL),
+    `AbsoluteSessionTimeout` (v1_2_0 — max seconds open *regardless of
+    activity*, applied only when `AbsoluteSessionTimeoutEnabled` is true).
+  - **Found a real traceability defect**: the REQUIREMENTS.md row "Session
+    timeout handling … OK" was overstated — `Session.expiresAt`/`isExpired`
+    existed but **nothing ever populated the deadline** (AuthManager never
+    reads the SessionService resource). Corrected the row to Partial and
+    pinned the model-level contract.
+  - New tested helper `Session.expiryFromService(...)` takes the conservative
+    *earlier* deadline (`createdAt + min(SessionTimeout,
+    AbsoluteSessionTimeout)` when enabled, else `SessionTimeout`), handles
+    absolute-only services and malformed values, `null` without a body.
+    +6 unit tests in `models_test.dart` (309 → 315).
+  - REQUIREMENTS.md DOCS-17 trace table added; Last-audited header updated.
+  - Anchors re-verified live 01:07 UTC: bmcweb `fbb307a` (unchanged — the
+    `main` ref 422s, `master` is the branch), mockup `23d21f9a` (unchanged),
+    DSP0266 1.25.0 (200, 1,243,359 bytes — unchanged), schema index 200.
+- UI-2 increment: FirmwareView error state now announces as ONE merged
+  semantics node (`Unable to load firmware. <message>` via
+  `Semantics(container: true, excludeSemantics: true, ...)`), Retry keeps its
+  own control node. +1 widget test asserting the merged label + visible text +
+  separately-announced Retry (315 → 316).
+
+**Decisions:**
+- DOCS per alternation. Within DOCS, chose the session-lifetime audit because
+  (a) it is the last trace row claiming OK with no tested code behind it, and
+  (b) it directly de-risks the top open P1 #015 (AuthManager) by providing the
+  expiry primitive `AuthManager` will wire in.
+- Small tested code fix per §2.3 (docs audit → safe gap fix with tests), no
+  behavior change outside the new helper; no new dependency; no TLS change.
+- Kept the AuthManager fetch/wiring out of this run — it belongs to #015's
+  acceptances; documented the exact remaining steps in the DOCS-17 section.
+- Queued DOCS-18: the MessageRegistry payload (`Base.1.5.0.json`) is the one
+  corpus surface the emulator pins but the mirror lacks — quick mirror next
+  docs run.
+
+**Next:**
+- Push 69 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager: wire the discovered SessionService body into login to
+  set `expiresAt` via `Session.expiryFromService`, re-auth when `isExpired`
+  flips; honor `AbsoluteSessionTimeout*` only when published (mockup serves
+  v1_1_8 — `SessionTimeout=30` pinned).
+- DOCS-18: mirror `Base.1.5.0.json` from the DMTF registries path; or #018
+  discovery pass on the fully pinned `$expand` contract.
+
+**Issues touched:**
+- none opened/closed this run. DOCS-17 done + DOCS-18 queued in FUTUREWORK;
+  UI-2 got the FirmwareView error-state increment; issues remain open.

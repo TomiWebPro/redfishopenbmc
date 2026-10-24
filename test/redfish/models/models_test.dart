@@ -54,6 +54,107 @@ void main() {
       expect(next.username, 'u');
       expect(next.systemId, 'bmc1');
     });
+
+    test(
+        'expiryFromService returns null without a SessionService body '
+        '(DOCS-17)', () {
+      final DateTime created = DateTime.utc(2026, 10, 24, 12);
+      expect(
+        Session.expiryFromService(null, createdAt: created),
+        isNull,
+      );
+      expect(
+        Session.expiryFromService(<String, dynamic>{}, createdAt: created),
+        isNull,
+      );
+    });
+
+    test(
+        'expiryFromService uses SessionTimeout only (DSP0266 §13.3.4.3, '
+        'DOCS-17)', () {
+      final DateTime created = DateTime.utc(2026, 10, 24, 12);
+      final DateTime? expiry = Session.expiryFromService(
+        <String, dynamic>{'SessionTimeout': 30},
+        createdAt: created,
+      );
+      expect(expiry, created.add(const Duration(seconds: 30)));
+    });
+
+    test(
+        'expiryFromService ignores a disabled AbsoluteSessionTimeout '
+        '(SessionService.v1_2_0, DOCS-17)', () {
+      final DateTime created = DateTime.utc(2026, 10, 24, 12);
+      final DateTime? expiry = Session.expiryFromService(
+        <String, dynamic>{
+          'SessionTimeout': 30,
+          'AbsoluteSessionTimeout': 86400,
+          'AbsoluteSessionTimeoutEnabled': false,
+        },
+        createdAt: created,
+      );
+      expect(expiry, created.add(const Duration(seconds: 30)));
+    });
+
+    test(
+        'expiryFromService takes the earlier of SessionTimeout and an '
+        'enabled AbsoluteSessionTimeout (DOCS-17)', () {
+      final DateTime created = DateTime.utc(2026, 10, 24, 12);
+      // SessionTimeout binds when it is shorter than the absolute cap.
+      final DateTime? bySession = Session.expiryFromService(
+        <String, dynamic>{
+          'SessionTimeout': 30,
+          'AbsoluteSessionTimeout': 600,
+          'AbsoluteSessionTimeoutEnabled': true,
+        },
+        createdAt: created,
+      );
+      expect(bySession, created.add(const Duration(seconds: 30)));
+      // The absolute cap binds when it is the shorter deadline.
+      final DateTime? byAbsolute = Session.expiryFromService(
+        <String, dynamic>{
+          'SessionTimeout': 600,
+          'AbsoluteSessionTimeout': 60,
+          'AbsoluteSessionTimeoutEnabled': true,
+        },
+        createdAt: created,
+      );
+      expect(byAbsolute, created.add(const Duration(seconds: 60)));
+    });
+
+    test(
+        'expiryFromService handles an absolute-only service '
+        '(SessionService.v1_2_0, DOCS-17)', () {
+      final DateTime created = DateTime.utc(2026, 10, 24, 12);
+      final DateTime? expiry = Session.expiryFromService(
+        <String, dynamic>{
+          'AbsoluteSessionTimeout': 300,
+          'AbsoluteSessionTimeoutEnabled': true,
+        },
+        createdAt: created,
+      );
+      expect(expiry, created.add(const Duration(seconds: 300)));
+    });
+
+    test('expiryFromService tolerates malformed timeout values (DOCS-17)', () {
+      final DateTime created = DateTime.utc(2026, 10, 24, 12);
+      expect(
+        Session.expiryFromService(
+          <String, dynamic>{'SessionTimeout': 'soon'},
+          createdAt: created,
+        ),
+        isNull,
+      );
+      final DateTime? expiry = Session.expiryFromService(
+        <String, dynamic>{
+          'SessionTimeout': 30,
+          'AbsoluteSessionTimeout': 'soon',
+          'AbsoluteSessionTimeoutEnabled': true,
+        },
+        createdAt: created,
+      );
+      // Malformed absolute value is ignored; SessionTimeout still applies.
+      expect(expiry, created.add(const Duration(seconds: 30)));
+    });
   });
 
   group('ConnectionProfile', () {
