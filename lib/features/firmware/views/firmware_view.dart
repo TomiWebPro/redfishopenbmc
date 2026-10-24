@@ -311,7 +311,33 @@ class _InventoryList extends StatelessWidget {
     }
     final UpdateServiceInfo data = info!;
     if (data.inventory.isEmpty) {
-      return const Text('No firmware inventory reported.');
+      // UI-2: a successful load with zero inventory renders the established
+      // empty-state pattern — one self-describing merged semantics node (icon
+      // + visible text), matching the Dashboard/KVM/Sensors empty states. No
+      // Retry: the load succeeded, there is nothing to retry.
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Semantics(
+            container: true,
+            excludeSemantics: true,
+            label: 'No firmware inventory reported.',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(Icons.inventory_2_outlined,
+                    size: 40, color: Theme.of(context).colorScheme.outline),
+                const SizedBox(height: 12),
+                Text(
+                  'No firmware inventory reported.',
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

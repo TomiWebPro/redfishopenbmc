@@ -172,6 +172,48 @@ void main() {
       expect(find.text('Firmware & update management'), findsOneWidget);
     });
 
+    testWidgets(
+        'empty inventory announces one merged semantics label + visible '
+        'text + icon (UI-2)', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        // A successful load that reports zero inventory items — the empty
+        // state is not an error, so there is no Retry.
+        service: FakeFirmwareService(
+          info: const UpdateServiceInfo(
+            serviceEnabled: true,
+            version: '9.9.9',
+            inventory: <FirmwareInventoryItem>[],
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // One self-describing announcement (merged node, no separate parts).
+      expect(
+        find.bySemanticsLabel('No firmware inventory reported.'),
+        findsOneWidget,
+      );
+      // The visible text + icon still render for sighted users.
+      expect(find.text('No firmware inventory reported.'), findsOneWidget);
+      expect(find.byIcon(Icons.inventory_2_outlined), findsOneWidget);
+      // The empty state must not overflow at the narrowest supported width
+      // (UI-3: 320 px); the center-aligned column wraps instead.
+      expect(tester.takeException(), isNull);
+      await tester.binding.setSurfaceSize(const Size(320, 800));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.binding.setSurfaceSize(const Size(800, 600));
+    });
+
     testWidgets('header announces one merged semantics label when idle (UI-2)',
         (tester) async {
       final SystemHandle handle = makeHandle(firmwareUpdate: true);

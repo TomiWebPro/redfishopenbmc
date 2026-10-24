@@ -1645,5 +1645,138 @@ void main() {
       expect(psu0['PowerCapacityWatts'], 800);
       expect((psu0['Status'] as Map<dynamic, dynamic>)['Health'], 'Warning');
     });
+
+    test(
+        'PowerSubsystem: Batteries collection + Battery detail + BatteryMetrics '
+        'with DataSourceUri wiring (#007/#019)', () async {
+      // The mockup also publishes the battery surface of the power subsystem
+      // (#Battery.v1_2_2 / #BatteryMetrics.v1_0_3): a BatteryCollection, the
+      // Module1 detail (state of health + capacity + charge state + the
+      // #Battery.SelfTest/#Battery.Calibrate action targets), and a Metrics
+      // resource with the electrical telemetry (input/output voltages +
+      // currents, stored energy, temperature, charge percent, cell voltages).
+      // The StateOfHealthPercent/TemperatureCelsius readings carry
+      // DataSourceUri links into the Sensors collection — the same wiring the
+      // EnvironmentMetrics/ThermalMetrics pins document, so a future
+      // #007/#019 telemetry receiver or #006 power card can follow them to
+      // raw per-sensor values.
+      final Map<String, dynamic> subsystem =
+          await client.getJson('/redfish/v1/Chassis/1U/PowerSubsystem');
+      final Map<String, dynamic> collection = await client.getJson(
+          (subsystem['Batteries'] as Map<dynamic, dynamic>)['@odata.id']
+              as String);
+      expect(collection['@odata.type'], startsWith('#BatteryCollection.'));
+      expect(collection['Members@odata.count'], 1);
+      final List<dynamic> members =
+          collection['Members'] as List<dynamic>? ?? <dynamic>[];
+      expect((members.first as Map<dynamic, dynamic>)['@odata.id'],
+          '/redfish/v1/Chassis/1U/PowerSubsystem/Batteries/Module1');
+
+      final Map<String, dynamic> battery = await client
+          .getJson('/redfish/v1/Chassis/1U/PowerSubsystem/Batteries/Module1');
+      expect(battery['@odata.type'], startsWith('#Battery.'));
+      expect(battery['Model'], 'RKS-440DC');
+      expect(battery['Manufacturer'], 'Contoso Power');
+      expect(battery['FirmwareVersion'], '1.00');
+      expect((battery['Status'] as Map<dynamic, dynamic>)['Health'], 'OK');
+      expect(battery['ChargeState'], 'Idle');
+      expect(battery['CapacityRatedWattHours'], 20);
+      expect(battery['CapacityActualWattHours'], 19.41);
+      expect(battery['MaxDischargeRateAmps'], 10);
+
+      // State of health aggregate + the DataSourceUri link into Sensors.
+      final Map<dynamic, dynamic> soh =
+          battery['StateOfHealthPercent'] as Map<dynamic, dynamic>;
+      expect(soh['Reading'], 91);
+      expect(soh['DataSourceUri'],
+          '/redfish/v1/Chassis/1U/Sensors/Battery1StateOfHealth');
+      final Map<String, dynamic> sohSensor =
+          await client.getJson(soh['DataSourceUri'] as String);
+      expect(sohSensor['@odata.type'], startsWith('#Sensor.'));
+      expect(sohSensor['Reading'], 91);
+
+      // Battery actions are advertised with real targets.
+      final Map<dynamic, dynamic> batteryActions =
+          battery['Actions'] as Map<dynamic, dynamic>;
+      expect(
+          (batteryActions['#Battery.SelfTest']
+              as Map<dynamic, dynamic>)['target'],
+          '/redfish/v1/Chassis/1U/PowerSubsystem/Batteries/Module1/Actions/'
+          'Battery.SelfTest');
+      expect(
+          (batteryActions['#Battery.Calibrate']
+              as Map<dynamic, dynamic>)['target'],
+          '/redfish/v1/Chassis/1U/PowerSubsystem/Batteries/Module1/Actions/'
+          'Battery.Calibrate');
+
+      // BatteryMetrics: the electrical telemetry a battery-health display
+      // would read (input voltage/current, output voltages/currents, stored
+      // energy, temperature, charge percent, cell voltages).
+      final Map<String, dynamic> metrics = await client.getJson(
+          (battery['Metrics'] as Map<dynamic, dynamic>)['@odata.id'] as String);
+      expect(metrics['@odata.type'], startsWith('#BatteryMetrics.'));
+      expect(metrics['DischargeCycles'], 8.67);
+      final Map<dynamic, dynamic> inputVoltage =
+          metrics['InputVoltage'] as Map<dynamic, dynamic>;
+      expect(inputVoltage['Reading'], 12.22);
+      expect(inputVoltage['DataSourceUri'],
+          '/redfish/v1/Chassis/1U/Sensors/Battery1InputVoltage');
+      final Map<dynamic, dynamic> temperature =
+          metrics['TemperatureCelsius'] as Map<dynamic, dynamic>;
+      expect(temperature['Reading'], 33);
+      expect(temperature['DataSourceUri'],
+          '/redfish/v1/Chassis/1U/Sensors/Battery1Temp');
+      expect(metrics['StoredEnergyWattHours']['Reading'], 19.41);
+      expect(metrics['ChargePercent']['Reading'], 100);
+      final List<dynamic> cells =
+          metrics['CellVoltages'] as List<dynamic>? ?? <dynamic>[];
+      expect(cells, hasLength(8));
+      // The DataSourceUri links resolve to real Sensor members (the same
+      // batteries the SensorsService parses — wired surfaces).
+      final Map<String, dynamic> tempSensor =
+          await client.getJson(temperature['DataSourceUri'] as String);
+      expect(tempSensor['@odata.type'], startsWith('#Sensor.'));
+      expect(tempSensor['Reading'], 33);
+      expect(tempSensor['PhysicalContext'], 'Battery');
+    });
+
+    test(
+        'Power action round-trips: #Battery.SelfTest/#Battery.Calibrate POST '
+        '204, #PowerSupply.Reset POST 404 (advertised but not implemented) '
+        '(#006/#022)', () async {
+      // The mockup's POST action framework only serves targets whose URI
+      // contains the '/Actions/' segment. #Battery.SelfTest and
+      // #Battery.Calibrate use that form, so a POST round-trips 204 — the
+      // success shape the client normalizes to an empty body.
+      final Map<String, dynamic> empty = await client.postJson(
+          '/redfish/v1/Chassis/1U/PowerSubsystem/Batteries/Module1/'
+          'Actions/Battery.SelfTest',
+          body: <String, dynamic>{});
+      // 204 with no content normalizes to a placeholder map (never an error).
+      expect(empty['value'], '');
+      final Map<String, dynamic> calibrate = await client.postJson(
+          '/redfish/v1/Chassis/1U/PowerSubsystem/Batteries/Module1/'
+          'Actions/Battery.Calibrate',
+          body: <String, dynamic>{});
+      expect(calibrate['value'], '');
+
+      // The #PowerSupply.Reset target is ADVERTISED on Bay1 but its URI has
+      // no '/Actions/' segment, so the mockup's action framework does not
+      // serve it — POST returns 404 with an empty body (the same shape as the
+      // unsupported-action pin above). #022/#006 firmware/PSU work must
+      // treat an advertised target as a *candidate*, not a contract, on this
+      // fixture.
+      try {
+        await client.postJson(
+          '/redfish/v1/Chassis/1U/PowerSubsystem/PowerSupplies/Bay1/'
+          'PowerSupply.Reset',
+          body: <String, dynamic>{'ResetType': 'On'},
+        );
+        fail('expected a RedfishException for the unimplemented '
+            '#PowerSupply.Reset target');
+      } on RedfishException catch (e) {
+        expect(e.statusCode, 404);
+      }
+    });
   });
 }

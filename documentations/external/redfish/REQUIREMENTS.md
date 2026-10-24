@@ -6,7 +6,17 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (DOCS-20 run — closed the **chassis-metrics /
+Last audited: 2026-10-24 (EMU run 48→50 — pinned the **Battery surface** of
+the power subsystem (`#Battery.v1_2_2` Module1 detail +
+`#BatteryMetrics.v1_0_3` electrical telemetry with `DataSourceUri` links into
+the Sensors collection + the `#Battery.SelfTest`/`#Battery.Calibrate` action
+targets) and the **action round-trip contract**: `#Battery.SelfTest`/
+`#Battery.Calibrate` POST → 204 while the advertised `#PowerSupply.Reset`
+target POST → 404 (its URI has no `/Actions/` segment the mockup serves — a
+documented negative for #022/#006); new corpus gap **DOCS-21** recorded —
+`Battery.v1_2_2`/`BatteryMetrics.v1_0_3`/`BatteryCollection` have no versioned
+schema in the fixture/mirror yet, queue for the next DOCS run).
+Prior: DOCS-20 run — closed the **chassis-metrics /
 subsystem** corpus gap the EMU-2 chassis-contracts pins (2026-10-24, EMU 45→48)
 exposed: mirrored the versioned schemas for the newly pinned families into
 `documentations/external/redfish/schemas/v1/` AND
@@ -246,7 +256,7 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 45 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 50 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -346,6 +356,29 @@ client-relevant families.
    `PowerSupplyCollection`, plus the `Redundancy` chain the FanRedundancy
    groups cite) — the "every published `@odata.type` for a client-relevant
    family has a versioned schema in the fixture" invariant restored.
+   **Batters + action round-trips (pinned 2026-10-24, EMU 48→50):** the
+   `#BatteryCollection` → `#Battery.v1_2_2` Module1 detail
+   (Model/Manufacturer/FirmwareVersion/Status/ChargeState/CapacityRated+
+   ActualWattHours/MaxDischargeRateAmps, StateOfHealthPercent with a
+   `DataSourceUri` → Sensors/Battery1StateOfHealth resolving live, and the
+   `#Battery.SelfTest`/`#Battery.Calibrate` action targets) + the
+   `#BatteryMetrics.v1_0_3` electrical telemetry (InputVoltage/OutputVoltages/
+   InputCurrentAmps/OutputCurrentAmps/StoredEnergyWattHours/TemperatureCelsius
+   /ChargePercent/CellVoltages[8] with `DataSourceUri` links into the Sensors
+   collection — the same wired-surface shape as EnvironmentMetrics/
+   ThermalMetrics, so #007/#019 can follow battery telemetry to raw sensors).
+   Action round-trip contract: `#Battery.SelfTest`/`#Battery.Calibrate` POST
+   → 204 (the mockup's `/Actions/` framework serves them), while the
+   **advertised `#PowerSupply.Reset` target is NOT implemented** — its URI has
+   no `/Actions/` segment, so POST returns 404 with an empty body (client
+   normalizes as `RedfishException` HTTP 404; the same shape as the
+   unsupported-action pin). #022/#006 firmware/PSU work must treat an
+   advertised action target as a *candidate*, never a contract, on this
+   fixture. **Corpus gap DOCS-21:** `#Battery.v1_2_2` and `#BatteryMetrics
+   .v1_0_3` are now pin-referenced client-relevant types with NO versioned
+   schema in the fixture/mirror — queue mirroring `Battery.v1_2_2.json`,
+   `BatteryMetrics.v1_0_3.json`, `BatteryCollection.json` for the next DOCS
+   run to restore the invariant.
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)
 

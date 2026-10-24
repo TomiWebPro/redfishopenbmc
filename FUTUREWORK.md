@@ -7,28 +7,27 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 10:30 (DOCS run — **DOCS-20 corpus closed**:
-  the 11 chassis-metrics/subsystem schemas the 08:15 EMULATOR pins reference
-  are now mirrored (`EnvironmentMetrics.v1_3_1`, `ThermalSubsystem.v1_3_1`,
-  `ThermalMetrics.v1_3_1`, `PowerSubsystem.v1_1_1`, `PowerSupply.v1_5_3`,
-  `PowerSupplyMetrics.v1_1_1`, mockup-served `Fan.v1_5_1`, `FanCollection`,
-  `PowerSupplyCollection`, `Redundancy.json` → `Redundancy.v1_7_1` chain),
-  160,101 bytes, SHA-256s + manifest rows verified, property audit complete —
-  the "every published `@odata.type` for a client-relevant family has a
-  versioned schema in the fixture" invariant restored); UI-2 Dashboard empty
-  state converted to the merged-semantics pattern (+1 widget test, suite
-  331 → 332); next P1: #015 (AuthManager)
-- **Current focus:** **DOCS-20 corpus closed (2026-10-24 10:30, DOCS)** — the
-  schemas behind the emulator-pinned chassis metrics/subsystem surface are
-  now mirrored in both `documentations/external/redfish/schemas/v1/` and
-  `test/fixtures/redfish/schemas/` (11 files, 160,101 bytes; every pinned
-  field verified present — no client code change needed); invariant restored;
-  UI-2 got the Dashboard "No systems yet" empty state (icon + merged
-  semantics); next P1: #015 (AuthManager) — `expiryFromService` + the Sessions
-  pin are ready, wire the discovered SessionService body into login + re-auth
-  on `isExpired`; #022/#016: `ResetActionInfo` ActionInfo resource crawl
-  (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only the
-  annotation form and now provably ignores ResetType values); #018:
+- **Last updated:** 2026-10-24 (EMULATOR run — **Battery surface + action
+  round-trips pinned live**: `#Battery.v1_2_2` Module1 detail +
+  `#BatteryMetrics.v1_0_3` electrical telemetry (DataSourceUri links into the
+  Sensors collection) + `#Battery.SelfTest`/`#Battery.Calibrate` POST → 204
+  vs the **advertised-but-unimplemented `#PowerSupply.Reset` target** (POST →
+  404, no `/Actions/` segment — documented negative for #022/#006), emulator
+  48 → 50, new corpus gap **DOCS-21** (Battery schemas not mirrored yet);
+  UI-2 FirmwareView empty state converted to the merged-semantics pattern
+  (icon + text, no Retry), +1 widget test, suite 332 → 333); next P1: #015
+  (AuthManager)
+- **Current focus:** **EMULATOR (2026-10-24)** — pinned the last unpinned
+  power-subsystem surface (Batteries + battery action round-trips; the
+  `#PowerSupply.Reset` advertised-target-404 negative is a real wire
+  contract for #022/#006 — treat advertised targets as candidates, never
+  contracts, on this fixture); DOCS-21 queued for the next DOCS run (mirror
+  `Battery.v1_2_2`/`BatteryMetrics.v1_0_3`/`BatteryCollection` to restore the
+  fixture invariant); next P1: #015 (AuthManager) — `expiryFromService` + the
+  Sessions pin are ready, wire the discovered SessionService body into login
+  + re-auth on `isExpired`; #022/#016: `ResetActionInfo` ActionInfo resource
+  crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only
+  the annotation form and now provably ignores ResetType values); #018:
   query-capability surface + live `$expand` contract pinned — remaining:
   build the lightweight discovery pass + the cache fixes
 - **Run cadence:** `0 */5 * * *`
@@ -277,7 +276,25 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `PowerSupplyMetrics.v1_1_1`, and the `Redundancy.json` →
       `Redundancy.v1_7_1` citation chain. **Done (run 2026-10-24,
       11 files / 160,101 bytes; SHA-256s + manifest rows verified; property
-      audit complete; commit pending).**
+      audit complete; commit 963366e).**
+
+- [ ] **DOCS-21** Mirror the versioned schemas for the **Battery surface** the
+      emulator pinned live (48 → 50, 2026-10-24): `Battery.v1_2_2.json`
+      (mockup-served `#Battery.v1_2_2.Battery` — Module1 detail:
+      Model/Manufacturer/FirmwareVersion/Status/ChargeState/CapacityRated+
+      ActualWattHours/MaxDischargeRateAmps/StateOfHealthPercent +
+      `#Battery.SelfTest`/`#Battery.Calibrate` action targets),
+      `BatteryMetrics.v1_0_3.json` (mockup-served `#BatteryMetrics.v1_0_3.
+      BatteryMetrics` — InputVoltage/OutputVoltages/InputCurrentAmps/
+      OutputCurrentAmps/StoredEnergyWattHours/TemperatureCelsius/ChargePercent/
+      CellVoltages with `DataSourceUri` links), plus the aggregator +
+      `BatteryCollection.json`, into `documentations/external/redfish/schemas/
+      v1/` **and** `test/fixtures/redfish/schemas/` so every `@odata.type` the
+      pinned mockup publishes for the battery family has a versioned schema in
+      the fixture (the DOCS-19/20 invariant). Source:
+      `https://redfish.dmtf.org/schemas/v1/Battery.v1_2_2.json` (+ newest
+      version for the delta note, following the DOCS-12/13 precedent). Keep
+      inside the DOCS-6 budget.
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across
@@ -392,7 +409,24 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       FirmwareVersion 1.00 / LineInputStatus Normal / `#PowerSupply.Reset`
       target / Metrics link) + legacy `/Chassis/1U/Power` embedded PSU
       documenting `Status.Health == 'Warning'` vs the overview rollup
-      reading ComputerSystem/Chassis Status (#006/#019))**
+      reading ComputerSystem/Chassis Status (#006/#019))** → **50 tests
+      (Batteries + action round-trips pinned 2026-10-24: the
+      `#BatteryCollection` → `#Battery.v1_2_2` Module1 detail —
+      Model/Manufacturer/FirmwareVersion/Status/ChargeState/CapacityRated+
+      ActualWattHours/MaxDischargeRateAmps/StateOfHealthPercent with
+      `DataSourceUri` → Sensors/Battery1StateOfHealth resolving live, plus
+      the `#Battery.SelfTest`/`#Battery.Calibrate` action targets — and the
+      `#BatteryMetrics.v1_0_3` electrical telemetry: InputVoltage/
+      OutputVoltages/InputCurrentAmps/OutputCurrentAmps/StoredEnergyWattHours/
+      TemperatureCelsius/ChargePercent/CellVoltages[8] with `DataSourceUri`
+      links into the Sensors collection (the wired-surface shape #007/#019
+      can follow battery telemetry to raw sensors); action round-trip
+      contract: `#Battery.SelfTest`/`#Battery.Calibrate` POST → 204 (the
+      mockup's `/Actions/` framework serves them) while the **advertised
+      `#PowerSupply.Reset` target is NOT implemented** — its URI has no
+      `/Actions/` segment, so POST returns 404 with an empty body (the
+      #022/#006 rule: treat advertised action targets as candidates, never
+      contracts, on this fixture)**
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -686,6 +720,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       list is not an error), +1 widget test asserts the merged label +
       visible text + icon; existing 320/800/1300 no-overflow tests unchanged
       (the empty state is a `Center` + `mainAxisSize.min` column);
+      **FirmwareView empty state ("No firmware inventory reported.") done
+      2026-10-24 — the last bare-`Text` empty surface on the firmware view
+      now renders the established pattern: icon (`Icons.inventory_2_outlined`)
+      + visible text inside a `Semantics(container + excludeSemantics)`
+      merged node (one self-describing announcement; no Retry — a successful
+      load with zero inventory is not an error), +1 widget test asserts the
+      merged label + visible text + icon + no overflow at 320/800 px;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

@@ -2280,3 +2280,77 @@
 - none opened/closed this run. DOCS-20 done; REQUIREMENTS.md audit + trace
   rows updated; UI-2 got the Dashboard empty-state increment; issues remain
   open.
+
+## 2026-10-24 — agent:redfish-automation — EMULATOR (Batteries + action round-trips) + UI-2 FirmwareView empty state
+
+**Done:**
+- EMULATOR primary workstream (alternation: DOCS 10:40 → EMULATOR next). Pinned
+  the **Battery surface** of the power subsystem — the last unpinned
+  power-subsystem resource in the fixture:
+  1. `#BatteryCollection` → `#Battery.v1_2_2` Module1 detail: Model RKS-440DC /
+     Manufacturer Contoso Power / FirmwareVersion 1.00 / Status OK / ChargeState
+     Idle / CapacityRatedWattHours 20 / CapacityActualWattHours 19.41 /
+     MaxDischargeRateAmps 10 / StateOfHealthPercent (Reading 91 +
+     `DataSourceUri` → Sensors/Battery1StateOfHealth resolving live to a
+     `#Sensor` member with Reading 91) + the `#Battery.SelfTest`/
+     `#Battery.Calibrate` action targets.
+  2. `#BatteryMetrics.v1_0_3`: DischargeCycles 8.67, InputVoltage (Reading
+     12.22 + DataSourceUri → Sensors/Battery1InputVoltage), TemperatureCelsius
+     (Reading 33 + DataSourceUri → Sensors/Battery1Temp resolving live:
+     Reading 33, PhysicalContext Battery), StoredEnergyWattHours 19.41,
+     ChargePercent 100, CellVoltages[8] — the wired-surface shape #007/#019
+     can follow battery telemetry to raw sensors (EnvironmentMetrics/
+     ThermalMetrics precedent).
+  3. **Action round-trip contract test**: `#Battery.SelfTest`/`#Battery.
+     Calibrate` POST → 204 (mockup `/Actions/` framework serves them; client
+     normalizes to `{'value': ''}`), while the **advertised
+     `#PowerSupply.Reset` target POST → 404** with an empty body (its URI has
+     no `/Actions/` segment the mockup implements) — client normalizes as
+     `RedfishException` HTTP 404. Recorded the #022/#006 rule: advertised
+     action targets are candidates, never contracts, on this fixture.
+- Emulator suite 48 → **50**, green twice via `tool/emulator/run_tests.sh`
+  (pin `23d21f9a` unchanged). REQUIREMENTS.md "Last audited" + Test platforms
+  45 → 50 + the new pins; **new corpus gap DOCS-21** recorded in FUTUREWORK
+  (Battery.v1_2_2 / BatteryMetrics.v1_0_3 / BatteryCollection have no
+  versioned schema in the fixture/mirror — queue the mirror for the next DOCS
+  run).
+- UI-2 increment: **FirmwareView empty state** ("No firmware inventory
+  reported.") converted to the established merged-semantics pattern —
+  `Icons.inventory_2_outlined` + visible text inside
+  `Semantics(container + excludeSemantics)` node, no Retry (a successful load
+  with zero inventory is not an error). +1 widget test (merged label + visible
+  text + icon + no overflow at 320/800 px). Suite 332 → 333.
+
+**Decisions:**
+- EMULATOR per alternation; within it, chose the Battery surface + action
+  round-trips because (a) the 08:15 pins covered EnvironmentMetrics/
+  ThermalSubsystem/PowerSupplies but never the Batteries collection the mockup
+  also serves, and (b) the round-trip test produces a crisp, reproducible
+  contract for #022/#006: the mockup implements ONLY action targets whose URI
+  contains `/Actions/`, so `#PowerSupply.Reset` (advertised on Bay1) is a real
+  404-on-POST — the PSU-reset flow must treat the advertised target as a
+  candidate and normalize the 404.
+- No production code change for the primary work: the pins document the wire
+  contract for future work. The Battery family has no client model yet — that
+  stays future #007/#019 telemetry work.
+- New corpus gap DOCS-21 recorded in FUTUREWORK under P1 docs: EMULATOR mode
+  stays one workstream, so the schema mirror is queued for the next DOCS run.
+- UI increment stayed pattern-consistent (icon + merged node, no Retry — an
+  empty inventory is not an error). No new dependencies, no TLS change.
+  `dart format` drift on unrelated files was reverted to keep the diff focused
+  on the 2 changed Dart files.
+
+**Next:**
+- Push 81 queued local commits once GitHub credentials are available.
+- DOCS-21: mirror the Battery-family schemas (Battery.v1_2_2,
+  BatteryMetrics.v1_0_3, BatteryCollection — mockup-served versions + newest
+  for the delta note) into the mirror AND fixture schemas.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, persist token/location from create RESPONSE HEADERS
+  only (the fixture echoes the password in session bodies).
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 48 → 50 recorded; #007/#019 got the
+  Battery + BatteryMetrics wired-surface pins; #022/#006 got the
+  `#PowerSupply.Reset` advertised-target-404 negative; DOCS-21 queued; UI-2
+  got the FirmwareView empty-state increment; issues remain open.

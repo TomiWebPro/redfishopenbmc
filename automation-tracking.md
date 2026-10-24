@@ -2540,3 +2540,84 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **80** (79 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 09:30 — EMULATOR (Batteries + action round-trips) + UI-2 FirmwareView empty state
+
+- **Baseline:** analyze 0; tests 332 passed / 1 skipped; starting commit cec2c64
+  (branch `main` ahead 81 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR (alternation: DOCS 10:40 → EMULATOR next). Pinned
+  the **Battery surface** the 08:15 chassis-contracts run never touched — the
+  last unpinned power-subsystem resource in the fixture. New test 1:
+  `#BatteryCollection` → `#Battery.v1_2_2` Module1 detail (Model RKS-440DC /
+  Manufacturer Contoso Power / FirmwareVersion 1.00 / Status OK / ChargeState
+  Idle / CapacityRatedWattHours 20 / CapacityActualWattHours 19.41 /
+  MaxDischargeRateAmps 10 / StateOfHealthPercent Reading 91 with
+  `DataSourceUri` → Sensors/Battery1StateOfHealth resolving live to a
+  `#Sensor` member) + the `#Battery.SelfTest`/`#Battery.Calibrate` action
+  targets; then `#BatteryMetrics.v1_0_3` — the electrical telemetry
+  (DischargeCycles 8.67, InputVoltage Reading 12.22 with DataSourceUri →
+  Sensors/Battery1InputVoltage, TemperatureCelsius Reading 33 with
+  DataSourceUri → Sensors/Battery1Temp resolving live (Reading 33,
+  PhysicalContext Battery), StoredEnergyWattHours 19.41, ChargePercent 100,
+  CellVoltages[8]) — the same wired-surface shape as the EnvironmentMetrics/
+  ThermalMetrics pins, so #007/#019 can follow battery telemetry to raw
+  sensors. New test 2: **action round-trip contract** — `#Battery.SelfTest`
+  and `#Battery.Calibrate` POST → 204 (the mockup's `/Actions/` framework
+  serves them; normalized by the client to `{'value': ''}`), while the
+  **advertised `#PowerSupply.Reset` target is NOT implemented** — its URI
+  (…/Bay1/PowerSupply.Reset) has no `/Actions/` segment, so POST returns 404
+  with an empty body and the client normalizes it as `RedfishException` HTTP
+  404. Recorded the #022/#006 rule: treat advertised action targets as
+  candidates, never contracts, on this fixture. Emulator 48 → **50**, green
+  via `tool/emulator/run_tests.sh` (pin `23d21f9a` unchanged) twice.
+- **Docs:** none fetched this run (EMULATOR alternation). REQUIREMENTS.md
+  "Last audited" + Test platforms 45 → 50 + the Batteries/round-trip/
+  PowerSupply.Reset-404 section written; **new corpus gap DOCS-21 recorded**
+  in FUTUREWORK (P1 docs): `#Battery.v1_2_2`/`#BatteryMetrics.v1_0_3`/
+  `#BatteryCollection` are now pin-referenced client-relevant types with NO
+  versioned schema in the fixture/mirror — queue mirroring
+  `Battery.v1_2_2.json`, `BatteryMetrics.v1_0_3.json`, `BatteryCollection.json`
+  (mockup-served versions + newest for the delta note, DOCS-12/13 precedent)
+  for the next DOCS run to restore the invariant.
+- **Emulator:** server + venv + cert re-created under /tmp (run 2026-10-24
+  09:xx); `tool/emulator/run_tests.sh` end-to-end green 50/50 twice; trap
+  cleanup verified (no leftover process/listener on 8443 after the run; one
+  orphan from a `timeout`-killed first script invocation was SIGKILLed and
+  confirmed gone).
+- **Code/tests:** `test_integration/emulator/emulator_suite_test.dart` +2
+  tests (Battery surface + action round-trips). No production lib change for
+  the primary work. UI: see below.
+- **UI:** UI-2 increment — the **FirmwareView empty state** ("No firmware
+  inventory reported.") was the last bare-`Text` empty surface on the firmware
+  view (after the header/inventory-card/error-state conversions). A successful
+  load with zero inventory now renders the established pattern: icon
+  (`Icons.inventory_2_outlined`) + visible text inside a
+  `Semantics(container: true, excludeSemantics: true, label: 'No firmware
+  inventory reported.')` merged node — one self-describing announcement. No
+  Retry: the load succeeded, there is nothing to retry (the KVM/Sensors/
+  Dashboard precedent). +1 widget test in `firmware_widget_test.dart`:
+  merged semantics label + visible text + icon render, and no overflow at
+  320/800 px (`tester.takeException()` null after `setSurfaceSize`).
+  Existing 320/800/1300 responsive tests unchanged (the empty state is a
+  `Center` + `mainAxisSize.min` column).
+- **Verification:** analyze 0; tests **333 passed / 1 skipped** (baseline 332 →
+  +1 widget); emulator suite 50/50 via `--dart-define=REDFISH_EMULATOR_URL=...`
+  and via `tool/emulator/run_tests.sh`; issues validate OK; `git diff --check`
+  clean; secret scan clean (docs prose + schema/test JSON only; emulator creds
+  are the standard mockup root/calvin already in the repo; no tokens).
+  `dart format` touched only the 2 changed Dart files — drift in unrelated
+  files reverted via `git checkout --` to keep the diff focused.
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** — the known GitHub
+  credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/
+  GIT_TOKEN env, no SSH key); local commit kept, not retried. Commits ahead of
+  origin/main: **81** before push attempt.
+- **Next:** 1) Push the queued local commits (82) from a machine with GitHub
+  credentials; 2) DOCS-21 — mirror the Battery-family schemas
+  (Battery.v1_2_2/BatteryMetrics.v1_0_3/BatteryCollection, mockup-served +
+  newest) into the mirror + fixture to restore the published-type invariant;
+  3) P1 #015 AuthManager — wire `Session.expiryFromService` into login (set
+  `expiresAt` from the discovered SessionService), re-auth on `isExpired`,
+  keep token/location from create headers only (the fixture echoes Password
+  in session bodies).
