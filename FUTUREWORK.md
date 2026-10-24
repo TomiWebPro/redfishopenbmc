@@ -7,28 +7,22 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 (DOCS run — **DOCS-21 closed**: mirrored the
-  Battery-family schemas the EMU battery pins reference — `Battery.v1_2_2`
-  (mockup-served `#Battery.v1_2_2.Battery`), `BatteryMetrics.v1_0_3`
-  (mockup-served `#BatteryMetrics.v1_0_3.BatteryMetrics`), the `Battery.json`/
-  `BatteryMetrics.json` aggregators + `BatteryCollection.json`, plus newest
-  `Battery.v1_5_0`/`BatteryMetrics.v1_1_0` for the delta note — into the
-  mirror AND fixture schemas (7 files / 95,718 bytes, inside DOCS-6;
-  property-delta audit: every emulator-pinned field present, excerpts are
-  `Sensor*Excerpt` refs resolving through the mirrored `Sensor.v1_8_1`;
-  newest versions additive only — no code change); bmcweb anchor advanced
-  `fbb307a` → `63a18f4` with all four mirrored docs byte-identical; UI-2
-  increment below); next P1: #015 (AuthManager)
-- **Current focus:** **DOCS (2026-10-24)** — the Battery corpus gap (DOCS-21)
-  is closed; all 18 client-mapped families now have versioned schemas for
-  every `@odata.type` the pinned mockup publishes (the DOCS-19/20 invariant);
-  next P1: #015 (AuthManager) — `expiryFromService` + the Sessions pin are
-  ready, wire the discovered SessionService body into login + re-auth on
-  `isExpired`; #022/#016: `ResetActionInfo` ActionInfo resource crawl
-  (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only
-  the annotation form and now provably ignores ResetType values); #018:
-  query-capability surface + live `$expand` contract pinned — remaining:
-  build the lightweight discovery pass + the cache fixes
+- **Last updated:** 2026-10-24 (EMU run — **corpus invariant verified live**:
+  new integration test crawls the running mockup and asserts every published
+  `@odata.type` for a client-mapped family has a served-version schema in the
+  fixture (DOCS-19/20/21 invariant as a runnable check; green, so the corpus
+  stays closed) + EventDestination detail pinned (DOCS-7 bed for #019);
+  UI-2 increment below); next P1: #015 (AuthManager)
+- **Current focus:** **EMULATOR (2026-10-24)** — suite 50 → 52 (corpus
+  invariant crawl + EventDestination detail; the pinned mockup's published
+  type surface now has an always-on fixture-schema guard); next P1: #015
+  (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the
+  discovered SessionService body into login + re-auth on `isExpired`;
+  #022/#016: `ResetActionInfo` ActionInfo resource crawl (bmcweb-style BMCs;
+  NOT pinable on the DMTF mockup — it serves only the annotation form and now
+  provably ignores ResetType values); #018: query-capability surface + live
+  `$expand` contract pinned — remaining: build the lightweight discovery pass
+  + the cache fixes
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -432,7 +426,19 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `#PowerSupply.Reset` target is NOT implemented** — its URI has no
       `/Actions/` segment, so POST returns 404 with an empty body (the
       #022/#006 rule: treat advertised action targets as candidates, never
-      contracts, on this fixture)**
+      contracts, on this fixture)** → **52 tests
+      (corpus invariant + EventDestination detail pinned 2026-10-24: (1) a
+      live published-types crawl from the service root follows every relative
+      `@odata.id` + `@Redfish.ActionInfo` link (excluding `/Actions/` POST
+      targets) and asserts **every published `@odata.type` for a client-mapped
+      family has its served-version schema in `test/fixtures/redfish/schemas/`**
+      — the DOCS-19/20/21 invariant as a runnable check (33 client-mapped
+      families; crawl reaches >50 published types; green because the mirror
+      work closed every served-version gap); (2) the four
+      `EventService/Subscriptions` members pin the `#EventDestination.v1_14_0`
+      detail — Redfish / SNMPv3 (HMAC_SHA96 + CFB128_AES128, key material
+      null) / SMTP-OEM / SyslogTCP (SyslogFilters LogFacilities +
+      LowestSeverity) — the DOCS-7 bed for #019)**
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -733,6 +739,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       merged node (one self-describing announcement; no Retry — a successful
       load with zero inventory is not an error), +1 widget test asserts the
       merged label + visible text + icon + no overflow at 320/800 px;
+      **FirmwareView inventory-loading state merged semantics label
+      (`Loading firmware inventory`) done 2026-10-24 — the in-flight
+      inventory load previously announced a bare detached `Text('Loading
+      inventory…')` next to the header; it now renders inside a
+      `Semantics(container + excludeSemantics)` node (one self-describing
+      announcement for the specific surface still loading, visible text
+      preserved), +1 widget test asserts the merged label + visible text;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

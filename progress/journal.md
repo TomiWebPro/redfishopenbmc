@@ -2431,3 +2431,66 @@
 - none opened/closed this run. DOCS-21 done; REQUIREMENTS.md audit + trace
   rows updated; UI-2 got the feature-chips empty-state increment; issues
   remain open (#015 next P1).
+
+## 2026-10-24 — agent:redfish-automation — EMULATOR (corpus invariant live crawl + EventDestination detail) + UI-2 inventory-loading semantics
+
+**Done:**
+- EMULATOR primary workstream (alternation: DOCS 12:30 → EMULATOR next; both
+  12:30-tracking candidates executed). Suite 50 → **52** in
+  `test_integration/emulator/emulator_suite_test.dart`:
+  1. **Corpus invariant, live**: BFS crawl from `/redfish/v1/` following every
+     relative `@odata.id` + `@Redfish.ActionInfo` link (excluding `/Actions/`
+     POST-only targets; cycle-safe; graceful 404 degradation) collects every
+     published `@odata.type`; the test asserts that each published type whose
+     family is client-mapped (33 families enumerated) has its served-version
+     schema in `test/fixtures/redfish/schemas/`. Crawl reached >50 published
+     types; **zero missing** served-version schemas — the DOCS-19/20/21
+     mirror work is now protected by a runnable check.
+  2. **EventDestination detail** (DOCS-7 bed for #019): the four
+     `EventService/Subscriptions` members pin `#EventDestination.v1_14_0`
+     protocol variants — Redfish (Destination/EventTypes/Context/Protocol/
+     SubscriptionType), SNMPv3 (`SNMP` block with HMAC_SHA96/CFB128_AES128 and
+     null key material — secrets never on the wire), SMTP/OEM, SyslogTCP
+     (`SyslogFilters[0]` LogFacilities/LowestSeverity).
+- REQUIREMENTS.md: "Last audited" rewritten for the EMU run; new paragraph in
+  the test-platforms block; Test platforms 50 → 52.
+- UI-2 increment: `FirmwareView` inventory-loading state converted from a bare
+  `Text('Loading inventory…')` to a merged `Semantics(container +
+  excludeSemantics, label: 'Loading firmware inventory')` node — the
+  established loading-state pattern (self-describing announcement, visible
+  text preserved). +1 widget test (merged label + visible text). Suite
+  334 → **335**.
+
+**Decisions:**
+- The corpus-invariant crawl import is `dart:io` `File(...).existsSync()` on
+  `test/fixtures/redfish/schemas/` — the emulator suite already runs from the
+  repo root (the mockup server serves the fixture from the same relative
+  path), and the suite skips entirely without `REDFISH_EMULATOR_URL`, so
+  plain `flutter test` never touches the filesystem check.
+- Seeded `/redfish/v1/Registries/Base.1.5.0.json` explicitly because the
+  registry payload is reachable only via `MessageRegistryFile.Location[0].Uri`
+  (a plain string, not an `@odata.id` link) — without it the crawl would omit
+  the `#MessageRegistry.v1_0_0` published type.
+- Followed `@Redfish.ActionInfo` in addition to `@odata.id` so ActionInfo
+  resources (SimpleUpdateActionInfo etc.) count as published types.
+- No production code change for the primary work: the pins document wire +
+  corpus contracts; the family list in the crawler is the executable version
+  of the DOCS-19/20/21 invariant and should be kept in sync when a DOCS run
+  maps a new family.
+- UI increment kept pattern-consistent (merged node, no Retry — loading, not
+  error). No new dependencies, no TLS change. `dart format` drift on unrelated
+  files reverted to keep the diff on 3 files.
+
+**Next:**
+- Push 86 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, persist token/location from create RESPONSE HEADERS
+  only (the fixture echoes the password in session bodies).
+- DOCS next per alternation: optionally cross-check the crawler's 33-family
+  list against any future corpus additions; revisit DOCS-7 with the pinned
+  EventDestination shapes (receiver still out of scope).
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 50 → 52 recorded (corpus crawl +
+  EventDestination); DOCS-7 bed extended; UI-2 got the inventory-loading
+  increment; issues remain open (#015 next P1).

@@ -307,7 +307,20 @@ class _InventoryList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (info == null) {
-      return const Text('Loading inventory…');
+      // UI-2: the in-flight inventory load announces as ONE merged semantics
+      // node ('Loading firmware inventory') instead of a bare detached text
+      // node next to the header — the established loading-state pattern
+      // (header row merges its own spinner; this announces the specific
+      // surface that is still loading).
+      return Semantics(
+        container: true,
+        excludeSemantics: true,
+        label: 'Loading firmware inventory',
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Center(child: Text('Loading inventory…')),
+        ),
+      );
     }
     final UpdateServiceInfo data = info!;
     if (data.inventory.isEmpty) {

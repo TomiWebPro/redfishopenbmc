@@ -2720,3 +2720,79 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **84** (83 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 15:00 — EMULATOR (corpus invariant live crawl + EventDestination detail) + UI-2 inventory-loading semantics
+
+- **Baseline:** analyze 0; tests 334 passed / 1 skipped; starting commit ad0801c
+  (branch `main` ahead 85 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR per alternation (last substantive run was DOCS
+  12:30; EMULATOR 09:30 — EMULATOR had gone longest). Two integration tests
+  added (suite 50 → **52**), both matching the 12:30 tracking's "Next"
+  candidates:
+  1. **Corpus invariant verified LIVE** — a new group
+     `emulator: corpus invariant + event-destination detail` crawls the
+     running DMTF mockup from `/redfish/v1/` (BFS following every relative
+     `@odata.id` link + `@Redfish.ActionInfo` string, excluding `/Actions/`
+     POST-only targets, cycle-safe visited set, graceful degradation on
+     404s) and asserts that **every published `@odata.type` for a
+     client-mapped family has its served-version schema in
+     `test/fixtures/redfish/schemas/`** — the DOCS-19/20/21 invariant as a
+     runnable check instead of a docs claim. The 33 client-mapped families
+     are enumerated in the test; the crawl reached >50 published types and
+     found zero missing served-version schemas (the DOCS-19/20/21 mirror
+     work closed every gap — green). This pins the invariant so a future
+     fixture/schema drift fails CI.
+  2. **EventDestination detail pinned** (DOCS-7 bed for #019) — the four
+     `EventService/Subscriptions` members are asserted with their
+     `#EventDestination.v1_14_0` contract: Redfish
+     (Destination/EventTypes/Context/Protocol/SubscriptionType RedfishEvent),
+     SNMPv3 (`SNMP.AuthenticationProtocol` HMAC_SHA96 +
+     `EncryptionProtocol` CFB128_AES128 with key material **null** on the
+     wire — the secrets-never-populated rule), SMTP/OEM
+     (`Protocol` SMTP / `SubscriptionType` OEM, mailto: Destination), and
+     SyslogTCP (`SyslogFilters[0]` LogFacilities/LowestSeverity).
+- **Docs:** none fetched this run (EMULATOR alternation; corpus unchanged —
+  the invariant test proved the existing mirror complete). REQUIREMENTS.md
+  "Last audited" header rewritten for the EMU run + a new paragraph under
+  the test-platforms block (corpus invariant + EventDestination pins);
+  Test platforms count 50 → 52.
+- **Emulator:** server pinned `23d21f9a` (unchanged), suite **52/52** via
+  `tool/emulator/run_tests.sh` (the corpus crawl itself runs ~2s inside the
+  suite); no server/action surprises — the crawl's graceful 404 handling
+  tolerated the advertised-but-not-served links exactly as the discovery
+  engine contract describes.
+- **Code/tests:** `test_integration/emulator/emulator_suite_test.dart` (+2
+  tests, +`dart:io` import); `documentations/external/redfish/REQUIREMENTS.md`
+  (audit + test-platforms prose); `FUTUREWORK.md` (EMU-2 50 → 52, Last
+  updated/Current focus, UI-2 entry). No production code change for the
+  primary work.
+- **UI:** UI-2 increment — `FirmwareView`'s inventory area previously showed
+  a **bare detached `Text('Loading inventory…')`** while the inventory fetch
+  was in flight (the last bare loading `Text` on the firmware view). It now
+  renders inside a `Semantics(container: true, excludeSemantics: true,
+  label: 'Loading firmware inventory')` node — one self-describing
+  announcement for the specific surface still loading, visible text
+  preserved (header already announces the screen-level loading state).
+  +1 widget test in `test/features/firmware/firmware_widget_test.dart`
+  asserts the merged label + visible text. Suite 334 → **335**.
+- **Verification:** analyze 0; tests **335 passed / 1 skipped** (baseline 334
+  → +1 widget); emulator suite 52/52 via `tool/emulator/run_tests.sh`;
+  issues validate OK; `git diff --check` clean; secret scan clean (Dart +
+  docs prose only; no tokens). `dart format` touched only the 3 changed Dart
+  files — drift in unrelated files reverted via `git checkout --` to keep
+  the diff focused (the established pattern).
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** — the known GitHub
+  credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/
+  GIT_TOKEN env, no SSH key); local commit kept, not retried. Commits ahead
+  of origin/main: **86** before push attempt.
+- **Next:** 1) Push the queued local commits (87) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
+  login (set `expiresAt` from the discovered SessionService), re-auth on
+  `isExpired`, keep token/location from create headers only (the fixture
+  echoes Password in session bodies); 3) DOCS per alternation — candidates:
+  verify the new corpus-invariant test's family list stays in sync with any
+  future family additions (it is the executable form of the DOCS-19/20/21
+  claim), or fold the EventDestination detail into the DOCS-7 decision
+  review (a receiver still out of scope this milestone).

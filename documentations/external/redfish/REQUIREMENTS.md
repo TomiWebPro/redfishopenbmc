@@ -6,8 +6,21 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (DOCS-21 run — **Battery corpus closed**: mirrored the
-versioned schemas for the battery family the EMU run (48→50) pinned live —
+Last audited: 2026-10-24 (EMU run 50→52 — **corpus invariant verified live**:
+a new integration test crawls the running DMTF mockup from the service root
+(following every relative `@odata.id` + `@Redfish.ActionInfo` link, excluding
+POST-only `/Actions/` targets) and asserts every published `@odata.type` for a
+client-mapped family has its **served-version** schema in
+`test/fixtures/redfish/schemas/` — the DOCS-19/20/21 invariant as a runnable
+check (33 client-mapped families, crawl reaches >50 published types; the
+DOCS-19/20/21 mirror work closed every served-version gap, so the check is
+green). Also pinned the **EventDestination detail** (`#EventDestination.v1_14_0`
+on all four `EventService/Subscriptions` members: Redfish / SNMPv3 / SMTP-OEM /
+SyslogTCP protocol variants incl. `SyslogFilters` and null SNMP key material —
+the DOCS-7 bed for #019). UI-2: FirmwareView inventory-loading state now
+announces one merged semantics node. Prior runs below.)
+Prior: DOCS-21 run — mirrored the versioned schemas for the battery family
+the EMU run (48→50) pinned live —
 `Battery.v1_2_2.json` (mockup-served `#Battery.v1_2_2.Battery`: Module1 detail
 Model/Manufacturer/FirmwareVersion/Status/ChargeState/CapacityRated+
 ActualWattHours/MaxDischargeRateAmps/StateOfHealthPercent + the
@@ -274,7 +287,7 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 50 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 52 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -401,6 +414,23 @@ client-relevant families.
    are additive only (BatteryChemistryType/EnergyStorageType/
    NominalOutputVoltage/ServicedDate; CRate/ERate) — the emulator-pinned
    contract holds; no code change needed.
+   **Corpus invariant verified LIVE (EMU 50→52, 2026-10-24):** a new
+   integration test crawls the running mockup from the service root
+   (following every relative `@odata.id` + `@Redfish.ActionInfo` link,
+   excluding `/Actions/` POST targets) and asserts that **every published
+   `@odata.type` for a client-mapped family has its served-version schema in
+   `test/fixtures/redfish/schemas/`** — the DOCS-19/20/21 invariant as a
+   runnable check instead of a docs claim. The crawl reaches >50 published
+   types (the fixture's ~100-resource tree) and stays green because the
+   DOCS-19/20/21 mirror work closed every served-version gap. **EventDestination
+   detail pinned (DOCS-7 bed for #019):** the four `EventService/Subscriptions`
+   members carry `#EventDestination.v1_14_0.EventDestination` with protocol
+   variants — Redfish (`Protocol` Redfish / `SubscriptionType` RedfishEvent),
+   SNMPv3 (`SNMP.AuthenticationProtocol` HMAC_SHA96 + `EncryptionProtocol`
+   CFB128_AES128 with key material null on the wire), SMTP/OEM (`Protocol`
+   SMTP / `SubscriptionType` OEM, mailto: Destination), and SyslogTCP
+   (`SyslogFilters[0]` LowesSeverity/LogFacilities) — the future #019
+   receiver's subscription-shape contract.
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)
 

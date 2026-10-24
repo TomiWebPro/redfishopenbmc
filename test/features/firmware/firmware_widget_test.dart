@@ -173,6 +173,34 @@ void main() {
     });
 
     testWidgets(
+        'inventory loading announces one merged semantics label + visible '
+        'text (UI-2)', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: _NeverCompletingFirmwareService(),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      // The auto-load never completes, so the inventory area is still in its
+      // in-flight state: one merged announcement for the loading surface.
+      await tester.pump();
+      expect(
+        find.bySemanticsLabel('Loading firmware inventory'),
+        findsOneWidget,
+      );
+      // The visible loading text still renders for sighted users, and there
+      // is no detached bare node leaking extra announcements.
+      expect(find.text('Loading inventory…'), findsOneWidget);
+    });
+
+    testWidgets(
         'empty inventory announces one merged semantics label + visible '
         'text + icon (UI-2)', (tester) async {
       final SystemHandle handle = makeHandle(firmwareUpdate: true);

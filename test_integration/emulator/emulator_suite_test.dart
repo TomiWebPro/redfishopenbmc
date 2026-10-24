@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -1777,6 +1779,212 @@ void main() {
       } on RedfishException catch (e) {
         expect(e.statusCode, 404);
       }
+    });
+  });
+
+  group(
+      'emulator: corpus invariant + event-destination detail '
+      '(DOCS-7/19/20/21)', () {
+    late AuthManager manager;
+    late RedfishClient client;
+
+    setUpAll(() async {
+      manager = AuthManager(storage: InMemoryStorage());
+      await manager.login('em-corpus', emulatorProfile());
+      client = manager.clientFor('em-corpus')!;
+    });
+
+    tearDownAll(() async {
+      await manager.logout('em-corpus');
+    });
+
+    test(
+        'corpus invariant: every @odata.type the mockup publishes for a '
+        'client-mapped family has a served-version schema in the fixture '
+        '(DOCS-19/20/21, live published-types crawl)', () async {
+      // The DOCS-19/20/21 invariant, re-verified LIVE against the running
+      // mockup instead of the static fixture: crawl the service tree from the
+      // root, collect every @odata.type published, and assert each resource
+      // type belonging to a client-mapped family has its served-version
+      // schema file in test/fixtures/redfish/schemas/. This is the same
+      // invariant the last DOCS runs restored (served + newest pairs).
+      final Set<String> clientMappedFamilies = <String>{
+        'AccountService',
+        'ActionInfo',
+        'Battery',
+        'BatteryMetrics',
+        'Chassis',
+        'ComputerSystem',
+        'EnvironmentMetrics',
+        'EthernetInterface',
+        'EventService',
+        'Fan',
+        'LogEntry',
+        'LogService',
+        'Manager',
+        'ManagerAccount',
+        'ManagerNetworkProtocol',
+        'MessageRegistry',
+        'Power',
+        'PowerSubsystem',
+        'PowerSupply',
+        'PowerSupplyMetrics',
+        'Redundancy',
+        'Role',
+        'Sensor',
+        'ServiceRoot',
+        'Session',
+        'SessionService',
+        'SoftwareInventory',
+        'Task',
+        'TaskService',
+        'Thermal',
+        'ThermalMetrics',
+        'ThermalSubsystem',
+        'UpdateService',
+      };
+
+      final Set<String> publishedTypes = <String>{};
+      final Set<String> visited = <String>{'/redfish/v1/'};
+      final List<String> queue = <String>['/redfish/v1/'];
+
+      // The message-registry payload (DOCS-18) is served at a Location URI —
+      // a plain string, not an @odata.id link — so seed it explicitly to make
+      // the crawl cover the `#MessageRegistry.v1_0_0` published type too.
+      const String registryPayload = '/redfish/v1/Registries/Base.1.5.0.json';
+      visited.add(registryPayload);
+      queue.add(registryPayload);
+
+      // Collect every relative link reachable from a body: `@odata.id` maps
+      // (Members, Links, nested link maps) AND `@Redfish.ActionInfo` strings
+      // (ActionInfo resources — GET-able, part of the published type
+      // surface). Action *targets* are POST-only, never followed.
+      void enqueueLinks(Object? value) {
+        if (value is Map) {
+          final Object? id = value['@odata.id'];
+          if (id is String &&
+              id.startsWith('/redfish/v1/') &&
+              !id.contains('/Actions/') &&
+              visited.add(id)) {
+            queue.add(id);
+          }
+          final Object? actionInfo = value['@Redfish.ActionInfo'];
+          if (actionInfo is String &&
+              actionInfo.startsWith('/redfish/v1/') &&
+              visited.add(actionInfo)) {
+            queue.add(actionInfo);
+          }
+          for (final Object? v in value.values) {
+            enqueueLinks(v);
+          }
+        } else if (value is List) {
+          for (final Object? v in value) {
+            enqueueLinks(v);
+          }
+        }
+      }
+
+      while (queue.isNotEmpty) {
+        final String uri = queue.removeAt(0);
+        final Map<String, dynamic> body;
+        try {
+          body = await client.getJson(uri);
+        } on RedfishException {
+          // Advertised-but-not-served links degrade gracefully (the discovery
+          // engine's contract); a missing branch never fails the crawl.
+          continue;
+        }
+        final Object? type = body['@odata.type'];
+        if (type is String && type.isNotEmpty) {
+          publishedTypes.add(type);
+        }
+        enqueueLinks(body);
+      }
+
+      expect(publishedTypes, isNotEmpty,
+          reason: 'the live crawl must publish at least one @odata.type');
+      expect(publishedTypes.length, greaterThan(50),
+          reason: 'the DMTF mockup fixture publishes ~100 resource types; a '
+              'crawl reaching far fewer suggests the link walk is broken');
+
+      final List<String> missing = <String>[];
+      for (final String type in publishedTypes) {
+        // Only resource types carry a version (collections are
+        // `#XxxCollection.XxxCollection` with no version — navigation-level,
+        // never pinned as versioned schemas).
+        final RegExpMatch? m =
+            RegExp(r'^#([^.]+)\.(v\d+_\d+_\d+)\.').firstMatch(type);
+        if (m == null) continue;
+        final String family = m.group(1)!;
+        if (!clientMappedFamilies.contains(family)) continue;
+        final String version = m.group(2)!;
+        final File schema =
+            File('test/fixtures/redfish/schemas/$family.$version.json');
+        if (!schema.existsSync()) {
+          missing.add('$type (wanted $family.$version.json)');
+        }
+      }
+
+      expect(missing, isEmpty,
+          reason: 'published client-mapped types without a served-version '
+              'schema in the fixture: $missing');
+    });
+
+    test(
+        'event destinations: Subscriptions members pin the EventDestination '
+        'detail contract incl. protocol variants (DOCS-7 bed for #019)',
+        () async {
+      // The existing event test pins the collection + SubmitTestEvent action;
+      // this pins the per-subscription detail shape a future #019 receiver
+      // must tolerate: Redfish, SNMPv3, SMTP/OEM, and SyslogTCP transports
+      // with their own fields, and the EventDestination @odata.type.
+      final Map<String, dynamic> subs =
+          await client.getJson('/redfish/v1/EventService/Subscriptions');
+      final List<dynamic> members = subs['Members'] as List<dynamic>;
+      expect(members, hasLength(4));
+
+      // 1 — Redfish JSON push (the common case).
+      final Map<String, dynamic> sub1 =
+          await client.getJson('/redfish/v1/EventService/Subscriptions/1');
+      expect(sub1['@odata.type'], '#EventDestination.v1_14_0.EventDestination');
+      expect(sub1['Destination'], 'http://www.dnsname.com/Destination1');
+      expect(sub1['EventTypes'], contains('Alert'));
+      expect(sub1['Context'], 'WebUser3');
+      expect(sub1['Protocol'], 'Redfish');
+      expect(sub1['SubscriptionType'], 'RedfishEvent');
+
+      // 2 — SNMPv3 inform: transport-specific SNMP block with auth/encryption
+      // protocol names; the key material stays null (never echoed).
+      final Map<String, dynamic> sub2 =
+          await client.getJson('/redfish/v1/EventService/Subscriptions/2');
+      expect(sub2['Protocol'], 'SNMPv3');
+      expect(sub2['SubscriptionType'], 'SNMPInform');
+      final Map<dynamic, dynamic> snmp = sub2['SNMP'] as Map<dynamic, dynamic>;
+      expect(snmp['AuthenticationProtocol'], 'HMAC_SHA96');
+      expect(snmp['EncryptionProtocol'], 'CFB128_AES128');
+      expect(snmp['AuthenticationKey'], isNull,
+          reason: 'secret key material must never be populated on the wire');
+      expect(sub2['ResourceTypes'], isA<List<dynamic>>());
+
+      // 3 — SMTP push via an OEM subscription type.
+      final Map<String, dynamic> sub3 =
+          await client.getJson('/redfish/v1/EventService/Subscriptions/3');
+      expect(sub3['Protocol'], 'SMTP');
+      expect(sub3['SubscriptionType'], 'OEM');
+      expect(sub3['Destination'], 'mailto:spam@contoso.com');
+
+      // 4 — Syslog TCP with explicit filter policy.
+      final Map<String, dynamic> sub4 =
+          await client.getJson('/redfish/v1/EventService/Subscriptions/4');
+      expect(sub4['Protocol'], 'SyslogTCP');
+      expect(sub4['SubscriptionType'], 'Syslog');
+      expect(sub4['Destination'], 'syslog://123.45.10:514');
+      final List<dynamic> filters = sub4['SyslogFilters'] as List<dynamic>;
+      expect(filters, isNotEmpty);
+      final Map<dynamic, dynamic> filter0 =
+          filters.first as Map<dynamic, dynamic>;
+      expect(filter0['LowestSeverity'], 'Warning');
+      expect(filter0['LogFacilities'], isA<List<dynamic>>());
     });
   });
 }
