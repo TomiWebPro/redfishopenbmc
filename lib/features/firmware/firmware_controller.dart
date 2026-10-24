@@ -7,7 +7,8 @@ import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
 /// Immutable UI state for the firmware & update screen (issue #008).
 ///
-/// Tracks whether an operation is in flight ([loading]), the latest
+/// Tracks whether an operation is in flight ([loading]), whether a
+/// `SimpleUpdate` is specifically being submitted ([starting]), the latest
 /// [UpdateServiceInfo] snapshot, the most recent queued [lastTask] handle,
 /// and the most recent [error] message. Kept as a value type so Riverpod
 /// rebuilds only dependents when something actually changes.
@@ -15,6 +16,7 @@ class FirmwareUiState {
   /// Creates a [FirmwareUiState].
   const FirmwareUiState({
     this.loading = false,
+    this.starting = false,
     this.info,
     this.lastTask,
     this.error,
@@ -22,6 +24,13 @@ class FirmwareUiState {
 
   /// Whether a load / update operation is currently in flight.
   final bool loading;
+
+  /// Whether a `SimpleUpdate` submission is currently in flight.
+  ///
+  /// Distinct from [loading] so the Start-update button can show its own busy
+  /// state (spinner + disabled) only while the POST is pending, without
+  /// implying the whole screen is re-loading.
+  final bool starting;
 
   /// The latest [UpdateServiceInfo] snapshot, or `null` before the first load.
   final UpdateServiceInfo? info;
@@ -36,6 +45,7 @@ class FirmwareUiState {
   /// Returns a copy with the given fields overridden.
   FirmwareUiState copyWith({
     bool? loading,
+    bool? starting,
     UpdateServiceInfo? info,
     UpdateTask? lastTask,
     bool clearLastTask = false,
@@ -44,15 +54,15 @@ class FirmwareUiState {
   }) =>
       FirmwareUiState(
         loading: loading ?? this.loading,
+        starting: starting ?? this.starting,
         info: info ?? this.info,
         lastTask: clearLastTask ? null : (lastTask ?? this.lastTask),
         error: clearError ? null : (error ?? this.error),
       );
 
   @override
-  String toString() =>
-      'FirmwareUiState(loading=$loading, info=${info != null}, '
-      'lastTask=$lastTask, error=$error)';
+  String toString() => 'FirmwareUiState(loading=$loading, starting=$starting, '
+      'info=${info != null}, lastTask=$lastTask, error=$error)';
 }
 
 /// Riverpod controller driving the firmware & update screen.
@@ -81,7 +91,7 @@ class FirmwareController extends StateNotifier<FirmwareUiState> {
   /// On failure the error is recorded and [loading] returns to `false`; on
   /// success the [info] is populated and any prior error is cleared.
   Future<void> load() async {
-    state = state.copyWith(loading: true, clearError: true);
+    state = state.copyWith(loading: true, starting: false, clearError: true);
     try {
       final UpdateServiceInfo info = await service.fetchUpdateService();
       if (!mounted) return;
@@ -99,20 +109,27 @@ class FirmwareController extends StateNotifier<FirmwareUiState> {
   ///
   /// On success the returned [UpdateTask] handle (task URI + optional
   /// `Retry-After`) is stored in [FirmwareUiState.lastTask] and any prior
-  /// error is cleared. On failure the error is recorded.
+  /// error is cleared. On failure the error is recorded. [starting] is raised
+  /// for the duration of the POST so the Start-update button can show its own
+  /// busy state without implying the whole screen is re-loading.
   Future<void> startUpdate(SimpleUpdateRequest req) async {
-    state =
-        state.copyWith(loading: true, clearError: true, clearLastTask: true);
+    state = state.copyWith(
+      loading: true,
+      starting: true,
+      clearError: true,
+      clearLastTask: true,
+    );
     try {
       final UpdateTask task = await service.startSimpleUpdate(req);
       if (!mounted) return;
-      state = state.copyWith(loading: false, lastTask: task);
+      state = state.copyWith(loading: false, starting: false, lastTask: task);
     } on RedfishException catch (e) {
       if (!mounted) return;
-      state = state.copyWith(loading: false, error: e.message);
+      state = state.copyWith(loading: false, starting: false, error: e.message);
     } catch (e) {
       if (!mounted) return;
-      state = state.copyWith(loading: false, error: e.toString());
+      state =
+          state.copyWith(loading: false, starting: false, error: e.toString());
     }
   }
 }

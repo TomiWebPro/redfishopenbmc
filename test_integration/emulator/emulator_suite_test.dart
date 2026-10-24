@@ -1301,6 +1301,85 @@ void main() {
           ]));
       expect(applyTime['MaintenanceWindowStartTime'], isA<String>());
     });
+
+    test(
+        'firmware actions: SimpleUpdate live round-trip — mockup accepts the '
+        'action but starts no monitored task (#008/#020)', () async {
+      // startSimpleUpdate resolves the #UpdateService.SimpleUpdate target from
+      // the live UpdateService body and POSTs the ImageURI/TransferProtocol
+      // contract. The DMTF mockup answers 204 with NO Location header (it
+      // accepts any action body without validation — the same non-validating
+      // behavior as the 04:01 Reset negative pin), so the returned UpdateTask
+      // carries a null taskUri and null retryAfterSeconds. The
+      // 202-with-Location task-monitor path therefore stays unit-level
+      // (firmware_service_test.dart pins it) and the UI must not require a
+      // monitor URI to show a "queued" handle.
+      final FirmwareService svc =
+          FirmwareService(client: client, systemId: 'em1');
+      final UpdateTask task = await svc.startSimpleUpdate(
+        const SimpleUpdateRequest(
+          imageUri: 'https://example.com/fw.bin',
+          transferProtocol: 'HTTP',
+          targets: <String>[],
+        ),
+      );
+      expect(task.taskUri, isNull,
+          reason: '#008/#020: the DMTF mockup never returns a task-monitor '
+              'Location; 202 + Location is the unit-level seam');
+      expect(task.retryAfterSeconds, isNull);
+      expect(task.statusText, isNull);
+    });
+
+    test(
+        'firmware actions: HttpPushUri is advertised but NOT implemented — '
+        'POST closes with 400, empty body, no error envelope (#008/#020)',
+        () async {
+      // The HttpPushUriOptions test above proves the fixture *advertises* the
+      // push URI (`HttpPushUri: /FWUpdate`); this proves it does NOT
+      // *implement* it. The mockup's POST handler routes every non-Action
+      // body through JSON decoding: a real binary upload body cannot be
+      // decoded, so the server replies 400 with an EMPTY body (no
+      // @Message.ExtendedInfo envelope) and closes the connection (GET
+      // /FWUpdate 404s as well). The #020 binary-push upload flow therefore
+      // stays unit-level, and the client must normalize the empty/no-envelope
+      // failure (RedfishException statusCode 400, no errorCode) instead of
+      // expecting a task monitor.
+      late DioException caught;
+      try {
+        await client.dio.post<dynamic>(
+          '/redfish/v1/UpdateService/FWUpdate',
+          data: 'fake-firmware-image-bytes',
+          options: Options(
+            headers: <String, String>{
+              'Content-Type': 'application/octet-stream',
+            },
+          ),
+        );
+        fail('expected the HttpPushUri POST to fail against the DMTF mockup');
+      } on DioException catch (e) {
+        caught = e;
+      }
+      expect(caught.type, DioExceptionType.badResponse);
+      expect(caught.response?.statusCode, 400);
+      final dynamic pushData = caught.response?.data;
+      expect(pushData == null || pushData.toString().isEmpty, isTrue,
+          reason: 'the fixture sends no Redfish error envelope on the push '
+              'seam (empty body, connection close)');
+      expect(caught.response?.headers.value('location'), isNull,
+          reason: '#008/#020: the mockup never returns a task-monitor '
+              'Location from the push seam');
+
+      final RedfishException normalized = RedfishException.fromDioException(
+        caught,
+        uri: Uri.parse('$emulatorUrl/redfish/v1/UpdateService/FWUpdate'),
+      );
+      expect(normalized.statusCode, 400);
+      expect(normalized.errorCode, isNull,
+          reason: 'no @Message.ExtendedInfo → the HTTP-400-with-no-code '
+              'fallback is the pinned client contract for the unimplemented '
+              'push seam');
+      expect(normalized.message, 'HTTP 400');
+    });
   });
 
   group('emulator: message registry + error-mapping contract (#014)', () {

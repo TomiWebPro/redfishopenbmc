@@ -66,6 +66,17 @@ class _NeverCompletingFirmwareService extends FakeFirmwareService {
       Completer<UpdateServiceInfo>().future;
 }
 
+/// A [FirmwareService] double whose `startSimpleUpdate` blocks until the test
+/// completes [startGate] — the in-flight Start-update shape (UI-5 busy state).
+class _GateFirmwareService extends FakeFirmwareService {
+  /// Completes the pending `startSimpleUpdate` when the test is ready.
+  final Completer<UpdateTask> startGate = Completer<UpdateTask>();
+
+  @override
+  Future<UpdateTask> startSimpleUpdate(SimpleUpdateRequest req) =>
+      startGate.future;
+}
+
 SystemHandle makeHandle({required bool firmwareUpdate}) {
   final ConnectionProfile profile = const ConnectionProfile(
     id: 'bmc1',
@@ -368,6 +379,107 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('(no task URI returned)'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Start-update button shows a disabled busy state while the update is '
+        'in flight (UI-5)', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final _GateFirmwareService service = _GateFirmwareService();
+      final FirmwareController controller =
+          FirmwareController(service: service);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Enter an image URI and tap Start; the POST is now in flight.
+      await tester.enterText(
+        find.byType(TextField),
+        'https://example.com/firmware.bin',
+      );
+      await tester.tap(find.text('Start'));
+      await tester.pump();
+
+      final FilledButton button =
+          tester.widget<FilledButton>(find.byType(FilledButton));
+      expect(button.onPressed, isNull,
+          reason: 'the Start-update button is disabled while the update POST '
+              'is in flight');
+      expect(find.text('Starting…'), findsOneWidget);
+      // The screen-level loading state also announces in the header (existing
+      // merged semantics); the button carries its own busy label + spinner.
+      expect(
+        find.bySemanticsLabel('Firmware and update management, loading'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Firmware and update management'),
+        findsNothing,
+      );
+
+      // Releasing the POST clears the busy state and shows the queued banner.
+      service.startGate.complete(
+        const UpdateTask(taskUri: '/redfish/v1/TaskService/TaskMonitors/1'),
+      );
+      await tester.pumpAndSettle();
+      final FilledButton after =
+          tester.widget<FilledButton>(find.byType(FilledButton));
+      expect(after.onPressed, isNotNull,
+          reason: 'the Start-update button re-enables after the POST resolves');
+      expect(find.text('Start'), findsOneWidget);
+      expect(find.textContaining('Update queued'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Start-update failure surfaces the error and re-enables the button '
+        '(UI-5)', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final _GateFirmwareService service = _GateFirmwareService();
+      final FirmwareController controller =
+          FirmwareController(service: service);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byType(TextField),
+        'https://example.com/firmware.bin',
+      );
+      await tester.tap(find.text('Start'));
+      await tester.pump();
+      expect(find.text('Starting…'), findsOneWidget);
+
+      service.startGate.completeError(
+        const RedfishException(
+          message: 'Update service is busy; please retry the update shortly.',
+          statusCode: 409,
+          errorCode: 'Base.1.0.ResourceInUse',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Starting…'), findsNothing);
+      expect(find.text('Start'), findsOneWidget);
+      final FilledButton button =
+          tester.widget<FilledButton>(find.byType(FilledButton));
+      expect(button.onPressed, isNotNull);
+      expect(
+        find.textContaining('Update service is busy'),
+        findsOneWidget,
+      );
     });
   });
 

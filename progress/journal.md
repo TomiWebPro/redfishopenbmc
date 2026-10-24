@@ -2025,3 +2025,64 @@
 **Issues touched:**
 - none opened/closed this run. DOCS-18 done; REQUIREMENTS.md rows updated;
   UI-2 got the Dashboard error-summary increment; issues remain open.
+
+## 2026-10-24 — agent:redfish-automation — EMULATOR (UpdateService action surface + firmware seams) + UI-5 FirmwareView busy state
+
+**Done:**
+- EMULATOR primary workstream (alternation: DOCS 05:20 → EMULATOR next).
+  **EMU-2 43 → 45 tests** — pinned the last un-pinned firmware seam, the
+  UpdateService action surface (#008/#020):
+  1. **SimpleUpdate live round-trip**: `FirmwareService.startSimpleUpdate`
+     resolves the action target from the live `UpdateService` body, POSTs the
+     contract body, and the DMTF mockup answers **204 with NO task-monitor
+     `Location`** (accepts any action body without validation — same
+     non-validating behavior as the 04:01 ResetType negative pin). The
+     returned `UpdateTask` has null taskUri/retryAfterSeconds — the
+     202-with-Location monitor path stays unit-level.
+  2. **HttpPushUri negative pin**: the fixture advertises
+     `HttpPushUri: /FWUpdate` but does NOT implement it — POSTing a binary
+     upload body fails with **400 + EMPTY body** (no `@Message.ExtendedInfo`
+     envelope; connection closed; GET /FWUpdate 404s). The #020 binary-push
+     flow stays unit-level; client normalizes as `RedfishException` HTTP 400
+     with no error code (asserted via `fromDioException` in the test).
+  REQUIREMENTS.md "Test platforms" 43 → 45 + both pins (with the mockup's
+  POST-handler JSON-decoding rationale recorded against the `23d21f9a` pin).
+- UI-5-style increment: **FirmwareView Start-update button busy state**.
+  Added `FirmwareUiState.starting` (distinct from `loading`); while a
+  SimpleUpdate POST is in flight the `FilledButton` shows a 16px spinner +
+  'Starting…' and is disabled, re-enabling on success (queued banner) or
+  failure (error card). +3 controller tests (new
+  `firmware_controller_test.dart`) + 2 widget tests (`_GateFirmwareService`
+  Completer-gated double): busy state (disabled + spinner + unchanged header
+  semantics) and failure re-enable + error surface.
+
+**Decisions:**
+- EMULATOR per alternation. Within it, chose the UpdateService action surface
+  because (a) it is the last un-pinned surface the top firmware issue
+  #008/#020 must reason about (the 202-with-Location task-monitor path vs the
+  mockup's 204-no-Location reality; the advertised-but-unimplemented push
+  URI), and (b) the probes produced crisp, reproducible pins: the mockup's
+  POST handler JSON-decodes every non-Action body ("Decoding JSON has failed"
+  → 400 empty body on binary), and SimpleUpdate answers 204 without
+  validation. Both seams are now recorded as unit-level, with the client's
+  normalized behavior pinned against the live server.
+- UI increment: kept to the UI-5 busy-state precedent (PowerView dialog
+  confirm). Added a dedicated `starting` state rather than overloading
+  `loading` so the header's merged '…, loading' semantics (screen-level) stays
+  accurate while the button carries its own in-flight indicator. No new
+  dependencies, no TLS change.
+- `dart format` on the 5 touched Dart files only — no tree-wide drift.
+
+**Next:**
+- Push 74 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login (set
+  `expiresAt` from the discovered SessionService), re-auth when `isExpired`
+  flips, persist token/location from create RESPONSE HEADERS only (the
+  fixture echoes the password in session bodies).
+- #018 discovery pass on the pinned `$expand` contract; or the
+  `ResetActionInfo` ActionInfo-resource crawl (#022/#016, bmcweb-style).
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 43 → 45 recorded; #008/#020 got the
+  UpdateService action-surface pins; UI-5 got the FirmwareView busy-state
+  increment; issues remain open.

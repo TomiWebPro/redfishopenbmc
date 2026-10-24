@@ -2211,3 +2211,79 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **73** (72 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 05:48 — EMULATOR (UpdateService action surface + firmware seams) + UI-5 FirmwareView busy state
+
+- **Baseline:** analyze 0; tests 322 passed / 1 skipped; starting commit e82b16f
+  (branch `main` ahead 74 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR (alternation: DOCS 05:20 → EMULATOR next).
+  **EMU-2 43 → 45 tests** — pinned the last un-pinned firmware seam, the
+  UpdateService action surface (#008/#020):
+  1. `FirmwareService.startSimpleUpdate` **live round-trip**: resolves the
+     `#UpdateService.SimpleUpdate` target from the live `UpdateService` body,
+     POSTs the `ImageURI`/`TransferProtocol` contract, and the DMTF mockup
+     answers **204 with NO task-monitor `Location`** (it accepts any action
+     body without validation — the same non-validating behavior as the 04:01
+     ResetType negative pin). The returned `UpdateTask` therefore carries null
+     taskUri / retryAfterSeconds / statusText: the 202-with-Location
+     task-monitor path stays unit-level and the UI must not require a monitor
+     URI for a queued handle.
+  2. **HttpPushUri negative pin**: the fixture *advertises*
+     `HttpPushUri: /FWUpdate` but does NOT *implement* it — POSTing a binary
+     upload body fails with **400 and an EMPTY body** (no
+     `@Message.ExtendedInfo` envelope; connection closed; GET /FWUpdate 404s).
+     The #020 binary-push upload flow therefore stays unit-level, and the
+     client normalizes the failure as `RedfishException` HTTP 400 with no
+     error code (pinned in the test via `RedfishException.fromDioException`).
+  REQUIREMENTS.md "Test platforms" updated 43 → 45 tests + both pins appended
+  (with the server-behavior rationale: the mockup's POST handler JSON-decodes
+  every non-Action body — source provenance recorded against the pinned
+  `23d21f9a` upstream).
+- **Docs:** none fetched (no corpus refresh; EMULATOR run). REQUIREMENTS.md
+  Test-platforms section updated only.
+- **Emulator:** official Redfish-Mockup-Server stood up per runbook §3 over
+  HTTPS (self-signed /tmp cert), health-checked, suite run twice (43/45
+  baseline → 45/45 with the new pins), server stopped via pkill + port-close
+  verified (no background process left).
+- **Code/tests:** +2 emulator tests in `emulator_suite_test.dart` (the two
+  pins above); no production code change from the emulator work.
+- **UI:** UI-5-style increment — **FirmwareView Start-update button busy
+  state**: `FirmwareUiState.starting` added (distinct from `loading` so the
+  button shows its own busy state only while the SimpleUpdate POST is in
+  flight); while starting the `FilledButton` renders a 16px spinner +
+  'Starting…' and is disabled, re-enabling on success (queued banner) or
+  failure (error card). +3 controller tests (`firmware_controller_test.dart`,
+  new file: starting raised/cleared on success + failure + load never sets
+  starting) and +2 widget tests (`firmware_widget_test.dart` with a
+  `_GateFirmwareService` Completer-gated double: busy state shows disabled +
+  spinner + header loading semantics unchanged; failure re-enables + surfaces
+  the error). Precedent: the PowerView confirm-dialog busy state (UI-5).
+- **Verification:** analyze 0; tests **327 passed / 1 skipped** (baseline 322
+  → +5: +3 controller, +2 widget; emulator +2 only runs under
+  `REDFISH_EMULATOR_URL`); emulator suite 45/45 via
+  `--dart-define=REDFISH_EMULATOR_URL=https://127.0.0.1:8443`; issues
+  validate OK; `git diff --check` clean; secret scan clean (test creds are the
+  standard mockup root/calvin, already in the repo; no tokens). `dart format`
+  on the 5 touched Dart files only — no tree-wide drift.
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** — the known GitHub
+  credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/
+  GIT_TOKEN env, no SSH key); local commit kept, not retried. Commits ahead of
+  origin/main: **74** before push attempt.
+- **Next:** 1) Push the queued local commits (74) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
+  login (set `expiresAt` from the discovered SessionService), re-auth on
+  `isExpired`, keep token/location from create headers only (the fixture
+  echoes Password in session bodies); 3) #018 discovery pass on the pinned
+  `$expand` contract, or the `ResetActionInfo` ActionInfo-resource crawl
+  (#022/#016, bmcweb-style).
+
+## 2026-10-24 05:50 — PUSH RECORD (no code change)
+
+- Attempted `git push origin main` once after the run above: failed with
+  `fatal: could not read Username for 'https://github.com': No such device or
+  address` — no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN env, no
+  SSH key on this machine. Local commit kept; not retried (runbook §7.4).
+- Queued local commits ahead of origin/main: **75** (74 before this run + 1
+  auto; live `git rev-list --count origin/main..HEAD`).

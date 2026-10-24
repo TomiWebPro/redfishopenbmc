@@ -210,7 +210,7 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 43 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 45 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -258,6 +258,18 @@ client-relevant families.
       like a valid one), so the client's 400 `ResetTypeInvalid` path stays
       unit-level and the UI must pre-validate against the advertised
       allow-list,
+      **UpdateService action surface (#008/#020, pinned 2026-10-24):** (a)
+      `FirmwareService.startSimpleUpdate` live round-trip — the mockup
+      accepts ANY SimpleUpdate body and answers 204 with NO task-monitor
+      `Location`, so the returned `UpdateTask` carries null
+      taskUri/retryAfterSeconds (the 202-with-Location monitor path stays
+      unit-level; the UI must not require a monitor URI for a queued
+      handle); (b) negative pin — the advertised `HttpPushUri` (`/FWUpdate`)
+      is NOT implemented: POSTing a binary upload body fails with 400 and an
+      EMPTY body (no `@Message.ExtendedInfo` envelope; connection closed;
+      GET /FWUpdate 404s), so the #020 binary-push upload flow stays
+      unit-level and the client normalizes it as `RedfishException` HTTP 400
+      with no error code,
       **OverviewService end-to-end hydration (#006: identity/health/power/
      processor-memory summaries/indicator-LED/leading-thermal), LogService +
      LogEntry collection incl. ClearLog action + `@odata.nextLink` pagination

@@ -232,8 +232,14 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                             ),
                           );
                         },
-                  icon: const Icon(Icons.system_update),
-                  label: const Text('Start'),
+                  icon: ui.starting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.system_update),
+                  label: Text(ui.starting ? 'Starting…' : 'Start'),
                 ),
               ],
             ),

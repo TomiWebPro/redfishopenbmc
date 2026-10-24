@@ -7,15 +7,16 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 05:20 (DOCS run — **DOCS-18 done**: mirrored
-  the DMTF message-registry payload the pinned mockup serves
-  (`registries/Base.1.5.0.json`, **byte-identical** to the fixture — SHA-256
-  `c1026341…`, proven authentic) + newest `registries/Base.1.24.0.json`
-  (125 templates; 1.5.0 → 1.24.0 adds 65 + rewords 39 shared Message strings
-  with **NumberOfArgs stable** — the emulator-pinned contract so the §8.6/§11.4
-  rows now cite a real mirror file; 170,279 new bytes, inside DOCS-6 budget);
-  UI-2 increment: Dashboard `_ErrorSummary` merged semantics + separate Retry
-  control (+2 widget tests; suite 320 → 322); next P1: #015
+- **Last updated:** 2026-10-24 05:48 (EMULATOR run — **EMU-2 43 → 45
+  tests**: UpdateService action surface pinned live — SimpleUpdate live
+  round-trip returns an `UpdateTask` with null taskUri/retryAfterSeconds
+  (mockup answers 204, no task-monitor Location; the 202-with-Location path
+  stays unit-level) + negative pin that the advertised `HttpPushUri` is NOT
+  implemented (binary POST → 400 empty body, no error envelope, connection
+  close; GET /FWUpdate 404s) — the #020 binary-push flow stays unit-level;
+  UI-5 increment: FirmwareView Start-update button busy state (`starting`
+  state + spinner + disabled + 'Starting…', +5 tests: 3 controller + 2
+  widget); next P1: #015
   (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the
   discovered SessionService body into login + re-auth on `isExpired`; #016/
   #022: `ResetActionInfo` ActionInfo resource crawl (bmcweb-style BMCs; NOT
@@ -23,9 +24,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
   provably ignores ResetType values); #018: query-capability surface + live
   `$expand` contract pinned — remaining: build the lightweight discovery pass
   + the cache fixes
-- **Current focus:** **Message-registry payload mirrored (2026-10-24): the
-  §8.6/§11.4 error-surface rows now cite real mirror files and the mockup's
-  Base.1.5.0 payload is proven authentic (byte-identical to DMTF)**; next P1:
+- **Current focus:** **UpdateService action surface pinned live (2026-10-24
+  05:48): the DMTF mockup accepts ANY SimpleUpdate body (204, no task-monitor
+  Location) and does NOT implement the advertised HttpPushUri (binary POST →
+  400 empty body, connection close)**; next P1:
   #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire
   the discovered SessionService body into login + re-auth on `isExpired`;
   #022/#016: Annotation allow-list fallback landed (16:05 run) — remaining:
@@ -334,7 +336,17 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       has no Password property); also pinned: POST Reset with an invalid
       `ResetType` returns 204 exactly like a valid one — the mockup does not
       validate the body, so the `ResetTypeInvalid` 400 path stays unit-level
-      (#014/#022))**)
+      (#014/#022)**) → **45 tests (UpdateService action surface
+      (#008/#020) pinned 2026-10-24: `FirmwareService.startSimpleUpdate`
+      live round-trip — the mockup accepts ANY SimpleUpdate body and answers
+      204 with NO task-monitor `Location`, so `UpdateTask` carries null
+      taskUri/retryAfterSeconds (the 202-with-Location monitor path stays
+      unit-level); negative pin — the advertised `HttpPushUri` (`/FWUpdate`)
+      is NOT implemented: POSTing a binary upload body fails with 400 and an
+      EMPTY body (no `@Message.ExtendedInfo` envelope; connection closed;
+      GET /FWUpdate 404s), so the #020 binary-push flow stays unit-level and
+      the client normalizes it as `RedfishException` HTTP 400 with no error
+      code)**
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -614,6 +626,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       TextButton keeps its own control node outside the container, widget
       tests assert the merged node + visible text + separately-announced Retry
       + the singular (`Unable to reach 1 system…`) form;
+      **FirmwareView Start-update button busy state done 2026-10-24 —
+      `FirmwareUiState.starting` distinguishes a SimpleUpdate POST in flight
+      from screen-level loading; while starting the FilledButton shows a
+      spinner + 'Starting…' and is disabled, re-enabling on success/failure
+      (the UI-5 power-dialog busy-state precedent) — +3 controller tests +
+      2 widget tests (busy state + failure re-enable);
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
