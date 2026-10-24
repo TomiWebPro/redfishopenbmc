@@ -105,10 +105,19 @@ class SystemCard extends StatelessWidget {
                     powerState: snapshot?.powerState ?? PowerState.unknown,
                   ),
                   if (detail != null)
-                    Text(
-                      detail,
-                      style: Theme.of(context).textTheme.bodySmall,
-                      overflow: TextOverflow.ellipsis,
+                    // UI-2: the product-identity line (Manufacturer · Model)
+                    // announces as ONE merged node — a screen reader hears the
+                    // detail in context instead of a bare detached Text next to
+                    // the header/badges (the established card-row pattern).
+                    Semantics(
+                      container: true,
+                      excludeSemantics: true,
+                      label: detail,
+                      child: Text(
+                        detail,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                 ],
               ),

@@ -3063,3 +3063,60 @@
 **Issues touched:**
 - none opened/closed this run. DOCS-26 done; UI-2 unchanged (skipped with
   reason); #015 remains the next P1.
+
+## 2026-10-24 — agent:redfish-automation — EMU 63→64 (Bios/Settings PATCH pin) + UI-2 detail-line merge
+
+**Done:**
+- EMULATOR primary workstream (alternation: DOCS 22:33 → EMU due). Added the
+  **THIRD live PATCH pin (#016)** and the **first pending-settings PATCH
+  round-trip (#028 input)** to the emulator suite
+  (`test_integration/emulator/emulator_suite_test.dart`):
+  PATCH `/redfish/v1/Systems/437XR1138R2/Bios/Settings` — the
+  `@Redfish.Settings` SettingsObject (located by the 16:30 Bios pin, carrying
+  the only ETag this mockup serves, `9234ac83b9700123cc32`) — with an
+  `Attributes` subset (EmbeddedSata Uefi) answers **204 AND persists**
+  (in-memory; on-disk fixture byte-identical). Negative pin: a stale
+  `If-Match: "bogus-stale-etag"` is IGNORED — 204 + persists, so 412
+  enforcement stays unit-level and the #016/#028 client must send the
+  settings-object ETag itself. Live-probed the exact shape first (probe:
+  EmbeddedSata Uefi → 204 + persisted → restored Ahci; NicBoot1 PxeBoot with
+  stale If-Match → 204 + persisted → restored NetworkBoot). Suite **63 →
+  64 tests, 64/64 passed**. Server stopped, fixture byte-identical.
+- UI-2 increment: the SystemCard **detail line** (Manufacturer · Model) was
+  the last remaining non-card label on the dashboard card body; it now
+  renders inside a `Semantics(container + excludeSemantics)` merged node
+  (one self-describing announcement, visible text preserved — the
+  established card-row pattern). +1 widget test in
+  `test/features/systems/ui_widget_test.dart` asserts the merged label +
+  visible text. Suite 348 → **349** passed / 1 skipped.
+
+**Decisions:**
+- EMULATOR per alternation; chose the Bios/Settings PATCH seam because (a) it
+  closes the last open #016 live-PATCH question — the settings-object ETag is
+  the fixture's ONLY concurrency token, and the existing 16:30 pin proved the
+  annotation but never round-tripped a PATCH against Settings; (b) it is the
+  exact mutation shape a #028 BIOS-config editor sends (partial `Attributes`
+  update with the settings-object ETag); (c) it extends the If-Match boundary
+  finding to a THIRD resource shape (ComputerSystem, Control, Bios/Settings).
+- UI increment: targeted the last remaining non-card label on the dashboard
+  card (the detail line) with the established merged-node pattern — small,
+  pattern-consistent, fully tested; did not rush the open-ended focus-order
+  hunt.
+- `dart format` drift in 26 unrelated files reverted to keep the diff on the
+  3 intended files (system_card.dart, ui_widget_test.dart,
+  emulator_suite_test.dart), following the prior EMU run precedent.
+- No new dependencies, no TLS change, no production behaviour change; no
+  corpus downloads (EMU stream).
+
+**Next:**
+- Push 105 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- DOCS per alternation: corpus mirror queue is EMPTY — a freshness audit
+  (DOCS-22 precedent) is the natural DOCS duty next.
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 63 → 64; #016 advanced (third live PATCH
+  pin — Bios/Settings; If-Match boundary on the settings object); #028
+  advanced (pending-settings PATCH round-trip seam pinned); UI-2 advanced
+  (SystemCard detail-line merge).

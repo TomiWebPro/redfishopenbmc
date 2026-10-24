@@ -7,46 +7,49 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 (DOCS run — **DOCS-26 Control corpus mirror
-  done**: served `Control.v1_5_0.json` + newest `Control.v1_8_1.json` (adds
-  only `SetPointError`, additive) + aggregator + `ControlCollection.json`
-  mirrored into the external corpus — 4 files / 129,851 B inside DOCS-6;
-  Control stays NOT client-mapped, no fixture duty; the corpus mirror queue
-  is now EMPTY); UI-2 skipped with reason (all surfaces already use the
-  merged-semantics pattern; remaining items are the open-ended focus-order
-  hunt); next P1: #015 (AuthManager — `expiryFromService` + the Sessions pin
-  are ready, wire the discovered SessionService body into login + re-auth on
-  `isExpired`); #016: the PATCH transport landed (`patchJson`) + the If-Match
-  boundary is pinned (the mockup ignores preconditions — the client must send
-  the settings-object ETag `9234ac83b9700123cc32` itself, EMU 53/60/63),
-  remaining is the actual If-Match/`@odata.etag` wiring in a Boot/IndicatorLED
-  PATCH flow + unit tests for the 412 path; #022/#016: `ResetActionInfo`
-  ActionInfo resource crawl (bmcweb-style BMCs; NOT pinable on the DMTF
-  mockup) + the Control SetPoint AllowableMin/Max pre-validation rule; #018:
-  query-capability surface + live `$expand` contract pinned — remaining: build
-  the lightweight discovery pass + the cache fixes; **new feature candidate
-  #028:** BIOS-config editor (Bios/Settings become client-mapped → served
-  versions move into `test/fixtures/redfish/schemas/` + the corpus-invariant
-  family list gains `Bios`/`Settings`)
-- **Current focus:** **DOCS (2026-10-24)** — DOCS-26 Control corpus mirror
-  done (corpus mirror queue EMPTY); next P1: #015 (AuthManager) —
+- **Last updated:** 2026-10-24 (EMU run — **EMU 63→64**: third live PATCH pin
+  (#016) — PATCH `/Bios/Settings` (the `@Redfish.Settings` SettingsObject
+  carrying the only ETag the mockup serves) answers 204 + persists for a
+  partial `Attributes` update, and a stale `If-Match` is IGNORED (412 stays
+  unit-level; the #028 BIOS editor must send the settings-object ETag
+  itself); first pending-settings PATCH round-trip (#028 input); UI-2 landed
+  the SystemCard detail line (Manufacturer · Model) merge (suite 348→349);
+  the corpus mirror queue is still EMPTY; next P1: #015 (AuthManager —
   `expiryFromService` + the Sessions pin are ready, wire the discovered
-  SessionService body into login + re-auth on `isExpired`; #016: the PATCH
-  transport landed (`patchJson`) + the If-Match boundary is pinned (the mockup
-  ignores preconditions — the client must send the settings-object ETag
-  `9234ac83b9700123cc32` itself, EMU 53/60/63), remaining is the actual
-  If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit tests
-  for the 412 path; #022/#016: `ResetActionInfo` ActionInfo resource crawl
-  (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only the
-  annotation form and now provably ignores ResetType/ResetKeysType values; the
-  Control SetPoint PATCH pin adds the AllowableMin/Max pre-validation rule for
-  power capping); #018: query-capability surface + live `$expand` contract
-  pinned — remaining: build the lightweight discovery pass + the cache fixes;
-  **new feature candidate #028:** BIOS-config editor (Bios/Settings become
-  client-mapped → served versions move into `test/fixtures/redfish/schemas/` +
-  the corpus-invariant family list gains `Bios`/`Settings`); corpus mirror
-  queue: **EMPTY** — all EMU-pinned families (incl. Control via DOCS-26) have
-  real mirror files; next DOCS run can do a freshness audit
+  SessionService body into login + re-auth on `isExpired`); #016: the PATCH
+  transport + If-Match boundary are pinned on all three live seams (Boot/
+  IndicatorLED, Control SetPoint, Bios/Settings), remaining is the actual
+  If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit
+  tests for the 412 path; #022/#016: `ResetActionInfo` ActionInfo resource
+  crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup) + the Control
+  SetPoint AllowableMin/Max pre-validation rule; #018: query-capability
+  surface + live `$expand` contract pinned — remaining: build the lightweight
+  discovery pass + the cache fixes; **new feature candidate #028:** BIOS-config
+  editor (Bios/Settings become client-mapped → served versions move into
+  `test/fixtures/redfish/schemas/` + the corpus-invariant family list gains
+  `Bios`/`Settings`; the Bios/Settings PATCH round-trip seam is now pinned)
+- **Current focus:** **EMULATOR (2026-10-24)** — EMU 63→64 closed the
+  Bios/Settings PATCH round-trip pin (third live PATCH pin; #016 If-Match-on-
+  Settings seam + #028 BIOS-editor input); UI-2 detail-line merge landed;
+  next P1: #015 (AuthManager) — `expiryFromService` + the Sessions pin are
+  ready, wire the discovered SessionService body into login + re-auth on
+  `isExpired`; #016: the PATCH transport landed (`patchJson`) + the If-Match
+  boundary is pinned on all three live seams (Boot/IndicatorLED, Control
+  SetPoint, Bios/Settings — the mockup ignores preconditions, the client
+  must send the settings-object ETag `9234ac83b9700123cc32` itself, EMU
+  53/60/63/64), remaining is the actual If-Match/`@odata.etag` wiring in a
+  Boot/IndicatorLED PATCH flow + unit tests for the 412 path; #022/#016:
+  `ResetActionInfo` ActionInfo resource crawl (bmcweb-style BMCs; NOT
+  pinable on the DMTF mockup — it serves only the annotation form and now
+  provably ignores ResetType/ResetKeysType values; the Control SetPoint PATCH
+  pin adds the AllowableMin/Max pre-validation rule for power capping); #018:
+  query-capability surface + live `$expand` contract pinned — remaining:
+  build the lightweight discovery pass + the cache fixes; **new feature
+  candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
+  served versions move into `test/fixtures/redfish/schemas/` + the
+  corpus-invariant family list gains `Bios`/`Settings`); corpus mirror queue:
+  **EMPTY** — all EMU-pinned families (incl. Control via DOCS-26) have real
+  mirror files; next DOCS run can do a freshness audit
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -651,7 +654,17 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `SetPoint: 9999` is ALSO applied unvalidated — the #022/#016 rule: the
       client must pre-validate Control SetPoints against AllowableMin/Max;
       Control stays NOT client-mapped — no fixture-schema duty, corpus mirror
-      duty recorded as DOCS-26)**
+      duty recorded as DOCS-26)** → **64 tests
+      (Bios/Settings PATCH round-trip pinned live 2026-10-24 23:xx — the
+      THIRD live PATCH pin (#016) and the first against the pending-settings
+      object (#028 input): PATCH `/Bios/Settings` (the `@Redfish.Settings`
+      SettingsObject carrying the only ETag the mockup serves —
+      `9234ac83b9700123cc32`, EMU 53) with an `Attributes` subset
+      (EmbeddedSata Uefi) answers 204 AND persists (in-memory; on-disk
+      fixture byte-identical); the mockup IGNORES the If-Match precondition
+      on the settings object too — a stale etag still 204s AND persists, so
+      412 enforcement stays unit-level and the #016/#028 client must send the
+      settings-object ETag itself; restored in `finally`)**
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -754,7 +767,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `#ComputerSystem.Reset` `ResetType@Redfish.AllowableValues`
       (On/ForceOff/GracefulShutdown/GracefulRestart/ForceRestart/Nmi/ForceOn/
       PushPowerButton) is pinned — the allow-list fallback must read the system
-      list, never the manager list — 2026-10-23 03:02)
+      list, never the manager list — 2026-10-23 03:02;
+      **third live PATCH pin + first pending-settings round-trip landed
+      2026-10-24 (EMU 63→64)**: PATCH `/Bios/Settings` with an `Attributes`
+      subset answers 204 + persists, and a stale `If-Match` is IGNORED (the
+      settings-object ETag `9234ac83b9700123cc32` is the only concurrency
+      token; the #028 BIOS editor must send it itself) — the #016 If-Match
+      wiring input for the Boot/IndicatorLED flow + the 412 unit tests)
 - [ ] **#017** Discover the SessionService URI instead of assuming it.
       (emulator test asserts `SessionService.@odata.id` is discoverable from the
       service root and serves a conformant SessionService — run 2026-10-22)
@@ -876,9 +895,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       DOCS-19/20/21 fixture invariant (copy served `Bios.v1_2_2.json` +
       `Settings.v1_3_5.json` into `test/fixtures/redfish/schemas/` and add both
       families to the emulator corpus-invariant list). PATCH/If-Match with the
-      settings-object ETag folds #016; `Bios.v1_3_0` `Passwords` + the
-      `ChangePassword` action are a #015/#026 password-management input. See
-      `issues/open/028-*` for acceptance criteria.
+      settings-object ETag folds #016; **the pending-settings PATCH round-trip
+      seam is now pinned live (EMU 63→64, 2026-10-24): PATCH `/Bios/Settings`
+      with an `Attributes` subset 204s + persists, stale If-Match ignored —
+      the exact mutation shape a BIOS editor sends**; `Bios.v1_3_0` `Passwords`
+      + the `ChangePassword` action are a #015/#026 password-management input.
+      See `issues/open/028-*` for acceptance criteria.
 - [ ] **#010** Hardening: secure storage, theming, accessibility, coverage.
 
 ## P2 — UI improvements (one small, tested increment per green run)
@@ -1029,6 +1051,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       preserved); the existing 4-state header test updated to expect the
       merged name + state + URL label, +1 widget test asserts the merged node
       + the URL appears exactly once in the semantics tree;
+      **SystemCard detail line (Manufacturer · Model) merged semantics node
+      done 2026-10-24 — the last remaining non-card label on the dashboard
+      card body now renders inside a `Semantics(container +
+      excludeSemantics)` node (one self-describing announcement, visible
+      text preserved — the established card-row pattern), +1 widget test
+      asserts the merged label + visible text;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

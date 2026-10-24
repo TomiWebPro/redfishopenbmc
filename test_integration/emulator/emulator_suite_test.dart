@@ -1076,6 +1076,89 @@ void main() {
         '/redfish/v1/Systems/437XR1138R2/Bios/Actions/Bios.ChangePassword',
       );
     });
+
+    test(
+        'bios settings: PATCH round-trip on the pending-settings object — '
+        '204 + persists; stale If-Match ignored, so the client sends the '
+        'settings-object ETag itself (#016/#028)', () async {
+      // The THIRD live PATCH pin on this fixture and the FIRST against the
+      // pending-settings resource: PATCHing an Attributes subset on
+      // /Bios/Settings (the `@Redfish.Settings` SettingsObject the 16:30 pin
+      // located) returns 204 and the change PERSISTS into the served
+      // resource — in-memory mockup; on-disk fixture untouched. This is the
+      // exact DSP0266 §6.5.2 partial-update shape a #028 BIOS-config editor
+      // sends (and the #016 optimistic-concurrency surface: the settings
+      // object carries the only ETag this mockup serves).
+      final Map<String, dynamic> bios =
+          await client.getJson('/redfish/v1/Systems/437XR1138R2/Bios');
+      final Map<dynamic, dynamic> settings =
+          bios['@Redfish.Settings'] as Map<dynamic, dynamic>;
+      final String etag = settings['ETag'] as String;
+      expect(etag, isNotEmpty,
+          reason: '#016: the settings-object ETag is the optimistic-'
+              'concurrency token a #028 BIOS editor must send');
+      final String settingsObjectUri = (settings['SettingsObject']
+          as Map<dynamic, dynamic>)['@odata.id'] as String;
+
+      try {
+        final Map<String, dynamic> patched = await client.patchJson(
+          settingsObjectUri,
+          body: <String, dynamic>{
+            'Attributes': <String, dynamic>{'EmbeddedSata': 'Uefi'},
+          },
+        );
+        expect(patched['value'], '');
+        final Map<String, dynamic> after =
+            await client.getJson(settingsObjectUri);
+        expect(
+          (after['Attributes'] as Map<dynamic, dynamic>)['EmbeddedSata'],
+          'Uefi',
+          reason: '#016/#028: a PATCHed pending-settings attribute persists '
+              'on this fixture — the live shape a BIOS editor relies on',
+        );
+      } finally {
+        await client.patchJson(
+          settingsObjectUri,
+          body: <String, dynamic>{
+            'Attributes': <String, dynamic>{'EmbeddedSata': 'Ahci'},
+          },
+        );
+      }
+
+      // Negative pin (same theme as the Boot/Control PATCH findings): the
+      // mockup IGNORES the If-Match precondition on the settings object too —
+      // a stale etag still answers 204 AND persists, so 412 enforcement stays
+      // unit-level and the #016/#028 client must apply the settings-object
+      // ETag itself rather than rely on the service evaluating it.
+      try {
+        final Map<String, dynamic> ignored = await client.patchJson(
+          settingsObjectUri,
+          body: <String, dynamic>{
+            'Attributes': <String, dynamic>{'NicBoot1': 'PxeBoot'},
+          },
+          headers: <String, String>{
+            'If-Match': '"bogus-stale-etag"',
+          },
+        );
+        expect(ignored['value'], '');
+        final Map<String, dynamic> out =
+            await client.getJson(settingsObjectUri);
+        expect(
+          (out['Attributes'] as Map<dynamic, dynamic>)['NicBoot1'],
+          'PxeBoot',
+          reason: '#016: the mockup applies a Settings PATCH even with a '
+              'stale If-Match — precondition enforcement is NOT pinable on '
+              'this fixture',
+        );
+      } finally {
+        await client.patchJson(
+          settingsObjectUri,
+          body: <String, dynamic>{
+            'Attributes': <String, dynamic>{'NicBoot1': 'NetworkBoot'},
+          },
+        );
+      }
+    });
   });
 
   group(

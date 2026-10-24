@@ -3498,3 +3498,59 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **104** ($((104 - 1)) before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 23:50 — EMULATOR (Bios/Settings PATCH round-trip pin) — UI detail-line merge
+
+- **Baseline:** analyze 0; tests 348 passed / 1 skipped; starting commit 0cfe993
+  (branch `main` ahead 105 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR per alternation (last runs: DOCS 22:33 → EMU 21:53;
+  EMU due). Added the **THIRD live PATCH pin (#016)** and the **first
+  pending-settings PATCH round-trip (#028)** to the emulator suite:
+  PATCH `/redfish/v1/Systems/437XR1138R2/Bios/Settings` (the
+  `@Redfish.Settings` SettingsObject located by the 16:30 Bios pin, carrying
+  the only ETag this mockup serves — `9234ac83b9700123cc32`) with an
+  `Attributes` subset answers **204 AND persists** (in-memory; on-disk
+  fixture byte-identical). Negative pin: a stale `If-Match: "bogus-stale-etag"`
+  is IGNORED — 204 + persists, so 412 enforcement stays unit-level and the
+  #016/#028 client must send the settings-object ETag itself. Live-probed the
+  shape before writing the test (probe: EmbeddedSata Uefi → 204 + persisted →
+  restored Ahci; NicBoot1 PxeBoot with stale If-Match → 204 + persisted →
+  restored NetworkBoot). Suite 63 → **64 tests, 64/64 passed** (+1 Bios
+  settings PATCH test). Server started from pinned `23d21f9a`, healthy on
+  8443, stopped after the run (no background process left). On-disk fixture
+  byte-identical (`git status` clean apart from the 3 intended files).
+- **Docs:** none this run (EMU stream). No corpus change needed — the Bios/
+  Settings served schemas (`Bios.v1_2_2` + `Settings.v1_3_5`) were mirrored by
+  DOCS-23 and the newest pairs by DOCS-23; the ETag + SettingsObject shape is
+  already pinned (EMU 53) and now round-tripped.
+- **Emulator:** server prepared from the pinned `23d21f9a`, healthy on 8443,
+  suite **63 → 64 tests, 64/64 passed** (+1 Bios settings PATCH pin — the
+  third live PATCH pin on the fixture and the first against the pending-
+  settings object). Server stopped; in-memory mockup state restored
+  (EmbeddedSata back to Ahci, NicBoot1 back to NetworkBoot in `finally`).
+- **Code/tests:** no lib/ production change for the EMU stream (emulator-only
+  pin in `test_integration/emulator/emulator_suite_test.dart`). Plain
+  `flutter test` suite unaffected (emulator tests skip without
+  `REDFISH_EMULATOR_URL`).
+- **UI:** one small tested UI-2 increment — the SystemCard **detail line**
+  (Manufacturer · Model) was the last remaining non-card label on the
+  dashboard card body; it now renders inside a
+  `Semantics(container + excludeSemantics)` merged node (one self-describing
+  announcement, visible text preserved — the established card-row pattern).
+  +1 widget test in `test/features/systems/ui_widget_test.dart` asserts the
+  merged label + visible text. Suite 348 → **349** passed / 1 skipped.
+- **Verification:** analyze 0; tests **349 passed / 1 skipped** (baseline 348
+  → +1 widget); emulator 64/64; issues validate OK; `git diff --check` clean;
+  secret scan: Dart tests + fixture prose only, no credentials. `dart format`
+  drift in 26 unrelated files reverted to keep the diff on the 3 intended
+  files (system_card.dart, ui_widget_test.dart, emulator_suite_test.dart).
+- **Commit:** (after §7.2/§7.3 below) — pushed: expected no (known GitHub
+  credential blocker; local commit kept, not retried).
+- **Next:** 1) Push the queued local commits (105) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
+  login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS
+  only (the next named P1; the EMU-2 chain 63→64 is now the If-Match-on-
+  Settings seam and the #028 BIOS editor input); 3) DOCS per alternation —
+  the corpus mirror queue is EMPTY, so a freshness audit (DOCS-22 precedent)
+  is the natural DOCS duty next.

@@ -258,6 +258,27 @@ void main() {
       expect(find.text('Acme · Server-9'), findsOneWidget);
     });
 
+    testWidgets(
+        'detail line (Manufacturer · Model) announces as one merged node '
+        'with visible text preserved (UI-2)', (tester) async {
+      final SystemHandle handle = connectedHandle(
+        id: 'bmc1',
+        name: 'Lab BMC',
+        manufacturer: 'Acme',
+        model: 'Server-9',
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: Scaffold(body: SystemCard(handle: handle))),
+      );
+      // Visible text preserved.
+      expect(find.text('Acme · Server-9'), findsOneWidget);
+      // One merged announcement covers the detail line.
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      expect(find.bySemanticsLabel('Acme · Server-9'), findsOneWidget,
+          reason: 'expected the merged product-identity node');
+      semantics.dispose();
+    });
+
     testWidgets('tapping the card and selecting a menu action fires callbacks',
         (tester) async {
       final SystemHandle handle = connectedHandle(id: 'bmc1');
