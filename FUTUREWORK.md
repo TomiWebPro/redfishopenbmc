@@ -7,16 +7,18 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 05:48 (EMULATOR run — **EMU-2 43 → 45
-  tests**: UpdateService action surface pinned live — SimpleUpdate live
-  round-trip returns an `UpdateTask` with null taskUri/retryAfterSeconds
-  (mockup answers 204, no task-monitor Location; the 202-with-Location path
-  stays unit-level) + negative pin that the advertised `HttpPushUri` is NOT
-  implemented (binary POST → 400 empty body, no error envelope, connection
-  close; GET /FWUpdate 404s) — the #020 binary-push flow stays unit-level;
-  UI-5 increment: FirmwareView Start-update button busy state (`starting`
-  state + spinner + disabled + 'Starting…', +5 tests: 3 controller + 2
-  widget); next P1: #015
+- **Last updated:** 2026-10-24 06:45 (DOCS run — **DOCS-19 done**: mirrored the
+  **mockup-served** versioned schemas for the eight client-mapped families that
+  DOCS-2 had refreshed to newest-only — `Sensor.v1_8_1` (42/42 sensors),
+  `ComputerSystem.v1_22_0`, `Chassis.v1_25_0`, `AccountService.v1_15_0`,
+  `SoftwareInventory.v1_10_1`, `LogService.v1_6_0`,
+  `EthernetInterface.v1_12_0`, `MessageRegistry.v1_0_0` — plus newest
+  `MessageRegistry.v1_9_0`, 9 files / 560,665 bytes inside DOCS-6, into mirror
+  + `test/fixtures/redfish/schemas/` so every `@odata.type` the pinned mockup
+  publishes has a versioned schema in the fixture; all client-read fields
+  verified present in the served versions, no code change; anchors re-verified
+  bmcweb `fbb307a`, mockup `23d21f9a`, DSP0266 1.25.0, schema index 200);
+  next P1: #015
   (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the
   discovered SessionService body into login + re-auth on `isExpired`; #016/
   #022: `ResetActionInfo` ActionInfo resource crawl (bmcweb-style BMCs; NOT
@@ -24,10 +26,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
   provably ignores ResetType values); #018: query-capability surface + live
   `$expand` contract pinned — remaining: build the lightweight discovery pass
   + the cache fixes
-- **Current focus:** **UpdateService action surface pinned live (2026-10-24
-  05:48): the DMTF mockup accepts ANY SimpleUpdate body (204, no task-monitor
-  Location) and does NOT implement the advertised HttpPushUri (binary POST →
-  400 empty body, connection close)**; next P1:
+- **Current focus:** **every `@odata.type` the pinned DMTF mockup publishes for
+  a client-mapped family now has a versioned schema in the fixture (2026-10-24
+  06:45, DOCS-19: `Sensor.v1_8_1`, `ComputerSystem.v1_22_0`,
+  `Chassis.v1_25_0`, `AccountService.v1_15_0`,
+  `SoftwareInventory.v1_10_1`, `LogService.v1_6_0`,
+  `EthernetInterface.v1_12_0`, `MessageRegistry.v1_0_0` + newest
+  `MessageRegistry.v1_9_0` — no client code change needed)**; next P1:
   #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire
   the discovered SessionService body into login + re-auth on `isExpired`;
   #022/#016: Annotation allow-list fallback landed (16:05 run) — remaining:
@@ -246,6 +251,30 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       both files 200; 170,279 new bytes total, inside the DOCS-6 budget;
       UI-2 Dashboard `_ErrorSummary` merged semantics + separate Retry control,
       +2 widget tests)
+
+- [x] **DOCS-19** Mirror the **mockup-served** versioned schemas for the eight
+      client-mapped families DOCS-2 refreshed to **newest-only**: the pinned
+      `23d21f9a` mockup serves older `@odata.type` versions —
+      `Sensor.v1_8_1` (42/42 sensors), `ComputerSystem.v1_22_0`,
+      `Chassis.v1_25_0`, `AccountService.v1_15_0`,
+      `SoftwareInventory.v1_10_1`, `LogService.v1_6_0`,
+      `EthernetInterface.v1_12_0`, `MessageRegistry.v1_0_0` — plus the newest
+      `MessageRegistry.v1_9_0` (the `@odata.type` behind the newest
+      `Base.1.24.0` registry payload, DOCS-18), into
+      `documentations/external/redfish/schemas/v1/` **and**
+      `test/fixtures/redfish/schemas/` so every `@odata.type` the mockup
+      publishes for a client-mapped family has a versioned schema in the
+      fixture (the DOCS-11/12/13 invariant). Source:
+      `https://redfish.dmtf.org/schemas/v1/<Name>.json`.
+      (run 2026-10-24 — 9 files, 560,665 bytes total, inside the DOCS-6
+      budget; manifest rows + SHA-256s verified; property-delta audit: every
+      client-read field present in the served versions (`Sensor` Reading/
+      ReadingType/ReadingUnits/Thresholds, `ComputerSystem` identity/
+      PowerState/Summaries, `AccountService` lockout surface, `LogService`
+      ServiceEnabled/OverWritePolicy/Entries, `EthernetInterface` MAC/IP/VLAN)
+      — **no client code change needed**; trace rows updated to cite served
+      files; anchors re-verified: bmcweb `fbb307a`, mockup `23d21f9a`,
+      DSP0266 1.25.0, schema index 200)
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across

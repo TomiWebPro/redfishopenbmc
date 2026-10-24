@@ -115,7 +115,29 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
       );
     }
     if (ui.chassis.isEmpty) {
-      return const Center(child: Text('No sensor data available'));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Semantics(
+            container: true,
+            excludeSemantics: true,
+            label: 'No sensor data available',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(Icons.sensors_off_outlined,
+                    size: 40, color: Theme.of(context).colorScheme.outline),
+                const SizedBox(height: 12),
+                Text(
+                  'No sensor data available',
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     return ListView(

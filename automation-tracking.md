@@ -2287,3 +2287,76 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **75** (74 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 06:45 — DOCS (served-version corpus mirror DOCS-19) + UI-2 SensorsView empty state
+
+- **Baseline:** analyze 0; tests 327 passed / 1 skipped; starting commit e1b61dc
+  (branch `main` ahead 75 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** DOCS (alternation: EMULATOR 05:48 → DOCS next). **DOCS-19
+  done** — closed the "served-version" corpus gap: DOCS-2 (2026-10-22) had
+  refreshed the six DOCS-2 families + LogService to their **newest** versioned
+  definitions only, but the pinned `23d21f9a` mockup *serves* older
+  `@odata.type` versions, violating the DOCS-11/12/13 invariant ("every
+  `@odata.type` the mockup publishes has a versioned schema in the fixture").
+  Mirrored the **mockup-served** versions for eight client-mapped families —
+  `Sensor.v1_8_1` (42/42 sensors), `ComputerSystem.v1_22_0`,
+  `Chassis.v1_25_0`, `AccountService.v1_15_0`, `SoftwareInventory.v1_10_1`,
+  `LogService.v1_6_0`, `EthernetInterface.v1_12_0`,
+  `MessageRegistry.v1_0_0` — plus the newest `MessageRegistry.v1_9_0` (the
+  `@odata.type` behind the newest `Base.1.24.0` registry payload, DOCS-18) into
+  both `documentations/external/redfish/schemas/v1/` and
+  `test/fixtures/redfish/schemas/`. 9 files, 560,665 bytes total, inside the
+  DOCS-6 budget. Property-delta audit verified every client-read field exists
+  in the served versions (Sensor Reading/ReadingType/ReadingUnits/Thresholds;
+  ComputerSystem identity/PowerState/Processor-MemorySummary/IndicatorLED/Boot;
+  AccountService lockout surface — the #015 fields; SoftwareInventory
+  Name/Version/Status/Updateable; LogService ServiceEnabled/OverWritePolicy/
+  Entries/ClearLog action; EthernetInterface MAC/IPv4/IPv6/VLAN/LinkStatus;
+  MessageRegistry RegistryPrefix/Version/OwningEntity/Messages/Language) — **no
+  client code change needed**.
+- **Docs:** 9 files fetched from `https://redfish.dmtf.org/schemas/v1/` (all
+  200); manifest +9 rows; REQUIREMENTS.md +DOCS-19 audit section (served vs
+  newest delta table) + trace rows updated to cite served files + trace-note
+  "every published `@odata.type` has a versioned schema in the fixture"
+  invariant; `documentations/redfish_reference/README.md` +DOCS-19 provenance
+  paragraph. Anchors re-verified: bmcweb `fbb307a` (HEAD unchanged), mockup
+  pin `23d21f9a` (unchanged), DSP0266 1.25.0 (unchanged), schema index 200,
+  registries path 200.
+- **Emulator:** none this run (DOCS alternation; no server started). The
+  existing 45-test suite remains green from 05:48; no fixture behavior change
+  (payloads untouched — only additive schema files in the fixture schemas dir).
+- **Code/tests:** no production code change from the emulator/docs work. The
+  fixture schema additions are reference-only (nothing under `test/` globs
+  `fixtures/redfish/schemas/` — verified).
+- **UI:** UI-2 increment — the **SensorsView empty state** ("No sensor data
+  available") was the last bare-`Text` empty surface in the established
+  pattern: it now renders an icon (`Icons.sensors_off_outlined`) + visible text
+  inside a `Semantics(container: true, excludeSemantics: true, label: 'No
+  sensor data available')` merged node — one self-describing announcement for
+  screen readers, matching the error-state pattern without a Retry (nothing to
+  retry: the load succeeded, the BMC reported no chassis). +2 widget tests in
+  `sensors_widget_test.dart` (new `_EmptySensorsService` double): (1) icon +
+  visible text render; (2) merged semantics node announces the label. Existing
+  responsive no-overflow tests unchanged (empty state renders at 320/800/1300
+  via the same Center+Padding layout, no overflow — suite covers the happy
+  path; the empty-state column is `mainAxisSize.min`).
+- **Verification:** analyze 0; tests **329 passed / 1 skipped** (baseline 327 →
+  +2 widget); issues validate OK; `git diff --check` clean; secret scan clean
+  (docs prose + schema JSON only, no tokens). `dart format` on the 2 touched
+  Dart files only — no tree-wide drift (the gate's tree-wide `dart format` pass
+  surfaced 28 files of pre-existing line-wrap churn; those files were restored
+  to HEAD to keep this commit scoped — documented here so the next run does not
+  re-format them unless editing them).
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** — the known GitHub
+  credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/
+  GIT_TOKEN env, no SSH key); local commit kept, not retried. Commits ahead of
+  origin/main: **75** before push attempt.
+- **Next:** 1) Push the queued local commits (75) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
+  login (set `expiresAt` from the discovered SessionService), re-auth on
+  `isExpired`, keep token/location from create headers only (the fixture
+  echoes Password in session bodies); 3) #018 discovery pass on the pinned
+  `$expand` contract, or the `ResetActionInfo` ActionInfo-resource crawl
+  (#022/#016, bmcweb-style).

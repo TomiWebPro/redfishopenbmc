@@ -43,6 +43,14 @@ class _FailingSensorsService extends SensorsService {
       throw const RedfishException(message: 'boom');
 }
 
+/// A [SensorsService] double that returns no chassis (empty-state tests).
+class _EmptySensorsService extends SensorsService {
+  _EmptySensorsService() : super(client: null, systemId: 'x');
+
+  @override
+  Future<List<ChassisSensors>> fetchAll() async => const <ChassisSensors>[];
+}
+
 SystemHandle buildHandle({required bool sensorMonitoring}) => SystemHandle(
       profile: ConnectionProfile(id: 'x', host: 'h'),
       status: ConnectionStatus.connected,
@@ -223,6 +231,50 @@ void main() {
         find.bySemanticsLabel(RegExp('^Retry')),
         findsWidgets,
       );
+    });
+
+    testWidgets('empty state renders an icon + message (UI-2)', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_EmptySensorsService()),
+          ],
+          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The empty state is now a proper state card: icon + visible text (not
+      // a bare detached sentence).
+      expect(find.text('No sensor data available'), findsOneWidget);
+      expect(find.byIcon(Icons.sensors_off_outlined), findsOneWidget);
+    });
+
+    testWidgets('empty state announces as one merged semantics node (UI-2)',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_EmptySensorsService()),
+          ],
+          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The icon + text merge into ONE node via the established
+      // container + excludeSemantics pattern, so a screen reader hears a
+      // single self-describing announcement.
+      final Finder merged = find.bySemanticsLabel('No sensor data available');
+      expect(merged, findsOneWidget);
+      final SemanticsNode? node = tester.getSemantics(merged);
+      expect(node?.label, contains('No sensor data available'));
     });
   });
 

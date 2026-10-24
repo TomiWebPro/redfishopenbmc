@@ -58,6 +58,17 @@ source code. The raw API payloads that back every example here live under
     `Session.v1_7_1.json`, `ManagerAccount.v1_12_0.json`, `Role.v1_3_1.json`,
     `ManagerNetworkProtocol.v1_10_0.json`, `ActionInfo.v1_4_1.json`,
     `ServiceRoot.v1_16_1.json`, `Task.v1_7_3.json`, `TaskService.v1_2_0.json`.
+  - DOCS-19 additions (2026-10-24): the **mockup-served** versioned defs for
+    the eight families DOCS-2 had refreshed to newest-only were added to
+    `test/fixtures/redfish/schemas/` (and to the external corpus, with the
+    newest `MessageRegistry.v1_9_0.json` completing the registry pair):
+    `Sensor.v1_8_1.json`, `ComputerSystem.v1_22_0.json`,
+    `Chassis.v1_25_0.json`, `AccountService.v1_15_0.json`,
+    `SoftwareInventory.v1_10_1.json`, `LogService.v1_6_0.json`,
+    `EthernetInterface.v1_12_0.json`, `MessageRegistry.v1_0_0.json`,
+    `MessageRegistry.v1_9_0.json`. Every `@odata.type` the pinned mockup
+    publishes for a client-mapped family now has a versioned schema in this
+    fixture folder.
 
 ## Gaps / notes
 - `SimpleUpdate` has **no standalone JSON schema** — it is an Action defined inside

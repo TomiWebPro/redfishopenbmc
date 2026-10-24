@@ -6,8 +6,21 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (DOCS-18 run — mirrored the **message-registry payload**
-the pinned mockup serves: `Base.1.5.0.json` from the DMTF registries path,
+Last audited: 2026-10-24 (DOCS-19 run — closed the "served-version" corpus gap
+for the eight client-mapped families DOCS-2 had refreshed to **newest** only:
+mirrored the **mockup-served** `@odata.type` versions the pinned `23d21f9a`
+fixture publishes — `Sensor.v1_8_1` (42/42 sensors),
+`ComputerSystem.v1_22_0`, `Chassis.v1_25_0`, `AccountService.v1_15_0`,
+`SoftwareInventory.v1_10_1`, `LogService.v1_6_0`,
+`EthernetInterface.v1_12_0`, `MessageRegistry.v1_0_0` — plus the newest
+`MessageRegistry.v1_9_0` (the `@odata.type` behind `Base.1.24.0`, DOCS-18)
+into both `documentations/external/redfish/schemas/v1/` and
+`test/fixtures/redfish/schemas/` (the "every published `@odata.type` has a
+versioned schema in the fixture" invariant, 9 files / 560,665 bytes, inside
+DOCS-6); every client-read field verified present in the served versions —
+no code change needed).
+Prior: DOCS-18 run — mirrored the **message-registry payload** the pinned
+mockup serves (`Base.1.5.0.json` from the DMTF registries path),
 **byte-identical** (SHA-256 `c1026341…`) to
 `test/fixtures/redfish/dmtf_mockup/Registries/Base.1.5.0.json` — proven
 authentic — plus the newest published `Base.1.24.0.json` (125 templates; 1.5.0
@@ -107,9 +120,9 @@ Folded into code this run:
 | Basic auth fallback | DSP0266 §13.3.3 "HTTP Basic authentication" | `lib/redfish/client/auth_manager.dart` | `test/redfish/client/auth_manager_test.dart` | OK |
 | No plaintext password at rest; token in secure storage | DSP0266 §13.3.4 + §13.2 "Sensitive data"; OpenBMC `Redfish.md` | `lib/core/storage/secure_storage.dart`, `AuthManager` | `test/redfish/client/auth_manager_test.dart` | OK |
 | Power control: `ComputerSystem.Reset` action with `ResetType` body; 202+`Location` accepted | DSP0266 §9.6.14 "Actions property" + §7.11 "POST (action)"; `ComputerSystem.json` `Actions` | `lib/features/power/power_service.dart` | `test/features/power/` | OK |
-| Sensor telemetry: `Chassis[*].Thermal` / `Sensors`, reading + units | DSP0266 §9.6.15 `Oem`/§9.1 links; schema contracts in `Sensor.json` + `Thermal.json` + `Thermal.v1_7_3.json` (newest, DOCS-12); DSP0266 does not enumerate per-resource schemas — the schema files are the normative property source | `lib/features/sensors/sensors_controller.dart` | `test/features/sensors/` | OK |
-| System overview: `ComputerSystem` identity (`Manufacturer`/`Model`/`SKU`/`SerialNumber`/`PartNumber`/`BiosVersion`), `PowerState`, `Status.Health`(+Rollup), `ProcessorSummary`/`MemorySummary`, `IndicatorLED`, leading `Chassis` thermal | DSP0266 §9.1 "Resources" + §9.6 "Properties"; schema contracts in `ComputerSystem.v1_29_0.json` + `Thermal.v1_7_3.json` (DSP0266 does not carry per-resource property lists) | `lib/features/overview/overview_service.dart` (+ `models/system_overview.dart`) hydrates system + best-effort chassis thermal | `test/features/overview/overview_provider_test.dart` + `overview_view_test.dart`; **emulator suite now pins the full hydrate end-to-end** against the DMTF mockup (#006) | OK |
-| Firmware inventory: `UpdateService` / `SoftwareInventory` collection | DSP0266 §12.7 "Update service" + §7.2.2 "Resource collection requests"; `SoftwareInventory.json` (schema contract) | `lib/features/firmware/firmware_models.dart` | `test/features/firmware/` | OK |
+| Sensor telemetry: `Chassis[*].Thermal` / `Sensors`, reading + units | DSP0266 §9.6.15 `Oem`/§9.1 links; schema contracts in `Sensor.json` + `Sensor.v1_8_1.json` (mockup-served) + `Sensor.v1_14_0.json` (newest) + `Thermal.json` + `Thermal.v1_7_3.json` (newest, DOCS-12); DSP0266 does not enumerate per-resource schemas — the schema files are the normative property source | `lib/features/sensors/sensors_controller.dart` | `test/features/sensors/` | OK |
+| System overview: `ComputerSystem` identity (`Manufacturer`/`Model`/`SKU`/`SerialNumber`/`PartNumber`/`BiosVersion`), `PowerState`, `Status.Health`(+Rollup), `ProcessorSummary`/`MemorySummary`, `IndicatorLED`, leading `Chassis` thermal | DSP0266 §9.1 "Resources" + §9.6 "Properties"; schema contracts in `ComputerSystem.v1_22_0.json` (mockup-served) + `ComputerSystem.v1_29_0.json` (newest, DOCS-2) + `Thermal.v1_7_3.json` (DSP0266 does not carry per-resource property lists) | `lib/features/overview/overview_service.dart` (+ `models/system_overview.dart`) hydrates system + best-effort chassis thermal | `test/features/overview/overview_provider_test.dart` + `overview_view_test.dart`; **emulator suite now pins the full hydrate end-to-end** against the DMTF mockup (#006) | OK |
+| Firmware inventory: `UpdateService` / `SoftwareInventory` collection | DSP0266 §12.7 "Update service" + §7.2.2 "Resource collection requests"; `SoftwareInventory.json` + `SoftwareInventory.v1_10_1.json` (mockup-served) + `SoftwareInventory.v1_15_0.json` (newest, DOCS-2) (schema contract) | `lib/features/firmware/firmware_models.dart` | `test/features/firmware/` | OK |
 | Firmware update: `UpdateService.SimpleUpdate` (entity-upload mode TBD); `UpdateService.ServiceEnabled` gates the capability | DSP0266 §12.7 "Update service" (§12.7.2.1 "Simple updates"); `UpdateService.json` (`ServiceEnabled`) + `UpdateService.v1_17_1.json` (newest, DOCS-12); OpenBMC `Redfish.md` §UpdateService | `lib/features/firmware/firmware_service.dart`; `FeatureRules.firmwareUpdate` honors `ServiceEnabled` (DOCS-5) | `test/features/firmware/`; `feature_rules_test.dart` (ServiceEnabled case) | Partial — task monitoring in #008/#020 |
 | KVM capability: `Manager.GraphicalConsole` / OEM console detection | OpenBMC `Redfish.md`; `Manager.json` + `Manager.v1_25_0.json` (newest, DOCS-12) | `lib/redfish/discovery/feature_rules.dart` (`kvm`, `kvmType`) | `test/redfish/discovery/feature_rules_test.dart` | OK (rendering gated in #009/#021) |
 | Event subscription: `EventService.Subscriptions` — POST → 201 + `Location`; DELETE to unsubscribe | DSP0266 §12.1.1–§12.1.2 "Eventing"; `EventService.json` + `EventService.v1_12_0.json` (newest, DOCS-12) | **not implemented** | — | GAP: DOCS-7 — decision recorded below (out-of-scope this milestone) |
@@ -124,7 +137,7 @@ Folded into code this run:
 | bmcweb serial console lives on the ComputerSystem (`SerialConsole/SSH|IPMI`), not the Manager | OpenBMC `Redfish.md` §ComputerSystem (`SerialConsole` fields) | `FeatureRules._managerConsoleType` only checks `Manager.GraphicalConsole/SerialConsole/Oem` | `feature_rules_test.dart` | Partial: GraphicalConsole detection still correct; System-level SerialConsole not yet mapped (see #009/#021 KVM) |
 | bmcweb auth surface: `AccountService.Oem.OpenBMC.AuthMethods.*` (`BasicAuth`, `Cookie`, `SessionToken`, `TLS`, `XToken`) + `HTTPBasicAuth` | OpenBMC `Redfish.md` §AccountService | `AuthManager` prefers session, falls back to basic | `test/redfish/client/auth_manager_test.dart` | Partial: vendor auth-method negotiation is #015/#026 |
 | bmcweb telemetry: `TelemetryService` with `MetricReports` / `Triggers` / `MetricReportDefinitions` | OpenBMC `Redfish.md` §TelemetryService | n/a — sensors poll `Thermal`/`Sensors` directly | sensors tests | Note: alternative telemetry source for #007/#019 |
-| Log service: `ComputerSystem.LogServices` → `LogService` (`ClearLog` action, `ServiceEnabled`) → `Entries` collection; `LogEntry` (`EntryType` SEL/Event, `Severity`, `Created` RFC3339, `Message`, `Links.OriginOfCondition`); `@odata.nextLink` pagination | `LogService.json` + `LogService.v1_9_0.json` + `LogEntry.json` + `LogEntry.v1_22_0.json` + `LogEntryCollection.json` (mirrored DOCS-11; `LogEntry.v1_16_0.json` kept for the mockup's pinned shapes); DSP0266 §9.6.12 (`Members@odata.nextLink`) + §9.6.11 (`Members`) define the paginated collection contract; emulator pins LogService.v1_6_0 + LogEntry.v1_16_0 shapes | not implemented — no log reader feature yet (future #010 hardening / diagnostics) | emulator: `emulator_suite_test.dart` "log service" group asserts collection → ClearLog target → Entries fields + nextLink (`\u0024skiptoken`) | Contract pin only; feature work not queued — revisit via FUTUREWORK if a log view is planned |
+| Log service: `ComputerSystem.LogServices` → `LogService` (`ClearLog` action, `ServiceEnabled`) → `Entries` collection; `LogEntry` (`EntryType` SEL/Event, `Severity`, `Created` RFC3339, `Message`, `Links.OriginOfCondition`); `@odata.nextLink` pagination | `LogService.json` + `LogService.v1_6_0.json` (mockup-served, DOCS-19) + `LogService.v1_9_0.json` (newest, DOCS-11) + `LogEntry.json` + `LogEntry.v1_22_0.json` + `LogEntryCollection.json` (mirrored DOCS-11; `LogEntry.v1_16_0.json` kept for the mockup's pinned shapes); DSP0266 §9.6.12 (`Members@odata.nextLink`) + §9.6.11 (`Members`) define the paginated collection contract; emulator pins LogService.v1_6_0 + LogEntry.v1_16_0 shapes | not implemented — no log reader feature yet (future #010 hardening / diagnostics) | emulator: `emulator_suite_test.dart` "log service" group asserts collection → ClearLog target → Entries fields + nextLink (`\u0024skiptoken`) | Contract pin only; feature work not queued — revisit via FUTUREWORK if a log view is planned |
 
 ## DOCS-12 — six-family versioned schema mirror audit (2026-10-23)
 
@@ -196,9 +209,15 @@ client-relevant families.
   Chassis, Sensor, AccountService, EthernetInterface, SoftwareInventory, Task,
   TaskService, LogEntry, LogService + DOCS-12's UpdateService, EventService,
   SessionService, Manager, Power, Thermal + DOCS-13's Session, ManagerAccount,
-  Role, ManagerNetworkProtocol, ActionInfo, ServiceRoot), with the
-  aggregator-`$ref`ed newest plus the mockup-served versions for emulator
-  provenance.
+  Role, ManagerNetworkProtocol, ActionInfo, ServiceRoot + DOCS-19's
+  MessageRegistry), with the aggregator-`$ref`ed newest plus the
+  mockup-served versions for emulator provenance. DOCS-19 (2026-10-24) closed
+  the last served-version gap: `Sensor.v1_8_1`, `ComputerSystem.v1_22_0`,
+  `Chassis.v1_25_0`, `AccountService.v1_15_0`, `SoftwareInventory.v1_10_1`,
+  `LogService.v1_6_0`, `EthernetInterface.v1_12_0`,
+  `MessageRegistry.v1_0_0` (+ newest `MessageRegistry.v1_9_0`) are now in the
+  fixture and mirror — every `@odata.type` the pinned mockup publishes for a
+  client-mapped family has a versioned schema in the fixture.
 - GAP rows are tracked in `FUTUREWORK.md`; do not re-file them in the issue
   tracker unless acceptance criteria are added.
 - bmcweb-specific behaviour (OEM schemas, console types) is cited from
@@ -674,3 +693,41 @@ visible text stays for sighted users and the Retry button keeps its own control
 node). New dashboard widget tests assert the merged label + separately-
 announced Retry control + Retry still reconnects failed systems (UI-1
 behaviour unchanged).
+
+## DOCS-19 — served-version corpus mirror for the DOCS-2 families + registry family (2026-10-24)
+
+Closed the "served-version" gap for the eight client-mapped families that
+DOCS-2 (2026-10-22) refreshed to their **newest** versioned definitions only:
+the pinned `23d21f9a` mockup *serves* older `@odata.type` versions, and the
+DOCS-11/12/13 precedent says every `@odata.type` the mockup publishes must
+have a versioned schema in the fixture + mirror. Mirrored, per family, the
+mockup-served version (and for `MessageRegistry` also the newest
+`v1_9_0` — the `@odata.type` behind the newest `Base.1.24.0` registry payload,
+DOCS-18) into `documentations/external/redfish/schemas/v1/` **and**
+`test/fixtures/redfish/schemas/`.
+
+| Family | Newest (already mirrored) | Mockup-served (this run) | Served-payload evidence | Client impact |
+|---|---|---|---|---|
+| `Sensor` | `v1_14_0` | **`v1_8_1`** | 42/42 sensors in the fixture publish `#Sensor.v1_8_1.Sensor` | none — every client-read field (`Reading`, `ReadingType`, `ReadingUnits`, `Thresholds`, `Status`, `PhysicalContext`, ranges) exists in `v1_8_1`; the DOCS-2 delta list still holds newest-side only |
+| `ComputerSystem` | `v1_29_0` | **`v1_22_0`** | systems publish `#ComputerSystem.v1_22_0.ComputerSystem` | none — identity/PowerState/Status/Processor-MemorySummary/IndicatorLED/Boot/Links all present in `v1_22_0` (69-property main def) |
+| `Chassis` | `v1_29_0` | **`v1_25_0`** | chassis publish `#Chassis.v1_25_0.Chassis` | none — ChassisType/PowerState/Status/Thermal/Power/Links present; `v1_29_0`-added `RackUnits`/`ProductionDate`/`LeakDetectors` etc. are newest-side only (client reads none) |
+| `AccountService` | `v1_19_0` | **`v1_15_0`** | AccountService publishes `#AccountService.v1_15_0.AccountService` (the lockout surface the auth emulator pins — `AccountLockoutThreshold` 5 / `AccountLockoutDuration` 30 / `AccountLockoutCounterResetAfter` 30 / `MinPasswordLength` 8) | none — all #015-relevant fields present in `v1_15_0`; `v1_19_0` adds `EnforcePasswordHistoryCount`/`PasswordGuidance*` (newest-side only) |
+| `SoftwareInventory` | `v1_15_0` | **`v1_10_1`** | firmware inventory publishes `#SoftwareInventory.v1_10_1.SoftwareInventory` | none — Name/Version/Status/Updateable/SoftwareId/Manufacturer/RelatedItem present; `v1_15_0`-added `ImageState`/`ActiveTargets`/etc. stay newest-side notes for #008/#020 |
+| `LogService` | `v1_9_0` | **`v1_6_0`** | log-service payloads publish `#LogService.v1_6_0.LogService` | none — ServiceEnabled/OverWritePolicy/Entries/Actions/DateTime/MaxNumberOfRecords present; `ClearLog` is an action (present via `Actions`) |
+| `EthernetInterface` | `v1_12_6` | **`v1_12_0`** | NIC payloads publish `#EthernetInterface.v1_12_0.EthernetInterface` | none — MAC/IPv4/IPv6/VLAN/LinkStatus/Status/InterfaceEnabled/Links present |
+| `MessageRegistry` | `v1_9_0` (this run, newest) | **`v1_0_0`** | the served `Base.1.5.0` registry payload publishes `@odata.type` `#MessageRegistry.v1_0_0.MessageRegistry` (DOCS-18) | none — RegistryPrefix/Version/OwningEntity/Messages/Language present; `v1_9_0` adds `ClearsAll`/`ClearsIf`/`ClearsMessage` (newest-side only) |
+
+Trace rows updated to cite the served files where the fixture is the contract
+source: sensor row → `Sensor.v1_8_1.json` (+ newest `Sensor.v1_14_0.json`),
+overview row → `ComputerSystem.v1_22_0.json` (+ `v1_29_0`), firmware row →
+`SoftwareInventory.v1_10_1.json` (+ `v1_15_0`), log row → `LogService.v1_6_0`
+(+ `v1_9_0`), auth/session rows unchanged (DOCS-13 files already served-version
+correct), `MessageRegistry` row → `MessageRegistry.v1_0_0.json` +
+`MessageRegistry.v1_9_0.json`.
+
+All upstream anchors re-verified (2026-10-24): bmcweb `fbb307a` (HEAD —
+unchanged), mockup pin `23d21f9a` (unchanged), DSP0266 1.25.0 (unchanged),
+schema index 200, registries path 200; each of the 9 mirrored files fetched
+200 from `https://redfish.dmtf.org/schemas/v1/`. New bytes this run: 560,665
+total (102,125+145,755+75,981+89,936+22,621+33,248+52,887+10,151+27,961) —
+inside the DOCS-6 budget.

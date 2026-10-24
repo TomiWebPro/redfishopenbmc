@@ -84,6 +84,15 @@ documentations/external/
 | `redfish/schemas/v1/odata.4.0.0.json` | https://redfish.dmtf.org/schemas/v1/odata.4.0.0.json | 2026-10-23 16:40 | `c73cce029ca4cc01a54d341389742f60a4f48e05691ee81934ca9ba513dc6b7c` | 1,834 | OData 4.0.0 | OData base vocabulary (context/id/idRef) — closes the REQUIREMENTS.md row-65 source citation (bare `Odata.json` 404s upstream; lowercase `odata` is canonical). Byte-identical to `test/fixtures/redfish/schemas/Odata.json` — DOCS-14 |
 | `redfish/registries/Base.1.5.0.json` | https://redfish.dmtf.org/registries/Base.1.5.0.json | 2026-10-24 04:38 | `c10263417a076402a992f099db4e019c9d91f674d256df32a390b86a2c46492c` | 31,984 | DMTF Base registry 1.5.0 | Message-registry payload the pinned mockup serves (`/redfish/v1/Registries/Base.1.5.0.json`, EMU-2 MessageRegistry pin 2026-10-24); 60 Base.* templates (Message/Severity/NumberOfArgs). **Byte-identical to `test/fixtures/redfish/dmtf_mockup/Registries/Base.1.5.0.json`** (proven authentic) — DOCS-18 |
 | `redfish/registries/Base.1.24.0.json` | https://redfish.dmtf.org/registries/Base.1.24.0.json | 2026-10-24 04:39 | `abe0b78bba184f4b0e061696e4c9c43d76c029edb0ae5cf4902fdf3f979ef92d` | 138,295 | DMTF Base registry 1.24.0 (newest) | Newest published Base registry (125 templates; 1.5.0 → 1.24.0 adds 65 templates + rewords 39 shared Message strings, **NumberOfArgs stable** — the emulator-pinned contract); `@odata.type` `#MessageRegistry.v1_9_0.MessageRegistry` — DOCS-18 |
+| `redfish/schemas/v1/Sensor.v1_8_1.json` | https://redfish.dmtf.org/schemas/v1/Sensor.v1_8_1.json | 2026-10-24 06:30 | `6972bd045addd8b4f6c58bb296a095be2d19e2eb450243243967bc71dafa2f80` | 102,125 | DMTF 2021.x | **Mockup-served** version — the 42-member Sensors collection the emulator pins publishes `#Sensor.v1_8_1.Sensor`; DOCS-2 had mirrored only the newest `v1_14_0`. All client-read properties present — DOCS-19 |
+| `redfish/schemas/v1/ComputerSystem.v1_22_0.json` | https://redfish.dmtf.org/schemas/v1/ComputerSystem.v1_22_0.json | 2026-10-24 06:30 | `3ba322e18e5d9445c51157fe4b2b3e835bf3992b4a4e60733bf6202342ee615e` | 145,755 | DMTF 2021.x | **Mockup-served** version — the systems the emulator pins publish `#ComputerSystem.v1_22_0.ComputerSystem`; DOCS-2 had mirrored only the newest `v1_29_0` — DOCS-19 |
+| `redfish/schemas/v1/Chassis.v1_25_0.json` | https://redfish.dmtf.org/schemas/v1/Chassis.v1_25_0.json | 2026-10-24 06:30 | `1fd75b98b3f6b380bc728090a5bace485d60e4886486c2be1e9b8e4b345b2001` | 75,981 | DMTF 2022.x | **Mockup-served** version — chassis payloads publish `#Chassis.v1_25_0.Chassis`; DOCS-2 had mirrored only the newest `v1_29_0` — DOCS-19 |
+| `redfish/schemas/v1/AccountService.v1_15_0.json` | https://redfish.dmtf.org/schemas/v1/AccountService.v1_15_0.json | 2026-10-24 06:30 | `2eda8a3f552500aa3bb1668ee97590eb83af8afa5cf811ae3dc0da35a68f963f` | 89,936 | DMTF 2022.x | **Mockup-served** version — AccountService payload publishes `#AccountService.v1_15_0.AccountService` (lockout fields pinned by the auth-surface emulator tests); DOCS-2 had mirrored only the newest `v1_19_0` — DOCS-19 |
+| `redfish/schemas/v1/SoftwareInventory.v1_10_1.json` | https://redfish.dmtf.org/schemas/v1/SoftwareInventory.v1_10_1.json | 2026-10-24 06:30 | `f265714965cbbd7659b2fb5ff86e798ebb9de2c94c5bb6efb253773ce43402e4` | 22,621 | DMTF 2021.x | **Mockup-served** version — firmware inventory payloads publish `#SoftwareInventory.v1_10_1.SoftwareInventory`; DOCS-2 had mirrored only the newest `v1_15_0` — DOCS-19 |
+| `redfish/schemas/v1/LogService.v1_6_0.json` | https://redfish.dmtf.org/schemas/v1/LogService.v1_6_0.json | 2026-10-24 06:30 | `21223c8379ea6fa5b9a2e7d074c21db994d2d6d16c7f5ba1c0c769a00278e1c3` | 33,248 | DMTF 2021.x | **Mockup-served** version — log-service payloads publish `#LogService.v1_6_0.LogService` (DOCS-11 had mirrored only the newest `v1_9_0`) — DOCS-19 |
+| `redfish/schemas/v1/EthernetInterface.v1_12_0.json` | https://redfish.dmtf.org/schemas/v1/EthernetInterface.v1_12_0.json | 2026-10-24 06:30 | `d30d0540dd75f8e02e7b9534890d43590c500bf56dfe827294518803984f283c` | 52,887 | DMTF 2021.x | **Mockup-served** version — NIC payloads publish `#EthernetInterface.v1_12_0.EthernetInterface`; DOCS-2 had mirrored only the newest `v1_12_6` — DOCS-19 |
+| `redfish/schemas/v1/MessageRegistry.v1_0_0.json` | https://redfish.dmtf.org/schemas/v1/MessageRegistry.v1_0_0.json | 2026-10-24 06:30 | `7a2f5eda067db83b8181d34ef3ac7645416b42814d7d0dc104620de9e61d7a7c` | 10,151 | DMTF 2021.x | **Mockup-served** version — the `Base.1.5.0` registry payload the mockup serves (DOCS-18) publishes `@odata.type` `#MessageRegistry.v1_0_0.MessageRegistry` — DOCS-19 |
+| `redfish/schemas/v1/MessageRegistry.v1_9_0.json` | https://redfish.dmtf.org/schemas/v1/MessageRegistry.v1_9_0.json | 2026-10-24 06:31 | `96c61a6bc1976dfb661e455948b1b50f964a9f7834d831a2d9bd411aba526aa4` | 27,961 | DMTF 2026.x | Newest versioned MessageRegistry — the `@odata.type` referenced by the newest `Base.1.24.0` registry payload (DOCS-18); closes the newest+served pair for the registry family — DOCS-19 |
 
 ### Downloaded schema set (21 base aggregator files)
 
@@ -111,6 +120,24 @@ Upstream anchors re-verified same run: bmcweb moved `27e0930b` → `fbb307a`
 (all four mirrored bmcweb docs byte-identical at the new HEAD — no refresh
 needed),`Redfish-Mockup-Server` still `23d21f9a`, DMTF schema index 200 OK,
 DSP0266 still 1.25.0.
+
+DOCS-19 (2026-10-24) closed the "served-version" gap for the eight
+client-mapped families that DOCS-2 had refreshed to their **newest** versioned
+definitions only: the pinned `23d21f9a` mockup *serves* older `@odata.type`
+versions (`Sensor.v1_8_1` — 42 of 42 sensors, `ComputerSystem.v1_22_0`,
+`Chassis.v1_25_0`, `AccountService.v1_15_0`, `SoftwareInventory.v1_10_1`,
+`LogService.v1_6_0`, `EthernetInterface.v1_12_0`, `MessageRegistry.v1_0_0`),
+and the DOCS-11/12/13 precedent says every `@odata.type` the mockup publishes
+must have a versioned schema in the fixture + mirror. Mirrored all eight
+**served** versions (plus the newest `MessageRegistry.v1_9_0` to complete the
+newest+served pair for the registry family — the `@odata.type` behind the
+newest `Base.1.24.0` payload, DOCS-18) into
+`documentations/external/redfish/schemas/v1/` **and**
+`test/fixtures/redfish/schemas/` (the "every published `@odata.type` has a
+versioned schema in the fixture" invariant). 9 files, 560,665 bytes total,
+inside the DOCS-6 budget. Property-delta audit: every client-read field exists
+in the served versions (no code change needed) — details in
+`REQUIREMENTS.md` "DOCS-19".
 
 DOCS-10 added the `Task` resource to the corpus: `Task.json` (aggregator) +
 `Task.v1_7_4.json` + `TaskService.v1_2_1.json` (see manifest rows above) so the

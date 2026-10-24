@@ -2086,3 +2086,70 @@
 - none opened/closed this run. EMU-2 43 → 45 recorded; #008/#020 got the
   UpdateService action-surface pins; UI-5 got the FirmwareView busy-state
   increment; issues remain open.
+
+## 2026-10-24 — agent:redfish-automation — DOCS (served-version corpus mirror DOCS-19) + UI-2 SensorsView empty state
+
+**Done:**
+- DOCS primary workstream (alternation: EMULATOR 05:48 → DOCS next).
+  **DOCS-19 done** — closed the last "served-version" corpus gap. DOCS-2
+  (2026-10-22) refreshed the DOCS-2-era families to their **newest** versioned
+  definitions only, but the pinned `23d21f9a` mockup *serves* older
+  `@odata.type` versions, breaking the DOCS-11/12/13 invariant that every
+  `@odata.type` the mockup publishes has a versioned schema in the fixture.
+  1. Mirrored the **mockup-served** versions for eight client-mapped families
+     into `documentations/external/redfish/schemas/v1/` **and**
+     `test/fixtures/redfish/schemas/`: `Sensor.v1_8_1` (42/42 sensors),
+     `ComputerSystem.v1_22_0`, `Chassis.v1_25_0`, `AccountService.v1_15_0`,
+     `SoftwareInventory.v1_10_1`, `LogService.v1_6_0`,
+     `EthernetInterface.v1_12_0`, `MessageRegistry.v1_0_0` — plus the newest
+     `MessageRegistry.v1_9_0` (the `@odata.type` behind `Base.1.24.0`,
+     DOCS-18) to complete the newest+served pair for the registry family.
+     9 files, 560,665 bytes, inside the DOCS-6 budget.
+  2. Property-delta audit: every client-read field verified present in the
+     served versions (Sensor Reading/ReadingType/ReadingUnits/Thresholds,
+     ComputerSystem identity/PowerState/Summaries/Boot, AccountService lockout
+     surface incl. the #015 fields, SoftwareInventory Name/Version/Status/
+     Updateable, LogService ServiceEnabled/OverWritePolicy/Entries/ClearLog,
+     EthernetInterface MAC/IPv4/IPv6/VLAN, MessageRegistry
+     RegistryPrefix/Version/Messages) — **no client code change needed**.
+  3. Trace rows updated to cite the served files; manifest +9 rows; reference
+     README +DOCS-19 provenance. All anchors re-verified unchanged (bmcweb
+     `fbb307a`, mockup `23d21f9a`, DSP0266 1.25.0, schema index 200,
+     registries path 200).
+- UI-2 increment: the **SensorsView empty state** ("No sensor data available")
+  is no longer a bare detached `Text` — it renders an icon + visible text
+  inside the established `Semantics(container + excludeSemantics)` merged node
+  (label `No sensor data available`), the last empty-state surface to follow
+  the pattern. +2 widget tests (icon + visible text; merged semantics node)
+  via a new `_EmptySensorsService` double.
+
+**Decisions:**
+- DOCS per alternation (last was EMULATOR 05:48). Within it, chose DOCS-19
+  because (a) the served-version gap is the last corpus hole — every other
+  family the mockup publishes already has its served version mirrored
+  (DOCS-12/13/11), and (b) the fixture-schema folder should be a complete
+  provenance set for the pinned mockup, not just the newest definitions.
+- Kept the fixture payloads untouched (additive schema files only) — nothing
+  under `test/` globs `fixtures/redfish/schemas/` (verified), so the emulator
+  suite is unaffected.
+- The verification gate's tree-wide `dart format` surfaced 28 files of
+  pre-existing line-wrap churn from prior runs' "format touched files only"
+  policy; those files were restored to HEAD to keep this commit scoped (the
+  DOCS-19 + UI changes are the only intended edits). Noted in
+  `automation-tracking.md` so future runs don't re-format them unless editing.
+- UI increment stayed minimal and pattern-consistent (icon + merged node, no
+  Retry — the load succeeded and returned no chassis, so there is nothing to
+  retry). No new dependencies, no TLS change.
+
+**Next:**
+- Push 75 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login (set
+  `expiresAt` from the discovered SessionService), re-auth when `isExpired`
+  flips, persist token/location from create RESPONSE HEADERS only (the
+  fixture echoes the password in session bodies).
+- #018 discovery pass on the pinned `$expand` contract; or the
+  `ResetActionInfo` ActionInfo-resource crawl (#022/#016, bmcweb-style).
+
+**Issues touched:**
+- none opened/closed this run. DOCS-19 done; REQUIREMENTS.md trace rows
+  updated; UI-2 got the SensorsView empty-state increment; issues remain open.
