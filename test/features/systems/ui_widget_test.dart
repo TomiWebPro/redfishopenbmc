@@ -281,6 +281,35 @@ void main() {
       expect(actions, contains('remove'));
     });
 
+    testWidgets(
+        'URL subtitle stays visible but is excluded from semantics — the '
+        'header announces name + state + URL as one node (UI-2)',
+        (tester) async {
+      final SystemHandle handle = connectedHandle(
+        id: 'bmc1',
+        name: 'Lab BMC',
+        status: ConnectionStatus.connected,
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: Scaffold(body: SystemCard(handle: handle))),
+      );
+      // Visible text preserved.
+      expect(find.text('https://1.2.3.4:443'), findsOneWidget);
+      // One merged announcement covers the URL; the subtitle must NOT add a
+      // second text node to the semantics tree (no double announcement).
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      final Finder node =
+          find.bySemanticsLabel('Lab BMC, connected, https://1.2.3.4:443');
+      expect(node, findsOneWidget,
+          reason: 'expected the merged name + state + URL header node');
+      // The URL appears exactly once in the semantics tree (inside the merged
+      // label); an exact standalone node for the subtitle would double it.
+      expect(find.bySemanticsLabel('https://1.2.3.4:443'), findsNothing,
+          reason: 'the URL subtitle must be ExcludeSemantics (the merged '
+              'header label announces it once)');
+      semantics.dispose();
+    });
+
     testWidgets('shows a per-status connection icon', (tester) async {
       for (final ConnectionStatus status in const <ConnectionStatus>[
         ConnectionStatus.connecting,
@@ -318,10 +347,14 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(home: Scaffold(body: SystemCard(handle: handle))),
         );
+        // UI-2: the merged header label now includes the endpoint URL (same
+        // pattern as the SystemOverviewPage connection header) so the URL
+        // subtitle line is not a second detached announcement.
         expect(
-          find.bySemanticsLabel('Lab BMC, $word'),
+          find.bySemanticsLabel('Lab BMC, $word, https://1.2.3.4:443'),
           findsOneWidget,
-          reason: 'expected merged header label for $status',
+          reason: 'expected merged header label (name + state + URL) for '
+              '$status',
         );
       }
     });

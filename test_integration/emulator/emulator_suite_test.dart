@@ -1869,6 +1869,151 @@ void main() {
   });
 
   group(
+      'emulator: chassis Controls surface — power-limit/frequency control '
+      'read + SetPoint PATCH round-trip (#006/#016/#019/#022)', () {
+    late AuthManager manager;
+    late RedfishClient client;
+
+    setUpAll(() async {
+      manager = AuthManager(storage: InMemoryStorage());
+      await manager.login('em-controls', emulatorProfile());
+      client = manager.clientFor('em-controls')!;
+    });
+
+    tearDownAll(() async {
+      await manager.logout('em-controls');
+    });
+
+    test(
+        'Controls collection: Chassis.1U.Controls enumerates PowerLimit + '
+        'CPU1Freq with served @odata.type (#006/#019)', () async {
+      // The mockup publishes the modern chassis control surface
+      // (#ControlCollection / #Control.v1_5_0) under the Chassis 'Controls'
+      // link — the resource a power-capping (#022/#006) or frequency-scaling
+      // UI reads BEFORE changing anything. The collection carries two
+      // members (PowerLimit + CPU1Freq), the same shape the EnvironmentMetrics
+      // power-limit surface (SetPoint 500) mirrors.
+      final Map<String, dynamic> chassis =
+          await client.getJson('/redfish/v1/Chassis/1U');
+      final Map<String, dynamic> controls = await client.getJson(
+          (chassis['Controls'] as Map<dynamic, dynamic>)['@odata.id']
+              as String);
+      expect(controls['@odata.type'], '#ControlCollection.ControlCollection');
+      expect(controls['Members@odata.count'], 2);
+      final List<dynamic> members =
+          controls['Members'] as List<dynamic>? ?? <dynamic>[];
+      expect(
+        members.map(
+            (Object? m) => (m as Map<dynamic, dynamic>)['@odata.id'] as String),
+        containsAll(<String>[
+          '/redfish/v1/Chassis/1U/Controls/PowerLimit',
+          '/redfish/v1/Chassis/1U/Controls/CPU1Freq',
+        ]),
+      );
+    });
+
+    test(
+        'Control detail: PowerLimit SetPoint/AllowableMin/Max + Sensor '
+        'DataSourceUri wiring; CPU1Freq frequency range (#006/#019/#022)',
+        () async {
+      // The per-control read surface: PowerLimit publishes the current
+      // SetPoint (500 W), the enforceable AllowableMin/Max a #022 power-
+      // capping flow must pre-validate against, the ControlMode, and a
+      // 'Sensor' excerpt carrying Reading + DataSourceUri into the Sensors
+      // collection — the same wiring the EnvironmentMetrics pin documents.
+      final Map<String, dynamic> powerLimit =
+          await client.getJson('/redfish/v1/Chassis/1U/Controls/PowerLimit');
+      expect(powerLimit['@odata.type'], '#Control.v1_5_0.Control');
+      expect(powerLimit['Id'], 'PowerLimit');
+      expect(powerLimit['ControlType'], 'Power');
+      expect(powerLimit['ControlMode'], 'Automatic');
+      expect(powerLimit['SetPoint'], 500);
+      expect(powerLimit['SetPointUnits'], 'W');
+      expect(powerLimit['AllowableMax'], 1000);
+      expect(powerLimit['AllowableMin'], 150);
+
+      // The Sensor excerpt's DataSourceUri resolves to a real Sensor member
+      // the SensorsService already parses (wired surfaces).
+      final Map<dynamic, dynamic> sensor =
+          powerLimit['Sensor'] as Map<dynamic, dynamic>;
+      expect(sensor['Reading'], 374);
+      expect(
+          sensor['DataSourceUri'], '/redfish/v1/Chassis/1U/Sensors/TotalPower');
+      final Map<String, dynamic> rawSensor =
+          await client.getJson(sensor['DataSourceUri'] as String);
+      expect(rawSensor['@odata.type'], startsWith('#Sensor.'));
+      expect(rawSensor['Reading'], 374);
+
+      // CPU1Freq: the frequency-control surface (SettingMin/Max + the wider
+      // AllowableMin/Max) a CPU power/performance UI would read.
+      final Map<String, dynamic> cpu1Freq =
+          await client.getJson('/redfish/v1/Chassis/1U/Controls/CPU1Freq');
+      expect(cpu1Freq['@odata.type'], '#Control.v1_5_0.Control');
+      expect(cpu1Freq['Id'], 'CPU1Freq');
+      expect(cpu1Freq['ControlType'], 'Frequency');
+      expect(cpu1Freq['ControlMode'], 'Automatic');
+      expect(cpu1Freq['SetPointUnits'], 'Hz');
+      expect(cpu1Freq['SettingMin'], 2000);
+      expect(cpu1Freq['SettingMax'], 2400);
+      expect(cpu1Freq['AllowableMin'], 1500);
+      expect(cpu1Freq['AllowableMax'], 3700);
+    });
+
+    test(
+        'Control PATCH round-trip: SetPoint 204 + persists; bogus value NOT '
+        'validated — client must pre-validate against AllowableMin/Max (#016)',
+        () async {
+      // The SECOND live PATCH pin on this fixture (after the ComputerSystem
+      // Boot/IndicatorLED pins): PATCHing a Control resource's SetPoint
+      // returns 204 and the change PERSISTS into the served resource (in-
+      // memory mockup; on-disk fixture untouched). This is the exact DSP0266
+      // §6.5.2 partial-update shape a #022 power-capping flow sends to
+      // /Chassis/1U/Controls/PowerLimit.
+      try {
+        final Map<String, dynamic> patched = await client.patchJson(
+          '/redfish/v1/Chassis/1U/Controls/PowerLimit',
+          body: <String, dynamic>{'SetPoint': 600},
+        );
+        expect(patched['value'], '');
+        final Map<String, dynamic> after =
+            await client.getJson('/redfish/v1/Chassis/1U/Controls/PowerLimit');
+        expect(after['SetPoint'], 600,
+            reason: '#016: a PATCHed Control SetPoint persists on this '
+                'fixture — the live shape a power-capping flow relies on');
+      } finally {
+        await client.patchJson(
+          '/redfish/v1/Chassis/1U/Controls/PowerLimit',
+          body: <String, dynamic>{'SetPoint': 500},
+        );
+      }
+
+      // Negative pin (same theme as ResetType/PATCH-body): the mockup does
+      // NOT validate the PATCH value — `SetPoint: 9999` answers 204 AND
+      // persists. #016/#022's client must pre-validate against the advertised
+      // AllowableMin/Max; the 400 + @Message.ExtendedInfo validation-failure
+      // path stays unit-level.
+      try {
+        final Map<String, dynamic> bogus = await client.patchJson(
+          '/redfish/v1/Chassis/1U/Controls/PowerLimit',
+          body: <String, dynamic>{'SetPoint': 9999},
+        );
+        expect(bogus['value'], '');
+        final Map<String, dynamic> out =
+            await client.getJson('/redfish/v1/Chassis/1U/Controls/PowerLimit');
+        expect(out['SetPoint'], 9999,
+            reason: '#016: the mockup applies ANY PATCH value without '
+                'validation — the client must pre-validate Control SetPoints '
+                'against AllowableMin/Max');
+      } finally {
+        await client.patchJson(
+          '/redfish/v1/Chassis/1U/Controls/PowerLimit',
+          body: <String, dynamic>{'SetPoint': 500},
+        );
+      }
+    });
+  });
+
+  group(
       'emulator: corpus invariant + event-destination detail '
       '(DOCS-7/19/20/21)', () {
     late AuthManager manager;

@@ -6,7 +6,25 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (DOCS-25 run — **SecureBoot/SecureBootDatabase corpus
+Last audited: 2026-10-24 (EMULATOR run — **chassis Controls surface pinned,
+EMU 60→63**): the mockup's `/Chassis/1U/Controls` publishes the modern control
+surface (`#ControlCollection.ControlCollection` → `#Control.v1_5_0.Control`):
+PowerLimit (ControlType Power, ControlMode Automatic, SetPoint 500 W,
+AllowableMax 1000 / AllowableMin 150 — the exact limits a #022 power-capping
+flow pre-validates against — plus a `Sensor` excerpt carrying Reading 374 +
+`DataSourceUri` → `/Chassis/1U/Sensors/TotalPower`, the same wiring the
+EnvironmentMetrics pin documents) and CPU1Freq (ControlType Frequency,
+SettingMin/Max 2000/2400 Hz, AllowableMax/Min 1500/3700); the **second live
+PATCH pin**: PATCHing `SetPoint: 600` returns 204 AND persists (in-memory only;
+on-disk fixture untouched) — the DSP0266 §6.5.2 partial-update shape a
+power-capping flow sends — while a bogus `SetPoint: 9999` is ALSO applied
+unvalidated (same "advertised contract, not enforced" rule as ResetType/
+PATCH-body, #016); the #006/#019/#022 client must pre-validate SetPoints
+against AllowableMin/Max. Control is NOT client-mapped — no fixture-schema
+duty; the corpus mirror duty (served `Control.v1_5_0.json` + newest
+`Control.v1_8_1.json` + aggregator + `ControlCollection.json`) is recorded as
+**DOCS-26**.
+Prior: 2026-10-24 (DOCS-25 run — **SecureBoot/SecureBootDatabase corpus
 mirror for the EMU-pinned boot-integrity surface, EMU 57→60**): the mockup's
 `/Systems/437XR1138R2/SecureBoot` publishes the secure-boot read surface
 (`#SecureBoot.v1_1_1.SecureBoot`: SecureBootEnable false /

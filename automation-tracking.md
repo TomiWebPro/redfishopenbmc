@@ -3360,3 +3360,64 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **100** (99 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 21:53 — EMULATOR (chassis Controls surface, EMU 60→63) + UI-2 SystemCard URL merge
+
+- **Baseline:** analyze 0; tests 347 passed / 1 skipped; starting commit 4750053
+  (branch `main` ahead 101 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR per alternation (last substantive runs: EMU 20:12
+  → DOCS 21:00; EMU due). Pinned the **chassis Controls surface** the mockup
+  serves under `Chassis.1U.Controls` (`#ControlCollection` →
+  `#Control.v1_5_0.Control`) — the modern power-limit / frequency control
+  surface a #006/#019/#022 power-capping flow reads before changing anything.
+  Three new live tests (suite 60 → **63**):
+  1. Collection: Chassis `Controls` link → `#ControlCollection.ControlCollection`
+     with 2 members (PowerLimit + CPU1Freq).
+  2. Control detail: PowerLimit (ControlType Power, ControlMode Automatic,
+     SetPoint 500 W, AllowableMax 1000 / AllowableMin 150, `Sensor` excerpt
+     Reading 374 + DataSourceUri → `/Chassis/1U/Sensors/TotalPower` resolving
+     to a real Sensor — the wired-surface shape) + CPU1Freq (ControlType
+     Frequency, SettingMin/Max 2000/2400 Hz, AllowableMin/Max 1500/3700).
+  3. **Second live PATCH pin (#016):** PATCHing `SetPoint: 600` on PowerLimit
+     returns 204 AND persists (in-memory; on-disk fixture byte-identical)
+     while `SetPoint: 9999` is ALSO applied unvalidated — same
+     advertised-contract-not-enforced rule as ResetType/PATCH-body; the
+     #022/#016 client must pre-validate SetPoints against AllowableMin/Max
+     (the 400 + `@Message.ExtendedInfo` validation path stays unit-level).
+- **Docs:** none this run (EMU stream). **DOCS-26 filed** — mirror the Control
+  family (served `Control.v1_5_0` + newest `Control.v1_8_1` + aggregator +
+  `ControlCollection`) into the external corpus next DOCS run; Control is NOT
+  client-mapped so there is no fixture-schema duty (corpus-invariant family
+  list untouched). REQUIREMENTS.md "Last audited" rewritten (EMU 60→63,
+  DOCS-26 noted; prior DOCS-25 section preserved).
+- **Emulator:** server prepared from the pinned `23d21f9a`, healthy on 8443,
+  suite **60 → 63 tests, 63/63 passed** (+3 Control tests). On-disk fixture
+  byte-identical (`git status` clean apart from the test file); in-memory
+  mockup state restored (SetPoint back to 500 in `finally`). Server stopped.
+- **Code/tests:** no lib/ production change for the EMU stream — emulator-only
+  pins in `test_integration/emulator/emulator_suite_test.dart` (new
+  Controls group). Plain `flutter test` suite unaffected (emulator tests skip
+  without `REDFISH_EMULATOR_URL`): 348 passed / 1 skipped.
+- **UI:** one small tested UI-2 increment — `SystemCard` header now merges
+  name + state + endpoint URL (`<name>, <state>, <scheme>://<host>:<port>`,
+  the SystemOverviewPage connection-header precedent; the URL subtitle was the
+  last remaining non-card label on the dashboard card). The standalone
+  subtitle `Text` is wrapped in `ExcludeSemantics` so it does not
+  double-announce (visible text preserved). The existing 4-state header test
+  updated to expect the merged label; +1 widget test asserts the merged node +
+  the URL appears exactly once in the semantics tree. Suite 347 → **348**.
+- **Verification:** analyze 0; tests **348 passed / 1 skipped** (baseline 347
+  → +1 widget); emulator 63/63; issues validate OK; `git diff --check` clean;
+  secret scan: Dart tests + doc prose only, no credentials (the Control bodies
+  are public DMTF fixture data, public schema JSONs referenced but not
+  downloaded this run).
+- **Commit:** (after §7.2/§7.3 below) — pushed: expected no (known GitHub
+  credential blocker; local commit kept, not retried).
+- **Next:** 1) Push the queued local commits (102) from a machine with GitHub
+  credentials; 2) DOCS per alternation — DOCS-26 (mirror Control served +
+  newest + aggregator + collection into the external corpus, then the
+  REQUIREMENTS.md #006/#019/#022 Control rows cite real files); 3) P1 #015
+  AuthManager — wire `Session.expiryFromService` into login, re-auth on
+  `isExpired`, token/location from create RESPONSE HEADERS only; #016 remains
+  the Boot/IndicatorLED If-Match wiring with the settings-object ETag.

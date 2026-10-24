@@ -7,38 +7,41 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 (DOCS run — **DOCS-25 done: SecureBoot +
-  SecureBootDatabase corpus mirror for the EMU-pinned boot-integrity
-  surface** — served `SecureBoot.v1_1_1` + newest `SecureBoot.v1_2_1` (adds
-  only `SecureBootDesiredMode`, additive), served `SecureBootDatabase.v1_0_2`
-  + newest `SecureBootDatabase.v1_0_3` (property no-op), both aggregators +
-  `SecureBootDatabaseCollection` = 7 files / 52,544 bytes, external corpus
-  only; served-version `ResetKeysType` enums verified to match the EMU pin
-  (SecureBoot: ResetAllKeysToDefault/DeleteAllKeys/DeletePK; PK database:
-  no DeletePK — the per-resource nuance is a schema fact); SecureBoot rows in
-  REQUIREMENTS.md now cite real mirror files; both families stay NOT
-  client-mapped — no fixture duty, corpus-invariant list untouched; anchors
-  re-verified unchanged: bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0,
-  schema index 200; next P1: #015 (AuthManager) and #016 (If-Match/ETag
+- **Last updated:** 2026-10-24 (EMULATOR run — **chassis Controls surface
+  pinned live, EMU 60→63**: `#ControlCollection` → `#Control.v1_5_0.Control`
+  PowerLimit SetPoint 500 W + AllowableMax/Min 1000/150 + `Sensor`
+  DataSourceUri → Sensors/TotalPower (374 W — the wiring #006/#019 power-capping
+  follows) + CPU1Freq frequency range; **second live PATCH pin (#016)** —
+  SetPoint PATCH 204 + persists, bogus 9999 also applied unvalidated → the
+  client must pre-validate against AllowableMin/Max; Control stays NOT
+  client-mapped — no fixture duty, corpus mirror recorded as **DOCS-26**
+  (served `Control.v1_5_0` + newest `Control.v1_8_1` + aggregator +
+  `ControlCollection`); UI-2 increment: SystemCard header merges name + state +
+  URL, URL subtitle ExcludeSemantics'd (no double announcement), +1 widget
+  test (suite 347 → 348); next P1: #015 (AuthManager) and #016 (If-Match/ETag
   wiring on the `patchJson` transport)
-- **Current focus:** **DOCS (2026-10-24)** — DOCS-25 closed (SecureBoot/
-  SecureBootDatabase mirrored; see above); next P1: #015 (AuthManager) —
-  `expiryFromService` + the Sessions pin are ready, wire the discovered
-  SessionService body into login + re-auth on `isExpired`; #016: the PATCH
-  transport landed (`patchJson`) + the If-Match boundary is pinned (the mockup
-  ignores preconditions — the client must send the settings-object ETag
-  `9234ac83b9700123cc32` itself, EMU 53/60), remaining is the actual
-  If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit tests
-  for the 412 path; #022/#016: `ResetActionInfo` ActionInfo resource crawl
-  (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only the
-  annotation form and now provably ignores ResetType/ResetKeysType values);
-  #018: query-capability surface + live `$expand` contract pinned — remaining:
-  build the lightweight discovery pass + the cache fixes; **new feature
-  candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
-  served versions move into `test/fixtures/redfish/schemas/` + the
-  corpus-invariant family list gains `Bios`/`Settings`); corpus mirror queue
-  is now EMPTY — all EMU-pinned families (incl. SecureBoot) have real mirror
-  files; next DOCS run can do a freshness audit or close remaining gaps
+- **Current focus:** **EMULATOR (2026-10-24)** — chassis Controls surface
+  pinned live (EMU 60→63, #Control.v1_5_0 PowerLimit + CPU1Freq + the second
+  live PATCH pin on SetPoint with AllowableMin/Max pre-validation); next P1:
+  #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire
+  the discovered SessionService body into login + re-auth on `isExpired`;
+  #016: the PATCH transport landed (`patchJson`) + the If-Match boundary is
+  pinned (the mockup ignores preconditions — the client must send the
+  settings-object ETag `9234ac83b9700123cc32` itself, EMU 53/60), remaining
+  is the actual If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH
+  flow + unit tests for the 412 path; #022/#016: `ResetActionInfo` ActionInfo
+  resource crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it
+  serves only the annotation form and now provably ignores ResetType/
+  ResetKeysType values; the Control SetPoint PATCH pin adds the AllowableMin/
+  Max pre-validation rule for power capping); #018: query-capability surface +
+  live `$expand` contract pinned — remaining: build the lightweight discovery
+  pass + the cache fixes; **new feature candidate #028:** BIOS-config editor
+  (Bios/Settings become client-mapped → served versions move into
+  `test/fixtures/redfish/schemas/` + the corpus-invariant family list gains
+  `Bios`/`Settings`); corpus mirror queue: **DOCS-26** (Control served v1_5_0
+  + newest v1_8_1 + aggregator + ControlCollection) is the only open duty —
+  all other EMU-pinned families have real mirror files; next DOCS run can do
+  a freshness audit or close DOCS-26
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -405,6 +408,22 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       corpus-invariant family list unchanged; anchors re-verified: bmcweb
       `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index 200).**
 
+- [ ] **DOCS-26** Mirror the **Control** family the EMU run pinned live
+      (EMU 60→63, 2026-10-24) — the external corpus has no schema for
+      `#Control.v1_5_0.Control` (the modern chassis control surface:
+      PowerLimit SetPoint/AllowableMax/Min + `Sensor` DataSourceUri wiring
+      into the Sensors collection + CPU1Freq frequency range — the #006/#019/
+      #022 power-capping read + the second live PATCH pin on SetPoint with
+      the AllowableMin/Max pre-validation rule). Mirror the **mockup-served**
+      `Control.v1_5_0.json` plus the **newest** `Control.v1_8_1.json` plus
+      the aggregator + `ControlCollection.json` (the DOCS-12/13/19/20/21/23/24
+      "newest + served" pair precedent) into
+      `documentations/external/redfish/schemas/v1/` only — Control stays NOT
+      client-mapped (no fixture duty; the corpus-invariant family list
+      unchanged). Source: `https://redfish.dmtf.org/schemas/v1/Control.json`
+      (+ `ControlCollection.json`). Keep inside the DOCS-6 budget.
+      (filed run 2026-10-24 EMU stream; **not started** — next DOCS duty)
+
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across
       DOCS-3/4/5/10/13 cited an older spec layout) and correct every stale
@@ -606,7 +625,20 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `9234ac83b9700123cc32` exists), so 412 enforcement stays unit-level and
       the client must send the settings-object ETag itself; SecureBoot /
       SecureBootDatabase stay NOT client-mapped — corpus mirror duty recorded
-      as DOCS-25)**
+      as DOCS-25)** → **63 tests
+      (chassis Controls surface pinned live 2026-10-24 22:xx:
+      `#ControlCollection` enumerates PowerLimit + CPU1Freq; each
+      `#Control.v1_5_0.Control` publishes ControlType/ControlMode/
+      AllowableMax/Min (PowerLimit: SetPoint 500 W + Allowable 1000/150 +
+      `Sensor` excerpt Reading 374 + DataSourceUri → Sensors/TotalPower — the
+      wiring a #006/#019 power-capping flow follows; CPU1Freq: Frequency,
+      SettingMin/Max 2000/2400 Hz + Allowable 1500/3700); the **second live
+      PATCH pin (#016)** — PATCHing `SetPoint: 600` on PowerLimit answers 204
+      AND persists (in-memory; on-disk fixture byte-identical), while
+      `SetPoint: 9999` is ALSO applied unvalidated — the #022/#016 rule: the
+      client must pre-validate Control SetPoints against AllowableMin/Max;
+      Control stays NOT client-mapped — no fixture-schema duty, corpus mirror
+      duty recorded as DOCS-26)**
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -975,6 +1007,15 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       the FirmwareView no-overflow test's manual `setSurfaceSize` restore was
       also converted to the established `addTearDown` (the 12:30 journal
       noted it for this run);
+      **SystemCard header merges name + state + endpoint URL (`<name>,
+      <state>, <scheme>://<host>:<port>`) done 2026-10-24 — the URL subtitle
+      line (the last remaining non-card label on the dashboard card) is now
+      part of the merged header semantics node (the SystemOverviewPage
+      connection-header precedent) and the standalone subtitle Text is
+      `ExcludeSemantics`'d so it does not double-announce (visible text
+      preserved); the existing 4-state header test updated to expect the
+      merged name + state + URL label, +1 widget test asserts the merged node
+      + the URL appears exactly once in the semantics tree;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

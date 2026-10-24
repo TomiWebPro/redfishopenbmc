@@ -85,9 +85,14 @@ class SystemCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall,
+              // UI-2: the URL subtitle is part of the merged header node (the
+              // label below already announces it), so it must not double-
+              // announce as a second detached text. The visible text stays.
+              ExcludeSemantics(
+                child: Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -145,10 +150,11 @@ class SystemCard extends StatelessWidget {
     return parts.isEmpty ? null : parts.join(' · ');
   }
 
-  /// One concise merged semantics label for the card header: the display name
-  /// plus the connection state (UI-2 pattern — the status icon carries no
-  /// intrinsic meaning for screen readers, and the raw text + icon would
-  /// otherwise announce as separate nodes).
+  /// One concise merged semantics label for the card header: the display name,
+  /// the connection state, and the endpoint URL (UI-2 pattern — the status
+  /// icon carries no intrinsic meaning for screen readers, and the raw text +
+  /// icon + URL line would otherwise announce as separate nodes; the URL
+  /// subtitle is ExcludeSemantics'd so it does not double-announce).
   String _headerLabel(SystemHandle handle) {
     final String state = switch (handle.status) {
       ConnectionStatus.connecting => 'connecting',
@@ -156,6 +162,8 @@ class SystemCard extends StatelessWidget {
       ConnectionStatus.error => 'connection error',
       ConnectionStatus.disconnected => 'disconnected',
     };
-    return '${handle.displayName}, $state';
+    final ConnectionProfile profile = handle.profile;
+    return '${handle.displayName}, $state, '
+        '${profile.scheme}://${profile.host}:${profile.port}';
   }
 }

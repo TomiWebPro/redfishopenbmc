@@ -2930,3 +2930,74 @@
 **Issues touched:**
 - none opened/closed this run. DOCS-25 done; UI-2 advanced (Discovery
   placeholder); #015 remains the next P1.
+
+## 2026-10-24 — agent:redfish-automation — EMU 60→63 (chassis Controls surface + second live PATCH pin) + UI-2 SystemCard URL merge
+
+**Done:**
+- EMULATOR primary workstream (alternation: EMU 20:12 → DOCS 21:00 → EMU due).
+  Suite 60 → **63 tests, 63/63 passed** against the pinned mockup (`23d21f9a`):
+  1. **Controls collection**: `Chassis.1U.Controls` link →
+     `#ControlCollection.ControlCollection`, 2 members (PowerLimit + CPU1Freq).
+  2. **Control detail**: `#Control.v1_5_0.Control` — PowerLimit publishes
+     ControlType Power / ControlMode Automatic / SetPoint 500 W /
+     AllowableMax 1000 / AllowableMin 150 + a `Sensor` excerpt (Reading 374,
+     DataSourceUri → `/Chassis/1U/Sensors/TotalPower`, resolves live to the
+     Sensor the SensorsService parses — wired surfaces); CPU1Freq publishes
+     ControlType Frequency / SettingMin/Max 2000/2400 Hz / AllowableMin/Max
+     1500/3700 — the frequency-scaling read.
+  3. **Second live PATCH pin (#016)**: PATCHing `SetPoint: 600` on PowerLimit
+     returns 204 AND persists (in-memory; on-disk fixture byte-identical);
+     a bogus `SetPoint: 9999` ALSO 204s AND persists — the mockup never
+     validates PATCH values, so the #022/#016 client must pre-validate
+     SetPoints against AllowableMin/Max and the 400 + `@Message.ExtendedInfo`
+     path stays unit-level (same rule as ResetType and PATCH-body).
+- REQUIREMENTS.md: "Last audited" rewritten (EMU 60→63; Controls read + the
+  AllowableMin/Max pre-validation rule; DOCS-26 duty filed). **DOCS-26 filed**
+  in FUTUREWORK.md — mirror Control served v1_5_0 + newest v1_8_1 + aggregator
+  + ControlCollection into the external corpus (Control is NOT client-mapped →
+  no fixture duty; corpus-invariant list untouched). FUTUREWORK.md: EMU-2
+  chain 60 → 63, #016 advanced (second live PATCH pin on a Control SetPoint),
+  #022 extended (Control AllowableMin/Max pre-validation rule), UI-2 advanced
+  (SystemCard URL), header rewritten.
+- UI-2 increment: `SystemCard` header merges name + state + endpoint URL
+  (`<name>, <state>, <scheme>://<host>:<port>` — the SystemOverviewPage
+  connection-header precedent); the standalone URL subtitle `Text` is
+  `ExcludeSemantics`'d so it does not double-announce (visible text kept).
+  Existing 4-state header test updated; +1 widget test asserts the merged node
+  + the URL appears exactly once in the semantics tree. Suite 347 → **348**
+  passed / 1 skipped.
+- No lib/ production change for the EMU stream; on-disk fixture
+  byte-identical; in-memory mockup state restored (SetPoint 500); server
+  stopped. `dart format` drift in 26 unrelated files reverted to keep the diff
+  on the emulator file + system_card.dart + ui_widget_test.dart +
+  REQUIREMENTS.md + FUTUREWORK.md + tracking.
+
+**Decisions:**
+- EMULATOR per alternation; chose Controls because (a) it is the modern
+  power-limit/frequency surface the #006/#019/#022 power-capping work needs —
+  first time the suite reads a settable control resource, (b) it gives the
+  second live PATCH pin (SetPoint) on a genuinely different resource shape,
+  proving #016's transport applies beyond ComputerSystem partial updates, (c)
+  it records the AllowableMin/Max pre-validation rule for control value
+  changes — the exact #022 guard for a power-capping UI.
+- Control stays NOT client-mapped; the corpus mirror duty is recorded as
+  DOCS-26 (DOCS stream job), following the EventDestination/VirtualMedia →
+  DOCS-24, SecureBoot → DOCS-25 precedent.
+- UI increment: targeted the last remaining non-card label on the dashboard
+  card (the URL subtitle) with the established merged-header pattern — small,
+  pattern-consistent, fully tested; did not rush the open-ended focus-order
+  hunt.
+- No new dependencies, no TLS change, no production behaviour change; no
+  corpus downloads (EMU stream).
+
+**Next:**
+- Push 102 queued local commits once GitHub credentials are available.
+- DOCS per alternation: DOCS-26 — mirror Control served/newest/aggregator/
+  collection into the external corpus.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 60 → 63; #016 advanced (second live PATCH
+  pin — Control SetPoint; AllowableMin/Max pre-validation rule); #022 advanced
+  (Control surface); DOCS-26 filed; UI-2 advanced (SystemCard URL merge).
