@@ -84,8 +84,7 @@ class _SystemShellState extends ConsumerState<SystemShell> {
   }
 
   int _currentIndex(List<_SystemTab> tabs) {
-    final List<String> segments =
-        GoRouterState.of(context).uri.pathSegments;
+    final List<String> segments = GoRouterState.of(context).uri.pathSegments;
     final String? last = segments.isNotEmpty ? segments.last : null;
     final int idx = tabs.indexWhere((t) => t.path == last);
     return idx < 0 ? 0 : idx;
@@ -97,9 +96,28 @@ class _SystemShellState extends ConsumerState<SystemShell> {
     final SystemHandle? handle = state.systems[widget.systemId];
 
     if (handle == null) {
+      // UI-2: the shell-level not-found fallback announces as ONE
+      // self-describing merged semantics node (icon + text) instead of a bare
+      // detached Text — the established empty/error-state pattern (matches the
+      // SystemOverviewPage fallback). No Retry: the system id does not exist in
+      // the manager, there is nothing to reload.
       return Scaffold(
         appBar: AppBar(title: const Text('System')),
-        body: const Center(child: Text('System not found')),
+        body: Center(
+          child: Semantics(
+            container: true,
+            excludeSemantics: true,
+            label: 'System not found',
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(Icons.search_off_outlined, size: 40),
+                SizedBox(height: 8),
+                Text('System not found'),
+              ],
+            ),
+          ),
+        ),
       );
     }
 

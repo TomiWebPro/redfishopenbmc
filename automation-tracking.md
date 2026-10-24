@@ -2888,3 +2888,66 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **88** (87 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 16:30 — EMULATOR (Bios @Redfish.Settings ETag surface) + UI-2 shell not-found semantics
+
+- **Baseline:** analyze 0; tests 336 passed / 1 skipped; starting commit 884428f
+  (branch `main` ahead 89 of origin); issues validate OK; working tree clean; no
+  stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR per alternation (last substantive runs: EMU 15:00 →
+  DOCS 13:05 → EMU overdue again). Added a live pin for the **Bios
+  `@Redfish.Settings` surface** (suite 52 → **53**): the DMTF mockup's
+  `/Systems/437XR1138R2/Bios` resource carries the DSP0266 §9.9
+  `@Redfish.Settings` payload annotation with a real **settings-object ETag**
+  (`9234ac83b9700123cc32`) — the ONLY ETag-ish token this fixture serves (no
+  resource-level `@odata.etag` / HTTP ETag header). This **refines the long-held
+  tracking note** "etag behaviour cannot be pinned on this fixture": header-level
+  ETags are absent, but the settings-object ETag IS pinable and is exactly the
+  optimistic-concurrency token a #016 PATCH/If-Match flow must send. The pin also
+  covers: the pending-settings resource (`Bios/Settings`,
+  `#Bios.v1_2_2.Bios` Id `Settings`) whose attribute set differs from the current
+  one (EmbeddedSata Raid→Ahci, ProcTurboMode Enabled→Disabled — the
+  "pending vs current" compare a BIOS-config editor presents),
+  `@Redfish.Settings.Messages[0]` `Base.1.0.SettingsFailed` + RelatedProperties
+  from the last failed apply, `#Bios.ResetBios` POST → 204 (served by the
+  mockup's `/Actions/` framework), and `#Bios.ChangePassword` advertised
+  (credential-bearing action — target pinned only, never round-tripped with real
+  secrets). New test lives in the overview/log group of
+  `test_integration/emulator/emulator_suite_test.dart`.
+- **Docs:** REQUIREMENTS.md "Last audited" rewritten for the EMU run + the
+  test-platforms block updated (52 → 53 tests; new Bios `@Redfish.Settings`
+  paragraph). No corpus refresh — anchors unchanged (mockup `23d21f9a`,
+  bmcweb `63a18f4`, DSP0266 1.25.0).
+- **Emulator:** server re-pinned `23d21f9a` (fresh clone, byte-identical
+  fixture), HTTPS self-signed test-only cert, suite run via
+  `tool/emulator/run_tests.sh` → **53/53 passed**; server stopped after (manual
+  start during probing, SIGKILL confirmed).
+- **Code/tests:** one emulator test added (53). UI-2 increment: **SystemShell
+  `System not found` scaffold fallback** converted from a bare `Text` to the
+  established merged `Semantics(container + excludeSemantics,
+  label: 'System not found')` node with `Icons.search_off_outlined` (one
+  self-describing announcement; no Retry — a nonexistent system id is not an
+  error; matches the SystemOverviewPage fallback fixed 13:05). +1 widget test
+  asserts the merged `bySemanticsLabel` node + visible text + icon + 320 px
+  no-overflow via `addTearDown`. Unit suite 336 → **337**.
+- **Verification:** analyze 0; tests **337 passed / 1 skipped** (baseline 336 →
+  +1 widget); emulator suite 53/53; issues validate OK; `git diff --check`
+  clean; secret scan clean (Dart + docs prose only; the test asserts the Bios
+  ChangePassword *target* but sends no credentials). `dart format` touched 29
+  files; drift in 25 unrelated files reverted via `git checkout --` to keep the
+  diff on 4 files (the established pattern).
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** (expected) — the known
+  GitHub credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN
+  env, no SSH key); local commit kept, not retried. Commits ahead of origin/main:
+  **89** before push attempt.
+- **Next:** 1) Push the queued local commits (90) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
+  login (set `expiresAt` from the discovered SessionService), re-auth on
+  `isExpired`, keep token/location from create headers only (the fixture echoes
+  Password in session bodies); 3) DOCS per alternation — the new Bios Settings
+  pin adds a candidate: mirror the served `Bios.v1_2_2.json` +
+  `Settings.v1_3_5.json` (the mockup publishes `#Bios.v1_2_2.Bios` +
+  `#Settings.v1_3_5.Settings`; they are in the corpus crawl but NOT yet in the
+  client-mapped family list — decide whether a BIOS-config feature makes them
+  client-mapped, which would pull them into the DOCS-19/20/21 fixture invariant).

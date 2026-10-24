@@ -2565,3 +2565,60 @@
 - none opened/closed this run. DOCS-22 done; manifest + REQUIREMENTS.md +
   FUTUREWORK updated; UI-2 got the not-found fallback increment; issues remain
   open (#015 next P1).
+
+## 2026-10-24 — agent:redfish-automation — EMU Bios @Redfish.Settings pin + shell not-found semantics
+
+**Done:**
+- EMULATOR primary workstream (alternation: DOCS 13:05 → EMU next). Pinned the
+  **Bios `@Redfish.Settings` surface** live against the pinned `23d21f9a` mockup
+  (suite 52 → **53**): `/Systems/437XR1138R2/Bios` carries the DSP0266 §9.9
+  `@Redfish.Settings` payload annotation with a real settings-object **ETag**
+  (`9234ac83b9700123cc32`, the fixture's only ETag-ish token — no resource-level
+  `@odata.etag`/HTTP ETag header). This refines the long-held "etag behaviour
+  cannot be pinned on this fixture" note: header-level ETags are absent, but the
+  settings-object ETag IS pinable and is the optimistic-concurrency token a #016
+  PATCH/If-Match flow sends. Also pinned: pending-settings resource
+  (`Bios/Settings`, `#Bios.v1_2_2.Bios`, Id `Settings`) with attribute diff vs
+  current (EmbeddedSata Raid→Ahci, ProcTurboMode Enabled→Disabled),
+  `Messages[0]` `Base.1.0.SettingsFailed` + RelatedProperties from the last
+  failed apply, `#Bios.ResetBios` POST → 204 (mockup `/Actions/` framework),
+  `#Bios.ChangePassword` advertised-only (never round-tripped with secrets).
+- REQUIREMENTS.md: "Last audited" rewritten for the EMU run; test-platforms
+  block updated 52 → 53 + new Bios Settings paragraph.
+- UI-2 increment: **SystemShell** `System not found` scaffold fallback converted
+  from a bare `Text` to the established merged `Semantics(container +
+  excludeSemantics, label: 'System not found')` node + `Icons.search_off_outlined`
+  (no Retry — nonexistent system id is not an error; matches the
+  SystemOverviewPage fallback from the 13:05 run). +1 widget test (merged
+  `bySemanticsLabel` node + visible text + icon + 320 px no-overflow via
+  `addTearDown`). Unit suite 336 → **337**.
+
+**Decisions:**
+- EMULATOR per alternation; within it chose the Bios Settings pin because it
+  (a) contradicts-and-refines a long-standing "not pinable" claim with evidence,
+  (b) gives #016 its first live optimistic-concurrency token, and (c) is the
+  DOCS-16 §9.9 payload-annotations story continued on the wire. It is a pure
+  pin; no production code change.
+- ChangePassword: pin the advertised target only. The suite never sends real
+  credentials; POSTing `{}` to a credential action was considered but rejected
+  to keep the "no secrets in tests" rule unambiguous.
+- UI increment stayed pattern-consistent (merged node, no Retry). The `addTearDown`
+  surface-size restore matches the established pattern.
+- Corpus: Bios/Settings published types are reached by the crawl but are NOT in
+  the client-mapped family list, so no fixture-schema duty this run. Whether a
+  BIOS-config feature makes them client-mapped (→ DOCS mirror + invariant) is a
+  decision for the next DOCS run.
+
+**Next:**
+- Push 90 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, persist token/location from create RESPONSE HEADERS
+  only (the fixture echoes the password in session bodies).
+- DOCS next per alternation: mirror served `Bios.v1_2_2.json` +
+  `Settings.v1_3_5.json` and decide client-mapped status; otherwise rerun the
+  corpus freshness audit (DOCS-22 is repeatable).
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 52 → 53 recorded (Bios Settings pin +
+  refinements to the etag-pinability note); UI-2 got the shell not-found
+  increment; issues remain open (#015 next P1).

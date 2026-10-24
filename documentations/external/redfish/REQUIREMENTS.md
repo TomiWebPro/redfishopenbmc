@@ -6,19 +6,18 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (DOCS run — **frequent-family freshness audit
-DOCS-22**: compared the live DMTF schema index against the mirrored "newest"
-per client-mapped family; **8 of 33 families had advanced upstream** —
-EnvironmentMetrics v1_3_1→v1_7_0, Fan v1_5_1→v1_6_0, PowerSubsystem
-v1_1_1→v1_2_0, PowerSupply v1_5_3→v1_8_0, PowerSupplyMetrics v1_1_1→v1_3_0,
-TaskService v1_2_1→v1_3_0, ThermalMetrics v1_3_1→v1_3_3 (structural no-op),
-ThermalSubsystem v1_3_1→v1_5_0 — mirrored the 8 newest files into
-`documentations/external/redfish/schemas/v1/` (189,768 B, inside DOCS-6);
-property-delta audit: **all additive-only, no client code change**; anchors
-re-verified live — bmcweb `63a18f4` with all four docs byte-identical, mockup
-`23d21f9a`, DSP0266 1.25.0, schema index 200). UI-2: SystemOverviewPage
-`System not found` fallback now announces one merged semantics node. Prior
-runs below.)
+Last audited: 2026-10-24 (EMULATOR run — **Bios `@Redfish.Settings` surface
+pinned live, EMU 52→53**: the DMTF mockup's `/Bios` resource carries the
+DSP0266 §9.9 `@Redfish.Settings` payload annotation with a real settings-object
+**ETag** — the only ETag-ish token this fixture serves (no resource-level
+`@odata.etag`/HTTP ETag header), refining the older note "etag behaviour cannot
+be pinned on this fixture": header-level ETags are absent but the
+settings-object ETag IS pinable — the optimistic-concurrency token a #016
+PATCH/If-Match flow must send; pending-settings resource compare (EmbeddedSata
+Raid→Ahci, ProcTurboMode Enabled→Disabled), failed-apply Messages +
+RelatedProperties, `#Bios.ResetBios` POST 204, `#Bios.ChangePassword`
+advertised-only). UI-2: SystemShell not-found fallback now announces one merged
+semantics node. Prior runs below.)
 Prior: DOCS-21 run — mirrored the versioned schemas for the battery family
 the EMU run (48→50) pinned live —
 `Battery.v1_2_2.json` (mockup-served `#Battery.v1_2_2.Battery`: Module1 detail
@@ -287,7 +286,7 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 52 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 53 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -431,6 +430,23 @@ client-relevant families.
    SMTP / `SubscriptionType` OEM, mailto: Destination), and SyslogTCP
    (`SyslogFilters[0]` LowesSeverity/LogFacilities) — the future #019
    receiver's subscription-shape contract.
+   **Bios `@Redfish.Settings` surface (pinned 2026-10-24, EMU 52→53):** the
+   system's `/Bios` resource carries the DSP0266 §9.9 `@Redfish.Settings`
+   payload annotation with a real **ETag** (`9234ac83b9700123cc32`) for its
+   pending-settings object — the only ETag-ish token this fixture serves (no
+   resource-level `@odata.etag` / HTTP ETag header exists). This refines the
+   older tracking note "etag behaviour cannot be pinned on this fixture":
+   header-level ETags are absent, but the **settings-object ETag IS pinable**
+   and is exactly the optimistic-concurrency token a #016 PATCH/If-Match flow
+   must send. The pin also covers the pending-settings resource
+   (`Bios/Settings`, `#Bios.v1_2_2.Bios` Id `Settings`) whose attribute set
+   differs from the current one (EmbeddedSata Raid→Ahci, ProcTurboMode
+   Enabled→Disabled — the "pending vs current" compare a BIOS-config editor
+   presents), `@Redfish.Settings.Messages[0]` `Base.1.0.SettingsFailed` +
+   RelatedProperties from the last failed apply, and the `#Bios.ResetBios`
+   action (POST 204 via the mockup's `/Actions/` framework) with
+   `#Bios.ChangePassword` advertised (credential-bearing action — never
+   round-tripped with real secrets in this suite).
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)
 

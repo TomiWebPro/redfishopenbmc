@@ -990,6 +990,92 @@ void main() {
         contains('\$skiptoken='),
       );
     });
+
+    test(
+        'bios: @Redfish.Settings carries the only ETag the mockup serves — '
+        'pending-settings + annotation contract for #016', () async {
+      // The tracking notes "the DMTF mockup serves no @odata.etag on
+      // resources" — TRUE at the resource/HTTP-header level (no ETag header,
+      // no @odata.etag property). But the BIOS resource DOES publish the
+      // DSP0266 §9.9 `@Redfish.Settings` payload annotation with an ETag for
+      // its pending-settings object — the surface a #016 PATCH flow uses for
+      // optimistic concurrency on BIOS configuration (and the
+      // reset-to-defaults action set).
+      final Map<String, dynamic> sys =
+          await client.getJson('/redfish/v1/Systems/437XR1138R2');
+      final String biosUri =
+          (sys['Bios'] as Map<dynamic, dynamic>)['@odata.id'] as String;
+      expect(biosUri, '/redfish/v1/Systems/437XR1138R2/Bios');
+
+      final Map<String, dynamic> bios = await client.getJson(biosUri);
+      expect(bios['@odata.type'], startsWith('#Bios.'));
+      expect(bios['AttributeRegistry'], 'BiosAttributeRegistryP89.v1_0_0');
+      final Map<dynamic, dynamic> currentAttrs =
+          bios['Attributes'] as Map<dynamic, dynamic>;
+      expect(currentAttrs['BootMode'], 'Uefi');
+      expect(currentAttrs['EmbeddedSata'], 'Raid');
+      expect(currentAttrs['ProcTurboMode'], 'Enabled');
+
+      // @Redfish.Settings (§9.9.4): the pending-configuration annotation with
+      // the ETag a PATCH/If-Match flow must send, the messages from the last
+      // failed apply, and the SettingsObject that holds the pending values.
+      final Map<dynamic, dynamic> settings =
+          bios['@Redfish.Settings'] as Map<dynamic, dynamic>;
+      expect(settings, isNotNull,
+          reason: '#016: the BIOS resource must carry @Redfish.Settings');
+      expect(settings['@odata.type'], '#Settings.v1_3_5.Settings');
+      expect(settings['ETag'], isA<String>());
+      expect((settings['ETag'] as String).isNotEmpty, isTrue,
+          reason: '#016: the settings ETag is the optimistic-concurrency '
+              'token a PATCH flow sends via If-Match');
+      final List<dynamic> messages =
+          settings['Messages'] as List<dynamic>? ?? <dynamic>[];
+      expect(messages, isNotEmpty);
+      final Map<dynamic, dynamic> message =
+          messages.first as Map<dynamic, dynamic>;
+      expect(message['MessageId'], 'Base.1.0.SettingsFailed');
+      expect(message['RelatedProperties'], isA<List<dynamic>>());
+      final String settingsObjectUri = (settings['SettingsObject']
+          as Map<dynamic, dynamic>)['@odata.id'] as String;
+      expect(
+          settingsObjectUri, '/redfish/v1/Systems/437XR1138R2/Bios/Settings');
+
+      // The pending-settings resource: same @odata.type as the current BIOS,
+      // but the attribute set differs — the "pending vs current" comparison a
+      // BIOS-config editor presents before applying.
+      final Map<String, dynamic> pending =
+          await client.getJson(settingsObjectUri);
+      expect(pending['@odata.type'], startsWith('#Bios.'));
+      expect(pending['Id'], 'Settings');
+      final Map<dynamic, dynamic> pendingAttrs =
+          pending['Attributes'] as Map<dynamic, dynamic>;
+      expect(pendingAttrs['EmbeddedSata'], 'Ahci',
+          reason: 'pending EmbeddedSata differs from current (Raid) — the '
+              'compare surface a BIOS editor relies on');
+      expect(pendingAttrs['ProcTurboMode'], 'Disabled',
+          reason: 'pending ProcTurboMode differs from current (Enabled)');
+
+      // BIOS actions: ResetBios is served by the mockup action framework
+      // (POST 204). ChangePassword is advertised only — a credential-bearing
+      // action is never round-tripped with real secrets in this suite.
+      final Map<dynamic, dynamic> actions =
+          bios['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> resetBios =
+          actions['#Bios.ResetBios'] as Map<dynamic, dynamic>;
+      expect(
+        resetBios['target'],
+        '/redfish/v1/Systems/437XR1138R2/Bios/Actions/Bios.ResetBios',
+      );
+      final Map<String, dynamic> resetResult = await client
+          .postJson(resetBios['target'] as String, body: <String, dynamic>{});
+      expect(resetResult['value'], '');
+      final Map<dynamic, dynamic> changePassword =
+          actions['#Bios.ChangePassword'] as Map<dynamic, dynamic>;
+      expect(
+        changePassword['target'],
+        '/redfish/v1/Systems/437XR1138R2/Bios/Actions/Bios.ChangePassword',
+      );
+    });
   });
 
   group(

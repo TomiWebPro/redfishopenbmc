@@ -657,6 +657,28 @@ void main() {
           initialLocation: '/ghost/overview');
       expect(find.text('System not found'), findsOneWidget);
     });
+
+    testWidgets(
+        'not-found scaffold announces one merged semantics node — icon + text '
+        '(UI-2)', (tester) async {
+      final SystemManager m = seededManager(systems: <String, SystemHandle>{});
+      await pumpManaged(tester, m, const Text('child'),
+          initialLocation: '/ghost/overview');
+      expect(
+        find.bySemanticsLabel('System not found'),
+        findsOneWidget,
+        reason: 'expected one merged not-found node (icon + text)',
+      );
+      // Visible text preserved for sighted users.
+      expect(find.text('System not found'), findsOneWidget);
+      expect(find.byIcon(Icons.search_off_outlined), findsOneWidget);
+      // No overflow at the narrowest supported width (UI-3).
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      expect(tester.takeException(), isNull);
+      await tester.binding.setSurfaceSize(const Size(320, 800));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('Dialogs / pages', () {

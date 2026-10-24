@@ -7,25 +7,29 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 (DOCS run — **DOCS-22 frequent-family freshness
-  audit**: 8 of 33 client-mapped families advanced upstream since their last
-  mirror — EnvironmentMetrics v1_3_1→v1_7_0, Fan v1_5_1→v1_6_0, PowerSubsystem
-  v1_1_1→v1_2_0, PowerSupply v1_5_3→v1_8_0, PowerSupplyMetrics v1_1_1→v1_3_0,
-  TaskService v1_2_1→v1_3_0, ThermalMetrics v1_3_1→v1_3_3, ThermalSubsystem
-  v1_3_1→v1_5_0 — all newest files mirrored (189,768 B, inside DOCS-6),
-  deltas additive-only, no code change; stale bmcweb anchor in manifest +
-  Sources fixed to `63a18f4`, re-verified live byte-identical); next P1: #015
-  (AuthManager)
-- **Current focus:** **DOCS (2026-10-24)** — corpus kept fresh against the
-  live schema index; the DOCS-22 delta note adds a #008/#020 candidate
-  (`TaskService.TaskMonitorAutoExpirySeconds` surfaced by the future poller);
-  next P1: #015 (AuthManager) — `expiryFromService` + the Sessions pin are
-  ready, wire the discovered SessionService body into login + re-auth on
-  `isExpired`; #022/#016: `ResetActionInfo` ActionInfo resource crawl
-  (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only the
-  annotation form and now provably ignores ResetType values); #018:
+- **Last updated:** 2026-10-24 (EMULATOR run — **Bios `@Redfish.Settings` ETag
+  surface pinned live (EMU 52→53)**: the DMTF mockup's `/Bios` resource carries
+  the DSP0266 §9.9 `@Redfish.Settings` annotation with the fixture's **only
+  ETag-ish token** — a settings-object ETag (no resource-level
+  `@odata.etag`/HTTP ETag header), refining the old "etag not pinable" note (a
+  #016 PATCH/If-Match flow CAN pin the settings ETag); pin also covers the
+  pending-settings compare (EmbeddedSata Raid→Ahci, ProcTurboMode
+  Enabled→Disabled), failed-apply Messages/RelatedProperties,
+  `#Bios.ResetBios` POST 204, `#Bios.ChangePassword` advertised-only); next
+  P1: #015 (AuthManager)
+- **Current focus:** **EMULATOR (2026-10-24)** — Bios `@Redfish.Settings` ETag
+  surface pinned live (the only ETag-ish token on the fixture — a #016
+  PATCH/If-Match input); next P1: #015 (AuthManager) — `expiryFromService` +
+  the Sessions pin are ready, wire the discovered SessionService body into
+  login + re-auth on `isExpired`; #022/#016: `ResetActionInfo` ActionInfo
+  resource crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves
+  only the annotation form and now provably ignores ResetType values); #018:
   query-capability surface + live `$expand` contract pinned — remaining: build
-  the lightweight discovery pass + the cache fixes
+  the lightweight discovery pass + the cache fixes; **new DOCS candidate:**
+  mirror served `Bios.v1_2_2.json` + `Settings.v1_3_5.json` and decide whether
+  a BIOS-config feature makes `Bios`/`Settings` client-mapped (which would pull
+  them into the DOCS-19/20/21 fixture invariant — the corpus crawl already
+  reaches both published types)
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
