@@ -7,21 +7,22 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 (EMULATOR run — **SecureBoot boot-integrity
-  surface + database + If-Match precondition boundary pinned, EMU 57→60**:
-  `#SecureBoot.v1_1_1.SecureBoot` read state + `#SecureBoot.ResetKeys`
-  `ResetKeysType@Redfish.AllowableValues` (ResetAllKeysToDefault/DeleteAllKeys/
-  DeletePK — annotation-form rule #022/#016 on a second action family; POST
-  204, bogus type ALSO 204s), `#SecureBootDatabaseCollection` 8 members
-  (PK/KEK/db/dbx + defaults) with per-database `#SecureBootDatabase.ResetKeys`
-  *smaller* allow-list (PK omits DeletePK), and the **#016 If-Match
-  boundary**: stale `If-Match` still PATCHes 204 + persists → 412 stays
-  unit-level, the client sends the settings-object ETag itself;
-  SecureBoot/SecureBootDatabase stay NOT client-mapped → **DOCS-25 mirror
-  duty recorded**; next P1: #015 (AuthManager) and #016 (If-Match/ETag
+- **Last updated:** 2026-10-24 (DOCS run — **DOCS-25 done: SecureBoot +
+  SecureBootDatabase corpus mirror for the EMU-pinned boot-integrity
+  surface** — served `SecureBoot.v1_1_1` + newest `SecureBoot.v1_2_1` (adds
+  only `SecureBootDesiredMode`, additive), served `SecureBootDatabase.v1_0_2`
+  + newest `SecureBootDatabase.v1_0_3` (property no-op), both aggregators +
+  `SecureBootDatabaseCollection` = 7 files / 52,544 bytes, external corpus
+  only; served-version `ResetKeysType` enums verified to match the EMU pin
+  (SecureBoot: ResetAllKeysToDefault/DeleteAllKeys/DeletePK; PK database:
+  no DeletePK — the per-resource nuance is a schema fact); SecureBoot rows in
+  REQUIREMENTS.md now cite real mirror files; both families stay NOT
+  client-mapped — no fixture duty, corpus-invariant list untouched; anchors
+  re-verified unchanged: bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0,
+  schema index 200; next P1: #015 (AuthManager) and #016 (If-Match/ETag
   wiring on the `patchJson` transport)
-- **Current focus:** **EMULATOR (2026-10-24)** — SecureBoot surface + If-Match
-  boundary pinned (EMU 57→60, DOCS-25 recorded); next P1: #015 (AuthManager) —
+- **Current focus:** **DOCS (2026-10-24)** — DOCS-25 closed (SecureBoot/
+  SecureBootDatabase mirrored; see above); next P1: #015 (AuthManager) —
   `expiryFromService` + the Sessions pin are ready, wire the discovered
   SessionService body into login + re-auth on `isExpired`; #016: the PATCH
   transport landed (`patchJson`) + the If-Match boundary is pinned (the mockup
@@ -35,8 +36,9 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
   build the lightweight discovery pass + the cache fixes; **new feature
   candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
   served versions move into `test/fixtures/redfish/schemas/` + the
-  corpus-invariant family list gains `Bios`/`Settings`); DOCS-25 (SecureBoot
-  corpus mirror) is the next DOCS-run duty
+  corpus-invariant family list gains `Bios`/`Settings`); corpus mirror queue
+  is now EMPTY — all EMU-pinned families (incl. SecureBoot) have real mirror
+  files; next DOCS run can do a freshness audit or close remaining gaps
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -375,7 +377,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       (API HEAD), mockup `23d21f9a` (API HEAD of main), DSP0266 1.25.0,
       schema index 200).**
 
-- [ ] **DOCS-25** Mirror the **SecureBoot** family the EMU run pinned live
+- [x] **DOCS-25** Mirror the **SecureBoot** family the EMU run pinned live
       (EMU 57→60, 2026-10-24) — the external corpus has no schema for
       `#SecureBoot.v1_1_1.SecureBoot` (the system boot-integrity read surface:
       SecureBootEnable/CurrentBoot/Mode + `#SecureBoot.ResetKeys` with
@@ -390,6 +392,18 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       for the EMU pins cite the live pin + DOCS-25 until then). Source:
       `https://redfish.dmtf.org/schemas/v1/SecureBoot.json` (+
       `SecureBootDatabase.json`). Keep inside the DOCS-6 budget.
+      **Done (run 2026-10-24, 7 files / 52,544 bytes, inside DOCS-6; SHA-256s
+      + manifest rows verified; served `SecureBoot.v1_1_1` + newest
+      `SecureBoot.v1_2_1` (adds only `SecureBootDesiredMode`, additive),
+      served `SecureBootDatabase.v1_0_2` + newest `SecureBootDatabase.v1_0_3`
+      (property no-op), both aggregators + `SecureBootDatabaseCollection`;
+      served-version `ResetKeysType` enums verified to match the EMU pin
+      exactly (SecureBoot: ResetAllKeysToDefault/DeleteAllKeys/DeletePK; PK
+      database: no DeletePK — the per-resource nuance is a schema fact, not a
+      mockup quirk); REQUIREMENTS.md SecureBoot rows now cite real mirror
+      files; both families stay NOT client-mapped — no fixture duty, the
+      corpus-invariant family list unchanged; anchors re-verified: bmcweb
+      `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index 200).**
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across

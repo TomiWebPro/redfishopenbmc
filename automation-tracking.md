@@ -3279,3 +3279,74 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **98** (97 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 21:00 — DOCS (DOCS-25: SecureBoot + SecureBootDatabase corpus mirror) + UI-2 Discovery placeholder
+
+- **Baseline:** analyze 0; tests 345 passed / 1 skipped; starting commit 0f76c85
+  (branch `main` ahead 99 of origin); issues validate OK; working tree clean; no
+  stash, no crashed-run leftovers.
+- **Primary work:** DOCS per alternation (last substantive runs: DOCS 19:25 →
+  EMU 20:12; DOCS due, and FUTUREWORK named DOCS-25 as the next DOCS duty).
+  Closed **DOCS-25** — mirrored the **SecureBoot boot-integrity family** the
+  EMU run pinned live (EMU 57→60) into `documentations/external/redfish/schemas/
+  v1/`: served `SecureBoot.v1_1_1.json` (`#SecureBoot.v1_1_1.SecureBoot` —
+  SecureBootEnable/CurrentBoot/Mode + `#SecureBoot.ResetKeys`
+  `ResetKeysType@Redfish.AllowableValues`) + newest `SecureBoot.v1_2_1.json`
+  (the aggregator's `$ref` target; adds **only `SecureBootDesiredMode`**,
+  additive), served `SecureBootDatabase.v1_0_2.json`
+  (`#SecureBootDatabase.v1_0_2.SecureBootDatabase` — DatabaseId/Certificates/
+  Signatures + per-resource `#SecureBootDatabase.ResetKeys` *smaller*
+  allow-list) + newest `SecureBootDatabase.v1_0_3.json` (**property no-op**,
+  11→11), the `SecureBoot.json`/`SecureBootDatabase.json` aggregators and
+  `SecureBootDatabaseCollection.json` — 7 files / **52,544 bytes**, inside the
+  DOCS-6 budget; SHA-256s verified and recorded in the manifest.
+- **Docs:** manifest +8→+7 rows (aggregator-count note 25 → 27), DOCS-25
+  section in `documentations/external/README.md`, DOCS-25 audit section in
+  `documentations/external/redfish/REQUIREMENTS.md` (delta table + client-
+  mapped decision), REQUIREMENTS.md "Last audited" rewritten and the two
+  SecureBoot trace notes now cite the real mirror files; verified the
+  served-version `ResetKeysType` enums match the EMU pins exactly (SecureBoot:
+  ResetAllKeysToDefault/DeleteAllKeys/DeletePK; PK database: no DeletePK) —
+  the per-resource allow-list nuance is a schema fact, not a mockup quirk.
+  Anchors re-verified 18:52 UTC all unchanged: bmcweb `63a18f4` (API HEAD),
+  mockup `23d21f9a` (API HEAD), DSP0266 1.25.0 (200 on working
+  `www.dmtf.org` URL), schema index 200. No client code change from the
+  corpus audit; both families stay NOT client-mapped (no fixture duty —
+  corpus-invariant family list untouched).
+- **Emulator:** none this run (DOCS stream). Emulator suite unaffected —
+  SecureBoot pins already covered by EMU 57→60.
+- **Code/tests:** no lib/ production change for DOCS; UI-2 increment:
+  `lib/features/discovery/discovery_page.dart` — the Discovery placeholder
+  (last bare-`Text` not-implemented surface in the app) converted to the
+  established merged `Semantics(container + excludeSemantics)` node
+  (`Discovery engine — schema-driven capability map (#003)`) + icon
+  `Icons.map_outlined` (one self-describing announcement; no Retry — the
+  discovery engine is a planned feature #003, not an error). New
+  `test/features/discovery/discovery_page_test.dart` — +2 widget tests
+  (merged `bySemanticsLabel` node + visible text + icon, and no overflow at
+  320 px via `addTearDown`). Suite 345 → **347**. `dart format` drift in 26
+  unrelated files reverted via `git checkout --` to keep the diff on the 7
+  schema files + README + REQUIREMENTS + discovery_page.dart + the new test
+  file.
+- **UI:** the Discovery placeholder was the last bare-`Text` placeholder
+  surface; every empty/error/loading/not-found/placeholder state across the
+  app now uses the merged-semantics pattern. Remaining UI-2: focus order +
+  remaining non-card labels (recorded).
+- **Verification:** analyze 0; tests **347 passed / 1 skipped** (baseline 345
+  → +2 widget); issues validate OK; `git diff --check` clean; secret scan
+  clean (Dart + docs prose + public DMTF schema JSONs — no credentials).
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** (expected) — the known
+  GitHub credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN
+  env, no SSH key); local commit kept, not retried. Commits ahead of origin/main:
+  **99** before this run's commit.
+- **Next:** 1) Push the queued local commits (100) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
+  login (set `expiresAt` from the discovered SessionService), re-auth on
+  `isExpired`, keep token/location from create headers only (the fixture echoes
+  Password in session bodies); 3) EMULATOR per alternation — the corpus mirror
+  queue is EMPTY (all EMU-pinned families have mirror files); candidates: re-run
+  the corpus-invariant crawl on future family additions, or pin a remaining
+  un-pinned surface (#028 BIOS-config editor is the P2 candidate with the exact
+  fixture duty recorded; the SecureBoot/SecureBootDatabase served versions must
+  move into the fixture only if a security-posture feature lands).

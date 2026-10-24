@@ -2874,3 +2874,59 @@
   pinned — client must send the settings-object ETag itself); #022 advanced
   (annotation-form allow-list rule extended + per-resource nuance); DOCS-25
   filed.
+
+## 2026-10-24 — agent:redfish-automation — DOCS-25 (SecureBoot + SecureBootDatabase corpus mirror) + UI-2 Discovery placeholder
+
+**Done:**
+- DOCS primary workstream (alternation: DOCS 19:25 → EMU 20:12 → DOCS due).
+  Closed **DOCS-25**: mirrored the EMU-pinned SecureBoot boot-integrity family
+  (EMU 57→60) into the external corpus — served `SecureBoot.v1_1_1` +
+  newest `SecureBoot.v1_2_1` (adds only `SecureBootDesiredMode`, additive),
+  served `SecureBootDatabase.v1_0_2` + newest `SecureBootDatabase.v1_0_3`
+  (property no-op), both aggregators + `SecureBootDatabaseCollection` —
+  7 files / 52,544 bytes, inside DOCS-6; SHA-256s verified in the manifest;
+  served-version `ResetKeysType` enums verified to match the EMU pins exactly
+  (SecureBoot: 3 values; PK database: no DeletePK — the per-resource nuance
+  is a schema fact).
+- REQUIREMENTS.md: "Last audited" rewritten (DOCS-25 done), SecureBoot trace
+  notes + DOCS-25 audit section (delta table, client-mapped decision) — both
+  families stay NOT client-mapped, no fixture duty.
+- README manifest: 7 rows + aggregator-count note 25 → 27 + DOCS-25 section;
+  anchors re-verified 18:52 UTC (bmcweb `63a18f4`, mockup `23d21f9a`,
+  DSP0266 1.25.0, schema index 200 — all unchanged).
+- UI-2 increment: DiscoveryPage placeholder (last bare-`Text`
+  not-implemented surface) converted to the established merged
+  `Semantics(container + excludeSemantics)` node + `Icons.map_outlined`
+  (no Retry — a planned feature, not an error). +2 widget tests in
+  `test/features/discovery/discovery_page_test.dart` (merged node + visible
+  text + icon; no overflow at 320 px). Suite 345 → **347** passed / 1
+  skipped. `dart format` drift in 26 unrelated files reverted to keep the
+  diff focused.
+
+**Decisions:**
+- DOCS per alternation; within it chose DOCS-25 because it was the named next
+  DOCS duty and the last EMU run explicitly recorded the corpus gap — same
+  "pinned type but un-mirrored" pattern DOCS-23/24 closed, and closing it
+  makes every REQUIREMENTS.md SecureBoot citation resolve to a real file.
+- External corpus only, no fixture duty: neither family is in the 33-family
+  client-mapped list, so the corpus-invariant test is untouched and no schema
+  copies land in `test/fixtures/redfish/schemas/`. If a future
+  security-posture feature client-maps either family, the served versions
+  must move into the fixture (recorded in REQUIREMENTS.md).
+- UI increment stayed pattern-consistent (merged node, no Retry) and targeted
+  the last remaining bare-text placeholder surface rather than adding new
+  decoration.
+- No new dependencies, no TLS change, no production behaviour change.
+
+**Next:**
+- Push 99 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- EMULATOR next per alternation: corpus mirror queue is empty; re-run the
+  corpus-invariant crawl after future family additions, or pin a remaining
+  un-pinned surface; #028 remains the P2 candidate (BIOS-config editor with
+  the exact fixture duty recorded).
+
+**Issues touched:**
+- none opened/closed this run. DOCS-25 done; UI-2 advanced (Discovery
+  placeholder); #015 remains the next P1.

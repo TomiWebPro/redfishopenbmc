@@ -6,8 +6,8 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (EMULATOR run — **SecureBoot boot-integrity
-surface + If-Match precondition boundary pinned, EMU 57→60**): the mockup's
+Last audited: 2026-10-24 (DOCS-25 run — **SecureBoot/SecureBootDatabase corpus
+mirror for the EMU-pinned boot-integrity surface, EMU 57→60**): the mockup's
 `/Systems/437XR1138R2/SecureBoot` publishes the secure-boot read surface
 (`#SecureBoot.v1_1_1.SecureBoot`: SecureBootEnable false /
 SecureBootCurrentBoot Disabled / SecureBootMode UserMode) with the
@@ -19,14 +19,20 @@ defaults) and each database resource carries its OWN
 `#SecureBootDatabase.ResetKeys` with a *smaller* per-resource allow-list
 (PK omits DeletePK — the per-resource annotation rule, #022); both SecureBoot
 action targets POST → 204 and the mockup does NOT validate action bodies
-(bogus ResetKeysType also 204s — the 400 path stays unit-level).
-**If-Match boundary (#016)**: a PATCH sent with a stale
+(bogus ResetKeysType also 204s — the 400 path stays unit-level), so the client
+must pre-validate against the annotation, never hardcode reset types.
+**Corpus mirror done (DOCS-25)**: every citation in this file's SecureBoot
+rows now resolves to a real mirrored file — served `SecureBoot.v1_1_1.json`
++ newest `SecureBoot.v1_2_1.json` (adds only `SecureBootDesiredMode`,
+additive), served `SecureBootDatabase.v1_0_2.json` + newest
+`SecureBootDatabase.v1_0_3.json` (property no-op), aggregators +
+`SecureBootDatabaseCollection.json` (7 files / 52,544 bytes, external corpus
+only — the families stay NOT client-mapped, no fixture duty). If-Match (#016)
+boundary (pinned EMU 59→60): a PATCH sent with a stale
 `If-Match: "bogus-stale-etag"` header still answers 204 AND persists — the
 mockup ignores preconditions, so 412 enforcement stays unit-level and the
 #016 client must send the settings-object ETag itself
 (`9234ac83b9700123cc32`, EMU 53) rather than rely on the service.
-SecureBoot/SecureBootDatabase stay NOT client-mapped — **corpus mirror duty
-recorded as DOCS-25**. No corpus download this run (EMU stream).
 Prior: 2026-10-24 EMULATOR run — **ComputerSystem Boot override +
 live PATCH round-trip + discovery Links graph + VirtualMedia pinned, EMU
 53→57**): the mockup's `/Systems/437XR1138R2/Boot` publishes the full boot-
@@ -542,27 +548,37 @@ client-relevant families.
     boot-media action round-trips stay unit-level (advertised-as-candidate
     rule). VirtualMedia is NOT client-mapped, so the corpus-invariant family
     list is unchanged (no fixture-schema duty).
-    **SecureBoot boot-integrity surface (pinned 2026-10-24, EMU 57→58):**
-    `/Systems/437XR1138R2/SecureBoot` publishes `#SecureBoot.v1_1_1.SecureBoot`
+    **SecureBoot boot-integrity surface (pinned 2026-10-24, EMU 57→58; corpus
+    mirror DOCS-25):** `/Systems/437XR1138R2/SecureBoot` publishes
+    `#SecureBoot.v1_1_1.SecureBoot` (mirror:
+    `redfish/schemas/v1/SecureBoot.v1_1_1.json`)
     with the secure-boot read state (SecureBootEnable false /
     SecureBootCurrentBoot Disabled / SecureBootMode UserMode) and the
     `#SecureBoot.ResetKeys` action + `ResetKeysType@Redfish.AllowableValues`
-    (ResetAllKeysToDefault/DeleteAllKeys/DeletePK) — the same annotation-form
+    (ResetAllKeysToDefault/DeleteAllKeys/DeletePK — the same annotation-form
     allow-list rule as `#ComputerSystem.Reset` (#022/#016): a security-posture
     UI pre-validates against the annotation, never hardcodes reset types; the
     action target POSTs 204 via the mockup's `/Actions/` framework, and a
     bogus `ResetKeysType` ALSO 204s (the mockup does not validate action
-    bodies — the 400 path stays unit-level).
-    **SecureBootDatabase collection (pinned 2026-10-24, EMU 58→59):** the
-    `SecureBootDatabaseCollection` enumerates 8 databases (PK/KEK/db/dbx +
-    their defaults) and each database resource (`#SecureBootDatabase.v1_0_2`)
+    bodies — the 400 path stays unit-level). Newest `SecureBoot.v1_2_1`
+    (mirror: `redfish/schemas/v1/SecureBoot.v1_2_1.json`) adds only
+    `SecureBootDesiredMode` — additive, no code change.
+    **SecureBootDatabase collection (pinned 2026-10-24, EMU 58→59; corpus
+    mirror DOCS-25):** the `SecureBootDatabaseCollection` (mirror:
+    `redfish/schemas/v1/SecureBootDatabaseCollection.json`) enumerates 8
+    databases (PK/KEK/db/dbx +
+    their defaults) and each database resource
+    (`#SecureBootDatabase.v1_0_2`, mirror:
+    `redfish/schemas/v1/SecureBootDatabase.v1_0_2.json`)
     carries its OWN `#SecureBootDatabase.ResetKeys` action with a *smaller*
     per-resource allow-list (PK: ResetAllKeysToDefault/DeleteAllKeys — no
     DeletePK) plus a Certificates link — a key-reset UI must read the
     database-level list, never reuse the SecureBoot-level one (#022).
-    SecureBoot/SecureBootDatabase stay NOT client-mapped — corpus mirror duty
-    recorded as **DOCS-25** (no fixture-schema duty; the corpus-invariant
-    family list is unchanged).
+    Newest `SecureBootDatabase.v1_0_3` (mirror:
+    `redfish/schemas/v1/SecureBootDatabase.v1_0_3.json`) is a property no-op.
+    SecureBoot/SecureBootDatabase stay NOT client-mapped — external-corpus
+    only (no fixture-schema duty; the corpus-invariant family list is
+    unchanged).
     **If-Match boundary (#016, pinned 2026-10-24, EMU 59→60):** a PATCH sent
     with a stale `If-Match: "bogus-stale-etag"` header is ANSWERED 204 and
     persists into the served resource — the mockup never evaluates
@@ -1184,3 +1200,62 @@ schema index 200. Freshness audit of the two new families: newest on the live
 index are `EventDestination.v1_17_1` / `VirtualMedia.v1_7_0` (mirrored);
 no other client-mapped family advanced since DOCS-22 (12:45 UTC spot-check).
 **No client code change** from the docs audit.
+
+## DOCS-25 — SecureBoot + SecureBootDatabase corpus mirror (2026-10-24)
+
+The EMU-2 pins (EMU 57→60, 2026-10-24) read the **SecureBoot boot-integrity
+surface** outside the 33 client-mapped families: `#SecureBoot.v1_1_1.SecureBoot`
+(the system secure-boot read state + `#SecureBoot.ResetKeys`
+`ResetKeysType@Redfish.AllowableValues` — the annotation-form allow-list rule
+#022/#016 applied to a second system action family) and the
+`#SecureBootDatabase.v1_0_2.SecureBootDatabase` per-database surface (the
+8-member `#SecureBootDatabaseCollection` PK/KEK/db/dbx + defaults, each with a
+*smaller* per-resource ResetKeys allow-list — PK omits DeletePK). Both families
+had **no schema in the external corpus**. This run mirrored the
+**mockup-served** versions plus the **newest** published versions plus the
+collection type (the DOCS-12/13/19/20/21/23/24 "newest + served" pair
+precedent):
+
+| File | Served/newest | Bytes | Mirror destination |
+|---|---|---|---|
+| `SecureBoot.json` | aggregator | 1,802 | external corpus only |
+| `SecureBoot.v1_1_1.json` | **served** (`#SecureBoot.v1_1_1.SecureBoot`) | 11,629 | external corpus only |
+| `SecureBoot.v1_2_1.json` | newest (live index, aggregator `$ref`) | 12,567 | external corpus only |
+| `SecureBootDatabase.json` | aggregator | 1,636 | external corpus only |
+| `SecureBootDatabase.v1_0_2.json` | **served** (`#SecureBootDatabase.v1_0_2.SecureBootDatabase`) | 9,765 | external corpus only |
+| `SecureBootDatabase.v1_0_3.json` | newest (live index, aggregator `$ref`) | 9,795 | external corpus only |
+| `SecureBootDatabaseCollection.json` | collection | 5,350 | external corpus only |
+
+52,544 new bytes total — inside the DOCS-6 budget. SHA-256s in the manifest
+(`documentations/external/README.md` rows).
+
+**Delta audit (newest vs served, additive-only):**
+
+| Family | Served → newest | Delta | Client impact |
+|---|---|---|---|
+| `SecureBoot` | `v1_1_1` → `v1_2_1` | adds `SecureBootDesiredMode` only (13 → 14 props; the requested-mode mirror of `SecureBootMode`) | none — every EMU-2-pinned field (SecureBootEnable/SecureBootCurrentBoot/SecureBootMode + ResetKeysType enum) is present in the served version; a future security-posture UI can read the desired mode from the newest |
+| `SecureBootDatabase` | `v1_0_2` → `v1_0_3` | **property no-op** (11 → 11 props; copyright/description-level only) | none — the per-resource ResetKeys allow-list is identical |
+
+Also verified the served-version `ResetKeysType` enum values in the mirror
+match the EMU pin exactly: SecureBoot carries
+`ResetAllKeysToDefault`/`DeleteAllKeys`/`DeletePK`; the PK database resource
+carries `ResetAllKeysToDefault`/`DeleteAllKeys` (no DeletePK) — the
+per-resource allow-list nuance is a schema fact (property `enum`), not a mockup
+quirk, so a key-reset UI must read the database-level list, never reuse the
+SecureBoot-level one (#022).
+
+**Client-mapped decision:** **SecureBoot/SecureBootDatabase stay NOT
+client-mapped.** The 33-family list in the emulator corpus-invariant test is
+untouched, and no fixture-schema duty attaches (the crawl skips
+non-client-mapped families). REQUIREMENTS.md rows that cited the EMU pins
+(SecureBoot boot-integrity surface; SecureBootDatabase per-resource allow-list)
+now resolve to real mirror files. If a future security-posture feature
+client-maps either family, the served versions must be copied into
+`test/fixtures/redfish/schemas/` (the DOCS-19/20/21 invariant).
+
+Anchors re-verified this run (2026-10-24 18:52 UTC): bmcweb master
+`63a18f4` (still HEAD via GitHub API), mockup pin `23d21f9a` (still HEAD of
+`main` via GitHub API), DSP0266 1.25.0 (200 on the working `www.dmtf.org`
+URL, 1.24 MB), schema index 200. Freshness audit of the two new families:
+newest on the live index are `SecureBoot.v1_2_1` / `SecureBootDatabase.v1_0_3`
+(mirrored). **No client code change** from the docs audit.

@@ -131,17 +131,33 @@ documentations/external/
 | `redfish/schemas/v1/VirtualMedia.v1_6_3.json` | https://redfish.dmtf.org/schemas/v1/VirtualMedia.v1_6_3.json | 2026-10-24 19:18 | `d4c4aa15fd15989243c33c188665f6705f5e2bd1e8424b739178591214190e21` | 24,898 | DMTF 2023.x | **Mockup-served** `#VirtualMedia.v1_6_3.VirtualMedia` — the CD1/Floppy1 detail the EMU-2 pin reads (ConnectedVia/Image/ImageName/Inserted/WriteProtected/MediaTypes; NO InsertMedia/EjectMedia targets) — DOCS-24 |
 | `redfish/schemas/v1/VirtualMedia.v1_7_0.json` | https://redfish.dmtf.org/schemas/v1/VirtualMedia.v1_7_0.json | 2026-10-24 19:18 | `08f6e3ca24cc8c3efcbbf87b5f2edec1e8e88499298e85eb23072b806d5b030f` | 27,768 | DMTF 2026.x | Newest VirtualMedia — adds Certificates/ClientCertificates/EjectPolicy/EjectTimeout/HTTPHeaders/Password/Status/TransferMethod/TransferProtocolType/UserName (+Actions) — DOCS-24 |
 | `redfish/schemas/v1/VirtualMediaCollection.json` | https://redfish.dmtf.org/schemas/v1/VirtualMediaCollection.json | 2026-10-24 19:18 | `71ec62b65aa41a33ae66ae3ef01e194e61956df2227ce1d4a620ff1f487ba799` | 5,418 | latest per aggregator | `#VirtualMediaCollection.VirtualMediaCollection` — the system VirtualMedia collection the EMU-2 pin enumerates — DOCS-24 |
+| `redfish/schemas/v1/SecureBoot.json` | https://redfish.dmtf.org/schemas/v1/SecureBoot.json | 2026-10-24 18:33 | `7473edff14b3be135a862fe9cf2d67f7ece30c0192c8e995ab8ae2b600673896` | 1,802 | latest per aggregator | SecureBoot family aggregator — `$ref`s v1_0_9/v1_1_2/v1_2_1; resolves `#SecureBoot.SecureBoot` citations (boot-integrity surface) — DOCS-25 |
+| `redfish/schemas/v1/SecureBoot.v1_1_1.json` | https://redfish.dmtf.org/schemas/v1/SecureBoot.v1_1_1.json | 2026-10-24 18:33 | `c875bf720e40017f077efee3e5527ad238aafe28d812897ec906fe779ae7bc04` | 11,629 | DMTF 2022.x | **Mockup-served** `#SecureBoot.v1_1_1.SecureBoot` — SecureBootEnable/CurrentBoot/Mode + `#SecureBoot.ResetKeys` `ResetKeysType@Redfish.AllowableValues` (ResetAllKeysToDefault/DeleteAllKeys/DeletePK) — DOCS-25 |
+| `redfish/schemas/v1/SecureBoot.v1_2_1.json` | https://redfish.dmtf.org/schemas/v1/SecureBoot.v1_2_1.json | 2026-10-24 18:33 | `ade82fcf3f142bbdab2d885361a037d473c1825774d430e4b34f97d1c4d91e10` | 12,567 | DMTF 2026.1 | Newest SecureBoot — adds `SecureBootDesiredMode` (additive vs served v1_1_1) — DOCS-25 |
+| `redfish/schemas/v1/SecureBootDatabase.json` | https://redfish.dmtf.org/schemas/v1/SecureBootDatabase.json | 2026-10-24 18:33 | `c21dd794178050db683bb9d1dca1bd2354cb9cd63064d60711673869d90caa1d` | 1,636 | latest per aggregator | SecureBootDatabase family aggregator — `$ref`s v1_0_3; resolves `#SecureBootDatabase.SecureBootDatabase` citations — DOCS-25 |
+| `redfish/schemas/v1/SecureBootDatabase.v1_0_2.json` | https://redfish.dmtf.org/schemas/v1/SecureBootDatabase.v1_0_2.json | 2026-10-24 18:33 | `1f908e05df60bc7737c2cc74274e11b95b86cf30e2517c695640d0f9b3c61d4d` | 9,765 | DMTF 2020.x | **Mockup-served** `#SecureBootDatabase.v1_0_2.SecureBootDatabase` — per-database surface (DatabaseId/Certificates/Signatures + per-resource `#SecureBootDatabase.ResetKeys` smaller allow-list, PK omits DeletePK) — DOCS-25 |
+| `redfish/schemas/v1/SecureBootDatabase.v1_0_3.json` | https://redfish.dmtf.org/schemas/v1/SecureBootDatabase.v1_0_3.json | 2026-10-24 18:33 | `8133c7200e2302ab3301faf5fb8387c068d7f1f456a7d793b5234777bdf5b1ec` | 9,795 | DMTF 2020.1 | Newest SecureBootDatabase — **no property delta** vs served v1_0_2 (11→11 props) — DOCS-25 |
+| `redfish/schemas/v1/SecureBootDatabaseCollection.json` | https://redfish.dmtf.org/schemas/v1/SecureBootDatabaseCollection.json | 2026-10-24 18:33 | `d862817e20a8d6a5cb89e7748b5d940ad1fa64dc08983d298c4dbd42edbb9093` | 5,350 | latest per aggregator | `#SecureBootDatabaseCollection.SecureBootDatabaseCollection` — the 8-member PK/KEK/db/dbx + defaults collection the EMU-2 pin enumerates — DOCS-25 |
 
-### Downloaded schema set (25 base aggregator files)
+### Downloaded schema set (27 base aggregator files)
 
 `ServiceRoot`, `ComputerSystem`, `Chassis`, `Sensor`, `Power`, `Thermal`,
 `SessionService`, `AccountService`, `UpdateService`, `SoftwareInventory`,
 `EventService`, `Manager`, `LogService`, `EthernetInterface`, `TaskService`,
 `MessageRegistry`, `Battery`, `BatteryMetrics`, `EventDestination`,
-`VirtualMedia`. Each bare `<Name>.json` is the
+`VirtualMedia`, `SecureBoot`, `SecureBootDatabase`. Each bare `<Name>.json` is the
 DMTF "latest" aggregator that
 `$ref`s the newest versioned definitions; SHA-256 hashes are listed in the
 run notes in `automation-tracking.md`.
+
+DOCS-25 (2026-10-24) closed the last **EMU-2-pinned non-client-mapped** corpus
+gap: the **SecureBoot boot-integrity family** (SecureBoot + SecureBootDatabase).
+Both mirror as aggregator + **mockup-served** version + **newest** version +
+collection type — 7 files / 52,544 bytes total, external corpus only (neither
+family is client-mapped, so no fixture duty; the corpus-invariant test skips
+them by design). Deltas audited: SecureBoot v1_1_1 → v1_2_1 adds only
+`SecureBootDesiredMode`; SecureBootDatabase v1_0_2 → v1_0_3 is a property
+no-op. REQUIREMENTS.md SecureBoot rows now cite the real mirror files.
 
 DOCS-24 (2026-10-24) closed the last two **EMU-2-pinned non-client-mapped**
 corpus gaps: `EventDestination` (the 4 `Subscriptions` members the event
@@ -230,7 +246,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-24 15:17 UTC — DOCS-23 Bios/Settings mirror; prior: DOCS-22 12:47 UTC, DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
+## Current upstream anchors (verified 2026-10-24 18:52 UTC — DOCS-25 SecureBoot/SecureBootDatabase mirror; prior: DOCS-23 15:17 UTC, DOCS-22 12:47 UTC, DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing)
@@ -302,6 +318,45 @@ lists and the served versions must also be copied into
 `test/fixtures/redfish/schemas/` (DOCS-19/20/21 invariant). Anchors re-verified
 same run: bmcweb `63a18f4` (still HEAD, docs byte-identical), mockup
 `23d21f9a`, DSP0266 1.25.0, schema index 200.
+
+### DOCS-25 — SecureBoot + SecureBootDatabase corpus mirror for the EMU-2 SecureBoot/pin (2026-10-24 18:52 UTC)
+
+The EMU-2 run (20:12 local, 57→60 tests) pinned the **SecureBoot boot-integrity
+surface** live; the published types it reads — `#SecureBoot.v1_1_1.SecureBoot`
+(`/Systems/437XR1138R2/SecureBoot`: SecureBootEnable false /
+SecureBootCurrentBoot Disabled / SecureBootMode UserMode +
+`#SecureBoot.ResetKeys` `ResetKeysType@Redfish.AllowableValues`) and the
+`#SecureBootDatabase.v1_0_2.SecureBootDatabase` per-database surface (the
+8-member `#SecureBootDatabaseCollection` PK/KEK/db/dbx + defaults, each with a
+*smaller* per-resource ResetKeys allow-list) — were reachable by the
+corpus-invariant crawl but had **no schema in the external corpus**. Mirrored
+the **mockup-served** versions (`SecureBoot.v1_1_1.json`,
+`SecureBootDatabase.v1_0_2.json`) per the DOCS-12/13/19/20/21/23/24 "newest +
+served" pair precedent, plus the **newest** published versions
+(`SecureBoot.v1_2_1.json` — the aggregator's `$ref` target; `v1_1_1` is absent
+from the newest aggregator list, which refs v1_0_9/v1_1_2/v1_2_1 —
+`SecureBootDatabase.v1_0_3.json`) plus both aggregators and the collection
+type — 7 files / **52,544 bytes** total, inside the DOCS-6 budget; SHA-256s +
+manifest rows above. Deltas audited against the served versions: **SecureBoot
+v1_1_1 → v1_2_1 adds only the `SecureBootDesiredMode` property** (13 → 14
+props; the requested-mode surface mirrored from SecureBootMode — no code
+change); **SecureBootDatabase v1_0_2 → v1_0_3 is a property no-op** (11 → 11
+props; copyright/description-level only). Also verified the served-version
+ResetKeysType enums in the mirror match the EMU pin exact values
+(`ResetAllKeysToDefault`/`DeleteAllKeys`/`DeletePK` on SecureBoot;
+`ResetAllKeysToDefault`/`DeleteAllKeys` — no DeletePK — on the PK database
+resource) — the per-resource allow-list nuance is a schema fact, not a mockup
+quirk. **Client-mapped decision: SecureBoot/SecureBootDatabase stay NOT
+client-mapped** — the client reads only the system overview; there is no
+secure-boot UI, so the corpus-invariant family list in the emulator test is
+untouched and no fixture-schema duty attaches. If a security-posture feature
+ever lands (FUTUREWORK candidate), SecureBoot/SecureBootDatabase join the
+client-mapped lists and the served versions must also be copied into
+`test/fixtures/redfish/schemas/` (DOCS-19/20/21 invariant). REQUIREMENTS.md
+SecureBoot rows now cite these real mirror files. Anchors re-verified same run:
+bmcweb `63a18f4` (still HEAD via GitHub API, docs byte-identical), mockup
+`23d21f9a`, DSP0266 1.25.0 (200 on the working `www.dmtf.org` URL — 1.24 MB),
+schema index 200.
 
 ### DOCS-15 — DSP0266 §7.3 query-parameters audit (2026-10-23 19:20 UTC)
 
