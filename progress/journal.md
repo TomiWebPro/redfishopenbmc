@@ -3001,3 +3001,65 @@
 - none opened/closed this run. EMU-2 60 → 63; #016 advanced (second live PATCH
   pin — Control SetPoint; AllowableMin/Max pre-validation rule); #022 advanced
   (Control surface); DOCS-26 filed; UI-2 advanced (SystemCard URL merge).
+
+## 2026-10-24 — agent:redfish-automation — DOCS-26 Control corpus mirror
+
+**Done:**
+- DOCS primary workstream (alternation: DOCS 21:00 → EMU 21:53 → DOCS due).
+  Closed **DOCS-26** — the named next DOCS duty from the EMU 60→63 run:
+  mirrored the **Control family** the EMU pins read into the external corpus.
+  4 files / **129,851 bytes** (inside DOCS-6), SHA-256s verified, manifest
+  rows added:
+  - `Control.json` — aggregator (9,694 B; `$ref`s v1_0_7/v1_1_6/v1_2_6/
+    v1_3_6/v1_4_6/v1_5_5/v1_6_3/v1_7_2/v1_8_1 — served v1_5_0 absent from the
+    newest list, the DOCS-25 pattern).
+  - `Control.v1_5_0.json` — **mockup-served** `#Control.v1_5_0.Control`
+    (47,414 B): ControlType/ControlMode/SetPoint/AllowableMax/Min/SettingMin/
+    Max + `Sensor` excerpt with DataSourceUri — every EMU-2-pinned field
+    present; `SetPointUnits` readonly matches the fixture's `W`/`Hz`;
+    `Sensor` is the SensorExcerpt/null `anyOf`.
+  - `Control.v1_8_1.json` — newest (67,784 B). **Delta audit (additive-
+    only):** adds `SetPointError` only (readonly, versionAdded v1_7_0 — the
+    error/difference of the related Sensor `Reading` from `SetPoint`). **No
+    client code change.**
+  - `ControlCollection.json` — collection type (4,959 B) for the
+    `#ControlCollection` citation.
+- Client-mapped decision: **Control stays NOT client-mapped** — external
+  corpus only, no fixture-schema duty, the 33-family corpus-invariant list
+  untouched. The **corpus mirror queue is now EMPTY** (every EMU-pinned
+  family — incl. Control — has real mirror files).
+- REQUIREMENTS.md: "Last audited" rewritten (DOCS-26 done), new DOCS-26
+  section (manifest table + delta table + client-mapped decision); the EMU
+  Controls citation in the header now resolves to real mirror files.
+- README manifest: 4 rows + aggregator-count note 27 → **28** + DOCS-26 note;
+  anchors re-verified 20:14 UTC (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
+  1.25.0, schema index 200 — all unchanged).
+- UI: **skipped with reason** — verified via scans that every empty/error/
+  loading/placeholder surface already uses the merged-`Semantics` pattern and
+  no bare Icon+Text rows remain; the only open UI-2 items are the open-ended
+  focus-order hunt and remaining non-card labels (risky to rush unattended on
+  a DOCS run; runbook §5 allows this with a reason).
+
+**Decisions:**
+- DOCS per alternation; within it chose DOCS-26 because it was the named next
+  DOCS duty and the last EMU run explicitly recorded the corpus gap — same
+  "pinned type but un-mirrored" pattern DOCS-23/24/25 closed, and closing it
+  makes every REQUIREMENTS.md Control citation resolve to a real file.
+- External corpus only, no fixture duty: Control is not in the 33-family
+  client-mapped list, so the corpus-invariant test is untouched and no schema
+  copies land in `test/fixtures/redfish/schemas/`.
+- No new dependencies, no TLS change, no production behaviour change; no
+  fixture or emulator changes (DOCS stream).
+
+**Next:**
+- Push 104 queued local commits once GitHub credentials are available.
+- EMULATOR next per alternation: corpus mirror queue is empty; re-run the
+  corpus-invariant crawl after future family additions, or pin a remaining
+  un-pinned surface; #028 remains the P2 candidate (BIOS-config editor with
+  the exact fixture duty recorded).
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+
+**Issues touched:**
+- none opened/closed this run. DOCS-26 done; UI-2 unchanged (skipped with
+  reason); #015 remains the next P1.

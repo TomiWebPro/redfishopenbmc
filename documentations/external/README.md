@@ -138,17 +138,31 @@ documentations/external/
 | `redfish/schemas/v1/SecureBootDatabase.v1_0_2.json` | https://redfish.dmtf.org/schemas/v1/SecureBootDatabase.v1_0_2.json | 2026-10-24 18:33 | `1f908e05df60bc7737c2cc74274e11b95b86cf30e2517c695640d0f9b3c61d4d` | 9,765 | DMTF 2020.x | **Mockup-served** `#SecureBootDatabase.v1_0_2.SecureBootDatabase` — per-database surface (DatabaseId/Certificates/Signatures + per-resource `#SecureBootDatabase.ResetKeys` smaller allow-list, PK omits DeletePK) — DOCS-25 |
 | `redfish/schemas/v1/SecureBootDatabase.v1_0_3.json` | https://redfish.dmtf.org/schemas/v1/SecureBootDatabase.v1_0_3.json | 2026-10-24 18:33 | `8133c7200e2302ab3301faf5fb8387c068d7f1f456a7d793b5234777bdf5b1ec` | 9,795 | DMTF 2020.1 | Newest SecureBootDatabase — **no property delta** vs served v1_0_2 (11→11 props) — DOCS-25 |
 | `redfish/schemas/v1/SecureBootDatabaseCollection.json` | https://redfish.dmtf.org/schemas/v1/SecureBootDatabaseCollection.json | 2026-10-24 18:33 | `d862817e20a8d6a5cb89e7748b5d940ad1fa64dc08983d298c4dbd42edbb9093` | 5,350 | latest per aggregator | `#SecureBootDatabaseCollection.SecureBootDatabaseCollection` — the 8-member PK/KEK/db/dbx + defaults collection the EMU-2 pin enumerates — DOCS-25 |
+| `redfish/schemas/v1/Control.json` | https://redfish.dmtf.org/schemas/v1/Control.json | 2026-10-24 20:14 | `7e3c135752e872e53b71faa23b264f36f3b7bd87279ce3c24785f04eaef85def` | 9,694 | latest per aggregator | Control family aggregator — `$ref`s v1_0_7/v1_1_6/v1_2_6/v1_3_6/v1_4_6/v1_5_5/v1_6_3/v1_7_2/v1_8_1; resolves `#Control.Control` citations (power-limit/frequency control surface) — DOCS-26 |
+| `redfish/schemas/v1/Control.v1_5_0.json` | https://redfish.dmtf.org/schemas/v1/Control.v1_5_0.json | 2026-10-24 20:14 | `de1614b0de069eb648ff125053fa90910c1dce882bd39c2f9f882e5264d98bd1` | 47,414 | DMTF 2023.x | **Mockup-served** `#Control.v1_5_0.Control` — ControlType/ControlMode/SetPoint/AllowableMax/Min/SettingMin/Max/Sensor excerpt with DataSourceUri (PowerLimit + CPU1Freq pins) — DOCS-26 |
+| `redfish/schemas/v1/Control.v1_8_1.json` | https://redfish.dmtf.org/schemas/v1/Control.v1_8_1.json | 2026-10-24 20:14 | `e6412df9e3bb779edb46f9f0f69bc5f60c9addbaaa58a172ae0c4804015fa88e` | 67,784 | DMTF 2026.2 | Newest Control — adds `SetPointError` (readonly, v1_7_0, additive vs served v1_5_0) — DOCS-26 |
+| `redfish/schemas/v1/ControlCollection.json` | https://redfish.dmtf.org/schemas/v1/ControlCollection.json | 2026-10-24 20:14 | `4faca423621f38515fcc9234e444a36019817793e6377d764ad0593330504785` | 4,959 | latest per aggregator | `#ControlCollection.ControlCollection` — the Chassis.1U.Controls enumeration (PowerLimit + CPU1Freq members) the EMU-2 pin reads — DOCS-26 |
 
-### Downloaded schema set (27 base aggregator files)
+### Downloaded schema set (28 base aggregator files)
 
 `ServiceRoot`, `ComputerSystem`, `Chassis`, `Sensor`, `Power`, `Thermal`,
 `SessionService`, `AccountService`, `UpdateService`, `SoftwareInventory`,
 `EventService`, `Manager`, `LogService`, `EthernetInterface`, `TaskService`,
 `MessageRegistry`, `Battery`, `BatteryMetrics`, `EventDestination`,
-`VirtualMedia`, `SecureBoot`, `SecureBootDatabase`. Each bare `<Name>.json` is the
+`VirtualMedia`, `SecureBoot`, `SecureBootDatabase`, `Control`. Each bare `<Name>.json` is the
 DMTF "latest" aggregator that
 `$ref`s the newest versioned definitions; SHA-256 hashes are listed in the
 run notes in `automation-tracking.md`.
+
+DOCS-26 (2026-10-24) closed the last **EMU-2-pinned non-client-mapped** corpus
+gap: the **Control family** (the modern chassis power-limit / frequency control
+surface the EMU 60→63 pins read — `#ControlCollection` → `#Control.v1_5_0`
+PowerLimit + CPU1Freq, plus the second live PATCH pin on SetPoint).
+Mirrored as aggregator + **mockup-served** version + **newest** version +
+collection type — 4 files / 129,851 bytes total, external corpus only (Control
+is NOT client-mapped, so no fixture duty; the corpus-invariant test skips it
+by design). Delta audited: Control v1_5_0 → v1_8_1 adds only `SetPointError`
+(readonly). REQUIREMENTS.md Control rows now cite the real mirror files.
 
 DOCS-25 (2026-10-24) closed the last **EMU-2-pinned non-client-mapped** corpus
 gap: the **SecureBoot boot-integrity family** (SecureBoot + SecureBootDatabase).
@@ -246,7 +260,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-24 18:52 UTC — DOCS-25 SecureBoot/SecureBootDatabase mirror; prior: DOCS-23 15:17 UTC, DOCS-22 12:47 UTC, DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
+## Current upstream anchors (verified 2026-10-24 20:14 UTC — DOCS-26 Control mirror; prior: DOCS-25 18:52 UTC, DOCS-23 15:17 UTC, DOCS-22 12:47 UTC, DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing)

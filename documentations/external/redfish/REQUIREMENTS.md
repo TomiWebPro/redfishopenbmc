@@ -21,9 +21,11 @@ power-capping flow sends — while a bogus `SetPoint: 9999` is ALSO applied
 unvalidated (same "advertised contract, not enforced" rule as ResetType/
 PATCH-body, #016); the #006/#019/#022 client must pre-validate SetPoints
 against AllowableMin/Max. Control is NOT client-mapped — no fixture-schema
-duty; the corpus mirror duty (served `Control.v1_5_0.json` + newest
-`Control.v1_8_1.json` + aggregator + `ControlCollection.json`) is recorded as
-**DOCS-26**.
+duty. **Corpus mirror done (DOCS-26)**: every Control citation in this file
+now resolves to a real mirrored file — served `Control.v1_5_0.json` + newest
+`Control.v1_8_1.json` (adds only `SetPointError`, additive) + aggregator +
+`ControlCollection.json` (4 files / 129,851 bytes, external corpus only —
+Control stays NOT client-mapped).
 Prior: 2026-10-24 (DOCS-25 run — **SecureBoot/SecureBootDatabase corpus
 mirror for the EMU-pinned boot-integrity surface, EMU 57→60**): the mockup's
 `/Systems/437XR1138R2/SecureBoot` publishes the secure-boot read surface
@@ -1277,3 +1279,55 @@ Anchors re-verified this run (2026-10-24 18:52 UTC): bmcweb master
 URL, 1.24 MB), schema index 200. Freshness audit of the two new families:
 newest on the live index are `SecureBoot.v1_2_1` / `SecureBootDatabase.v1_0_3`
 (mirrored). **No client code change** from the docs audit.
+
+## DOCS-26 — Control corpus mirror for the EMU-2 Controls pin (2026-10-24)
+
+The EMU-2 pins (EMU 60→63, 2026-10-24) read the **Control family** outside
+the 33 client-mapped families: `#ControlCollection.ControlCollection` (the
+`Chassis.1U.Controls` enumeration with PowerLimit + CPU1Freq members) and
+`#Control.v1_5_0.Control` (PowerLimit: ControlType Power / ControlMode
+Automatic / SetPoint 500 W / AllowableMax 1000 / AllowableMin 150 / `Sensor`
+excerpt carrying Reading 374 + DataSourceUri → Sensors/TotalPower; CPU1Freq:
+ControlType Frequency / SettingMin/Max 2000/2400 Hz / AllowableMin/Max
+1500/3700). The family had **no schema in the external corpus**. This run
+mirrored the **mockup-served** versions plus the **newest** published versions
+plus the collection type (the DOCS-12/13/19/20/21/23/24/25 "newest + served"
+pair precedent):
+
+| File | Served/newest | Bytes | Mirror destination |
+|---|---|---|---|
+| `Control.json` | aggregator | 9,694 | external corpus only |
+| `Control.v1_5_0.json` | **served** (`#Control.v1_5_0.Control`) | 47,414 | external corpus only |
+| `Control.v1_8_1.json` | newest (live index, aggregator `$ref`) | 67,784 | external corpus only |
+| `ControlCollection.json` | collection | 4,959 | external corpus only |
+
+129,851 new bytes total — inside the DOCS-6 budget. SHA-256s in the manifest
+(`documentations/external/README.md` rows).
+
+**Delta audit (newest vs served, additive-only):**
+
+| Family | Served → newest | Delta | Client impact |
+|---|---|---|---|
+| `Control` | `v1_5_0` → `v1_8_1` | adds `SetPointError` only (readonly, versionAdded v1_7_0; the error/difference of the related Sensor `Reading` from `SetPoint`, units per `SetPointUnits`) | none — every EMU-2-pinned field (ControlType/ControlMode/SetPoint/AllowableMax/Min/SettingMin/Max/Sensor) is present in the served version; a future power-capping UI (#022/#006) can surface the newest SetPointError from a newer BMC |
+
+Also verified the aggregator `$ref`s v1_8_1 as newest (v1_0_7/v1_1_6/v1_2_6/
+v1_3_6/v1_4_6/v1_5_5/v1_6_3/v1_7_2/v1_8_1 — the served v1_5_0 is absent from
+the newest list, the same pattern DOCS-25 noted); `SetPointUnits` is defined
+in the served `v1_5_0` (readonly, matches the fixture's `W`/`Hz` values); the
+`Sensor` property is an `anyOf` SensorExcerpt/null in both versions (the
+DataSourceUri link shape the emulator pin reads).
+
+**Client-mapped decision:** **Control stays NOT client-mapped.** The 33-family
+list in the emulator corpus-invariant test is untouched, and no fixture-schema
+duty attaches (the crawl skips non-client-mapped families). REQUIREMENTS.md
+rows that cite the EMU-pinned Control surface (this header's "Last audited"
+paragraph + the powerControl/#022 rows) now resolve to real mirror files. If a
+future power-capping feature client-maps Control, the served v1_5_0 must be
+copied into `test/fixtures/redfish/schemas/` (the DOCS-19/20/21 invariant).
+
+Anchors re-verified this run (2026-10-24 20:14 UTC): bmcweb master
+`63a18f4` (still HEAD via GitHub API), mockup pin `23d21f9a` (still HEAD of
+`main` via GitHub API), DSP0266 1.25.0 (200 on the working `www.dmtf.org`
+URL, 1.24 MB), schema index 200. Freshness audit of the new family: newest
+on the live index is `Control.v1_8_1` (mirrored). **No client code change**
+from the docs audit.

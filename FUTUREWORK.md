@@ -7,41 +7,46 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 (EMULATOR run — **chassis Controls surface
-  pinned live, EMU 60→63**: `#ControlCollection` → `#Control.v1_5_0.Control`
-  PowerLimit SetPoint 500 W + AllowableMax/Min 1000/150 + `Sensor`
-  DataSourceUri → Sensors/TotalPower (374 W — the wiring #006/#019 power-capping
-  follows) + CPU1Freq frequency range; **second live PATCH pin (#016)** —
-  SetPoint PATCH 204 + persists, bogus 9999 also applied unvalidated → the
-  client must pre-validate against AllowableMin/Max; Control stays NOT
-  client-mapped — no fixture duty, corpus mirror recorded as **DOCS-26**
-  (served `Control.v1_5_0` + newest `Control.v1_8_1` + aggregator +
-  `ControlCollection`); UI-2 increment: SystemCard header merges name + state +
-  URL, URL subtitle ExcludeSemantics'd (no double announcement), +1 widget
-  test (suite 347 → 348); next P1: #015 (AuthManager) and #016 (If-Match/ETag
-  wiring on the `patchJson` transport)
-- **Current focus:** **EMULATOR (2026-10-24)** — chassis Controls surface
-  pinned live (EMU 60→63, #Control.v1_5_0 PowerLimit + CPU1Freq + the second
-  live PATCH pin on SetPoint with AllowableMin/Max pre-validation); next P1:
-  #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire
-  the discovered SessionService body into login + re-auth on `isExpired`;
-  #016: the PATCH transport landed (`patchJson`) + the If-Match boundary is
-  pinned (the mockup ignores preconditions — the client must send the
-  settings-object ETag `9234ac83b9700123cc32` itself, EMU 53/60), remaining
-  is the actual If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH
-  flow + unit tests for the 412 path; #022/#016: `ResetActionInfo` ActionInfo
-  resource crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it
-  serves only the annotation form and now provably ignores ResetType/
-  ResetKeysType values; the Control SetPoint PATCH pin adds the AllowableMin/
-  Max pre-validation rule for power capping); #018: query-capability surface +
-  live `$expand` contract pinned — remaining: build the lightweight discovery
-  pass + the cache fixes; **new feature candidate #028:** BIOS-config editor
-  (Bios/Settings become client-mapped → served versions move into
-  `test/fixtures/redfish/schemas/` + the corpus-invariant family list gains
-  `Bios`/`Settings`); corpus mirror queue: **DOCS-26** (Control served v1_5_0
-  + newest v1_8_1 + aggregator + ControlCollection) is the only open duty —
-  all other EMU-pinned families have real mirror files; next DOCS run can do
-  a freshness audit or close DOCS-26
+- **Last updated:** 2026-10-24 (DOCS run — **DOCS-26 Control corpus mirror
+  done**: served `Control.v1_5_0.json` + newest `Control.v1_8_1.json` (adds
+  only `SetPointError`, additive) + aggregator + `ControlCollection.json`
+  mirrored into the external corpus — 4 files / 129,851 B inside DOCS-6;
+  Control stays NOT client-mapped, no fixture duty; the corpus mirror queue
+  is now EMPTY); UI-2 skipped with reason (all surfaces already use the
+  merged-semantics pattern; remaining items are the open-ended focus-order
+  hunt); next P1: #015 (AuthManager — `expiryFromService` + the Sessions pin
+  are ready, wire the discovered SessionService body into login + re-auth on
+  `isExpired`); #016: the PATCH transport landed (`patchJson`) + the If-Match
+  boundary is pinned (the mockup ignores preconditions — the client must send
+  the settings-object ETag `9234ac83b9700123cc32` itself, EMU 53/60/63),
+  remaining is the actual If-Match/`@odata.etag` wiring in a Boot/IndicatorLED
+  PATCH flow + unit tests for the 412 path; #022/#016: `ResetActionInfo`
+  ActionInfo resource crawl (bmcweb-style BMCs; NOT pinable on the DMTF
+  mockup) + the Control SetPoint AllowableMin/Max pre-validation rule; #018:
+  query-capability surface + live `$expand` contract pinned — remaining: build
+  the lightweight discovery pass + the cache fixes; **new feature candidate
+  #028:** BIOS-config editor (Bios/Settings become client-mapped → served
+  versions move into `test/fixtures/redfish/schemas/` + the corpus-invariant
+  family list gains `Bios`/`Settings`)
+- **Current focus:** **DOCS (2026-10-24)** — DOCS-26 Control corpus mirror
+  done (corpus mirror queue EMPTY); next P1: #015 (AuthManager) —
+  `expiryFromService` + the Sessions pin are ready, wire the discovered
+  SessionService body into login + re-auth on `isExpired`; #016: the PATCH
+  transport landed (`patchJson`) + the If-Match boundary is pinned (the mockup
+  ignores preconditions — the client must send the settings-object ETag
+  `9234ac83b9700123cc32` itself, EMU 53/60/63), remaining is the actual
+  If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit tests
+  for the 412 path; #022/#016: `ResetActionInfo` ActionInfo resource crawl
+  (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only the
+  annotation form and now provably ignores ResetType/ResetKeysType values; the
+  Control SetPoint PATCH pin adds the AllowableMin/Max pre-validation rule for
+  power capping); #018: query-capability surface + live `$expand` contract
+  pinned — remaining: build the lightweight discovery pass + the cache fixes;
+  **new feature candidate #028:** BIOS-config editor (Bios/Settings become
+  client-mapped → served versions move into `test/fixtures/redfish/schemas/` +
+  the corpus-invariant family list gains `Bios`/`Settings`); corpus mirror
+  queue: **EMPTY** — all EMU-pinned families (incl. Control via DOCS-26) have
+  real mirror files; next DOCS run can do a freshness audit
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -408,7 +413,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       corpus-invariant family list unchanged; anchors re-verified: bmcweb
       `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index 200).**
 
-- [ ] **DOCS-26** Mirror the **Control** family the EMU run pinned live
+- [x] **DOCS-26** Mirror the **Control** family the EMU run pinned live
       (EMU 60→63, 2026-10-24) — the external corpus has no schema for
       `#Control.v1_5_0.Control` (the modern chassis control surface:
       PowerLimit SetPoint/AllowableMax/Min + `Sensor` DataSourceUri wiring
@@ -422,7 +427,15 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       client-mapped (no fixture duty; the corpus-invariant family list
       unchanged). Source: `https://redfish.dmtf.org/schemas/v1/Control.json`
       (+ `ControlCollection.json`). Keep inside the DOCS-6 budget.
-      (filed run 2026-10-24 EMU stream; **not started** — next DOCS duty)
+      **Done (run 2026-10-24, 4 files / 129,851 bytes, inside DOCS-6;
+      SHA-256s + manifest rows verified; delta audit additive-only —
+      `Control.v1_5_0`→`v1_8_1` adds `SetPointError` (readonly, v1_7_0); every
+      EMU-2-pinned field present in the served version — **no client code
+      change**; Control stays NOT client-mapped — no fixture duty,
+      corpus-invariant list untouched; REQUIREMENTS.md Control rows now cite
+      real mirror files; anchors re-verified: bmcweb `63a18f4`, mockup
+      `23d21f9a`, DSP0266 1.25.0, schema index 200 — the corpus mirror queue
+      is now EMPTY)**
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across

@@ -3431,3 +3431,60 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **102** (101 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 22:33 — DOCS (DOCS-26 Control corpus mirror) — UI skipped with reason
+
+- **Baseline:** analyze 0; tests 348 passed / 1 skipped; starting commit 6242e21
+  (branch `main` ahead 103 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** DOCS per alternation (last substantive runs: DOCS 21:00 →
+  EMU 21:53; DOCS due — and DOCS-26 is the named next DOCS duty from the EMU
+  run). Closed **DOCS-26**: mirrored the **Control family** the EMU 60→63 pins
+  read — `#ControlCollection.ControlCollection` → `#Control.v1_5_0.Control`
+  (PowerLimit: ControlType Power / ControlMode Automatic / SetPoint 500 W /
+  AllowableMax 1000 / AllowableMin 150 + `Sensor` excerpt with DataSourceUri →
+  Sensors/TotalPower; CPU1Freq: ControlType Frequency / SettingMin/Max
+  2000/2400 Hz / AllowableMin/Max 1500/3700) — into
+  `documentations/external/redfish/schemas/v1/`. 4 files / **129,851 bytes**
+  total (`Control.json` 9,694 + `Control.v1_5_0.json` 47,414 +
+  `Control.v1_8_1.json` 67,784 + `ControlCollection.json` 4,959), inside the
+  DOCS-6 budget. All 4 sources verified 200 via `curl -sSIL` before download;
+  SHA-256s + manifest rows added.
+- **Docs:** served `Control.v1_5_0.json` (mockup-served `#Control.v1_5_0.Control`,
+  absent from the newest aggregator `$ref` list — the DOCS-25 pattern) + newest
+  `Control.v1_8_1.json` (aggregator `$ref`s v1_0_7/v1_1_6/v1_2_6/v1_3_6/v1_4_6/
+  v1_5_5/v1_6_3/v1_7_2/v1_8_1) + both aggregators. **Delta audit (additive-
+  only):** v1_5_0 → v1_8_1 adds `SetPointError` only (readonly, versionAdded
+  v1_7_0 — the error/difference of the related Sensor `Reading` from
+  `SetPoint`, units per `SetPointUnits`); every EMU-2-pinned field present in
+  the served version — **no client code change**. `SetPointUnits` + the
+  `Sensor` SensorExcerpt/null `anyOf` verified in the served schema (matches
+  the fixture's `W`/`Hz` values + DataSourceUri shape). Client-mapped decision:
+  **Control stays NOT client-mapped** — external corpus only, no fixture duty,
+  the 33-family corpus-invariant list untouched. REQUIREMENTS.md: "Last
+  audited" updated (DOCS-26 done), new DOCS-26 section (manifest table, delta
+  table, decision); README: 4 manifest rows, aggregator count 27 → **28**,
+  DOCS-26 note + anchors timestamp.
+- **Emulator:** none this run (DOCS stream). Emulator suite unaffected —
+  Control pins already covered by EMU 60→63.
+- **Code/tests:** no lib/ production change for DOCS-26 (pure corpus +
+  provenance + traceability). No fixture copies (Control NOT client-mapped).
+- **UI:** skipped with reason — every empty/error/loading/placeholder surface
+  across the app already uses the merged-`Semantics` pattern (verified via
+  scans: no bare Icon+Text rows remain un-merged, no bare-`Text` fallbacks
+  remain); the only open UI-2 items are the open-ended focus-order hunt and
+  remaining non-card labels, which are risky to rush unattended on a DOCS run
+  and were not attempted (runbook §5 allows this with a reason).
+- **Verification:** analyze 0; tests **348 passed / 1 skipped** (unchanged —
+  DOCS-only); issues validate OK; `git diff --check` clean; secret scan: 4
+  public DMTF schema JSONs + docs prose only, no credentials.
+- **Commit:** (after §7.2/§7.3 below) — pushed: expected no (known GitHub
+  credential blocker; local commit kept, not retried).
+- **Next:** 1) Push the queued local commits (104) from a machine with GitHub
+  credentials; 2) EMULATOR per alternation — corpus mirror queue is now EMPTY
+  (all EMU-pinned families incl. Control have real mirror files); candidates:
+  re-run the corpus-invariant crawl on future family additions, or pin a
+  remaining un-pinned surface (#028 BIOS-config editor remains the P2
+  candidate with its fixture duty recorded); 3) P1 #015 AuthManager — wire
+  `Session.expiryFromService` into login, re-auth on `isExpired`,
+  token/location from create RESPONSE HEADERS only.
