@@ -7,22 +7,25 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 (EMU run — **corpus invariant verified live**:
-  new integration test crawls the running mockup and asserts every published
-  `@odata.type` for a client-mapped family has a served-version schema in the
-  fixture (DOCS-19/20/21 invariant as a runnable check; green, so the corpus
-  stays closed) + EventDestination detail pinned (DOCS-7 bed for #019);
-  UI-2 increment below); next P1: #015 (AuthManager)
-- **Current focus:** **EMULATOR (2026-10-24)** — suite 50 → 52 (corpus
-  invariant crawl + EventDestination detail; the pinned mockup's published
-  type surface now has an always-on fixture-schema guard); next P1: #015
-  (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the
-  discovered SessionService body into login + re-auth on `isExpired`;
-  #022/#016: `ResetActionInfo` ActionInfo resource crawl (bmcweb-style BMCs;
-  NOT pinable on the DMTF mockup — it serves only the annotation form and now
-  provably ignores ResetType values); #018: query-capability surface + live
-  `$expand` contract pinned — remaining: build the lightweight discovery pass
-  + the cache fixes
+- **Last updated:** 2026-10-24 (DOCS run — **DOCS-22 frequent-family freshness
+  audit**: 8 of 33 client-mapped families advanced upstream since their last
+  mirror — EnvironmentMetrics v1_3_1→v1_7_0, Fan v1_5_1→v1_6_0, PowerSubsystem
+  v1_1_1→v1_2_0, PowerSupply v1_5_3→v1_8_0, PowerSupplyMetrics v1_1_1→v1_3_0,
+  TaskService v1_2_1→v1_3_0, ThermalMetrics v1_3_1→v1_3_3, ThermalSubsystem
+  v1_3_1→v1_5_0 — all newest files mirrored (189,768 B, inside DOCS-6),
+  deltas additive-only, no code change; stale bmcweb anchor in manifest +
+  Sources fixed to `63a18f4`, re-verified live byte-identical); next P1: #015
+  (AuthManager)
+- **Current focus:** **DOCS (2026-10-24)** — corpus kept fresh against the
+  live schema index; the DOCS-22 delta note adds a #008/#020 candidate
+  (`TaskService.TaskMonitorAutoExpirySeconds` surfaced by the future poller);
+  next P1: #015 (AuthManager) — `expiryFromService` + the Sessions pin are
+  ready, wire the discovered SessionService body into login + re-auth on
+  `isExpired`; #022/#016: `ResetActionInfo` ActionInfo resource crawl
+  (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only the
+  annotation form and now provably ignores ResetType values); #018:
+  query-capability surface + live `$expand` contract pinned — remaining: build
+  the lightweight discovery pass + the cache fixes
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -295,6 +298,26 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       ServicedDate; CRate/ERate), emulator-pinned contract holds, no code
       change; bmcweb anchor advanced `fbb307a` → `63a18f4` with all four
       mirrored docs byte-identical).**
+
+- [x] **DOCS-22** Freshness-audit the mirrored **newest** schema versions
+      against the live DMTF schema index for every client-mapped family, and
+      mirror any that advanced upstream (the "newest + served" pair precedent,
+      DOCS-11/12/13/19/20/21) — keep the corpus current so the properties the
+      client reads are checkable against the newest definitions, not just the
+      mockup-served ones. (run 2026-10-24 — **8 of 33 families had advanced**:
+      EnvironmentMetrics v1_3_1→v1_7_0, Fan v1_5_1→v1_6_0, PowerSubsystem
+      v1_1_1→v1_2_0, PowerSupply v1_5_3→v1_8_0, PowerSupplyMetrics v1_1_1→
+      v1_3_0, TaskService v1_2_1→v1_3_0, ThermalMetrics v1_3_1→v1_3_3
+      (structural no-op), ThermalSubsystem v1_3_1→v1_5_0; 8 files / 189,768
+      bytes mirrored into the external corpus only (fixture keeps
+      mockup-served versions), manifest rows + SHA-256s verified; deltas
+      **additive-only** — no client code change; TaskService v1_3_0 adds a
+      `#TaskService.DeleteAllCompletedTasks` action + `TaskMonitorAutoExpirySeconds`
+      (note for #008/#020 poller); stale bmcweb anchor `fbb307a` →
+      `63a18f4` in manifest + REQUIREMENTS.md Sources fixed + re-verified
+      live byte-identical; remaining 25 families unchanged; all anchors
+      re-verified: bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0,
+      schema index 200)
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across
@@ -746,6 +769,17 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `Semantics(container + excludeSemantics)` node (one self-describing
       announcement for the specific surface still loading, visible text
       preserved), +1 widget test asserts the merged label + visible text;
+      **SystemOverviewPage `System not found` fallback merged semantics node
+      (`System not found`) done 2026-10-24 — the last bare `Text` fallback on
+      the overview page now renders the established pattern: icon
+      (`Icons.search_off_outlined`) + visible text inside a
+      `Semantics(container + excludeSemantics)` merged node (one
+      self-describing announcement; no Retry — a nonexistent system id is not
+      an error), +1 widget test asserts the merged label + visible text +
+      icon + no overflow at 320 px (via the `addTearDown` restore pattern);
+      the FirmwareView no-overflow test's manual `setSurfaceSize` restore was
+      also converted to the established `addTearDown` (the 12:30 journal
+      noted it for this run);
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

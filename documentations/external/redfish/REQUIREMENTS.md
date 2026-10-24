@@ -6,19 +6,19 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (EMU run 50→52 — **corpus invariant verified live**:
-a new integration test crawls the running DMTF mockup from the service root
-(following every relative `@odata.id` + `@Redfish.ActionInfo` link, excluding
-POST-only `/Actions/` targets) and asserts every published `@odata.type` for a
-client-mapped family has its **served-version** schema in
-`test/fixtures/redfish/schemas/` — the DOCS-19/20/21 invariant as a runnable
-check (33 client-mapped families, crawl reaches >50 published types; the
-DOCS-19/20/21 mirror work closed every served-version gap, so the check is
-green). Also pinned the **EventDestination detail** (`#EventDestination.v1_14_0`
-on all four `EventService/Subscriptions` members: Redfish / SNMPv3 / SMTP-OEM /
-SyslogTCP protocol variants incl. `SyslogFilters` and null SNMP key material —
-the DOCS-7 bed for #019). UI-2: FirmwareView inventory-loading state now
-announces one merged semantics node. Prior runs below.)
+Last audited: 2026-10-24 (DOCS run — **frequent-family freshness audit
+DOCS-22**: compared the live DMTF schema index against the mirrored "newest"
+per client-mapped family; **8 of 33 families had advanced upstream** —
+EnvironmentMetrics v1_3_1→v1_7_0, Fan v1_5_1→v1_6_0, PowerSubsystem
+v1_1_1→v1_2_0, PowerSupply v1_5_3→v1_8_0, PowerSupplyMetrics v1_1_1→v1_3_0,
+TaskService v1_2_1→v1_3_0, ThermalMetrics v1_3_1→v1_3_3 (structural no-op),
+ThermalSubsystem v1_3_1→v1_5_0 — mirrored the 8 newest files into
+`documentations/external/redfish/schemas/v1/` (189,768 B, inside DOCS-6);
+property-delta audit: **all additive-only, no client code change**; anchors
+re-verified live — bmcweb `63a18f4` with all four docs byte-identical, mockup
+`23d21f9a`, DSP0266 1.25.0, schema index 200). UI-2: SystemOverviewPage
+`System not found` fallback now announces one merged semantics node. Prior
+runs below.)
 Prior: DOCS-21 run — mirrored the versioned schemas for the battery family
 the EMU run (48→50) pinned live —
 `Battery.v1_2_2.json` (mockup-served `#Battery.v1_2_2.Battery`: Module1 detail
@@ -138,8 +138,8 @@ Sources:
 - DSP0266 1.25.0 — `redfish/spec/DSP0266_1.25.0.pdf`
 - DMTF schema index — `redfish/schemas/v1-index.html` + `redfish/schemas/v1/*.json`
 - bmcweb — `redfish/openbmc/Redfish.md`, `REDFISH_CHECKLIST.md`, `OEM_SCHEMAS.md`,
-  `CLIENTS.md` (bmcweb master `fbb307a`, re-verified 2026-10-23 19:20 UTC —
-  byte-identical to `27e0930b`)
+  `CLIENTS.md` (bmcweb master `63a18f4`, re-verified 2026-10-24 12:45 UTC —
+  byte-identical to `fbb307a`)
 
 ## DOCS-10 — task-monitor contract audit (2026-10-23)
 
@@ -912,3 +912,38 @@ Fixture copies byte-identical to the mirror (verified with `cmp`); SHA-256s
 recorded in the manifest. The battery family has **no client model yet** — the
 mirrored defs document the wire surface for future #007/#019 telemetry work;
 no code change needed this run.
+
+## DOCS-22 — frequent-family newest-version freshness audit (2026-10-24)
+
+Freshness audit against the live DMTF schema index
+(`https://redfish.dmtf.org/schemas/v1/`, 200 OK 3.4 MB). Extracted the
+**newest published version per client-mapped family** and compared against the
+mirrored "newest" file (the DOCS-12/13/19/20/21 precedent: newest + served
+pairs). **8 of the 33 families had advanced upstream** since their last mirror:
+
+| Family | Mirrored newest → new newest | Delta (additive-only) | Client impact |
+|---|---|---|---|
+| `EnvironmentMetrics` | `v1_3_1` → `v1_7_0` | `AmbientTemperatureCelsius`, `BarometricPressureMm`, `CurrentAmps`, `DewPointProximityCelsius`, `Voltage` | none — the emulator-pinned Temp/Power/Fan excerpts unchanged |
+| `Fan` | `v1_5_1` → `v1_6_0` | `RatedSpeedRPM`, `RatedSecondarySpeedRPM` | none — served v1_5_1 still the pinned member type |
+| `PowerSubsystem` | `v1_1_1` → `v1_2_0` | `Applied`, `Enabled`, `Links`, `LoadPercentThreshold`, `MaxRampRateWattsPerSecond`, `PowerBrake`, `PowerBrakeLoadPercentSensor`, `PowerBrakeTemperatureSensor`, `TemperatureThreshold` | none — served v1_1_1 still the pinned PowerSupplies surface |
+| `PowerSupply` | `v1_5_3` → `v1_8_0` | `Certificates`, `VoltageControl` | none — served v1_5_3 still the pinned PSU detail (Model/Manufacturer/FirmwareVersion/LineInputStatus/Metrics) |
+| `PowerSupplyMetrics` | `v1_1_1` → `v1_3_0` | `ChargePercent`, single-phase `Line1..3`/`Neutral` + `LineXToLineY`/`LineXToNeutral`, `PolyPhaseCurrentAmps`/`EnergykWh`/`PowerWatts`/`Voltage`, `PowerLoadPercent` | none — served v1_1_1 still pinned |
+| `TaskService` | `v1_2_1` → `v1_3_0` | `#TaskService.DeleteAllCompletedTasks` action + `TaskMonitorAutoExpirySeconds` | none for #008/#020 — the new action/TTL are task-lifecycle extras, not yet read by the poller (stays #008/#020) |
+| `ThermalMetrics` | `v1_3_1` → `v1_3_3` | **structural no-op** — copyright year + `anyOf[ref,null]` → bare `$ref` normalization (verified by deep diff) | none |
+| `ThermalSubsystem` | `v1_3_1` → `v1_5_0` | `FansFullSpeedOverrideEnable`, `Filters` | none — served v1_3_1 still the pinned Fans/FanRedundancy surface |
+
+All 8 files mirror to `documentations/external/redfish/schemas/v1/` only (the
+fixture keeps the mockup-served versions — the DOCS-21 precedent; the corpus
+invariant test asserts served versions, which are unchanged). New bytes: 189,768
+total (22,003+18,934+22,174+37,552+46,503+11,802+19,245+11,555) — inside the
+DOCS-6 budget. SHA-256s in the manifest; fetched 200 from
+`https://redfish.dmtf.org/schemas/v1/`. The remaining 25 client-mapped families
+are unchanged upstream (newest still the mirrored file).
+
+Anchors re-verified this run (2026-10-24 12:45–12:47 UTC): **bmcweb master
+`63a18f4e6188a77b713a8b22c8a95ab3d6c5a718`** — all four mirrored docs
+byte-identical at HEAD (re-verified live, SHA-256 match), mockup pin
+`23d21f9a` (unchanged), DSP0266 1.25.0 (unchanged; 1.26.0 probe → 404), schema
+index 200. **No client code change**: every delta is additive, none of the new
+fields sit on the current reader surface; the newest-version corpus stays a
+reference for future telemetry/task work (#007/#019/#008/#020).

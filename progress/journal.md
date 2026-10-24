@@ -2494,3 +2494,74 @@
 - none opened/closed this run. EMU-2 50 → 52 recorded (corpus crawl +
   EventDestination); DOCS-7 bed extended; UI-2 got the inventory-loading
   increment; issues remain open (#015 next P1).
+
+## 2026-10-24 — agent:redfish-automation — DOCS-22 freshness audit + UI-2 not-found semantics
+
+**Done:**
+- DOCS primary workstream (alternation: EMU 15:00 → DOCS next). **DOCS-22:
+  frequent-family newest-version freshness audit** — extracted the newest
+  published version per client-mapped family from the live DMTF schema index
+  (`https://redfish.dmtf.org/schemas/v1/`, 200 OK, 3.4 MB) and compared
+  against the mirrored "newest" files. **8 of 33 families had advanced
+  upstream**: EnvironmentMetrics v1_3_1→v1_7_0, Fan v1_5_1→v1_6_0,
+  PowerSubsystem v1_1_1→v1_2_0, PowerSupply v1_5_3→v1_8_0, PowerSupplyMetrics
+  v1_1_1→v1_3_0, TaskService v1_2_1→v1_3_0, ThermalMetrics v1_3_1→v1_3_3,
+  ThermalSubsystem v1_3_1→v1_5_0. Mirrored the 8 newest files into
+  `documentations/external/redfish/schemas/v1/` (189,768 B total, inside
+  DOCS-6; manifest rows + SHA-256s verified; fixture untouched — keeps
+  mockup-served versions, DOCS-21 precedent). Property-delta audit: every
+  delta additive-only (EnvironmentMetrics: AmbientTemperatureCelsius/
+  BarometricPressureMm/CurrentAmps/DewPointProximityCelsius/Voltage; Fan:
+  RatedSpeedRPM/RatedSecondarySpeedRPM; PowerSubsystem: Applied/Enabled/
+  Links/LoadPercentThreshold/MaxRampRateWattsPerSecond/PowerBrake(+sensors)/
+  TemperatureThreshold; PowerSupply: Certificates/VoltageControl;
+  PowerSupplyMetrics: ChargePercent/Line*/PolyPhase*/PowerLoadPercent;
+  TaskService: `#TaskService.DeleteAllCompletedTasks` + TaskMonitorAutoExpirySeconds;
+  ThermalMetrics: structural no-op; ThermalSubsystem:
+  FansFullSpeedOverrideEnable/Filters) — **no client code change**.
+- **Provenance fix**: the DOCS-21 run advanced the bmcweb pin to `63a18f4…`
+  but the manifest rows + REQUIREMENTS.md Sources block still cited `fbb307a`.
+  Re-verified **live**: fetched all four bmcweb docs at `63a18f4…` HEAD, SHA-256
+  byte-identical to the mirror; updated manifest rows + Sources block + anchors
+  section. All anchors re-verified: bmcweb `63a18f4` (still HEAD), mockup
+  `23d21f9a`, DSP0266 1.25.0 (1.26.0 probe → 404), schema index 200.
+- Emulator suite re-run **52/52** (corpus invariant + EventDestination +
+  battery groups all green) — served versions unchanged so the 33-family list
+  stays in sync.
+- UI-2 increment: `SystemOverviewPage` `System not found` fallback converted
+  from a bare `Text` to the established merged `Semantics(container +
+  excludeSemantics, label: 'System not found')` node + `Icons.search_off_outlined`
+  (no Retry). +1 widget test (merged label + visible text + icon + 320 px
+  no-overflow via `addTearDown`). Also converted the FirmwareView no-overflow
+  test's manual `setSurfaceSize(800×600)` restore to `addTearDown` (the 12:30
+  journal noted this for the next UI run). Suite 335 → **336**.
+
+**Decisions:**
+- DOCS per alternation; within it, DOCS-22 exactly — the corpus's newest
+  versions were drifting from upstream, and the freshness audit is the
+  repeatable check that keeps the DOCS-12/13/19/20/21 "newest + served" pairs
+  honest.
+- Newest-version files go to the **external corpus only** (fixture keeps
+  mockup-served versions) — the corpus-invariant test asserts served versions,
+  which are unchanged, so the crawler family list needs no edit.
+- Stale-anchor fix is a pure provenance correction — byte-identical content
+  means no refresh, only the citation rows change (historical audit sections
+  keep their recorded hashes, per the DOCS-21 pattern).
+- UI increment stayed pattern-consistent (merged node, no Retry). The
+  `addTearDown` conversion matches the 12:30 run's own recommendation.
+- No new dependencies, no TLS change, no production behaviour change.
+
+**Next:**
+- Push 88 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, persist token/location from create RESPONSE HEADERS
+  only (the fixture echoes the password in session bodies).
+- EMULATOR next per alternation: candidates — re-verify the corpus invariant
+  against a fresh published-types crawl, or pin a remaining un-pinned surface;
+  the DOCS-22 TaskService note (`TaskMonitorAutoExpirySeconds`) is a #008/#020
+  input for when the poller lands.
+
+**Issues touched:**
+- none opened/closed this run. DOCS-22 done; manifest + REQUIREMENTS.md +
+  FUTUREWORK updated; UI-2 got the not-found fallback increment; issues remain
+  open (#015 next P1).

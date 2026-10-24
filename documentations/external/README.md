@@ -34,10 +34,10 @@ documentations/external/
 | File | Source URL | Fetched (UTC) | SHA-256 | Bytes | Upstream version/commit | Notes |
 |---|---|---|---|---|---|---|
 | `redfish/spec/DSP0266_1.25.0.pdf` | https://www.dmtf.org/sites/default/files/standards/documents/DSP0266_1.25.0.pdf | 2026-10-22 12:17 | `385ee6d0039a2dbc610c7af9fa9bba304fc2a461ceb5a8eda0adb33630c82149` | 1,243,359 | DSP0266 1.25.0 | Redfish specification PDF; linked from redfish.dmtf.org hub |
-| `redfish/openbmc/Redfish.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/Redfish.md | 2026-10-22 12:31 (re-verified 16:45 UTC @ `fbb307a`) | `9be2748b017c1657631565b747ff38fc3e74afaaeae1f39cdb6b3a519d786105` | 25,689 | bmcweb master `fbb307a` (was `27e0930b`) | OpenBMC Redfish overview — byte-identical at new HEAD |
-| `redfish/openbmc/REDFISH_CHECKLIST.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/REDFISH_CHECKLIST.md | 2026-10-22 12:31 (re-verified 16:45 UTC @ `fbb307a`) | `98ff60be5d6592dd592b267a36f86224c121aba7ad23c34d8e93ceb2f8cdb5ce` | 1,761 | bmcweb master `fbb307a` | OpenBMC compliance checklist — byte-identical at new HEAD |
-| `redfish/openbmc/OEM_SCHEMAS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/OEM_SCHEMAS.md | 2026-10-22 12:31 (re-verified 16:45 UTC @ `fbb307a`) | `7d651fd19bc715b64497fdd466fae03cf043acd50c9efacbacb4a5def469d726` | 5,687 | bmcweb master `fbb307a` | OpenBMC OEM schema extensions — byte-identical at new HEAD |
-| `redfish/openbmc/CLIENTS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/CLIENTS.md | 2026-10-22 23:40 (re-verified 16:45 UTC @ `fbb307a`) | `cfea5163ec820bb4edaba449ef837c9906ce3a2b690e22c4ce16132e526a735f` | 2,695 | bmcweb master `fbb307a` | Client-compat map: DMTF validators, python-redfish-library, redfishtool, fwupd |
+| `redfish/openbmc/Redfish.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/Redfish.md | 2026-10-22 12:31 (re-verified 2026-10-24 12:45 UTC @ `63a18f4`) | `9be2748b017c1657631565b747ff38fc3e74afaaeae1f39cdb6b3a519d786105` | 25,689 | bmcweb master `63a18f4` (was `fbb307a`, `27e0930b`) | OpenBMC Redfish overview — byte-identical at new HEAD |
+| `redfish/openbmc/REDFISH_CHECKLIST.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/REDFISH_CHECKLIST.md | 2026-10-22 12:31 (re-verified 2026-10-24 12:45 UTC @ `63a18f4`) | `98ff60be5d6592dd592b267a36f86224c121aba7ad23c34d8e93ceb2f8cdb5ce` | 1,761 | bmcweb master `63a18f4` | OpenBMC compliance checklist — byte-identical at new HEAD |
+| `redfish/openbmc/OEM_SCHEMAS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/OEM_SCHEMAS.md | 2026-10-22 12:31 (re-verified 2026-10-24 12:45 UTC @ `63a18f4`) | `7d651fd19bc715b64497fdd466fae03cf043acd50c9efacbacb4a5def469d726` | 5,687 | bmcweb master `63a18f4` | OpenBMC OEM schema extensions — byte-identical at new HEAD |
+| `redfish/openbmc/CLIENTS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/CLIENTS.md | 2026-10-22 23:40 (re-verified 2026-10-24 12:45 UTC @ `63a18f4`) | `cfea5163ec820bb4edaba449ef837c9906ce3a2b690e22c4ce16132e526a735f` | 2,695 | bmcweb master `63a18f4` | Client-compat map: DMTF validators, python-redfish-library, redfishtool, fwupd |
 | `redfish/mockup/README-mockup-server.md` | https://raw.githubusercontent.com/DMTF/Redfish-Mockup-Server/master/README.md | 2026-10-22 12:31 | `b3af2ff369dcfd78c75f156bd1ddedfca46750d185c59eefdffaa2f11c289431` | 7,318 | Redfish-Mockup-Server `23d21f9a` | Mockup server usage + DSP2043 link |
 | `redfish/schemas/v1-index.html` | https://redfish.dmtf.org/schemas/v1/ | 2026-10-22 12:17 | `e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86` | 3,448,133 | n/a | Full DMTF schema index listing (14,259 JSON/YAML entries) |
 | `redfish/schemas/v1/<16 schemas>.json` | https://redfish.dmtf.org/schemas/v1/<Name>.json | 2026-10-22 12:34 | see `sha256sum` in run notes | 106,322 (total) | latest per aggregator | Base aggregator stubs for the 16 resources the client maps |
@@ -111,6 +111,14 @@ documentations/external/
 | `redfish/schemas/v1/BatteryMetrics.json` | https://redfish.dmtf.org/schemas/v1/BatteryMetrics.json | 2026-10-24 12:14 | `6db7acd63802fff243596c0a45a44121cf474ff9b11432885c3dfac9bb3f736c` | 1,448 | latest per aggregator | BatteryMetrics family aggregator — resolves `#BatteryMetrics.BatteryMetrics` citations — DOCS-21 |
 | `redfish/schemas/v1/BatteryMetrics.v1_0_3.json` | https://redfish.dmtf.org/schemas/v1/BatteryMetrics.v1_0_3.json | 2026-10-24 12:14 | `5e642e47db7c9532eb84d89ef0eb8f8c6e7f28f6344fecad01bd0e4d00d147d9` | 12,790 | DMTF 2021.x | **Mockup-served** `#BatteryMetrics.v1_0_3.BatteryMetrics` — electrical telemetry pinned by the emulator (InputVoltage/OutputVoltages/InputCurrentAmps/OutputCurrentAmps/StoredEnergyWattHours/TemperatureCelsius/ChargePercent/CellVoltages, `Sensor*Excerpt` refs + DataSourceUri) — DOCS-21 |
 | `redfish/schemas/v1/BatteryMetrics.v1_1_0.json` | https://redfish.dmtf.org/schemas/v1/BatteryMetrics.v1_1_0.json | 2026-10-24 12:14 | `fc09a3bedbdfe35ee272cebffc9b2779dd977e885d3c8e2e916b93a1dfa0e479` | 14,986 | DMTF 2022.x | Newest BatteryMetrics def — adds CRate/ERate only (delta note vs served v1_0_3) — DOCS-21 |
+| `redfish/schemas/v1/EnvironmentMetrics.v1_7_0.json` | https://redfish.dmtf.org/schemas/v1/EnvironmentMetrics.v1_7_0.json | 2026-10-24 12:47 | `fda1312b586088277262b2185366a8b0579988d084b31b22072345ec31f1e54e` | 22,003 | DMTF 2026.x | Newest EnvironmentMetrics — adds AmbientTemperatureCelsius/BarometricPressureMm/CurrentAmps/DewPointProximityCelsius/Voltage (additive vs served v1_3_1) — DOCS-22 |
+| `redfish/schemas/v1/Fan.v1_6_0.json` | https://redfish.dmtf.org/schemas/v1/Fan.v1_6_0.json | 2026-10-24 12:47 | `4d1496a5e094d65b1f1ef0103a3822a76dd0bc0c70fb36c9c4c038d669088e4f` | 18,934 | DMTF 2026.x | Newest Fan — adds RatedSpeedRPM/RatedSecondarySpeedRPM (additive vs served v1_5_1) — DOCS-22 |
+| `redfish/schemas/v1/PowerSubsystem.v1_2_0.json` | https://redfish.dmtf.org/schemas/v1/PowerSubsystem.v1_2_0.json | 2026-10-24 12:47 | `a88aea554901aa482834e7cc0ebdd4abfbb111f34c1a0bf74b8b84326af66e2c` | 22,174 | DMTF 2026.x | Newest PowerSubsystem — adds Applied/Enabled/Links/LoadPercentThreshold/MaxRampRateWattsPerSecond/PowerBrake(+sensors)/TemperatureThreshold (additive vs served v1_1_1) — DOCS-22 |
+| `redfish/schemas/v1/PowerSupply.v1_8_0.json` | https://redfish.dmtf.org/schemas/v1/PowerSupply.v1_8_0.json | 2026-10-24 12:47 | `9816f1e7f47540ec28e9c242eff7c6d3448612bf4b090f9c6e0e1fe4e744f019` | 37,552 | DMTF 2026.x | Newest PowerSupply — adds Certificates/VoltageControl (additive vs served v1_5_3) — DOCS-22 |
+| `redfish/schemas/v1/PowerSupplyMetrics.v1_3_0.json` | https://redfish.dmtf.org/schemas/v1/PowerSupplyMetrics.v1_3_0.json | 2026-10-24 12:47 | `ae2e6b0c02c668aee6facbe8a9747dd68d36f5c6c98bf1395aeb42922f45cf3f` | 46,503 | DMTF 2026.x | Newest PowerSupplyMetrics — adds ChargePercent/Line*/PolyPhase*/PowerLoadPercent (additive vs served v1_1_1) — DOCS-22 |
+| `redfish/schemas/v1/TaskService.v1_3_0.json` | https://redfish.dmtf.org/schemas/v1/TaskService.v1_3_0.json | 2026-10-24 12:47 | `0ff595276fedaef23cb6840757d93473d6fce3acf6bc7bd9480de269cc2b613d` | 11,802 | DMTF 2026.x | Newest TaskService — adds `#TaskService.DeleteAllCompletedTasks` action + TaskMonitorAutoExpirySeconds (additive vs v1_2_1) — DOCS-22 |
+| `redfish/schemas/v1/ThermalMetrics.v1_3_3.json` | https://redfish.dmtf.org/schemas/v1/ThermalMetrics.v1_3_3.json | 2026-10-24 12:47 | `8618fcf00538422383eba106cca40c68767e3e294c2c77f1e13845314b7f704b` | 19,245 | DMTF 2026.x | Newest ThermalMetrics — structural no-op vs v1_3_1 (copyright/anyOf-normalization only) — DOCS-22 |
+| `redfish/schemas/v1/ThermalSubsystem.v1_5_0.json` | https://redfish.dmtf.org/schemas/v1/ThermalSubsystem.v1_5_0.json | 2026-10-24 12:47 | `ba191747b75c257efc50e1d3d387c291625d83eb0f7e1a5eca5fc0a390e48e75` | 11,555 | DMTF 2026.x | Newest ThermalSubsystem — adds FansFullSpeedOverrideEnable/Filters (additive vs served v1_3_1) — DOCS-22 |
 
 ### Downloaded schema set (23 base aggregator files)
 
@@ -201,7 +209,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-24 12:15 UTC — DOCS-21 Battery corpus run; prior: DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
+## Current upstream anchors (verified 2026-10-24 12:47 UTC — DOCS-22 freshness audit; prior: DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing)
@@ -216,7 +224,37 @@ redirection), so no fixture referencing a specific version is affected.
   (master advanced `fbb307a` → `63a18f4e6188a77b713a8b22c8a95ab3d6c5a718` at
   2026-10-24 12:15 UTC; Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md,
   CLIENTS.md all byte-identical at the new HEAD — verified by SHA-256, no
-  refresh needed)
+  refresh needed; re-verified 2026-10-24 12:45 UTC at `63a18f4` — still HEAD,
+  all four docs byte-identical)
+
+### DOCS-22 — frequent-family newest-version freshness audit (2026-10-24 12:47 UTC)
+
+Freshness audit against the live schema index: extracted the **newest published
+version per client-mapped family** from `https://redfish.dmtf.org/schemas/v1/`
+and compared against the mirrored "newest" files. **8 of 33 families had
+advanced upstream** since their last mirror (all others unchanged). Mirrored the
+8 newest files (189,768 bytes total, inside the DOCS-6 budget; SHA-256s + rows
+above): `EnvironmentMetrics.v1_7_0` (v1_3_1 → v1_7_0),
+`Fan.v1_6_0` (v1_5_1 → v1_6_0), `PowerSubsystem.v1_2_0` (v1_1_1 → v1_2_0),
+`PowerSupply.v1_8_0` (v1_5_3 → v1_8_0), `PowerSupplyMetrics.v1_3_0`
+(v1_1_1 → v1_3_0), `TaskService.v1_3_0` (v1_2_1 → v1_3_0),
+`ThermalMetrics.v1_3_3` (v1_3_1 → v1_3_3), `ThermalSubsystem.v1_5_0`
+(v1_3_1 → v1_5_0). Property-delta audit: **every delta is additive-only** (new
+properties/actions, no removals): EnvironmentMetrics adds
+AmbientTemperatureCelsius/BarometricPressureMm/CurrentAmps/
+DewPointProximityCelsius/Voltage; Fan adds RatedSpeedRPM/RatedSecondarySpeedRPM;
+PowerSubsystem adds Applied/Enabled/Links/LoadPercentThreshold/
+MaxRampRateWattsPerSecond/PowerBrake(+sensors)/TemperatureThreshold;
+PowerSupply adds Certificates/VoltageControl; PowerSupplyMetrics adds
+ChargePercent/multi-phase Line*/PolyPhase*/PowerLoadPercent; TaskService adds a
+`#TaskService.DeleteAllCompletedTasks` action + `TaskMonitorAutoExpirySeconds`;
+ThermalMetrics v1_3_3 is a **structural no-op** (copyright + anyOf-normalization
+only); ThermalSubsystem adds FansFullSpeedOverrideEnable/Filters. None of the
+new fields affect the client's current reader surface — **no client code
+change** (newest versions are only mirrored to the external corpus, not the
+fixture; the fixture keeps the mockup-served versions per the DOCS-21
+precedent). Manifest rows + anchors updated above; the 33-family list in the
+emulator corpus-invariant test stays in sync (served versions unchanged).
 
 ### DOCS-15 — DSP0266 §7.3 query-parameters audit (2026-10-23 19:20 UTC)
 

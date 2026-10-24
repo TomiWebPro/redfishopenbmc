@@ -545,6 +545,29 @@ void main() {
     });
 
     testWidgets(
+        'not-found fallback announces one merged semantics node — icon + text '
+        '(UI-2)', (tester) async {
+      final SystemManager m = seededManager(systems: <String, SystemHandle>{});
+      await pumpOverviewDirect(tester, m, 'ghost');
+      expect(
+        find.bySemanticsLabel('System not found'),
+        findsOneWidget,
+        reason: 'expected one merged not-found node (icon + text)',
+      );
+      // Visible text preserved for sighted users.
+      expect(find.text('System not found'), findsOneWidget);
+      expect(find.byIcon(Icons.search_off_outlined), findsOneWidget);
+      // No overflow at the narrowest supported width (UI-3); use the
+      // established addTearDown restore so the resize cannot leak into later
+      // tests (precedent: the SystemShell group's no-overflow tests).
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      expect(tester.takeException(), isNull);
+      await tester.binding.setSurfaceSize(const Size(320, 800));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
         'connection header announces one merged semantics node — name + URL '
         '(UI-2)', (tester) async {
       final SystemManager m = seededManager(

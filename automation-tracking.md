@@ -2806,3 +2806,75 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **86** (85 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 13:05 — DOCS (frequent-family freshness audit DOCS-22) + UI-2 not-found semantics
+
+- **Baseline:** analyze 0; tests 335 passed / 1 skipped; starting commit 4b3e3ac
+  (branch `main` ahead 87 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** DOCS per alternation (last substantive runs 09:30 EMU →
+  12:30 DOCS → 15:00 EMU — DOCS overdue). Ran a **frequent-family newest-version
+  freshness audit (DOCS-22)**: extracted the newest published version per
+  client-mapped family from the live DMTF schema index
+  (`https://redfish.dmtf.org/schemas/v1/`, 200 OK 3.4 MB) and compared against
+  the mirrored "newest" files. **8 of 33 families had advanced upstream**:
+  `EnvironmentMetrics` v1_3_1→v1_7_0, `Fan` v1_5_1→v1_6_0, `PowerSubsystem`
+  v1_1_1→v1_2_0, `PowerSupply` v1_5_3→v1_8_0, `PowerSupplyMetrics` v1_1_1→v1_3_0,
+  `TaskService` v1_2_1→v1_3_0, `ThermalMetrics` v1_3_1→v1_3_3, `ThermalSubsystem`
+  v1_3_1→v1_5_0. Mirrored the 8 newest files into
+  `documentations/external/redfish/schemas/v1/` (189,768 bytes total, inside
+  the DOCS-6 budget; manifest rows + SHA-256s verified; fixture untouched —
+  keeps mockup-served versions per the DOCS-21 precedent). Property-delta
+  audit: **every delta is additive-only** (EnvironmentMetrics adds
+  AmbientTemperatureCelsius/BarometricPressureMm/CurrentAmps/
+  DewPointProximityCelsius/Voltage; Fan adds RatedSpeedRPM/RatedSecondarySpeedRPM;
+  PowerSubsystem adds Applied/Enabled/Links/LoadPercentThreshold/
+  MaxRampRateWattsPerSecond/PowerBrake(+sensors)/TemperatureThreshold;
+  PowerSupply adds Certificates/VoltageControl; PowerSupplyMetrics adds
+  ChargePercent/Line*/PolyPhase*/PowerLoadPercent; TaskService adds a
+  `#TaskService.DeleteAllCompletedTasks` action + `TaskMonitorAutoExpirySeconds`
+  — a #008/#020 task-lifecycle note; ThermalMetrics v1_3_3 is a **structural
+  no-op** (copyright + anyOf-normalization only, verified by deep diff);
+  ThermalSubsystem adds FansFullSpeedOverrideEnable/Filters) — **no client code
+  change needed** (none of the new fields sit on the current reader surface).
+  The other 25 client-mapped families are unchanged upstream.
+- **Docs:** fixed **stale-provenance inconsistency** from DOCS-21: manifest rows
+  + REQUIREMENTS.md Sources block still cited bmcweb `fbb307a` after DOCS-21
+  advanced the pin to `63a18f4…`. Re-verified **live**:
+  `curl` fetch of all four bmcweb docs at `63a18f4…` HEAD → SHA-256
+  **byte-identical** to the mirrored copies (re-verified 12:45 UTC); manifest
+  rows + Sources block + anchors section updated to `63a18f4`. All anchors
+  re-verified: bmcweb `63a18f4` (still HEAD), mockup `23d21f9a` (unchanged),
+  DSP0266 1.25.0 (unchanged; 1.26.0 probe → 404), schema index 200. New bytes
+  this run: 189,768 (inside DOCS-6); no PDF, no large artifact.
+- **Emulator:** suite re-run **52/52** via `tool/emulator/run_tests.sh`
+  (corpus-invariant + EventDestination + battery groups all green) — the 33
+  family list in the crawler stays in sync since served versions are unchanged.
+- **Code/tests:** no production code change for the primary work. UI-2:
+  `SystemOverviewPage` `System not found` fallback converted from a bare
+  detached `Text` to the established merged `Semantics(container +
+  excludeSemantics, label: 'System not found')` node with
+  `Icons.search_off_outlined` (one self-describing announcement, no Retry — a
+  nonexistent system is not an error). +1 widget test (merged label + visible
+  text + icon + 320 px no-overflow via the `addTearDown` restore pattern).
+  Also fixed the journal-flagged manual `setSurfaceSize` restore in the
+  FirmwareView no-overflow test → `addTearDown` (12:30 journal noted it for
+  this run). Suite 335 → **336**.
+- **Verification:** analyze 0; tests **336 passed / 1 skipped** (baseline 335
+  → +1 widget); emulator suite 52/52; issues validate OK; `git diff --check`
+  clean; secret scan clean (docs prose + schema JSON + Dart only; no tokens).
+  `dart format` touched only the 2 changed Dart files; drift in 28 unrelated
+  files reverted via `git checkout --` to keep the diff on 5 files.
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** (expected) — the known
+  GitHub credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/
+  GIT_TOKEN env, no SSH key); local commit kept, not retried. Commits ahead of
+  origin/main: **87** before push attempt.
+- **Next:** 1) Push the queued local commits (88) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
+  login (set `expiresAt` from the discovered SessionService), re-auth on
+  `isExpired`, keep token/location from create headers only (the fixture
+  echoes Password in session bodies); 3) EMULATOR per alternation — the
+  DOCS-22 note adds a #008/#020 candidate: surface
+  `TaskMonitorAutoExpirySeconds` from TaskService when the poller lands, and
+  re-run the corpus crawl on any future family additions.

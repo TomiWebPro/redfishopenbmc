@@ -25,7 +25,25 @@ class SystemOverviewPage extends ConsumerWidget {
     final SystemHandle? handle = state.systems[systemId];
 
     if (handle == null) {
-      return const Center(child: Text('System not found'));
+      // UI-2: the not-found fallback announces as ONE self-describing merged
+      // semantics node (icon + text) instead of a bare detached Text — the
+      // established empty/error-state pattern. No Retry: the system id does
+      // not exist in the manager, there is nothing to reload.
+      return Center(
+        child: Semantics(
+          container: true,
+          excludeSemantics: true,
+          label: 'System not found',
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.search_off_outlined, size: 40),
+              SizedBox(height: 8),
+              Text('System not found'),
+            ],
+          ),
+        ),
+      );
     }
 
     final SystemFeatures? features = handle.features;

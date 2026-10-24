@@ -234,12 +234,14 @@ void main() {
       expect(find.text('No firmware inventory reported.'), findsOneWidget);
       expect(find.byIcon(Icons.inventory_2_outlined), findsOneWidget);
       // The empty state must not overflow at the narrowest supported width
-      // (UI-3: 320 px); the center-aligned column wraps instead.
+      // (UI-3: 320 px); the center-aligned column wraps instead. Use the
+      // established addTearDown restore so the resize cannot leak into later
+      // tests (12:30 journal noted this test restored manually).
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       expect(tester.takeException(), isNull);
       await tester.binding.setSurfaceSize(const Size(320, 800));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      await tester.binding.setSurfaceSize(const Size(800, 600));
     });
 
     testWidgets('header announces one merged semantics label when idle (UI-2)',
