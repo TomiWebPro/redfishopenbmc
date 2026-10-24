@@ -7,26 +7,25 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 (EMULATOR run — **Battery surface + action
-  round-trips pinned live**: `#Battery.v1_2_2` Module1 detail +
-  `#BatteryMetrics.v1_0_3` electrical telemetry (DataSourceUri links into the
-  Sensors collection) + `#Battery.SelfTest`/`#Battery.Calibrate` POST → 204
-  vs the **advertised-but-unimplemented `#PowerSupply.Reset` target** (POST →
-  404, no `/Actions/` segment — documented negative for #022/#006), emulator
-  48 → 50, new corpus gap **DOCS-21** (Battery schemas not mirrored yet);
-  UI-2 FirmwareView empty state converted to the merged-semantics pattern
-  (icon + text, no Retry), +1 widget test, suite 332 → 333); next P1: #015
-  (AuthManager)
-- **Current focus:** **EMULATOR (2026-10-24)** — pinned the last unpinned
-  power-subsystem surface (Batteries + battery action round-trips; the
-  `#PowerSupply.Reset` advertised-target-404 negative is a real wire
-  contract for #022/#006 — treat advertised targets as candidates, never
-  contracts, on this fixture); DOCS-21 queued for the next DOCS run (mirror
-  `Battery.v1_2_2`/`BatteryMetrics.v1_0_3`/`BatteryCollection` to restore the
-  fixture invariant); next P1: #015 (AuthManager) — `expiryFromService` + the
-  Sessions pin are ready, wire the discovered SessionService body into login
-  + re-auth on `isExpired`; #022/#016: `ResetActionInfo` ActionInfo resource
-  crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only
+- **Last updated:** 2026-10-24 (DOCS run — **DOCS-21 closed**: mirrored the
+  Battery-family schemas the EMU battery pins reference — `Battery.v1_2_2`
+  (mockup-served `#Battery.v1_2_2.Battery`), `BatteryMetrics.v1_0_3`
+  (mockup-served `#BatteryMetrics.v1_0_3.BatteryMetrics`), the `Battery.json`/
+  `BatteryMetrics.json` aggregators + `BatteryCollection.json`, plus newest
+  `Battery.v1_5_0`/`BatteryMetrics.v1_1_0` for the delta note — into the
+  mirror AND fixture schemas (7 files / 95,718 bytes, inside DOCS-6;
+  property-delta audit: every emulator-pinned field present, excerpts are
+  `Sensor*Excerpt` refs resolving through the mirrored `Sensor.v1_8_1`;
+  newest versions additive only — no code change); bmcweb anchor advanced
+  `fbb307a` → `63a18f4` with all four mirrored docs byte-identical; UI-2
+  increment below); next P1: #015 (AuthManager)
+- **Current focus:** **DOCS (2026-10-24)** — the Battery corpus gap (DOCS-21)
+  is closed; all 18 client-mapped families now have versioned schemas for
+  every `@odata.type` the pinned mockup publishes (the DOCS-19/20 invariant);
+  next P1: #015 (AuthManager) — `expiryFromService` + the Sessions pin are
+  ready, wire the discovered SessionService body into login + re-auth on
+  `isExpired`; #022/#016: `ResetActionInfo` ActionInfo resource crawl
+  (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only
   the annotation form and now provably ignores ResetType values); #018:
   query-capability surface + live `$expand` contract pinned — remaining:
   build the lightweight discovery pass + the cache fixes
@@ -278,7 +277,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       11 files / 160,101 bytes; SHA-256s + manifest rows verified; property
       audit complete; commit 963366e).**
 
-- [ ] **DOCS-21** Mirror the versioned schemas for the **Battery surface** the
+- [x] **DOCS-21** Mirror the versioned schemas for the **Battery surface** the
       emulator pinned live (48 → 50, 2026-10-24): `Battery.v1_2_2.json`
       (mockup-served `#Battery.v1_2_2.Battery` — Module1 detail:
       Model/Manufacturer/FirmwareVersion/Status/ChargeState/CapacityRated+
@@ -295,6 +294,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `https://redfish.dmtf.org/schemas/v1/Battery.v1_2_2.json` (+ newest
       version for the delta note, following the DOCS-12/13 precedent). Keep
       inside the DOCS-6 budget.
+      **Done (run 2026-10-24, 7 files / 95,718 bytes; SHA-256s + manifest
+      rows verified; property-delta audit complete — newest versions
+      (Battery.v1_5_0 / BatteryMetrics.v1_1_0) additive only
+      (BatteryChemistryType/EnergyStorageType/NominalOutputVoltage/
+      ServicedDate; CRate/ERate), emulator-pinned contract holds, no code
+      change; bmcweb anchor advanced `fbb307a` → `63a18f4` with all four
+      mirrored docs byte-identical).**
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across

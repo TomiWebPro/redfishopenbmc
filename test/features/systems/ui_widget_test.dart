@@ -568,6 +568,38 @@ void main() {
       expect(find.text('Lab BMC'), findsOneWidget);
       expect(find.text('https://10.0.0.7:8443'), findsOneWidget);
     });
+
+    testWidgets(
+        'no optional features empty state announces one merged semantics node '
+        '(UI-2)', (tester) async {
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(
+            id: 'bmc1',
+            features: const SystemFeatures(systemId: 'bmc1'),
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+      await pumpOverviewDirect(tester, m, 'bmc1');
+      // One self-describing announcement (merged node, no separate parts).
+      expect(
+        find.bySemanticsLabel('No optional features discovered.'),
+        findsOneWidget,
+      );
+      // The visible text + icon still render for sighted users.
+      expect(find.text('No optional features discovered.'), findsOneWidget);
+      expect(find.byIcon(Icons.category_outlined), findsOneWidget);
+      // The empty state must not overflow at the narrowest supported width
+      // (UI-3: 320 px); the center-aligned column wraps instead.
+      expect(tester.takeException(), isNull);
+      await tester.binding.setSurfaceSize(const Size(320, 800));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      // Restore the default test surface so later tests in this file are
+      // unaffected (UI-3 no-overflow checks must not leak the resize).
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+    });
   });
 
   group('SystemShell', () {

@@ -6,16 +6,34 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (EMU run 48→50 — pinned the **Battery surface** of
-the power subsystem (`#Battery.v1_2_2` Module1 detail +
-`#BatteryMetrics.v1_0_3` electrical telemetry with `DataSourceUri` links into
-the Sensors collection + the `#Battery.SelfTest`/`#Battery.Calibrate` action
-targets) and the **action round-trip contract**: `#Battery.SelfTest`/
-`#Battery.Calibrate` POST → 204 while the advertised `#PowerSupply.Reset`
-target POST → 404 (its URI has no `/Actions/` segment the mockup serves — a
-documented negative for #022/#006); new corpus gap **DOCS-21** recorded —
-`Battery.v1_2_2`/`BatteryMetrics.v1_0_3`/`BatteryCollection` have no versioned
-schema in the fixture/mirror yet, queue for the next DOCS run).
+Last audited: 2026-10-24 (DOCS-21 run — **Battery corpus closed**: mirrored the
+versioned schemas for the battery family the EMU run (48→50) pinned live —
+`Battery.v1_2_2.json` (mockup-served `#Battery.v1_2_2.Battery`: Module1 detail
+Model/Manufacturer/FirmwareVersion/Status/ChargeState/CapacityRated+
+ActualWattHours/MaxDischargeRateAmps/StateOfHealthPercent + the
+`#Battery.SelfTest`/`#Battery.Calibrate`/`#Battery.Reset` action defs),
+`BatteryMetrics.v1_0_3.json` (mockup-served `#BatteryMetrics.v1_0_3.
+BatteryMetrics`: InputVoltage/OutputVoltages/InputCurrentAmps/
+OutputCurrentAmps/StoredEnergyWattHours/TemperatureCelsius/ChargePercent/
+CellVoltages — every excerpt a `Sensor` `Sensor*Excerpt` ref with
+`DataSourceUri`), `Battery.json`/`BatteryMetrics.json` aggregators, and
+`BatteryCollection.json` — into `documentations/external/redfish/schemas/v1/`
+AND `test/fixtures/redfish/schemas/` (the "every published `@odata.type` for a
+client-relevant family has a versioned schema in the fixture" invariant,
+DOCS-19/20), plus the **newest** `Battery.v1_5_0.json` +
+`BatteryMetrics.v1_1_0.json` for the delta note (7 files / 95,718 bytes, inside
+DOCS-6); every emulator-pinned field verified present in the served defs
+(34 props / 23 props; `SensorExcerpt` refs resolve to the already-mirrored
+`Sensor.v1_8_1.json`) — **no code change needed**; the battery family stays
+future #007/#019 telemetry work (no client model yet).)
+Prior: EMU run 48→50 — pinned the **Battery surface** of the power subsystem
+(`#Battery.v1_2_2` Module1 detail + `#BatteryMetrics.v1_0_3` electrical
+telemetry with `DataSourceUri` links into the Sensors collection + the
+`#Battery.SelfTest`/`#Battery.Calibrate` action targets) and the **action
+round-trip contract**: `#Battery.SelfTest`/`#Battery.Calibrate` POST → 204
+while the advertised `#PowerSupply.Reset` target POST → 404 (its URI has no
+`/Actions/` segment the mockup serves — a documented negative for #022/#006;
+the DOCS-21 corpus gap it exposed is now closed by this run).
 Prior: DOCS-20 run — closed the **chassis-metrics /
 subsystem** corpus gap the EMU-2 chassis-contracts pins (2026-10-24, EMU 45→48)
 exposed: mirrored the versioned schemas for the newly pinned families into
@@ -374,11 +392,15 @@ client-relevant families.
    normalizes as `RedfishException` HTTP 404; the same shape as the
    unsupported-action pin). #022/#006 firmware/PSU work must treat an
    advertised action target as a *candidate*, never a contract, on this
-   fixture. **Corpus gap DOCS-21:** `#Battery.v1_2_2` and `#BatteryMetrics
-   .v1_0_3` are now pin-referenced client-relevant types with NO versioned
-   schema in the fixture/mirror — queue mirroring `Battery.v1_2_2.json`,
-   `BatteryMetrics.v1_0_3.json`, `BatteryCollection.json` for the next DOCS
-   run to restore the invariant.
+   fixture. **Corpus closed (DOCS-21, 2026-10-24):** `#Battery.v1_2_2`,
+   `#BatteryMetrics.v1_0_3`, `#BatteryCollection` (and the `Battery.json` /
+   `BatteryMetrics.json` aggregators) now have versioned schemas in the
+   fixture AND mirror — property-delta audit: every pinned field present in
+   the served defs, `Sensor` excerpt refs resolve through the already-mirrored
+   `Sensor.v1_8_1.json`; newest `Battery.v1_5_0` / `BatteryMetrics.v1_1_0`
+   are additive only (BatteryChemistryType/EnergyStorageType/
+   NominalOutputVoltage/ServicedDate; CRate/ERate) — the emulator-pinned
+   contract holds; no code change needed.
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)
 
@@ -832,3 +854,31 @@ mockup pin `23d21f9a` (unchanged), DSP0266 1.25.0 (unchanged), schema index
 (17,008+10,142+19,523+10,756+34,997+17,833+17,544+4,936+5,251+2,890+19,221) —
 inside the DOCS-6 budget. Fixture copies byte-identical to the mirror (verified
 with `cmp`); SHA-256s recorded in the manifest.
+
+## DOCS-21 — Battery corpus mirror (2026-10-24)
+
+Closed the corpus gap the EMU-2 battery pins (2026-10-24, EMU 48→50) exposed:
+the newly pinned battery family had **no versioned schema** in the
+fixture/mirror. Mirrored 7 files (95,718 bytes total, inside DOCS-6) into
+`documentations/external/redfish/schemas/v1/` **and**
+`test/fixtures/redfish/schemas/` (served types + aggregators + collections):
+
+| Family | File | Served/pinned evidence | Client impact |
+|---|---|---|---|
+| `Battery` | `Battery.json` (aggregator) + `Battery.v1_2_2.json` (**mockup-served** `#Battery.v1_2_2.Battery`) | the EMU battery pin reads `/Chassis/1U/Batteries/Battery1` — Module1 detail: Model/Manufacturer/FirmwareVersion/Status/ChargeState/CapacityRated+ActualWattHours/MaxDischargeRateAmps/StateOfHealthPercent (`SensorExcerpt`, `DataSourceUri` → Sensors/Battery1StateOfHealth) + the `#Battery.SelfTest`/`#Battery.Calibrate`/`#Battery.Reset` action defs | none — all 34 properties present in the served `definitions/Battery`; `StateOfHealthPercent` `$ref`s `Sensor.json#/definitions/SensorExcerpt` (already-mirrored `Sensor.v1_8_1`, DOCS-19) |
+| `BatteryMetrics` | `BatteryMetrics.json` (aggregator) + `BatteryMetrics.v1_0_3.json` (**mockup-served** `#BatteryMetrics.v1_0_3.BatteryMetrics`) | EMU pin reads electrical telemetry: DischargeCycles/InputVoltage/OutputVoltages/InputCurrentAmps/OutputCurrentAmps/StoredEnergyWattHours/TemperatureCelsius/ChargePercent/CellVoltages[8], every excerpt carrying `DataSourceUri` | none — all 23 properties present in the served `definitions/BatteryMetrics`; excerpt props are `Sensor` `SensorVoltageExcerpt`/`SensorExcerpt` refs |
+| `BatteryCollection` | `BatteryCollection.json` | the `#BatteryCollection.BatteryCollection` the EMU pin enumerates (`Members[]` → `#Battery.v1_2_2.Battery`) | none |
+| newest pair (delta note) | `Battery.v1_5_0.json` + `BatteryMetrics.v1_1_0.json` | newest published versions on the schema index | none — additive only: `BatteryChemistryType`/`EnergyStorageType`/`NominalOutputVoltage`/`ServicedDate` (Battery), `CRate`/`ERate` (Metrics); every emulator-pinned field unchanged → the pin contract holds across newest |
+
+All upstream anchors re-verified (2026-10-24): **bmcweb master advanced
+`fbb307a` → `63a18f4e6188a77b713a8b22c8a95ab3d6c5a718`** — all four mirrored
+bmcweb docs byte-identical at the new HEAD (verified by SHA-256, no refresh
+needed), mockup pin `23d21f9a` (unchanged), DSP0266 1.25.0 (unchanged),
+schema index
+200; each of the 7 mirrored files fetched 200 from
+`https://redfish.dmtf.org/schemas/v1/`. New bytes this run: 95,718 total
+(2,416+27,215+31,888+4,975+1,448+12,790+14,986) — inside the DOCS-6 budget.
+Fixture copies byte-identical to the mirror (verified with `cmp`); SHA-256s
+recorded in the manifest. The battery family has **no client model yet** — the
+mirrored defs document the wire surface for future #007/#019 telemetry work;
+no code change needed this run.

@@ -80,6 +80,17 @@ source code. The raw API payloads that back every example here live under
     `Redundancy.v1_7_1.json` chain the FanRedundancy groups cite. The
     "every `@odata.type` published for a client-relevant family has a
     versioned schema in the fixture" invariant is restored.
+  - DOCS-21 additions (2026-10-24): the **Battery family** defs the EMU-2
+    battery pins (EMU 48→50) reference were added to
+    `test/fixtures/redfish/schemas/` (and to the external corpus):
+    `Battery.v1_2_2.json` (**mockup-served** `#Battery.v1_2_2.Battery`),
+    `BatteryMetrics.v1_0_3.json` (**mockup-served**
+    `#BatteryMetrics.v1_0_3.BatteryMetrics`), plus the `Battery.json` /
+    `BatteryMetrics.json` aggregators and `BatteryCollection.json`; the
+    newest `Battery.v1_5_0.json` / `BatteryMetrics.v1_1_0.json` complete
+    the served+newest pair in the external corpus only. Every `@odata.type`
+    the pinned mockup publishes for the battery family now has a versioned
+    schema in this fixture folder.
 
 ## Gaps / notes
 - `SimpleUpdate` has **no standalone JSON schema** — it is an Action defined inside

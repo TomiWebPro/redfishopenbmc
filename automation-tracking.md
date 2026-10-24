@@ -2631,3 +2631,82 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **82** (81 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 12:30 — DOCS (DOCS-21 Battery corpus) + UI-2 feature-chips empty state
+
+- **Baseline:** analyze 0; tests 333 passed / 1 skipped; starting commit 0dcd89c
+  (branch `main` ahead 83 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** DOCS per alternation (last substantive run was EMULATOR
+  09:30; FUTUREWORK had DOCS-21 explicitly queued "for the next DOCS run").
+  Closed **DOCS-21** — mirrored the **Battery-family schemas** the EMU battery
+  pins (48→50) reference: `Battery.v1_2_2.json` (mockup-served
+  `#Battery.v1_2_2.Battery` — Module1 detail
+  Model/Manufacturer/FirmwareVersion/Status/ChargeState/CapacityRated+
+  ActualWattHours/MaxDischargeRateAmps/StateOfHealthPercent + the
+  `#Battery.SelfTest`/`#Battery.Calibrate`/`#Battery.Reset` action defs),
+  `BatteryMetrics.v1_0_3.json` (mockup-served
+  `#BatteryMetrics.v1_0_3.BatteryMetrics` — InputVoltage/OutputVoltages/
+  InputCurrentAmps/OutputCurrentAmps/StoredEnergyWattHours/TemperatureCelsius/
+  ChargePercent/CellVoltages, `Sensor*Excerpt` refs + DataSourceUri), the
+  `Battery.json`/`BatteryMetrics.json` aggregators + `BatteryCollection.json`,
+  plus the **newest** `Battery.v1_5_0.json`/`BatteryMetrics.v1_1_0.json` for
+  the delta note — 7 files / 95,718 bytes total, inside the DOCS-6 budget.
+  The five served/aggregator files also copied into
+  `test/fixtures/redfish/schemas/` (byte-identical, verified with `cmp`) —
+  the "every published `@odata.type` for a client-relevant family has a
+  versioned schema in the fixture" invariant restored for the battery family.
+  Property-delta audit (written into REQUIREMENTS.md "DOCS-21"): every
+  emulator-pinned field present in the served defs (34 / 23 props),
+  `SensorExcerpt` refs resolve through the already-mirrored `Sensor.v1_8_1`
+  (DOCS-19); newest versions additive only (BatteryChemistryType/
+  EnergyStorageType/NominalOutputVoltage/ServicedDate; CRate/ERate) — the
+  emulator-pinned contract holds across newest, **no client code change
+  needed** (the battery family has no client model yet — future #007/#019
+  telemetry work).
+- **Docs:** 7 files from `https://redfish.dmtf.org/schemas/v1/` (fetched
+  12:14 UTC, SHA-256s + manifest rows added to `documentations/external/
+  README.md`; aggregator-count note 21 → 23; `redfish_reference/README.md`
+  +DOCS-21 provenance). REQUIREMENTS.md "Last audited" header + EMU trace row
+  (former DOCS-21 gap now "Corpus closed") + new "DOCS-21" audit section.
+  **Anchors re-verified 12:15 UTC:** bmcweb master advanced `fbb307a` →
+  `63a18f4e6188a77b713a8b22c8a95ab3d6c5a718` — all four mirrored bmcweb docs
+  byte-identical at the new HEAD (SHA-256 verified, no refresh needed);
+  mockup pin `23d21f9a` unchanged; DSP0266 1.25.0 unchanged (200, 1,243,359 B);
+  schema index 200.
+- **Emulator:** none this run (DOCS alternation; the mockup pin and fixture
+  were not touched — the fixture gained only schema JSON).
+- **Code/tests:** no production behaviour change for the primary work.
+  UI change below (1 Dart file + 1 test file).
+- **UI:** UI-2 increment — the **feature-chips empty state** on
+  `SystemOverviewPage` ("No optional features discovered.") was the last
+  bare-`Text` empty surface on the system overview; a successful discovery
+  with zero optional features now renders the established pattern: icon
+  (`Icons.category_outlined`) + visible text inside a
+  `Semantics(container: true, excludeSemantics: true, label: 'No optional
+  features discovered.')` merged node — one self-describing announcement. No
+  Retry: discovery succeeded, nothing to retry (Dashboard/Firmware/KVM/
+  Sensors precedent). `_featureChips` gained the `BuildContext` parameter.
+  +1 widget test in `ui_widget_test.dart` (SystemOverviewPage group): merged
+  semantics label + visible text + icon render, and no overflow at 320 px
+  (`setSurfaceSize` + `takeException`, restored via `addTearDown` so the
+  resize cannot leak into later tests — the two dialog tests caught the leak
+  and now pass again). Suite 333 → **334**.
+- **Verification:** analyze 0; tests **334 passed / 1 skipped** (baseline 333
+  → +1 widget); issues validate OK; `git diff --check` clean; secret scan
+  clean (docs prose + schema JSON + Dart only, no tokens). `dart format`
+  touched only the 2 changed Dart files (0 reformatted).
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** — the known GitHub
+  credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/
+  GIT_TOKEN env, no SSH key); local commit kept, not retried. Commits ahead of
+  origin/main: **84** before push attempt.
+- **Next:** 1) Push the queued local commits (85) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
+  login (set `expiresAt` from the discovered SessionService), re-auth on
+  `isExpired`, keep token/location from create headers only (the fixture
+  echoes Password in session bodies); 3) EMULATOR per alternation — candidates:
+  re-verify the corpus invariant against a fresh published-types crawl (all 18
+  client-mapped families now have served+newest pairs), the `ResetActionInfo`
+  ActionInfo-resource crawl stays a bmcweb-style code task (#022/#016), or
+  pin a remaining un-pinned surface from the fixture.

@@ -117,7 +117,7 @@ class SystemOverviewPage extends ConsumerWidget {
             child: Card(
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: _featureChips(features),
+                child: _featureChips(context, features),
               ),
             ),
           ),
@@ -127,7 +127,7 @@ class SystemOverviewPage extends ConsumerWidget {
     );
   }
 
-  Widget _featureChips(SystemFeatures features) {
+  Widget _featureChips(BuildContext context, SystemFeatures features) {
     final List<String> labels = <String>[
       if (features.powerControl) 'Power control',
       if (features.sensorMonitoring) 'Sensors (${features.sensorCount})',
@@ -137,7 +137,37 @@ class SystemOverviewPage extends ConsumerWidget {
       if (features.chassis > 0) 'Chassis: ${features.chassis}',
     ];
     if (labels.isEmpty) {
-      return const Text('No optional features discovered.');
+      // UI-2: a successful discovery with zero optional features renders the
+      // established empty-state pattern — one self-describing merged semantics
+      // node (icon + visible text), matching the Dashboard/Firmware/KVM/Sensors
+      // empty states. No Retry: the feature discovery succeeded, there is
+      // nothing to retry.
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Semantics(
+            container: true,
+            excludeSemantics: true,
+            label: 'No optional features discovered.',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  Icons.category_outlined,
+                  size: 40,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'No optional features discovered.',
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
     return Wrap(
       spacing: 8,

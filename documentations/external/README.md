@@ -104,15 +104,33 @@ documentations/external/
 | `redfish/schemas/v1/PowerSupplyCollection.json` | https://redfish.dmtf.org/schemas/v1/PowerSupplyCollection.json | 2026-10-24 10:20 | `105fbec40330ea9f1b6c434bdd2df8063bfa8a4846f7e5f2ab84306ec941851b` | 5,251 | latest per aggregator | `#PowerSupplyCollection.PowerSupplyCollection` — `PowerSubsystem.PowerSupplies` link target — DOCS-20 |
 | `redfish/schemas/v1/Redundancy.json` | https://redfish.dmtf.org/schemas/v1/Redundancy.json | 2026-10-24 10:20 | `985705e0e1cf7bd1c059659002637197bf05640d50f72ddaa19312bdbd5ca672` | 2,890 | latest per aggregator | RedundantGroup aggregator — resolves the `ThermalSubsystem.FanRedundancy` citation chain (DOCS-14 precedent) — DOCS-20 |
 | `redfish/schemas/v1/Redundancy.v1_7_1.json` | https://redfish.dmtf.org/schemas/v1/Redundancy.v1_7_1.json | 2026-10-24 10:20 | `f670ed0c111d509cb95bb390c5a67d92147bf98f73056529007e15deaea598ef` | 19,221 | DMTF 2026.x | Newest RedundantGroup def (MinNeededInGroup/MaxSupportedInGroup/RedundancyGroup/RedundancyType) — the emulator-pinned NPlusM surfaces — DOCS-20 |
+| `redfish/schemas/v1/Battery.json` | https://redfish.dmtf.org/schemas/v1/Battery.json | 2026-10-24 12:14 | `d8803713c62dfd04af68f8b20902b65903b5a327b275a6f4391bd9950bf66b9c` | 2,416 | latest per aggregator | Battery family aggregator — resolves `#Battery.Battery` citations — DOCS-21 |
+| `redfish/schemas/v1/Battery.v1_2_2.json` | https://redfish.dmtf.org/schemas/v1/Battery.v1_2_2.json | 2026-10-24 12:14 | `0a498bfe81cfbb41b5c3c23c783aa8c616e9808caae2c8eb84b6a3328304e578` | 27,215 | DMTF 2021.x | **Mockup-served** `#Battery.v1_2_2.Battery` — the Module1 detail the emulator pins (Model/Manufacturer/FirmwareVersion/Status/ChargeState/CapacityRated+ActualWattHours/MaxDischargeRateAmps/StateOfHealthPercent) + `#Battery.SelfTest`/`#Battery.Calibrate`/`#Battery.Reset` action defs — DOCS-21 |
+| `redfish/schemas/v1/Battery.v1_5_0.json` | https://redfish.dmtf.org/schemas/v1/Battery.v1_5_0.json | 2026-10-24 12:14 | `02deb6169a716ac0f53eeb7ed35375bb18cc6cd26a1dcccfc906699bb82c14cc` | 31,888 | DMTF 2026.x | Newest Battery def — adds BatteryChemistryType/EnergyStorageType/NominalOutputVoltage/ServicedDate only (delta note vs the served v1_2_2) — DOCS-21 |
+| `redfish/schemas/v1/BatteryCollection.json` | https://redfish.dmtf.org/schemas/v1/BatteryCollection.json | 2026-10-24 12:14 | `a5f65f6714692154806876e88241aef6cdd6bf56ce6e01d436caf4259648390d` | 4,975 | latest per aggregator | `#BatteryCollection.BatteryCollection` — the collection the EMU battery pin enumerates — DOCS-21 |
+| `redfish/schemas/v1/BatteryMetrics.json` | https://redfish.dmtf.org/schemas/v1/BatteryMetrics.json | 2026-10-24 12:14 | `6db7acd63802fff243596c0a45a44121cf474ff9b11432885c3dfac9bb3f736c` | 1,448 | latest per aggregator | BatteryMetrics family aggregator — resolves `#BatteryMetrics.BatteryMetrics` citations — DOCS-21 |
+| `redfish/schemas/v1/BatteryMetrics.v1_0_3.json` | https://redfish.dmtf.org/schemas/v1/BatteryMetrics.v1_0_3.json | 2026-10-24 12:14 | `5e642e47db7c9532eb84d89ef0eb8f8c6e7f28f6344fecad01bd0e4d00d147d9` | 12,790 | DMTF 2021.x | **Mockup-served** `#BatteryMetrics.v1_0_3.BatteryMetrics` — electrical telemetry pinned by the emulator (InputVoltage/OutputVoltages/InputCurrentAmps/OutputCurrentAmps/StoredEnergyWattHours/TemperatureCelsius/ChargePercent/CellVoltages, `Sensor*Excerpt` refs + DataSourceUri) — DOCS-21 |
+| `redfish/schemas/v1/BatteryMetrics.v1_1_0.json` | https://redfish.dmtf.org/schemas/v1/BatteryMetrics.v1_1_0.json | 2026-10-24 12:14 | `fc09a3bedbdfe35ee272cebffc9b2779dd977e885d3c8e2e916b93a1dfa0e479` | 14,986 | DMTF 2022.x | Newest BatteryMetrics def — adds CRate/ERate only (delta note vs served v1_0_3) — DOCS-21 |
 
-### Downloaded schema set (21 base aggregator files)
+### Downloaded schema set (23 base aggregator files)
 
 `ServiceRoot`, `ComputerSystem`, `Chassis`, `Sensor`, `Power`, `Thermal`,
 `SessionService`, `AccountService`, `UpdateService`, `SoftwareInventory`,
 `EventService`, `Manager`, `LogService`, `EthernetInterface`, `TaskService`,
-`MessageRegistry`. Each bare `<Name>.json` is the DMTF "latest" aggregator that
+`MessageRegistry`, `Battery`, `BatteryMetrics`. Each bare `<Name>.json` is the
+DMTF "latest" aggregator that
 `$ref`s the newest versioned definitions; SHA-256 hashes are listed in the
 run notes in `automation-tracking.md`.
+
+DOCS-21 (2026-10-24) closed the **Battery** corpus gap the EMU-2 battery pins
+(EMU 48→50) exposed: `Battery.json` + `Battery.v1_2_2.json` (the
+**mockup-served** `#Battery.v1_2_2.Battery`) + newest `Battery.v1_5_0.json` +
+`BatteryCollection.json` + `BatteryMetrics.json` + `BatteryMetrics.v1_0_3.json`
+(the **mockup-served** `#BatteryMetrics.v1_0_3.BatteryMetrics`) + newest
+`BatteryMetrics.v1_1_0.json` — 7 files / 95,718 bytes, inside DOCS-6. The five
+served/aggregator files also went into `test/fixtures/redfish/schemas/`
+(byte-identical, verified with `cmp`) — every `@odata.type` the pinned mockup
+publishes for the battery family now has a versioned schema in the fixture.
 
 DOCS-13 (2026-10-23) extended the corpus with the five remaining client-relevant
 resource families: `Session`, `ManagerAccount`, `Role`, `ManagerNetworkProtocol`,
@@ -183,7 +201,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-24 01:07 UTC — DOCS-17 session-lifetime audit run; prior: DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
+## Current upstream anchors (verified 2026-10-24 12:15 UTC — DOCS-21 Battery corpus run; prior: DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing)
@@ -195,8 +213,10 @@ redirection), so no fixture referencing a specific version is affected.
 - Redfish Mockup Server — <https://github.com/DMTF/Redfish-Mockup-Server>
   (default branch `main` @ `23d21f9a` — unchanged; README saved to `redfish/mockup/`)
 - OpenBMC bmcweb docs — <https://github.com/openbmc/bmcweb/tree/master/docs>
-  (master `fbb307a` — unchanged since DOCS-14; Redfish.md, REDFISH_CHECKLIST.md,
-  OEM_SCHEMAS.md, CLIENTS.md saved; re-verified 2026-10-24 01:07 UTC)
+  (master advanced `fbb307a` → `63a18f4e6188a77b713a8b22c8a95ab3d6c5a718` at
+  2026-10-24 12:15 UTC; Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md,
+  CLIENTS.md all byte-identical at the new HEAD — verified by SHA-256, no
+  refresh needed)
 
 ### DOCS-15 — DSP0266 §7.3 query-parameters audit (2026-10-23 19:20 UTC)
 

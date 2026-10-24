@@ -2354,3 +2354,80 @@
   Battery + BatteryMetrics wired-surface pins; #022/#006 got the
   `#PowerSupply.Reset` advertised-target-404 negative; DOCS-21 queued; UI-2
   got the FirmwareView empty-state increment; issues remain open.
+
+## 2026-10-24 — agent:redfish-automation — DOCS (DOCS-21 Battery corpus) + UI-2 feature-chips empty state
+
+**Done:**
+- DOCS primary workstream (alternation: EMULATOR 09:30 → DOCS next; DOCS-21 was
+  explicitly queued). Closed **DOCS-21** — the Battery corpus gap the EMU
+  battery pins (48→50) exposed:
+  1. Mirrored 7 files / 95,718 bytes (inside DOCS-6) into
+     `documentations/external/redfish/schemas/v1/`:
+     `Battery.json` aggregator, `Battery.v1_2_2.json` (**mockup-served**
+     `#Battery.v1_2_2.Battery` — the Module1 detail the emulator pins +
+     `#Battery.SelfTest`/`#Battery.Calibrate`/`#Battery.Reset` action defs),
+     `Battery.v1_5_0.json` (newest, delta note), `BatteryCollection.json`,
+     `BatteryMetrics.json` aggregator, `BatteryMetrics.v1_0_3.json`
+     (**mockup-served** `#BatteryMetrics.v1_0_3.BatteryMetrics` — the
+     electrical telemetry the emulator pins), `BatteryMetrics.v1_1_0.json`
+     (newest, delta note).
+  2. Copied the five served/aggregator files into
+     `test/fixtures/redfish/schemas/` (byte-identical via `cmp`) — the
+     "every published `@odata.type` for a client-relevant family has a
+     versioned schema in the fixture" invariant restored for the battery
+     family.
+  3. Property-delta audit: every emulator-pinned field present in the served
+     defs; `StateOfHealthPercent`/`TemperatureCelsius`/... are
+     `Sensor*Excerpt` refs resolving through the already-mirrored
+     `Sensor.v1_8_1.json` (DOCS-19); newer `Battery.v1_5_0` /
+     `BatteryMetrics.v1_1_0` add only `BatteryChemistryType`/
+     `EnergyStorageType`/`NominalOutputVoltage`/`ServicedDate` and
+     `CRate`/`ERate` — the emulator-pinned contract holds, **no client code
+     change** (battery family has no client model yet; future #007/#019).
+  4. Manifest +7 rows (SHA-256s verified); REQUIREMENTS.md "Last audited" +
+    EMU trace row (gap → closed) + new "DOCS-21" audit section; README
+     aggregator-count note 21 → 23; `redfish_reference/README.md` +DOCS-21
+     provenance. **Anchors re-verified: bmcweb advanced `fbb307a` →
+     `63a18f4`** (all four mirrored docs byte-identical at the new HEAD,
+     SHA-256 verified), mockup `23d21f9a` unchanged, DSP0266 1.25.0
+     unchanged, schema index 200.
+- UI-2 increment: **feature-chips empty state** on `SystemOverviewPage`
+  ("No optional features discovered.") converted to the established
+  merged-semantics pattern — `Icons.category_outlined` + visible text inside
+  `Semantics(container + excludeSemantics)` node, no Retry (a successful
+  discovery with zero features is not an error). `_featureChips` gained a
+  `BuildContext` param. +1 widget test (merged label + visible text + icon +
+  no overflow at 320 px, `addTearDown` resets the surface). Suite 333 → 334.
+
+**Decisions:**
+- DOCS per alternation; within it, DOCS-21 exactly — the last open corpus gap,
+  with the EMU battery pins providing precise served-type + property evidence.
+- Included the newest `Battery.v1_5_0`/`BatteryMetrics.v1_1_0` beyond the
+  originally listed 3 files — the DOCS-12/13 precedent: mirror the
+  mockup-served version + the newest for the delta note.
+- bmcweb anchor advanced but all four mirrored docs are byte-identical — no
+  refresh needed, anchors updated in README + DOCS-21 section only (historical
+  audit sections keep their recorded hashes).
+- UI increment stayed pattern-consistent (icon + merged node, no Retry — an
+  empty feature set is not an error). The `setSurfaceSize` leak caught by the
+  two dialog tests was fixed with `addTearDown(() =>
+  tester.binding.setSurfaceSize(null))` — a good regression check the
+  established no-overflow pattern should use going forward (the firmware test
+  currently restores 800×600 manually; noted for the next UI run).
+- No new dependencies, no TLS change, no production behaviour change.
+
+**Next:**
+- Push 84 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, persist token/location from create RESPONSE HEADERS
+  only (the fixture echoes the password in session bodies).
+- EMULATOR next per alternation: candidates — re-verify the corpus invariant
+  against a fresh published-types crawl (all 18 client-mapped families now
+  have served+newest pairs), or pin a remaining un-pinned fixture surface;
+  the `ResetActionInfo` ActionInfo-resource crawl stays a bmcweb-style code
+  task (#022/#016), not pinable on the DMTF mockup.
+
+**Issues touched:**
+- none opened/closed this run. DOCS-21 done; REQUIREMENTS.md audit + trace
+  rows updated; UI-2 got the feature-chips empty-state increment; issues
+  remain open (#015 next P1).
