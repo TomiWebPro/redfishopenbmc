@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_const_constructors
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:redfishopenbmc/features/sensors/models/sensor_models.dart';
@@ -8,6 +9,7 @@ import 'package:redfishopenbmc/features/sensors/sensors_service.dart';
 import 'package:redfishopenbmc/features/sensors/views/sensors_view.dart';
 import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
+import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
 /// A [SensorsService] double that returns canned telemetry (no network).
@@ -30,6 +32,15 @@ class _FakeSensorsService extends SensorsService {
           ],
         ),
       ];
+}
+
+/// A [SensorsService] double that always fails (error-state tests).
+class _FailingSensorsService extends SensorsService {
+  _FailingSensorsService() : super(client: null, systemId: 'x');
+
+  @override
+  Future<List<ChassisSensors>> fetchAll() async =>
+      throw const RedfishException(message: 'boom');
 }
 
 SystemHandle buildHandle({required bool sensorMonitoring}) => SystemHandle(
@@ -157,6 +168,61 @@ void main() {
       expect(find.text('Temperatures'), findsOneWidget);
       expect(find.text('Fans'), findsOneWidget);
       expect(find.text('Sensors'), findsOneWidget);
+    });
+
+    testWidgets('shows an error state with a retry affordance', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_FailingSensorsService()),
+          ],
+          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Unable to load sensors'), findsOneWidget);
+      expect(find.text('boom'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Retry'), findsOneWidget);
+
+      // Tapping retry must not crash (re-runs the failing service).
+      await tester.tap(find.widgetWithText(FilledButton, 'Retry'));
+      await tester.pumpAndSettle();
+      expect(find.text('Unable to load sensors'), findsOneWidget);
+    });
+
+    testWidgets('error state announces as one merged semantics node (UI-2)',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_FailingSensorsService()),
+          ],
+          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The icon + title + detail merge into one node carrying both strings;
+      // the Retry button keeps its own semantics (it is a control).
+      final Finder merged = find.bySemanticsLabel(
+        'Unable to load sensors. boom',
+      );
+      expect(merged, findsOneWidget);
+      final SemanticsNode? node = tester.getSemantics(merged);
+      expect(node?.label, contains('Unable to load sensors'));
+      expect(node?.label, contains('boom'));
+
+      // The Retry control is still separately focusable/announced.
+      expect(
+        find.bySemanticsLabel(RegExp('^Retry')),
+        findsWidgets,
+      );
     });
   });
 

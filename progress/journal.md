@@ -1781,3 +1781,61 @@
 **Issues touched:**
 - none opened/closed this run. DOCS-16 recorded in FUTUREWORK; UI-2 got the
   OverviewView error-state increment; issues remain open.
+## 2026-10-24 — agent:redfish-automation — EMULATOR (MessageRegistry contract) + UI-2 SensorsView error state
+
+**Done:**
+- EMULATOR primary workstream (alternation: DOCS 23:40 → EMULATOR next).
+  Pinned the **MessageRegistry discovery/resolution contract** live against
+  the pinned mockup (`23d21f9a`), joining the existing discovery-contract
+  pins (LogService, EventService, TaskService) with the **§8.6 error-response
+  surface** the `RedfishError` model normalizes:
+  - Service root advertises `Registries` → `MessageRegistryFileCollection`
+    (exactly one member, `Base.1.5.0`) → `MessageRegistryFile.Location[0].Uri`
+    resolves to the `#MessageRegistry` JSON with **60 Base.\* templates**
+    (Message/Severity/NumberOfArgs).
+  - Asserts the client-relevant template shapes: GeneralError (Critical /
+    NumberOfArgs 0 — the `code` fallback), ActionNotSupported (%1 arg),
+    AccessDenied (Critical), ActionParameterMissing (2 args).
+  - Suite 40 → **41 tests**, all green via `run_tests.sh` (trap cleanup
+    verified, port 8443 closed).
+- **Negative findings recorded (curl probes before adding the pin):** the
+  mockup's reset action returns **204 with no `Location`** task-monitor header
+  (GET-on-monitor seam stays unit-level, complements the absent-PercentComplete
+  pin) and the **live 404 closes the connection without an error body**
+  (extended-info envelope seam stays unit-level, consistent with EMU-5).
+- REQUIREMENTS.md "Test platforms" updated (40 → 41 + MessageRegistry
+  paragraph, §8.6/§11.4 + #014).
+- UI-2 increment: **SensorsView error state** — bare error-colored `Text` →
+  merged semantics node (`Unable to load sensors. <message>` via
+  `Semantics(container: true, excludeSemantics: true, ...)`), plus a **Retry**
+  `FilledButton.icon` wired to the existing `SensorsController.load()`.
+  Two new widget tests: retry-affordance/reload-no-crash +
+  merged-node-with-separate-Retry-control (mirroring the OverviewView error
+  tests, including the `_FailingSensorsService` double).
+
+**Decisions:**
+- EMULATOR per alternation. Within it, chose the MessageRegistry contract
+  because (a) it is the last un-pinned, spec-conformant fixture surface that
+  a REQUIREMENTS.md requirement row cites for the error-mapping behaviour,
+  and (b) the two tempting seams (task-monitor Location on reset, live 404
+  extended-info body) were probed first and both negatively confirmed as
+  unit-level-only — consistent with the recorded EMU-5/EMU-3 findings.
+- No production code change for the emulator pin; the UI increment is the
+  only production diff, kept to the established error-state pattern.
+- `dart format` on only the 3 touched Dart files (0 changed) — avoiding the
+  tree-wide formatter drift that previous runs reverted.
+
+**Next:**
+- Push 66 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager (authMethod dispatch, safe logout URI, token rehydrate,
+  SessionTimeout + AbsoluteSessionTimeout* expiry — auth surface fully pinned
+  + schemas mirrored; session clauses now §13.3.4).
+- #018: build the lightweight discovery pass on the fully pinned contract
+  (`getJson(query: {'\$expand': '.($levels=1)'})` collection fetch; gate on
+  `ProtocolFeaturesSupported.ExpandQuery`; filter/project client-side; map
+  501/507) + the forceRefresh/`_error` cache fixes; or #008/#020 task poller
+  (GET-on-monitor stays unit-level — mockup reset returns 204 no Location).
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 count 40 → 41 recorded in FUTUREWORK;
+  UI-2 got the SensorsView error-state increment; issues remain open.

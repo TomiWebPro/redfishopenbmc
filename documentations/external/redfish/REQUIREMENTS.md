@@ -191,7 +191,7 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 40 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 41 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -218,7 +218,13 @@ client-relevant families.
       to the wire) + the URL-string pins above are joined: a #018 pass calling
       `getJson('/redfish/v1/Systems', query: {'\$expand': '.($levels=1)'})`
       receives the same inlined full member bodies as the URL-string form,
-     **OverviewService end-to-end hydration (#006: identity/health/power/
+      **MessageRegistry contract (pinned 2026-10-24 02:xx)** — the service
+      root advertises `Registries` -> `MessageRegistryFileCollection`
+      (Base.1.5.0) -> `Location[0].Uri` resolves to the `#MessageRegistry`
+      JSON defining the 60 Base.* message templates (Message/Severity/
+      NumberOfArgs) behind `RedfishError.code`/`firstMessage` (DSP0266 §8.6
+      error responses + §11.4 message registries; #014 model),
+      **OverviewService end-to-end hydration (#006: identity/health/power/
      processor-memory summaries/indicator-LED/leading-thermal), LogService +
      LogEntry collection incl. ClearLog action + `@odata.nextLink` pagination
      (LogService.v1_6/LogEntry.v1_16 contract, pinned 2026-10-23 06:10), Task

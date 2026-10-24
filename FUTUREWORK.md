@@ -7,19 +7,18 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-23 23:40 (DOCS run — **DOCS-16 done: DSP0266
-  citation audit** — the REQUIREMENTS.md rows cited an older spec layout;
-  corrected every stale clause against the mirrored 1.25.0 PDF (`§8.3` →
-  `§7.2.3`, `§8.4/§8.10/§8.14` → schemas + `§9`, `§12.3/§12.4` → `§13.3.3/§
-  13.3.4`, `§12.7` → `§8.6`, `§9.7` → `§12.7`, `§12.2 Actions` →
-  `§9.6.14`), pinned the §9.9 payload-annotation contract with +2 unit tests
-  (AllowableValues list parse + unrecognized-annotation tolerance §9.9.1),
-  UI-2 OverviewView error-state merged semantics +1 widget test; suite 304 →
-  307; anchors re-verified (bmcweb `fbb307a`, mockup `23d21f9a`, DSP0266
-  1.25.0, schema index 200); **EMU-2 suite at 40 tests**; **map-form
-  `getJson(path, query:)` `$expand` round-trip pinned live 22:45 — same
-  inlined bodies as the URL-string form, closing the seam for the #018
-  pass**; next P1: #015 (AuthManager) — emulator
+- **Last updated:** 2026-10-24 02:30 (EMULATOR run — **EMU-2 suite at 41
+  tests: MessageRegistry contract pinned — service root advertises
+  `Registries` -> `MessageRegistryFileCollection` (Base.1.5.0) ->
+  `Location[0].Uri` resolves to the `#MessageRegistry` JSON defining the 60
+  Base.* message templates (Message/Severity/NumberOfArgs) behind
+  `RedfishError.code`/`firstMessage` — the DSP0266 §8.6/§11.4 error surface
+  for the #014 model**; re-verified the reset action returns 204 with NO
+  task-monitor Location header and the live 404 closes the connection
+  without a body — both seams stay unit-level; emulator pin `23d21f9a`
+  unchanged; UI-2 increment: SensorsView error state merged semantics label
+  (`Unable to load sensors. <message>`) + working Retry, +2 widget tests;
+  suite 307 → 309); next P1: #015 (AuthManager) — emulator
   pins the full auth
   contract + the Session/ManagerAccount/Role schemas are mirrored
   (#015/#017/#026); #022/#016: Annotation allow-list fallback landed (16:05
@@ -27,14 +26,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
   BMCs; NOT pinable on the DMTF mockup — it serves only the annotation form);
   #018: query-capability surface + live `$expand` contract pinned (17:07) —
   remaining: build the lightweight discovery pass + the cache fixes
-- **Current focus:** **DOCS-15 done (DSP0266 §7.3 query-parameters audit —
-  the #018 pass must gate `$expand` on `ProtocolFeaturesSupported` and filter/
-  project client-side; `getJson` query transport pinned);** EMU-2 suite at
-  **40 tests** — **query-behavior contract pinned 18:36: `$expand=*` inlines
-  full bodies, `$filter`/`$select` advertised but NOT applied (client-side
-  only)**; **map-form `getJson(path, query:)` `$expand` round-trip pinned
-  live 22:45 — same inlined bodies as the URL-string form, closing the seam
-  for the #018 pass**; next P1: #015 (AuthManager) — emulator
+- **Current focus:** **EMU-2 suite at 41 tests — MessageRegistry contract
+  pinned (2026-10-24): the §8.6 error-mapping surface (Base.* templates
+  behind `RedfishError.code`/`firstMessage`) is now pinned live; the
+  map-form `$expand` round-trip (22:45) + the registry resolver complete
+  the #018/error-mapping testable corpus**; next P1: #015 (AuthManager) —
+  emulator
   pins the full auth
   contract + the Session/ManagerAccount/Role schemas are mirrored
   (#015/#017/#026); #022/#016: Annotation allow-list fallback landed (16:05
@@ -278,7 +275,16 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       emulator now proves the map-form `$expand=.($levels=1)` on the Systems
       collection returns the SAME inlined full member bodies as the URL-string
       pins — Model/PowerState/Reset allow-list incl. Nmi/ProcessorSummary —
-      the exact call shape a #018 discovery pass will make)**)
+      the exact call shape a #018 discovery pass will make)** → **41 tests
+      (MessageRegistry contract pinned 2026-10-24 02:15: service root
+      advertises `Registries` -> `MessageRegistryFileCollection`
+      (Base.1.5.0) -> `Location[0].Uri` resolves to the `#MessageRegistry`
+      JSON defining the 60 Base.* message templates (Message/Severity/
+      NumberOfArgs) behind `RedfishError.code`/`firstMessage` — the DSP0266
+      §8.6/§11.4 error surface for the #014 model; also re-verified the reset
+      action returns 204 No Content with NO task-monitor Location header and
+      the 404 path closes the connection without a body — the
+      GET-on-monitor/error-envelope seams stay unit-level)**)
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -520,6 +526,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       Semantics(container + excludeSemantics) wraps the icon + title +
       detail column, Retry button keeps its own control node, widget test
       asserts the merged label + visible texts + separately-announced Retry;
+      **SensorsView error state merged semantics label (`Unable to load
+      sensors. <message>`) done 2026-10-24 — Semantics(container +
+      excludeSemantics) wraps the icon + title + detail column (the
+      established error-state pattern), the new Retry button reloads via the
+      controller (re-runs the failing service in tests), widget tests assert
+      the merged label + visible texts + separately-announced Retry;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

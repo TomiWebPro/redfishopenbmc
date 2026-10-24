@@ -1892,3 +1892,73 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **65** (64 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 02:25 — EMULATOR (MessageRegistry contract pin) + UI-2 SensorsView error state
+
+- **Baseline:** analyze 0; tests 307 passed / 1 skipped; starting commit fe1057b
+  (branch `main` ahead 66 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR (alternation: DOCS 23:40 → EMULATOR next). Pinned
+  the **MessageRegistry discovery/resolution contract** against the live DMTF
+  mockup (`23d21f9a`): service root advertises `Registries` →
+  `MessageRegistryFileCollection` (exactly one member, `Base.1.5.0`) →
+  `MessageRegistryFile.Location[0].Uri` (`/redfish/v1/Registries/
+  Base.1.5.0.json`) resolves to a `#MessageRegistry` JSON defining the **60
+  Base.\* message templates** (Message/Severity/NumberOfArgs) behind
+  `RedfishError.code`/`firstMessage` — the DSP0266 §8.6 error-response /
+  §11.4 message-registry surface the #014 model normalizes. Asserts the
+  template shapes the client actually surfaces: GeneralError (Severity
+  Critical, NumberOfArgs 0 — the `code` fallback), ActionNotSupported
+  (NumberOfArgs 1, `%1` template), AccessDenied (Critical), ActionParameterMissing
+  (NumberOfArgs 2). Emulator suite 40 → **41 tests**, all green via
+  `tool/emulator/run_tests.sh` (server stopped by trap; port 8443 closed —
+  verified twice: first run shared the port with a manual server from the same
+  pinned checkout, second run was clean end-to-end).
+  **Negative re-verifications recorded:** the mockup's reset action returns
+  **204 No Content with NO task-monitor `Location` header** (the #008/#020/#022
+  GET-on-monitor seam stays unit-level, consistent with the absent
+  PercentComplete pin), and the **live 404 closes the connection without an
+  error body** (the extended-info error-envelope seam stays unit-level,
+  consistent with EMU-5). Both were probed with curl before deciding the pin.
+- **Docs:** no new downloads (corpus complete; DOCS-6 budget untouched).
+  REQUIREMENTS.md "Test platforms" note updated: 40 → 41 tests + the
+  MessageRegistry paragraph (§8.6/§11.4 + #014). Upstream anchor mockup
+  `23d21f9a` re-verified via the pinned run script.
+- **Emulator:** suite green 41/41; pin `23d21f9a` unchanged; self-signed
+  cert regenerated under /tmp (test-only TLS, EMU-6 intact); trap cleanup
+  confirmed; port 8443 closed after the run.
+- **Code/tests:** `test_integration/emulator/emulator_suite_test.dart` +1
+  test (MessageRegistry contract). No production code change other than the
+  UI increment below.
+- **UI:** UI-2 increment — the **SensorsView error state** (a bare
+  error-colored `Text` with no context) now announces as ONE merged semantics
+  node (`Semantics(container: true, excludeSemantics: true, label: 'Unable to
+  load sensors. <message>')` — the established OverviewView error-state
+  pattern: cloud-off icon + title + detail message, visible text preserved),
+  plus a new **Retry** `FilledButton.icon` that reloads via the existing
+  `SensorsController.load()` (idempotent, `mounted`-guarded). Two new widget
+  tests in `sensors_widget_test.dart`: (1) error state renders title +
+  message + Retry and tapping Retry does not crash (re-runs the failing
+  service double `_FailingSensorsService` throwing `RedfishException('boom')`);
+  (2) the merged semantics node carries both strings while Retry stays a
+  separately-announced control (the OverviewView error-test pattern).
+- **Verification:** analyze 0; tests 309 passed / 1 skipped (baseline 307 →
+  +2: the two SensorsView error-state widget tests; the emulator +1 test only
+  runs under `REDFISH_EMULATOR_URL`); emulator suite 41/41 via run_tests.sh;
+  issues validate OK; `git diff --check` clean; secret scan clean (`dart
+  format` on the 3 touched Dart files: 0 changed).
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** — same GitHub
+  credential blocker expected (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/
+  GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
+  Commits ahead of origin/main: **66** before push attempt.
+- **Next:** 1) Push the queued local commits (66) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager (authMethod dispatch, safe logout URI,
+  token rehydrate, SessionTimeout + AbsoluteSessionTimeout* expiry — full
+  auth surface pinned + schemas mirrored + session clauses cited §13.3.4);
+  3) #018: build the lightweight discovery pass on the fully pinned contract
+  — `getJson(query: {'\$expand': '.($levels=1)'})` collection fetch (transport
+  + live round-trip pinned), gate on `ProtocolFeaturesSupported.ExpandQuery`,
+  filter/project client-side, map 501/507 + the forceRefresh/`_error` cache
+  fixes; or #008/#020: task poller — note the mockup's reset returns 204 with
+  no Location, so GET-on-monitor must stay pinned in unit tests.

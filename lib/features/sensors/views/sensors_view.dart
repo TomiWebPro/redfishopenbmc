@@ -73,9 +73,43 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Text(
-            ui.error!,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              // UI-2: the icon + title + detail announce as ONE node, so a
+              // screen reader gets the error in context instead of a bare
+              // detached sentence (the established error-state pattern). The
+              // Retry button keeps its own node (it is a control).
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: 'Unable to load sensors. ${ui.error}',
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(Icons.cloud_off_outlined,
+                        size: 40, color: Theme.of(context).colorScheme.outline),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Unable to load sensors',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      ui.error!,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: _load,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
           ),
         ),
       );

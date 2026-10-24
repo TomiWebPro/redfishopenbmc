@@ -1219,4 +1219,92 @@ void main() {
       expect(applyTime['MaintenanceWindowStartTime'], isA<String>());
     });
   });
+
+  group('emulator: message registry + error-mapping contract (#014)', () {
+    late AuthManager manager;
+    late RedfishClient client;
+
+    setUpAll(() async {
+      manager = AuthManager(storage: InMemoryStorage());
+      await manager.login('em-reg', emulatorProfile());
+      client = manager.clientFor('em-reg')!;
+    });
+
+    tearDownAll(() async {
+      await manager.logout('em-reg');
+    });
+
+    test(
+        'message registry: Base MessageRegistry is discoverable and resolves '
+        'the message IDs RedfishError normalizes (#014)', () async {
+      // DSP0266 §8.6 error responses carry `code` + `@Message.ExtendedInfo`
+      // whose MessageId prefixes reference a published MessageRegistry. The
+      // client's RedfishError (models/redfish_error.dart, #014 result)
+      // normalizes those Base.* codes; this pins the registry surface a
+      // future message-resolver (or an error-reasoning test) would read:
+      // service root advertises Registries -> MessageRegistryFileCollection
+      // -> Base.1.5.0 -> Location Uri -> MessageRegistry JSON defining the
+      // exact Base.* message templates (Message/MessageArgs/Severity).
+      final Map<String, dynamic> root = await client.getJson('/redfish/v1/');
+      final dynamic registriesLink = root['Registries'];
+      expect(registriesLink, isA<Map<dynamic, dynamic>>(),
+          reason: 'service root must advertise the Registries link');
+      final String registriesUri =
+          (registriesLink as Map<dynamic, dynamic>)['@odata.id'] as String;
+
+      final Map<String, dynamic> collection =
+          await client.getJson(registriesUri);
+      expect(collection['@odata.type'],
+          startsWith('#MessageRegistryFileCollection.'));
+      // The pinned mockup ships exactly the Base registry file.
+      expect(collection['Members@odata.count'], 1);
+      final List<dynamic> members =
+          collection['Members'] as List<dynamic>? ?? <dynamic>[];
+      expect(
+        members.map((dynamic m) => (m as Map<dynamic, dynamic>)['@odata.id']),
+        contains('/redfish/v1/Registries/Base.1.5.0'),
+      );
+
+      // MessageRegistryFile -> the resolvable registry JSON Location.
+      final Map<String, dynamic> file =
+          await client.getJson('/redfish/v1/Registries/Base.1.5.0');
+      expect(file['@odata.type'], startsWith('#MessageRegistryFile.'));
+      expect(file['Registry'], 'Base.1.5.0');
+      final List<dynamic> locations =
+          file['Location'] as List<dynamic>? ?? <dynamic>[];
+      expect(locations, isNotEmpty);
+      final String registryJsonUri =
+          (locations.first as Map<dynamic, dynamic>)['Uri'] as String;
+      expect(registryJsonUri, isNotEmpty);
+
+      // The registry itself: the canonical Base.* templates the client's
+      // RedfishError.code / firstMessage surface resolve against.
+      final Map<String, dynamic> registry =
+          await client.getJson(registryJsonUri);
+      expect(registry['@odata.type'], startsWith('#MessageRegistry.'));
+      final Map<dynamic, dynamic> messages =
+          registry['Messages'] as Map<dynamic, dynamic>;
+      // GeneralError is the fallback code RedfishError uses for unknown
+      // failures (redfish_error.dart doc cites Base.*.GeneralError).
+      final Map<dynamic, dynamic> general =
+          messages['GeneralError'] as Map<dynamic, dynamic>;
+      expect(general['Message'], isA<String>());
+      expect(general['Message'] as String, isNotEmpty);
+      expect(general['Severity'], 'Critical');
+      expect(general['NumberOfArgs'], 0);
+      // The action-parameter codes the client surfaces on reset/power POST
+      // failures are defined with the argument count their Message templates
+      // take (MessageArgs substitution).
+      final Map<dynamic, dynamic> notSupported =
+          messages['ActionNotSupported'] as Map<dynamic, dynamic>;
+      expect(notSupported['NumberOfArgs'], 1);
+      expect(notSupported['Message'] as String, contains('%1'));
+      final Map<dynamic, dynamic> accessDenied =
+          messages['AccessDenied'] as Map<dynamic, dynamic>;
+      expect(accessDenied['Severity'], 'Critical');
+      final Map<dynamic, dynamic> missing =
+          messages['ActionParameterMissing'] as Map<dynamic, dynamic>;
+      expect(missing['NumberOfArgs'], 2);
+    });
+  });
 }
