@@ -7,32 +7,36 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 (DOCS run — **EventDestination + VirtualMedia
-  corpus mirror, DOCS-24**: the two EMU-2-pinned non-client-mapped families
-  (`#EventDestination.v1_14_0` + `#VirtualMedia.v1_6_3`) now have served +
-  newest + aggregator + collection schemas in the external corpus (8 files /
-  194,278 B, inside DOCS-6); deltas additive-only (`EventDestination.v1_17_1`
-  adds BackupDestinations/Certificates/Severities/SyslogFilters/…,
-  `VirtualMedia.v1_7_0` adds EjectPolicy/TransferMethod/Password/UserName —
-  a #028 boot-media security note); UI-2 router not-found fallback merged
-  semantics node + 2 widget tests (suite 343→345); next P1: #015 (AuthManager)
-  and #016 (If-Match/ETag wiring on the new `patchJson` transport)
-- **Current focus:** **DOCS (2026-10-24)** — EventDestination + VirtualMedia
-  corpus gap closed (DOCS-24); next P1: #015 (AuthManager) —
+- **Last updated:** 2026-10-24 (EMULATOR run — **SecureBoot boot-integrity
+  surface + database + If-Match precondition boundary pinned, EMU 57→60**:
+  `#SecureBoot.v1_1_1.SecureBoot` read state + `#SecureBoot.ResetKeys`
+  `ResetKeysType@Redfish.AllowableValues` (ResetAllKeysToDefault/DeleteAllKeys/
+  DeletePK — annotation-form rule #022/#016 on a second action family; POST
+  204, bogus type ALSO 204s), `#SecureBootDatabaseCollection` 8 members
+  (PK/KEK/db/dbx + defaults) with per-database `#SecureBootDatabase.ResetKeys`
+  *smaller* allow-list (PK omits DeletePK), and the **#016 If-Match
+  boundary**: stale `If-Match` still PATCHes 204 + persists → 412 stays
+  unit-level, the client sends the settings-object ETag itself;
+  SecureBoot/SecureBootDatabase stay NOT client-mapped → **DOCS-25 mirror
+  duty recorded**; next P1: #015 (AuthManager) and #016 (If-Match/ETag
+  wiring on the `patchJson` transport)
+- **Current focus:** **EMULATOR (2026-10-24)** — SecureBoot surface + If-Match
+  boundary pinned (EMU 57→60, DOCS-25 recorded); next P1: #015 (AuthManager) —
   `expiryFromService` + the Sessions pin are ready, wire the discovered
   SessionService body into login + re-auth on `isExpired`; #016: the PATCH
-  transport just landed (`patchJson`), remaining is If-Match/`@odata.etag`
-  wiring (settings-object ETag `9234ac83b9700123cc32` is the token, EMU 53)
-  + Boot/IndicatorLED PATCH actions; #022/#016: `ResetActionInfo` ActionInfo
-  resource crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it
-  serves only the annotation form and now provably ignores ResetType values);
+  transport landed (`patchJson`) + the If-Match boundary is pinned (the mockup
+  ignores preconditions — the client must send the settings-object ETag
+  `9234ac83b9700123cc32` itself, EMU 53/60), remaining is the actual
+  If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit tests
+  for the 412 path; #022/#016: `ResetActionInfo` ActionInfo resource crawl
+  (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only the
+  annotation form and now provably ignores ResetType/ResetKeysType values);
   #018: query-capability surface + live `$expand` contract pinned — remaining:
   build the lightweight discovery pass + the cache fixes; **new feature
   candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
   served versions move into `test/fixtures/redfish/schemas/` + the
-  corpus-invariant family list gains `Bios`/`Settings`); the EMU-2
-  EventDestination/VirtualMedia pins now resolve to real mirror files
-  (DOCS-24)
+  corpus-invariant family list gains `Bios`/`Settings`); DOCS-25 (SecureBoot
+  corpus mirror) is the next DOCS-run duty
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -371,6 +375,22 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       (API HEAD), mockup `23d21f9a` (API HEAD of main), DSP0266 1.25.0,
       schema index 200).**
 
+- [ ] **DOCS-25** Mirror the **SecureBoot** family the EMU run pinned live
+      (EMU 57→60, 2026-10-24) — the external corpus has no schema for
+      `#SecureBoot.v1_1_1.SecureBoot` (the system boot-integrity read surface:
+      SecureBootEnable/CurrentBoot/Mode + `#SecureBoot.ResetKeys` with
+      `ResetKeysType@Redfish.AllowableValues`) or for the
+      `#SecureBootDatabaseCollection` / `#SecureBootDatabase.v1_0_2` types
+      (the 8-member PK/KEK/db/dbx + defaults database surface). Mirror the
+      **mockup-served** versions plus the **newest** published versions plus
+      the collection type (the DOCS-12/13/19/20/21/23/24 "newest + served"
+      pair precedent) into `documentations/external/redfish/schemas/v1/`
+      only — SecureBoot stays NOT client-mapped (no fixture duty; the
+      corpus-invariant family list unchanged; the REQUIREMENTS.md trace rows
+      for the EMU pins cite the live pin + DOCS-25 until then). Source:
+      `https://redfish.dmtf.org/schemas/v1/SecureBoot.json` (+
+      `SecureBootDatabase.json`). Keep inside the DOCS-6 budget.
+
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across
       DOCS-3/4/5/10/13 cited an older spec layout) and correct every stale
@@ -549,7 +569,30 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       WriteProtected/MediaTypes/ConnectedVia) — boot-media UX input for
       #028/#022; fixture publishes NO InsertMedia/EjectMedia action targets
       (advertised-as-candidate rule); VirtualMedia stays NOT client-mapped —
-      no fixture-schema duty)**
+      no fixture-schema duty)** → **60 tests
+      (SecureBoot boot-integrity surface + database + If-Match boundary
+      pinned 2026-10-24 20:xx: (1) `#SecureBoot.v1_1_1.SecureBoot` — the
+      system secure-boot read state (SecureBootEnable false /
+      SecureBootCurrentBoot Disabled / SecureBootMode UserMode) + the
+      `#SecureBoot.ResetKeys` action with `ResetKeysType@Redfish.
+      AllowableValues` (ResetAllKeysToDefault/DeleteAllKeys/DeletePK — the
+      annotation-form allow-list rule #022/#016 applied to a SECOND system
+      action family; POST → 204 via the `/Actions/` framework; a bogus
+      ResetKeysType ALSO 204s — the mockup never validates action bodies, so
+      the 400 path stays unit-level); (2) the `#SecureBootDatabaseCollection`
+      enumerates 8 databases (PK/KEK/db/dbx + defaults) and each
+      `#SecureBootDatabase.v1_0_2` resource carries its OWN
+      `#SecureBootDatabase.ResetKeys` with a *smaller* per-resource
+      allow-list (PK: ResetAllKeysToDefault/DeleteAllKeys — no DeletePK) +
+      a Certificates link — a key-reset UI must read the database-level
+      list; (3) **If-Match boundary closed (#016)**: a PATCH with a stale
+      `If-Match: "bogus-stale-etag"` header is answered 204 AND persists —
+      the mockup never evaluates preconditions (no resource-level
+      `@odata.etag`/HTTP ETag; only the settings-object ETag
+      `9234ac83b9700123cc32` exists), so 412 enforcement stays unit-level and
+      the client must send the settings-object ETag itself; SecureBoot /
+      SecureBootDatabase stay NOT client-mapped — corpus mirror duty recorded
+      as DOCS-25)**
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -630,9 +673,15 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       byte-identical), while the mockup applies ANY body value unvalidated
       (`IndicatorLED: "Bogus"` persists) — the client must pre-validate
       against advertised `AllowableValues` (Boot-override + Reset list now
-      both pinned); remaining: (a) If-Match/`@odata.etag` wiring — the
-      settings-object ETag `9234ac83b9700123cc32` (EMU 53) is the only
-      pinable concurrency token on the fixture, header-level ETags stay
+      both pinned); **If-Match boundary pinned live 2026-10-24 20:xx (EMU
+      59→60)**: a PATCH with a stale `If-Match: "bogus-stale-etag"` header is
+      answered 204 AND persists — the mockup never evaluates preconditions
+      (no resource-level `@odata.etag`/HTTP ETag; the settings-object ETag
+      `9234ac83b9700123cc32` is the only concurrency token it serves), so 412
+      enforcement stays unit-level and the #016 client must send the
+      settings-object ETag itself; remaining: (a) If-Match/`@odata.etag`
+      wiring — the settings-object ETag `9234ac83b9700123cc32` (EMU 53) is the
+      only pinable concurrency token on the fixture, header-level ETags stay
       unit-level, (b) Boot/IndicatorLED PATCH actions in a service + UI,
       (c) the `ResetActionInfo` ActionInfo *resource* crawl; bmcweb
       ResetActionInfo → supportedResetTypes fallback also folds here —
@@ -705,7 +754,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       run 2026-10-22; system-level allow-list pinned incl. `Nmi` (NMI-stabilize)
       + `ForceOn` + `PushPowerButton`, and the mockup does NOT advertise
       `PowerCycle` — the gate must use exactly the advertised values — run
-      2026-10-23 03:02)
+      2026-10-23 03:02; the annotation-form rule is now also pinned on a
+      SECOND system action family — `#SecureBoot.ResetKeys` +
+      `ResetKeysType@Redfish.AllowableValues` (EMU 57→60, 2026-10-24), with
+      the per-resource nuance that `#SecureBootDatabase.ResetKeys` carries a
+      *smaller* allow-list than the SecureBoot-level one (PK omits DeletePK)
+      — allow-list sources are per-resource, never shared)
 - [ ] **#024** `profile_repository.clear()` orphaned passwords.
 - [ ] **#026** Resolve duplicate auth fields.
 

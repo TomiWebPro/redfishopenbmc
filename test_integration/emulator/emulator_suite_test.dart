@@ -2308,5 +2308,161 @@ void main() {
       // rule (#022/#006).
       expect(cd['Actions'], isNull);
     });
+
+    test(
+        'SecureBoot: boot-integrity surface — ResetKeys action + '
+        'annotation-form allow-list (#022/#016)', () async {
+      // A security-posture read (UEFI Secure Boot state, key reset) reads
+      // this ComputerSystem sub-resource: the current SecureBootEnable /
+      // SecureBootCurrentBoot / SecureBootMode, the ResetKeys action target,
+      // and its ResetKeysType `@Redfish.AllowableValues` annotation — the
+      // same annotation-form allow-list rule as #ComputerSystem.Reset (#022/
+      // #016: the UI pre-validates against the advertised list, never
+      // hardcodes). SecureBoot is NOT client-mapped yet, so this pins the
+      // read surface for the future security-posture feature (corpus mirror
+      // duty recorded as DOCS-25).
+      final Map<String, dynamic> sb =
+          await client.getJson('/redfish/v1/Systems/437XR1138R2/SecureBoot');
+      expect(sb['@odata.type'], '#SecureBoot.v1_1_1.SecureBoot');
+      expect(sb['SecureBootEnable'], isFalse);
+      expect(sb['SecureBootCurrentBoot'], 'Disabled');
+      expect(sb['SecureBootMode'], 'UserMode');
+      final Map<dynamic, dynamic> actions =
+          sb['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> resetKeys =
+          actions['#SecureBoot.ResetKeys'] as Map<dynamic, dynamic>;
+      expect(
+        resetKeys['target'],
+        '/redfish/v1/Systems/437XR1138R2/SecureBoot/Actions/'
+        'SecureBoot.ResetKeys',
+      );
+      expect(
+        resetKeys['ResetKeysType@Redfish.AllowableValues'] as List<dynamic>,
+        containsAll(<String>[
+          'ResetAllKeysToDefault',
+          'DeleteAllKeys',
+          'DeletePK',
+        ]),
+      );
+      expect(
+        (sb['SecureBootDatabases'] as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/Systems/437XR1138R2/SecureBoot/SecureBootDatabases',
+      );
+
+      // Action round-trip: the mockup's `/Actions/` framework serves the
+      // target (POST → 204, normalized to an empty body). Negative: the
+      // mockup does NOT validate the action body — a bogus ResetKeysType
+      // also answers 204, exactly like the ResetType (-#022) and PATCH-body
+      // findings. The 400 validation-failure path stays unit-level; the
+      // client pre-validates against the annotation allow-list.
+      final Map<String, dynamic> empty = await client.postJson(
+        '/redfish/v1/Systems/437XR1138R2/SecureBoot/Actions/'
+        'SecureBoot.ResetKeys',
+        body: <String, dynamic>{'ResetKeysType': 'ResetAllKeysToDefault'},
+      );
+      expect(empty['value'], '');
+      final Map<String, dynamic> bogus = await client.postJson(
+        '/redfish/v1/Systems/437XR1138R2/SecureBoot/Actions/'
+        'SecureBoot.ResetKeys',
+        body: <String, dynamic>{'ResetKeysType': 'Bogus'},
+      );
+      expect(bogus['value'], '');
+    });
+
+    test(
+        'SecureBootDatabase: collection enumerates PK/KEK/db/dbx + defaults '
+        'with per-database ResetKeys allow-list (#022)', () async {
+      // The platform-key database surface behind SecureBoot: the collection
+      // enumerates the four UEFI key databases plus their defaults, and each
+      // database resource carries its OWN ResetKeys action with a *smaller*
+      // allow-list (PK: ResetAllKeysToDefault/DeleteAllKeys — no DeletePK) —
+      // the per-resource annotation rule means a key-reset UI must read the
+      // database-level list, never reuse the SecureBoot-level one.
+      final Map<String, dynamic> collection = await client.getJson(
+          '/redfish/v1/Systems/437XR1138R2/SecureBoot/SecureBootDatabases');
+      expect(
+        collection['@odata.type'],
+        '#SecureBootDatabaseCollection.SecureBootDatabaseCollection',
+      );
+      expect(collection['Members@odata.count'], 8);
+      final List<dynamic> members =
+          collection['Members'] as List<dynamic>? ?? <dynamic>[];
+      expect(
+        members.map(
+            (Object? m) => (m as Map<dynamic, dynamic>)['@odata.id'] as String),
+        containsAll(<String>[
+          '/redfish/v1/Systems/437XR1138R2/SecureBoot/SecureBootDatabases/PK',
+          '/redfish/v1/Systems/437XR1138R2/SecureBoot/SecureBootDatabases/KEK',
+          '/redfish/v1/Systems/437XR1138R2/SecureBoot/SecureBootDatabases/db',
+          '/redfish/v1/Systems/437XR1138R2/SecureBoot/SecureBootDatabases/dbx',
+        ]),
+      );
+
+      final Map<String, dynamic> pk = await client.getJson(
+          '/redfish/v1/Systems/437XR1138R2/SecureBoot/SecureBootDatabases/PK');
+      expect(
+          pk['@odata.type'], '#SecureBootDatabase.v1_0_2.SecureBootDatabase');
+      expect(pk['DatabaseId'], 'PK');
+      expect(pk['Name'], 'PK - Platform Key');
+      final Map<dynamic, dynamic> pkActions =
+          pk['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> pkReset =
+          pkActions['#SecureBootDatabase.ResetKeys'] as Map<dynamic, dynamic>;
+      expect(
+        pkReset['target'],
+        '/redfish/v1/Systems/437XR1138R2/SecureBoot/SecureBootDatabases/PK/'
+        'Actions/SecureBootDatabase.ResetKeys',
+      );
+      expect(
+        pkReset['ResetKeysType@Redfish.AllowableValues'] as List<dynamic>,
+        containsAll(<String>['ResetAllKeysToDefault', 'DeleteAllKeys']),
+        reason: '#022: the database-level allow-list is per-resource and '
+            'omits DeletePK (the SecureBoot-level list has it)',
+      );
+      expect(
+        (pk['Certificates'] as Map<dynamic, dynamic>)['@odata.id'],
+        '/redfish/v1/Systems/437XR1138R2/SecureBoot/SecureBootDatabases/PK/'
+        'Certificates',
+      );
+    });
+
+    test(
+        'If-Match: the mockup IGNORES the precondition — a stale etag still '
+        'PATCHes 204, so 412 enforcement stays unit-level (#016)', () async {
+      // Closes the open #016 question "can If-Match be pinned here?" An
+      // HTTP-level `If-Match` with a stale/wrong etag is sent on the PATCH
+      // transport; the mockup answers 204 AND persists the change — it never
+      // evaluates preconditions (no resource-level @odata.etag / HTTP ETag on
+      // this fixture; the settings-object ETag `9234ac83b9700123cc32` from
+      // the Bios pin is the only concurrency token it serves). If-Match/412
+      // precondition handling therefore stays unit-level, and the #016 client
+      // must apply the settings-object ETag itself rather than rely on the
+      // service enforcing it.
+      try {
+        final Map<String, dynamic> patched = await client.patchJson(
+          '/redfish/v1/Systems/437XR1138R2',
+          body: <String, dynamic>{
+            'IndicatorLED': 'Blinking',
+          },
+          headers: <String, String>{
+            'If-Match': '"bogus-stale-etag"',
+          },
+        );
+        expect(patched['value'], '');
+        final Map<String, dynamic> after =
+            await client.getJson('/redfish/v1/Systems/437XR1138R2');
+        expect(after['IndicatorLED'], 'Blinking',
+            reason: '#016: the mockup applies the PATCH even with a stale '
+                'If-Match — precondition enforcement is NOT pinable on this '
+                'fixture');
+      } finally {
+        // Restore the fixture value so the in-memory server state is
+        // unchanged when the suite ends.
+        await client.patchJson(
+          '/redfish/v1/Systems/437XR1138R2',
+          body: <String, dynamic>{'IndicatorLED': 'Off'},
+        );
+      }
+    });
   });
 }

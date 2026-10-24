@@ -6,7 +6,28 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (EMULATOR run — **ComputerSystem Boot override +
+Last audited: 2026-10-24 (EMULATOR run — **SecureBoot boot-integrity
+surface + If-Match precondition boundary pinned, EMU 57→60**): the mockup's
+`/Systems/437XR1138R2/SecureBoot` publishes the secure-boot read surface
+(`#SecureBoot.v1_1_1.SecureBoot`: SecureBootEnable false /
+SecureBootCurrentBoot Disabled / SecureBootMode UserMode) with the
+`#SecureBoot.ResetKeys` action + `ResetKeysType@Redfish.AllowableValues`
+(ResetAllKeysToDefault/DeleteAllKeys/DeletePK — the same annotation-form
+allow-list rule as Reset, #022/#016) and the SecureBootDatabases link; the
+`SecureBootDatabaseCollection` enumerates 8 databases (PK/KEK/db/dbx +
+defaults) and each database resource carries its OWN
+`#SecureBootDatabase.ResetKeys` with a *smaller* per-resource allow-list
+(PK omits DeletePK — the per-resource annotation rule, #022); both SecureBoot
+action targets POST → 204 and the mockup does NOT validate action bodies
+(bogus ResetKeysType also 204s — the 400 path stays unit-level).
+**If-Match boundary (#016)**: a PATCH sent with a stale
+`If-Match: "bogus-stale-etag"` header still answers 204 AND persists — the
+mockup ignores preconditions, so 412 enforcement stays unit-level and the
+#016 client must send the settings-object ETag itself
+(`9234ac83b9700123cc32`, EMU 53) rather than rely on the service.
+SecureBoot/SecureBootDatabase stay NOT client-mapped — **corpus mirror duty
+recorded as DOCS-25**. No corpus download this run (EMU stream).
+Prior: 2026-10-24 EMULATOR run — **ComputerSystem Boot override +
 live PATCH round-trip + discovery Links graph + VirtualMedia pinned, EMU
 53→57**): the mockup's `/Systems/437XR1138R2/Boot` publishes the full boot-
 override surface (BootSourceOverrideEnabled/Mode/Target +
@@ -25,7 +46,7 @@ Manager.Links.ManagerForServers/ManagerForChassis/ManagerInChassis +
 ManagerType/FirmwareVersion/Model). VirtualMedia read surface
 (`#VirtualMedia.v1_6_3`, CD1 Applet//CD,DVD, Floppy1 URI/Floppy,USBStick) —
 a boot-media UX input; this fixture publishes NO InsertMedia/EjectMedia
-action targets. No corpus download this run (EMU stream). Prior runs below.)
+action targets. No corpus download this run (EMU stream).)
 Prior: DOCS run — **Bios + Settings corpus mirror,
 DOCS-23**: mirrored the mockup-served `Bios.v1_2_2.json` +
 `Settings.v1_3_5.json` (the two published types the EMU Bios-`@Redfish.Settings`
@@ -317,7 +338,7 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 57 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 60 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -521,6 +542,35 @@ client-relevant families.
     boot-media action round-trips stay unit-level (advertised-as-candidate
     rule). VirtualMedia is NOT client-mapped, so the corpus-invariant family
     list is unchanged (no fixture-schema duty).
+    **SecureBoot boot-integrity surface (pinned 2026-10-24, EMU 57→58):**
+    `/Systems/437XR1138R2/SecureBoot` publishes `#SecureBoot.v1_1_1.SecureBoot`
+    with the secure-boot read state (SecureBootEnable false /
+    SecureBootCurrentBoot Disabled / SecureBootMode UserMode) and the
+    `#SecureBoot.ResetKeys` action + `ResetKeysType@Redfish.AllowableValues`
+    (ResetAllKeysToDefault/DeleteAllKeys/DeletePK) — the same annotation-form
+    allow-list rule as `#ComputerSystem.Reset` (#022/#016): a security-posture
+    UI pre-validates against the annotation, never hardcodes reset types; the
+    action target POSTs 204 via the mockup's `/Actions/` framework, and a
+    bogus `ResetKeysType` ALSO 204s (the mockup does not validate action
+    bodies — the 400 path stays unit-level).
+    **SecureBootDatabase collection (pinned 2026-10-24, EMU 58→59):** the
+    `SecureBootDatabaseCollection` enumerates 8 databases (PK/KEK/db/dbx +
+    their defaults) and each database resource (`#SecureBootDatabase.v1_0_2`)
+    carries its OWN `#SecureBootDatabase.ResetKeys` action with a *smaller*
+    per-resource allow-list (PK: ResetAllKeysToDefault/DeleteAllKeys — no
+    DeletePK) plus a Certificates link — a key-reset UI must read the
+    database-level list, never reuse the SecureBoot-level one (#022).
+    SecureBoot/SecureBootDatabase stay NOT client-mapped — corpus mirror duty
+    recorded as **DOCS-25** (no fixture-schema duty; the corpus-invariant
+    family list is unchanged).
+    **If-Match boundary (#016, pinned 2026-10-24, EMU 59→60):** a PATCH sent
+    with a stale `If-Match: "bogus-stale-etag"` header is ANSWERED 204 and
+    persists into the served resource — the mockup never evaluates
+    preconditions (no resource-level `@odata.etag`/HTTP ETag; the
+    settings-object ETag `9234ac83b9700123cc32` from the Bios pin is the only
+    concurrency token it serves). If-Match/412 enforcement therefore stays
+    unit-level; the #016 client must send the settings-object ETag itself
+    rather than rely on the service enforcing it.
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)
 

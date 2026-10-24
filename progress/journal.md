@@ -2812,3 +2812,65 @@
 **Issues touched:**
 - none opened/closed this run. DOCS-24 done; UI-2 advanced (router fallback);
   #015 remains the next P1.
+
+## 2026-10-24 — agent:redfish-automation — EMU 57→60 (SecureBoot + SecureBootDatabase + If-Match boundary) + DOCS-25 filed
+
+**Done:**
+- EMULATOR primary workstream (alternation: DOCS 19:25 → EMU 18:40 → EMU due).
+  Suite 57 → **60 tests, 60/60 passed** against the pinned mockup (`23d21f9a`):
+  1. **SecureBoot boot-integrity surface**: `#SecureBoot.v1_1_1.SecureBoot`
+     read state (SecureBootEnable false / SecureBootCurrentBoot Disabled /
+     SecureBootMode UserMode) + `#SecureBoot.ResetKeys` action +
+     `ResetKeysType@Redfish.AllowableValues` (ResetAllKeysToDefault /
+     DeleteAllKeys / DeletePK) — the annotation-form allow-list rule
+     (#022/#016) pinned on a second system action family; POST → 204 and a
+     bogus ResetKeysType also 204s (mockup never validates action bodies; 400
+     stays unit-level).
+  2. **SecureBootDatabase collection**: 8 members (PK/KEK/db/dbx + defaults);
+     per-database `#SecureBootDatabase.v1_0_2` carries its OWN
+     `#SecureBootDatabase.ResetKeys` with a smaller allow-list (PK omits
+     DeletePK — per-resource rule) + Certificates link.
+  3. **If-Match boundary (#016)**: stale `If-Match: "bogus-stale-etag"` on a
+     PATCH is answered 204 AND persists — the mockup never evaluates
+     preconditions (no resource-level `@odata.etag`/HTTP ETag; only the
+     settings-object ETag `9234ac83b9700123cc32` exists). 412 enforcement
+     stays unit-level; the #016 client must send the settings-object ETag
+     itself.
+- REQUIREMENTS.md updated: "Last audited" rewritten, test-platforms 57 → 60,
+  trace-note paragraphs for the three pins. **DOCS-25 filed** — mirror the
+  SecureBoot family (served v1_1_1 + newest + SecureBootDatabase + collection)
+  into the external corpus next DOCS run (families stay NOT client-mapped →
+  no fixture duty). FUTUREWORK.md: EMU-2 chain 57 → 60, #016 If-Match boundary
+  recorded, #022 annotation-form rule extended to SecureBoot + per-resource
+  allow-list nuance, header rewritten.
+- No lib/ production change; on-disk fixture byte-identical; in-memory mockup
+  state restored (IndicatorLED Off, Boot Once).
+
+**Decisions:**
+- EMULATOR per alternation; chose SecureBoot because (a) it is a genuinely new
+  security-relevant surface the suite never read, (b) it re-proves the
+  annotation-form allow-list rule on a second action family with a
+  per-resource nuance (database-level list omits DeletePK), directly feeding
+  #022/#016, (c) the If-Match probe closes the open "can we pin If-Match
+  here?" question with live evidence (we cannot — it stays unit-level).
+- SecureBoot/SecureBootDatabase stay NOT client-mapped; the corpus mirror duty
+  is recorded as DOCS-25 (not this EMU run's job), following the
+  EventDestination/VirtualMedia → DOCS-24 precedent.
+- UI increment skipped: the remaining UI-2 candidates (focus order, non-card
+  labels) are open-ended deep-hunt items; rushing them would risk an untested
+  change. Recorded in tracking, not rushed.
+- No new dependencies, no TLS change, no production behaviour change; no corpus
+  downloads (EMU stream).
+
+**Next:**
+- Push 97 queued local commits once GitHub credentials are available.
+- DOCS per alternation: DOCS-25 — mirror SecureBoot/SecureBootDatabase
+  served+newest+collection into the external corpus.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 57 → 60; #016 advanced (If-Match boundary
+  pinned — client must send the settings-object ETag itself); #022 advanced
+  (annotation-form allow-list rule extended + per-resource nuance); DOCS-25
+  filed.

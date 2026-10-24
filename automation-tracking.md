@@ -3205,3 +3205,67 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **96** (95 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 20:12 — EMULATOR (SecureBoot boot-integrity surface + SecureBootDatabase + If-Match precondition boundary)
+
+- **Baseline:** analyze 0; tests 345 passed / 1 skipped; starting commit e2b1b0d
+  (branch `main` ahead 97 of origin); issues validate OK; working tree clean; no
+  stash, no crashed-run leftovers. Emulator suite re-run at start: 57/57.
+- **Primary work:** EMULATOR per alternation (last substantive runs: DOCS 19:25
+  → EMU 18:40; EMU due). Pinned the **SecureBoot boot-integrity surface** the
+  fixture serves but the suite never read: `#SecureBoot.v1_1_1.SecureBoot`
+  (SecureBootEnable false / SecureBootCurrentBoot Disabled / SecureBootMode
+  UserMode) with the `#SecureBoot.ResetKeys` action +
+  `ResetKeysType@Redfish.AllowableValues` (ResetAllKeysToDefault/DeleteAllKeys/
+  DeletePK) — the annotation-form allow-list rule (#022/#016) now pinned on a
+  SECOND system action family; the action target POST → 204 via the mockup's
+  `/Actions/` framework and a bogus `ResetKeysType` ALSO 204s (the mockup never
+  validates action bodies — the 400 path stays unit-level). Also pinned the
+  **SecureBootDatabase collection** (`#SecureBootDatabaseCollection`, 8 members:
+  PK/KEK/db/dbx + defaults) with per-database detail —
+  `#SecureBootDatabase.v1_0_2.SecureBootDatabase` carries its OWN
+  `#SecureBootDatabase.ResetKeys` with a *smaller* allow-list (PK omits
+  DeletePK — per-resource annotation rule) + a Certificates link. Finally
+  closed the open **#016 If-Match question**: a PATCH sent with a stale
+  `If-Match: "bogus-stale-etag"` header is answered 204 AND persists — the
+  mockup never evaluates preconditions (no resource-level `@odata.etag`/HTTP
+  ETag; the settings-object ETag `9234ac83b9700123cc32` is the only
+  concurrency token it serves), so 412 enforcement stays unit-level and the
+  #016 client must send the settings-object ETag itself.
+- **Docs:** no corpus download this run (EMU stream). REQUIREMENTS.md: "Last
+  audited" rewritten (EMU 57→60 summary + the If-Match boundary), test-platforms
+  bullet 57 → 60 tests, trace-note paragraphs added for the three pins;
+  **DOCS-25 filed in FUTUREWORK.md** — mirror the SecureBoot family
+  (SecureBoot served v1_1_1 + newest + SecureBootDatabase + collection) into
+  the external corpus so the new REQUIREMENTS.md citations resolve to mirror
+  files (SecureBoot/SecureBootDatabase stay NOT client-mapped → no fixture
+  duty). Anchors not re-verified this run (no corpus access; bmcweb `63a18f4`,
+  mockup `23d21f9a`, DSP0266 1.25.0 unchanged from the 19:25 re-verification).
+- **Emulator:** server prepared from the pinned `23d21f9a`, healthy on 8443,
+  suite **57 → 60 tests, 60/60 passed** (+3: SecureBoot read + ResetKeys
+  round-trip incl. invalid-type negative; SecureBootDatabase collection + PK
+  detail; If-Match stale-etag boundary). On-disk fixture byte-identical
+  (`git status` clean apart from the test file); in-memory mockup state
+  restored (IndicatorLED Off, Boot Once — the If-Match test restores in
+  `finally`). Server will be stopped at run end.
+- **Code/tests:** no lib/ production change — emulator-only pins in
+  `test_integration/emulator/emulator_suite_test.dart` (3 new tests in the
+  existing ComputerSystem Boot/PATCH/Links/VirtualMedia group). Plain `flutter
+  test` suite unaffected (emulator tests skip without
+  `REDFISH_EMULATOR_URL`): 345 passed / 1 skipped.
+- **UI:** skipped — the primary EMU workstream produced the finished increment;
+  the remaining UI-2 candidates (focus order, non-card labels) are open-ended
+  deep-hunt items the prior EMU run flagged, and rushing them into the last
+  minutes of the budget would risk an untested change. Recorded, not rushed.
+- **Verification:** (pending full gate after tracking — analyze 0; tests 345
+  passed / 1 skipped; emulator 60/60; issues validate OK; `git diff --check`
+  clean; secret scan: Dart tests + doc prose only, no credentials — the
+  SecureBoot bodies are public DMTF fixture data).
+- **Commit:** (after §7.2/§7.3 below) — pushed: expected no (known GitHub
+  credential blocker; local commit kept, not retried).
+- **Next:** 1) Push the queued local commits (98) from a machine with GitHub
+  credentials; 2) DOCS per alternation — DOCS-25 (mirror SecureBoot/
+  SecureBootDatabase served+newest+collection into the external corpus, then
+  the REQUIREMENTS.md SecureBoot rows cite real files); 3) P1 #015 AuthManager
+  — wire `Session.expiryFromService` into login, re-auth on `isExpired`,
+  token/location from create RESPONSE HEADERS only.
