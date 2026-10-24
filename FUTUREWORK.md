@@ -7,15 +7,18 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 (EMULATOR run — **Boot override + live PATCH
-  round-trip + discovery Links graph + VirtualMedia pinned, EMU 53→57**;
-  `RedfishClient.patchJson` landed — the DSP0266 §6.5.2 PATCH transport for
-  #016: 204/200 normalized + non-2xx → `RedfishException`, 3 unit tests + a
-  live emulator pin proving PATCH persists (and that the mockup applies ANY
-  body value unvalidated); next P1: #015 (AuthManager) and #016
-  (If-Match/ETag wiring on top of the new transport)
-- **Current focus:** **EMULATOR (2026-10-24)** — Boot/Links/VirtualMedia
-  surfaces + live PATCH pinned; next P1: #015 (AuthManager) —
+- **Last updated:** 2026-10-24 (DOCS run — **EventDestination + VirtualMedia
+  corpus mirror, DOCS-24**: the two EMU-2-pinned non-client-mapped families
+  (`#EventDestination.v1_14_0` + `#VirtualMedia.v1_6_3`) now have served +
+  newest + aggregator + collection schemas in the external corpus (8 files /
+  194,278 B, inside DOCS-6); deltas additive-only (`EventDestination.v1_17_1`
+  adds BackupDestinations/Certificates/Severities/SyslogFilters/…,
+  `VirtualMedia.v1_7_0` adds EjectPolicy/TransferMethod/Password/UserName —
+  a #028 boot-media security note); UI-2 router not-found fallback merged
+  semantics node + 2 widget tests (suite 343→345); next P1: #015 (AuthManager)
+  and #016 (If-Match/ETag wiring on the new `patchJson` transport)
+- **Current focus:** **DOCS (2026-10-24)** — EventDestination + VirtualMedia
+  corpus gap closed (DOCS-24); next P1: #015 (AuthManager) —
   `expiryFromService` + the Sessions pin are ready, wire the discovered
   SessionService body into login + re-auth on `isExpired`; #016: the PATCH
   transport just landed (`patchJson`), remaining is If-Match/`@odata.etag`
@@ -27,7 +30,9 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
   build the lightweight discovery pass + the cache fixes; **new feature
   candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
   served versions move into `test/fixtures/redfish/schemas/` + the
-  corpus-invariant family list gains `Bios`/`Settings`)
+  corpus-invariant family list gains `Bios`/`Settings`); the EMU-2
+  EventDestination/VirtualMedia pins now resolve to real mirror files
+  (DOCS-24)
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -338,6 +343,33 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `test/fixtures/redfish/schemas/` + the emulator corpus-invariant family
       list; anchors re-verified: bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
       1.25.0, schema index 200).**
+
+- [x] **DOCS-24** Mirror the two **EMU-2-pinned non-client-mapped** families
+      the 18:40 EMU run reads but the external corpus had no schemas for:
+      `EventDestination` (the four `Subscriptions` members —
+      `#EventDestination.v1_14_0.EventDestination`, Redfish/SNMPv3/SMTP-OEM/
+      SyslogTCP transports — the DOCS-7 bed for #019) and `VirtualMedia` (the
+      system boot-media read surface — `#VirtualMedia.v1_6_3.VirtualMedia`,
+      CD1 Applet + Floppy1 URI — the #028 boot-media UX input). Mirror the
+      **mockup-served** versions plus the **newest** published versions plus
+      the collection types (the DOCS-12/13/19/20/21/23 "newest + served" pair
+      precedent). Source: `https://redfish.dmtf.org/schemas/v1/<Name>.json`.
+      **Done (run 2026-10-24, 8 files / 194,278 bytes total, inside DOCS-6;
+      SHA-256s + manifest rows verified; delta audit additive-only —
+      `EventDestination.v1_14_0`→`v1_17_1` adds BackupDestinations/
+      Certificates/ClientCertificates/EventFormatType/HeartbeatIntervalMinutes/
+      HttpHeaders/OEM*/OriginResources/SendHeartbeat/Severities/
+      SubordinateResources/SyslogFilters/VerifyCertificate (+Actions),
+      `VirtualMedia.v1_6_3`→`v1_7_0` adds Certificates/EjectPolicy/
+      EjectTimeout/HTTPHeaders/Password/Status/TransferMethod/
+      TransferProtocolType/UserName (+Actions) — the `Password`/`UserName`
+      additions are a #028 boot-media security note (never read back); every
+      EMU-2-pinned field present in the served versions — **no client code
+      change**; both families stay NOT client-mapped — no fixture duty,
+      corpus-invariant list untouched; REQUIREMENTS.md rows that cited the EMU
+      pins now cite real mirror files; anchors re-verified: bmcweb `63a18f4`
+      (API HEAD), mockup `23d21f9a` (API HEAD of main), DSP0266 1.25.0,
+      schema index 200).**
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across
@@ -863,6 +895,15 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       self-describing announcement; no Retry — a nonexistent system id is not
       an error), +1 widget test asserts the merged label + visible text +
       icon + no overflow at 320 px (via the `addTearDown` restore pattern);
+      **AppRouter route-not-found fallback merged semantics node (`Route not
+      found: <uri>`) done 2026-10-24 — the last bare-`Text` fallback surface
+      in the app (GoRouter `errorBuilder`) now renders the established
+      pattern: icon (`Icons.search_off_outlined`) + visible text inside a
+      `Semantics(container + excludeSemantics)` merged node; the URI is
+      dynamic so the label mirrors the visible text; no Retry — an unknown
+      route is not an error; +2 widget tests in `test/core/router_test.dart`
+      (merged `bySemanticsLabel` node + visible text + icon, and no overflow
+      at 320 px);
       the FirmwareView no-overflow test's manual `setSurfaceSize` restore was
       also converted to the established `addTearDown` (the 12:30 journal
       noted it for this run);

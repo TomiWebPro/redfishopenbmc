@@ -1084,3 +1084,53 @@ Anchors re-verified this run (2026-10-24 15:17 UTC): bmcweb master
 byte-identical), mockup pin `23d21f9a`, DSP0266 1.25.0 (1.26.0 probe → 404),
 schema index 200. **No client code change** from the docs audit; UI-2 landed
 the not-found fallback unification separately (see tracking).
+
+## DOCS-24 — EventDestination + VirtualMedia corpus mirror (2026-10-24)
+
+The EMU-2 pins (EMU 52→57, 2026-10-24) read two published types outside the
+33 client-mapped families: `#EventDestination.v1_14_0.EventDestination` (the
+four `Subscriptions` members: Redfish/SNMPv3/SMTP-OEM/SyslogTCP transports —
+the DOCS-7 bed for #019) and `#VirtualMedia.v1_6_3.VirtualMedia` (the system
+boot-media read surface: CD1 Applet + Floppy1 URI — the #028 boot-media UX
+input). Both families had **no schema in the external corpus**. This run
+mirrored the **mockup-served** versions plus the **newest** published versions
+(the DOCS-12/13/19/20/21/23 "newest + served" pair precedent):
+
+| File | Served/newest | Bytes | Mirror destination |
+|---|---|---|---|
+| `EventDestination.json` | aggregator | 4,937 | external corpus only |
+| `EventDestination.v1_14_0.json` | **served** (`#EventDestination.v1_14_0.EventDestination`) | 60,342 | external corpus only |
+| `EventDestination.v1_17_1.json` | newest (live index) | 62,941 | external corpus only |
+| `EventDestinationCollection.json` | collection | 5,037 | external corpus only |
+| `VirtualMedia.json` | aggregator | 2,937 | external corpus only |
+| `VirtualMedia.v1_6_3.json` | **served** (`#VirtualMedia.v1_6_3.VirtualMedia`) | 24,898 | external corpus only |
+| `VirtualMedia.v1_7_0.json` | newest (live index) | 27,768 | external corpus only |
+| `VirtualMediaCollection.json` | collection | 5,418 | external corpus only |
+
+194,278 new bytes total — inside the DOCS-6 budget. SHA-256s in the manifest
+(`documentations/external/README.md` rows).
+
+**Delta audit (newest vs served, additive-only):**
+
+| Family | Served → newest | Delta | Client impact |
+|---|---|---|---|
+| `EventDestination` | `v1_14_0` → `v1_17_1` | adds `BackupDestinations`, `Certificates`, `ClientCertificates`, `EventFormatType`, `HeartbeatIntervalMinutes`, `HttpHeaders`, `OEMProtocol`, `OEMSubscriptionType`, `OriginResources`, `RegistryPrefixes`, `SendHeartbeat`, `Severities`, `Status`, `SubordinateResources`, `SyslogFilters`, `VerifyCertificate` (+ `Actions`) | none — every EMU-2-pinned field (Destination/EventTypes/Context/Protocol/SubscriptionType/SNMP{HMAC_SHA96,CFB128_AES128,null keys}) is present in the served version; a future #019 receiver tolerates the newest additions |
+| `VirtualMedia` | `v1_6_3` → `v1_7_0` | adds `Certificates`, `ClientCertificates`, `EjectPolicy`, `EjectTimeout`, `HTTPHeaders`, `Password`, `Status`, `TransferMethod`, `TransferProtocolType`, `UserName` (+ `Actions`) | none — every EMU-2-pinned field (ConnectedVia/Image/ImageName/Inserted/WriteProtected/MediaTypes/VerifyCertificate) is present in the served version; `Password`/`UserName` are a #028 boot-media security note (never read back) |
+
+**Client-mapped decision:** **EventDestination/VirtualMedia stay NOT
+client-mapped.** The 33-family list in the emulator corpus-invariant test is
+untouched, and no fixture-schema duty attaches (the crawl skips
+non-client-mapped families). REQUIREMENTS.md rows that cited the EMU pins
+(EventDestination §11.4/DOCS-7 bed; VirtualMedia boot-media) now resolve to
+real mirror files. If a future event receiver (#019) or boot-media editor
+(#028) client-maps either family, the served versions must be copied into
+`test/fixtures/redfish/schemas/` (the DOCS-19/20/21 invariant).
+
+Anchors re-verified this run (2026-10-24 19:15–19:20 UTC): bmcweb master
+`63a18f4e6188a77b713a8b22c8a95ab3d6c5a718` (still HEAD; API-verified), mockup
+pin `23d21f9a3610f6b6fbb71ffc941296b159a524d2` (still HEAD of `main` —
+API-verified), DSP0266 1.25.0 (hub link unchanged; 1.26.0 probe → 404),
+schema index 200. Freshness audit of the two new families: newest on the live
+index are `EventDestination.v1_17_1` / `VirtualMedia.v1_7_0` (mirrored);
+no other client-mapped family advanced since DOCS-22 (12:45 UTC spot-check).
+**No client code change** from the docs audit.

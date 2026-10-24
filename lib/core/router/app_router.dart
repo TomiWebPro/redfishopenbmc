@@ -101,7 +101,26 @@ class AppRouter {
       ],
       errorBuilder: (BuildContext context, GoRouterState state) => Scaffold(
         appBar: AppBar(title: const Text('Not found')),
-        body: Center(child: Text('Route not found: ${state.uri}')),
+        // UI-2: the route-not-found fallback renders the established
+        // error-surface pattern — icon + visible text inside one merged
+        // `Semantics(container + excludeSemantics)` node (one
+        // self-describing announcement; no Retry — an unknown route is not
+        // an error). The URI is dynamic, so the label mirrors the text.
+        body: Center(
+          child: Semantics(
+            container: true,
+            excludeSemantics: true,
+            label: 'Route not found: ${state.uri}',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Icon(Icons.search_off_outlined, size: 40),
+                const SizedBox(height: 8),
+                Text('Route not found: ${state.uri}'),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -2748,3 +2748,67 @@
 - none opened/closed this run. EMU-2 53 → 57 recorded; #016 advanced (PATCH
   transport + live pin); #018 gained the Links-graph pin; #015 remains the
   next P1.
+
+## 2026-10-24 — agent:redfish-automation — DOCS-24 (EventDestination + VirtualMedia corpus) + UI-2 router fallback
+
+**Done:**
+- DOCS primary workstream (alternation: DOCS 17:38 → EMU 18:40 → DOCS next).
+  Mirrored the two EMU-2-pinned non-client-mapped families that had **no
+  schema in the external corpus**: `EventDestination` (the four
+  `Subscriptions` members the event pin reads — Redfish/SNMPv3/SMTP-OEM/
+  SyslogTCP transports, DOCS-7 bed for #019) and `VirtualMedia` (the system
+  boot-media read surface the Boot/Links pin reads — CD1 Applet + Floppy1
+  URI, #028 input). Each mirrored as aggregator + **mockup-served** version +
+  **newest** published version + collection type (the DOCS-12/13/19/20/21/23
+  "newest + served" pair precedent) — 8 files / 194,278 bytes, external corpus
+  only, inside DOCS-6.
+- Delta audit (additive-only): `EventDestination.v1_14_0`→`v1_17_1` adds
+  BackupDestinations/Certificates/ClientCertificates/EventFormatType/
+  HeartbeatIntervalMinutes/HttpHeaders/OEM*/OriginResources/SendHeartbeat/
+  Severities/SubordinateResources/SyslogFilters/VerifyCertificate (+Actions);
+  `VirtualMedia.v1_6_3`→`v1_7_0` adds Certificates/EjectPolicy/EjectTimeout/
+  HTTPHeaders/Password/Status/TransferMethod/TransferProtocolType/UserName
+  (+Actions). Every EMU-2-pinned field present in the served versions → **no
+  client code change**; `Password`/`UserName` recorded as a #028 boot-media
+  security note.
+- Manifest (`documentations/external/README.md`) +8 rows + aggregator-count
+  note 23 → 25; REQUIREMENTS.md DOCS-24 audit table + client-mapped decision
+  (both families stay NOT client-mapped; corpus-invariant list untouched).
+- Anchors re-verified 19:15–19:20 UTC: bmcweb `63a18f4` + mockup `23d21f9a`
+  both still HEAD (GitHub API), DSP0266 1.25.0 (hub unchanged), schema index
+  200 (live curl).
+- UI-2 increment: **AppRouter route-not-found fallback** converted from the
+  bare `Center(child: Text(...))` to the established merged
+  `Semantics(container + excludeSemantics, label: 'Route not found: <uri>')`
+  node + `Icons.search_off_outlined` (no Retry). This was the **last
+  bare-`Text` fallback surface in the app**. +2 widget tests in
+  `test/core/router_test.dart` (merged node + visible text + icon; no overflow
+  at 320 px). Suite 343 → **345** passed / 1 skipped.
+
+**Decisions:**
+- DOCS per alternation; within it chose the EventDestination/VirtualMedia gap
+  because the EMU-2 pins read both types live but the corpus (and the
+  REQUIREMENTS.md citations) had no mirror files for them — the same
+  "pinned type but un-mirrored" gap DOCS-23 closed for Bios/Settings, and
+  closing it makes every current REQUIREMENTS.md EMU-pin citation resolve to a
+  real file.
+- External corpus only, no fixture duty: neither family is in the 33-family
+  client-mapped list, so the corpus-invariant test is untouched and no schema
+  copies land in `test/fixtures/redfish/schemas/`. If a future #019 receiver
+  or #028 boot-media editor client-maps either family, the served versions
+  must move into the fixture (recorded in REQUIREMENTS.md).
+- UI increment stayed pattern-consistent (merged node, no Retry) and targeted
+  the last remaining bare-text surface rather than adding new decoration.
+- No new dependencies, no TLS change, no production behaviour change.
+
+**Next:**
+- Push 95 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- EMULATOR next per alternation: re-run the corpus-invariant crawl after any
+  future family additions, or pin a remaining un-pinned surface; #028 remains
+  the P2 candidate (BIOS-config editor with the exact fixture duty recorded).
+
+**Issues touched:**
+- none opened/closed this run. DOCS-24 done; UI-2 advanced (router fallback);
+  #015 remains the next P1.

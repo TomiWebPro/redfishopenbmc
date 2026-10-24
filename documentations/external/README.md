@@ -123,16 +123,33 @@ documentations/external/
 | `redfish/schemas/v1/Bios.v1_3_0.json` | https://redfish.dmtf.org/schemas/v1/Bios.v1_3_0.json | 2026-10-24 15:17 | `65beebaa0f689693b4175eaaacbbae27eac767c2ed74e9c55fd1c312a01075f8` | 20,646 | DMTF 2026.x | Newest Bios — adds `Passwords` resource (additive vs served v1_2_2) — DOCS-23 |
 | `redfish/schemas/v1/Settings.v1_3_5.json` | https://redfish.dmtf.org/schemas/v1/Settings.v1_3_5.json | 2026-10-24 15:17 | `c05bc148013fd9d5270192da71d7c5a0362ab81d8cc54f3f527939f18d791ea9` | 15,194 | DMTF 2020.x | **Mockup-served** `#Settings.v1_3_5.Settings` — the `@Redfish.Settings` annotation type pinned by EMU-2 (SettingsObject/Messages) — DOCS-23 |
 | `redfish/schemas/v1/Settings.v1_5_0.json` | https://redfish.dmtf.org/schemas/v1/Settings.v1_5_0.json | 2026-10-24 15:17 | `8d481104a194fbcdf474fb9c068704f28a98de6dffc899f3fc538d2b7351d616` | 15,695 | DMTF 2026.x | Newest Settings — **no property delta** vs served v1_3_5 (structural/description-level only) — DOCS-23 |
+| `redfish/schemas/v1/EventDestination.json` | https://redfish.dmtf.org/schemas/v1/EventDestination.json | 2026-10-24 19:18 | `f4aa85812c3300dbc0e4bafdee0f4d024d0a11363cb15a7d2ea39cfe64e70c25` | 4,937 | latest per aggregator | EventDestination family aggregator — resolves `#EventDestination.EventDestination` citations (DOCS-7 bed, #019) — DOCS-24 |
+| `redfish/schemas/v1/EventDestination.v1_14_0.json` | https://redfish.dmtf.org/schemas/v1/EventDestination.v1_14_0.json | 2026-10-24 19:18 | `489c765b2f9b9818f2557fe6db56debf1fac65d9026f838e6c1fa0a337816455` | 60,342 | DMTF 2023.x | **Mockup-served** `#EventDestination.v1_14_0.EventDestination` — the 4 Subscriptions members the EMU-2 pin reads (Redfish/SNMPv3/SMTP-OEM/SyslogTCP transports, SNMP key material null) — DOCS-24 |
+| `redfish/schemas/v1/EventDestination.v1_17_1.json` | https://redfish.dmtf.org/schemas/v1/EventDestination.v1_17_1.json | 2026-10-24 19:18 | `660a432886273955bc70f9492e529131854657d577c33c8a8f243d045e74fa80` | 62,941 | DMTF 2026.x | Newest EventDestination — adds BackupDestinations/Certificates/ClientCertificates/EventFormatType/HeartbeatIntervalMinutes/HttpHeaders/OEM*/OriginResources/SendHeartbeat/Severities/SubordinateResources/SyslogFilters/VerifyCertificate (+Actions/Status) — DOCS-24 |
+| `redfish/schemas/v1/EventDestinationCollection.json` | https://redfish.dmtf.org/schemas/v1/EventDestinationCollection.json | 2026-10-24 19:18 | `561dc4cc7d654f8d64c6ce89e4ce0a9bd2381983ac6818e938508198e7f8b2c8` | 5,037 | latest per aggregator | `#EventDestinationCollection.EventDestinationCollection` — the Subscriptions collection type the EMU-2 pin enumerates — DOCS-24 |
+| `redfish/schemas/v1/VirtualMedia.json` | https://redfish.dmtf.org/schemas/v1/VirtualMedia.json | 2026-10-24 19:18 | `b835bffdeb278d856af3d0c3e5c012e54344f75c9d8f1772c0071d61564bd2b8` | 2,937 | latest per aggregator | VirtualMedia family aggregator — resolves `#VirtualMedia.VirtualMedia` citations (#028 boot-media) — DOCS-24 |
+| `redfish/schemas/v1/VirtualMedia.v1_6_3.json` | https://redfish.dmtf.org/schemas/v1/VirtualMedia.v1_6_3.json | 2026-10-24 19:18 | `d4c4aa15fd15989243c33c188665f6705f5e2bd1e8424b739178591214190e21` | 24,898 | DMTF 2023.x | **Mockup-served** `#VirtualMedia.v1_6_3.VirtualMedia` — the CD1/Floppy1 detail the EMU-2 pin reads (ConnectedVia/Image/ImageName/Inserted/WriteProtected/MediaTypes; NO InsertMedia/EjectMedia targets) — DOCS-24 |
+| `redfish/schemas/v1/VirtualMedia.v1_7_0.json` | https://redfish.dmtf.org/schemas/v1/VirtualMedia.v1_7_0.json | 2026-10-24 19:18 | `08f6e3ca24cc8c3efcbbf87b5f2edec1e8e88499298e85eb23072b806d5b030f` | 27,768 | DMTF 2026.x | Newest VirtualMedia — adds Certificates/ClientCertificates/EjectPolicy/EjectTimeout/HTTPHeaders/Password/Status/TransferMethod/TransferProtocolType/UserName (+Actions) — DOCS-24 |
+| `redfish/schemas/v1/VirtualMediaCollection.json` | https://redfish.dmtf.org/schemas/v1/VirtualMediaCollection.json | 2026-10-24 19:18 | `71ec62b65aa41a33ae66ae3ef01e194e61956df2227ce1d4a620ff1f487ba799` | 5,418 | latest per aggregator | `#VirtualMediaCollection.VirtualMediaCollection` — the system VirtualMedia collection the EMU-2 pin enumerates — DOCS-24 |
 
-### Downloaded schema set (23 base aggregator files)
+### Downloaded schema set (25 base aggregator files)
 
 `ServiceRoot`, `ComputerSystem`, `Chassis`, `Sensor`, `Power`, `Thermal`,
 `SessionService`, `AccountService`, `UpdateService`, `SoftwareInventory`,
 `EventService`, `Manager`, `LogService`, `EthernetInterface`, `TaskService`,
-`MessageRegistry`, `Battery`, `BatteryMetrics`. Each bare `<Name>.json` is the
+`MessageRegistry`, `Battery`, `BatteryMetrics`, `EventDestination`,
+`VirtualMedia`. Each bare `<Name>.json` is the
 DMTF "latest" aggregator that
 `$ref`s the newest versioned definitions; SHA-256 hashes are listed in the
 run notes in `automation-tracking.md`.
+
+DOCS-24 (2026-10-24) closed the last two **EMU-2-pinned non-client-mapped**
+corpus gaps: `EventDestination` (the 4 `Subscriptions` members the event
+pin reads) and `VirtualMedia` (the CD1/Floppy1 boot-media surface the Boot/
+Links pin reads). Both mirror as aggregator + **mockup-served** version +
+**newest** version + collection type — 8 files / 194,278 bytes total, external
+corpus only (neither family is client-mapped, so no fixture duty; the
+corpus-invariant test skips them by design).
 
 DOCS-21 (2026-10-24) closed the **Battery** corpus gap the EMU-2 battery pins
 (EMU 48→50) exposed: `Battery.json` + `Battery.v1_2_2.json` (the

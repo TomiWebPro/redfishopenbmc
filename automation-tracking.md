@@ -3120,3 +3120,78 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **94** (93 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 19:25 — DOCS (EventDestination + VirtualMedia corpus mirror) + UI-2 router fallback
+
+- **Baseline:** analyze 0; tests 343 passed / 1 skipped; starting commit 1108b55
+  (branch `main` ahead 95 of origin); issues validate OK; working tree clean; no
+  stash, no crashed-run leftovers.
+- **Primary work:** DOCS per alternation (last substantive runs: DOCS 17:38 →
+  EMU 18:40; DOCS due). The EMU-2 pins read two published types outside the 33
+  client-mapped families — `#EventDestination.v1_14_0.EventDestination` (the
+  four `Subscriptions` members: Redfish/SNMPv3/SMTP-OEM/SyslogTCP transports,
+  DOCS-7 bed for #019) and `#VirtualMedia.v1_6_3.VirtualMedia` (the system
+  boot-media read surface: CD1 Applet + Floppy1 URI, #028 input) — but the
+  external corpus had **no schemas for either family**. DOCS-24 mirrored both
+  as aggregator + **mockup-served** version + **newest** published version +
+  collection type (the DOCS-12/13/19/20/21/23 "newest + served" pair
+  precedent): 8 files / 194,278 bytes total, inside the DOCS-6 budget, into
+  `documentations/external/redfish/schemas/v1/` only (neither family is
+  client-mapped → no fixture duty; the corpus-invariant family list untouched).
+  Delta audit (additive-only): `EventDestination.v1_14_0`→`v1_17_1` adds
+  BackupDestinations/Certificates/ClientCertificates/EventFormatType/
+  HeartbeatIntervalMinutes/HttpHeaders/OEM*/OriginResources/SendHeartbeat/
+  Severities/SubordinateResources/SyslogFilters/VerifyCertificate (+Actions);
+  `VirtualMedia.v1_6_3`→`v1_7_0` adds Certificates/EjectPolicy/EjectTimeout/
+  HTTPHeaders/Password/Status/TransferMethod/TransferProtocolType/UserName
+  (+Actions) — the `Password`/`UserName` additions are a #028 boot-media
+  security note (never read back). Every EMU-2-pinned field is present in the
+  served versions → **no client code change**.
+- **Docs:** 8 DMTF schema files fetched 19:18 UTC from
+  `https://redfish.dmtf.org/schemas/v1/` (SHA-256s + sizes in the manifest);
+  manifest README updated (8 rows + aggregator-count note 23 → 25);
+  REQUIREMENTS.md DOCS-24 audit table + client-mapped decision (both families
+  stay NOT client-mapped); anchors re-verified 19:15–19:20 UTC: bmcweb master
+  `63a18f4e6188a77b713a8b22c8a95ab3d6c5a718` (still HEAD via GitHub API),
+  mockup pin `23d21f9a3610f6b6fbb71ffc941296b159a524d2` (still HEAD of `main`
+  via GitHub API), DSP0266 1.25.0 (hub link unchanged; 1.26.0 probe → 404),
+  schema index 200 (live curl). Freshness spot-check of the two new families:
+  newest on the live index are exactly the mirrored files.
+- **Emulator:** none this run (DOCS stream; no emulator code touched — the
+  corpus-invariant test list is unchanged, so the suite result is unaffected).
+- **Code/tests:** `lib/core/router/app_router.dart` — the GoRouter
+  `errorBuilder` route-not-found fallback converted from a bare
+  `Center(child: Text(...))` to the established UI-2 merged
+  `Semantics(container + excludeSemantics, label: 'Route not found: <uri>')`
+  node with `Icons.search_off_outlined` (one self-describing announcement; no
+  Retry — an unknown route is not an error; the URI is dynamic so the label
+  mirrors the visible text). New `test/core/router_test.dart` — +2 widget
+  tests (merged `bySemanticsLabel` node + visible text + icon, and no overflow
+  at 320 px via `addTearDown`). Suite 343 → **345**.
+- **UI:** the router not-found fallback was the **last bare-`Text` fallback
+  surface in the app** — every error/empty/loading/not-found state across
+  Dashboard/Sensors/Firmware/KVM/Power/Overview/SystemShell/SystemOverviewPage
+  and now the router layer uses the merged-semantics pattern. Remaining UI-2:
+  focus order + remaining non-card labels (recorded).
+- **Verification:** analyze 0; tests **345 passed / 1 skipped** (baseline 343 →
+  +2 widget); issues validate OK; `git diff --check` clean; secret scan clean
+  (Dart + docs prose + public DMTF schema JSONs — no credentials; the
+  EventDestination `SNMP` blocks in the schemas are property defs, not key
+  material). `dart format` applied to the 2 touched Dart files; drift in 25
+  unrelated files reverted via `git checkout --` to keep the diff on 8 new
+  schema files + README + REQUIREMENTS + app_router.dart + router_test.dart.
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** (expected) — the known
+  GitHub credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/GIT_TOKEN
+  env, no SSH key); local commit kept, not retried. Commits ahead of origin/main:
+  **95** before push attempt.
+- **Next:** 1) Push the queued local commits (96) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
+  login (set `expiresAt` from the discovered SessionService), re-auth on
+  `isExpired`, keep token/location from create headers only (the fixture echoes
+  Password in session bodies); 3) EMULATOR per alternation — candidates: re-run
+  the corpus-invariant crawl on future family additions, or pin a remaining
+  un-pinned surface (the EventDestination `SyslogFilters`/`Severities` and
+  VirtualMedia `TransferMethod` newest-schema fields are candidates only if a
+  family becomes client-mapped); #028 (BIOS-config editor) is the new P2
+  candidate with the exact fixture duty recorded in its issue file.
