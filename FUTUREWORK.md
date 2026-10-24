@@ -7,34 +7,24 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 08:15 (EMULATOR run — **chassis metrics +
-  subsystem contracts pinned live**: `#EnvironmentMetrics.v1_3_1` aggregate
-  telemetry (Temperature/Power/Fan with `DataSourceUri` → Sensors), the
-  `#ThermalSubsystem.v1_3_1` surface (Fans + FanRedundancy NPlusM +
-  `#ThermalMetrics.v1_3_1` Intake/Exhaust/Internal/Ambient summary), and the
-  `#PowerSubsystem.v1_1_1` surface (`#PowerSupply.v1_5_3` detail +
-  `#PowerSupply.Reset` target + Metrics link) — emulator 45 → **48**; the
-  #019 receiver / #006 power card can poll ONE aggregate resource; documented
-  negative: legacy `/Chassis/1U/Power` PowerSupplies reports `Health:
-  Warning` while the overview rollup reads ComputerSystem/Chassis Status;
-  **corpus gap found (DOCS-20):** the newly pinned families
-  (`EnvironmentMetrics.v1_3_1`, `ThermalSubsystem.v1_3_1`,
+- **Last updated:** 2026-10-24 10:30 (DOCS run — **DOCS-20 corpus closed**:
+  the 11 chassis-metrics/subsystem schemas the 08:15 EMULATOR pins reference
+  are now mirrored (`EnvironmentMetrics.v1_3_1`, `ThermalSubsystem.v1_3_1`,
   `ThermalMetrics.v1_3_1`, `PowerSubsystem.v1_1_1`, `PowerSupply.v1_5_3`,
-  `FanCollection`, `PowerSupplyCollection`) have NO versioned schema in the
-  fixture/mirror yet — mirror next DOCS run to restore the invariant);
-  UI-2 KVM empty state converted to the merged-semantics pattern (+2 widget
-  tests, suite 329 → 331); next P1: #015 (AuthManager)
-- **Current focus:** **chassis metrics + subsystem contracts pinned live
-  (2026-10-24 08:15, EMULATOR 45 → 48)** — `EnvironmentMetrics.v1_3_1`
-  (Temperature/Power/Fan `DataSourceUri` → Sensors), `ThermalSubsystem.v1_3_1`
-  (Fans + FanRedundancy NPlusM + ThermalMetrics summaries), and
-  `PowerSubsystem.v1_1_1` (`PowerSupply.v1_5_3` detail +
-  `#PowerSupply.Reset` target) — the aggregate telemetry shapes a #019
-  receiver or #006 power card consume; documented negative: legacy
-  `/Chassis/1U/Power` PowerSupplies `Health: Warning` vs the overview rollup
-  reading ComputerSystem/Chassis Status; **new corpus gap (DOCS-20):** the
-  pinned families lack versioned schemas in the fixture/mirror — mirror next
-  DOCS run; next P1: #015 (AuthManager) — `expiryFromService` + the Sessions
+  `PowerSupplyMetrics.v1_1_1`, mockup-served `Fan.v1_5_1`, `FanCollection`,
+  `PowerSupplyCollection`, `Redundancy.json` → `Redundancy.v1_7_1` chain),
+  160,101 bytes, SHA-256s + manifest rows verified, property audit complete —
+  the "every published `@odata.type` for a client-relevant family has a
+  versioned schema in the fixture" invariant restored); UI-2 Dashboard empty
+  state converted to the merged-semantics pattern (+1 widget test, suite
+  331 → 332); next P1: #015 (AuthManager)
+- **Current focus:** **DOCS-20 corpus closed (2026-10-24 10:30, DOCS)** — the
+  schemas behind the emulator-pinned chassis metrics/subsystem surface are
+  now mirrored in both `documentations/external/redfish/schemas/v1/` and
+  `test/fixtures/redfish/schemas/` (11 files, 160,101 bytes; every pinned
+  field verified present — no client code change needed); invariant restored;
+  UI-2 got the Dashboard "No systems yet" empty state (icon + merged
+  semantics); next P1: #015 (AuthManager) — `expiryFromService` + the Sessions
   pin are ready, wire the discovered SessionService body into login + re-auth
   on `isExpired`; #022/#016: `ResetActionInfo` ActionInfo resource crawl
   (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only the
@@ -277,19 +267,17 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       files; anchors re-verified: bmcweb `fbb307a`, mockup `23d21f9a`,
       DSP0266 1.25.0, schema index 200)
 
-- [ ] **DOCS-20** Mirror the newly pinned chassis-metrics/subsystem families
+- [x] **DOCS-20** Mirror the newly pinned chassis-metrics/subsystem families
       (emulator 45 → 48, 2026-10-24) into
       `documentations/external/redfish/schemas/v1/` **and**
       `test/fixtures/redfish/schemas/`: `EnvironmentMetrics.v1_3_1`,
       `ThermalSubsystem.v1_3_1`, `ThermalMetrics.v1_3_1`,
       `PowerSubsystem.v1_1_1`, `PowerSupply.v1_5_3`, `FanCollection`,
-      `PowerSupplyCollection` — the "every published `@odata.type` for a
-      client-relevant family has a versioned schema in the fixture" invariant
-      now covers the emulator-pinned surfaces (the 2026-10-24 EMULATOR run
-      pinned their wire contracts live but did not mirror the schemas —
-      EMULATOR mode stays one workstream). Source:
-      `https://redfish.dmtf.org/schemas/v1/<Name>.json`, keep inside the
-      DOCS-6 budget; verify SHA-256s + manifest rows.
+      `PowerSupplyCollection`, plus the mockup-served `Fan.v1_5_1`,
+      `PowerSupplyMetrics.v1_1_1`, and the `Redundancy.json` →
+      `Redundancy.v1_7_1` citation chain. **Done (run 2026-10-24,
+      11 files / 160,101 bytes; SHA-256s + manifest rows verified; property
+      audit complete; commit pending).**
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across
@@ -690,6 +678,14 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       spinner + 'Starting…' and is disabled, re-enabling on success/failure
       (the UI-5 power-dialog busy-state precedent) — +3 controller tests +
       2 widget tests (busy state + failure re-enable);
+      **DashboardView empty state ("No systems yet. Tap + to add a BMC.")
+      done 2026-10-24 — the last bare-`Text` empty surface on the dashboard
+      now renders the established pattern: icon (`Icons.dns_outlined`) +
+      visible text inside a `Semantics(container + excludeSemantics)`
+      merged node (one self-describing announcement; no Retry — the empty
+      list is not an error), +1 widget test asserts the merged label +
+      visible text + icon; existing 320/800/1300 no-overflow tests unchanged
+      (the empty state is a `Center` + `mainAxisSize.min` column);
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

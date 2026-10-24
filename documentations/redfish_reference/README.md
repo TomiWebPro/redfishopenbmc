@@ -69,6 +69,17 @@ source code. The raw API payloads that back every example here live under
     `MessageRegistry.v1_9_0.json`. Every `@odata.type` the pinned mockup
     publishes for a client-mapped family now has a versioned schema in this
     fixture folder.
+  - DOCS-20 additions (2026-10-24): the **chassis-metrics / subsystem** family
+    defs the EMU-2 chassis-contracts pins (EMU 45→48) reference were added to
+    `test/fixtures/redfish/schemas/` (and to the external corpus):
+    `EnvironmentMetrics.v1_3_1.json`, `ThermalSubsystem.v1_3_1.json`,
+    `ThermalMetrics.v1_3_1.json`, `PowerSubsystem.v1_1_1.json`,
+    `PowerSupply.v1_5_3.json`, `PowerSupplyMetrics.v1_1_1.json`,
+    `Fan.v1_5_1.json` (mockup-served member type), `FanCollection.json`,
+    `PowerSupplyCollection.json`, plus the `Redundancy.json` →
+    `Redundancy.v1_7_1.json` chain the FanRedundancy groups cite. The
+    "every `@odata.type` published for a client-relevant family has a
+    versioned schema in the fixture" invariant is restored.
 
 ## Gaps / notes
 - `SimpleUpdate` has **no standalone JSON schema** — it is an Action defined inside

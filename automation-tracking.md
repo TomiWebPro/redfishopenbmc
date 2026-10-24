@@ -2462,3 +2462,71 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **78** (77 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 10:40 — DOCS (DOCS-20 corpus mirror) + UI-2 Dashboard empty state
+
+- **Baseline:** analyze 0; tests 331 passed / 1 skipped; starting commit 02436b5
+  (branch `main` ahead 78 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** DOCS (alternation: EMULATOR 08:15 → DOCS next). Closed the
+  **DOCS-20 corpus gap** the 08:15 EMULATOR chassis-contracts pins exposed —
+  the newly pinned aggregate-telemetry families had no versioned schema in the
+  fixture/mirror. Mirrored **11 files / 160,101 bytes** (inside the DOCS-6
+  budget) from `https://redfish.dmtf.org/schemas/v1/` into
+  `documentations/external/redfish/schemas/v1/` **and**
+  `test/fixtures/redfish/schemas/` (fixture copies byte-identical via `cmp`):
+  `EnvironmentMetrics.v1_3_1` (Temp/Power/Fan excerpts with DataSourceUri),
+  `ThermalSubsystem.v1_3_1` (Fans + FanRedundancy + ThermalMetrics links),
+  `ThermalMetrics.v1_3_1` (TemperatureSummaryCelsius Intake/Exhaust/Internal/
+  Ambient), `PowerSubsystem.v1_1_1`, `PowerSupply.v1_5_3` (+
+  `#PowerSupply.Reset` action), `PowerSupplyMetrics.v1_1_1` (the Metrics
+  target), the **mockup-served** `Fan.v1_5_1` (Fans collection member type),
+  `FanCollection`, `PowerSupplyCollection`, plus the `Redundancy.json` →
+  `Redundancy.v1_7_1` chain the FanRedundancy groups cite (DOCS-14 precedent —
+  REQUIREMENTS.md citations must resolve to real mirror files).
+  **Property-delta audit:** every emulator-pinned field verified present in the
+  mirrored defs — EnvironmentMetrics excerpts `$ref` the `Sensor` excerpts
+  already mirrored in DOCS-19 (`Sensor.v1_8_1.json`), `FanRedundancy` items
+  `$ref` `Redundancy.v1_7_1.json#/definitions/RedundantGroup`
+  (MinNeededInGroup/MaxSupportedInGroup/RedundancyGroup/RedundancyType),
+  thermal summaries are `SensorExcerpt` refs, PSU Model/Manufacturer/
+  FirmwareVersion/LineInputStatus/Metrics + `#PowerSupply.Reset` all present —
+  **no client code change needed**. Invariant restored: every `@odata.type`
+  the pinned mockup publishes for a client-relevant family now has a versioned
+  schema in the fixture (the 36 remaining un-mirrored published types —
+  Certificate/Key/SecureBoot/USBController/etc. — are mockup-only breadth, not
+  client-mapped families; documented in the audit section).
+- **Docs:** 11 files fetched (each verified 200 first), SHA-256s recorded;
+  manifest +11 rows; REQUIREMENTS.md "Last audited" updated + DOCS-20 audit
+  table + corpus-note closed; `documentations/redfish_reference/README.md`
+  +DOCS-20 provenance. All upstream anchors re-verified (2026-10-24): bmcweb
+  `fbb307a`, mockup pin `23d21f9a`, DSP0266 1.25.0, schema index 200.
+- **Emulator:** none this run (DOCS alternation; corpus-only + reference docs).
+- **Code/tests:** no production code change for the primary work. UI: see below.
+- **UI:** UI-2 increment — the **DashboardView empty state** ("No systems yet.
+  Tap + to add a BMC.") was the last bare-`Text` empty surface on the
+  dashboard. A state with zero systems now renders the established pattern:
+  icon (`Icons.dns_outlined`) + visible text inside a
+  `Semantics(container: true, excludeSemantics: true, label: 'No systems yet.
+  Tap + to add a BMC.')` merged node — one self-describing announcement. No
+  Retry: the empty list is not an error (the KVM/Sensors empty-state
+  precedent). +1 widget test in `dashboard_view_test.dart`: merged semantics
+  label + visible text + icon render. Existing 320/800/1300 no-overflow tests
+  unchanged (the empty state is a `Center` + `mainAxisSize.min` column).
+- **Verification:** analyze 0; tests **332 passed / 1 skipped** (baseline 331 →
+  +1 widget); issues validate OK; `git diff --check` clean; secret scan clean
+  (docs prose + schema JSON only, no tokens). `dart format` on the 2 touched
+  Dart files only — no tree-wide drift.
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** — the known GitHub
+  credential blocker (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/
+  GIT_TOKEN env, no SSH key); local commit kept, not retried. Commits ahead of
+  origin/main: **78** before push attempt.
+- **Next:** 1) Push the queued local commits (79) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
+  login (set `expiresAt` from the discovered SessionService), re-auth on
+  `isExpired`, keep token/location from create headers only (the fixture
+  echoes Password in session bodies); 3) EMULATOR — the alternation queue is
+  DOCS → EMULATOR next; candidates: pin the `#PowerSupply.Reset` action
+  round-trip, the PowerSubsystem `Batteries` surface, or re-verify the corpus
+  invariant against a fresh published-types crawl.

@@ -178,6 +178,46 @@ void main() {
           find.bySemanticsLabel(RegExp('^Health: No systems')), findsOneWidget);
       expect(find.text('No systems'), findsWidgets);
     });
+
+    testWidgets(
+        'empty state renders icon + visible text inside a merged '
+        'semantics node (UI-2)', (tester) async {
+      final SystemManager manager = SystemManager(
+        repository: InMemoryProfileRepository(),
+        storage: InMemoryStorage(),
+      );
+      manager.state = const SystemState(
+        systems: <String, SystemHandle>{},
+        selectedId: null,
+      );
+      final GoRouter router = GoRouter(
+        initialLocation: '/systems',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/systems',
+            builder: (BuildContext c, GoRouterState s) => const DashboardView(),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [systemManagerProvider.overrideWith((ref) => manager)],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The icon + visible text announce as ONE merged node.
+      expect(
+        find.bySemanticsLabel('No systems yet. Tap + to add a BMC.'),
+        findsOneWidget,
+        reason: 'the empty state must announce as a single merged node',
+      );
+      // The visible text is still present for sighted users.
+      expect(find.text('No systems yet. Tap + to add a BMC.'), findsOneWidget);
+      expect(find.byIcon(Icons.dns_outlined), findsOneWidget);
+    });
   });
 
   group('DashboardView — responsive layout (UI-3)', () {

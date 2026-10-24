@@ -47,9 +47,25 @@ class DashboardView extends ConsumerWidget {
                 ),
               ),
             if (state.systems.isEmpty)
-              const SliverFillRemaining(
+              SliverFillRemaining(
                 child: Center(
-                  child: Text('No systems yet. Tap + to add a BMC.'),
+                  child: Semantics(
+                    container: true,
+                    excludeSemantics: true,
+                    label: 'No systems yet. Tap + to add a BMC.',
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(
+                          Icons.dns_outlined,
+                          size: 48,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 12),
+                        Text('No systems yet. Tap + to add a BMC.'),
+                      ],
+                    ),
+                  ),
                 ),
               )
             else

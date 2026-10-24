@@ -6,7 +6,24 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (DOCS-19 run — closed the "served-version" corpus gap
+Last audited: 2026-10-24 (DOCS-20 run — closed the **chassis-metrics /
+subsystem** corpus gap the EMU-2 chassis-contracts pins (2026-10-24, EMU 45→48)
+exposed: mirrored the versioned schemas for the newly pinned families into
+`documentations/external/redfish/schemas/v1/` AND
+`test/fixtures/redfish/schemas/` — `EnvironmentMetrics.v1_3_1`,
+`ThermalSubsystem.v1_3_1`, `ThermalMetrics.v1_3_1`, `PowerSubsystem.v1_1_1`,
+`PowerSupply.v1_5_3`, `PowerSupplyMetrics.v1_1_1`, `Fan.v1_5_1` (the
+mockup-served Fan member type), `FanCollection`, `PowerSupplyCollection`, plus
+the `Redundancy.json` → `Redundancy.v1_7_1` chain the FanRedundancy groups cite
+(the "every published `@odata.type` for a client-relevant family has a versioned
+schema in the fixture" invariant; 11 files / 160,101 bytes, inside DOCS-6).
+Every emulator-pinned field verified present in the mirrored defs:
+EnvironmentMetrics Temp/Power/Fan excerpts (`SensorExcerpt` refs →
+`Sensor.v1_8_1`), ThermalSubsystem Fans + FanRedundancy (`RedundantGroup`
+MinNeededInGroup/MaxSupportedInGroup via Redundancy.v1_7_1), ThermalMetrics
+Intake/Exhaust/Internal/Ambient, PowerSupply Model/Manufacturer/
+FirmwareVersion/LineInputStatus + `#PowerSupply.Reset` — no code change needed).
+Prior: DOCS-19 run — closed the "served-version" corpus gap
 for the eight client-mapped families DOCS-2 had refreshed to **newest** only:
 mirrored the **mockup-served** `@odata.type` versions the pinned `23d21f9a`
 fixture publishes — `Sensor.v1_8_1` (42/42 sensors),
@@ -320,13 +337,15 @@ client-relevant families.
    embedded PowerSupplies member reports `Status.Health == 'Warning'` while
    the current OverviewService rollup reads ComputerSystem/Chassis Status —
    a future #006/#019 improvement should surface PSU health from the legacy
-   Power surface or the subsystem PowerSupplies. **Corpus note (DOCS-20):**
-   the newly pinned families have NO versioned schema in the fixture/mirror
-   yet (`EnvironmentMetrics.v1_3_1`, `ThermalSubsystem.v1_3_1`,
-   `ThermalMetrics.v1_3_1`, `PowerSubsystem.v1_1_1`, `PowerSupply.v1_5_3`,
-   `FanCollection`, `PowerSupplyCollection`) — mirror them next DOCS run to
-   restore the "every published `@odata.type` for a client-relevant family has
-   a versioned schema in the fixture" invariant.
+   Power surface or the subsystem PowerSupplies. **Corpus closed (DOCS-20,
+   2026-10-24):** the newly pinned families now have their versioned schemas
+   in the fixture AND mirror (`EnvironmentMetrics.v1_3_1`,
+   `ThermalSubsystem.v1_3_1`, `ThermalMetrics.v1_3_1`,
+   `PowerSubsystem.v1_1_1`, `PowerSupply.v1_5_3`,
+   `PowerSupplyMetrics.v1_1_1`, `Fan.v1_5_1`, `FanCollection`,
+   `PowerSupplyCollection`, plus the `Redundancy` chain the FanRedundancy
+   groups cite) — the "every published `@odata.type` for a client-relevant
+   family has a versioned schema in the fixture" invariant restored.
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)
 
@@ -751,3 +770,32 @@ schema index 200, registries path 200; each of the 9 mirrored files fetched
 200 from `https://redfish.dmtf.org/schemas/v1/`. New bytes this run: 560,665
 total (102,125+145,755+75,981+89,936+22,621+33,248+52,887+10,151+27,961) —
 inside the DOCS-6 budget.
+
+## DOCS-20 — chassis-metrics / subsystem corpus mirror (2026-10-24)
+
+Closed the corpus gap the EMU-2 chassis-contracts pins (2026-10-24, EMU 45→48)
+exposed: the newly pinned aggregate-telemetry families had **no versioned
+schema** in the fixture/mirror. Mirrored 11 files (160,101 bytes total, inside
+DOCS-6) into `documentations/external/redfish/schemas/v1/` **and**
+`test/fixtures/redfish/schemas/`:
+
+| Family | File | Served/pinned evidence | Client impact |
+|---|---|---|---|
+| `EnvironmentMetrics` | `EnvironmentMetrics.v1_3_1.json` | the EMU chassis pin reads `/Chassis/1U/EnvironmentMetrics` (`TemperatureCelsius`/`PowerWatts`/`PowerLimitWatts`/`FanSpeedsPercent`, every excerpt carrying `DataSourceUri`) | none — excerpts are `Sensor` `SensorExcerpt`/`SensorPowerExcerpt`/`SensorFanArrayExcerpt` refs, all present in the already-mirrored `Sensor.v1_8_1.json` (DOCS-19) |
+| `ThermalSubsystem` | `ThermalSubsystem.v1_3_1.json` | EMU pin reads Fans collection + FanRedundancy NPlusM groups + ThermalMetrics link | none — `FanRedundancy` items `$ref` `Redundancy.json#/definitions/RedundantGroup` (resolved below); `Fans` `$ref` FanCollection; `ThermalMetrics` `$ref` ThermalMetrics.json |
+| `ThermalMetrics` | `ThermalMetrics.v1_3_1.json` | EMU pin reads `TemperatureSummaryCelsius` Intake/Exhaust/Internal/Ambient with DataSourceUri | none — the four summary props are `SensorExcerpt` refs |
+| `PowerSubsystem` | `PowerSubsystem.v1_1_1.json` | EMU pin reads PowerSupplies collection | none |
+| `PowerSupply` | `PowerSupply.v1_5_3.json` | EMU pin reads Bay1 detail: Model/Manufacturer/FirmwareVersion/LineInputStatus/Metrics + `#PowerSupply.Reset` target | none — all present; `#PowerSupply.Reset` is an action in `definitions/Actions` |
+| `PowerSupplyMetrics` | `PowerSupplyMetrics.v1_1_1.json` | the PSU detail's `Metrics` link target (`#PowerSupplyMetrics.v1_1_1.PowerSupplyMetrics`) | none |
+| `Fan` | `Fan.v1_5_1.json` | **mockup-served** member type — the Fans collection members publish `#Fan.v1_5_1.Fan` | none |
+| `FanCollection` | `FanCollection.json` | `ThermalSubsystem.Fans` link target (`#FanCollection.FanCollection`) | none |
+| `PowerSupplyCollection` | `PowerSupplyCollection.json` | `PowerSubsystem.PowerSupplies` link target | none |
+| `Redundancy` (chain) | `Redundancy.json` + `Redundancy.v1_7_1.json` | `ThermalSubsystem.FanRedundancy` → `RedundantGroup` (MinNeededInGroup/MaxSupportedInGroup/RedundancyGroup/RedundancyType) | none — DOCS-14 precedent: source citations resolve to real mirror files |
+
+All upstream anchors re-verified (2026-10-24): bmcweb `fbb307a` (unchanged),
+mockup pin `23d21f9a` (unchanged), DSP0266 1.25.0 (unchanged), schema index
+200; each of the 11 mirrored files fetched 200 from
+`https://redfish.dmtf.org/schemas/v1/`. New bytes this run: 160,101 total
+(17,008+10,142+19,523+10,756+34,997+17,833+17,544+4,936+5,251+2,890+19,221) —
+inside the DOCS-6 budget. Fixture copies byte-identical to the mirror (verified
+with `cmp`); SHA-256s recorded in the manifest.

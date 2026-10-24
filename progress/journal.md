@@ -2226,3 +2226,57 @@
 - none opened/closed this run. EMU-2 45 → 48 recorded; #007/#019/#006 got the
   chassis metrics + subsystem contracts pins + the PSU-health gap note; UI-2
   got the KVM empty-state increment; issues remain open.
+
+## 2026-10-24 — agent:redfish-automation — DOCS (DOCS-20) + UI-2 Dashboard empty state
+
+**Done:**
+- DOCS primary workstream (alternation: EMULATOR 08:15 → DOCS next). Closed the
+  DOCS-20 corpus gap: mirrored **11 files / 160,101 bytes** (inside DOCS-6)
+  into `documentations/external/redfish/schemas/v1/` AND
+  `test/fixtures/redfish/schemas/` (byte-identical via `cmp`) for the
+  chassis-metrics/subsystem families the 08:15 EMULATOR pins reference —
+  `EnvironmentMetrics.v1_3_1`, `ThermalSubsystem.v1_3_1`,
+  `ThermalMetrics.v1_3_1`, `PowerSubsystem.v1_1_1`, `PowerSupply.v1_5_3` (+
+  `#PowerSupply.Reset`), `PowerSupplyMetrics.v1_1_1`, mockup-served
+  `Fan.v1_5_1`, `FanCollection`, `PowerSupplyCollection`, and the
+  `Redundancy.json` → `Redundancy.v1_7_1` citation chain. Property-delta
+  audit: every pinned field present (excerpts resolve through
+  `Sensor.v1_8_1.json` DOCS-19; FanRedundancy → `RedundantGroup` in
+  `Redundancy.v1_7_1`) — no client code change. Invariant restored.
+- Manifest +11 rows (SHA-256s verified); REQUIREMENTS.md "Last audited" +
+  DOCS-20 audit table + corpus-note closed; `redfish_reference/README.md`
+  +DOCS-20 provenance. Anchors re-verified unchanged (bmcweb `fbb307a`,
+  mockup `23d21f9a`, DSP0266 1.25.0, schema index 200).
+- UI-2 increment: DashboardView "No systems yet" empty state converted to the
+  merged-semantics pattern — `Icons.dns_outlined` + visible text inside
+  `Semantics(container + excludeSemantics)` node, no Retry. +1 widget test
+  (merged label + visible text + icon). Suite 331 → 332.
+
+**Decisions:**
+- DOCS per alternation; within it, DOCS-20 exactly — the last open corpus gap,
+  with the emulator pins providing precise served-type + property evidence.
+- Included `Fan.v1_5_1` (mockup-served member type), `PowerSupplyMetrics
+  .v1_1_1` (PSU Metrics target), and the `Redundancy` chain beyond the
+  originally listed 7 — the invariant is "every published `@odata.type` for a
+  client-relevant family", and these are published + client-relevant. The 36
+  remaining un-mirrored published types (Certificate/Key/SecureBoot/
+  USBController/…) are mockup-only breadth — documented as out of scope in the
+  DOCS-20 audit table.
+- No production code change for the primary work (mirror + audit only, as
+  DOCS-19).
+- UI increment stayed pattern-consistent (icon + merged node, no Retry — an
+  empty list is not an error). No new dependencies, no TLS change.
+
+**Next:**
+- Push 79 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, persist token/location from create RESPONSE HEADERS
+  only.
+- EMULATOR next per alternation: pin the `#PowerSupply.Reset` round-trip, the
+  PowerSubsystem `Batteries` surface, or re-verify the corpus invariant against
+  a fresh published-types crawl.
+
+**Issues touched:**
+- none opened/closed this run. DOCS-20 done; REQUIREMENTS.md audit + trace
+  rows updated; UI-2 got the Dashboard empty-state increment; issues remain
+  open.
