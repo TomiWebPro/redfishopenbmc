@@ -201,7 +201,7 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 41 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 43 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -234,6 +234,21 @@ client-relevant families.
       JSON defining the 60 Base.* message templates (Message/Severity/
       NumberOfArgs) behind `RedfishError.code`/`firstMessage` (DSP0266 §8.6
       error responses + §11.4 message registries; #014 model),
+      **Sessions collection + Session resource contract (#015/#026, pinned
+      2026-10-24 03:5x)** — the Sessions collection is enumerable from the
+      discovered SessionService URI (members are session resources, never the
+      collection; pre-seeded `#Session.v1_7_1` for Administrator carries
+      Id/Name/Description/UserName and NO Password), and a **security-relevant
+      negative pin**: a session minted via POST resolves to a body that echoes
+      the login `Password` and lacks `@odata.type`/SessionType
+      (non-conformant — DSP0266 §13.3.4 Session has no Password property); the
+      #015 AuthManager must persist the token/location from the create
+      RESPONSE HEADERS and never read session-resource bodies for secrets;
+      **ResetType validation negative pin (#014/#022, pinned 2026-10-24)** —
+      the pinned mockup accepts ANY ResetType body value (Bogus returns 204
+      like a valid one), so the client's 400 `ResetTypeInvalid` path stays
+      unit-level and the UI must pre-validate against the advertised
+      allow-list,
       **OverviewService end-to-end hydration (#006: identity/health/power/
      processor-memory summaries/indicator-LED/leading-thermal), LogService +
      LogEntry collection incl. ClearLog action + `@odata.nextLink` pagination

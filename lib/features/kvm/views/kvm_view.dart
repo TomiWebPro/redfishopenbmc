@@ -56,6 +56,54 @@ class _KvmViewState extends ConsumerState<KvmView> {
     }
 
     final KvmUiState ui = ref.watch(kvmControllerProvider(widget.systemId));
+    final KvmController controller =
+        ref.read(kvmControllerProvider(widget.systemId).notifier);
+
+    // UI-2: a hard load failure (no consoles at all) renders as ONE merged
+    // semantics node in context ('Unable to load KVM consoles. <message>') —
+    // the established error-state pattern (OverviewView/SensorsView/
+    // FirmwareView). The Retry control stays a separate node.
+    if (ui.error != null && ui.consoles.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: 'Unable to load KVM consoles. ${ui.error}',
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(Icons.cloud_off_outlined,
+                        size: 40, color: Theme.of(context).colorScheme.outline),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Unable to load KVM consoles',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      ui.error!,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: () => controller.load(),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -85,14 +133,6 @@ class _KvmViewState extends ConsumerState<KvmView> {
           ),
         ),
         const SizedBox(height: 16),
-        if (ui.error != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Text(
-              ui.error!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
         if (ui.loading)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),

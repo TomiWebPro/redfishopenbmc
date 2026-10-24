@@ -7,30 +7,31 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 03:09 (DOCS run — **DOCS-17: session-lifetime
-  audit done**: DSP0266 §13.3.4.3 + mirrored
-  `SessionService.v1_2_0.json` pinned via `Session.expiryFromService` —
-  `SessionTimeout` inactivity TTL + `AbsoluteSessionTimeout`/
-  `AbsoluteSessionTimeoutEnabled` (v1_2_0) bound to the *earlier* deadline so
-  the client re-authenticates before the service kills the session; 6 unit
-  tests; the trace row corrected from overstated OK to Partial — AuthManager
-  wiring stays #015; UI-2 increment: FirmwareView error state merged semantics
-  label + separate Retry control (+1 widget test); suite 309 → 316; anchors
-  re-verified 01:07 UTC all unchanged); next P1: #015 (AuthManager) —
-  `expiryFromService` is ready, wire the discovered SessionService body into
-  login + re-auth on `isExpired`; DOCS-18 queued: mirror the DMTF Base
-  message-registry payload (`Base.1.5.0.json`, mockup-served) so the §8.6/§11.4
-  MessageRegistry rows cite a real mirror file; #022/#016: Annotation
-  allow-list fallback landed (16:05
-  run) — remaining: `ResetActionInfo` ActionInfo resource crawl (bmcweb-style
-  BMCs; NOT pinable on the DMTF mockup — it serves only the annotation form);
-  #018: query-capability surface + live `$expand` contract pinned (17:07) —
+- **Last updated:** 2026-10-24 04:01 (EMULATOR run — **EMU-2 41 → 43**:
+  Sessions collection + Session resource contract pinned live (#015/#026):
+  enumerable collection, pre-seeded conformant `#Session.v1_7_1` with no
+  Password, and the **security-relevant negative pin** that POST-created
+  session bodies echo the login `Password` and lack `@odata.type`/SessionType
+  — AuthManager must keep token/location from create headers only; plus the
+  ResetType negative pin: the mockup returns 204 for an invalid `ResetType`
+  (client pre-validates; 400 path stays unit-level); UI-2 increments:
+  PowerView inline error merged semantics + Retry (via refresh), KvmView
+  hard-load error full merged state + Retry (via load) — 4 new widget tests;
+  suite 316 → 320; emulator 43/43 via run_tests.sh); next P1: #015
+  (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the
+  discovered SessionService body into login + re-auth on `isExpired`;
+  DOCS-18 queued: mirror the DMTF Base message-registry payload
+  (`Base.1.5.0.json`, mockup-served) so the §8.6/§11.4 MessageRegistry rows
+  cite a real mirror file; #022/#016: Annotation allow-list fallback landed
+  (16:05 run) — remaining: `ResetActionInfo` ActionInfo resource crawl
+  (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only the
+  annotation form and now provably ignores ResetType values); #018:
+  query-capability surface + live `$expand` contract pinned (17:07) —
   remaining: build the lightweight discovery pass + the cache fixes
-- **Current focus:** **DOCS-17 session-lifetime pin (2026-10-24): the
-  §13.3.4.3 timeout contract is now model-level pinned
-  (`Session.expiryFromService`) — the last overstated "OK" trace row is
-  corrected to Partial and the #015 AuthManager has its expiry primitive
-  ready**; next P1: #015 (AuthManager) —
+- **Current focus:** **Sessions/Session-resource contract pinned live
+  (2026-10-24): the #015 AuthManager has the session enumeration shape + the
+  security rule (never read session bodies for secrets — the fixture echoes
+  the password)**; next P1: #015 (AuthManager) —
   emulator
   pins the full auth
   contract + the Session/ManagerAccount/Role schemas are mirrored
@@ -316,7 +317,19 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       §8.6/§11.4 error surface for the #014 model; also re-verified the reset
       action returns 204 No Content with NO task-monitor Location header and
       the 404 path closes the connection without a body — the
-      GET-on-monitor/error-envelope seams stay unit-level)**)
+      GET-on-monitor/error-envelope seams stay unit-level)** → **43 tests
+      (Sessions collection + Session resource contract pinned 2026-10-24 04:01:
+      the collection is enumerable from the discovered SessionService URI —
+      members are session resources, never the collection; the pre-seeded
+      `#Session.v1_7_1` (Administrator) carries Id/Name/Description/UserName
+      and NO Password, while a POST-created session body ECHOES the login
+      Password and lacks @odata.type/SessionType — the #015/#026 security rule:
+      AuthManager persists the token/location from the create RESPONSE HEADERS,
+      never reads session-resource bodies for secrets (DSP0266 §13.3.4 Session
+      has no Password property); also pinned: POST Reset with an invalid
+      `ResetType` returns 204 exactly like a valid one — the mockup does not
+      validate the body, so the `ResetTypeInvalid` 400 path stays unit-level
+      (#014/#022))**)
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -331,7 +344,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       unit fixtures, so EMU-3 is effectively complete; **probed 2026-10-23
       18:36: the mockup without `-u` accepts ANY credentials — `POST Sessions`
       with a wrong password returns 204, so the 401 bad-login error-mapping
-      path also stays unit-level (consistent with EMU-5)**)
+      path also stays unit-level (consistent with EMU-5)**;
+      **probed 2026-10-24 04:01: the mockup accepts ANY `ResetType` body value
+      — `ResetType: "Bogus"` returns 204 like a valid one, so the 400
+      `ResetTypeInvalid` path stays unit-level too; the UI must pre-validate
+      against the advertised allow-list (it does)**)
 - [x] **EMU-4** Add `tool/emulator/run_tests.sh` that starts the server, waits for
       health, runs the integration tests, and always stops the server via `trap`.
       Pin the emulator commit and document it.
@@ -370,7 +387,14 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       lockout/password-policy fields + Roles link, Roles collection (3
       predefined roles with AssignedPrivileges/OemPrivileges), ManagerAccount
       detail (AccountTypes/PasswordChangeRequired/Locked/Enabled/Links.Role/
-      ChangePassword target + Password masked on the wire))
+      ChangePassword target + Password masked on the wire);
+      **Sessions collection + Session resource contract pinned live 2026-10-24
+      04:01** — collection enumerable (members = session resources), pre-seeded
+      `#Session.v1_7_1` (Administrator, no Password); **security rule pinned:
+      POST-created session bodies echo the login `Password` and lack
+      `@odata.type`/SessionType — AuthManager persists token/location from the
+      create RESPONSE HEADERS and never reads secrets back from session
+      resources**)
 - [x] **#027** Verify the Flutter toolchain issue is stale; close it with evidence
       if `flutter analyze`/`flutter test` work, otherwise fix it.
       (run 2026-10-22 — closed with evidence: `~/flutter/bin/flutter` on PATH,
@@ -564,6 +588,21 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       established error-state pattern), the new Retry button reloads via the
       controller (re-runs the failing service in tests), widget tests assert
       the merged label + visible texts + separately-announced Retry;
+      **PowerView inline error state merged semantics label (`Power control
+      failed. <message>`) + separate Retry `TextButton.icon` done 2026-10-24 —
+      Semantics(container + excludeSemantics) wraps the visible error text,
+      Retry re-reads the power state via the existing
+      `PowerController.refresh()` (clears the error on success), widget tests
+      assert the merged node + visible text + separately-announced Retry +
+      Retry re-runs the failing fetch;
+      **KvmView hard-load error state merged semantics label (`Unable to load
+      KVM consoles. <message>`) + Retry `FilledButton.icon` done 2026-10-24 —
+      the full icon + title + detail error state (the SensorsView pattern),
+      Retry reloads via `KvmController.load()`, and an error with zero
+      consoles now renders the error state instead of the bare error line
+      above 'No consoles found.', widget tests assert the merged node +
+      visible texts + separately-announced Retry + Retry re-runs the failing
+      service;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

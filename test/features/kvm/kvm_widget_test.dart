@@ -8,6 +8,7 @@ import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
 import 'package:redfishopenbmc/features/kvm/views/kvm_view.dart';
 import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
+import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
 /// A [KvmController] whose [load] is a no-op and whose state can be pre-seeded
@@ -18,6 +19,20 @@ class _StubController extends KvmController {
 
   @override
   Future<void> load() async {}
+}
+
+/// A [KvmService] double whose console fetch always fails (error-state tests).
+///
+/// Records fetch calls so a test can prove the Retry affordance re-runs the
+/// load through the controller's failing service instead of doing nothing.
+class _FailingKvmService extends KvmService {
+  _FailingKvmService() : super(client: null, systemId: 'bmc1');
+  int fetchCalls = 0;
+  @override
+  Future<List<KvmConsole>> fetchConsoles() async {
+    fetchCalls++;
+    throw const RedfishException(message: 'boom');
+  }
 }
 
 SystemHandle _handle({required bool kvm}) => SystemHandle(
@@ -207,6 +222,68 @@ void main() {
       expect(find.text('Remote KVM / Consoles'), findsOneWidget);
       expect(find.text('Consoles exposed by the system managers.'),
           findsOneWidget);
+    });
+
+    testWidgets(
+        'hard load error announces one merged semantics node + a separate '
+        'Retry control (UI-2)', (WidgetTester tester) async {
+      final KvmController controller =
+          KvmController(service: _FailingKvmService());
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The visible error text is preserved for sighted users…
+      expect(find.text('Unable to load KVM consoles'), findsOneWidget);
+      expect(find.text('boom'), findsOneWidget);
+      // …and the icon + title + detail announce as ONE merged semantics node.
+      expect(
+        find.bySemanticsLabel('Unable to load KVM consoles. boom'),
+        findsOneWidget,
+        reason: 'the hard error must announce in context, not as a bare '
+            'detached sentence',
+      );
+      // The Retry control is still separately announced (it is a control).
+      expect(find.bySemanticsLabel(RegExp('^Retry')), findsOneWidget);
+    });
+
+    testWidgets(
+        'tapping Retry re-runs the failing console load without crashing '
+        '(UI-2)', (WidgetTester tester) async {
+      final _FailingKvmService svc = _FailingKvmService();
+      final KvmController controller = KvmController(service: svc);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The initState post-frame callback performed the first load.
+      expect(svc.fetchCalls, 1);
+
+      await tester.tap(find.bySemanticsLabel(RegExp('^Retry')));
+      await tester.pumpAndSettle();
+
+      expect(svc.fetchCalls, 2,
+          reason: 'Retry must re-run the failing service through the '
+              'controller and must not crash');
+      // The load still fails, so the merged error node remains.
+      expect(
+        find.bySemanticsLabel('Unable to load KVM consoles. boom'),
+        findsOneWidget,
+      );
     });
   });
 

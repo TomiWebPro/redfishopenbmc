@@ -57,6 +57,23 @@ class _FailingPowerService extends PowerService {
   Future<PowerState> fetchPowerState() async => PowerState.on;
 }
 
+/// A [PowerService] double whose power-state fetch always fails (Retry tests).
+///
+/// Records fetch calls so a test can prove the Retry affordance re-runs the
+/// fetch through [PowerController.refresh] instead of doing nothing.
+class _FailingFetchPowerService extends PowerService {
+  _FailingFetchPowerService() : super(client: null, systemId: 'bmc1');
+  int fetchCalls = 0;
+  @override
+  Future<void> reset(ResetType type) async {}
+
+  @override
+  Future<PowerState> fetchPowerState() async {
+    fetchCalls++;
+    throw const RedfishException(message: 'boom');
+  }
+}
+
 SystemManager buildManager({
   required bool powerControl,
   List<String> supportedResetTypes = const <String>[
@@ -574,6 +591,92 @@ void main() {
         find.bySemanticsLabel(RegExp('^A, power Off')),
         findsOneWidget,
         reason: 'the card header must announce as a single merged node',
+      );
+    });
+  });
+
+  group('PowerView — error state semantics (UI-2)', () {
+    testWidgets(
+        'inline error announces one merged node + a separate Retry control',
+        (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      final PowerController controller = PowerController(
+        service: _FakePowerService(),
+        features: SystemFeatures(
+          systemId: 'bmc1',
+          powerControl: true,
+          supportedResetTypes: const <String>['On'],
+        ),
+        initialState: const PowerUiState(
+          powerState: PowerState.unknown,
+          error: 'reset was rejected',
+        ),
+        pollInterval: const Duration(seconds: 60),
+        pollTimeout: const Duration(milliseconds: 1),
+      );
+
+      await tester.pumpWidget(
+        harness(manager: manager, controller: controller),
+      );
+      await tester.pumpAndSettle();
+
+      // The visible error text is preserved for sighted users…
+      expect(find.text('reset was rejected'), findsOneWidget);
+      // …and announces as ONE merged semantics node (UI-2 pattern).
+      expect(
+        find.bySemanticsLabel('Power control failed. reset was rejected'),
+        findsOneWidget,
+        reason: 'the inline error must announce in context, not as a bare '
+            'detached sentence',
+      );
+      // The Retry control is still separately announced (it is a control).
+      expect(find.bySemanticsLabel(RegExp('^Retry')), findsOneWidget);
+    });
+
+    testWidgets('tapping Retry re-runs the power-state fetch without crashing',
+        (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      final _FailingFetchPowerService svc = _FailingFetchPowerService();
+      final PowerController controller = PowerController(
+        service: svc,
+        features: SystemFeatures(
+          systemId: 'bmc1',
+          powerControl: true,
+          supportedResetTypes: const <String>['On'],
+        ),
+        initialState: const PowerUiState(
+          powerState: PowerState.unknown,
+          error: 'boom',
+        ),
+        pollInterval: const Duration(seconds: 60),
+        pollTimeout: const Duration(milliseconds: 1),
+      );
+
+      await tester.pumpWidget(
+        harness(manager: manager, controller: controller),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel(RegExp('^Retry')));
+      await tester.pumpAndSettle();
+
+      expect(svc.fetchCalls, 1,
+          reason: 'Retry must re-run the failing fetch (controller.refresh) '
+              'and must not crash');
+      // The fetch still fails, so the merged error node remains.
+      expect(
+        find.bySemanticsLabel('Power control failed. boom'),
+        findsOneWidget,
       );
     });
   });

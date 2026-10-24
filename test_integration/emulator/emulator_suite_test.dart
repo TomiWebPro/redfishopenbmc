@@ -591,6 +591,25 @@ void main() {
         expect(e.retryable, isFalse);
       }
     });
+
+    test(
+        'reset action: the mockup does not validate ResetType — an invalid '
+        'value also returns 204 (#014/#022)', () async {
+      // The client's PowerService maps an invalid ResetType to a 400
+      // Base.1.0.ResetTypeInvalid error (unit-level). The pinned mockup
+      // ignores the request body for the Reset action: POSTing a bogus
+      // ResetType returns 204 exactly like a valid one, so the invalid-type
+      // 400 path can never be pinned against this fixture — the client must
+      // pre-validate against the advertised allow-list (it already does).
+      final Response<dynamic> bogus = await client.dio.post<dynamic>(
+        '/redfish/v1/Systems/437XR1138R2/Actions/ComputerSystem.Reset',
+        data: <String, dynamic>{'ResetType': 'Bogus'},
+      );
+      expect(bogus.statusCode, 204,
+          reason: '#022: the mockup accepts any ResetType value; the client '
+              'must pre-validate against the allow-list, never trust the '
+              'server to reject an invalid value');
+    });
   });
 
   group('emulator: session lifecycle (#015 / #017)', () {
@@ -686,6 +705,70 @@ void main() {
           reason: '#015: Session.expiresAt is derived from '
               'SessionService.SessionTimeout');
       expect(timeout as int, greaterThan(0));
+    });
+
+    test(
+        'sessions collection: enumerable + Session resource contract incl. the '
+        'fixture password-echo quirk (#015/#026)', () async {
+      // The AuthManager (#015) reasons about session reuse/expiry; this pins
+      // the shape it sees: the Sessions collection is enumerable from the
+      // discovered SessionService URI and its members are session RESOURCES,
+      // never the collection itself.
+      final Map<String, dynamic> root = await client.getJson('/redfish/v1/');
+      final String sessionServiceUri = (root['SessionService']
+          as Map<dynamic, dynamic>)['@odata.id'] as String;
+      final Map<String, dynamic> service =
+          await client.getJson(sessionServiceUri);
+      final String sessionsUri =
+          (service['Sessions'] as Map<dynamic, dynamic>)['@odata.id'] as String;
+
+      final Map<String, dynamic> collection = await client.getJson(sessionsUri);
+      expect(collection['@odata.type'],
+          startsWith('#SessionCollection.SessionCollection'));
+      expect(collection['Members@odata.count'], isA<int>());
+      expect(collection['Members@odata.count'] as int, greaterThanOrEqualTo(1));
+      final List<dynamic> members =
+          collection['Members'] as List<dynamic>? ?? <dynamic>[];
+      expect(members, isNotEmpty);
+      for (final dynamic member in members) {
+        final String id =
+            (member as Map<dynamic, dynamic>)['@odata.id'] as String;
+        expect(id, startsWith(sessionsUri),
+            reason: '#015: every collection member names a session resource, '
+                'never the collection itself');
+      }
+
+      // The mockup pre-seeds a conformant #Session.v1_7_1 resource for the
+      // Administrator user — the shape a session-reuse pass would enumerate.
+      final Map<String, dynamic> seeded =
+          await client.getJson('/redfish/v1/SessionService/Sessions/'
+              '1234567890ABCDEF');
+      expect(seeded['@odata.type'], startsWith('#Session.'));
+      expect(seeded['UserName'], 'Administrator');
+      expect(seeded.containsKey('Password'), isFalse,
+          reason: 'the pre-seeded session resource never exposes a password');
+
+      // SECURITY-RELEVANT NEGATIVE PIN: a session minted via POST resolves to
+      // a body that ECHOES the login password and lacks @odata.type/SessionType
+      // (non-conformant — DSP0266 §13.3.4 Session has no Password property).
+      // The AuthManager must persist the token/location from the create
+      // RESPONSE HEADERS and never read session-resource bodies for secrets
+      // (#015/#026).
+      final Response<dynamic> created = await client.dio.post<dynamic>(
+        sessionsUri,
+        data: <String, String>{'UserName': 'root', 'Password': 'calvin'},
+      );
+      final String? location = created.headers.value('Location') ??
+          created.headers.value('Content-Location');
+      expect(location, isNotNull);
+      final Map<String, dynamic> minted = await client.getJson(location!);
+      expect(minted['UserName'], 'root');
+      expect(minted.containsKey('Password'), isTrue,
+          reason: 'pinned mockup v1.3.0 echoes the POSTed password in the '
+              'session body; the client must never rely on this — headers only');
+      expect(minted.containsKey('@odata.type'), isFalse,
+          reason: 'POST-created sessions lack the @odata.type the pre-seeded '
+              'resources carry — feature detection must not require it');
     });
   });
 

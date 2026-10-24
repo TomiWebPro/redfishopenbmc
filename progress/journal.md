@@ -1893,3 +1893,78 @@
 **Issues touched:**
 - none opened/closed this run. DOCS-17 done + DOCS-18 queued in FUTUREWORK;
   UI-2 got the FirmwareView error-state increment; issues remain open.
+## 2026-10-24 — agent:redfish-automation — EMULATOR (Sessions/Session-resource contract + ResetType negative pins) + UI-2 PowerView/KVM error states
+
+**Done:**
+- EMULATOR primary workstream (alternation: DOCS 03:09 → EMULATOR next).
+  Pinned two more fixture surfaces live against the pinned mockup
+  (`23d21f9a`, fresh clone + checkout verified; suite 41 → **43 tests**,
+  green via `run_tests.sh`, trap cleanup verified, port 8443 closed):
+  1. **Sessions collection + Session resource contract (#015/#026):** the
+     collection is enumerable from the discovered SessionService URI
+     (`#SessionCollection.SessionCollection`, `Members@odata.count` ≥ 1,
+     members are session resources — never the collection); the pre-seeded
+     session is a conformant `#Session.v1_7_1` for Administrator
+     (Id/Name/Description/UserName, **no Password**). **Security-relevant
+     negative pin:** a POST-created session resolves to a body that ECHOES
+     the login `Password` and lacks `@odata.type`/SessionType
+     (non-conformant — DSP0266 §13.3.4 Session has no Password property).
+     Client rule recorded in REQUIREMENTS.md: the #015 AuthManager must
+     persist the token/location from the create RESPONSE HEADERS and never
+     read session-resource bodies for secrets.
+  2. **ResetType validation negative pin (#014/#022):** POST Reset with
+     `ResetType: "Bogus"` returns 204 exactly like a valid value — the
+     mockup does not validate the body; the client's 400
+     `ResetTypeInvalid` path stays unit-level and the UI must pre-validate
+     against the advertised allow-list (it already does).
+- REQUIREMENTS.md "Test platforms" updated: 41 → 43 tests + both negative
+  pins in prose (§13.3.4 citation for the Session quirk).
+- UI-2 increments (the last two bare error-`Text` views -> established merged
+  pattern):
+  - **PowerView inline error**: `Power control failed. <message>` merged
+    semantics node (container + excludeSemantics) + Retry `TextButton.icon`
+    wired to the existing `PowerController.refresh()` (clears the error on
+    success, mounted-guarded). +2 widget tests (`_FailingFetchPowerService`
+    double): merged node + visible text + separate Retry control; Retry
+    re-runs the failing fetch (fetchCalls == 1) without crashing.
+  - **KvmView hard-load error**: full error state (icon + title + detail) as
+    ONE merged node `Unable to load KVM consoles. <message>` + Retry
+    `FilledButton.icon` wired to `KvmController.load()`; error-with-zero-
+    consoles is now distinct from the clean empty state (the old code showed
+    a bare error line above "No consoles found."). +2 widget tests
+    (`_FailingKvmService` double, the SensorsView pattern): merged node +
+    visible texts + separate Retry control; Retry re-runs the failing load
+    (fetchCalls 1 → 2) without crashing.
+
+**Decisions:**
+- EMULATOR per alternation. Within it, chose the Sessions/Session-resource
+  contract because (a) it is the last un-pinned surface the top P1 #015
+  AuthManager must reason about (session reuse/expiry), and (b) the probe
+  surfaced a genuinely security-relevant fixture quirk (password echo) that
+  needs to be pinned so the client never reads secrets back — the
+  #015/#026 auth-surface note. The ResetType negative pin closes the
+  invalid-type question for #014/#022 with evidence (the mockup accepts any
+  value) — consistent with the recorded 204-no-Location / 404-no-body /
+  any-credentials negative findings.
+- No production code change besides the two UI increments (kept to the
+  established error-state pattern). Pinned the clock convention to local time
+  (CEST) as previous entries.
+- `dart format` on only the 5 touched Dart files; reverted the runbook §6
+  tree-wide formatter drift on 28 untouched files (formatting only) — per the
+  established repo practice recorded in prior runs.
+
+**Next:**
+- Push 70 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager — expiry + session-shape primitives are now pinned:
+  wire `Session.expiryFromService` into login (set `expiresAt` from the
+  discovered SessionService), re-auth when `isExpired` flips, persist the
+  token/location from create RESPONSE HEADERS only (the fixture echoes the
+  password in session bodies).
+- DOCS-18: mirror `Base.1.5.0.json` from the DMTF registries path; or #018
+  discovery pass on the pinned `$expand` contract; or start the
+  `ResetActionInfo` ActionInfo-resource crawl (#022/#016, bmcweb-style).
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 41 → 43 recorded; #015/#026/#014/#022
+  got new pins; UI-2 got the PowerView + KVM error-state increments; issues
+  remain open.

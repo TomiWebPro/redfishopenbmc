@@ -84,16 +84,38 @@ class PowerView extends ConsumerWidget {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 12),
-                if (ui.error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(
-                      ui.error!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+                if (ui.error != null) ...[
+                  // UI-2: the inline error announces as ONE merged node in
+                  // context ('Power control failed. <message>') — the
+                  // established error-state pattern (OverviewView/SensorsView/
+                  // FirmwareView). The visible text is preserved and the
+                  // Retry control keeps its own semantics node.
+                  Semantics(
+                    container: true,
+                    excludeSemantics: true,
+                    label: 'Power control failed. ${ui.error}',
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        ui.error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                       ),
                     ),
                   ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: TextButton.icon(
+                        onPressed: () => controller.refresh(),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                      ),
+                    ),
+                  ),
+                ],
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,

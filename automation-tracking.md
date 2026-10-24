@@ -2043,3 +2043,81 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **69** (68 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 04:01 — EMULATOR (Sessions/Session-resource contract + ResetType negative pin) + UI-2 PowerView/KVM error states
+
+- **Baseline:** analyze 0; tests 316 passed / 1 skipped; starting commit 401f808
+  (branch `main` ahead 70 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR (alternation: DOCS 03:09 → EMULATOR next). **EMU-2
+  count 41 → 43** — two new live pins against the pinned mockup `23d21f9a`
+  (verified clone at pin; server healthy on 8443; trap cleanup re-verified;
+  port closed after the run):
+  1. **Sessions collection + Session resource contract (#015/#026):** the
+     Sessions collection is enumerable from the discovered SessionService URI
+     (`#SessionCollection.SessionCollection`, `Members@odata.count` ≥ 1, every
+     member names a session resource — never the collection); the pre-seeded
+     session is a conformant `#Session.v1_7_1` (Id/Name/Description/UserName =
+     Administrator, **no Password**). **Security-relevant negative pin:** a
+     session minted via POST resolves to a body that **echoes the login
+     Password** and lacks `@odata.type`/`SessionType` (non-conformant —
+     DSP0266 §13.3.4 Session has no Password property). Client rule recorded:
+     the #015 AuthManager must persist the token/location from the create
+     RESPONSE HEADERS and never read session-resource bodies for secrets.
+  2. **ResetType validation negative pin (#014/#022):** POST Reset with
+     `ResetType: "Bogus"` returns **204 exactly like a valid value** — the
+     pinned mockup does not validate the body; the client's 400
+     `ResetTypeInvalid` path stays unit-level and the UI must pre-validate
+     against the advertised allow-list (it already does).
+  REQUIREMENTS.md "Test platforms" updated: 41 → 43 tests + both negative pins
+  in prose (with §13.3.4 citation).
+- **Docs:** no new downloads this run (corpus complete; DOCS-6 budget
+  untouched). No manifest/anchor changes (upstream pins re-verified implicitly
+  by the fresh clone checkout at `23d21f9a`).
+- **Emulator:** suite green 43/43 via `tool/emulator/run_tests.sh` (pin
+  unchanged); self-signed cert regenerated under /tmp (test-only TLS, EMU-6
+  intact); trap cleanup confirmed; port 8443 closed after the run.
+- **Code/tests:** `test_integration/emulator/emulator_suite_test.dart` +2
+  tests (Sessions collection/resource contract + ResetType 204 negative pin).
+  No other production code change besides the UI increments below.
+- **UI:** UI-2 increment — two remaining bare error-`Text` views upgraded to
+  the established error-state pattern:
+  - **PowerView inline error** now announces as ONE merged semantics node
+    (`Power control failed. <message>` via `Semantics(container: true,
+    excludeSemantics: true)` — visible text preserved) plus a **Retry**
+    `TextButton.icon` that re-reads the power state via the existing
+    `PowerController.refresh()` (idempotent, `mounted`-guarded, clears the
+    error on success). +2 widget tests: (1) merged node + visible text +
+    separately-announced Retry control; (2) tapping Retry re-runs the failing
+    `fetchPowerState` double (`_FailingFetchPowerService`, fetchCalls == 1)
+    without crashing.
+  - **KvmView hard-load error** (error with zero consoles) now renders the
+    full error state (cloud-off icon + title + detail) as ONE merged semantics
+    node (`Unable to load KVM consoles. <message>`), Retry `FilledButton.icon`
+    reloads via `KvmController.load()`; empty-with-error vs empty-clean are now
+    distinct (the old code rendered an error-colored line above "No consoles
+    found."). +2 widget tests mirroring the SensorsView pattern
+    (`_FailingKvmService` double): merged node + visible texts + separate
+    Retry control; tapping Retry increments fetchCalls (1 → 2) without
+    crashing.
+- **Verification:** analyze 0; tests 320 passed / 1 skipped (baseline 316 →
+  +4: the two PowerView + two KvmView widget tests; the emulator +2 only runs
+  under `REDFISH_EMULATOR_URL`); emulator suite 43/43 via run_tests.sh; issues
+  validate OK; `git diff --check` clean; secret scan clean. NOTE: the runbook
+  §6 tree-wide `dart format lib test test_integration tool` drifted 28
+  untouched files (formatting only); reverted those to HEAD — only the 6
+  intended files remain changed (0 formatting changes on the 5 touched Dart
+  files after the drift revert).
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** — same GitHub
+  credential blocker expected (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/
+  GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
+  Commits ahead of origin/main: **70** before push attempt.
+- **Next:** 1) Push the queued local commits (70) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — the Sessions/Session-resource pin
+  landed: wire `Session.expiryFromService` into login (set `expiresAt`),
+  re-auth on `isExpired`, keep token/location from create headers only (the
+  fixture echoes Password in session bodies — never read secrets back);
+  3) DOCS-18: mirror `Base.1.5.0.json` (DMTF registries path) so the §8.6/§11.4
+  MessageRegistry rows cite a real mirror file; or #018 discovery pass on the
+  pinned `$expand` contract.
