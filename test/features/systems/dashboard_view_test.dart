@@ -327,6 +327,62 @@ void main() {
       expect(find.byIcon(Icons.error_outline), findsNothing);
       expect(find.text('1 OK, 1 Warning'), findsOneWidget);
     });
+
+    testWidgets(
+        'error summary announces one merged node + a separate Retry control '
+        '(UI-2)', (tester) async {
+      await pumpFailed(tester, transient: false);
+
+      // The visible text is preserved for sighted users…
+      expect(find.text('2 systems could not be reached'), findsOneWidget);
+      // …and announces as ONE merged semantics node (UI-2 pattern).
+      expect(
+        find.bySemanticsLabel('Unable to reach 2 systems. Retry available.'),
+        findsOneWidget,
+        reason: 'the dashboard error summary must announce in context, not '
+            'as a bare detached sentence',
+      );
+      // The Retry control is still separately announced (it is a control).
+      expect(find.bySemanticsLabel(RegExp('^Retry')), findsOneWidget);
+    });
+
+    testWidgets('single-system failure uses the singular merged label (UI-2)',
+        (tester) async {
+      final SystemManager manager = SystemManager(
+        repository: InMemoryProfileRepository(),
+        storage: InMemoryStorage(),
+        loginOverride: (id, p) async => throw Exception('boom'),
+        discoverOverride: (c, id) async => SystemFeatures(systemId: id),
+        snapshotOverride: (c, id) async =>
+            const SystemSnapshot(health: Health.ok),
+      );
+      await manager.addProfile(const ConnectionProfile(id: 'bmc1', host: '1'));
+      await manager.connect('bmc1');
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/systems',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/systems',
+            builder: (BuildContext c, GoRouterState s) => const DashboardView(),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [systemManagerProvider.overrideWith((ref) => manager)],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 system could not be reached'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Unable to reach 1 system. Retry available.'),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel(RegExp('^Retry')), findsOneWidget);
+    });
   });
 }
 

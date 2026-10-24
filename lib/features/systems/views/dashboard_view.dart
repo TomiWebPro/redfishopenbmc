@@ -209,6 +209,12 @@ int _failedCount(SystemState state) => state.systems.values
 /// with a one-tap retry of every failed system. Reuses the FirmwareView
 /// error-card pattern (errorContainer card, icon, message, disabled-while-busy
 /// Retry action) so the dashboard never silently hides a down BMC.
+///
+/// UI-2: the summary announces as ONE merged semantics node ("Unable to reach
+/// N systems. Retry available.") so screen readers hear the failure with
+/// context, not a bare icon + disjoint text. The visible text stays for sighted
+/// users and the Retry button keeps its own control node (same pattern as
+/// FirmwareView/SensorsView error states).
 class _ErrorSummary extends StatelessWidget {
   const _ErrorSummary({required this.count, required this.onRetry});
 
@@ -230,14 +236,32 @@ class _ErrorSummary extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: <Widget>[
-              Icon(Icons.error_outline, color: scheme.onErrorContainer),
-              const SizedBox(width: 12),
+              // UI-2: the icon + visible text announce as ONE merged node, so
+              // a screen reader gets the failure in context instead of a bare
+              // detached sentence (the established error-state pattern). The
+              // Retry button stays OUTSIDE this container so it keeps its own
+              // control node.
               Expanded(
-                child: Text(
-                  count == 1
-                      ? '1 system could not be reached'
-                      : '$count systems could not be reached',
-                  style: TextStyle(color: scheme.onErrorContainer),
+                child: Semantics(
+                  container: true,
+                  excludeSemantics: true,
+                  label: count == 1
+                      ? 'Unable to reach 1 system. Retry available.'
+                      : 'Unable to reach $count systems. Retry available.',
+                  child: Row(
+                    children: <Widget>[
+                      Icon(Icons.error_outline, color: scheme.onErrorContainer),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          count == 1
+                              ? '1 system could not be reached'
+                              : '$count systems could not be reached',
+                          style: TextStyle(color: scheme.onErrorContainer),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 8),

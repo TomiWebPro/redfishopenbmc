@@ -1968,3 +1968,60 @@
 - none opened/closed this run. EMU-2 41 → 43 recorded; #015/#026/#014/#022
   got new pins; UI-2 got the PowerView + KVM error-state increments; issues
   remain open.
+## 2026-10-24 — agent:redfish-automation — DOCS (message-registry payload mirror + Base registry delta audit) + UI-2 Dashboard error summary
+
+**Done:**
+- DOCS primary workstream (alternation: EMULATOR 04:01 → DOCS next).
+  **DOCS-18 done** — the last corpus surface the emulator pins but the mirror
+  lacked is closed:
+  1. **`registries/Base.1.5.0.json` mirrored** (31,984 bytes, SHA-256
+     `c1026341…`) from the DMTF registries path — **byte-identical** to
+     `test/fixtures/redfish/dmtf_mockup/Registries/Base.1.5.0.json`, so the
+     EMU-2 MessageRegistry pin (60 Base.* templates) now resolves against a
+     real mirror file and the fixture payload is **proven authentic upstream**
+     (not fixture-generated).
+  2. **`registries/Base.1.24.0.json` mirrored** (newest published, 138,295
+     bytes, `@odata.type` `#MessageRegistry.v1_9_0`) + **delta audit**: adds
+     65 templates (60→125, none removed), rewords 39 shared Message strings,
+     but **`NumberOfArgs` stable for every shared key** — the
+     emulator-pinned argument-count contract holds across the newest registry.
+  3. REQUIREMENTS.md §8.6 error-envelope row + "Test platforms" MessageRegistry
+     pin now cite the mirror files; DOCS-18 audit section added (3 trace rows +
+     delta table + anchors note). Manifest +2 rows. New bytes 170,279, inside
+     DOCS-6 budget. All upstream anchors unchanged (bmcweb `fbb307a`, mockup
+     `23d21f9a`, DSP0266 1.25.0, schema index 200, registries path 200).
+- UI-2 increment: the **Dashboard `_ErrorSummary` card** now announces as ONE
+  merged semantics node (`Unable to reach N systems. Retry available.` —
+  `Semantics(container + excludeSemantics)` wraps only the icon+text row), the
+  Retry `TextButton` kept outside the container to retain its own control
+  node. +2 widget tests (merged node + visible text + separate Retry control;
+  singular form). UI-1 Retry behaviour unchanged.
+
+**Decisions:**
+- DOCS per alternation. Within it, chose DOCS-18 because (a) it is the last
+  queued DOCS item whose source the emulator already pins live (the
+  MessageRegistry contract 04:01 run) but the mirror lacks, and (b) the
+  byte-identical provenance check gives the strongest form of traceability —
+  the pinned mockup's error surface is now proven to be the authentic DMTF
+  publication.
+- Mirrored the newest `Base.1.24.0.json` too (138 KB, inside budget) so the
+  "newest vs mockup-served" delta is documented against real files, matching
+  the DOCS-12/13 newest+served precedent. Recorded that the client impact is
+  none (RedfishError treats code/message opaquely; a future MessageId resolver
+  would read the mirror).
+- UI increment kept to the established merged-semantics pattern with the Retry
+  control outside the excluded container (matches SensorsView/PowerView/KvmView
+  implementations). No new dependencies, no TLS change, no production behavior
+  change beyond accessibility semantics.
+
+**Next:**
+- Push 72 queued local commits once GitHub credentials are available.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login (set
+  `expiresAt` from the discovered SessionService), re-auth when `isExpired`
+  flips, persist token/location from create RESPONSE HEADERS only.
+- #018 discovery pass on the pinned `$expand` contract; or the
+  `ResetActionInfo` ActionInfo-resource crawl (#022/#016, bmcweb-style).
+
+**Issues touched:**
+- none opened/closed this run. DOCS-18 done; REQUIREMENTS.md rows updated;
+  UI-2 got the Dashboard error-summary increment; issues remain open.

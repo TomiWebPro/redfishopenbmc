@@ -6,7 +6,16 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-24 (DOCS-17 run — audited the DSP0266 §13.3.4.3
+Last audited: 2026-10-24 (DOCS-18 run — mirrored the **message-registry payload**
+the pinned mockup serves: `Base.1.5.0.json` from the DMTF registries path,
+**byte-identical** (SHA-256 `c1026341…`) to
+`test/fixtures/redfish/dmtf_mockup/Registries/Base.1.5.0.json` — proven
+authentic — plus the newest published `Base.1.24.0.json` (125 templates; 1.5.0
+→ 1.24.0 adds 65 templates + rewords 39 shared Message strings with
+`NumberOfArgs` stable, the emulator-pinned contract); the §8.6/§11.4 rows below
+now cite a real mirror file; UI-2 Dashboard `_ErrorSummary` card merged
+semantics `Unable to reach N systems` + separate Retry control).
+Prior: DOCS-17 run — audited the DSP0266 §13.3.4.3
 "Session lifetime" contract against the mirrored `SessionService.json` +
 `SessionService.v1_2_0.json` (DOCS-12); pinned the timeout contract with the
 new `Session.expiryFromService` model helper + 6 unit tests — `SessionTimeout`
@@ -93,7 +102,7 @@ Folded into code this run:
 | Feature detection "nothing is assumed": every UI feature gated on discovered capability | OpenBMC `Redfish.md`; DSP0266 §9.1 "Resources" (resource tree traversal) | `lib/redfish/discovery/feature_rules.dart` → `SystemFeatures` | `test/redfish/discovery/feature_rules_test.dart` | OK |
 | Conditional GET re-crawl via `If-None-Match` / ETag (304 short-circuit) | DSP0266 §6.5 "ETags" + §7.2 "GET (read requests)"; `ComputerSystem.json` | `lib/redfish/discovery/discovery_engine.dart` (`_fetchUri` etag map) | `test/redfish/discovery/discovery_engine_test.dart` | OK |
 | PATCH write support with `If-Match` / `@odata.etag` | DSP0266 §6.5 "ETags" (weak/strong validation, RFC7232); §7.6 "PATCH (update)" | **not implemented** | — | GAP: #016 |
-| Error envelope: `error.code`, `error.message`, `error.@Message.ExtendedInfo[]` | DSP0266 §8.6 "Error responses"; `redfish_error.md` | `lib/redfish/models/redfish_error.dart` | `test/redfish/models/models_test.dart` | OK (see #014: ExtendedInfo parsing hardening) |
+| Error envelope: `error.code`, `error.message`, `error.@Message.ExtendedInfo[]`; message templates from the published `Base.*` MessageRegistry | DSP0266 §8.6 "Error responses" + §11.4 "Message registries"; `redfish_error.md`; `registries/Base.1.5.0.json` + `registries/Base.1.24.0.json` (mirrored DOCS-18 — the 1.5.0 payload is byte-identical to the pinned mockup's, so the emulator-pinned `Base.*` templates resolve against a real mirror file) | `lib/redfish/models/redfish_error.dart` | `test/redfish/models/models_test.dart`; emulator MessageRegistry group pins the Base.1.5.0 discovery + template surface | OK (see #014: ExtendedInfo parsing hardening) |
 | Session auth: `POST SessionService/Sessions` → `X-Auth-Token`, session reuse | DSP0266 §13.3.4 "Redfish session login authentication"; `SessionService.json` + `SessionService.v1_2_0.json` (newest, DOCS-12) | `lib/redfish/client/auth_manager.dart` | `test/redfish/client/auth_manager_test.dart` | OK (see #015: discover session URI instead of hardcoding) |
 | Basic auth fallback | DSP0266 §13.3.3 "HTTP Basic authentication" | `lib/redfish/client/auth_manager.dart` | `test/redfish/client/auth_manager_test.dart` | OK |
 | No plaintext password at rest; token in secure storage | DSP0266 §13.3.4 + §13.2 "Sensitive data"; OpenBMC `Redfish.md` | `lib/core/storage/secure_storage.dart`, `AuthManager` | `test/redfish/client/auth_manager_test.dart` | OK |
@@ -606,3 +615,50 @@ firmware. <message>')` — the established OverviewView/SensorsView error-state
 pattern), with the Retry button keeping its own control node. One new widget
 test in `firmware_widget_test.dart` asserts the merged label + visible message
 text + separately-announced Retry control.
+
+## DOCS-18 — MessageRegistry payload mirror + Base registry delta audit (2026-10-24)
+
+Closed the last corpus gap the emulator pins but the mirror lacked: the
+**message-registry payload** behind the `MessageRegistryFile.Location[0].Uri`
+the EMU-2 MessageRegistry contract resolves (service root `Registries` →
+`MessageRegistryFileCollection` → `Base.1.5.0` → `#MessageRegistry` JSON).
+Registry payloads live on the DMTF registries path
+(`https://redfish.dmtf.org/registries/` — the `redfish/schemas/v1/` index
+carries only the `MessageRegistry.json` aggregator + schemas).
+
+| Requirement | Source (section/URL) | Code | Test | Status |
+|---|---|---|---|---|
+| Error responses carry `error.code` (a `Base.*` MessageId) + human `error.message`; `@Message.ExtendedInfo[].MessageId` references a published MessageRegistry entry | DSP0266 §8.6 "Error responses"; `registries/Base.1.5.0.json` (mirrored DOCS-18; byte-identical to the pinned mockup's payload — SHA-256 `c1026341…`) | `lib/redfish/models/redfish_error.dart` (`fromJson` envelope self-descend #014, code/message normalization) | `test/redfish/models/models_test.dart`; emulator MessageRegistry group pins the discovery + `Base.*` template surface (GeneralError Severity Critical / NumberOfArgs 0; ActionNotSupported NumberOfArgs 1) | OK |
+| Message registries are versioned resources published per `RegistryPrefix` (the `Base` registry's messages are the standard template set) | DSP0266 §11.4 "Message registries"; `registries/Base.1.24.0.json` (newest published, mirrored DOCS-18) | n/a — model reads templates only for reasoning/tests | emulator: `#MessageRegistry.v1_0_0.MessageRegistry` shape (Id `Base.1.5.0`, RegistryVersion 1.5.0, OwningEntity DMTF, `Messages` map) | OK (contract pin only) |
+| The mockup-served registry payload is authentic upstream (not fixture-generated) | DMTF registries index 200; `curl -sSIL` HEAD on `Base.1.5.0.json` | — | byte-compare: `sha256sum` upstream download == fixture (`c10263417a076402a992f099db4e019c9d91f674d256df32a390b86a2c46492c`, 31,984 bytes) | OK (provenance) |
+
+**Newest-vs-served delta audit (`Base.1.5.0` → `Base.1.24.0`):**
+
+- Template count **60 → 125** (+65 additions — e.g. `AccessForbidden`,
+  `ActionParameterValueNotInList`, `HeaderInvalid`, `InvalidJSON`,
+  `PreconditionFailed`, `PropertyValueNotInList` grew typo/format variants,
+  `ResourceExhaustion`; nothing removed).
+- **39 shared keys reworded** (e.g. `ActionNotSupported` "The action %1 is not
+  supported by the resource." → "The action '%1' is not supported by the
+  resource."; `GeneralError` gained an `@Message.ExtendedInfo` pointer) — but
+  **`NumberOfArgs` is stable for every shared key (0 changed)**, so the
+  argument-count contract the emulator pins (`GeneralError` 0,
+  `ActionNotSupported` 1) holds across the newest registry too.
+- `@odata.type` advanced `#MessageRegistry.v1_0_0` → `#MessageRegistry.v1_9_0`.
+- **Client impact: none.** `RedfishError` treats `code`/`message` opaquely
+  (the message resolver / error-reasoning surface is a future feature). The
+  `1.5.0` mirror stays authoritative for the mockup-served surface; `1.24.0`
+  is the "newest" provenance + a future `MessageId` resolver would read it.
+- Anchors re-verified this run: registries path 200; `Base.1.5.0.json` and
+  `Base.1.24.0.json` both 200. bmcweb `fbb307a`, mockup `23d21f9a`, DSP0266
+  1.25.0, schema index 200 — all unchanged. New bytes this run: 170,279
+  (31,984 + 138,295) — inside the DOCS-6 budget.
+
+UI-2 increment this run: the **Dashboard `_ErrorSummary` card** ("N systems
+could not be reached") now announces as ONE merged semantics node
+(`Semantics(container: true, excludeSemantics: true, label: 'Unable to reach
+N systems. Retry available.')` — the established error-state pattern; the
+visible text stays for sighted users and the Retry button keeps its own control
+node). New dashboard widget tests assert the merged label + separately-
+announced Retry control + Retry still reconnects failed systems (UI-1
+behaviour unchanged).

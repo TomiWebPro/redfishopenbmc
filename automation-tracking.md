@@ -2131,3 +2131,73 @@ Append-only run log for the `redfish-automation` scheduler job.
   SSH key on this machine. Local commit kept; not retried (runbook §7.4).
 - Queued local commits ahead of origin/main: **71** (70 before this run + 1
   auto; live `git rev-list --count origin/main..HEAD`).
+
+## 2026-10-24 05:20 — DOCS (message-registry payload mirror + Base registry delta audit) + UI-2 Dashboard error summary
+
+- **Baseline:** analyze 0; tests 320 passed / 1 skipped; starting commit e64624a
+  (branch `main` ahead 72 of origin); issues validate OK; working tree clean;
+  no stash, no crashed-run leftovers.
+- **Primary work:** DOCS (alternation: EMULATOR 04:01 → DOCS next). **DOCS-18
+  done** — mirrored the DMTF message-registry payload the pinned mockup serves
+  (`Base.1.5.0.json`, the file behind the EMU-2 MessageRegistry contract's
+  `Location[0].Uri`) plus the newest published version:
+  1. `documentations/external/redfish/registries/Base.1.5.0.json` — 31,984
+     bytes, SHA-256 `c10263417a076402a992f099db4e019c9d91f674d256df32a390b86a2c46492c`,
+     **byte-identical** to `test/fixtures/redfish/dmtf_mockup/Registries/
+     Base.1.5.0.json` (proven authentic — the fixture payload is the real
+     DMTF publication, not fixture-generated). 60 Base.* templates
+     (Message/Severity/NumberOfArgs) behind `RedfishError.code`/`firstMessage`.
+  2. `documentations/external/redfish/registries/Base.1.24.0.json` — 138,295
+     bytes, SHA-256 `abe0b78bba184f4b0e061696e4c9c43d76c029edb0ae5cf4902fdf3f979ef92d`
+     (newest published; `@odata.type` `#MessageRegistry.v1_9_0.MessageRegistry`).
+     **Delta audit:** 1.5.0 → 1.24.0 adds 65 templates (60 → 125, nothing
+     removed), rewords 39 shared Message strings (e.g. `ActionNotSupported`
+     gains quote marks around args; `GeneralError` adds an `@Message.ExtendedInfo`
+     pointer), but **`NumberOfArgs` is stable for every shared key (0 changed)** —
+     the emulator-pinned argument-count contract (`GeneralError` 0,
+     `ActionNotSupported` 1) holds across the newest registry.
+  REQUIREMENTS.md: §8.6 error-envelope row + the "Test platforms"
+  MessageRegistry pin now cite the real mirror files; new DOCS-18 audit section
+  (3 trace rows + newest-vs-served delta + anchors note). Manifest: 2 rows
+  added (fetched 04:38/04:39 UTC). New bytes this run: 170,279 — inside the
+  DOCS-6 budget.
+- **Docs:** URLs fetched: `https://redfish.dmtf.org/registries/Base.1.5.0.json`
+  and `https://redfish.dmtf.org/registries/Base.1.24.0.json` (both verified
+  `curl -sSIL` 200 before download; registries index 200). Files added:
+  `redfish/registries/Base.1.5.0.json` + `redfish/registries/Base.1.24.0.json`.
+  Requirements found: registry payload provenance + newest-vs-served contract
+  stability (recorded in REQUIREMENTS.md DOCS-18). Upstream anchors
+  re-verified: bmcweb `fbb307a`, mockup `23d21f9a`, DSP0266 1.25.0, schema
+  index 200 — all unchanged.
+- **Emulator:** none this run (no server started; DOCS alternation). The
+  existing 43/43 suite still green from 04:01; no fixture change.
+- **Code/tests:** no production code change besides the UI increment below.
+  `documentations/external/README.md` +2 manifest rows; REQUIREMENTS.md §8.6
+  row updated + DOCS-18 section appended; FUTUREWORK DOCS-18 checked off.
+- **UI:** UI-2 increment — the **Dashboard `_ErrorSummary` card** ("N systems
+  could not be reached") was the last bare error-surface in the established
+  pattern: the icon + visible text now announce as ONE merged semantics node
+  (`Unable to reach N systems. Retry available.` via `Semantics(container:
+  true, excludeSemantics: true)`), with the Retry `TextButton` kept OUTSIDE
+  the container so it retains its own control node. +2 widget tests in
+  `dashboard_view_test.dart` (folded into the existing UI-1 group, reusing its
+  harness): (1) merged node + visible text + separately-announced Retry; (2)
+  single-system failure asserts the singular merged label (`Unable to reach 1
+  system. Retry available.`). UI-1 Retry behaviour unchanged (existing tests
+  still pass).
+- **Verification:** analyze 0; tests 322 passed / 1 skipped (baseline 320 →
+  +2); issues validate OK; `git diff --check` clean; secret scan clean (only
+  prose protocol references in the docs diff). `dart format` on the 2 touched
+  Dart files only (dashboard_view.dart + dashboard_view_test.dart) — no
+  tree-wide drift.
+- **Commit:** (after §7.2/§7.3 below) — pushed: **no** — same GitHub
+  credential blocker expected (`fatal: could not read Username for
+  'https://github.com'`; no credential helper, no GITHUB_TOKEN/GH_TOKEN/
+  GIT_TOKEN env, no SSH key on this machine); local commit kept, not retried.
+  Commits ahead of origin/main: **72** before push attempt.
+- **Next:** 1) Push the queued local commits (72) from a machine with GitHub
+  credentials; 2) P1 #015 AuthManager — `Session.expiryFromService` is ready:
+  wire the discovered SessionService body into login to set `expiresAt`,
+  re-auth on `isExpired`, keep token/location from create headers only;
+  3) #018 discovery pass on the pinned `$expand` contract, or the
+  `ResetActionInfo` ActionInfo-resource crawl (#022/#016, bmcweb-style).

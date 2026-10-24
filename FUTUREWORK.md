@@ -7,38 +7,31 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-24 04:01 (EMULATOR run — **EMU-2 41 → 43**:
-  Sessions collection + Session resource contract pinned live (#015/#026):
-  enumerable collection, pre-seeded conformant `#Session.v1_7_1` with no
-  Password, and the **security-relevant negative pin** that POST-created
-  session bodies echo the login `Password` and lack `@odata.type`/SessionType
-  — AuthManager must keep token/location from create headers only; plus the
-  ResetType negative pin: the mockup returns 204 for an invalid `ResetType`
-  (client pre-validates; 400 path stays unit-level); UI-2 increments:
-  PowerView inline error merged semantics + Retry (via refresh), KvmView
-  hard-load error full merged state + Retry (via load) — 4 new widget tests;
-  suite 316 → 320; emulator 43/43 via run_tests.sh); next P1: #015
+- **Last updated:** 2026-10-24 05:20 (DOCS run — **DOCS-18 done**: mirrored
+  the DMTF message-registry payload the pinned mockup serves
+  (`registries/Base.1.5.0.json`, **byte-identical** to the fixture — SHA-256
+  `c1026341…`, proven authentic) + newest `registries/Base.1.24.0.json`
+  (125 templates; 1.5.0 → 1.24.0 adds 65 + rewords 39 shared Message strings
+  with **NumberOfArgs stable** — the emulator-pinned contract so the §8.6/§11.4
+  rows now cite a real mirror file; 170,279 new bytes, inside DOCS-6 budget);
+  UI-2 increment: Dashboard `_ErrorSummary` merged semantics + separate Retry
+  control (+2 widget tests; suite 320 → 322); next P1: #015
   (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the
-  discovered SessionService body into login + re-auth on `isExpired`;
-  DOCS-18 queued: mirror the DMTF Base message-registry payload
-  (`Base.1.5.0.json`, mockup-served) so the §8.6/§11.4 MessageRegistry rows
-  cite a real mirror file; #022/#016: Annotation allow-list fallback landed
-  (16:05 run) — remaining: `ResetActionInfo` ActionInfo resource crawl
-  (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only the
-  annotation form and now provably ignores ResetType values); #018:
+  discovered SessionService body into login + re-auth on `isExpired`; #016/
+  #022: `ResetActionInfo` ActionInfo resource crawl (bmcweb-style BMCs; NOT
+  pinable on the DMTF mockup — it serves only the annotation form and now
+  provably ignores ResetType values); #018: query-capability surface + live
+  `$expand` contract pinned — remaining: build the lightweight discovery pass
+  + the cache fixes
+- **Current focus:** **Message-registry payload mirrored (2026-10-24): the
+  §8.6/§11.4 error-surface rows now cite real mirror files and the mockup's
+  Base.1.5.0 payload is proven authentic (byte-identical to DMTF)**; next P1:
+  #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire
+  the discovered SessionService body into login + re-auth on `isExpired`;
+  #022/#016: Annotation allow-list fallback landed (16:05 run) — remaining:
+  `ResetActionInfo` ActionInfo resource crawl (bmcweb-style BMCs; NOT pinable
+  on the DMTF mockup — it serves only the annotation form); #018:
   query-capability surface + live `$expand` contract pinned (17:07) —
-  remaining: build the lightweight discovery pass + the cache fixes
-- **Current focus:** **Sessions/Session-resource contract pinned live
-  (2026-10-24): the #015 AuthManager has the session enumeration shape + the
-  security rule (never read session bodies for secrets — the fixture echoes
-  the password)**; next P1: #015 (AuthManager) —
-  emulator
-  pins the full auth
-  contract + the Session/ManagerAccount/Role schemas are mirrored
-  (#015/#017/#026); #022/#016: Annotation allow-list fallback landed (16:05
-  run) — remaining: `ResetActionInfo` ActionInfo resource crawl (bmcweb-style
-  BMCs; NOT pinable on the DMTF mockup — it serves only the annotation form);
-  #018: query-capability surface + live `$expand` contract pinned (17:07) —
   remaining: build the lightweight discovery pass + the cache fixes
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
@@ -225,7 +218,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       FirmwareView error state merged semantics label + separate Retry control,
       +1 widget test)
 
-- [ ] **DOCS-18** Mirror the DMTF **message-registry payload** the pinned
+- [x] **DOCS-18** Mirror the DMTF **message-registry payload** the pinned
       mockup serves (`Base.1.5.0.json` — the file behind
       `MessageRegistryFile.Location[0].Uri`, pinned live by the EMU-2
       MessageRegistry contract 2026-10-24: 60 Base.* templates with
@@ -239,6 +232,18 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       "newest vs mockup-served" delta note. Source:
       <https://redfish.dmtf.org/registries/> (+ the mockup-served path
       `/redfish/v1/Registries/Base.1.5.0.json` in the fixture).
+      (run 2026-10-24 — `redfish/registries/Base.1.5.0.json` mirrored,
+      **byte-identical** to `test/fixtures/redfish/dmtf_mockup/Registries/
+      Base.1.5.0.json` (SHA-256 `c10263417a076402a992f099db4e019c9d91f674d256d
+      f32a390b86a2c46492c`, 31,984 bytes — proven authentic) + newest
+      `redfish/registries/Base.1.24.0.json` (138,295 bytes; 125 templates;
+      1.5.0 → 1.24.0 adds 65 + rewords 39 shared Message strings with
+      **NumberOfArgs stable** — the emulator-pinned contract holds across the
+      newest registry too); §8.6 error-envelope row + the trace-note
+      MessageRegistry pin now cite the real mirror files; registries path +
+      both files 200; 170,279 new bytes total, inside the DOCS-6 budget;
+      UI-2 Dashboard `_ErrorSummary` merged semantics + separate Retry control,
+      +2 widget tests)
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across
@@ -603,6 +608,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       above 'No consoles found.', widget tests assert the merged node +
       visible texts + separately-announced Retry + Retry re-runs the failing
       service;
+      **DashboardView error summary card merged semantics label (`Unable to
+      reach N systems. Retry available.`) done 2026-10-24 — Semantics(container
+      + excludeSemantics) wraps the icon + visible text row, the Retry
+      TextButton keeps its own control node outside the container, widget
+      tests assert the merged node + visible text + separately-announced Retry
+      + the singular (`Unable to reach 1 system…`) form;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
