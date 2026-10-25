@@ -6,7 +6,24 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (DOCS run — **`$levels=2` depth-bound audit row**):
+Last audited: 2026-10-25 (DOCS run — **query-501 gap closed + anchor
+re-verification**): closed the row-923 "no query-specific 400/501 unit
+fixture yet" gap — the §7.3.1 query-error surface is now pinned with two
+`RedfishException` normalization fixtures (`Base.1.0.QueryNotSupported` 501 +
+`Base.1.0.QueryNotSupportedOnResource` 400, both carrying the mirrored
+registry message texts), and **501 (Not Implemented) is now classified
+NON-retryable** in `RedfishException.fromResponse` — a permanent "service does
+not implement this query parameter" signal (DSP0266 §7.3.1), so the #018
+discovery pass must gate the query instead of re-issuing it (transient 5xx /
+429 stay retryable). Re-verified all upstream anchors this run: bmcweb
+`63a18f4` (still HEAD via GitHub API), mockup `23d21f9a` (still HEAD via
+GitHub API), DSP0266 1.25.0 (200 on the working `www.dmtf.org` URL,
+byte-identical SHA-256 `385ee6d0…` vs the mirror), schema index 200 and
+**byte-identical** to the mirrored `v1-index.html` (SHA-256
+`e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86`,
+3,448,133 bytes) → **no corpus refresh needed this run** (DOCS-27's ZERO
+version advances still hold).
+Prior: 2026-10-25 (DOCS run — **`$levels=2` depth-bound audit row**):
 extended the DOCS-15 §7.3.2 query-parameter table with the new EMU pins
 (2026-10-25, EMU 66→68): the `$expand=.($levels=1)` shape is now pinned on
 **all three** top-level collections the #018 discovery pass walks (Systems +
@@ -920,7 +937,7 @@ pinned mockup.
 |---|---|---|---|---|
 | Query parameters apply only to **GET** operations; service shall process them in order `$filter` → `$skip` → `$top` → server-side pagination → `$expand` → `excerpt` → `$select` | DSP0266 §7.3.1 "Query parameter overview" | `RedfishClient.getJson` accepts `query` (Dio `queryParameters`) — GET only; no feature passes a query today | (new, this run) `redfish_client_extra_test.dart` pins `getJson` forwards `query` to the wire | OK — transport ready for #018 |
 | Service **shall** advertise query support via `ProtocolFeaturesSupported` in the service root; service **may** support `$expand`/`$filter`/`$select`, **should** support `$top`/`$skip`/`only`/`excerpt` | DSP0266 §7.3.1; `ServiceRoot.v1_22_0.json` `ProtocolFeaturesSupported` (mirrored DOCS-13) | `FeatureRules` reads the service root (discovery crawl) but does not yet gate query usage on the advertised flags | emulator service-root group asserts `ProtocolFeaturesSupported` publishes `ExpandQuery{ExpandAll,Levels}` + `FilterQuery`/`SelectQuery` | GAP: #018 must gate its `$expand` usage on `ExpandQuery` (Levels/ExpandAll) and assume NO `$filter`/`$select` application |
-| Service shall return **501 Not Implemented** for unsupported `$`-prefixed query parameters, with an extended error naming the unsupported parameter; **400 Bad Request** for invalid values; **400 QueryNotSupportedOnResource** for implemented-but-unsupported-on-resource params | DSP0266 §7.3.1; `Base` Message Registry `QueryNotSupportedOnResource` | `RedfishException.fromDioException` normalizes 400/501 into typed errors | `redfish_error_test` / `models_test.dart` cover error envelope; no query-specific 400/501 unit fixture yet | Partial: generic error mapping OK; #018 should add a unit fixture for the query-501 path |
+| Service shall return **501 Not Implemented** for unsupported `$`-prefixed query parameters, with an extended error naming the unsupported parameter; **400 Bad Request** for invalid values; **400 QueryNotSupportedOnResource** for implemented-but-unsupported-on-resource params | DSP0266 §7.3.1; `Base` Message Registry `QueryNotSupportedOnResource` / `QueryNotSupported` | `RedfishException.fromDioException` normalizes 400/501 into typed errors; **501 (Not Implemented) is now classified NON-retryable** — a permanent capability signal, so the client gates the query instead of retrying it | `auth_manager_test.dart` (RedfishException normalization: `501 Not Implemented … is non-retryable` + `400 QueryNotSupportedOnResource …` fixtures, +2, 2026-10-25); existing envelope tests in `models_test.dart` | OK — query-501 fixture landed; #018 still must *use* the classification (gate `$expand` on `ProtocolFeaturesSupported`, never retry a 501) |
 | `$expand` options: `*` (all hyperlinks incl. payload annotations), `$levels` (default 1), `.` (all but `links` properties), `~` (only `links` properties); when `$levels` advertised, `MaxLevels` caps the depth; combine with `$select` using full property path | DSP0266 §7.3.2 "The $expand query parameter"; `ServiceRoot.v1_22_0.json` `Expand` definition | none (client does not send `$expand` today) | emulator pins: `$expand=.($levels=1)` **and** `$expand=*` both inline full member bodies (17:07 + 18:36 runs); **generalized 2026-10-25 (EMU 66→68)**: the same map-form `$levels=1` on **Chassis + Managers** also inlines full member bodies — Chassis identity/ChassisType/Status/IndicatorLED/Links.ComputerSystems/ManagedBy and Manager ManagerType/FirmwareVersion/Model/Links.ManagerForServers/ManagerInChassis + the **manager-level reset allow-list (`#Manager.Reset` `ResetType@Redfish.AllowableValues` == exactly `[ForceRestart, GracefulRestart]`) visible through the expanded payload** (the #022/#016 conflation guard — the gate never reuses the manager list for the system gate — now pinned on the inlined shape) | OK pinned on the mockup; #018 may use either form (`*` or `$levels=1`) for collection fetch on all three top-level collections |
 | `$levels=N` depth cap: `$levels` is transitive up to the advertised `MaxLevels`; the service determines the actual depth from the first `$levels` occurrence in the `$expand` query | DSP0266 §7.3.2 "The $expand query parameter" | none (client does not send `$expand` today) | **depth-bound pinned live 2026-10-25 (EMU 66→68)**: `$levels=2` on Systems does **NOT** recurse beyond one level — the member's own `Links.Chassis` stays a bare `@odata.id` ref (no inlined ChassisType/Status) — so the #018 discovery pass gets exactly one full inlined hop per collection and must follow cross-resource URIs explicitly for deeper hops | OK — depth-cap behaviour pinned; #018 discovery design input (fetch one full hop per collection, walk the graph via bare `@odata.id` refs) |
 | Service shall not expand referenced resources the client lacks privileges for (no request failure); **507 Insufficient Storage** when the expanded payload exceeds service limits; partial collection expansion → 200 + `@odata.id` for unexpandable members + extended info | DSP0266 §7.3.2 | none | — | Note for #018 (payload-growth guard + 507 mapping) |

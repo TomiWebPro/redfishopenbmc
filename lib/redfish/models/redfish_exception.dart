@@ -137,9 +137,14 @@ class RedfishException implements Exception {
       }
     }
 
-    // 429 (rate limit) and 5xx are generally retryable.
-    final retryable =
-        statusCode == 429 || (statusCode >= 500 && statusCode < 600);
+    // 429 (rate limit) and transient 5xx are generally retryable. 501 is NOT:
+    // DSP0266 §7.3.1 uses 501 for unsupported `$`-prefixed query parameters —
+    // a permanent capability signal ("service does not implement this query
+    // parameter"), not a transient server failure, so re-issuing the identical
+    // request cannot succeed (and the #018 discovery pass must gate the query
+    // instead of retrying it).
+    final retryable = statusCode == 429 ||
+        (statusCode >= 500 && statusCode < 600 && statusCode != 501);
 
     return RedfishException(
       statusCode: statusCode,

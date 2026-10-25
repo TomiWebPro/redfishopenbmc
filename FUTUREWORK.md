@@ -7,30 +7,26 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (EMULATOR run — **wrong-password + multipart-null
-  auth/firmware pins, EMU 68→69**): the long-recorded probe that a bad login
-  still mints a session on this fixture (mockup runs WITHOUT `-u`, no auth
-  enforcement) is now a **pinned test** in the session-lifecycle group — POST
-  `Sessions` with `Password: definitely-wrong` returns 204 + X-Auth-Token +
-  Location (never the collection), so the client's 401 bad-login mapping is
-  **provably** unit-level (#015/#026) with the evidence in the suite; the
-  UpdateService firmware test now also pins **`multipartHttpPushUri` is null
-  on the DMTF fixture** (#008/#020: server vs bmcweb push-URI variants —
-  bmcweb serves the multipart form, this fixture only `HttpPushUri` `/FWUpdate`,
-  so the client must tolerate a null multipart URI and pick the single-push
-  form) — same run's UI-2 increment: the firmware **start-update form's
-  transfer-protocol `DropdownButton` now has a visible + announced label**
-  (`Transfer protocol` Text above the select, the Image URI labelText pattern;
-  the card column merges the sibling texts so a screen reader hears
-  `Start update, Transfer protocol` before the protocol value, while the
-  dropdown keeps its own button node; +1 widget test, firmware 18→19); no
-  corpus refresh, no lib/ behaviour change beyond the label)
-- **Current focus:** **EMULATOR (2026-10-25)** — pinned two remaining
-  auth/push negative facts as live tests (EMU 68→69); next primary is
-  **DOCS** per alternation — corpus mirror queue EMPTY; candidates: DOCS-27-
-  style anchor freshness re-verification (bmcweb `63a18f4`, mockup
-  `23d21f9a`, DSP0266 1.25.0, schema index), or corpus refresh if the schema
-  index advanced; then P1 #015 (AuthManager) — `expiryFromService` + the Sessions
+- **Last updated:** 2026-10-25 (DOCS run — **query-501 gap closed + anchor
+  re-verification**): the §7.3.1 query-error surface is now pinned with two
+  `RedfishException` normalization fixtures (`Base.1.0.QueryNotSupported`
+  501 + `Base.1.0.QueryNotSupportedOnResource` 400, both carrying the
+  mirrored registry message texts), and **501 (Not Implemented) is now
+  classified NON-retryable** — a permanent "service does not implement this
+  query parameter" signal (DSP0266 §7.3.1), so the #018 discovery pass must
+  gate the query instead of re-issuing it (transient 5xx / 429 stay
+  retryable); all upstream anchors re-verified unchanged (bmcweb `63a18f4`,
+  mockup `23d21f9a`, DSP0266 1.25.0 byte-identical, schema index
+  byte-identical) → **no corpus refresh**; same run's UI-2 increment: the
+  KVM **console card body rows** (`Manager: …`, `Max concurrent sessions: …`,
+  `HTML5 console — open via BMC web UI.`) now each announce as ONE merged
+  semantics node (the established card-row pattern) instead of detached
+  labels — +1 widget test, KVM 11→12)
+- **Current focus:** **DOCS (2026-10-25)** — closed the row-923 query-501
+  gap (unit fixtures + 501 non-retryable classification); next primary is
+  **EMULATOR** per alternation — corpus mirror queue EMPTY; candidates:
+  re-run the corpus-invariant published-types crawl, or pin a remaining
+  un-pinned surface; then P1 #015 (AuthManager) — `expiryFromService` + the Sessions
   pin are ready, wire the discovered SessionService body into login +
   re-auth on `isExpired`; #016: the PATCH transport + If-Match boundary are
   pinned on all live seams (Boot/IndicatorLED, Control SetPoint,
@@ -1235,6 +1231,15 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       protocol value while the dropdown keeps its own button node (`HTTP`);
       +1 widget test (visible label + announced label + dropdown control node
       + protocol selection still works), firmware 18→19;
+      **KVM console card body rows merged semantics nodes done 2026-10-25 —
+      the three remaining bare body labels in `_ConsoleCard` (`Manager: BMC`,
+      `Max concurrent sessions: 4`, `HTML5 console — open via BMC web UI.`)
+      each announced as detached `Text` rows (the last "non-card label"
+      class in the KVM view); each now renders inside a
+      `Semantics(container + excludeSemantics)` node (the established
+      card-row pattern, one self-describing announcement, visible texts
+      preserved), +1 widget test asserts the three merged labels + visible
+      texts, KVM 11→12;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

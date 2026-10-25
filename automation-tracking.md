@@ -4025,3 +4025,72 @@ Append-only run log for the `redfish-automation` scheduler job.
   `02eb993..8e28c58  main -> main` — the EMU auto commit (8e28c58) pushed.
   `git rev-list --count origin/main..HEAD` = 0 (fully synced), working tree
   clean. Queued local commits ahead of origin/main: **0**.
+
+## 2026-10-25 04:10 UTC — DOCS (query-501 gap closed + anchors re-verified) + UI-2 KVM console card body
+
+- **Baseline:** analyze 0; tests 355 passed / 1 skipped; starting commit af26535
+  (origin/main fully synced, 0 queued local commits); issues validate OK;
+  working tree clean; no stash, no crashed-run leftovers.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 03:12 — DOCS is
+  due). The corpus mirror queue is EMPTY and DOCS-27's ZERO advances were
+  re-proven ~2h ago, so the run had two queued DOCS candidates: anchor
+  freshness re-verification (cheap) and closing the last "Partial" audit row in
+  REQUIREMENTS.md. Both landed:
+  1. **Anchor re-verification — all unchanged, no corpus refresh.** bmcweb
+     `63a18f4…` (still HEAD via GitHub API), mockup `23d21f9a…` (still HEAD),
+     DSP0266 1.25.0 (200 on the working `www.dmtf.org` URL; re-downloaded
+     live PDF **byte-identical** — SHA-256 `385ee6d0…` both sides), schema
+     index 200 + **byte-identical** to the mirrored `v1-index.html`
+     (`e5a29797…`, 3,448,133 B, `cmp` verified). No downloads added inside the
+     DOCS-6 budget (re-downloads were probe copies under /tmp, not corpus).
+  2. **Row-923 gap closed (DSP0266 §7.3.1 query-error surface).** The row
+     said "generic error mapping OK; #018 should add a unit fixture for the
+     query-501 path" — landed: +2 `RedfishException` normalization fixtures in
+     `auth_manager_test.dart` (`Base.1.0.QueryNotSupported` on a 501 with the
+     mirrored registry message text; `Base.1.0.QueryNotSupportedOnResource`
+     on a 400 — `Base.1.24.0.json` `NumberOfArgs` 0, exact message strings),
+     AND the one-line spec-driven classification fix the fixtures exposed:
+     **501 (Not Implemented) is now NON-retryable** — DSP0266 §7.3.1 returns
+     501 for unsupported `$`-prefixed query parameters, a *permanent*
+     capability signal, so re-issuing the identical request cannot succeed
+     (the #018 discovery pass must gate the query instead); transient 5xx +
+     429 stay retryable. No production caller depends on 501 retryability
+     (grep-verified); update is test-pinned both ways.
+- **Docs:** none new mirrored — anchors verified unchanged + byte-identical
+  (see Primary). Manifest README anchors line + REQUIREMENTS.md "Last audited"
+  header + row-923 status updated (Partial → OK). `redfish_reference/` snapshot
+  untouched (no corpus change).
+- **Emulator:** none this run (DOCS stream). The 69-test suite from the 03:12
+  EMU run stays green on the pinned `23d21f9a`.
+- **Code/tests:** lib change from the DOCS stream: `redfish_exception.dart`
+  501 non-retryable classification (one-line + comment, test-pinned). UI-2
+  increment below touched `lib/features/kvm/views/kvm_view.dart` + its test.
+- **UI:** one small tested UI-2 increment — **KVM console card body rows now
+  merged semantics nodes**. `_ConsoleCard` still had three bare detached body
+  labels (the "remaining non-card labels" class UI-2 tracks): `Manager: BMC`,
+  `Max concurrent sessions: 4` (when present), and `HTML5 console — open via
+  BMC web UI.` (when `supportsHtml5`). Each now renders inside the established
+  `Semantics(container + excludeSemantics)` card-row node — one self-describing
+  announcement (`Manager: BMC` etc.), visible texts preserved for sighted
+  users. The header + Connect-URI rows were already merged (prior runs). +1
+  widget test asserting all three merged labels + all three visible texts.
+  Targeted run: 47/47 passed before the full gate (KVM 11 → 12). No new
+  dependencies; no overflow impact (no-overflow tests at 320/800/1300 green).
+- **Verification:** analyze 0; tests **358 passed / 1 skipped** (+3 — two
+  query fixtures + one KVM card-body test); issues validate OK;
+  `git diff --check` clean; secret scan: Dart code + JSON-prose docs only, no
+  credentials (the query-501 fixture strings are DMTF registry message texts,
+  never credentials); `git diff --stat` 6 files: kvm_view.dart,
+  kvm_widget_test.dart, redfish_exception.dart, auth_manager_test.dart,
+  REQUIREMENTS.md, README.md. `dart format` reflowed redfish_exception.dart
+  only (4 touched files, 1 changed).
+- **Commit:** (pending this run) —
+  `auto: DOCS — query-501 gap closed (501 non-retryable) + anchors re-verified
+  (no corpus refresh) + UI-2 KVM console card body merged nodes (run
+  2026-10-25 04:10)`.
+- **Next:** 1) EMULATOR per alternation — corpus mirror queue EMPTY and
+  verified; candidates: re-run the corpus-invariant published-types crawl on
+  the pinned `23d21f9a`, or close any remaining un-pinned surface; 2) P1 #015
+  AuthManager — wire `Session.expiryFromService` into login, re-auth on
+  `isExpired`, token/location from create RESPONSE HEADERS only; 3) keep
+  pushing every run (credentials verified; 0 queued commits).

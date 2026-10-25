@@ -162,6 +162,56 @@ void main() {
     });
 
     testWidgets(
+        'console card body rows announce as one merged semantics node each '
+        '(Manager / Max concurrent sessions / HTML5, UI-2)', (tester) async {
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(
+          consoles: <KvmConsole>[
+            KvmConsole(
+              type: KvmConsoleType.graphical,
+              managerId: 'BMC',
+              connectTypesSupported: <String>['KVMIP', 'HTML5'],
+              serviceEnabled: true,
+              maxConcurrentSessions: 4,
+              sourceManagerUri: '/redfish/v1/Managers/BMC',
+            ),
+          ],
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Each body row is ONE self-describing node — never a detached label
+      // next to a detached value (the established card-row pattern).
+      expect(
+        find.bySemanticsLabel('Manager: BMC'),
+        findsOneWidget,
+        reason: 'UI-2: the manager line announces one merged label',
+      );
+      expect(
+        find.bySemanticsLabel('Max concurrent sessions: 4'),
+        findsOneWidget,
+        reason: 'UI-2: the max-concurrent-sessions line announces one label',
+      );
+      expect(
+        find.bySemanticsLabel('HTML5 console — open via BMC web UI.'),
+        findsOneWidget,
+        reason: 'UI-2: the HTML5 line announces one merged label',
+      );
+      // Visible texts stay for sighted users.
+      expect(find.text('Manager: BMC'), findsOneWidget);
+      expect(find.text('Max concurrent sessions: 4'), findsOneWidget);
+      expect(find.text('HTML5 console — open via BMC web UI.'), findsOneWidget);
+    });
+
+    testWidgets(
         'console card header announces one merged semantics node — '
         'enabled (UI-2)', (WidgetTester tester) async {
       final KvmController controller = _StubController()

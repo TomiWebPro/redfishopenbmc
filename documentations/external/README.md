@@ -268,7 +268,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-25 02:11 UTC — DOCS-28 mirror run; prior: DOCS-27 00:15 UTC, DOCS-26 20:14 UTC, DOCS-25 18:52 UTC, DOCS-23 15:17 UTC, DOCS-22 12:47 UTC, DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
+## Current upstream anchors (verified 2026-10-25 04:07 UTC — DOCS run, query-501 gap closed; prior: DOCS-28 02:11 UTC, DOCS-29 02:09 UTC, DOCS-27 00:15 UTC, DOCS-26 20:14 UTC, DOCS-25 18:52 UTC, DOCS-23 15:17 UTC, DOCS-22 12:47 UTC, DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing)

@@ -249,9 +249,17 @@ class _ConsoleCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 4),
-            Text(
-              'Manager: ${console.managerId}',
-              style: Theme.of(context).textTheme.bodySmall,
+            // UI-2: the manager line announces as ONE self-describing node
+            // (the established card-row pattern) — a screen reader hears
+            // "Manager: BMC" in context instead of a detached label row.
+            Semantics(
+              container: true,
+              excludeSemantics: true,
+              label: 'Manager: ${console.managerId}',
+              child: Text(
+                'Manager: ${console.managerId}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -267,18 +275,32 @@ class _ConsoleCard extends StatelessWidget {
             ),
             if (console.maxConcurrentSessions != null) ...<Widget>[
               const SizedBox(height: 8),
-              Text(
-                'Max concurrent sessions: ${console.maxConcurrentSessions}',
-                style: Theme.of(context).textTheme.bodySmall,
+              // UI-2: same merged card-row pattern — label + value as one node.
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label:
+                    'Max concurrent sessions: ${console.maxConcurrentSessions}',
+                child: Text(
+                  'Max concurrent sessions: ${console.maxConcurrentSessions}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
             ],
             if (console.supportsHtml5) ...<Widget>[
               const SizedBox(height: 8),
-              Text(
-                'HTML5 console — open via BMC web UI.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+              // UI-2: the informative line announces as ONE node too — no
+              // bare detached sentence in the card body.
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: 'HTML5 console — open via BMC web UI.',
+                child: Text(
+                  'HTML5 console — open via BMC web UI.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                ),
               ),
             ],
             if (console.connectUri != null) ...<Widget>[

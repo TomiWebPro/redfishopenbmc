@@ -618,6 +618,80 @@ void main() {
       expect(ePlain.errorCode, 'Base.1.0.GeneralError');
       expect(ePlain.message, 'gone');
     });
+
+    test(
+        '501 Not Implemented for unsupported query params is non-retryable '
+        '(DSP0266 §7.3.1, row 923)', () {
+      // A spec-conformant service answers an unsupported `$`-prefixed query
+      // parameter with 501 + a Redfish error envelope naming the parameter.
+      // That is a *permanent* capability signal (the service does not
+      // implement the query parameter), so re-issuing the identical request
+      // cannot succeed — the #018 discovery pass must gate the query instead
+      // of retrying it.
+      final Response<dynamic> resp501 = Response<dynamic>(
+        requestOptions: RequestOptions(path: '/redfish/v1/Systems?%24weird=1'),
+        statusCode: 501,
+        data: <String, dynamic>{
+          'error': <String, dynamic>{
+            'code': 'Base.1.0.QueryNotSupported',
+            'message': 'Querying is not supported by the implementation.',
+            '@Message.ExtendedInfo': <dynamic>[
+              <String, dynamic>{
+                '@odata.type': '#Message.v1_1_2.Message',
+                'MessageId': 'Base.1.0.QueryNotSupported',
+                'Message': 'Querying is not supported by the implementation.',
+                'Severity': 'Warning',
+              },
+            ],
+          },
+        },
+      );
+      final RedfishException e = RedfishException.fromResponse(resp501);
+      expect(e.statusCode, 501);
+      expect(e.errorCode, 'Base.1.0.QueryNotSupported');
+      expect(e.hasDetails, isTrue);
+      expect(
+        e.details!.code,
+        'Base.1.0.QueryNotSupported',
+        reason: 'the normalized error carries the registry code',
+      );
+      expect(e.retryable, isFalse,
+          reason: '501 = permanent "not implemented", never retryable');
+    });
+
+    test(
+        '400 QueryNotSupportedOnResource is non-retryable and keeps the '
+        'registry code (DSP0266 §7.3.1, row 923)', () {
+      // Implemented-but-unsupported-on-resource query parameters are a 400
+      // with the QueryNotSupportedOnResource registry message (mirrored
+      // `Base.1.24.0.json`): the client must not retry, it must adjust the
+      // request shape (e.g. drop the query for that resource).
+      final Response<dynamic> resp400 = Response<dynamic>(
+        requestOptions: RequestOptions(path: '/redfish/v1/Systems/1'),
+        statusCode: 400,
+        data: <String, dynamic>{
+          'error': <String, dynamic>{
+            'code': 'Base.1.0.QueryNotSupportedOnResource',
+            'message': 'Querying is not supported on the requested resource.',
+            '@Message.ExtendedInfo': <dynamic>[
+              <String, dynamic>{
+                '@odata.type': '#Message.v1_1_2.Message',
+                'MessageId': 'Base.1.0.QueryNotSupportedOnResource',
+                'Message':
+                    'Querying is not supported on the requested resource.',
+                'Severity': 'Warning',
+              },
+            ],
+          },
+        },
+      );
+      final RedfishException e = RedfishException.fromResponse(resp400);
+      expect(e.statusCode, 400);
+      expect(e.errorCode, 'Base.1.0.QueryNotSupportedOnResource');
+      expect(e.retryable, isFalse);
+      expect(e.details!.firstMessage,
+          contains('not supported on the requested resource'));
+    });
   });
 
   group('RedfishClient transports', () {

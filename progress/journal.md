@@ -3509,3 +3509,57 @@
   unit-level — the fixture never 401s); #008/#020 advanced (multipart push URI
   null-pin on the DMTF fixture); UI-2 advanced (firmware protocol-select
   label).
+
+## 2026-10-25 — agent:redfish-automation — DOCS query-501 gap closed + UI-2 KVM card body
+
+**Done:**
+- DOCS primary per alternation (last primary: EMULATOR 03:12). Two queued
+  candidates landed:
+  1. **Anchor re-verification — no corpus refresh.** bmcweb `63a18f4` still
+     HEAD (GitHub API); mockup `23d21f9a` still HEAD; DSP0266 1.25.0 200 on
+     the working `www.dmtf.org` URL and the re-downloaded PDF is
+     **byte-identical** to the mirror (SHA-256 `385ee6d0…` both sides);
+     schema index 200 + **byte-identical** to `v1-index.html`
+     (`e5a29797…`, 3,448,133 B). DOCS-27's ZERO advances re-proven.
+  2. **Row-923 gap closed (§7.3.1 query-error surface).** +2
+     `RedfishException` normalization fixtures (501 `Base.1.0.QueryNotSupported`
+     + 400 `Base.1.0.QueryNotSupportedOnResource`, both with the mirrored
+     registry texts); spec-driven fix: **501 is now NON-retryable** (a
+     permanent "service does not implement this query parameter" signal, not
+     a transient server failure; #018 must gate the query, never retry a 501).
+     Transient 5xx + 429 stay retryable. Row status Partial → OK.
+- UI-2 increment: **KVM console card body rows merged** — `Manager: …`,
+  `Max concurrent sessions: …`, `HTML5 console — open via BMC web UI.` each
+  now announce as ONE `Semantics(container + excludeSemantics)` node (the
+  established card-row pattern) instead of detached labels; visible texts
+  preserved; +1 widget test (KVM 11→12).
+
+**Decisions:**
+- DOCS per alternation; the queued candidates were the anchor re-verification
+  and the last Partial row in REQUIREMENTS.md — both cheap, high-value, and
+  the row-923 one produced a *tested* code fix (501 retryability), which is
+  the runbook's preferred DOCS outcome ("prefer fixing small, safe gaps
+  immediately (with tests)"). Changing 501 to non-retryable is safe: grep
+  shows no caller branches on 501 retryability, and the fixtures pin both the
+  classification and the envelope extraction.
+- UI increment: the three KVM console card body rows were the last bare
+  "non-card labels" in the KVM view; the merge follows the exact pattern
+  already used for SystemCard detail + Overview Processors body + Connect-URI
+  row. Did not rush the open-ended focus-order hunt (prior-run rationale).
+- No new dependencies, no TLS change, no emulator dependency (plain
+  `flutter test` still never needs the emulator).
+
+**Next:**
+- EMULATOR per alternation: corpus mirror queue EMPTY; re-run the
+  corpus-invariant published-types crawl on the pinned `23d21f9a`, or pin a
+  remaining un-pinned surface; #028 remains the P2 candidate with its exact
+  fixture duty recorded.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- Keep pushing every run (credentials verified; 0 queued).
+
+**Issues touched:**
+- none opened/closed this run. Row-923 (requirement) Partial → OK; #018
+  advanced (501/400 query-error classification test-pinned — the discovery
+  pass must gate queries, never retry a 501); UI-2 advanced (KVM console card
+  body rows merged).
