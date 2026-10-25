@@ -3624,3 +3624,57 @@
   resources — the `ResetActionInfo`-crawl input); #016 advanced (ActionInfo
   crawl shape + link resolution pinned); UI-2 advanced (PowerView footnote
   merged).
+
+## 2026-10-25 — agent:redfish-automation — DOCS anchor re-verification + bmcweb file-level provenance + UI-2 sensor tile context
+
+**Done:**
+- DOCS primary per alternation (last primary: EMULATOR 06:15). Two queued
+  candidates landed:
+  1. **Anchor re-verification — no corpus refresh.** bmcweb `63a18f4` still
+     HEAD; all four mirrored bmcweb docs byte-identical at current master;
+     mockup `23d21f9a` still HEAD (default branch `main` re-confirmed);
+     DSP0266 1.25.0 200 + PDF byte-identical (`385ee6d0…`); a
+     `DSP0266_1.26.0.pdf` probe 404s → 1.25.0 still current; schema index
+     byte-identical (`e5a29797…`, 3,448,133 B). DOCS-27's ZERO advances
+     re-proven; 0 new downloads.
+  2. **Provenance upgrade — file-level last-touch commits.** The manifest
+     recorded only the repo-HEAD anchor for the bmcweb docs; the GitHub path
+     API showed the four files were last changed well before HEAD:
+     `Redfish.md` → `bb6b9ebc` (2026-09-21), and the other three docs →
+     `24e758ab` (2025-06-26 docs-folder creation). Manifest rows + anchors
+     note now record both anchors — the DOCS-27 precedent of truthful
+     provenance.
+- UI-2 increment: **sensor tile merged labels now carry the visible subtitle
+  context** — the three tiles' `excludeSemantics` was dropping threshold
+  hints (temperature), physical context (fan), and reading type + thresholds
+  (generic sensor) that sighted users see; each merged label now appends that
+  context (`…, caution 45 / crit 55`, `…, CPU`, `…, Voltage, UpperCritical
+  13.0 / LowerCritical 11.0`); +1 widget test; sensors 13→14.
+
+**Decisions:**
+- DOCS per alternation; the corpus mirror queue is EMPTY and the anchors keep
+  verifying unchanged, so the run combined the cheap freshness check with a
+  genuine provenance improvement (file-level last-touch commits) instead of
+  re-downloading anything. No new corpus gap appeared; no code change was
+  needed from the docs stream.
+- UI increment: the sensor-tile subtitle gap was the genuine remaining UI-2
+  "non-card label" class — a screen reader heard the value + health but not
+  the threshold/context hints sighted users read. The fix mirrors the
+  established card-row pattern (one self-describing announcement), keeps all
+  visible texts, and adds no dependencies.
+- No new dependencies, no TLS change, no emulator dependency (plain
+  `flutter test` still never needs the emulator).
+
+**Next:**
+- EMULATOR per alternation: corpus mirror queue EMPTY; re-run the
+  corpus-invariant published-types crawl on the pinned `23d21f9a`, or pin a
+  remaining un-pinned service-root branch (keep `KeyService`/`NVMeoFSecrets`
+  read-only — never render key material).
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- Keep pushing every run (credentials verified; 0 queued).
+
+**Issues touched:**
+- none opened/closed this run. DOCS corpus verified current (no row status
+  change; "Last audited" header advanced); UI-2 advanced (sensor tiles now
+  announce threshold/context details — #007/#019 sensor UX input).

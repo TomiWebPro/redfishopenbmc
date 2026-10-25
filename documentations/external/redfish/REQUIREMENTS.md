@@ -6,7 +6,22 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (DOCS run — **query-501 gap closed + anchor
+Last audited: 2026-10-25 (DOCS run — **anchor re-verification + bmcweb
+file-level provenance pinned**): re-verified every upstream anchor — bmcweb
+`63a18f4` (still HEAD via GitHub API; `Redfish.md`, `REDFISH_CHECKLIST.md`,
+`OEM_SCHEMAS.md`, `CLIENTS.md` all **byte-identical** to the mirror at current
+master), mockup `23d21f9a` (still HEAD), DSP0266 1.25.0 (200 on the working
+`www.dmtf.org` URL, byte-identical SHA-256 `385ee6d0…`; `DSP0266_1.26.0.pdf`
+probe 404s → 1.25.0 still current), schema index 200 and **byte-identical**
+to the mirrored `v1-index.html` (SHA-256
+`e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86`,
+3,448,133 bytes) → **no corpus refresh needed this run** (DOCS-27's ZERO
+version advances still hold). Provenance upgrade: the manifest rows for the
+four bmcweb docs now record the **file-level last-touch commits** (GitHub path
+API) alongside the repo HEAD — `Redfish.md` → `bb6b9ebc` (2026-09-21), the
+other three docs → `24e758ab` (2025-06-26 docs-folder creation) — the
+DOCS-27 precedent of making every recorded anchor truthful.
+Prior: 2026-10-25 (DOCS run — **query-501 gap closed + anchor
 re-verification**): closed the row-923 "no query-specific 400/501 unit
 fixture yet" gap — the §7.3.1 query-error surface is now pinned with two
 `RedfishException` normalization fixtures (`Base.1.0.QueryNotSupported` 501 +

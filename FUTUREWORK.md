@@ -7,23 +7,25 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (EMULATOR run — **ActionInfo resource contract
-  pinned live**): the recurring #022/#016 note "crawl the `ResetActionInfo`
-  ActionInfo *resource*" advanced — the emulator now proves the two
-  `CertificateService` actions' `@Redfish.ActionInfo` links resolve to real
-  `#ActionInfo.v1_4_1.ActionInfo` resources whose `Parameters[]` carry
-  `Name`/`Required`/`DataType` + per-parameter `AllowableValues`
-  (`KeyPairAlgorithm`/`KeyCurveId`/`KeyUsage`/`CertificateType [PEM]`) — the
-  exact shape a bmcweb `ResetActionInfo` crawl parses on OpenBMC (EMU 69→71;
-  REQUIREMENTS.md ActionInfo row updated); the `ResetActionInfo` resource
-  itself stays absent on the DMTF mockup so the OpenBMC allow-list-source
-  crawl remains a code task inside #022/#016; same run's UI-2 increment: the
-  PowerView destructive-actions guidance line now announces as ONE merged
-  semantics node (the KVM console-card precedent) instead of a bare detached
-  sentence below the card — +1 widget test, PowerView 18→19)
-- **Current focus:** **EMULATOR (2026-10-25)** — pinned the ActionInfo
-  resource contract; corpus mirror queue still EMPTY; remaining EMU
-  candidates: re-run the corpus-invariant published-types crawl on the pinned
+- **Last updated:** 2026-10-25 (DOCS run — **anchor re-verification + bmcweb
+  file-level provenance pinned**): every upstream anchor re-verified unchanged
+  and byte-identical (bmcweb `63a18f4` with all four mirrored docs
+  byte-identical at current master, mockup `23d21f9a`, DSP0266 1.25.0 with
+  `DSP0266_1.26.0.pdf` probe 404 → still current, schema index byte-identical
+  `e5a29797…`) → **no corpus refresh** (DOCS-27 ZERO advances still hold);
+  provenance upgrade: manifest rows for the four bmcweb docs now record the
+  **file-level last-touch commits** from the GitHub path API alongside the repo
+  HEAD (`Redfish.md` → `bb6b9ebc` 2026-09-21; the other three docs →
+  `24e758ab` 2025-06-26 docs-folder creation) — the DOCS-27 precedent of
+  recording truthful anchors; UI-2 increment below: sensor tile merged labels
+  now carry the visible subtitle context (temperature thresholds, fan physical
+  context, sensor reading type + thresholds — +1 widget test); corpus mirror
+  queue still EMPTY
+- **Current focus:** **DOCS (2026-10-25)** — anchor re-verification + bmcweb
+  file-level provenance pinned (no corpus refresh; see Last updated); corpus
+  mirror queue still EMPTY; remaining DOCS candidates: none queued — the
+  corpus is complete and verified for all 38 families; next EMULATOR per
+  alternation: re-run the corpus-invariant published-types crawl on the pinned
   `23d21f9a` (already in-suite), or pin the last un-pinned service-root
   branches the crawl visits (`CertificateService`, `KeyService`/
   `NVMeoFSecrets`, `ComponentIntegrity` — all NOT client-mapped, so no fixture
@@ -1255,6 +1257,19 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       card-row pattern, one self-describing announcement, visible texts
       preserved), +1 widget test asserts the three merged labels + visible
       texts, KVM 11→12;
+      **sensor tile merged labels now carry the visible subtitle context done
+      2026-10-25 — the three tiles wrapped their inner title/subtitle/chip in
+      `Semantics(container + excludeSemantics)` (the 2026-10-23 merge) but the
+      `excludeSemantics` dropped the SUBTITLE: temperature tiles hid the
+      threshold hints (`caution 45 / crit 55`), fan tiles hid the physical
+      context (`CPU`), generic sensor tiles hid the reading type + thresholds
+      (`Voltage · UpperCritical 13.0 / LowerCritical 11.0`) that sighted
+      users see; each merged label now appends that visible subtitle context
+      (`Temperature CPU1 Temp, 41.0°C, Unknown, caution 45 / crit 55`, `Fan
+      Fan0, 5400 RPM, Unknown, CPU`, `Sensor PSU1, 12.50 V, Unknown, Voltage,
+      UpperCritical 13.0 / LowerCritical 11.0`) — one self-describing
+      announcement that mirrors the visible text, +1 widget test asserts the
+      detail-aware labels + visible subtitles stay, sensors 13→14;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

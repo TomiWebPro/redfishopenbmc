@@ -34,6 +34,47 @@ class _FakeSensorsService extends SensorsService {
       ];
 }
 
+/// A [SensorsService] double with threshold + physical-context data so the
+/// UI-2 merged labels can be pinned (no network).
+class _DetailSensorsService extends SensorsService {
+  _DetailSensorsService() : super(client: null, systemId: 'x');
+
+  @override
+  Future<List<ChassisSensors>> fetchAll() async => <ChassisSensors>[
+        ChassisSensors(
+          chassisId: '1U',
+          chassisName: 'Chassis 1U',
+          thermal: <ThermalReading>[
+            ThermalReading(
+              name: 'CPU1 Temp',
+              readingCelsius: 41.0,
+              upperCaution: 45,
+              upperCritical: 55,
+            ),
+          ],
+          fans: const <FanReading>[
+            FanReading(
+              name: 'Fan0',
+              reading: 5400,
+              physicalContext: 'CPU',
+            ),
+          ],
+          sensors: const <SensorReading>[
+            SensorReading(
+              name: 'PSU1',
+              reading: 12.5,
+              readingUnits: 'V',
+              readingType: 'Voltage',
+              thresholds: <String, double>{
+                'UpperCritical': 13.0,
+                'LowerCritical': 11.0,
+              },
+            ),
+          ],
+        ),
+      ];
+}
+
 /// A [SensorsService] double that always fails (error-state tests).
 class _FailingSensorsService extends SensorsService {
   _FailingSensorsService() : super(client: null, systemId: 'x');
@@ -149,6 +190,47 @@ void main() {
         find.bySemanticsLabel('Sensor PSU1, 12.50 V, Unknown'),
         findsOneWidget,
       );
+    });
+
+    testWidgets(
+        'sensor tile merged labels carry the visible subtitle context (UI-2)',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_DetailSensorsService()),
+          ],
+          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Each tile announces ONE node whose label mirrors what sighted users
+      // see: threshold hints (temperature), physical context (fan), and
+      // reading type + thresholds (generic sensor) are part of the merged
+      // announcement, not dropped by excludeSemantics.
+      expect(
+        find.bySemanticsLabel(
+            'Temperature CPU1 Temp, 41.0°C, Unknown, caution 45 / crit 55'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Fan Fan0, 5400 RPM, Unknown, CPU'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Sensor PSU1, 12.50 V, Unknown, Voltage, '
+            'UpperCritical 13.0 / LowerCritical 11.0'),
+        findsOneWidget,
+      );
+      // Visible subtitle texts stay for sighted users.
+      expect(find.text('caution 45 / crit 55'), findsOneWidget);
+      expect(find.text('CPU'), findsOneWidget);
+      expect(find.text('Voltage · UpperCritical 13.0 / LowerCritical 11.0'),
+          findsOneWidget);
     });
 
     testWidgets('chassis card header exposes a merged summary label (UI-2)',

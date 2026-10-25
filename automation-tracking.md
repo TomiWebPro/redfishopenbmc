@@ -4176,3 +4176,74 @@ Append-only run log for the `redfish-automation` scheduler job.
   `6f82255..f270472  main -> main` — the EMU auto commit (f270472) pushed.
   `git rev-list --count origin/main..HEAD` = 0 (fully synced), working tree
   clean. Queued local commits ahead of origin/main: **0**.
+
+## 2026-10-25 07:10 UTC — DOCS (anchor re-verification + bmcweb file-level provenance) + UI-2 sensor tile context
+
+- **Baseline:** analyze 0; tests 359 passed / 1 skipped; starting commit a6f90f7
+  (origin/main fully synced, 0 queued local commits); issues validate OK;
+  working tree clean; no stash, no crashed-run leftovers.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 06:15 — DOCS
+  is due). Corpus mirror queue is EMPTY and verified, so this run did the
+  cheap anchor-freshness candidate plus a provenance upgrade:
+  1. **Anchor re-verification — no corpus refresh.** bmcweb `63a18f4` still
+     HEAD (GitHub API); all four mirrored docs (`Redfish.md`,
+     `REDFISH_CHECKLIST.md`, `OEM_SCHEMAS.md`, `CLIENTS.md`) re-downloaded
+     from current master and **byte-identical** to the mirror; mockup
+     `23d21f9a` still HEAD (default branch is `main`, re-confirmed); DSP0266
+     1.25.0 200 on the working `www.dmtf.org` URL, PDF re-downloaded and
+     **byte-identical** (SHA-256 `385ee6d0…`), and a `DSP0266_1.26.0.pdf`
+     probe 404s → 1.25.0 is still the current release; schema index 200 and
+     **byte-identical** to `v1-index.html` (`e5a29797…`, 3,448,133 B) —
+     DOCS-27's ZERO version advances re-proven.
+  2. **Provenance upgrade — file-level last-touch commits.** The manifest
+     recorded only the repo-HEAD anchor `63a18f4` for the bmcweb docs; the
+     GitHub path API showed the four files were last changed long before the
+     current HEAD: `Redfish.md` → `bb6b9ebc` (2026-09-21), and
+     `REDFISH_CHECKLIST.md`/`OEM_SCHEMAS.md`/`CLIENTS.md` → `24e758ab`
+     (2025-06-26, the docs-folder creation commit). Manifest rows + anchors
+     note now record both anchors (repo HEAD for content verification, file
+     last-touch for provenance) — the DOCS-27 precedent of truthful anchors.
+- **Docs:** 0 new downloads (verification-only); manifest rows + anchors note
+  in `documentations/external/README.md` updated with file-level commits;
+  REQUIREMENTS.md "Last audited" header rewritten for this run; FUTUREWORK
+  Last-updated + Current-focus lines updated; corpus mirror queue still EMPTY.
+- **Emulator:** none this run (DOCS stream). The 71-test suite from the 06:15
+  EMU run stays green on the pinned `23d21f9a`.
+- **Code/tests:** no production lib change from the DOCS stream (verification +
+  provenance only). UI-2 increment below touched
+  `lib/features/sensors/views/sensors_view.dart` + its test.
+- **UI:** one small tested UI-2 increment — **sensor tile merged labels now
+  carry the visible subtitle context**. The three tiles (`_TemperatureTile`,
+  `_FanTile`, `_SensorTile`) already wrapped their title/subtitle/chip in a
+  `Semantics(container + excludeSemantics)` node (merged 2026-10-23), but the
+  `excludeSemantics` dropped the SUBTITLE: temperature tiles hid the threshold
+  hints (`caution 45 / crit 55`), fan tiles hid the physical context (`CPU`),
+  generic sensor tiles hid the reading type + thresholds (`Voltage ·
+  UpperCritical 13.0 / LowerCritical 11.0`) that sighted users see. Each
+  merged label now appends that visible subtitle context — `Temperature CPU1
+  Temp, 41.0°C, Unknown, caution 45 / crit 55`, `Fan Fan0, 5400 RPM, Unknown,
+  CPU`, `Sensor PSU1, 12.50 V, Unknown, Voltage, UpperCritical 13.0 /
+  LowerCritical 11.0` — one self-describing announcement that mirrors the
+  visible text (a screen reader now hears what sighted users read). +1 widget
+  test asserts the detail-aware labels + visible subtitles stay; existing
+  no-context fixtures still pass unchanged (13 → 14 sensors tests; targeted
+  run 14/14 before the full gate). No new dependencies; no layout change, so
+  the 320/800/1300 no-overflow tests are unaffected.
+- **Verification:** analyze 0; tests **360 passed / 1 skipped** (+1 — the new
+  sensor detail-context test); issues validate OK; `git diff --check` clean;
+  secret scan: Dart code + JSON-prose docs only, no credentials; `git diff
+  --stat` 5 files: sensors_view.dart, sensors_widget_test.dart, README.md,
+  REQUIREMENTS.md, FUTUREWORK.md. `dart format` reflowed the widget test only
+  (2 touched files, 1 changed).
+- **Commit:** (pending this run) —
+  `auto: DOCS — anchors re-verified (no corpus refresh) + bmcweb file-level
+  provenance pinned + UI-2 sensor tile subtitle context (run 2026-10-25
+  07:10)`.
+- **Next:** 1) EMULATOR per alternation — corpus mirror queue EMPTY and
+  verified; candidates: re-run the corpus-invariant published-types crawl on
+  the pinned `23d21f9a`, or pin the last un-pinned service-root branches
+  (`CertificateService`, `KeyService`/`NVMeoFSecrets`, `ComponentIntegrity` —
+  NOT client-mapped → no fixture duty; keep NVMeoFSecrets read-only); 2) P1
+  #015 AuthManager — wire `Session.expiryFromService` into login, re-auth on
+  `isExpired`, token/location from create RESPONSE HEADERS only; 3) keep
+  pushing every run (credentials verified; 0 queued commits).

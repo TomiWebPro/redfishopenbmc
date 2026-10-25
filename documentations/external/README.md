@@ -34,10 +34,10 @@ documentations/external/
 | File | Source URL | Fetched (UTC) | SHA-256 | Bytes | Upstream version/commit | Notes |
 |---|---|---|---|---|---|---|
 | `redfish/spec/DSP0266_1.25.0.pdf` | https://www.dmtf.org/sites/default/files/standards/documents/DSP0266_1.25.0.pdf | 2026-10-22 12:17 | `385ee6d0039a2dbc610c7af9fa9bba304fc2a461ceb5a8eda0adb33630c82149` | 1,243,359 | DSP0266 1.25.0 | Redfish specification PDF; linked from redfish.dmtf.org hub |
-| `redfish/openbmc/Redfish.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/Redfish.md | 2026-10-22 12:31 (re-verified 2026-10-24 12:45 UTC @ `63a18f4`) | `9be2748b017c1657631565b747ff38fc3e74afaaeae1f39cdb6b3a519d786105` | 25,689 | bmcweb master `63a18f4` (was `fbb307a`, `27e0930b`) | OpenBMC Redfish overview — byte-identical at new HEAD |
-| `redfish/openbmc/REDFISH_CHECKLIST.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/REDFISH_CHECKLIST.md | 2026-10-22 12:31 (re-verified 2026-10-24 12:45 UTC @ `63a18f4`) | `98ff60be5d6592dd592b267a36f86224c121aba7ad23c34d8e93ceb2f8cdb5ce` | 1,761 | bmcweb master `63a18f4` | OpenBMC compliance checklist — byte-identical at new HEAD |
-| `redfish/openbmc/OEM_SCHEMAS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/OEM_SCHEMAS.md | 2026-10-22 12:31 (re-verified 2026-10-24 12:45 UTC @ `63a18f4`) | `7d651fd19bc715b64497fdd466fae03cf043acd50c9efacbacb4a5def469d726` | 5,687 | bmcweb master `63a18f4` | OpenBMC OEM schema extensions — byte-identical at new HEAD |
-| `redfish/openbmc/CLIENTS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/CLIENTS.md | 2026-10-22 23:40 (re-verified 2026-10-24 12:45 UTC @ `63a18f4`) | `cfea5163ec820bb4edaba449ef837c9906ce3a2b690e22c4ce16132e526a735f` | 2,695 | bmcweb master `63a18f4` | Client-compat map: DMTF validators, python-redfish-library, redfishtool, fwupd |
+| `redfish/openbmc/Redfish.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/Redfish.md | 2026-10-22 12:31 (re-verified 2026-10-25 07:00 UTC @ `63a18f4`) | `9be2748b017c1657631565b747ff38fc3e74afaaeae1f39cdb6b3a519d786105` | 25,689 | bmcweb master `63a18f4`; file last-touch `bb6b9ebc` (2026-09-21) | OpenBMC Redfish overview — byte-identical at current master HEAD; file-level provenance pinned 2026-10-25 via GitHub path API (repo HEAD has moved past the file's last content change) |
+| `redfish/openbmc/REDFISH_CHECKLIST.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/REDFISH_CHECKLIST.md | 2026-10-22 12:31 (re-verified 2026-10-25 07:00 UTC @ `63a18f4`) | `98ff60be5d6592dd592b267a36f86224c121aba7ad23c34d8e93ceb2f8cdb5ce` | 1,761 | bmcweb master `63a18f4`; file last-touch `24e758ab` (2025-06-26) | OpenBMC compliance checklist — byte-identical at current master HEAD; untouched since the docs-folder creation commit |
+| `redfish/openbmc/OEM_SCHEMAS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/OEM_SCHEMAS.md | 2026-10-22 12:31 (re-verified 2026-10-25 07:00 UTC @ `63a18f4`) | `7d651fd19bc715b64497fdd466fae03cf043acd50c9efacbacb4a5def469d726` | 5,687 | bmcweb master `63a18f4`; file last-touch `24e758ab` (2025-06-26) | OpenBMC OEM schema extensions — byte-identical at current master HEAD; untouched since the docs-folder creation commit |
+| `redfish/openbmc/CLIENTS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/CLIENTS.md | 2026-10-22 23:40 (re-verified 2026-10-25 07:00 UTC @ `63a18f4`) | `cfea5163ec820bb4edaba449ef837c9906ce3a2b690e22c4ce16132e526a735f` | 2,695 | bmcweb master `63a18f4`; file last-touch `24e758ab` (2025-06-26) | Client-compat map: DMTF validators, python-redfish-library, redfishtool, fwupd — byte-identical at current master HEAD; untouched since the docs-folder creation commit |
 | `redfish/mockup/README-mockup-server.md` | https://raw.githubusercontent.com/DMTF/Redfish-Mockup-Server/master/README.md | 2026-10-22 12:31 (re-verified 2026-10-25 00:15 UTC @ `23d21f9a`) | `0d79a16595033b72b3dea70c14326fa31cfc1e8a2ac4e14bbf4c721222ba15ed` | 7,316 | Redfish-Mockup-Server `23d21f9a` | Mockup server usage + DSP2043 link; committed with trailing whitespace normalized on 2 `cert = `/`key = ` lines (2 bytes) — content identical to upstream `b3af2ff369dcfd78c75f156bd1ddedfca46750d185c59eefdffaa2f11c289431` (7,318 B) — DOCS-27 provenance fix |
 | `redfish/schemas/v1-index.html` | https://redfish.dmtf.org/schemas/v1/ | 2026-10-22 12:17 | `e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86` | 3,448,133 | n/a | Full DMTF schema index listing (14,259 JSON/YAML entries) |
 | `redfish/schemas/v1/<16 schemas>.json` | https://redfish.dmtf.org/schemas/v1/<Name>.json | 2026-10-22 12:34 | see `sha256sum` in run notes | 106,322 (total) | latest per aggregator | Base aggregator stubs for the 16 resources the client maps |
@@ -284,7 +284,12 @@ redirection), so no fixture referencing a specific version is affected.
   2026-10-24 12:15 UTC; Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md,
   CLIENTS.md all byte-identical at the new HEAD — verified by SHA-256, no
   refresh needed; re-verified 2026-10-25 00:07 UTC at `63a18f4` — still HEAD,
-  all four docs byte-identical)
+  all four docs byte-identical; **re-verified 2026-10-25 07:00 UTC — `63a18f4`
+  still HEAD, all four docs byte-identical, and the file-level last-touch
+  commits pinned via the GitHub path API: `Redfish.md` → `bb6b9ebc`
+  (2026-09-21), the other three docs → `24e758ab` (2025-06-26 docs-folder
+  creation) — manifest rows updated to record both anchors; no refresh
+  needed)**
 
 ### DOCS-27 — corpus freshness audit + mockup README provenance fix (2026-10-25 00:15 UTC)
 

@@ -263,11 +263,16 @@ class _TemperatureTile extends StatelessWidget {
       if (reading.upperCritical != null)
         'crit ${reading.upperCritical!.toStringAsFixed(0)}',
     ];
+    // UI-2: the merged label carries the same threshold context sighted users
+    // get from the subtitle (the tile is one self-describing announcement —
+    // `excludeSemantics` drops the inner Text, so the label must include it).
+    final String announced =
+        'Temperature ${reading.name}, $value, ${_healthLabel(reading.status.healthEnum)}'
+        '${thresholds.isEmpty ? '' : ', ${thresholds.join(' / ')}'}';
     return Semantics(
       container: true,
       excludeSemantics: true,
-      label:
-          'Temperature ${reading.name}, $value, ${_healthLabel(reading.status.healthEnum)}',
+      label: announced,
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         title: Text(reading.name),
@@ -291,11 +296,16 @@ class _FanTile extends StatelessWidget {
     final String value = reading.reading == null
         ? '—'
         : '${reading.reading!.toStringAsFixed(0)} RPM';
+    // UI-2: the merged label carries the physical-context hint sighted users
+    // get from the subtitle (one self-describing announcement; the inner
+    // subtitle Text is excluded from semantics, so the label must keep it).
+    final String announced =
+        'Fan ${reading.name}, $value, ${_healthLabel(reading.status.healthEnum)}'
+        '${reading.physicalContext == null ? '' : ', ${reading.physicalContext}'}';
     return Semantics(
       container: true,
       excludeSemantics: true,
-      label:
-          'Fan ${reading.name}, $value, ${_healthLabel(reading.status.healthEnum)}',
+      label: announced,
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         title: Text(reading.name),
@@ -326,11 +336,18 @@ class _SensorTile extends StatelessWidget {
         .map((MapEntry<String, double> e) =>
             '${e.key} ${e.value.toStringAsFixed(1)}')
         .toList();
+    // UI-2: the merged label carries the reading-type + threshold context
+    // sighted users get from the subtitle (one self-describing announcement;
+    // the inner subtitle Text is excluded from semantics, so the label must
+    // keep it).
+    final String announced =
+        'Sensor ${reading.name}, $value, ${_healthLabel(reading.status.healthEnum)}'
+        '${reading.readingType == null ? '' : ', ${reading.readingType}'}'
+        '${thresholds.isEmpty ? '' : ', ${thresholds.join(' / ')}'}';
     return Semantics(
       container: true,
       excludeSemantics: true,
-      label:
-          'Sensor ${reading.name}, $value, ${_healthLabel(reading.status.healthEnum)}',
+      label: announced,
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         title: Text(reading.name),
