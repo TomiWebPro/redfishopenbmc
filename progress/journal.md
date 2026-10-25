@@ -3563,3 +3563,64 @@
   advanced (501/400 query-error classification test-pinned — the discovery
   pass must gate queries, never retry a 501); UI-2 advanced (KVM console card
   body rows merged).
+
+## 2026-10-25 — agent:redfish-automation — EMU 69→71 ActionInfo contract + UI-2 PowerView footnote
+
+**Done:**
+- EMULATOR primary per alternation (last primary: DOCS 04:10). Closed the last
+  recurring "un-pinned surface" note: the **ActionInfo resource contract** is
+  now pinned live. The mockup serves two real ActionInfo resources under
+  `CertificateService` — `GenerateCSRActionInfo` +
+  `ReplaceCertificateActionInfo` — advertised via `@Redfish.ActionInfo`:
+  1. **Link resolution + resource shape:** the `@Redfish.ActionInfo` link
+     resolves from the action (POST-only targets are never followed), the
+     resource is `#ActionInfo.v1_4_1.ActionInfo` (fixture-schema match), and
+     every `Parameters[]` entry carries Name/Required/DataType (13 params on
+     GenerateCSR).
+  2. **Per-parameter AllowableValues:** KeyPairAlgorithm TPM_ALG_RSA/ECDSA,
+     KeyCurveId P256/P384/P521, KeyUsage 14 values, CertificateType `['PEM']`
+     — the exact `Parameters[].AllowableValues` shape a bmcweb
+     `ResetActionInfo`-style crawl parses on OpenBMC (DOCS-4/13; DSP0266
+     §9.6.14 / ActionInfo.v1_4_1). The `ResetActionInfo` resource itself stays
+     absent on this fixture → the OpenBMC allow-list-source fetch remains a
+     code task inside #022/#016.
+  Suite 69 → **71/71** passed on pinned `23d21f9a`; trap cleanup verified,
+  port closed.
+- UI-2 increment: **PowerView destructive-actions guidance footnote now one
+  merged semantics node** — the view's last bare non-card text no longer
+  announces as a detached sentence below the card; visible text preserved;
+  +1 widget test; PowerView 18→19 (19/19 targeted before the full gate).
+
+**Decisions:**
+- EMULATOR per alternation; chose the ActionInfo pin because (a) it is the one
+  "un-pinned surface" #022/#016 has referenced in every run since 2026-10-23,
+  (b) it is tiny, fixture-true, read-only (GET only — no action POSTs, no key
+  material touched), and (c) REQUIREMENTS.md's ActionInfo row was the natural
+  Partial→OK close. The `KeyService`/`NVMeoFSecrets` surface holds real key
+  strings — deliberately NOT pinned beyond the corpus crawl's existence check
+  and NOT client-mapped; a security note stands: never read secrets back
+  (#015/#026 rule), recorded in Next.
+- UI increment: the PowerView footnote was the genuine last "non-card label"
+  in the view (the KVM console-card precedent from 04:10). Did not rush the
+  open-ended focus-order hunt (prior-run rationale).
+- No new dependencies, no TLS change, no emulator dependency in plain
+  `flutter test` (suite lives in `test_integration/`), no production behaviour
+  change beyond the semantics wrapper.
+
+**Next:**
+- DOCS per alternation: corpus mirror queue EMPTY; cheap candidate — anchor
+  freshness re-verification (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
+  1.25.0, schema index byte-compare), or a read-surface pin for the last
+  un-pinned service-root branches (`CertificateService`, `KeyService`/
+  `NVMeoFSecrets`, `ComponentIntegrity` — NOT client-mapped → no fixture duty;
+  note: NVMeoFSecrets serves key material, keep it read-only/never-render).
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- Keep pushing every run (credentials verified; 0 queued).
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 69 → 71; #022 advanced (ActionInfo
+  resource contract shape pinned live on the served CertificateService
+  resources — the `ResetActionInfo`-crawl input); #016 advanced (ActionInfo
+  crawl shape + link resolution pinned); UI-2 advanced (PowerView footnote
+  merged).

@@ -7,41 +7,42 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (DOCS run — **query-501 gap closed + anchor
-  re-verification**): the §7.3.1 query-error surface is now pinned with two
-  `RedfishException` normalization fixtures (`Base.1.0.QueryNotSupported`
-  501 + `Base.1.0.QueryNotSupportedOnResource` 400, both carrying the
-  mirrored registry message texts), and **501 (Not Implemented) is now
-  classified NON-retryable** — a permanent "service does not implement this
-  query parameter" signal (DSP0266 §7.3.1), so the #018 discovery pass must
-  gate the query instead of re-issuing it (transient 5xx / 429 stay
-  retryable); all upstream anchors re-verified unchanged (bmcweb `63a18f4`,
-  mockup `23d21f9a`, DSP0266 1.25.0 byte-identical, schema index
-  byte-identical) → **no corpus refresh**; same run's UI-2 increment: the
-  KVM **console card body rows** (`Manager: …`, `Max concurrent sessions: …`,
-  `HTML5 console — open via BMC web UI.`) now each announce as ONE merged
-  semantics node (the established card-row pattern) instead of detached
-  labels — +1 widget test, KVM 11→12)
-- **Current focus:** **DOCS (2026-10-25)** — closed the row-923 query-501
-  gap (unit fixtures + 501 non-retryable classification); next primary is
-  **EMULATOR** per alternation — corpus mirror queue EMPTY; candidates:
-  re-run the corpus-invariant published-types crawl, or pin a remaining
-  un-pinned surface; then P1 #015 (AuthManager) — `expiryFromService` + the Sessions
-  pin are ready, wire the discovered SessionService body into login +
-  re-auth on `isExpired`; #016: the PATCH transport + If-Match boundary are
-  pinned on all live seams (Boot/IndicatorLED, Control SetPoint,
-  Bios/Settings, Manager.Reset), remaining is the actual If-Match/
-  `@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit tests for
-  the 412 path; #022/#016: `ResetActionInfo` ActionInfo resource crawl
-  (bmcweb-style BMCs; NOT pinable on the DMTF mockup) + the Control SetPoint
-  AllowableMin/Max pre-validation rule; #018: query-capability surface +
-  live `$expand` contract pinned (now all three collections + depth bound,
-  trace row landed) — remaining: build the lightweight discovery pass + the
-  cache fixes; **new feature candidate #028:** BIOS-config editor
-  (Bios/Settings become client-mapped → served versions move into
-  `test/fixtures/redfish/schemas/` + the corpus-invariant family list gains
-  `Bios`/`Settings`; the Bios/Settings PATCH round-trip seam is now
-  pinned); corpus mirror queue: **EMPTY**
+- **Last updated:** 2026-10-25 (EMULATOR run — **ActionInfo resource contract
+  pinned live**): the recurring #022/#016 note "crawl the `ResetActionInfo`
+  ActionInfo *resource*" advanced — the emulator now proves the two
+  `CertificateService` actions' `@Redfish.ActionInfo` links resolve to real
+  `#ActionInfo.v1_4_1.ActionInfo` resources whose `Parameters[]` carry
+  `Name`/`Required`/`DataType` + per-parameter `AllowableValues`
+  (`KeyPairAlgorithm`/`KeyCurveId`/`KeyUsage`/`CertificateType [PEM]`) — the
+  exact shape a bmcweb `ResetActionInfo` crawl parses on OpenBMC (EMU 69→71;
+  REQUIREMENTS.md ActionInfo row updated); the `ResetActionInfo` resource
+  itself stays absent on the DMTF mockup so the OpenBMC allow-list-source
+  crawl remains a code task inside #022/#016; same run's UI-2 increment: the
+  PowerView destructive-actions guidance line now announces as ONE merged
+  semantics node (the KVM console-card precedent) instead of a bare detached
+  sentence below the card — +1 widget test, PowerView 18→19)
+- **Current focus:** **EMULATOR (2026-10-25)** — pinned the ActionInfo
+  resource contract; corpus mirror queue still EMPTY; remaining EMU
+  candidates: re-run the corpus-invariant published-types crawl on the pinned
+  `23d21f9a` (already in-suite), or pin the last un-pinned service-root
+  branches the crawl visits (`CertificateService`, `KeyService`/
+  `NVMeoFSecrets`, `ComponentIntegrity` — all NOT client-mapped, so no fixture
+  duty; a read-surface pin would document them); then P1 #015 (AuthManager) —
+  `expiryFromService` + the Sessions pin are ready, wire the discovered
+  SessionService body into login + re-auth on `isExpired`; #016: the PATCH
+  transport + If-Match boundary are pinned on all live seams (Boot/IndicatorLED,
+  Control SetPoint, Bios/Settings, Manager.Reset), remaining is the actual
+  If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit tests
+  for the 412 path; #022/#016: the ActionInfo *resource* crawl on OpenBMC is
+  now shape-pinned (this run) — the remaining piece is the actual
+  `ResetActionInfo`-resource fetch + `Parameters[].AllowableValues` wiring in
+  FeatureRules + the Control SetPoint AllowableMin/Max pre-validation rule;
+  #018: query-capability surface + live `$expand` contract pinned — remaining:
+  build the lightweight discovery pass + the cache fixes; **new feature
+  candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
+  served versions move into `test/fixtures/redfish/schemas/` + the
+  corpus-invariant family list gains `Bios`/`Settings`; the Bios/Settings
+  PATCH round-trip seam is now pinned); corpus mirror queue: **EMPTY**
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -780,7 +781,21 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       adds the multipart variant (DOCS-4/9), so
       `UpdateServiceInfo.multipartHttpPushUri` is null on this fixture and the
       #008/#020 upload flow must pick the single-push URI when that is all the
-      service advertises)**
+      service advertises))** → **71 tests
+      (ActionInfo resource contract pinned live 2026-10-25: the two
+      `CertificateService` actions (`#CertificateService.GenerateCSR` +
+      `#CertificateService.ReplaceCertificate`) each advertise an
+      `@Redfish.ActionInfo` link that resolves to a GET-able
+      `#ActionInfo.v1_4_1.ActionInfo` resource — `GenerateCSRActionInfo`
+      publishes 13 `Parameters[]` entries each with `Name`/`Required`/`DataType`
+      and per-parameter `AllowableValues` on `KeyPairAlgorithm`
+      (`TPM_ALG_RSA`/`TPM_ALG_ECDSA`), `KeyCurveId` (3 curves), `KeyUsage`
+      (14 values); `ReplaceCertificateActionInfo` publishes `CertificateType`
+      `AllowableValues ['PEM']` — the exact `Parameters[].AllowableValues`
+      shape a bmcweb `ResetActionInfo`-style crawl produces on OpenBMC (#022/
+      #016; DOCS-4/13); the `ResetActionInfo` resource itself is still absent
+      on this fixture, so the OpenBMC allow-list-source crawl stays a code
+      task; REQUIREMENTS.md ActionInfo row updated; EMU 69→71)**
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.

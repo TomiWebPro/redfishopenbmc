@@ -622,6 +622,35 @@ void main() {
     });
   });
 
+  group('PowerView — guidance footnote semantics (UI-2)', () {
+    testWidgets(
+        'destructive-actions footnote announces as one merged node with the '
+        'visible text preserved', (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      final PowerController controller = _fakeController();
+
+      await tester.pumpWidget(
+        harness(manager: manager, controller: controller),
+      );
+      await tester.pumpAndSettle();
+
+      const String footnote = 'Destructive actions (force off, restart) '
+          'require confirmation. State refreshes automatically after a reset.';
+      // The visible guidance text is preserved for sighted users…
+      expect(find.text(footnote), findsOneWidget);
+      // …and announces as ONE merged semantics node (the established
+      // card-row pattern) instead of a bare detached sentence below the card.
+      expect(find.bySemanticsLabel(footnote), findsOneWidget);
+      // The action buttons keep their own control nodes.
+      expect(find.bySemanticsLabel(RegExp('^Power On')), findsOneWidget);
+    });
+  });
+
   group('PowerView — error state semantics (UI-2)', () {
     testWidgets(
         'inline error announces one merged node + a separate Retry control',

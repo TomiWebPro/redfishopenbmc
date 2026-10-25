@@ -2958,4 +2958,153 @@ void main() {
       }
     });
   });
+
+  group(
+      'emulator: ActionInfo resource contract — Parameters[] '
+      'Required/DataType/AllowableValues (#022/#016)', () {
+    late AuthManager manager;
+    late RedfishClient client;
+
+    setUpAll(() async {
+      manager = AuthManager(storage: InMemoryStorage());
+      await manager.login('em-actioninfo', emulatorProfile());
+      client = manager.clientFor('em-actioninfo')!;
+    });
+
+    tearDownAll(() async {
+      await manager.logout('em-actioninfo');
+    });
+
+    test(
+        'certificate service: actions advertise @Redfish.ActionInfo '
+        'resources that resolve and publish the ActionInfo contract '
+        '(#022/#016)', () async {
+      // The recurring #022/#016 note is "crawl the ResetActionInfo ActionInfo
+      // *resource*". On this fixture there is no ResetActionInfo (the
+      // ComputerSystem.Reset allow-list exists only in the annotation form —
+      // pinned 2026-10-23), but the mockup DOES serve real ActionInfo
+      // resources for CertificateService.GenerateCSR and
+      // CertificateService.ReplaceCertificate. Those resources are the exact
+      // shape a ResetActionInfo-style crawler must parse:
+      //   Parameters[].{Name, Required, DataType, AllowableValues?}
+      // per DSP0266 §9.6.14 / ActionInfo.v1_4_1. This pins the crawl contract
+      // on the served resources so the future #022/#016 crawler has a live
+      // shape to build against (bmcweb uses the same Parameters/
+      // AllowableValues form — DOCS-4/13).
+      final Map<String, dynamic> certSvc =
+          await client.getJson('/redfish/v1/CertificateService');
+      final Map<dynamic, dynamic> actions =
+          certSvc['Actions'] as Map<dynamic, dynamic>;
+      expect(
+          actions.keys,
+          containsAll(<String>[
+            '#CertificateService.GenerateCSR',
+            '#CertificateService.ReplaceCertificate',
+          ]));
+
+      final Map<dynamic, dynamic> generateCsr =
+          actions['#CertificateService.GenerateCSR'] as Map<dynamic, dynamic>;
+      final Object? generateCsrInfo = generateCsr['@Redfish.ActionInfo'];
+      expect(generateCsrInfo, isA<String>(),
+          reason: '#022/#016: an action advertising an ActionInfo link must '
+              'resolve it; the crawler follows @Redfish.ActionInfo, never the '
+              'POST-only target');
+      expect(
+        generateCsr['target'],
+        '/redfish/v1/CertificateService/Actions/'
+        'CertificateService.GenerateCSR',
+      );
+
+      final Map<String, dynamic> info =
+          await client.getJson(generateCsrInfo! as String);
+      expect(info['@odata.type'], startsWith('#ActionInfo.'));
+      expect(info['@odata.type'], '#ActionInfo.v1_4_1.ActionInfo',
+          reason: 'the served type must match the fixture schema '
+              '(ActionInfo.v1_4_1.json)');
+      final List<dynamic> params =
+          info['Parameters'] as List<dynamic>? ?? <dynamic>[];
+      expect(params, isNotEmpty);
+      // Every parameter carries the crawl contract fields.
+      for (final Object? p in params) {
+        final Map<dynamic, dynamic> param = p as Map<dynamic, dynamic>;
+        expect(param['Name'], isA<String>());
+        expect(param['Required'], isA<bool>(),
+            reason: '#022/#016: Required flags shape validation UX');
+        expect(param['DataType'], isA<String>(),
+            reason: '#022/#016: DataType (String/StringArray/Number/Object) '
+                'drives the input control');
+      }
+      expect(params.length, 13,
+          reason: 'GenerateCSRActionInfo publishes 13 documented parameters');
+    });
+
+    test(
+        'ActionInfo allow-lists: per-parameter AllowableValues resolve from '
+        'the resource — the exact bmcweb ResetActionInfo shape (#022/#016)',
+        () async {
+      // The annotation-form allow-list (ResetType@Redfish.AllowableValues) is
+      // pinned elsewhere; this pins the ActionInfo *resource form*: the
+      // per-parameter AllowableValues array a bmcweb `ResetActionInfo` crawl
+      // would read. Both served CertificateService ActionInfo resources
+      // declare such arrays — GenerateCSR on KeyPairAlgorithm/KeyCurveId/
+      // KeyUsage, ReplaceCertificate on CertificateType.
+      final Map<String, dynamic> generateCsr = await client
+          .getJson('/redfish/v1/CertificateService/GenerateCSRActionInfo');
+      final List<dynamic> generateParams =
+          generateCsr['Parameters'] as List<dynamic>? ?? <dynamic>[];
+
+      List<dynamic> allowedOf(String name) {
+        final List<dynamic> matches = generateParams
+            .where(
+                (Object? p) => p is Map<dynamic, dynamic> && p['Name'] == name)
+            .toList();
+        return (matches.first as Map<dynamic, dynamic>)['AllowableValues']
+                as List<dynamic>? ??
+            <dynamic>[];
+      }
+
+      expect(allowedOf('KeyPairAlgorithm'),
+          containsAll(<String>['TPM_ALG_RSA', 'TPM_ALG_ECDSA']));
+      expect(
+          allowedOf('KeyCurveId'),
+          containsAll(<String>[
+            'TPM_ECC_NIST_P256',
+            'TPM_ECC_NIST_P384',
+            'TPM_ECC_NIST_P521',
+          ]));
+      expect(
+        allowedOf('KeyUsage'),
+        containsAll(<String>[
+          'DigitalSignature',
+          'NonRepudiation',
+          'KeyEncipherment',
+          'DataEncipherment',
+          'KeyAgreement',
+          'KeyCertSign',
+          'CRLSigning',
+          'EncipherOnly',
+          'DecipherOnly',
+          'ServerAuthentication',
+          'ClientAuthentication',
+          'CodeSigning',
+          'EmailProtection',
+          'OCSPSigning',
+        ]),
+      );
+
+      final Map<String, dynamic> replace = await client.getJson(
+          '/redfish/v1/CertificateService/ReplaceCertificateActionInfo');
+      final List<dynamic> replaceParams =
+          replace['Parameters'] as List<dynamic>? ?? <dynamic>[];
+      final List<dynamic> certType = replaceParams
+          .where((Object? p) =>
+              p is Map<dynamic, dynamic> && p['Name'] == 'CertificateType')
+          .toList();
+      expect(certType, isNotEmpty);
+      expect(
+        (certType.first as Map<dynamic, dynamic>)['AllowableValues'],
+        containsAll(<String>['PEM']),
+      );
+    });
+  });
 }

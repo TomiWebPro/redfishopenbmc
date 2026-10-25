@@ -5,7 +5,7 @@ status: open
 priority: P2
 type: bug
 created: 2026-08-30
-updated: 2026-08-30
+updated: 2026-10-25
 closed: null
 assignee: unassigned
 labels: [power, state, race, error-handling]
@@ -52,6 +52,7 @@ estimated_tokens: 14000
 
 ## Progress Log
 
+- 2026-10-25 — EMU run: the recurring "crawl the `ResetActionInfo` ActionInfo *resource*" note advanced — the emulator now pins the **ActionInfo resource contract live** via the two `CertificateService` ActionInfo resources the fixture serves (`GenerateCSRActionInfo` + `ReplaceCertificateActionInfo`): the `@Redfish.ActionInfo` link resolves from the action, the resource is `#ActionInfo.v1_4_1.ActionInfo`, every `Parameters[]` entry carries `Name`/`Required`/`DataType`, and per-parameter `AllowableValues` resolve (`KeyPairAlgorithm` [TPM_ALG_RSA, TPM_ALG_ECDSA], `KeyCurveId` [3 curves], `KeyUsage` [14 values], `CertificateType` [PEM]). That is the exact shape a bmcweb `ResetActionInfo` crawl produces on OpenBMC (DOCS-4/13); the `ResetActionInfo` resource itself is still absent on the DMTF mockup, so the actual allow-list-source crawl on OpenBMC remains a code task. EMU 69 → 71; REQUIREMENTS.md ActionInfo row updated.
 - 2026-08-30 — Created from triage analysis (feature #15). See also #005.
 
 ## References

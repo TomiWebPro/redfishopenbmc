@@ -4101,3 +4101,71 @@ Append-only run log for the `redfish-automation` scheduler job.
   `af26535..5a41fa0  main -> main` — the DOCS auto commit (5a41fa0) pushed.
   `git rev-list --count origin/main..HEAD` = 0 (fully synced), working tree
   clean. Queued local commits ahead of origin/main: **0**.
+
+## 2026-10-25 06:15 UTC — EMULATOR (ActionInfo resource contract pinned) + UI-2 PowerView footnote
+
+- **Baseline:** analyze 0; tests 358 passed / 1 skipped; starting commit 6f82255
+  (origin/main fully synced, 0 queued local commits); issues validate OK;
+  working tree clean; no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR per alternation (last primary: DOCS 04:10 — EMU is
+  due). The corpus mirror queue is EMPTY and verified, and the suite was already
+  at 69/69, so the run closed the last recurring "un-pinned surface" note in
+  #022/#016: **the ActionInfo resource contract is now pinned live**. The DMTF
+  mockup does NOT serve a `ResetActionInfo` ActionInfo resource (a fact pinned
+  2026-10-23), but it DOES serve two real ActionInfo resources —
+  `/CertificateService/GenerateCSRActionInfo` and
+  `/CertificateService/ReplaceCertificateActionInfo`, advertised via
+  `@Redfish.ActionInfo` links on the `#CertificateService.GenerateCSR` and
+  `#CertificateService.ReplaceCertificate` actions. New emulator group pins:
+  (1) the `@Redfish.ActionInfo` link resolves from the action (never the
+  POST-only target), the resource is `#ActionInfo.v1_4_1.ActionInfo` (matches
+  the fixture schema), and every `Parameters[]` entry carries
+  `Name`/`Required`/`DataType` (13 params on GenerateCSR); (2) per-parameter
+  `AllowableValues` resolve (`KeyPairAlgorithm` TPM_ALG_RSA/ECDSA, `KeyCurveId`
+  3 curves, `KeyUsage` 14 values, `CertificateType ['PEM']`) — the exact shape
+  a bmcweb `ResetActionInfo`-style crawl parses on OpenBMC (DOCS-4/13, DSP0266
+  §9.6.14 / ActionInfo.v1_4_1). EMU 69 → **71 tests** (all pass on pinned
+  `23d21f9a`; the run_tests.sh trap stopped the server). REQUIREMENTS.md
+  ActionInfo row updated (Partial → OK: resource form live; the actual
+  `ResetActionInfo` fetch on OpenBMC stays code-task #022/#016).
+- **Docs:** none new mirrored (corpus queue EMPTY; anchors unchanged per the
+  04:10 verification). Only the REQUIREMENTS.md ActionInfo trace row updated.
+- **Emulator:** 71/71 passed on pinned `23d21f9a` (server setup + cert + suite
+  via `tool/emulator/run_tests.sh`; trap cleanup verified, no leftover process;
+  port 8443 confirmed closed after the run).
+- **Code/tests:** no production lib change from the EMU stream (2 new pins in
+  `test_integration/emulator/emulator_suite_test.dart` only). UI-2 increment
+  below touched `lib/features/power/views/power_view.dart` + its test.
+- **UI:** one small tested UI-2 increment — **PowerView destructive-actions
+  guidance footnote now a merged semantics node**. The view's last bare
+  non-card text — `Destructive actions (force off, restart) require
+  confirmation. State refreshes automatically after a reset.` — sat below the
+  card as a detached `Text` (screen readers heard a lone sentence with no
+  context). It now renders inside the established
+  `Semantics(container + excludeSemantics)` card-row pattern (same class as the
+  KVM console-card `HTML5 console — open via BMC web UI.` line merged 04:10):
+  one self-describing announcement, visible text preserved for sighted users.
+  +1 widget test (merged label findsOneWidget + visible text preserved + the
+  `Power On` button keeps its own control node). Targeted run: 19/19 passed
+  before the full gate (PowerView 18 → 19). No new dependencies; no overflow
+  impact (no-overflow tests at 320/800/1300 still green).
+- **Verification:** analyze 0; tests **359 passed / 1 skipped** (+1 — the new
+  PowerView footnote test); emulator 71/71; issues validate OK;
+  `git diff --check` clean; secret scan: Dart code + JSON-prose docs only, no
+  credentials (the `Password`/`ChangePassword` hits are schema field names in
+  pre-existing REQUIREMENTS.md rows; the bad-login fixture password was already
+  tracked); `git diff --stat` 7 files: emulator_suite_test.dart,
+  power_view.dart, power_view_test.dart, REQUIREMENTS.md, FUTUREWORK.md,
+  issues/open/016, issues/open/022. `dart format` clean on the touched files.
+- **Commit:** (pending this run) —
+  `auto: EMULATOR — ActionInfo resource contract pinned live (EMU 69→71) +
+  UI-2 PowerView guidance footnote merged (run 2026-10-25 06:15)`.
+- **Next:** 1) DOCS per alternation — corpus mirror queue EMPTY and verified;
+   cheap candidate: anchor freshness re-verification (bmcweb `63a18f4`, mockup
+   `23d21f9a`, DSP0266 1.25.0, schema index byte-compare), or pin the last
+   un-pinned service-root branches the corpus crawl visits (`CertificateService`,
+   `KeyService`/`NVMeoFSecrets`, `ComponentIntegrity` — all NOT client-mapped,
+   no fixture duty); 2) P1 #015 AuthManager — wire `Session.expiryFromService`
+   into login, re-auth on `isExpired`, token/location from create RESPONSE
+   HEADERS only; 3) keep pushing every run (credentials verified; 0 queued
+   commits).

@@ -5,7 +5,7 @@ status: open
 priority: P2
 type: feature
 created: 2026-08-30
-updated: 2026-08-30
+updated: 2026-10-25
 closed: null
 assignee: unassigned
 labels: [redfish-core, http, spec]
@@ -50,6 +50,7 @@ estimated_tokens: 14000
 
 ## Progress Log
 
+- 2026-10-25 — EMU run: the ActionInfo *resource* crawl shape advanced — the emulator pins the `CertificateService` `@Redfish.ActionInfo` link resolution + the `Parameters[].{Name,Required,DataType,AllowableValues}` contract live (EMU 69→71; `GenerateCSRActionInfo`/`ReplaceCertificateActionInfo` on the fixture). The per-parameter allow-list form is the same shape a future `ResetActionInfo`-resource crawl reads on OpenBMC (#022); the `ResetActionInfo` resource itself remains absent on the DMTF mockup, so that fetch + the If-Match/`@odata.etag` wiring remain code tasks.
 - 2026-08-30 — Created from triage analysis (core correctness #9).
 
 ## References

@@ -161,10 +161,20 @@ class PowerView extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Text(
-          'Destructive actions (force off, restart) require confirmation. '
-          'State refreshes automatically after a reset.',
-          style: Theme.of(context).textTheme.bodySmall,
+        // UI-2: the guidance line announces as ONE self-describing node (the
+        // established card-row pattern — same class as the KVM console card's
+        // "HTML5 console — open via BMC web UI." line) instead of a bare
+        // detached sentence below the card. The visible text is preserved.
+        Semantics(
+          container: true,
+          excludeSemantics: true,
+          label: 'Destructive actions (force off, restart) require '
+              'confirmation. State refreshes automatically after a reset.',
+          child: Text(
+            'Destructive actions (force off, restart) require confirmation. '
+            'State refreshes automatically after a reset.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ),
       ],
     );
