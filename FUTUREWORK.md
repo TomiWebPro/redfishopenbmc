@@ -7,29 +7,29 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (EMULATOR run — **last un-pinned service-root
-  branches pinned live**): the read surfaces of the final three service-root
-  branches the corpus crawl visits are now pinned — `CertificateService.
-  CertificateLocations` (`#CertificateLocations.v1_0_3`, 3 cert-store links),
-  `KeyService` (`#KeyService.v1_0_0`; `NVMeoFKeyPolicies/0` `#KeyPolicy.
-  v1_0_0` NVMeoF allow-lists pinned read-only, `NVMeoFSecrets`
-  `#KeyCollection.KeyCollection` 2 members pinned **collection-metadata only**
-  — members carry real `KeyString` material, so no member body is ever fetched
-  per the #015/#026 never-read-secrets-back rule), and `ComponentIntegrity`
-  collection (4 members) + `#ComponentIntegrity.v1_2_2` SPDM/TPM/USB shapes
-  incl. the disabled USB member (EMU 71→75; all three families NOT client-mapped
-  → no fixture schema duty, corpus-invariant unchanged); UI-2 increment:
-  OverviewView Memory card body now one merged semantics node (`32 GiB`, +1
-  widget test, overview 14→15); corpus mirror queue still EMPTY
-- **Current focus:** **EMULATOR (2026-10-25)** — last un-pinned service-root
-  branches pinned live (`CertificateLocations`, `KeyService` read-only incl.
-  the NVMeoFSecrets collection-metadata-only security boundary,
-  `ComponentIntegrity` SPDM/TPM/USB; EMU 71→75; all NOT client-mapped → no
-  fixture duty); corpus mirror queue still EMPTY; remaining DOCS candidates:
-  none queued — the corpus is complete and verified for all 38 families; next
-  DOCS per alternation: anchor freshness re-verification (bmcweb `63a18f4`,
-  mockup `23d21f9a`, DSP0266 1.25.0, schema index byte-compare), or a
-  REQUIREMENTS.md housekeeping pass now that branch pins are complete; then P1
+- **Last updated:** 2026-10-25 (DOCS run — **anchors re-verified, no corpus
+  refresh; Test-platforms description reconciled to the 75-test suite**): all
+  upstream anchors still current (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
+  1.25.0 byte-identical, schema index byte-identical — DOCS-27 ZERO advances
+  hold, 0 new downloads); REQUIREMENTS.md "Test platforms" note now describes
+  every one of the 75 emulator tests (was: count 75 but pins described only
+  through EMU 59→60 — added Controls PATCH, Bios/Settings PATCH,
+  Heaters + Manager.Reset, generalized `$expand` + `$levels=2` depth cap, the
+  two negative facts, ActionInfo resource contract, and the three last
+  service-root branches incl. the NVMeoFSecrets collection-metadata-only
+  boundary); UI-2 increment: OverviewView Temperatures + LED card bodies now
+  merged semantics nodes (the last two bare card-body Texts in the overview),
+  +2 widget tests, overview 15→17; corpus mirror queue still EMPTY
+- **Current focus:** **DOCS (2026-10-25)** — anchors re-verified (bmcweb
+  `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index byte-compare; 0
+  new downloads) + REQUIREMENTS.md "Test platforms" description reconciled
+  with the 75-test suite (every EMU pin through 71→75 now described); corpus
+  mirror queue still EMPTY; remaining DOCS candidates: none queued — the
+  corpus is complete and verified for all 38 families; next DOCS per
+  alternation: another cheap anchor freshness re-verification, or a
+  REQUIREMENTS.md audit of the "60 tests" progression wording in
+  `documentations/external/README.md` DOCS-25/28 notes (historical records —
+  verify they read as history, not current state); then P1
   #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire
   the discovered SessionService body into login + re-auth on `isExpired`;
   #016: the PATCH transport + If-Match boundary are pinned on all live seams

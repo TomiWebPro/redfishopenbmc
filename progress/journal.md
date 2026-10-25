@@ -3748,3 +3748,62 @@
   boundary in the suite); #022 advanced (the KeyPolicy NVMeoF allow-list
   shape is a second read-only allow-list source pinned live); UI-2 advanced
   (OverviewView Memory card body merged).
+
+## 2026-10-25 — agent:redfish-automation — DOCS anchors re-verified + Test-platforms reconciled + UI-2 Temperature/LED card bodies
+
+**Done:**
+- DOCS primary per alternation (last primary: EMULATOR 07:13). Corpus mirror
+  queue EMPTY and verified; took the two queued cheap DOCS candidates in one
+  pass:
+  1. **Anchor freshness re-verification — no corpus refresh.** bmcweb
+     `63a18f4` still HEAD (GitHub API), four mirrored docs byte-identical;
+     mockup `23d21f9a` still HEAD of `main` (GitHub API); DSP0266 1.25.0 200
+     + PDF byte-identical (`385ee6d0…`); schema index **byte-identical**
+     (`e5a29797…`, 3,448,133 B) → 0 new downloads, DOCS-27 ZERO advances
+     re-proven.
+  2. **REQUIREMENTS.md housekeeping — "Test platforms" description reconciled
+     with the 75-test suite.** The note counted 75 tests but described pins
+     only through EMU 59→60. Extended it with the EMU 60→75 pins: chassis
+     Controls + second live PATCH pin (SetPoint, EMU 60→63), Bios/Settings
+     PATCH round-trip + settings-object ETag (63→64), Heaters + Manager.Reset
+     round-trip (64→66), generalized `$expand` on Chassis/Managers +
+     `$levels=2` depth cap (66→68), the two negative facts (bad login mints a
+     session; `MultipartHttpPushUri` absent, 69), ActionInfo *resource*
+     contract via CertificateService (69→71), and the last three service-root
+     branches incl. the NVMeoFSecrets collection-metadata-only boundary
+     (71→75). "Last audited" header + manifest anchors note rotated to
+     08:06 UTC.
+- UI-2 increment: **OverviewView Temperatures + LED card bodies merged
+  semantics nodes** — the last two bare card-body Texts in the overview (the
+  07:13 Memory-body precedent): the temperature reading (`42.0 °C`) and the
+  indicator-LED state (`Lit`) each now render inside
+  `Semantics(container + excludeSemantics)` (one self-describing node,
+  visible text preserved); +2 widget tests; overview 15→17.
+
+**Decisions:**
+- DOCS per alternation; ran the housekeeping pass rather than pure
+  anchor re-verification because (a) the "75 tests but described through
+  59→60" mismatch is a genuine documentation defect the 07:13 hand-off
+  explicitly flagged, (b) anchors were verified 3× today with zero changes, so
+  a pure re-verify adds little. No new corpus gap appeared; no code change was
+  needed from the docs stream (the descriptions are the deliverable).
+- UI increment: Temperatures + LED were the genuine remaining "bare card-body
+  Text" class in OverviewView — the direct successor of the Processors/Memory
+  merges. Did not rush the open-ended focus-order hunt.
+- No new dependencies, no TLS change, no emulator dependency in plain
+  `flutter test`, no production behaviour change beyond the semantics
+  wrappers.
+
+**Next:**
+- EMULATOR per alternation: corpus mirror queue EMPTY; re-run the
+  corpus-invariant published-types crawl on the pinned `23d21f9a` (cheap
+  re-proof), or take the ActionInfo/`ResetActionInfo` crawler as code work
+  (#022/#016 — all service-root branches are now pinned).
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- Keep pushing every run (credentials verified; 0 queued).
+
+**Issues touched:**
+- none opened/closed this run. DOCS corpus verified current (no row status
+  change; "Last audited" header advanced); UI-2 advanced (OverviewView is now
+  fully merged-card-body — every card body in the view announces as one node).

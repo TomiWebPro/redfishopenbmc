@@ -245,6 +245,41 @@ void main() {
     });
 
     testWidgets(
+        'temperature card body announces as one merged semantics node (UI-2)',
+        (tester) async {
+      await tester.pumpWidget(scopeWith(sample: fullSample()));
+      await tester.pumpAndSettle();
+      // The reading ("42.0 °C") previously announced as a detached text node
+      // under the merged "Temperatures" header; it now announces as ONE
+      // self-describing node carrying the value (the established card-body
+      // pattern).
+      expect(
+        find.bySemanticsLabel('42.0 °C'),
+        findsOneWidget,
+        reason: 'the temperature reading must announce as a single node',
+      );
+      // The visible text stays for sighted users.
+      expect(find.text('42.0 °C'), findsOneWidget);
+    });
+
+    testWidgets(
+        'indicator LED card body announces as one merged semantics node (UI-2)',
+        (tester) async {
+      await tester.pumpWidget(scopeWith(sample: fullSample()));
+      await tester.pumpAndSettle();
+      // The state ("Lit") previously announced as a detached text node under
+      // the merged "Indicator LED" header; it now announces as ONE
+      // self-describing node carrying the value.
+      expect(
+        find.bySemanticsLabel('Lit'),
+        findsOneWidget,
+        reason: 'the indicator LED state must announce as a single node',
+      );
+      // The visible text stays for sighted users.
+      expect(find.text('Lit'), findsOneWidget);
+    });
+
+    testWidgets(
         'health banner announces one merged semantics node incl. the state '
         '(UI-2)', (tester) async {
       await tester.pumpWidget(scopeWith(sample: fullSample()));

@@ -6,9 +6,28 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (EMULATOR run — **last un-pinned service-root
-branches pinned live**): the read surfaces of the final three service-root
-branches the corpus crawl visits are now pinned in the emulator suite —
+Last audited: 2026-10-25 (DOCS run — **anchors re-verified, no corpus
+refresh; "Test platforms" description reconciled with the 75-test suite**):
+re-verified every upstream anchor — bmcweb `63a18f4` (still HEAD via GitHub
+API), mockup `23d21f9a` (still HEAD of `main` via GitHub API), DSP0266 1.25.0
+(200 on the working `www.dmtf.org` URL, byte-identical SHA-256 `385ee6d0…`),
+schema index 200 and **byte-identical** to the mirrored `v1-index.html`
+(SHA-256 `e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86`,
+3,448,133 bytes) → **no corpus refresh needed** (DOCS-27's ZERO version
+advances still hold). Housekeeping: the "Test platforms" emulator-suite note
+counted 75 tests but described pins only through EMU 59→60; it now also
+describes the EMU 60→75 pins — chassis Controls + the second live PATCH pin
+(SetPoint), Bios/Settings PATCH round-trip + the settings-object ETag,
+ThermalSubsystem Heaters + Manager.Reset round-trip, the generalized
+`$expand` pins on Chassis/Managers + the `$levels=2` depth cap, the two
+negative facts (bad login mints a session; `MultipartHttpPushUri` absent),
+the ActionInfo *resource* contract (CertificateService actions), and the
+last three service-root branches (CertificateLocations / KeyService /
+ComponentIntegrity incl. the NVMeoFSecrets collection-metadata-only boundary)
+— the count is now backed by descriptions of every pin.
+Prior: 2026-10-25 (EMULATOR run — **last un-pinned service-root branches
+pinned live**): the read surfaces of the final three service-root branches the
+corpus crawl visits are now pinned in the emulator suite —
 (1) `CertificateService.CertificateLocations`
 (`#CertificateLocations.v1_0_3`) links the three certificate stores the
 fixture serves (HTTPS server cert / UpdateService client cert / VirtualMedia
@@ -714,6 +733,78 @@ client-relevant families.
     concurrency token it serves). If-Match/412 enforcement therefore stays
     unit-level; the #016 client must send the settings-object ETag itself
     rather than rely on the service enforcing it.
+    **Chassis Controls +#006/#019/#022 power-capping surface (pinned
+    2026-10-24, EMU 60→63):** `/Chassis/1U/Controls` publishes the modern
+    control surface — `#ControlCollection` → `#Control.v1_5_0.Control`
+    PowerLimit (ControlType Power, SetPoint 500 W, AllowableMax 1000,
+    AllowableMin 150, `Sensor` DataSourceUri → Sensors/TotalPower) + CPU1Freq
+    (SettingMin/Max + Allowable ranges) — and the **second live PATCH pin**:
+    PATCHing `SetPoint: 600` answers 204 AND persists (in-memory), while a
+    bogus `SetPoint: 9999` is ALSO applied unvalidated — the #016/#022 client
+    must pre-validate against AllowableMin/Max. Control stays NOT
+    client-mapped (corpus DOCS-26).
+    **Bios/Settings PATCH round-trip (#016/#028, pinned 2026-10-24, EMU
+    63→64):** PATCH `/Bios/Settings` (the `@Redfish.Settings` SettingsObject
+    carrying the only ETag the mockup serves — `9234ac83b9700123cc32`) with
+    an `Attributes` subset answers 204 AND persists; the mockup IGNORES the
+    If-Match precondition on the settings object too (a stale etag still 204s
+    + persists), so the #016/#028 client must send the settings-object ETag
+    itself; restored in `finally`.
+    **ThermalSubsystem Heaters + Manager.Reset (pinned 2026-10-25, EMU
+    64→66):** `#HeaterCollection` → `#Heater.v1_0_1` CPU1Heater detail
+    (PhysicalContext CPU, Manufacturer/Model/Serial, HotPluggable,
+    LocationIndicatorActive, Status + `Links.Processors[0]` resolving to CPU1
+    + Metrics link → `#HeaterMetrics.v1_0_1` PrePowerOn/RuntimeHeatingTime-
+    Seconds + PowerWatts 200.3 + TemperatureReadingsCelsius) — the
+    thermal-UI surface; the **advertised `#HeaterMetrics.ResetMetrics` target
+    has NO `/Actions/` segment → POST 404 with an empty body** (the
+    PowerSupply.Reset advertised-as-candidate rule); `#Manager.Reset` POST
+    GracefulRestart → 204 (no task-monitor Location) AND a bogus `ResetType`
+    also 204s — the #022/#016 client must pre-validate against the MANAGER's
+    own allow-list (ForceRestart/GracefulRestart), never the system list.
+    Heaters stay NOT client-mapped (corpus DOCS-28).
+    **Generalized `$expand` pins (#018, pinned 2026-10-25, EMU 66→68):** the
+    SAME map-form `$expand=.($levels=1)` on `/redfish/v1/Chassis` AND
+    `/redfish/v1/Managers` also inlines FULL member bodies (Chassis
+    identity/ChassisType/Status/IndicatorLED/Links, Manager ManagerType/
+    FirmwareVersion/Model/Links + the manager-level reset allow-list
+    `[ForceRestart, GracefulRestart]` through the expanded payload), and
+    **`$levels=2` does NOT recurse** — the member's own `Links.Chassis` stays
+    a bare `@odata.id` ref (DSP0266 §7.3.2 depth-cap pinned), so the #018
+    discovery pass gets one full inlined hop per collection and must follow
+    cross-resource URIs explicitly.
+    **Two negative facts pinned (2026-10-25, EMU 69):** (1) **bad login
+    still mints a session** — the mockup runs WITHOUT auth enforcement, so
+    POST `Sessions` with a wrong password returns 204 + X-Auth-Token +
+    Location; the client's 401 mapping is provably unit-level (#015/#026) and
+    token presence proves nothing about credential validity on this fixture;
+    (2) **`MultipartHttpPushUri` is absent** — the fixture serves only
+    `HttpPushUri` (`/FWUpdate`) unlike bmcweb's multipart variant, so
+    `UpdateServiceInfo.multipartHttpPushUri` is null and the #008/#020 upload
+    flow must pick the single-push URI when that is all the service
+    advertises.
+    **ActionInfo resource contract (pinned 2026-10-25, EMU 69→71):** the two
+    `CertificateService` actions each advertise an `@Redfish.ActionInfo` link
+    that resolves to a GET-able `#ActionInfo.v1_4_1.ActionInfo` resource —
+    `GenerateCSRActionInfo` (13 `Parameters[]` with Name/Required/DataType +
+    AllowableValues on KeyPairAlgorithm/KeyCurveId/KeyUsage),
+    `ReplaceCertificateActionInfo` (`CertificateType` AllowableValues
+    `['PEM']`) — the exact `Parameters[].AllowableValues` shape a bmcweb
+    `ResetActionInfo`-style crawl produces (#022/#016; DOCS-4/13);
+    `ResetActionInfo` itself is still absent on this fixture.
+    **Last service-root branches (#015/#026/#022, pinned 2026-10-25, EMU
+    71→75):** `CertificateService.CertificateLocations`
+    (`#CertificateLocations.v1_0_3`) links the three certificate stores;
+    `KeyService` (`#KeyService.v1_0_0`) — `NVMeoFKeyPolicies/0`
+    (`#KeyPolicy.v1_0_0`) NVMeoF allow-lists (SecurityTransport/CipherSuite/
+    SecurityProtocol/DHGroup/SecureHash) pinned read-only + `NVMeoFSecrets`
+    (`#KeyCollection.KeyCollection`, 2 members) pinned **collection-metadata
+    only** (member bodies carry real `KeyString` key material — the suite
+    asserts the surface exists without fetching a member body, the #015/#026
+    never-read-secrets-back rule as an explicit scope boundary);
+    `ComponentIntegrity` collection (4 members) + `#ComponentIntegrity.
+    v1_2_2` SPDM/TPM/USB shapes incl. the disabled USB member. All three
+    families stay NOT client-mapped (no fixture schema duty).
 
 ## EMU-5 decision — richer emulator evaluation (2026-10-22)
 

@@ -4341,3 +4341,80 @@ Append-only run log for the `redfish-automation` scheduler job.
   `ce1745e..f275175  main -> main` — the EMULATOR auto commit (f275175)
   pushed. `git rev-list --count origin/main..HEAD` = 0 (fully synced),
   working tree clean. Queued local commits ahead of origin/main: **0**.
+
+## 2026-10-25 08:06 UTC — DOCS (anchors re-verified + Test-platforms description reconciled) + UI-2 OverviewView Temperature/LED card bodies
+
+- **Baseline:** analyze 0; tests 361 passed / 1 skipped; starting commit ba97fac
+  (origin/main fully synced, 0 queued local commits); issues validate OK;
+  working tree clean; no stash, no crashed-run leftovers.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 07:13 — DOCS is
+  due). The corpus mirror queue is EMPTY and verified (DOCS-27/28/29 all
+  confirmed ZERO version advances), so this run took the two queued cheap
+  candidates in one pass:
+  1. **Anchor freshness re-verification — no corpus refresh.** bmcweb `63a18f4`
+     still HEAD (GitHub API); all four mirrored bmcweb docs byte-identical at
+     current master; mockup `23d21f9a` still HEAD of `main` (GitHub API,
+     full SHA `23d21f9a3610f6b6fbb71ffc941296b159a524d2`); DSP0266 1.25.0 200
+     on the working `www.dmtf.org` URL with the PDF byte-identical
+     (`385ee6d0…`); schema index **byte-identical** to the mirrored
+     `v1-index.html` (SHA-256 `e5a29797…`, 3,448,133 B) → **no new downloads,
+     no corpus refresh** (DOCS-27's ZERO advances re-proven).
+  2. **REQUIREMENTS.md housekeeping — "Test platforms" description reconciled
+     with the 75-test suite.** The emulator-suite note counted **75 tests** but
+     the described pins ended at EMU 59→60 (If-Match). Extended the
+     description with the EMU 60→75 pins so the count is backed by what the
+     tests actually cover: chassis Controls + second live PATCH pin (SetPoint,
+     EMU 60→63), Bios/Settings PATCH round-trip + settings-object ETag (EMU
+     63→64), ThermalSubsystem Heaters + Manager.Reset round-trip (EMU 64→66),
+     generalized `$expand` on Chassis/Managers + `$levels=2` depth cap (EMU
+     66→68), the two negative facts (bad login mints a session;
+     `MultipartHttpPushUri` absent — EMU 69), the ActionInfo *resource*
+     contract (CertificateService actions, EMU 69→71), and the last three
+     service-root branches (CertificateLocations / KeyService read-only /
+     ComponentIntegrity incl. the NVMeoFSecrets collection-metadata-only
+     boundary, EMU 71→75). "Last audited" header + manifest anchors note
+     updated (08:06 UTC) with the re-verification.
+- **Docs:** anchors verified 08:06 UTC (see above); REQUIREMENTS.md Test
+  platforms note extended (+97 lines), "Last audited" header rotated;
+  `documentations/external/README.md` manifest re-verified timestamps
+  (07:00/00:15 → 08:06 UTC) + anchors header rotated. No new files mirrored,
+  no downloads (corpus mirror queue stays EMPTY).
+- **Emulator:** none this run (DOCS stream; the 75-test suite was verified
+  green on `23d21f9a` at 07:13).
+- **Code/tests:** no production lib change from the docs stream. UI-2
+  increment below touched `lib/features/overview/views/overview_view.dart` +
+  its test.
+- **UI:** one small tested UI-2 increment — **OverviewView Temperatures + LED
+  card bodies now merged semantics nodes**. The two card bodies were the last
+  bare `Text`s in the OverviewView card set: the temperature reading
+  (`42.0 °C`) and the indicator-LED state (`Lit`) each announced as a detached
+  node under their merged card headers (the same class as the Memory card body
+  merged at 07:13). Both now render inside the established
+  `Semantics(container + excludeSemantics)` card-body pattern — one
+  self-describing announcement that mirrors the visible text; visible text
+  preserved for sighted users. +2 widget tests (merged
+  `find.bySemanticsLabel('42.0 °C')` / `('Lit')` findsOneWidget + visible
+  text preserved). Targeted run: 17/17 passed before the full gate
+  (OverviewView 15 → 17). No new dependencies; no layout change (the Semantics
+  wrapper does not alter geometry), so the 320/800/1300 no-overflow tests are
+  unaffected.
+- **Verification:** analyze 0; tests **363 passed / 1 skipped** (+2 — the two
+  new card-body tests); issues validate OK; `git diff --check` clean; secret
+  scan: Dart code + JSON-prose docs only, no credentials (the `password`/
+  `key`/`token` hits are Redfish protocol prose — session-login description,
+  KeyService/KeyPolicy resource names, SHA-256 checksums); `git diff --stat`
+  4 files: README.md, REQUIREMENTS.md, overview_view.dart,
+  overview_view_test.dart. `dart format` reflowed overview_view.dart only
+  (114 files scanned, 1 changed).
+- **Commit:** (pending this run) —
+  `auto: DOCS — anchors re-verified (no corpus refresh) + Test-platforms
+  description reconciled to 75 tests + UI-2 Temperature/LED card bodies merged
+  (run 2026-10-25 08:06)`.
+- **Next:** 1) EMULATOR per alternation — corpus mirror queue EMPTY and
+  verified; candidates: re-run the corpus-invariant published-types crawl on
+  the pinned `23d21f9a` (cheap re-proof), or pin a remaining un-pinned
+  service-root branch (all main branches are pinned — the remaining surface is
+  ActionInfo/`ResetActionInfo` crawler work which is a code task #022/#016);
+  2) P1 #015 AuthManager — wire `Session.expiryFromService` into login,
+  re-auth on `isExpired`, token/location from create RESPONSE HEADERS only;
+  3) keep pushing every run (credentials verified; 0 queued commits).

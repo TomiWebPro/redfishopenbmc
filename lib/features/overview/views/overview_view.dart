@@ -350,17 +350,37 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
   }
 
   Widget _temperature(BuildContext context, SystemOverview o) {
-    return Text(
-      '${o.leadingTemperatureCelsius!.toStringAsFixed(1)} °C',
-      style: Theme.of(context).textTheme.bodyMedium,
+    final String text = '${o.leadingTemperatureCelsius!.toStringAsFixed(1)} °C';
+    // UI-2: the reading announces as ONE merged node ("42.0 °C") under the
+    // merged "Temperatures" header instead of a detached bare Text — the
+    // established card-body pattern (see _memory). The visible text stays for
+    // sighted users.
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: text,
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
     );
   }
 
   Widget _led(BuildContext context, SystemOverview o) {
     if (o.indicatorLed == IndicatorLed.unknown) return const NotExposed();
-    return Text(
-      o.indicatorLed.label,
-      style: Theme.of(context).textTheme.bodyMedium,
+    final String text = o.indicatorLed.label;
+    // UI-2: the state announces as ONE merged node ("Lit") under the merged
+    // "Indicator LED" header instead of a detached bare Text — the established
+    // card-body pattern (see _memory). The visible text stays for sighted
+    // users.
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: text,
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
     );
   }
 
