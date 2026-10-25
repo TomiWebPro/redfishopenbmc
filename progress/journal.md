@@ -3678,3 +3678,73 @@
 - none opened/closed this run. DOCS corpus verified current (no row status
   change; "Last audited" header advanced); UI-2 advanced (sensor tiles now
   announce threshold/context details — #007/#019 sensor UX input).
+
+## 2026-10-25 — agent:redfish-automation — EMU 71→75: last service-root branches pinned + UI-2 Memory card body
+
+**Done:**
+- EMULATOR primary per alternation (last primary: DOCS 07:10). Closed the
+  recurring "un-pinned service-root branches" note every run has carried since
+  2026-10-23 by pinning the read surfaces of the final three branches the
+  corpus crawl visits:
+  1. **CertificateService read surface:** `CertificateLocations`
+     (`#CertificateLocations.v1_0_3`) `Links.Certificates[]` — the three
+     certificate stores the fixture serves (Managers/BMC HTTPS, UpdateService
+     ClientCertificates, Systems/VirtualMedia CD1). The 06:15 run had pinned
+     the actions + ActionInfo; this completes the branch.
+  2. **KeyService read-only:** `#KeyService.v1_0_0` + `NVMeoFKeyPolicies/0`
+     (`#KeyPolicy.v1_0_0`) NVMeoF allow-lists — the #022-style allow-list
+     shape (SecurityTransport/CipherSuite/SecurityProtocol/DHGroup/
+     SecureHash) pinned as a read-only read. `NVMeoFSecrets`
+     (`#KeyCollection.KeyCollection`, 2 members) pinned **collection-metadata
+     only**: members carry real `KeyString` key material, so the suite proves
+     the surface exists (type + count + member @odata.id list) without ever
+     fetching a member body — the #015/#026 never-read-secrets-back rule,
+     stated as an explicit scope boundary in the test.
+  3. **ComponentIntegrity:** collection (4 members) + `#ComponentIntegrity.
+     v1_2_2` SPDM (enabled, DMTF MeasurementSet with digest Measurements,
+     TargetComponentURI) + TPM (PCR measurement set) + the **disabled** USB
+     member — enabled-state read per member, never assumed.
+  Suite 71 → **75/75** passed on pinned `23d21f9a`; trap cleanup verified,
+  port closed. All three families remain NOT client-mapped → no fixture schema
+  duty (corpus-invariant unchanged).
+- UI-2 increment: **OverviewView Memory card body now one merged semantics
+  node** — the capacity (`32 GiB`) announced as a detached bare Text under the
+  merged "Memory" header; it now uses the established
+  `Semantics(container + excludeSemantics)` card-body pattern (Processors
+  precedent): one self-describing node, visible text preserved, +1 widget
+  test; overview 14→15.
+- Docs side: REQUIREMENTS.md emulator-suite test count 60 → 75 + new
+  "Last audited" entry documenting the three branch pins (incl. the
+  NVMeoFSecrets security boundary).
+
+**Decisions:**
+- EMULATOR per alternation; took the queued "read-surface pin for the last
+  un-pinned branches" candidate because (a) it is the explicit "Next" from the
+  07:10 DOCS run and the last recurring un-pinned-surface note, (b) it is
+  fixture-true, 100% read-only (no action POSTs), and (c) it documents the
+  complete service-root graph in-suite — every branch the corpus crawl visits
+  is now pinned. The NVMeoFSecrets security boundary was the deliberate
+  exception: collection metadata only, never member bodies (KeyString).
+- UI increment: the Memory card body was the genuine next "non-card label"
+  class in OverviewView — the direct sibling of the Processors merge from
+  earlier today. Did not rush the open-ended focus-order hunt.
+- No new dependencies, no TLS change, no emulator dependency in plain
+  `flutter test` (suite lives in `test_integration/`), no production behaviour
+  change beyond the semantics wrapper.
+
+**Next:**
+- DOCS per alternation: corpus mirror queue EMPTY; cheap candidate — anchor
+  freshness re-verification (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
+  1.25.0, schema index byte-compare), or a REQUIREMENTS.md housekeeping pass
+  now that the branch pins are complete (reconcile any lingering "60 tests"
+  wording).
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- Keep pushing every run (credentials verified; 0 queued).
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 71 → 75; #015/#026 advanced (the
+  NVMeoFSecrets never-read-secrets-back rule is now a live, stated scope
+  boundary in the suite); #022 advanced (the KeyPolicy NVMeoF allow-list
+  shape is a second read-only allow-list source pinned live); UI-2 advanced
+  (OverviewView Memory card body merged).

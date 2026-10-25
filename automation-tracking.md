@@ -4254,3 +4254,83 @@ Append-only run log for the `redfish-automation` scheduler job.
   `a6f90f7..761bb67  main -> main` — the DOCS auto commit (761bb67) pushed.
   `git rev-list --count origin/main..HEAD` = 0 (fully synced), working tree
   clean. Queued local commits ahead of origin/main: **0**.
+
+## 2026-10-25 07:13 UTC — EMULATOR (last un-pinned service-root branches) + UI-2 OverviewView Memory card body
+
+- **Baseline:** analyze 0; tests 360 passed / 1 skipped; starting commit ce1745e
+  (origin/main fully synced, 0 queued local commits); issues validate OK;
+  working tree clean; no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR per alternation (last primary: DOCS 07:10 — EMULATOR
+  is due). Corpus mirror queue is EMPTY and verified, so this run took the queued
+  "read-surface pin for the last un-pinned service-root branches" candidate —
+  `CertificateService`, `KeyService`, `ComponentIntegrity` — closing the last
+  "un-pinned branch" note every prior run has carried:
+  1. **CertificateService read surface pinned:** `CertificateLocations`
+     (`#CertificateLocations.v1_0_3`) `Links.Certificates[]` enumerates the
+     three certificate stores the fixture serves (Managers/BMC HTTPS server
+     cert, UpdateService ClientCertificates, Systems/VirtualMedia CD1 cert) —
+     the location-list a certificate-management flow starts from (the 06:15 run
+     had pinned only the actions + ActionInfo resources).
+  2. **KeyService pinned read-only:** `#KeyService.v1_0_0` advertises both
+     NVMeoF sub-collections; `NVMeoFKeyPolicies/0` (`#KeyPolicy.v1_0_0`)
+     pins the NVMeoF allow-lists (SecurityTransportAllowList TLSv2/v3,
+     CipherSuiteAllowList, SecurityProtocolAllowList DHHC/TLS_PSK,
+     DHGroupAllowList, SecureHashAllowList) — a #022-style allow-list shape
+     (read-only); `NVMeoFSecrets` (`#KeyCollection.KeyCollection`, 2 members)
+     is pinned **collection-metadata only**: the members carry real key material
+     (`KeyString`), so the suite asserts the surface exists + member `@odata.id`
+     list + count WITHOUT fetching a member body — the #015/#026
+     never-read-secrets-back rule, deliberately stated as a scope boundary in
+     the test.
+  3. **ComponentIntegrity pinned:** collection (4 members: SS-SPDM-0/1,
+     USB-Integrity, TPM-0) + `#ComponentIntegrity.v1_2_2` member shapes —
+     SPDM (enabled, MeasurementSet with DMTF spec + non-empty Measurements
+     digests, TargetComponentURI → AC-RoT0), TPM (PCR measurement set), and the
+     **disabled** USB member (enabled-state read per member, never assumed).
+  All three families remain **NOT client-mapped** → no fixture schema duty
+  (corpus-invariant unchanged); EMU 71 → **75 tests** (all pass on pinned
+  `23d21f9a`; run_tests.sh trap stopped the server; port closed after).
+- **Docs:** none new mirrored (corpus queue EMPTY). REQUIREMENTS.md updated:
+  emulator-suite test count 60 → 75 in the "Test platforms" note + a new
+  "Last audited" entry documenting the three branch pins (with the
+  NVMeoFSecrets security boundary).
+- **Emulator:** 75/75 passed on pinned `23d21f9a` (server setup + cert + suite
+  via `tool/emulator/run_tests.sh`; trap cleanup verified, no leftover process;
+  port 8443 confirmed closed after the run).
+- **Code/tests:** no production lib change from the EMU stream (4 new read-
+  surface pins in `test_integration/emulator/emulator_suite_test.dart` only).
+  UI-2 increment below touched `lib/features/overview/views/overview_view.dart`
+  + its test.
+- **UI:** one small tested UI-2 increment — **OverviewView Memory card body now
+  one merged semantics node**. The card's capacity (`32 GiB`) sat under the
+  merged "Memory" header as a bare detached `Text` — a screen reader heard a
+  naked number with no context (the same class as the Processors card body
+  merged earlier today). It now renders inside the established
+  `Semantics(container + excludeSemantics)` card-body pattern: one
+  self-describing announcement (`32 GiB`) that mirrors the visible text; visible
+  text preserved for sighted users. +1 widget test (merged label findsOneWidget
+  + visible text preserved). Targeted run: 15/15 passed before the full gate
+  (OverviewView 14 → 15). No new dependencies; no layout change (the
+  Semantics wrapper does not alter geometry), so the 320/800/1300 no-overflow
+  tests are unaffected.
+- **Verification:** analyze 0; tests **361 passed / 1 skipped** (+1 — the new
+  Memory-card test); emulator 75/75; issues validate OK; `git diff --check`
+  clean; secret scan: Dart code + JSON-prose docs only, no credentials (the
+  `DHHC` hit is a SecurityProtocolAllowList protocol identifier; the
+  `secrets` hit is the NVMeoFSecrets collection local variable — the suite
+  never fetches a member body, so no `KeyString` appears anywhere);
+  `git diff --stat` 4 files: emulator_suite_test.dart, overview_view.dart,
+  overview_view_test.dart, REQUIREMENTS.md. `dart format` reflowed the
+  emulator suite only (my new group needed reflow; 114 files scanned).
+- **Commit:** (pending this run) —
+  `auto: EMULATOR — last service-root branches pinned (CertificateLocations /
+  KeyService read-only / ComponentIntegrity, EMU 71→75) + UI-2 Memory card body
+  merged (run 2026-10-25 07:13)`.
+- **Next:** 1) DOCS per alternation — corpus mirror queue EMPTY and verified;
+   cheap candidate: anchor freshness re-verification (bmcweb `63a18f4`, mockup
+   `23d21f9a`, DSP0266 1.25.0, schema index byte-compare), or a REQUIREMENTS.md
+   housekeeping pass now that the service-root branch pins are complete
+   (e.g. reconcile the "60 tests" wording elsewhere if it lingers); 2) P1 #015
+   AuthManager — wire `Session.expiryFromService` into login, re-auth on
+   `isExpired`, token/location from create RESPONSE HEADERS only; 3) keep
+   pushing every run (credentials verified; 0 queued commits).

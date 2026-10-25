@@ -3107,4 +3107,162 @@ void main() {
       );
     });
   });
+
+  group(
+      'emulator: last un-pinned service-root branches — read-surface pins '
+      '(CertificateService / KeyService / ComponentIntegrity)', () {
+    late AuthManager manager;
+    late RedfishClient client;
+
+    setUpAll(() async {
+      manager = AuthManager(storage: InMemoryStorage());
+      await manager.login('em-branches', emulatorProfile());
+      client = manager.clientFor('em-branches')!;
+    });
+
+    tearDownAll(() async {
+      await manager.logout('em-branches');
+    });
+
+    test(
+        'certificate service: CertificateLocations read surface links the '
+        'three certificate stores on the fixture', () async {
+      // The 06:15 run pinned the CertificateService *actions* + their
+      // ActionInfo resources; this closes the branch by pinning its read
+      // surface — the CertificateLocations resource a certificate-
+      // management flow starts from. It is a location list
+      // (CertificateLocations.v1_0_3), not a key store: its
+      // Links.Certificates[] enumerates the three certificate stores the
+      // fixture serves (HTTPS server cert, UpdateService client cert,
+      // VirtualMedia cert).
+      final Map<String, dynamic> locations = await client
+          .getJson('/redfish/v1/CertificateService/CertificateLocations');
+      expect(locations['@odata.type'],
+          '#CertificateLocations.v1_0_3.CertificateLocations');
+      final Map<dynamic, dynamic> links =
+          locations['Links'] as Map<dynamic, dynamic>;
+      final List<dynamic> certs = links['Certificates'] as List<dynamic>;
+      expect(certs, hasLength(3));
+      expect(
+        certs
+            .map((Object? c) => (c as Map<dynamic, dynamic>)['@odata.id'])
+            .toList(),
+        containsAll(<String>[
+          '/redfish/v1/Managers/BMC/NetworkProtocol/HTTPS/Certificates/1',
+          '/redfish/v1/UpdateService/ClientCertificates/1',
+          '/redfish/v1/Systems/437XR1138R2/VirtualMedia/CD1/Certificates/1',
+        ]),
+      );
+    });
+
+    test(
+        'key service: NVMeoF key-policy surface pins the NVMeoF allow-lists '
+        '(read-only)', () async {
+      final Map<String, dynamic> svc =
+          await client.getJson('/redfish/v1/KeyService');
+      expect(svc['@odata.type'], '#KeyService.v1_0_0.KeyService');
+      // Both NVMeoF sub-collections are advertised from the service.
+      expect((svc['NVMeoFKeyPolicies'] as Map<dynamic, dynamic>)['@odata.id'],
+          '/redfish/v1/KeyService/NVMeoFKeyPolicies');
+      expect((svc['NVMeoFSecrets'] as Map<dynamic, dynamic>)['@odata.id'],
+          '/redfish/v1/KeyService/NVMeoFSecrets');
+
+      final Map<String, dynamic> policies =
+          await client.getJson('/redfish/v1/KeyService/NVMeoFKeyPolicies');
+      expect(
+          policies['@odata.type'], '#KeyPolicyCollection.KeyPolicyCollection');
+      expect(policies['Members'], hasLength(1));
+
+      final Map<String, dynamic> policy =
+          await client.getJson('/redfish/v1/KeyService/NVMeoFKeyPolicies/0');
+      expect(policy['@odata.type'], '#KeyPolicy.v1_0_0.KeyPolicy');
+      expect(policy['IsDefault'], isTrue);
+      final Map<dynamic, dynamic> nvmeof =
+          policy['NVMeoF'] as Map<dynamic, dynamic>;
+      expect(nvmeof['SecurityTransportAllowList'],
+          containsAll(<String>['TLSv2', 'TLSv3']));
+      expect(
+          nvmeof['CipherSuiteAllowList'],
+          containsAll(<String>[
+            'TLS_AES_128_GCM_SHA256',
+            'TLS_AES_256_GCM_SHA384',
+          ]));
+      expect(nvmeof['SecurityProtocolAllowList'],
+          containsAll(<String>['DHHC', 'TLS_PSK']));
+      expect(nvmeof['DHGroupAllowList'],
+          containsAll(<String>['FFDHE2048', 'FFDHE3072']));
+      expect(nvmeof['SecureHashAllowList'],
+          containsAll(<String>['SHA384', 'SHA512']));
+    });
+
+    test(
+        'key service: NVMeoFSecrets collection enumerated WITHOUT reading key '
+        'material (security rule)', () async {
+      // The NVMeoFSecrets members carry real key material (KeyString) — the
+      // #015/#026 rule is to NEVER read secrets back. This pins the
+      // collection METADATA only (type + member @odata.id list + count):
+      // enough to prove the surface exists and is discoverable, without
+      // fetching a member body or asserting on any key value.
+      final Map<String, dynamic> secrets =
+          await client.getJson('/redfish/v1/KeyService/NVMeoFSecrets');
+      expect(secrets['@odata.type'], '#KeyCollection.KeyCollection');
+      expect(secrets['Members@odata.count'], 2);
+      final List<dynamic> members = secrets['Members'] as List<dynamic>;
+      expect(members, hasLength(2));
+      expect(
+        members
+            .map((Object? m) => (m as Map<dynamic, dynamic>)['@odata.id'])
+            .toList(),
+        containsAll(<String>[
+          '/redfish/v1/KeyService/NVMeoFSecrets/0',
+          '/redfish/v1/KeyService/NVMeoFSecrets/1',
+        ]),
+      );
+      // Deliberate scope boundary: no member GET follows this pin — KeyString
+      // must never be read, logged, rendered, or asserted in this suite.
+    });
+
+    test(
+        'component integrity: SPDM + TPM + disabled members pin the read '
+        'surface', () async {
+      final Map<String, dynamic> collection =
+          await client.getJson('/redfish/v1/ComponentIntegrity');
+      expect(collection['@odata.type'],
+          '#ComponentIntegrityCollection.ComponentIntegrityCollection');
+      expect(collection['Members@odata.count'], 4);
+      expect(collection['Members'], hasLength(4));
+
+      // SPDM member: enabled, integrity measurements for CPU1's AC-RoT0.
+      final Map<String, dynamic> spdm =
+          await client.getJson('/redfish/v1/ComponentIntegrity/SS-SPDM-0');
+      expect(
+          spdm['@odata.type'], '#ComponentIntegrity.v1_2_2.ComponentIntegrity');
+      expect(spdm['ComponentIntegrityType'], 'SPDM');
+      expect(spdm['ComponentIntegrityEnabled'], isTrue);
+      expect(spdm['TargetComponentURI'],
+          '/redfish/v1/Chassis/1U/TrustedComponents/AC-RoT0');
+      final Map<dynamic, dynamic> spdmSummary = (spdm['SPDM']
+          as Map<dynamic, dynamic>)['MeasurementSet'] as Map<dynamic, dynamic>;
+      expect(spdmSummary['MeasurementSpecification'], 'DMTF');
+      expect(spdmSummary['Measurements'], isNotEmpty,
+          reason: 'the SPDM surface serves integrity measurements '
+              '(digests, not credentials)');
+
+      // TPM member: PCR-based measurement set, integrity for the GPU TPM.
+      final Map<String, dynamic> tpm =
+          await client.getJson('/redfish/v1/ComponentIntegrity/TPM-0');
+      expect(tpm['ComponentIntegrityType'], 'TPM');
+      expect(tpm['ComponentIntegrityEnabled'], isTrue);
+      final Map<dynamic, dynamic> tpmSummary = (tpm['TPM']
+          as Map<dynamic, dynamic>)['MeasurementSet'] as Map<dynamic, dynamic>;
+      expect(tpmSummary['Measurements'], isNotEmpty);
+
+      // USB member is the stateful counter-example: present but DISABLED.
+      final Map<String, dynamic> usb =
+          await client.getJson('/redfish/v1/ComponentIntegrity/USB-Integrity');
+      expect(usb['ComponentIntegrityType'], 'SPDM');
+      expect(usb['ComponentIntegrityEnabled'], isFalse,
+          reason: 'enabled-state must be read per member, never assumed');
+    });
+  });
 }

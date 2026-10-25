@@ -6,7 +6,25 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (DOCS run — **anchor re-verification + bmcweb
+Last audited: 2026-10-25 (EMULATOR run — **last un-pinned service-root
+branches pinned live**): the read surfaces of the final three service-root
+branches the corpus crawl visits are now pinned in the emulator suite —
+(1) `CertificateService.CertificateLocations`
+(`#CertificateLocations.v1_0_3`) links the three certificate stores the
+fixture serves (HTTPS server cert / UpdateService client cert / VirtualMedia
+cert); (2) `KeyService` (`#KeyService.v1_0_0`) — `NVMeoFKeyPolicies`
+(`#KeyPolicy.v1_0_0` NVMeoF allow-lists: SecurityTransportAllowList/
+CipherSuiteAllowList/SecurityProtocolAllowList/DHGroupAllowList/
+SecureHashAllowList) and `NVMeoFSecrets` (`#KeyCollection.KeyCollection`,
+2 members) pinned **collection-metadata only** — the members carry real key
+material (`KeyString`), so the suite asserts the surface exists without ever
+fetching a member body (the #015/#026 never-read-secrets-back rule);
+(3) `ComponentIntegrity` collection (4 members) + `#ComponentIntegrity.
+v1_2_2` SPDM/TPM/USB member shapes incl. the **disabled** USB member
+(enabled-state read per member, never assumed). All three families remain
+**NOT client-mapped** → no fixture schema duty (corpus-invariant unchanged);
+EMU 71→75. No corpus refresh (DOCS-27 ZERO advances still hold).
+Prior: 2026-10-25 (DOCS run — **anchor re-verification + bmcweb
 file-level provenance pinned**): re-verified every upstream anchor — bmcweb
 `63a18f4` (still HEAD via GitHub API; `Redfish.md`, `REDFISH_CHECKLIST.md`,
 `OEM_SCHEMAS.md`, `CLIENTS.md` all **byte-identical** to the mirror at current
@@ -453,7 +471,7 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 60 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 75 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail

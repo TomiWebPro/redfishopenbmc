@@ -228,6 +228,23 @@ void main() {
     });
 
     testWidgets(
+        'memory card body announces as one merged semantics node (UI-2)',
+        (tester) async {
+      await tester.pumpWidget(scopeWith(sample: fullSample()));
+      await tester.pumpAndSettle();
+      // The capacity ("32 GiB") previously announced as a detached text node
+      // under the merged "Memory" header; it now announces as ONE
+      // self-describing node carrying the value.
+      expect(
+        find.bySemanticsLabel('32 GiB'),
+        findsOneWidget,
+        reason: 'the memory capacity must announce as a single node',
+      );
+      // The visible text stays for sighted users.
+      expect(find.text('32 GiB'), findsOneWidget);
+    });
+
+    testWidgets(
         'health banner announces one merged semantics node incl. the state '
         '(UI-2)', (tester) async {
       await tester.pumpWidget(scopeWith(sample: fullSample()));

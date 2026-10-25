@@ -7,43 +7,43 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (DOCS run — **anchor re-verification + bmcweb
-  file-level provenance pinned**): every upstream anchor re-verified unchanged
-  and byte-identical (bmcweb `63a18f4` with all four mirrored docs
-  byte-identical at current master, mockup `23d21f9a`, DSP0266 1.25.0 with
-  `DSP0266_1.26.0.pdf` probe 404 → still current, schema index byte-identical
-  `e5a29797…`) → **no corpus refresh** (DOCS-27 ZERO advances still hold);
-  provenance upgrade: manifest rows for the four bmcweb docs now record the
-  **file-level last-touch commits** from the GitHub path API alongside the repo
-  HEAD (`Redfish.md` → `bb6b9ebc` 2026-09-21; the other three docs →
-  `24e758ab` 2025-06-26 docs-folder creation) — the DOCS-27 precedent of
-  recording truthful anchors; UI-2 increment below: sensor tile merged labels
-  now carry the visible subtitle context (temperature thresholds, fan physical
-  context, sensor reading type + thresholds — +1 widget test); corpus mirror
-  queue still EMPTY
-- **Current focus:** **DOCS (2026-10-25)** — anchor re-verification + bmcweb
-  file-level provenance pinned (no corpus refresh; see Last updated); corpus
-  mirror queue still EMPTY; remaining DOCS candidates: none queued — the
-  corpus is complete and verified for all 38 families; next EMULATOR per
-  alternation: re-run the corpus-invariant published-types crawl on the pinned
-  `23d21f9a` (already in-suite), or pin the last un-pinned service-root
-  branches the crawl visits (`CertificateService`, `KeyService`/
-  `NVMeoFSecrets`, `ComponentIntegrity` — all NOT client-mapped, so no fixture
-  duty; a read-surface pin would document them); then P1 #015 (AuthManager) —
-  `expiryFromService` + the Sessions pin are ready, wire the discovered
-  SessionService body into login + re-auth on `isExpired`; #016: the PATCH
-  transport + If-Match boundary are pinned on all live seams (Boot/IndicatorLED,
-  Control SetPoint, Bios/Settings, Manager.Reset), remaining is the actual
-  If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit tests
-  for the 412 path; #022/#016: the ActionInfo *resource* crawl on OpenBMC is
-  now shape-pinned (this run) — the remaining piece is the actual
-  `ResetActionInfo`-resource fetch + `Parameters[].AllowableValues` wiring in
-  FeatureRules + the Control SetPoint AllowableMin/Max pre-validation rule;
-  #018: query-capability surface + live `$expand` contract pinned — remaining:
-  build the lightweight discovery pass + the cache fixes; **new feature
-  candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
-  served versions move into `test/fixtures/redfish/schemas/` + the
-  corpus-invariant family list gains `Bios`/`Settings`; the Bios/Settings
+- **Last updated:** 2026-10-25 (EMULATOR run — **last un-pinned service-root
+  branches pinned live**): the read surfaces of the final three service-root
+  branches the corpus crawl visits are now pinned — `CertificateService.
+  CertificateLocations` (`#CertificateLocations.v1_0_3`, 3 cert-store links),
+  `KeyService` (`#KeyService.v1_0_0`; `NVMeoFKeyPolicies/0` `#KeyPolicy.
+  v1_0_0` NVMeoF allow-lists pinned read-only, `NVMeoFSecrets`
+  `#KeyCollection.KeyCollection` 2 members pinned **collection-metadata only**
+  — members carry real `KeyString` material, so no member body is ever fetched
+  per the #015/#026 never-read-secrets-back rule), and `ComponentIntegrity`
+  collection (4 members) + `#ComponentIntegrity.v1_2_2` SPDM/TPM/USB shapes
+  incl. the disabled USB member (EMU 71→75; all three families NOT client-mapped
+  → no fixture schema duty, corpus-invariant unchanged); UI-2 increment:
+  OverviewView Memory card body now one merged semantics node (`32 GiB`, +1
+  widget test, overview 14→15); corpus mirror queue still EMPTY
+- **Current focus:** **EMULATOR (2026-10-25)** — last un-pinned service-root
+  branches pinned live (`CertificateLocations`, `KeyService` read-only incl.
+  the NVMeoFSecrets collection-metadata-only security boundary,
+  `ComponentIntegrity` SPDM/TPM/USB; EMU 71→75; all NOT client-mapped → no
+  fixture duty); corpus mirror queue still EMPTY; remaining DOCS candidates:
+  none queued — the corpus is complete and verified for all 38 families; next
+  DOCS per alternation: anchor freshness re-verification (bmcweb `63a18f4`,
+  mockup `23d21f9a`, DSP0266 1.25.0, schema index byte-compare), or a
+  REQUIREMENTS.md housekeeping pass now that branch pins are complete; then P1
+  #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire
+  the discovered SessionService body into login + re-auth on `isExpired`;
+  #016: the PATCH transport + If-Match boundary are pinned on all live seams
+  (Boot/IndicatorLED, Control SetPoint, Bios/Settings, Manager.Reset),
+  remaining is the actual If-Match/`@odata.etag` wiring in a Boot/IndicatorLED
+  PATCH flow + unit tests for the 412 path; #022/#016: the ActionInfo
+  *resource* crawl on OpenBMC is now shape-pinned — the remaining piece is the
+  actual `ResetActionInfo`-resource fetch + `Parameters[].AllowableValues`
+  wiring in FeatureRules + the Control SetPoint AllowableMin/Max pre-validation
+  rule; #018: query-capability surface + live `$expand` contract pinned —
+  remaining: build the lightweight discovery pass + the cache fixes; **new
+  feature candidate #028:** BIOS-config editor (Bios/Settings become
+  client-mapped → served versions move into `test/fixtures/redfish/schemas/` +
+  the corpus-invariant family list gains `Bios`/`Settings`; the Bios/Settings
   PATCH round-trip seam is now pinned); corpus mirror queue: **EMPTY**
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
@@ -798,6 +798,28 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       #016; DOCS-4/13); the `ResetActionInfo` resource itself is still absent
       on this fixture, so the OpenBMC allow-list-source crawl stays a code
       task; REQUIREMENTS.md ActionInfo row updated; EMU 69→71)**
+      → **75 tests
+      (last un-pinned service-root branches pinned live 2026-10-25: the read
+      surfaces of the final three branches the corpus crawl visits —
+      `CertificateService.CertificateLocations`
+      (`#CertificateLocations.v1_0_3`) links the three certificate stores
+      (HTTPS server cert / UpdateService client cert / VirtualMedia cert);
+      `KeyService` (`#KeyService.v1_0_0`) — `NVMeoFKeyPolicies/0`
+      (`#KeyPolicy.v1_0_0`) NVMeoF allow-lists
+      (SecurityTransportAllowList/CipherSuiteAllowList/
+      SecurityProtocolAllowList/DHGroupAllowList/SecureHashAllowList, the
+      #022-style read-only allow-list shape) and `NVMeoFSecrets`
+      (`#KeyCollection.KeyCollection`, 2 members) pinned **collection-
+      metadata only** — the members carry real `KeyString` key material, so
+      the suite asserts the surface exists + member `@odata.id` list + count
+      WITHOUT fetching a member body (the #015/#026 never-read-secrets-back
+      rule stated as a scope boundary in the test); `ComponentIntegrity`
+      collection (4 members: SS-SPDM-0/1, USB-Integrity, TPM-0) +
+      `#ComponentIntegrity.v1_2_2` SPDM (enabled, DMTF MeasurementSet with
+      non-empty digest Measurements), TPM (PCR measurement set), and the
+      **disabled** USB member (enabled-state read per member, never assumed)).
+      All three families remain NOT client-mapped → no fixture schema duty
+      (corpus-invariant unchanged); EMU 71→75)**
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -1270,6 +1292,14 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       UpperCritical 13.0 / LowerCritical 11.0`) — one self-describing
       announcement that mirrors the visible text, +1 widget test asserts the
       detail-aware labels + visible subtitles stay, sensors 13→14;
+      **OverviewView Memory card body merged semantics node done 2026-10-25 —
+      the card capacity (`32 GiB`) sat under the merged "Memory" header as a
+      bare detached `Text` (a screen reader heard a naked number); it now
+      renders inside the established `Semantics(container + excludeSemantics)`
+      card-body pattern (the Processors-card precedent): one self-describing
+      announcement (`32 GiB`) that mirrors the visible text, visible text
+      preserved for sighted users, +1 widget test asserts the merged label +
+      visible text, overview 14→15;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

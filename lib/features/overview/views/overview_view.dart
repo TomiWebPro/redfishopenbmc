@@ -333,9 +333,19 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
     final String text = gib == gib.roundToDouble()
         ? gib.round().toString()
         : gib.toStringAsFixed(1);
-    return Text(
-      '$text GiB',
-      style: Theme.of(context).textTheme.bodyMedium,
+    // UI-2: the capacity announces as ONE merged node ("<n> GiB") under the
+    // merged "Memory" header instead of a detached bare Text under it — the
+    // established card-body pattern (see _processors). The visible text
+    // stays for sighted users.
+    final String announced = '$text GiB';
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: announced,
+      child: Text(
+        announced,
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
     );
   }
 
