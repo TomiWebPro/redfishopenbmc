@@ -7,32 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (DOCS run — **crashed-run recovery verified:
-  DOCS-31 corpus mirror (65 files, a458ded) + extended corpus-invariant crawl
-  re-proven 78/78 live on the pinned `23d21f9a`, every anchor re-verified
-  (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0 byte-identical,
-  schema index byte-identical) — no corpus refresh needed, corpus mirror
-  queue EMPTY for every published type**; UI-2 loading-state semantics merged
-  for Sensors/KVM; both recovery commits + this run pushed)
-- **Current focus:** **DOCS (2026-10-25)** — the crashed 13:20 run's DOCS-31
-  work recovered (commit a458ded) + this run's REQUIREMENTS.md recovery
-  (4753e4f), both verified (analyze 0, 366 unit tests pass / 1 skipped,
-  emulator 78/78) and pushed; corpus mirror queue **EMPTY for every published
-  type** and the invariant re-proven; next per alternation: **EMULATOR**
-  (candidates: the `ResetActionInfo` ActionInfo-*resource* crawl as code work
-  #022/#016 — all other ActionInfo families are pinned; or re-run the
-  invariant suite cheaply), then P1 #015 (AuthManager) — `expiryFromService`
-  + the Sessions pin are ready, wire the discovered SessionService body into
-  login + re-auth on `isExpired`; #016: the PATCH transport + If-Match
-  boundary are pinned on all live seams (Boot/IndicatorLED, Control SetPoint,
-  Bios/Settings, Manager.Reset), remaining is the actual If-Match/
-  `@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit tests for the
-  412 path; #022/#016: the ActionInfo *resource* crawl on OpenBMC is now
-  shape-pinned on every fixture ActionInfo (EMU 69→78) — the remaining piece
-  is the actual `ResetActionInfo`-resource fetch + `Parameters[].
-  AllowableValues` wiring in FeatureRules + the Control SetPoint
-  AllowableMin/Max pre-validation rule; **new UI backlog item: focus order +
-  remaining dialogs/tables (UI-2)**; corpus mirror queue: **EMPTY**
+- **Last updated:** 2026-10-25 (EMULATOR run — `ResetActionInfo` ActionInfo-*resource* crawl wired into `FeatureRules.supportedResetTypes`: the discovery engine now follows `@Redfish.ActionInfo` links and captures the resources, FeatureRules unions `Parameters[].AllowableValues` on `ResetType` as the third allow-list source — unit + engine tests + live emulator pin (79/79); #022/#016 advanced; Control SetPoint AllowableMin/Max pre-validation still open)
+- **Current focus:** **EMULATOR (2026-10-25)** — the bmcweb `ResetActionInfo` ActionInfo-*resource* crawl is no longer a TODO: the engine follows `@Redfish.ActionInfo` links (EMU 79th test pins the live `SimpleUpdateActionInfo` capture), `FeatureRules.supportedResetTypes` unions `SupportedResetTypes` + annotation + ActionInfo `Parameters[].AllowableValues` on `ResetType`, with the manager-list conflation guard (unit + engine tests). Next per alternation: **DOCS** (corpus mirror queue still EMPTY; cheap re-verify), then the remaining #022/#016 pieces — the Control SetPoint AllowableMin/Max pre-validation rule (#006/#019/#022) and the Boot/IndicatorLED PATCH flow + 412 unit tests; then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; **UI-2 remaining is the open-ended focus-order/dialogs-tables hunt** (every concrete "last bare text" surface audited 2026-10-25 is already merged)
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -986,13 +962,17 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       wiring — the settings-object ETag `9234ac83b9700123cc32` (EMU 53) is the
       only pinable concurrency token on the fixture, header-level ETags stay
       unit-level, (b) Boot/IndicatorLED PATCH actions in a service + UI,
-      (c) the `ResetActionInfo` ActionInfo *resource* crawl; bmcweb
+      (c) ~~the `ResetActionInfo` ActionInfo *resource* crawl~~ **landed
+      2026-10-25 (EMU run)** — the engine follows `@Redfish.ActionInfo` links,
+      `FeatureRules.supportedResetTypes` unions `Parameters[].AllowableValues`
+      on `ResetType` (third allow-list source; unit + engine tests + live
+      emulator pin of a served ActionInfo resource via a normal crawl);
+      bmcweb
       ResetActionInfo → supportedResetTypes fallback also folds here —
       DOCS-4; **annotation-form allow-list fallback landed 2026-10-23 16:05** —
       `supportedResetTypes` now unions `SupportedResetTypes` +
       `ResetType@Redfish.AllowableValues` on `#ComputerSystem.Reset` (the
-      bmcweb/mockup shape), conflation-guarded; remaining: crawl the
-      `ResetActionInfo` ActionInfo *resource*. Emulator notes: the DMTF mockup
+      bmcweb/mockup shape), conflation-guarded. Emulator notes: the DMTF mockup
       serves no `@odata.etag` on resources — etag behaviour cannot be pinned on
       this fixture, keep it in unit tests — 2026-10-23; the system-level
       `#ComputerSystem.Reset` `ResetType@Redfish.AllowableValues`
@@ -1058,14 +1038,22 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       fallback landed 2026-10-23 16:05**: `FeatureRules.supportedResetTypes`
       unions `SupportedResetTypes` + the `ResetType@Redfish.AllowableValues`
       annotation on `#ComputerSystem.Reset` (the DMTF mockup / bmcweb-style
-      shape), with the manager-list conflation guard — emulator-pinned; the
-      remaining piece is crawling the `ResetActionInfo` *resource* itself
-      (`Parameters[].AllowableValues`). **Emulator negative finding 2026-10-23
-      17:07**: the DMTF mockup fixture ships NO `ResetActionInfo` ActionInfo
-      resource for `#ComputerSystem.Reset` — it serves only the annotation
-      form (= the 16:05 fallback); the ActionInfo-resource crawl is a
-      bmcweb-style (OpenBMC) code task for #022/#016, not pinable on this
-      fixture. Emulator asserts the DMTF mockup's
+      shape), with the manager-list conflation guard — emulator-pinned;
+      **the ActionInfo-*resource* crawl is now WIRED (2026-10-25 EMU run)**:
+      the discovery engine follows `@Redfish.ActionInfo` links and captures the
+      resources (live emulator pin — 79th test captures `SimpleUpdateActionInfo`
+      through a normal crawl), and `FeatureRules.supportedResetTypes` unions
+      `Parameters[].AllowableValues` on the `ResetType` parameter as the third
+      source — bmcweb's `ResetActionInfo` shape parsed from the real resource
+      (unit + engine tests; REQUIREMENTS.md row updated; `ResetActionInfo`
+      itself is still absent on the DMTF fixture, so the live crawl pin uses
+      the fixture's served ActionInfo resources). **Emulator negative finding
+      2026-10-23 17:07**: the DMTF mockup fixture ships NO `ResetActionInfo`
+      ActionInfo resource for `#ComputerSystem.Reset` — it serves only the
+      annotation form (= the 16:05 fallback); the ActionInfo-resource crawl is
+      bmcweb-style (OpenBMC), now implemented + tested at unit/engine level and
+      pinable live only via the served ActionInfo resources. Emulator asserts
+      the DMTF mockup's
       `#Manager.Reset` carries its own `ResetType@Redfish.AllowableValues` —
       the fallback must not conflate manager- vs system-level Reset actions —
       run 2026-10-22; system-level allow-list pinned incl. `Nmi` (NMI-stabilize)

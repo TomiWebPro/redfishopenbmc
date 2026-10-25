@@ -18,6 +18,7 @@ class DiscoveryContext {
     this.sensors = const <Map<String, dynamic>>[],
     this.updateService,
     this.sessionService,
+    this.actionInfos = const <String, dynamic>{},
     this.rawTree = const <String, dynamic>{},
   });
 
@@ -44,6 +45,13 @@ class DiscoveryContext {
 
   /// The SessionService resource, or `null` if the BMC exposes none.
   final Map<String, dynamic>? sessionService;
+
+  /// Every `@Redfish.ActionInfo` resource (URI → body) discovered during the
+  /// crawl, keyed by its relative path. ActionInfo resources document the
+  /// parameters of an action (`Parameters[].AllowableValues`) — the bmcweb
+  /// `ResetActionInfo`-style allow-list source (#022/#016; DOCS-4/13). Empty
+  /// when the service advertises no ActionInfo links.
+  final Map<String, dynamic> actionInfos;
 
   /// Every URI → body fetched during the crawl (the raw explorer tree).
   final Map<String, dynamic> rawTree;
@@ -81,21 +89,29 @@ class FeatureRules {
 
   /// Union of every reset-type value across all systems.
   ///
-  /// Reads both documented sources, so the allow-list is surfaced even on
+  /// Reads all documented allow-list sources, so the list is surfaced even on
   /// BMCs that omit `SupportedResetTypes`:
   ///  1. `SupportedResetTypes` (DSP0266 `ComputerSystem.json`);
   ///  2. the `ResetType@Redfish.AllowableValues` annotation on the
   ///     `#ComputerSystem.Reset` action (the form the DMTF mockup and
-  ///     bmcweb-style ActionInfo BMCs publish — DOCS-4/13, #022/#016).
+  ///     bmcweb-style ActionInfo BMCs publish — DOCS-4/13, #022/#016);
+  ///  3. the bmcweb-style `@Redfish.ActionInfo` *resource* the action links
+  ///     to (`Parameters[].AllowableValues` on the `ResetType` parameter) —
+  ///     [actionInfos] keys are the ActionInfo relative paths, the exact map
+  ///     the discovery engine captures (EMU 71→78 pinned the resource shape
+  ///     live; #022/#016).
   ///
-  /// The annotation is read **only from ComputerSystem payloads** (`systems`),
-  /// never from Manager payloads — the system-level allow-list includes
-  /// `Nmi` / `ForceOn` / `PushPowerButton` and must not be conflated with the
+  /// The annotation and ActionInfo resource are read **only from
+  /// ComputerSystem payloads** (`systems`) and only the ActionInfo resources
+  /// the system's own `#ComputerSystem.Reset` action links to — never from
+  /// Manager payloads — the system-level allow-list includes `Nmi` /
+  /// `ForceOn` / `PushPowerButton` and must not be conflated with the
   /// manager-level `#Manager.Reset` list (`ForceRestart`/`GracefulRestart`),
   /// per the emulator-pinned contract.
   static List<String> supportedResetTypes(
-    List<Map<String, dynamic>> systems,
-  ) {
+    List<Map<String, dynamic>> systems, {
+    Map<String, dynamic> actionInfos = const <String, dynamic>{},
+  }) {
     final Set<String> types = <String>{};
     for (final Map<String, dynamic> s in systems) {
       final dynamic raw = s['SupportedResetTypes'];
@@ -106,8 +122,68 @@ class FeatureRules {
       }
       final List<String> annotated = resetTypesFromAction(s);
       types.addAll(annotated);
+      final List<String> fromInfo = resetTypesFromActionInfo(s, actionInfos);
+      types.addAll(fromInfo);
     }
     return types.toList()..sort();
+  }
+
+  /// Extracts the `ResetType` allow-list from the `@Redfish.ActionInfo`
+  /// resource [system]'s `#ComputerSystem.Reset` action links to, or an empty
+  /// list when the link or resource is absent.
+  ///
+  /// bmcweb (OpenBMC) publishes the reset allow-list as a `ResetActionInfo`
+  /// ActionInfo resource whose `Parameters[]` contains a `ResetType` entry
+  /// with `AllowableValues` (DOCS-4/13); it serves no system-level
+  /// `SupportedResetTypes` and no annotation on the action. Following the
+  /// action's `@Redfish.ActionInfo` link and reading that parameter is the
+  /// #022/#016 "crawl the ActionInfo *resource*" step (EMU 71→78 pinned the
+  /// `Parameters[].AllowableValues` shape live on CertificateService/
+  /// EventService/UpdateService ActionInfo resources).
+  static List<String> resetTypesFromActionInfo(
+    Map<String, dynamic> system,
+    Map<String, dynamic> actionInfos,
+  ) {
+    final dynamic action = ODataResource(system).actions[computerSystemReset];
+    if (action is! Map<dynamic, dynamic>) return const <String>[];
+    final dynamic infoUri = action['@Redfish.ActionInfo'];
+    if (infoUri is! String) return const <String>[];
+    final dynamic info = actionInfos[infoUri];
+    if (info is! Map<String, dynamic> && info is! Map<dynamic, dynamic>) {
+      return const <String>[];
+    }
+    final Map<String, dynamic> infoMap = info is Map<String, dynamic>
+        ? info
+        : Map<String, dynamic>.fromEntries(
+            (info as Map<dynamic, dynamic>).entries.map(
+                  (MapEntry<dynamic, dynamic> e) =>
+                      MapEntry<String, dynamic>(e.key.toString(), e.value),
+                ),
+          );
+    return allowableValuesFromActionInfo(infoMap, 'ResetType');
+  }
+
+  /// Returns the `AllowableValues` of the [parameterName] entry in an
+  /// ActionInfo resource's `Parameters[]`, or an empty list when absent.
+  ///
+  /// Shape per DSP0266 §9.6.14 / `ActionInfo.v1_4_1` (pinned live EMU 71→78):
+  /// `Parameters[].{Name, Required, DataType, AllowableValues?}`.
+  static List<String> allowableValuesFromActionInfo(
+    Map<String, dynamic> actionInfo,
+    String parameterName,
+  ) {
+    final dynamic raw = actionInfo['Parameters'];
+    if (raw is! List<dynamic>) return const <String>[];
+    for (final dynamic p in raw) {
+      if (p is Map<String, dynamic> && p['Name'] == parameterName) {
+        final dynamic allowed = p['AllowableValues'];
+        if (allowed is List<dynamic>) {
+          return allowed.map((dynamic e) => e.toString()).toList();
+        }
+        return const <String>[];
+      }
+    }
+    return const <String>[];
   }
 
   /// Extracts the `ResetType@Redfish.AllowableValues` annotation from a
@@ -230,7 +306,8 @@ class FeatureRules {
     return SystemFeatures(
       systemId: systemId,
       powerControl: powerControl(ctx.systems),
-      supportedResetTypes: supportedResetTypes(ctx.systems),
+      supportedResetTypes:
+          supportedResetTypes(ctx.systems, actionInfos: ctx.actionInfos),
       kvm: kvm(ctx.managers),
       kvmType: kvmType(ctx.managers),
       sensorMonitoring: sensorMonitoring(ctx.chassis),

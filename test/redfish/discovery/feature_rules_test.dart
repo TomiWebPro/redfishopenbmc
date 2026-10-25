@@ -204,6 +204,211 @@ void main() {
       };
       expect(FeatureRules.resetTypesFromAction(system3), isEmpty);
     });
+
+    test(
+        'allowableValuesFromActionInfo reads Parameters[].AllowableValues '
+        'per DSP0266 §9.6.14 / ActionInfo.v1_4_1 (EMU 71→78, #022/#016)', () {
+      // The bmcweb ResetActionInfo shape: a `Parameters[]` entry named
+      // `ResetType` with an `AllowableValues` array. This parser is the
+      // #022/#016 "crawl the ActionInfo *resource*" consumer.
+      final Map<String, dynamic> info = <String, dynamic>{
+        '@odata.type': '#ActionInfo.v1_4_1.ActionInfo',
+        'Id': 'ResetActionInfo',
+        'Parameters': <dynamic>[
+          <String, dynamic>{
+            'Name': 'ResetType',
+            'Required': true,
+            'DataType': 'String',
+            'AllowableValues': <String>[
+              'On',
+              'ForceOff',
+              'GracefulShutdown',
+              'GracefulRestart',
+              'ForceRestart',
+              'Nmi',
+              'ForceOn',
+              'PushPowerButton',
+            ],
+          },
+        ],
+      };
+      expect(
+        FeatureRules.allowableValuesFromActionInfo(info, 'ResetType'),
+        <String>[
+          'On',
+          'ForceOff',
+          'GracefulShutdown',
+          'GracefulRestart',
+          'ForceRestart',
+          'Nmi',
+          'ForceOn',
+          'PushPowerButton',
+        ],
+      );
+      // Order is preserved (verbatim from the resource — the caller sorts).
+      expect(
+        FeatureRules.allowableValuesFromActionInfo(info, 'ResetType'),
+        <String>[
+          'On',
+          'ForceOff',
+          'GracefulShutdown',
+          'GracefulRestart',
+          'ForceRestart',
+          'Nmi',
+          'ForceOn',
+          'PushPowerButton',
+        ],
+      );
+    });
+
+    test(
+        'allowableValuesFromActionInfo is empty when the parameter is absent '
+        'or the resource is malformed (#022/#016)', () {
+      final Map<String, dynamic> noResetType = <String, dynamic>{
+        'Parameters': <dynamic>[
+          <String, dynamic>{
+            'Name': 'Other',
+            'AllowableValues': <String>['x']
+          },
+        ],
+      };
+      expect(
+        FeatureRules.allowableValuesFromActionInfo(noResetType, 'ResetType'),
+        isEmpty,
+      );
+      // No Parameters array.
+      expect(
+        FeatureRules.allowableValuesFromActionInfo(
+          <String, dynamic>{'Id': 'ResetActionInfo'},
+          'ResetType',
+        ),
+        isEmpty,
+      );
+      // AllowableValues present but not a list → tolerated as absent.
+      final Map<String, dynamic> nonList = <String, dynamic>{
+        'Parameters': <dynamic>[
+          <String, dynamic>{'Name': 'ResetType', 'AllowableValues': 'On'},
+        ],
+      };
+      expect(
+        FeatureRules.allowableValuesFromActionInfo(nonList, 'ResetType'),
+        isEmpty,
+      );
+    });
+
+    test(
+        'resetTypesFromActionInfo follows the action\'s @Redfish.ActionInfo '
+        'link into the crawled ActionInfo resource (bmcweb ResetActionInfo, '
+        '#022/#016)', () {
+      // bmcweb shape: no SupportedResetTypes, no annotation — the allow-list
+      // lives in the `ResetActionInfo` ActionInfo *resource* the
+      // `#ComputerSystem.Reset` action links to (DOCS-4/13).
+      final Map<String, dynamic> system = <String, dynamic>{
+        'Actions': <String, dynamic>{
+          '#ComputerSystem.Reset': <String, dynamic>{
+            'target': '/redfish/v1/Systems/1/Actions/ComputerSystem.Reset',
+            '@Redfish.ActionInfo': '/redfish/v1/Systems/1/ResetActionInfo',
+          },
+        },
+      };
+      final Map<String, dynamic> actionInfos = <String, dynamic>{
+        '/redfish/v1/Systems/1/ResetActionInfo': <String, dynamic>{
+          '@odata.type': '#ActionInfo.v1_4_1.ActionInfo',
+          'Id': 'ResetActionInfo',
+          'Parameters': <dynamic>[
+            <String, dynamic>{
+              'Name': 'ResetType',
+              'Required': true,
+              'DataType': 'String',
+              'AllowableValues': <String>[
+                'On',
+                'ForceOff',
+                'ForceRestart',
+              ],
+            },
+          ],
+        },
+      };
+      expect(
+        FeatureRules.resetTypesFromActionInfo(system, actionInfos),
+        <String>['On', 'ForceOff', 'ForceRestart'],
+      );
+
+      // The manager-level `#Manager.Reset` action is NOT consulted — even if
+      // a manager ActionInfo resource exists in the map, it is only reachable
+      // via a system's `#ComputerSystem.Reset` link (conflation guard).
+      final Map<String, dynamic> managerLike = <String, dynamic>{
+        'Actions': <String, dynamic>{
+          '#Manager.Reset': <String, dynamic>{
+            'target': '/redfish/v1/Managers/BMC/Actions/Manager.Reset',
+            '@Redfish.ActionInfo': '/redfish/v1/Managers/BMC/ResetActionInfo',
+          },
+        },
+      };
+      expect(
+        FeatureRules.resetTypesFromActionInfo(
+          managerLike,
+          <String, dynamic>{
+            '/redfish/v1/Managers/BMC/ResetActionInfo': <String, dynamic>{
+              'Parameters': <dynamic>[
+                <String, dynamic>{
+                  'Name': 'ResetType',
+                  'AllowableValues': <String>[
+                    'ForceRestart',
+                    'GracefulRestart',
+                  ],
+                },
+              ],
+            },
+          },
+        ),
+        isEmpty,
+      );
+    });
+
+    test(
+        'supportedResetTypes unions the ActionInfo resource allow-list '
+        '(third source, #022/#016)', () {
+      // A system with BOTH the annotation and a linked ResetActionInfo: the
+      // union dedupes and sorts (annotation lacks ForceRestart; the ActionInfo
+      // resource brings it in).
+      final Map<String, dynamic> system = <String, dynamic>{
+        'Actions': <String, dynamic>{
+          '#ComputerSystem.Reset': <String, dynamic>{
+            'target': '/x',
+            'ResetType@Redfish.AllowableValues': <String>[
+              'On',
+              'ForceOff',
+            ],
+            '@Redfish.ActionInfo': '/redfish/v1/Systems/1/ResetActionInfo',
+          },
+        },
+      };
+      final Map<String, dynamic> actionInfos = <String, dynamic>{
+        '/redfish/v1/Systems/1/ResetActionInfo': <String, dynamic>{
+          'Parameters': <dynamic>[
+            <String, dynamic>{
+              'Name': 'ResetType',
+              'AllowableValues': <String>['On', 'ForceRestart'],
+            },
+          ],
+        },
+      };
+      expect(
+        FeatureRules.supportedResetTypes(
+          <Map<String, dynamic>>[system],
+          actionInfos: actionInfos,
+        ),
+        <String>['ForceOff', 'ForceRestart', 'On'],
+      );
+
+      // Without the ActionInfo map the annotation alone is returned (existing
+      // behaviour preserved for callers that don't crawl ActionInfo).
+      expect(
+        FeatureRules.supportedResetTypes(<Map<String, dynamic>>[system]),
+        <String>['ForceOff', 'On'],
+      );
+    });
   });
 
   group('FeatureRules — kvm', () {

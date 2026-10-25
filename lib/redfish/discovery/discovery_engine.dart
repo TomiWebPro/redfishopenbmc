@@ -142,6 +142,7 @@ class DiscoveryEngine {
     final List<Map<String, dynamic>> sensors = <Map<String, dynamic>>[];
     Map<String, dynamic>? updateService;
     Map<String, dynamic>? sessionService;
+    final Map<String, dynamic> actionInfos = <String, dynamic>{};
 
     void classify(Map<String, dynamic> res) {
       if (res.containsKey('Members')) {
@@ -168,6 +169,9 @@ class DiscoveryEngine {
         updateService = res;
       } else if (r.isType('sessionservice')) {
         sessionService = res;
+      } else if (r.isType('actioninfo')) {
+        final String? id = r.id;
+        if (id != null) actionInfos[id] = res;
       }
     }
 
@@ -234,6 +238,7 @@ class DiscoveryEngine {
       sensors: sensors,
       updateService: updateService,
       sessionService: sessionService,
+      actionInfos: actionInfos,
       rawTree: rawTree,
     );
   }
@@ -289,16 +294,39 @@ class DiscoveryEngine {
   /// Returns the child URIs to enqueue from a freshly-fetched [res].
   ///
   /// Collections expand to their member `@odata.id`s; chassis expand to their
-  /// `Thermal` / `Sensors` / `Power` sub-resources. Everything else is a leaf
-  /// for feature purposes (its own `@odata.id` targets, when present, are
-  /// action endpoints, not navigation links).
+  /// `Thermal` / `Sensors` / `Power` sub-resources; anything advertising
+  /// `@Redfish.ActionInfo` links (ActionInfo *resources* — the bmcweb
+  /// `ResetActionInfo` allow-list source, #022/#016) expands to those GET-able
+  /// resources. Action *targets* (`Actions.*.target`) are POST-only and never
+  /// followed.
   List<String> _childLinks(Map<String, dynamic> res) {
     final ODataResource r = ODataResource(res);
     if (r.isCollection) return r.memberIds();
     if (r.isType('chassis')) {
       return r.linkUris(<String>['Thermal', 'Sensors', 'Power']);
     }
-    return const <String>[];
+    return _actionInfoLinks(res);
+  }
+
+  /// The `@Redfish.ActionInfo` URIs advertised by [res]'s `Actions` map.
+  ///
+  /// DSP0266 §9.6.14 / `ActionInfo.v1_4_1`: an action may link to an
+  /// ActionInfo *resource* that documents its `Parameters[]` (including
+  /// `AllowableValues`) — bmcweb publishes the reset allow-list this way
+  /// (`ResetActionInfo`, DOCS-4/13). The links appear beside each action's
+  /// `target`; only the link is followed (the target is a POST endpoint).
+  List<String> _actionInfoLinks(Map<String, dynamic> res) {
+    final List<String> uris = <String>[];
+    for (final dynamic action in ODataResource(res).actions.values) {
+      if (action is Map<dynamic, dynamic>) {
+        final dynamic info = action['@Redfish.ActionInfo'];
+        if (info is String && info.isNotEmpty) uris.add(info);
+      } else if (action is Map<String, dynamic>) {
+        final dynamic info = action['@Redfish.ActionInfo'];
+        if (info is String && info.isNotEmpty) uris.add(info);
+      }
+    }
+    return uris;
   }
 
   /// Resolves a top-level link [key] on [res] to its `@odata.id`, tolerating

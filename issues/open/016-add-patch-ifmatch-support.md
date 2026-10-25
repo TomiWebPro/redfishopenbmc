@@ -50,17 +50,10 @@ estimated_tokens: 14000
 
 ## Progress Log
 
-- 2026-10-25 — EMU run: the ActionInfo *resource* crawl shape advanced — the emulator pins the `CertificateService` `@Redfish.ActionInfo` link resolution + the `Parameters[].{Name,Required,DataType,AllowableValues}` contract live (EMU 69→71; `GenerateCSRActionInfo`/`ReplaceCertificateActionInfo` on the fixture). The per-parameter allow-list form is the same shape a future `ResetActionInfo`-resource crawl reads on OpenBMC (#022); the `ResetActionInfo` resource itself remains absent on the DMTF mockup, so that fetch + the If-Match/`@odata.etag` wiring remain code tasks.
-- 2026-08-30 — Created from triage analysis (core correctness #9).
-
-## References
-
-- `lib/redfish/client/redfish_client.dart` (only GET/POST/DELETE)
-- `lib/redfish/models/odata.dart`
-- Related: #014
-
-## Closed Criteria
-
-- Resolution:
-- Closed reason:
-- Follow-ups: none
+- 2026-10-25 — EMU run: **(c) the `ResetActionInfo` ActionInfo-*resource* crawl LANDED** — the discovery engine now follows `@Redfish.ActionInfo` links (`_childLinks` → `_actionInfoLinks`) and captures the resources (`DiscoveryContext.actionInfos`), and `FeatureRules.supportedResetTypes` unions `Parameters[].AllowableValues` on `ResetType` as the third allow-list source (bmcweb `ResetActionInfo` shape). Unit tests (`resetTypesFromActionInfo` follows the link; `allowableValuesFromActionInfo` parses per DSP0266 §9.6.14 / `ActionInfo.v1_4_1`), engine tests (link followed + values folded; dangling 404 link degrades gracefully), live emulator pin (79/79 — crawl captures the fixture's `SimpleUpdateActionInfo`). Remaining for #016: (a) If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + 412 unit tests (the settings-object ETag `9234ac83b9700123cc32` is the only pinable token on this fixture; header-level ETags stay unit-level), (b) Boot/IndicatorLED PATCH actions in a service + UI.
+- 2026-10-24 — EMU run (20:xx): third live PATCH pin + first pending-settings round-trip — PATCH `/Bios/Settings` (`@Redfish.Settings` SettingsObject carrying the only ETag the mockup serves, `9234ac83b9700123cc32`) with an `Attributes` subset answers 204 + persists (in-memory; on-disk fixture byte-identical); the mockup IGNORES the If-Match precondition on the settings object too (a stale etag still 204s AND persists), so 412 enforcement stays unit-level and the #016/#028 client must send the settings-object ETag itself; restored in `finally`. EMU 63 → 64.
+- 2026-10-24 — EMU run (20:xx): If-Match boundary: a PATCH with a stale `If-Match: "bogus-stale-etag"` header is answered 204 AND persists — the mockup never evaluates preconditions (no resource-level `@odata.etag`/HTTP ETag; only the settings-object ETag `9234ac83b9700123cc32` exists), so 412 enforcement stays unit-level and the #016 client must send the settings-object ETag itself. EMU 59 → 60.
+- 2026-10-24 — EMU run (18:xx): **PATCH transport landed** — `RedfishClient.patchJson(path, body:, headers:)` (DSP0266 §6.5.2 partial-update; 204/200 normalized, non-2xx → `RedfishException`), 3 unit tests; first live PATCH pin: `Boot.BootSourceOverrideEnabled: Disabled` → 204 AND persists (in-memory; on-disk fixture byte-identical); negative: the mockup applies ANY body unvalidated (`IndicatorLED: "Bogus"` persists) so the client pre-validates against AllowableValues (400 + `@Message.ExtendedInfo` stays unit-level). EMU 57 → 59.
+- 2026-10-23 — annotation-form allow-list fallback landed (16:05): `supportedResetTypes` unions `SupportedResetTypes` + `ResetType@Redfish.AllowableValues` on `#ComputerSystem.Reset`, conflation-guarded.
+- 2026-10-22 — PATCH/ETag scoped; transport approach decided (Dio PUT/PATCH + If-Match).
+- 2026-08-30 — Created from triage analysis (feature #15).

@@ -3985,3 +3985,75 @@
 - none opened/closed this run. DOCS-31 (crashed recovery) now pushed +
   verified; UI-2 advanced (loading states merged for Sensors/KVM — the last
   bare progress-indicator announcements in the feature views).
+
+## 2026-10-25 — agent:redfish-automation — EMULATOR: ResetActionInfo ActionInfo-resource crawl wired (EMU 78→79) — #022/#016
+
+**Done:**
+- EMULATOR primary per alternation (last primary: DOCS 14:10). Landed the
+  long-standing #022/#016 "crawl the ActionInfo *resource*" code task — the
+  bmcweb `ResetActionInfo` allow-list source is now implemented end-to-end:
+  (1) **engine**: `DiscoveryEngine._childLinks` returns the `@Redfish.ActionInfo`
+  URIs advertised beside action targets (`_actionInfoLinks`); the fetched
+  ActionInfo resources are classified into `DiscoveryContext.actionInfos`
+  (URI → body, keyed by relative path); (2) **rules**:
+  `FeatureRules.supportedResetTypes` now unions a third source —
+  `Parameters[].AllowableValues` on the `ResetType` parameter of the
+  `@Redfish.ActionInfo` resource the system's `#ComputerSystem.Reset` action
+  links to (`resetTypesFromActionInfo` + `allowableValuesFromActionInfo`,
+  DSP0266 §9.6.14 / `ActionInfo.v1_4_1` shape pinned live EMU 69→78), with the
+  manager-list conflation guard preserved (only the system's own linked
+  resource is read). +4 unit tests (parser; absent/malformed resilience;
+  follow-link + manager-guard; three-source union), +2 discovery-engine tests
+  (link followed + values folded + rawTree capture; dangling 404 link
+  degrades gracefully to `_error` + remaining sources). Full unit suite 366 →
+  **372 passed / 1 skipped**; analyze 0.
+- **Emulator:** 78 → **79/79** live on pinned `23d21f9a` (official
+  `tool/emulator/run_tests.sh`; the new test runs a normal crawl and asserts
+  `features.raw` contains `/redfish/v1/UpdateService/SimpleUpdateActionInfo`
+  with `FeatureRules.allowableValuesFromActionInfo(..., 'TransferProtocol')`
+  reading the live `HTTP/HTTPS/SFTP` allow-list; the DMTF fixture's system
+  allow-list stays annotation-form — the documented boundary). Confirmed
+  stable across two official-script runs; an ad-hoc manual server start raced
+  once (Connection refused — startup race in the throwaway script, not a test
+  failure; the script's health-wait passed both times). Server stopped via
+  trap.
+- **Docs:** REQUIREMENTS.md — bmcweb `ResetActionInfo` row now shows the
+  three-source union + real tests; "Test platforms" 78 → 79 with the crawl pin
+  described; the "remaining piece" language removed from the ActionInfo trace
+  paragraph. No corpus downloads; anchors unchanged (bmcweb `63a18f4`, mockup
+  `23d21f9a`, DSP0266 1.25.0, schema index 200).
+- **UI:** skipped, documented in tracking — the remaining UI-2 item is the
+  open-ended focus-order/dialogs-tables hunt; every concrete "last bare text"
+  surface is already merged (re-audited this run). Did not rush an untested
+  redesign (runbook §5).
+
+**Decisions:**
+- Took the agreed EMULATOR-slot candidate (the ActionInfo crawl) over a cheap
+  invariant re-run — it is the last unpinned #022/#016 piece and the shape
+  had been pinned live EMU 69→78, so the code work had a verified contract.
+- Kept the three-source union additive + default-arg backward-compatible
+  (`supportedResetTypes(systems, {actionInfos})`) so existing callers/tests
+  are untouched; only the system's own linked ActionInfo is consulted
+  (conflation guard unchanged).
+- Graceful degradation: a BMC advertising an unresolvable ActionInfo link
+  (404) records `_error` in rawTree and the allow-list falls back to the
+  sources that worked — no discovery crash on partial BMCs (existing engine
+  contract).
+- No new dependencies, no TLS change, no emulator dependency in plain
+  `flutter test`.
+
+**Next:**
+- DOCS per alternation (corpus mirror queue EMPTY; cheap anchor re-verify).
+- Remaining #022/#016: Control SetPoint AllowableMin/Max pre-validation
+  (#006/#019/#022; boundaries pinned EMU 60→63), Boot/IndicatorLED PATCH flow
+  + 412 unit tests (settings-object ETag `9234ac83b9700123cc32`).
+- P1 #015 AuthManager (expiryFromService → login + re-auth; token/location
+  from create RESPONSE HEADERS only). Keep pushing every run.
+
+**Issues touched:**
+- #022 advanced (Progress Log: crawl wired, third allow-list source, +4 unit +
+  2 engine + 1 emulator tests; remaining: Control SetPoint pre-validation,
+  task polling/races).
+- #016 advanced (Progress Log: (c) ActionInfo-resource crawl landed; remaining:
+  If-Match/`@odata.etag` wiring + 412 tests, Boot/IndicatorLED PATCH flow).
+- none opened/closed this run.

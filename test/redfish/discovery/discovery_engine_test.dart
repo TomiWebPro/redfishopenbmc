@@ -197,6 +197,141 @@ void main() {
       expect(bmc.requests, contains('/redfish/v1/'));
       expect(f.powerControl, isFalse);
     });
+
+    test(
+        'the engine follows @Redfish.ActionInfo links and folds '
+        'Parameters[].AllowableValues into the reset allow-list '
+        '(bmcweb ResetActionInfo crawl, #022/#016)', () async {
+      // bmcweb shape: the system's #ComputerSystem.Reset action links to a
+      // `ResetActionInfo` ActionInfo *resource* (no SupportedResetTypes, no
+      // annotation — the allow-list source is the resource, DOCS-4/13; the
+      // ActionInfo shape itself was pinned live EMU 71→78).
+      final Map<String, dynamic> routes = <String, dynamic>{
+        '/redfish/v1/': <String, dynamic>{
+          '@odata.id': '/redfish/v1/',
+          'Systems': <String, dynamic>{'@odata.id': '/redfish/v1/Systems'},
+        },
+        '/redfish/v1/Systems': <String, dynamic>{
+          '@odata.id': '/redfish/v1/Systems',
+          'Members': <dynamic>[
+            <String, dynamic>{'@odata.id': '/redfish/v1/Systems/system'},
+          ],
+        },
+        '/redfish/v1/Systems/system': <String, dynamic>{
+          '@odata.id': '/redfish/v1/Systems/system',
+          '@odata.type': '#ComputerSystem.v1_20_0.ComputerSystem',
+          'Actions': <String, dynamic>{
+            '#ComputerSystem.Reset': <String, dynamic>{
+              'target':
+                  '/redfish/v1/Systems/system/Actions/ComputerSystem.Reset',
+              '@Redfish.ActionInfo':
+                  '/redfish/v1/Systems/system/ResetActionInfo',
+            },
+          },
+        },
+        '/redfish/v1/Systems/system/ResetActionInfo': <String, dynamic>{
+          '@odata.id': '/redfish/v1/Systems/system/ResetActionInfo',
+          '@odata.type': '#ActionInfo.v1_4_1.ActionInfo',
+          'Id': 'ResetActionInfo',
+          'Name': 'Reset Action Info',
+          'Parameters': <dynamic>[
+            <String, dynamic>{
+              'Name': 'ResetType',
+              'Required': true,
+              'DataType': 'String',
+              'AllowableValues': <String>[
+                'On',
+                'ForceOff',
+                'GracefulShutdown',
+                'GracefulRestart',
+                'ForceRestart',
+                'Nmi',
+                'ForceOn',
+                'PushPowerButton',
+              ],
+            },
+          ],
+        },
+      };
+      final FakeBmc bmc = FakeBmc(routes);
+      final DiscoveryEngine engine = DiscoveryEngine();
+      final SystemFeatures f = await engine.discover(bmc.buildClient(), 'bmc1');
+
+      // The engine followed the ActionInfo link (one extra request) and the
+      // ActionInfo-derived allow-list reached the feature map (there is no
+      // SupportedResetTypes / annotation in this payload).
+      expect(
+          bmc.requests, contains('/redfish/v1/Systems/system/ResetActionInfo'));
+      expect(
+        f.supportedResetTypes,
+        <String>[
+          'ForceOff',
+          'ForceOn',
+          'ForceRestart',
+          'GracefulRestart',
+          'GracefulShutdown',
+          'Nmi',
+          'On',
+          'PushPowerButton',
+        ],
+      );
+      // The raw tree exposes the captured ActionInfo resource too.
+      final Map<String, dynamic> tree =
+          await engine.rawTree(bmc.buildClient(), 'bmc1');
+      expect(
+        tree.containsKey('/redfish/v1/Systems/system/ResetActionInfo'),
+        isTrue,
+      );
+    });
+
+    test(
+        'a dangling @Redfish.ActionInfo link degrades gracefully '
+        '(rawTree error, discovery continues, #022/#016)', () async {
+      // A BMC that advertises an ActionInfo link the crawl cannot resolve
+      // (404) must not break discovery: the link is recorded as an error in
+      // the rawTree and the feature map still builds from the sources that
+      // worked.
+      final Map<String, dynamic> routes = <String, dynamic>{
+        '/redfish/v1/': <String, dynamic>{
+          '@odata.id': '/redfish/v1/',
+          'Systems': <String, dynamic>{'@odata.id': '/redfish/v1/Systems'},
+        },
+        '/redfish/v1/Systems': <String, dynamic>{
+          '@odata.id': '/redfish/v1/Systems',
+          'Members': <dynamic>[
+            <String, dynamic>{'@odata.id': '/redfish/v1/Systems/system'},
+          ],
+        },
+        '/redfish/v1/Systems/system': <String, dynamic>{
+          '@odata.id': '/redfish/v1/Systems/system',
+          '@odata.type': '#ComputerSystem.v1_20_0.ComputerSystem',
+          'SupportedResetTypes': <String>['On', 'ForceOff'],
+          'Actions': <String, dynamic>{
+            '#ComputerSystem.Reset': <String, dynamic>{
+              'target':
+                  '/redfish/v1/Systems/system/Actions/ComputerSystem.Reset',
+              '@Redfish.ActionInfo':
+                  '/redfish/v1/Systems/system/ResetActionInfo',
+            },
+          },
+        },
+        // NOTE: no route for ResetActionInfo → FakeBmc 404s it.
+      };
+      final FakeBmc bmc = FakeBmc(routes);
+      final DiscoveryEngine engine = DiscoveryEngine();
+      final SystemFeatures f = await engine.discover(bmc.buildClient(), 'bmc1');
+
+      expect(f.powerControl, isTrue);
+      // The 404'd ActionInfo falls back to the SupportedResetTypes source.
+      expect(f.supportedResetTypes, <String>['ForceOff', 'On']);
+      final Map<String, dynamic> tree =
+          await engine.rawTree(bmc.buildClient(), 'bmc1');
+      expect(
+        (tree['/redfish/v1/Systems/system/ResetActionInfo']
+            as Map<String, dynamic>)['_error'],
+        isA<String>(),
+      );
+    });
   });
 
   group('DiscoveryEngine — caching & invalidation', () {

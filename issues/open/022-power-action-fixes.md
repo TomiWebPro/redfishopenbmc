@@ -52,19 +52,6 @@ estimated_tokens: 14000
 
 ## Progress Log
 
+- 2026-10-25 — EMU run: the **ActionInfo-*resource* crawl is now WIRED — no longer a TODO**. `DiscoveryEngine` follows `@Redfish.ActionInfo` links during the crawl (new `_actionInfoLinks` in `_childLinks`; captured resources classified into `DiscoveryContext.actionInfos` keyed by relative path); `FeatureRules.supportedResetTypes` now unions a THIRD allow-list source — `Parameters[].AllowableValues` on the `ResetType` parameter of the `@Redfish.ActionInfo` resource the `#ComputerSystem.Reset` action links to (bmcweb's `ResetActionInfo` shape, DOCS-4/13), with the existing manager-list conflation guard (only the system's own linked resource is read). +4 unit tests (parser + follow-link + union + manager-guard) in `feature_rules_test.dart`, +2 discovery-engine tests (follows link & folds values; dangling 404 link degrades gracefully to the remaining sources) in `discovery_engine_test.dart`, +1 live emulator test (79/79: a normal crawl captures the fixture's `SimpleUpdateActionInfo` and `FeatureRules.allowableValuesFromActionInfo` reads the live `TransferProtocol` allow-list). REQUIREMENTS.md row + "Test platforms" 78 → 79 updated.
 - 2026-10-25 — EMU run: the recurring "crawl the `ResetActionInfo` ActionInfo *resource*" note advanced — the emulator now pins the **ActionInfo resource contract live** via the two `CertificateService` ActionInfo resources the fixture serves (`GenerateCSRActionInfo` + `ReplaceCertificateActionInfo`): the `@Redfish.ActionInfo` link resolves from the action, the resource is `#ActionInfo.v1_4_1.ActionInfo`, every `Parameters[]` entry carries `Name`/`Required`/`DataType`, and per-parameter `AllowableValues` resolve (`KeyPairAlgorithm` [TPM_ALG_RSA, TPM_ALG_ECDSA], `KeyCurveId` [3 curves], `KeyUsage` [14 values], `CertificateType` [PEM]). That is the exact shape a bmcweb `ResetActionInfo` crawl produces on OpenBMC (DOCS-4/13); the `ResetActionInfo` resource itself is still absent on the DMTF mockup, so the actual allow-list-source crawl on OpenBMC remains a code task. EMU 69 → 71; REQUIREMENTS.md ActionInfo row updated.
 - 2026-08-30 — Created from triage analysis (feature #15). See also #005.
-
-## References
-
-- `lib/features/power/power_controller.dart:151-177`
-- `lib/features/power/power_state.dart:123`
-- `lib/features/power/power_view.dart:77-86,144-153`
-- `lib/features/power/power_service.dart:146,170`
-- Related: #005
-
-## Closed Criteria
-
-- Resolution:
-- Closed reason:
-- Follow-ups: none

@@ -17,6 +17,7 @@ import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
 import 'package:redfishopenbmc/redfish/client/auth_manager.dart';
 import 'package:redfishopenbmc/redfish/client/redfish_client.dart';
 import 'package:redfishopenbmc/redfish/discovery/discovery_engine.dart';
+import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
 import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/session.dart';
@@ -116,6 +117,48 @@ void main() {
       expect(features.managers, greaterThan(0));
       expect(features.chassis, greaterThan(0));
       expect(features.raw, isNotEmpty);
+    });
+
+    test(
+        'discovery engine follows @Redfish.ActionInfo links and the crawl '
+        'captures live ActionInfo resources (EMU 71→78, #022/#016)', () async {
+      // The 04:xx EMU pins proved the mockup serves real ActionInfo
+      // resources (SimpleUpdateActionInfo, GenerateCSRActionInfo, ...) — the
+      // exact `Parameters[].AllowableValues` shape a bmcweb ResetActionInfo
+      // crawl produces on OpenBMC. This test pins the *discovery engine*
+      // following those links during a normal crawl: UpdateService's
+      // #UpdateService.SimpleUpdate action advertises @Redfish.ActionInfo, so
+      // the engine must fetch it and surface it in the raw tree, and
+      // FeatureRules must parse the live-served allow-list.
+      final AuthManager manager = AuthManager(storage: InMemoryStorage());
+      await manager.login('em-actioninfo-crawl', emulatorProfile());
+      final RedfishClient client = manager.clientFor('em-actioninfo-crawl')!;
+
+      final DiscoveryEngine engine = DiscoveryEngine();
+      final SystemFeatures features = await engine.discover(client, 'em1');
+
+      const String simpleUpdateInfo =
+          '/redfish/v1/UpdateService/SimpleUpdateActionInfo';
+      final Map<String, dynamic> raw = features.raw;
+      expect(raw, contains(simpleUpdateInfo),
+          reason: 'the crawl must follow the @Redfish.ActionInfo link on '
+              '#UpdateService.SimpleUpdate (EMU 45 pinned the action)');
+      final dynamic infoBody = raw[simpleUpdateInfo];
+      expect(infoBody, isA<Map<String, dynamic>>());
+      final List<String> protocols = FeatureRules.allowableValuesFromActionInfo(
+        infoBody as Map<String, dynamic>,
+        'TransferProtocol',
+      );
+      expect(protocols, containsAll(<String>['HTTP', 'HTTPS', 'SFTP']),
+          reason: 'the live SimpleUpdateActionInfo serves the TransferProtocol '
+              'allow-list the engine captured (#008/#020/#022 contract)');
+
+      // The DMTF fixture has NO ResetActionInfo for #ComputerSystem.Reset
+      // (documented since 2026-10-23) — the system allow-list still comes from
+      // the annotation form; the ActionInfo-resource source stays a
+      // bmcweb/OpenBMC shape this engine can now serve.
+      expect(features.supportedResetTypes, isNotEmpty);
+      await manager.logout('em-actioninfo-crawl');
     });
 
     test('service root advertises a discoverable SessionService URI (#017)',
@@ -2510,9 +2553,8 @@ void main() {
         // its served-version schema in the external corpus mirror (the
         // DOCS-31 invariant: the mirror tracks every @odata.type the pinned
         // mockup publishes, not only the client-mapped families).
-        final File external =
-            File('documentations/external/redfish/schemas/v1/'
-                '$family.$version.json');
+        final File external = File('documentations/external/redfish/schemas/v1/'
+            '$family.$version.json');
         if (!external.existsSync()) {
           missingExternal.add('$type (wanted $family.$version.json)');
         }
