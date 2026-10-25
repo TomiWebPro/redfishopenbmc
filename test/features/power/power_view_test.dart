@@ -650,8 +650,8 @@ void main() {
     });
 
     testWidgets(
-        'failed reset closes the dialog and surfaces the error snackbar',
-        (tester) async {
+        'failed reset closes the dialog and shows the error inline only '
+        '(no duplicate snackbar)', (tester) async {
       final SystemManager manager = buildManager(powerControl: true);
       await manager.addProfile(
         const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
@@ -679,21 +679,66 @@ void main() {
       await tester.tap(find.text('Power On'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Confirm'));
+      // Stepped pumps: `pumpAndSettle` would advance through the SnackBar's
+      // display timer and dismiss it before the assertion.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Dialog closed, error reported once via the persistent inline error
+      // card (the controller records the error instead of throwing, so the
+      // dialog pops after the request resolves). Issue #022 criterion 4:
+      // no snackbar duplicates the failure (the snackbar is success-only).
+      expect(find.text('Confirm Power On?'), findsNothing);
+      expect(find.text('reset was rejected'), findsOneWidget,
+          reason: 'the inline error must be the single failure presentation');
+      expect(find.byType(SnackBar), findsNothing,
+          reason: 'a failure must not also surface as a snackbar');
+    });
+
+    testWidgets('a successful reset confirms via the success snackbar',
+        (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      final _FakePowerService svc = _FakePowerService();
+      final PowerController controller = PowerController(
+        service: svc,
+        features: SystemFeatures(
+          systemId: 'bmc1',
+          powerControl: true,
+          supportedResetTypes: const <String>['On'],
+        ),
+        initialState: const PowerUiState(powerState: PowerState.off),
+        pollInterval: const Duration(seconds: 60),
+        pollTimeout: const Duration(milliseconds: 1),
+      );
+
+      await tester.pumpWidget(
+        harness(manager: manager, controller: controller),
+      );
       await tester.pumpAndSettle();
 
-      // Dialog closed, error reported via the inline error text AND the
-      // snackbar (the controller records the error instead of throwing, so
-      // the dialog pops after the request resolves).
-      expect(find.text('Confirm Power On?'), findsNothing);
-      expect(find.text('reset was rejected'), findsWidgets);
+      await tester.tap(find.text('Power On'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirm'));
+      // Stepped pumps keep the SnackBar visible (see the failure test above).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Success: the snackbar confirms the issued action; no inline error.
+      expect(find.text('Power On issued'), findsOneWidget,
+          reason: 'success must confirm via the snackbar');
       expect(
-        find.descendant(
-          of: find.byType(SnackBar),
-          matching: find.text('reset was rejected'),
-        ),
-        findsOneWidget,
-        reason: 'the snackbar must carry the failure message',
-      );
+          find.bySemanticsLabel(RegExp('^Power control failed')), findsNothing,
+          reason: 'a successful reset must not show the inline error');
+
+      // Let the SnackBar's display timer elapse so no timer is pending at
+      // teardown.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
     });
   });
 

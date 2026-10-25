@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (DOCS run — **anchors re-verified live (no corpus refresh; mirror queue EMPTY; bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index byte-identical) + UI-2 ConfirmResetDialog focus entry/order pinned** — the dialog opens with keyboard focus inside it on the least-destructive Cancel (WAI-ARIA dialog pattern), Tab walks Cancel → Force, +2 widget tests; unit suite **426 passed / 1 skipped**)
-- **Current focus:** **DOCS (2026-10-25)** — corpus mirror queue still EMPTY; anchors unchanged; UI-2 dialog-focus hunt continues (ConfirmResetDialog pinned this run). Next per alternation: **EMULATOR** — the **#022** opening items (task polling/races, NMI terminal state, error dedupe, BMC-id fallback — untouched so far) + cheap 82/82 suite re-run; then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — the remaining dialogs/tables focus audit (delete-system confirm dialog in EditSystemPage is the last untested dialog) + any remaining non-card labels
+- **Last updated:** 2026-10-25 (EMULATOR run — **#022 power-action correctness: per-action poll handle (no optimistic-state clobbering), NMI keeps current state, error shown once (inline-only), BMC-id reset-URI fallback** — 4 of 5 acceptance criteria; unit suite **432 passed / 1 skipped**, emulator 82/82 re-run green)
+- **Current focus:** **EMULATOR (2026-10-25)** — the #022 opening items mostly landed: poll/race (criterion 2), NMI terminal state (3), error dedupe (4), BMC-id fallback (5). Remaining #022: **202 task-monitor *polling* (criterion 1)** — folds into #008/#020 firmware/task work (GET-on-monitor + TaskState parsing are the only missing pieces; the DMTF mockup never returns a 202 for reset, so it stays unit-level). Next per alternation: **DOCS** — cheap anchor re-verify (mirror queue EMPTY). Then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — the delete-system confirm dialog in EditSystemPage is the last untested dialog + any remaining non-card labels
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1101,7 +1101,14 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       allow-list precedent applied to numeric bounds); Control became
       client-mapped (served `Control.v1_5_0.json` in the fixture +
       corpus-invariant list) — +11 unit tests, +1 live emulator pin (79 →
-      80/80). **Emulator negative finding
+      80/80). **The four power-action correctness fixes landed 2026-10-25
+      (EMU run)** — per-action poll handle (`_pollGeneration`; a rapid second
+      action supersedes the first poll loop — no optimistic-state clobbering),
+      NMI keeps the current known state (interrupt, not a transition),
+      failure shown once (inline error card only; snackbar success-only), and
+      the final reset-URI fallback prefers the BMC ComputerSystem id — 4 of 5
+      acceptance criteria checked; the remaining criterion (**202 task-monitor
+      polling**) folds into #008/#020. **Emulator negative finding
       2026-10-23 17:07**: the DMTF mockup fixture ships NO `ResetActionInfo`
       ActionInfo resource for `#ComputerSystem.Reset` — it serves only the
       annotation form (= the 16:05 fallback); the ActionInfo-resource crawl is

@@ -211,13 +211,14 @@ class PowerView extends ConsumerWidget {
 
     if (!context.mounted) return;
     final PowerUiState after = ref.read(powerControllerProvider(systemId));
+    // Error is shown once (issue #022 criterion 4): the persistent inline
+    // error card (with Retry) is the single failure presentation — the
+    // snackbar is reserved for the success confirmation so a failure is never
+    // double-announced.
+    if (after.error != null) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          after.error != null ? after.error! : '${action.label} issued',
-        ),
-        backgroundColor:
-            after.error != null ? Theme.of(context).colorScheme.error : null,
+        content: Text('${action.label} issued'),
       ),
     );
   }

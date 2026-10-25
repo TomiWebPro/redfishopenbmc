@@ -402,6 +402,54 @@ void main() {
       // 202 + Location: treated as accepted; the task is not polled here.
       await svc.reset(ResetType.forceRestart);
     });
+
+    test('final fallback uses the BMC ComputerSystem id, not the profile id',
+        () async {
+      final DioAdapter adapter = DioAdapter(
+        dio: Dio(BaseOptions(baseUrl: 'https://bmc202.local:443')),
+        matcher: const _PathMatcher(),
+      );
+      // No action target anywhere: the raw tree carries a ComputerSystem with
+      // a BMC id but no Actions, there is no known resource URI, and the live
+      // crawl fails (empty collection) — the final fallback must build the
+      // reset URI from the BMC ComputerSystem id (issue #022 criterion 5).
+      adapter.onGet(
+        '/redfish/v1/Systems',
+        (server) =>
+            server.reply(200, <String, dynamic>{'Members': <dynamic>[]}),
+      );
+      adapter.onPost(
+        '/redfish/v1/Systems/bmc202-sys/Actions/ComputerSystem.Reset',
+        (server) => server.reply(204, null),
+      );
+      final PowerService svc = PowerService(
+        client: RedfishClient(
+          profile:
+              const ConnectionProfile(host: 'bmc202.local', name: 'bmc202'),
+          dio: adapter.dio,
+        ),
+        systemId: 'bmc202',
+        features: SystemFeatures(
+          systemId: 'bmc202',
+          powerControl: true,
+          supportedResetTypes: const <String>['On'],
+          raw: <String, dynamic>{
+            '/redfish/v1/Systems/bmc202-sys': <String, dynamic>{
+              '@odata.id': '/redfish/v1/Systems/bmc202-sys',
+              '@odata.type': '#ComputerSystem.v1_20_0.ComputerSystem',
+              'Id': 'bmc202-sys',
+              'PowerState': 'On',
+            },
+          },
+        ),
+        systemResourceUri: null,
+      );
+
+      await svc.reset(ResetType.on);
+      // Reaching the POST on the BMC-id URI means the fallback used the BMC
+      // ComputerSystem id; a profile-id fallback would have hit an unmocked
+      // path and thrown.
+    });
   });
 
   group('PowerService — fetchPowerState', () {

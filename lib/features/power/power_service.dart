@@ -143,6 +143,14 @@ class PowerService {
       return '$live/Actions/ComputerSystem.Reset';
     }
 
+    // Final fallback: prefer the BMC ComputerSystem id discovered in the raw
+    // tree over the profile id (which may not equal the BMC resource id and
+    // would produce a malformed reset URI — issue #022). Mirrors
+    // [_resolveSystemUri].
+    final String? bmcId = _computerSystemIdFromRaw();
+    if (bmcId != null && bmcId.isNotEmpty) {
+      return '$bmcId/Actions/ComputerSystem.Reset';
+    }
     return '/redfish/v1/Systems/$systemId/Actions/ComputerSystem.Reset';
   }
 

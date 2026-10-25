@@ -120,6 +120,10 @@ enum ResetType {
       case ResetType.powerCycle:
         return PowerState.poweringOn;
       case ResetType.nmi:
+        // NMI does not change the power state (it is an interrupt), so the
+        // model cannot project a transition. `PowerController.reset` keeps
+        // the current known state for NMI instead of this `unknown` fallback
+        // (issue #022); the getter stays context-free for other callers.
         return PowerState.unknown;
     }
   }

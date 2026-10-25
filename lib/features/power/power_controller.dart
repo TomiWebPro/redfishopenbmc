@@ -89,8 +89,14 @@ class PowerController extends StateNotifier<PowerUiState> {
   /// Maximum time to keep polling before giving up (state stays optimistic).
   final Duration pollTimeout;
 
-  /// Guards against overlapping poll loops.
-  bool _polling = false;
+  /// Monotonic token identifying the poll loop of the most recent action.
+  ///
+  /// Each [reset] bumps the token before the request is issued; a poll loop
+  /// only writes state while its captured token is still current, so a rapid
+  /// second action (e.g. GracefulShutdown right after On) supersedes the
+  /// first loop instead of letting its stale reads clobber the new optimistic
+  /// state (issue #022 — per-action poll handle).
+  int _pollGeneration = 0;
 
   /// Issues [type] and begins tracking the transition.
   ///
@@ -110,11 +116,19 @@ class PowerController extends StateNotifier<PowerUiState> {
       return;
     }
 
+    // Supersede any in-flight poll loop from a previous action before the
+    // optimistic projection lands, so its reads cannot overwrite it.
+    _pollGeneration++;
+    final int generation = _pollGeneration;
+
     state = state.copyWith(
       actionInFlight: true,
       clearError: true,
       lastAction: type,
-      powerState: type.optimisticState,
+      // NMI does not change the power state (it is an interrupt), so keep the
+      // current known state instead of flashing `unknown` (issue #022).
+      powerState:
+          type == ResetType.nmi ? state.powerState : type.optimisticState,
     );
 
     try {
@@ -136,7 +150,7 @@ class PowerController extends StateNotifier<PowerUiState> {
     }
 
     state = state.copyWith(actionInFlight: false);
-    _startPolling();
+    _startPolling(generation);
   }
 
   /// Re-reads the current power state once (e.g. on pull-to-refresh).
@@ -149,22 +163,18 @@ class PowerController extends StateNotifier<PowerUiState> {
     }
   }
 
-  void _startPolling() {
-    if (_polling) return;
-    _polling = true;
+  void _startPolling(int generation) {
     () async {
       final DateTime deadline = DateTime.now().add(pollTimeout);
       while (DateTime.now().isBefore(deadline)) {
         // Yield to the event loop / UI between polls.
         await Future<void>.delayed(pollInterval);
-        if (!mounted) {
-          _polling = false;
+        if (!mounted || generation != _pollGeneration) {
           return;
         }
         try {
           final PowerState s = await service.fetchPowerState();
-          if (!mounted) {
-            _polling = false;
+          if (!mounted || generation != _pollGeneration) {
             return;
           }
           state = state.copyWith(powerState: s);
@@ -173,13 +183,13 @@ class PowerController extends StateNotifier<PowerUiState> {
           // Transient read failure: keep the optimistic state and keep trying.
         }
       }
-      _polling = false;
     }();
   }
 
   @override
   void dispose() {
-    _polling = false;
+    // Invalidate any in-flight poll loop so it stops writing state.
+    _pollGeneration++;
     super.dispose();
   }
 }

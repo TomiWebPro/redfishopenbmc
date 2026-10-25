@@ -4319,3 +4319,67 @@
 
 **Issues touched:**
 - none opened/closed/advanced this run (UI increment only).
+
+## 2026-10-25 — agent:redfish-automation — #022 power-action correctness (4 of 5 criteria)
+
+**Done:**
+- EMULATOR primary per alternation (last primary: DOCS 20:43). Landed four of
+  the five #022 acceptance criteria as one finished, tested increment:
+  1. **Per-action poll handle** — `PowerController` swapped the single
+     `_polling` bool for a monotonic `_pollGeneration` token; each `reset()`
+     bumps the token before issuing and a poll loop only writes while its
+     captured generation is current, so a rapid second action supersedes the
+     first loop instead of letting its stale reads clobber the new optimistic
+     state (the old guard made the second `_startPolling()` a no-op).
+     `dispose()` bumps the token too. +1 controller test with a completer-gated
+     service proving the stale read never lands.
+  2. **NMI terminal state** — the controller keeps the current known power
+     state for `ResetType.nmi` (NMI is an interrupt, not a power transition),
+     so the badge never flashes "Unknown" and the poll loop converges
+     immediately; documented in `power_state.dart`. +1 controller test.
+  3. **Error shown once** — `PowerView` keeps the snackbar for the success
+     confirmation only; a failure is presented once via the persistent inline
+     error card (with Retry). Failure widget test now asserts inline-only +
+     no SnackBar; +1 success-snackbar widget test (stepped pumps — a bare
+     `pumpAndSettle` advances through the SnackBar display timer and dismisses
+     it, a pattern noted for future snackbar tests).
+  4. **BMC-id fallback** — `PowerService._resolveResetTarget`'s final fallback
+     prefers the BMC ComputerSystem id from the discovery raw tree before the
+     profile id (mirrors `_resolveSystemUri`; avoids malformed reset URIs when
+     the BMC resource id differs). +1 service test (POST lands on the BMC-id
+     URI when raw has a ComputerSystem with no action target + empty live
+     crawl).
+- **Tests:** unit suite 428 → **432 passed / 1 skipped** (+4); analyze 0.
+  Emulator suite re-run **82/82 green** on pinned `23d21f9a` (official
+  harness; no emulator code touched — the power fixes are unit-level because
+  the DMTF mockup never returns a 202 task monitor for reset).
+- **Docs:** REQUIREMENTS.md "Last audited" header + Power-control trace row
+  updated; no corpus change (mirror queue EMPTY; anchors unchanged from the
+  20:43 DOCS run).
+
+**Decisions:**
+- Took the four tractable #022 criteria as the EMULATOR-slot candidate; the
+  fifth (202 task-monitor *polling*) stays with #008/#020 firmware/task work
+  — the fixture cannot pin it (204-only resets), and GET-on-monitor + TaskState
+  parsing are shared with the firmware poller.
+- NMI handling lives in the controller (the model `optimisticState` getter is
+  context-free and keeps `unknown` as its neutral fallback, documented) — the
+  controller knows the current state and preserves it.
+- Error presentation follows the app's established inline-error + Retry
+  pattern; the snackbar is demoted to a success confirmation — satisfies
+  "shown once".
+- Snackbar widget tests must use stepped pumps, not `pumpAndSettle`
+  (pumpAndSettle advances fake time past the display timer) — recorded so the
+  next snackbar test doesn't rediscover the trap.
+
+**Next:**
+- DOCS per alternation (corpus mirror queue EMPTY; cheap anchor re-verify).
+- #022 criterion 1 — 202 task-monitor polling (folds into #008/#020), then the
+  UI-2 delete-system-dialog focus audit.
+- P1 #015 AuthManager (expiryFromService → login + re-auth; token/location
+  from create RESPONSE HEADERS only). Keep pushing every run.
+
+**Issues touched:**
+- #022 advanced (4 of 5 acceptance criteria checked; Progress Log + Tasks
+  updated; criterion 1 left open with the #008/#020 note).
+- none opened/closed this run.

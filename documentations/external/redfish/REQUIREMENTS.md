@@ -6,24 +6,15 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (DOCS run — **anchor freshness re-verification,
-no corpus refresh** + UI-2 dialog focus entry/order): re-verified every
-upstream anchor this run — (1) **bmcweb `63a18f4`** still HEAD of `master`
-via `git ls-remote`; (2) **mockup `23d21f9a`** still HEAD of `main` via
-`git ls-remote`; (3) **DSP0266 1.25.0** from `www.dmtf.org` **byte-identical**
-SHA-256 `385ee6d0…` vs the mirrored `redfish/spec/DSP0266_1.25.0.pdf`;
-(4) **schema index** from `redfish.dmtf.org/schemas/v1/` **byte-identical**
-SHA-256 `e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86`
-(3,448,133 B) vs the mirrored `v1-index.html` → **no corpus refresh needed**
-(DOCS-27 ZERO version advances hold; the corpus mirror queue stays EMPTY for
-every published type; 0 bytes downloaded). No code gap surfaced by the audit
-this run. **UI-2 dialog focus entry pin:** the `ConfirmResetDialog` (power
-reset confirmation) now opens with keyboard focus INSIDE the dialog on the
-least-destructive action (Cancel) — WAI-ARIA dialog pattern, the Add-system
-dialog precedent — via an explicit `_cancelFocus` `FocusNode` requested after
-the first frame (an Enter/Tab user cannot accidentally trigger a destructive
-reset), and Tab walks Cancel → Force and wraps; +2 widget tests pin the
-destructive + non-destructive dialog focus entry and the Tab order.
+Last audited: 2026-10-25 (EMU run — **#022 power-action correctness fixes
+landed, emulator suite 82/82 green**): the #022 opening items (per-action poll
+handle, NMI terminal state, error dedupe, BMC-id fallback) are now code + tests
+in `lib/features/power/` — see the Power-control trace row. Upstream anchors
+unchanged from the 20:43 DOCS run (bmcweb `63a18f4`, mockup `23d21f9a`,
+DSP0266 1.25.0, schema index byte-identical); corpus mirror queue stays EMPTY.
+The remaining #022 item — 202 task-monitor *polling* — stays with the
+#008/#020 firmware/task work (the DMTF mockup never returns a 202 task monitor
+for reset, so it stays unit-level).
 
 Prior: 2026-10-25 (EMULATOR run — **the #016 Boot/IndicatorLED PATCH
 flow landed in a service + UI**): `SystemSettingsService`
@@ -535,7 +526,7 @@ Folded into code this run:
 | Session auth: `POST SessionService/Sessions` → `X-Auth-Token`, session reuse | DSP0266 §13.3.4 "Redfish session login authentication"; `SessionService.json` + `SessionService.v1_2_0.json` (newest, DOCS-12) | `lib/redfish/client/auth_manager.dart` | `test/redfish/client/auth_manager_test.dart` | OK (see #015: discover session URI instead of hardcoding) |
 | Basic auth fallback | DSP0266 §13.3.3 "HTTP Basic authentication" | `lib/redfish/client/auth_manager.dart` | `test/redfish/client/auth_manager_test.dart` | OK |
 | No plaintext password at rest; token in secure storage | DSP0266 §13.3.4 + §13.2 "Sensitive data"; OpenBMC `Redfish.md` | `lib/core/storage/secure_storage.dart`, `AuthManager` | `test/redfish/client/auth_manager_test.dart` | OK |
-| Power control: `ComputerSystem.Reset` action with `ResetType` body; 202+`Location` accepted | DSP0266 §9.6.14 "Actions property" + §7.11 "POST (action)"; `ComputerSystem.json` `Actions` | `lib/features/power/power_service.dart` | `test/features/power/` | OK |
+| Power control: `ComputerSystem.Reset` action with `ResetType` body; 202+`Location` accepted | DSP0266 §9.6.14 "Actions property" + §7.11 "POST (action)"; `ComputerSystem.json` `Actions` | `lib/features/power/power_service.dart` + `power_controller.dart` + `views/power_view.dart` | `test/features/power/` | OK — #022 correctness fixes landed 2026-10-25: per-action poll handle (a rapid second action supersedes the first poll loop — no optimistic-state clobbering), NMI keeps the current known state (interrupt, not a power transition), failure is shown once (inline error card only; the snackbar is success-only), and the final reset-URI fallback prefers the BMC ComputerSystem id over the profile id |
 | Sensor telemetry: `Chassis[*].Thermal` / `Sensors`, reading + units | DSP0266 §9.6.15 `Oem`/§9.1 links; schema contracts in `Sensor.json` + `Sensor.v1_8_1.json` (mockup-served) + `Sensor.v1_14_0.json` (newest) + `Thermal.json` + `Thermal.v1_7_3.json` (newest, DOCS-12); DSP0266 does not enumerate per-resource schemas — the schema files are the normative property source | `lib/features/sensors/sensors_controller.dart` | `test/features/sensors/` | OK |
 | System overview: `ComputerSystem` identity (`Manufacturer`/`Model`/`SKU`/`SerialNumber`/`PartNumber`/`BiosVersion`), `PowerState`, `Status.Health`(+Rollup), `ProcessorSummary`/`MemorySummary`, `IndicatorLED`, leading `Chassis` thermal | DSP0266 §9.1 "Resources" + §9.6 "Properties"; schema contracts in `ComputerSystem.v1_22_0.json` (mockup-served) + `ComputerSystem.v1_29_0.json` (newest, DOCS-2) + `Thermal.v1_7_3.json` (DSP0266 does not carry per-resource property lists) | `lib/features/overview/overview_service.dart` (+ `models/system_overview.dart`) hydrates system + best-effort chassis thermal | `test/features/overview/overview_provider_test.dart` + `overview_view_test.dart`; **emulator suite now pins the full hydrate end-to-end** against the DMTF mockup (#006) | OK |
 | Firmware inventory: `UpdateService` / `SoftwareInventory` collection | DSP0266 §12.7 "Update service" + §7.2.2 "Resource collection requests"; `SoftwareInventory.json` + `SoftwareInventory.v1_10_1.json` (mockup-served) + `SoftwareInventory.v1_15_0.json` (newest, DOCS-2) (schema contract) | `lib/features/firmware/firmware_models.dart` | `test/features/firmware/` | OK |
