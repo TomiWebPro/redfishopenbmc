@@ -37,6 +37,12 @@ class HealthBadge extends StatelessWidget {
     return Semantics(
       label: 'Health ${health.label}',
       container: true,
+      // UI-2: exclude the child semantics so the merged label REPLACES the
+      // chip's inner Text node — otherwise a screen reader hears "Health
+      // Warning" and then "Warning" twice (the double-announcement pattern
+      // this codebase merges everywhere else). Visible text stays for sighted
+      // users.
+      excludeSemantics: true,
       child: Chip(
         avatar: Icon(icon, size: 16, color: color),
         label: Text(health.label),
@@ -147,6 +153,10 @@ class _PowerBadgeState extends State<PowerBadge>
     return Semantics(
       label: 'Power ${widget.powerState.label}',
       container: true,
+      // UI-2: exclude the child semantics so the merged label REPLACES the
+      // chip's inner Text node — otherwise a screen reader hears "Power Off"
+      // and then "Off" twice. Visible text stays for sighted users.
+      excludeSemantics: true,
       child: Chip(
         avatar: transitioning
             ? FadeTransition(opacity: _opacity, child: avatar)

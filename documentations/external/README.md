@@ -142,6 +142,13 @@ documentations/external/
 | `redfish/schemas/v1/Control.v1_5_0.json` | https://redfish.dmtf.org/schemas/v1/Control.v1_5_0.json | 2026-10-24 20:14 | `de1614b0de069eb648ff125053fa90910c1dce882bd39c2f9f882e5264d98bd1` | 47,414 | DMTF 2023.x | **Mockup-served** `#Control.v1_5_0.Control` — ControlType/ControlMode/SetPoint/AllowableMax/Min/SettingMin/Max/Sensor excerpt with DataSourceUri (PowerLimit + CPU1Freq pins) — DOCS-26 |
 | `redfish/schemas/v1/Control.v1_8_1.json` | https://redfish.dmtf.org/schemas/v1/Control.v1_8_1.json | 2026-10-24 20:14 | `e6412df9e3bb779edb46f9f0f69bc5f60c9addbaaa58a172ae0c4804015fa88e` | 67,784 | DMTF 2026.2 | Newest Control — adds `SetPointError` (readonly, v1_7_0, additive vs served v1_5_0) — DOCS-26 |
 | `redfish/schemas/v1/ControlCollection.json` | https://redfish.dmtf.org/schemas/v1/ControlCollection.json | 2026-10-24 20:14 | `4faca423621f38515fcc9234e444a36019817793e6377d764ad0593330504785` | 4,959 | latest per aggregator | `#ControlCollection.ControlCollection` — the Chassis.1U.Controls enumeration (PowerLimit + CPU1Freq members) the EMU-2 pin reads — DOCS-26 |
+| `redfish/schemas/v1/Heater.json` | https://redfish.dmtf.org/schemas/v1/Heater.json | 2026-10-25 02:11 | `6fbceeeae8c1323347cec0df76003b3d04faa6bbe7825c37f5985fc7fd28510c` | 1,252 | latest per aggregator | Heater family aggregator — `$ref`s v1_0_0/v1_0_1/v1_0_2; resolves `#Heater.Heater` citations (thermal-heater surface) — DOCS-28 |
+| `redfish/schemas/v1/Heater.v1_0_1.json` | https://redfish.dmtf.org/schemas/v1/Heater.v1_0_1.json | 2026-10-25 02:11 | `09002a7f554311bce7c3c9e8d23b477e05674aece530bcc5154527747a983963` | 16,421 | DMTF 2023.x | **Mockup-served** `#Heater.v1_0_1.Heater` — CPU1Heater detail the EMU-2 pin reads (PhysicalContext/Manufacturer/Model/SerialNumber/HotPluggable/LocationIndicatorActive/Status + `Links.Processors` + `Metrics` link) — DOCS-28 |
+| `redfish/schemas/v1/Heater.v1_0_2.json` | https://redfish.dmtf.org/schemas/v1/Heater.v1_0_2.json | 2026-10-25 02:11 | `8d04775c9c02201dacfaf52e19ef2b405fbf2af502b912dd738b117e9d4aba20` | 16,449 | DMTF 2024.x | Newest Heater — **property no-op** vs served v1_0_1 (26 diff lines: `$id`/copyright/backtick-quoted descriptions/`language`/title only) — DOCS-28 |
+| `redfish/schemas/v1/HeaterMetrics.json` | https://redfish.dmtf.org/schemas/v1/HeaterMetrics.json | 2026-10-25 02:11 | `f88ecdca65cba5aefaaa83d7911ce818178cd44c26580d0f8ce301d310c06712` | 1,275 | latest per aggregator | HeaterMetrics family aggregator — `$ref`s v1_0_0/v1_0_1/v1_0_2; resolves `#HeaterMetrics.HeaterMetrics` citations — DOCS-28 |
+| `redfish/schemas/v1/HeaterMetrics.v1_0_1.json` | https://redfish.dmtf.org/schemas/v1/HeaterMetrics.v1_0_1.json | 2026-10-25 02:11 | `9060b7665d15ac6871b65fe6e613226a6a6ec745ecbdfc2f41c471e9bb3f0303` | 9,823 | DMTF 2023.x | **Mockup-served** `#HeaterMetrics.v1_0_1.HeaterMetrics` — pre-power-on/runtime heating seconds, PowerWatts.Reading, TemperatureReadingsCelsius + advertised `#HeaterMetrics.ResetMetrics` (no `/Actions/` segment → 404 candidate) — DOCS-28 |
+| `redfish/schemas/v1/HeaterMetrics.v1_0_2.json` | https://redfish.dmtf.org/schemas/v1/HeaterMetrics.v1_0_2.json | 2026-10-25 02:11 | `82086f0668d633a3f8c83398a686ee73045699b3a88f62327a15a8b988d65825` | 9,859 | DMTF 2024.x | Newest HeaterMetrics — **property no-op** vs served v1_0_1 (26 diff lines: `$id`/copyright/backtick-quoted descriptions/`language`/title only) — DOCS-28 |
+| `redfish/schemas/v1/HeaterCollection.json` | https://redfish.dmtf.org/schemas/v1/HeaterCollection.json | 2026-10-25 02:11 | `574a1e99434ebee6397cedf8801718876246eb1f4b87912e3625458edc65768d` | 4,966 | latest per aggregator | `#HeaterCollection.HeaterCollection` — the `ThermalSubsystem.Heaters` enumeration (CPU1Heater member) the EMU-2 pin reads — DOCS-28 |
 
 ### Downloaded schema set (28 base aggregator files)
 
@@ -149,7 +156,8 @@ documentations/external/
 `SessionService`, `AccountService`, `UpdateService`, `SoftwareInventory`,
 `EventService`, `Manager`, `LogService`, `EthernetInterface`, `TaskService`,
 `MessageRegistry`, `Battery`, `BatteryMetrics`, `EventDestination`,
-`VirtualMedia`, `SecureBoot`, `SecureBootDatabase`, `Control`. Each bare `<Name>.json` is the
+`VirtualMedia`, `SecureBoot`, `SecureBootDatabase`, `Control`, `Heater`,
+`HeaterMetrics`. Each bare `<Name>.json` is the
 DMTF "latest" aggregator that
 `$ref`s the newest versioned definitions; SHA-256 hashes are listed in the
 run notes in `automation-tracking.md`.
@@ -260,7 +268,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-25 00:15 UTC — DOCS-27 freshness audit; prior: DOCS-26 20:14 UTC, DOCS-25 18:52 UTC, DOCS-23 15:17 UTC, DOCS-22 12:47 UTC, DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
+## Current upstream anchors (verified 2026-10-25 02:11 UTC — DOCS-28 mirror run; prior: DOCS-27 00:15 UTC, DOCS-26 20:14 UTC, DOCS-25 18:52 UTC, DOCS-23 15:17 UTC, DOCS-22 12:47 UTC, DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing)
@@ -298,6 +306,46 @@ note that the content is byte-identical to upstream apart from the 2-byte
 whitespace normalisation (restoring the trailing whitespace would fail
 `git diff --check`). The 33-family emulator corpus-invariant list is
 untouched (no family became client-mapped).
+
+### DOCS-28 — Heater + HeaterMetrics corpus mirror for the EMU-2 Heaters pin (2026-10-25 02:11 UTC)
+
+The EMU-2 run (01:34 local, 64→66 tests) pinned the **ThermalSubsystem
+Heaters surface** live; the published types it reads — `#Heater.v1_0_1.Heater`
+(`/redfish/v1/Chassis/1U/ThermalSubsystem/Heaters/CPU1Heater`:
+PhysicalContext CPU / Manufacturer Contoso Heaters / Model CPUHeater /
+SerialNumber SNDHM0123456789 / HotPluggable / LocationIndicatorActive /
+Status + `Links.Processors[0]` → CPU1 + `Metrics` link) and
+`#HeaterMetrics.v1_0_1.HeaterMetrics` (PrePowerOnHeatingTimeSeconds 600 /
+RuntimeHeatingTimeSeconds 3600 / PowerWatts.Reading 200.3 /
+TemperatureReadingsCelsius[1] DeviceName 'Heater Average Temperature'
+Reading 2.5 + the advertised `#HeaterMetrics.ResetMetrics` action — a
+no-`/Actions/`-segment candidate) — were reachable by the corpus-invariant
+crawl but had **no schema in the external corpus**. Mirrored the
+**mockup-served** versions (`Heater.v1_0_1.json`, `HeaterMetrics.v1_0_1.json`)
+per the DOCS-12/13/19/20/21/23/24/25/26 "newest + served" pair precedent, plus
+the **newest** published versions (`Heater.v1_0_2.json`,
+`HeaterMetrics.v1_0_2.json` — both the aggregators' `$ref` targets; v1_0_3
+probes 404, verified 2026-10-25) plus both aggregators and the collection type
+— 7 files / **60,045 bytes** total, inside the DOCS-6 budget; SHA-256s +
+manifest rows above. Deltas audited against the served versions: **Heater
+v1_0_1 → v1_0_2 is a property no-op** (26 diff lines — `$id`/copyright year/
+backtick-quoted descriptions/`language: "en"`/title only) and **HeaterMetrics
+v1_0_1 → v1_0_2 is likewise a property no-op** (26 diff lines, same classes)
+— the emulator-pinned contract holds across the newest versions, **no client
+code change**. Also verified the served-version `ResetMetrics` action def in
+the mirror matches the EMU pin (target under `HeaterMetrics.ResetMetrics`,
+no `/Actions/`-segment obligation). **Client-mapped decision:
+Heater/HeaterMetrics stay NOT client-mapped** — the client reads only the
+fan/thermal subsystem rollups; there is no heater UI, so the corpus-invariant
+family list in the emulator test is untouched and no fixture-schema duty
+attaches. If a thermal-heater feature ever lands (FUTUREWORK candidate),
+Heater/HeaterMetrics join the client-mapped lists and the served versions
+must also be copied into `test/fixtures/redfish/schemas/` (DOCS-19/20/21
+invariant). The corpus mirror queue is now **EMPTY** — every EMU-2-pinned
+family has a schema in the external corpus. Anchors re-verified same run:
+bmcweb `63a18f4` (still HEAD via GitHub API, docs byte-identical), mockup
+`23d21f9a`, DSP0266 1.25.0 (200 on the working `www.dmtf.org` URL), schema
+index 200.
 
 ### DOCS-22 — frequent-family newest-version freshness audit (2026-10-24 12:47 UTC)
 

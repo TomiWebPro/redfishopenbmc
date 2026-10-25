@@ -6,7 +6,24 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (DOCS-27 run — **corpus freshness audit + provenance
+Last audited: 2026-10-25 (DOCS-28 run — **Heater + HeaterMetrics corpus
+mirror**): mirrored the 7-file Heater family pair the EMU-2 Heaters pin
+(64→66 tests) reads — `Heater.json` + `HeaterMetrics.json` (aggregators,
+`$ref` v1_0_2 newest) + served `Heater.v1_0_1` / `HeaterMetrics.v1_0_1`
+(what the pinned mockup publishes) + newest `Heater.v1_0_2` /
+`HeaterMetrics.v1_0_2` (v1_0_3 probes 404 — v1_0_2 is current) +
+`HeaterCollection.json` — 60,045 bytes total, inside the DOCS-6 budget;
+SHA-256s + manifest rows verified (see README.md). Delta audit: **v1_0_1 →
+v1_0_2 is a property no-op for both families** (26 diff lines each — `$id`/
+copyright/backtick-quoted descriptions/`language`/title), so the
+emulator-pinned contract holds — **no client code change**; both families
+stay NOT client-mapped (no fixture duty, corpus-invariant list untouched).
+The corpus mirror queue is now **EMPTY** — every EMU-2-pinned family has a
+schema in the external corpus. Re-verified all anchors same run: bmcweb
+`63a18f4` (still HEAD via GitHub API, docs byte-identical), mockup
+`23d21f9a`, DSP0266 1.25.0 (200 on the working `www.dmtf.org` URL), schema
+index 200.
+Prior: 2026-10-25 (DOCS-27 run — **corpus freshness audit + provenance
 fix**): re-verified every upstream anchor — bmcweb master `63a18f4` (still
 HEAD via GitHub API; all four mirrored docs byte-identical at HEAD), mockup
 pin `23d21f9a` (still HEAD of `main`), DSP0266 1.25.0 (200 on the working
@@ -1402,3 +1419,39 @@ via `git ls-remote`), DSP0266 1.25.0 (200 on the working `www.dmtf.org` URL),
 schema index 200. The 33-family corpus-invariant emulator list is untouched
 (no family became client-mapped). **No client code change** from the docs
 audit.
+
+## DOCS-28 — Heater + HeaterMetrics corpus mirror for the EMU-2 Heaters pin (2026-10-25)
+
+Closed the last corpus gap the EMU-2 Heaters pin (2026-10-25, EMU 64→66)
+exposed: the newly pinned thermal-heater families had **no schema at all** in
+the external corpus. Mirrored 7 files (60,045 bytes total, inside DOCS-6) into
+`documentations/external/redfish/schemas/v1/` (external corpus only — both
+families stay **NOT client-mapped**, so no fixture duty and no
+corpus-invariant list change, the DOCS-24/25/26 precedent):
+
+| Family | Served file | Newest file | EMU pin evidence | Client impact |
+|---|---|---|---|---|
+| `Heater` | `Heater.v1_0_1.json` | `Heater.v1_0_2.json` (+ `Heater.json` aggregator) | the pin reads `/Chassis/1U/ThermalSubsystem/Heaters/CPU1Heater` (`#Heater.v1_0_1.Heater`): PhysicalContext CPU / Manufacturer Contoso Heaters / Model CPUHeater / SerialNumber SNDHM0123456789 / HotPluggable / LocationIndicatorActive / Status + `Links.Processors[0]` → CPU1 + `Metrics` link | none — every pinned field present in the served def; v1_0_2 delta is a **property no-op** (26 diff lines: `$id`/copyright/backtick-quoted descriptions/`language`/title) |
+| `HeaterMetrics` | `HeaterMetrics.v1_0_1.json` | `HeaterMetrics.v1_0_2.json` (+ `HeaterMetrics.json` aggregator) | the pin reads the `Metrics` link target (`#HeaterMetrics.v1_0_1.HeaterMetrics`): PrePowerOnHeatingTimeSeconds 600 / RuntimeHeatingTimeSeconds 3600 / PowerWatts.Reading 200.3 / TemperatureReadingsCelsius[1] (DeviceName 'Heater Average Temperature', Reading 2.5) + advertised `#HeaterMetrics.ResetMetrics` (no `/Actions/` segment → POST 404 candidate, never a contract) | none — every pinned field present in the served def; v1_0_2 delta is a **property no-op** (same class of diff) |
+| `HeaterCollection` | `HeaterCollection.json` | — | `ThermalSubsystem.Heaters` link target — the pin enumerates its 1 member (CPU1Heater) | none — collection type |
+
+The **newest** versions are the aggregators' `$ref` targets (verified in the
+mirrors: `Heater.json` refs `Heater.v1_0_2.json`, `HeaterMetrics.json` refs
+`HeaterMetrics.v1_0_2.json`); `Heater.v1_0_3` / `HeaterMetrics.v1_0_3` probe
+404 on the live index (verified 2026-10-25 02:11 UTC) — v1_0_2 is current.
+The served-version `ResetMetrics` action def in the mirror matches the EMU pin
+(target `HeaterMetrics.ResetMetrics` under `definitions/Actions`, no
+`/Actions/`-segment obligation). **No client code change** — both families
+stay NOT client-mapped; if a thermal-heater feature ever lands (FUTUREWORK
+candidate), Heater/HeaterMetrics join the client-mapped lists and the served
+versions must also be copied into `test/fixtures/redfish/schemas/` (the
+DOCS-19/20/21 invariant).
+
+All upstream anchors re-verified (2026-10-25 02:11 UTC): bmcweb `63a18f4`
+(still HEAD via GitHub API, docs byte-identical), mockup pin `23d21f9a`
+(still HEAD of `main` via `git ls-remote`), DSP0266 1.25.0 (200 on the
+working `www.dmtf.org` URL — 1.26.0 still 404), schema index 200; each of the
+7 mirrored files fetched 200 from `https://redfish.dmtf.org/schemas/v1/`.
+New bytes this run: 60,045 total (1,252+16,421+16,449+1,275+9,823+9,859+4,966)
+— inside the DOCS-6 budget. **The corpus mirror queue is now EMPTY** — every
+EMU-2-pinned family has a schema in the external corpus.

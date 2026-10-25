@@ -3723,3 +3723,71 @@ Append-only run log for the `redfish-automation` scheduler job.
   the same operation. `git rev-list --count origin/main..HEAD` = 0 (fully
   synced), working tree clean.
 - Queued local commits ahead of origin/main: **0**.
+
+## 2026-10-25 00:34 UTC — DOCS (DOCS-28 Heater + HeaterMetrics corpus mirror) — UI-2 badge merge
+
+- **Baseline:** analyze 0; tests 352 passed / 1 skipped; starting commit 4e7e8f3
+  (origin/main fully synced, 0 queued local commits); issues validate OK;
+  working tree clean; no stash, no crashed-run leftovers.
+- **Primary work:** DOCS per alternation (last runs: DOCS 00:20 → EMU 01:34 →
+  DOCS 00:30 → EMU 23:50 — EMU ran most recently, so DOCS is due). Chose
+  **DOCS-28** — the only un-mirrored EMU-pinned family pair, recorded by the
+  01:34 EMU run (Heat surface pin, EMU 64→66). Mirrored the 7-file Heater
+  corpus into `documentations/external/redfish/schemas/v1/` (external corpus
+  only — both families stay NOT client-mapped, so no fixture duty and the
+  33-family corpus-invariant emulator list is untouched):
+  `Heater.json` + `HeaterMetrics.json` (aggregators; each `$ref`s the newest
+  `v1_0_2`), served `Heater.v1_0_1` + `HeaterMetrics.v1_0_1` (the versions
+  the pinned mockup publishes — `#Heater.v1_0_1.Heater` CPU1Heater +
+  `#HeaterMetrics.v1_0_1.HeaterMetrics`), newest `Heater.v1_0_2` +
+  `HeaterMetrics.v1_0_2`, and `HeaterCollection.json` — 60,045 bytes total,
+  inside the DOCS-6 budget. All 7 probed 200 with a browser UA; SHA-256s
+  verified after download and recorded in the manifest. **Delta audit:
+  v1_0_1 → v1_0_2 is a property no-op for both families** (26 diff lines
+  each — `$id`, copyright year, backtick-quoted descriptions, `language:
+  "en"`, title only) — the emulator-pinned contract holds across the newest
+  versions, **no client code change**. `Heater.v1_0_3` / `HeaterMetrics.v1_0_3`
+  probe 404 (verified live) — v1_0_2 is current. Also verified the served
+  `ResetMetrics` action def in the mirror matches the EMU pin exactly (the
+  no-`/Actions/`-segment advertised-as-candidate rule, never a contract).
+  Updated `documentations/external/README.md` (7 manifest rows + DOCS-28
+  section + downloaded-set list + anchors line) and
+  `documentations/external/redfish/REQUIREMENTS.md` (DOCS-28 trace table +
+  "Last audited" header). The corpus mirror queue is now **EMPTY** — every
+  EMU-2-pinned family has a schema in the external corpus.
+- **Docs:** 7 files mirrored (list above, total 60,045 bytes, inside
+  DOCS-6); manifest rows + SHA-256s; DOCS-28 trace table in REQUIREMENTS.md;
+  anchors re-verified (bmcweb `63a18f4` still HEAD via GitHub API, mockup
+  `23d21f9a`, DSP0266 1.25.0, schema index 200). No `redfish_reference/`
+  update needed (external-corpus-only — the DOCS-24/25/26 precedent never
+  touched it for NOT-client-mapped families).
+- **Emulator:** none this run (DOCS stream). The corpus-invariant crawl the
+  next EMU run re-runs now covers the Heater surface with real mirror files.
+- **Code/tests:** no lib/ production change from the DOCS stream (external
+  corpus only, no fixture changes). UI-2 increment below touched
+  `lib/features/systems/widgets/status_badges.dart` + its test only.
+- **UI:** one small tested UI-2 increment — **HealthBadge/PowerBadge merged
+  node fixed**. Both badges wrapped their `Chip` in `Semantics(label: ...,
+  container: true)` WITHOUT `excludeSemantics: true`, so the chip's inner
+  `Text` still announced as a separate node — a screen reader heard "Health
+  Warning" then "Warning" / "Power Off" then "Off" (the double-announcement
+  defect merged everywhere else in the app). Both badges now add
+  `excludeSemantics: true` so the merged label is the ONLY announcement;
+  visible text preserved for sighted users. The existing a11y label test in
+  `test/features/systems/ui_widget_test.dart` extended with
+  `bySemanticsLabel('Warning')`/`('Off')` findsNothing pins + visible-text
+  assertions (+3 assertions in the one test). Targeted run: 29/29 passed
+  before the full gate.
+- **Verification:** analyze 0; tests **352 passed / 1 skipped** (unchanged
+  count — the badge test was extended, not added); issues validate OK;
+  `git diff --check` clean; secret scan: JSON schemas, docs prose, Dart
+  widget code only, no credentials. `dart format` clean on the touched files.
+- **Commit:** (after §7.2/§7.3 below) — pushed: expected yes (credentials
+  confirmed working at 01:36 UTC).
+- **Next:** 1) EMULATOR per alternation — corpus mirror queue is EMPTY and
+  verified; candidates: re-run the corpus-invariant published-types crawl
+  (now covers the Heater surface), or pin a remaining un-pinned surface
+  (#028 BIOS-config editor remains the P2 candidate with its fixture duty
+  recorded); 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
+  login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS
+  only; 3) keep pushing every run (credentials verified; no queued commits).

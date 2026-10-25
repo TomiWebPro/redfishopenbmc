@@ -212,6 +212,21 @@ void main() {
         find.bySemanticsLabel('Power Off'),
         findsOneWidget,
       );
+      // UI-2: the badge label REPLACES the chip's inner Text node (the
+      // merged-node pattern) — the raw label must not announce a second time.
+      expect(
+        find.bySemanticsLabel('Warning'),
+        findsNothing,
+        reason: 'the chip child Text must not announce separately',
+      );
+      expect(
+        find.bySemanticsLabel('Off'),
+        findsNothing,
+        reason: 'the chip child Text must not announce separately',
+      );
+      // The visible texts stay for sighted users.
+      expect(find.text('Warning'), findsOneWidget);
+      expect(find.text('Off'), findsOneWidget);
     });
 
     testWidgets('health badge uses a distinct icon per state',

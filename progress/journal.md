@@ -3275,3 +3275,58 @@
   segment advertised-as-candidate rule now pinned on a SECOND action —
   HeaterMetrics.ResetMetrics, alongside PowerSupply.Reset); DOCS-28 recorded
   (Heater corpus duty); UI-2 advanced (Processors card body merge).
+
+## 2026-10-25 — agent:redfish-automation — DOCS-28 (Heater corpus mirror) + UI-2 badge merge
+
+**Done:**
+- DOCS primary workstream (alternation: EMU 01:34 → DOCS due). **DOCS-28** —
+  the last un-mirrored EMU-pinned family pair (recorded by the EMU Heaters
+  pin, EMU 64→66). Mirrored 7 files into
+  `documentations/external/redfish/schemas/v1/` (external corpus only):
+  `Heater.json`/`HeaterMetrics.json` aggregators ($ref newest v1_0_2),
+  served `Heater.v1_0_1`/`HeaterMetrics.v1_0_1` (mockup-published types),
+  newest `Heater.v1_0_2`/`HeaterMetrics.v1_0_2`, and
+  `HeaterCollection.json` — 60,045 bytes, inside DOCS-6; SHA-256s verified
+  and recorded. Delta audit: **v1_0_1 → v1_0_2 is a property no-op for both
+  families** (26 diff lines each — `$id`/copyright/description formatting/
+  `language`/title), so the emulator-pinned contract holds — no client code
+  change; v1_0_3 probes 404 — v1_0_2 is current. Served `ResetMetrics` def
+  verified to match the EMU pin (no `/Actions/` segment — advertised-as-
+  candidate rule, never a contract). README manifest + DOCS-28 section +
+  REQUIREMENTS.md DOCS-28 trace table updated. **Corpus mirror queue is now
+  EMPTY.**
+- UI-2 increment: **HealthBadge/PowerBadge merged node fixed** — both badges
+  wrapped their `Chip` in `Semantics(label:, container: true)` without
+  `excludeSemantics`, so the inner Text double-announced ("Health Warning"
+  then "Warning"); added `excludeSemantics: true` to both so the merged
+  label is the only announcement (visible text preserved). a11y label test
+  extended to pin the single-node behavior (+3 assertions).
+
+**Decisions:**
+- DOCS per alternation; within it chose DOCS-28 because it is the exact duty
+  the 01:34 EMU run recorded and the only un-mirrored EMU-pinned family pair
+  (closing it empties the corpus mirror queue).
+- External-corpus-only per the DOCS-24/25/26 precedent: Heaters stays NOT
+  client-mapped, so no fixture changes and the corpus-invariant list is
+  untouched (no `redfish_reference/` update — that mirror tracks the
+  fixture snapshot, unchanged).
+- UI increment: the badge double-announcement was the genuine remaining
+  UI-2 defect (the merged-node pattern everywhere else uses
+  `excludeSemantics`); small, pattern-consistent, fully tested. Did not
+  rush the open-ended focus-order hunt (the only other open UI-2 item, per
+  the 00:30 DOCS run's rationale).
+- No new dependencies, no TLS change, no production behaviour change beyond
+  the semantics fix.
+
+**Next:**
+- EMULATOR next per alternation: corpus mirror queue EMPTY; re-run the
+  corpus-invariant published-types crawl (now covers the Heater surface with
+  real mirror files), or pin a remaining un-pinned surface; #028 remains the
+  P2 candidate (BIOS-config editor with its exact fixture duty recorded).
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- Keep pushing every run (credentials verified at 01:36 UTC; 0 queued).
+
+**Issues touched:**
+- none opened/closed this run. DOCS-28 done (corpus mirror queue EMPTY);
+  UI-2 advanced (badge merged node fix); #015 remains the next P1.
