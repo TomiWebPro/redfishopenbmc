@@ -18,6 +18,7 @@ class AddSystemDialog extends StatelessWidget {
         width: 440,
         child: SingleChildScrollView(
           child: SystemProfileForm(
+            autofocusFirstField: true,
             onSubmit: (ConnectionProfile profile) {
               ProviderScope.containerOf(context)
                   .read(systemManagerProvider.notifier)

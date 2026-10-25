@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show SemanticsNode;
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -75,6 +76,43 @@ Finder switchTile(String label) => find.ancestor(
       of: find.text(label),
       matching: find.byType(SwitchListTile),
     );
+
+/// Whether the [TextFormField] matched by [finder] currently owns keyboard
+/// focus (UI-2 focus-order tests).
+bool _fieldFocused(WidgetTester tester, Finder finder) {
+  final EditableText editable = tester.widget<EditableText>(
+    find.descendant(of: finder, matching: find.byType(EditableText)),
+  );
+  return editable.focusNode.hasFocus;
+}
+
+/// Whether the primary keyboard focus currently sits inside any widget matched
+/// by [finder]; walks up from the focused element to the root (UI-2
+/// focus-order tests).
+bool _focusInside(WidgetTester tester, Finder finder) {
+  final FocusNode? node = tester.binding.focusManager.primaryFocus;
+  final BuildContext? focused = node?.context;
+  if (focused == null) return false;
+  final List<Element> matches = finder.evaluate().toList();
+  return matches.any((Element candidate) {
+    if (identical(candidate, focused)) return true;
+    bool inside = false;
+    (focused as Element).visitAncestorElements((Element ancestor) {
+      if (identical(ancestor, candidate)) {
+        inside = true;
+        return false; // Stop visiting: found.
+      }
+      return true;
+    });
+    return inside;
+  });
+}
+
+/// Sends a Tab key event and pumps one frame so focus traversal moves.
+Future<void> _pressTab(WidgetTester tester) async {
+  await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+  await tester.pump();
+}
 
 /// Pumps [child] inside a ProviderScope + GoRouter so `context.go` works and the
 /// [systemManagerProvider] is overridden with [manager].
@@ -900,6 +938,90 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Save'));
       await tester.pumpAndSettle();
       expect(m.state.systems['bmc1']!.profile.host, 'edited.host');
+    });
+  });
+
+  group('Focus order (UI-2)', () {
+    // The form's first field autofocuses (WAI-ARIA dialog pattern) and the
+    // keyboard Tab order walks the fields in visual order to the submit
+    // button. These tests pin that contract so a regression (e.g. autofocus
+    // removed, or a field inserted out of the visual order) fails loudly.
+
+    testWidgets('AddSystemDialog opens with keyboard focus on the first field',
+        (tester) async {
+      final SystemManager m = seededManager(systems: <String, SystemHandle>{});
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            secureStorageProvider.overrideWith((ref) => InMemoryStorage()),
+            systemManagerProvider.overrideWith((ref) => m),
+          ],
+          child: MaterialApp(
+            home: Builder(
+              builder: (BuildContext context) => ElevatedButton(
+                onPressed: () => showAddSystemDialog(context),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SystemProfileForm), findsOneWidget);
+      // Keyboard focus landed inside the dialog on the first field — a user
+      // can start typing without hunting for the form.
+      expect(_fieldFocused(tester, field('Display name (optional)')), isTrue);
+      expect(_fieldFocused(tester, field('Host / IP')), isFalse);
+    });
+
+    testWidgets('Tab order walks the profile form to the Add system button',
+        (tester) async {
+      await tester.pumpWidget(
+        _formScreen(
+          SystemProfileForm(
+            autofocusFirstField: true, // the AddSystemDialog path
+            onSubmit: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Autofocus puts the first field in focus.
+      expect(_fieldFocused(tester, field('Display name (optional)')), isTrue);
+
+      // Name -> Host -> Port.
+      await _pressTab(tester);
+      expect(_fieldFocused(tester, field('Host / IP')), isTrue);
+      await _pressTab(tester);
+      expect(_fieldFocused(tester, field('Port')), isTrue);
+
+      // Port -> TLS switch -> auth-method dropdown -> Username.
+      await _pressTab(tester);
+      expect(_focusInside(tester, switchTile('Use TLS (HTTPS)')), isTrue);
+      await _pressTab(tester);
+      expect(
+        _focusInside(tester, find.byType(DropdownButton<AuthMethod>)),
+        isTrue,
+      );
+      await _pressTab(tester);
+      expect(_fieldFocused(tester, field('Username')), isTrue);
+
+      // Username -> Password -> Remember switch -> self-signed switch.
+      await _pressTab(tester);
+      expect(_fieldFocused(tester, field('Password')), isTrue);
+      await _pressTab(tester);
+      expect(_focusInside(tester, switchTile('Remember password')), isTrue);
+      await _pressTab(tester);
+      expect(
+        _focusInside(tester, switchTile('Allow self-signed certificate')),
+        isTrue,
+      );
+
+      // Self-signed switch -> Add system button.
+      await _pressTab(tester);
+      expect(_focusInside(tester, find.byType(FilledButton)), isTrue);
     });
   });
 

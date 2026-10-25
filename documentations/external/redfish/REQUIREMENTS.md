@@ -6,7 +6,26 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (EMULATOR run — **Control SetPoint pre-validation
+Last audited: 2026-10-25 (DOCS run — **anchor freshness re-verification, no
+corpus refresh**): re-verified every upstream anchor this run — (1) **bmcweb
+`63a18f4`** still HEAD of `master` via `git ls-remote`; (2) **mockup
+`23d21f9a`** still HEAD of `main` via `git ls-remote`; (3) **DSP0266 1.25.0**
+from `www.dmtf.org` **byte-identical** SHA-256 `385ee6d0…` vs the mirrored
+`redfish/spec/DSP0266_1.25.0.pdf`; (4) **schema index** from
+`redfish.dmtf.org/schemas/v1/` **byte-identical** SHA-256
+`e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86`
+(3,448,133 B) vs the mirrored `v1-index.html` → **no corpus refresh needed**
+(DOCS-27 ZERO version advances hold; the corpus mirror queue stays EMPTY for
+every published type; 0 bytes downloaded). No code gap surfaced by the audit
+this run. **UI-2 focus-order pin:** `SystemProfileForm` gained
+`autofocusFirstField` — the Add-system dialog autofocuses its first field so
+keyboard/screen-reader users land inside the form the moment it opens
+(WAI-ARIA dialog pattern: focus moves into the dialog; the edit page leaves
+the flag off so it does not scroll on load), and two widget tests pin the
+dialog focus entry + the full keyboard Tab order (Name → Host → Port → TLS →
+auth dropdown → Username → Password → Remember → self-signed → Add system).
+
+Prior: 2026-10-25 (EMULATOR run — **Control SetPoint pre-validation
 rule implemented; Control family became client-mapped**): the #022/#016
 client-side rule the pinned Control surface demands is now code —
 `ControlResource` (`lib/redfish/models/control.dart`) parses

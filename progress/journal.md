@@ -4151,3 +4151,48 @@
 - #016 advanced (Progress Log: (d) SetPoint pre-validation corollary landed;
   remaining: (b) Boot/IndicatorLED PATCH service/UI flow).
 - none opened/closed this run.
+
+## 2026-10-25 — agent:redfish-automation — DOCS: anchors re-verified + UI-2 focus-order pin
+
+**Done:**
+- DOCS primary per alternation (last primary: EMULATOR 17:50). Corpus mirror
+  queue is EMPTY, so the DOCS run did the documented cheap anchor re-verify.
+  Re-verified live: bmcweb `63a18f4` (git ls-remote, still master HEAD),
+  mockup `23d21f9a` (still main HEAD), DSP0266 1.25.0 PDF **byte-identical**
+  SHA-256 `385ee6d0…`, schema index **byte-identical** SHA-256 `e5a29797…`
+  (3,448,133 B) → no corpus refresh, DOCS-27 ZERO advances hold, 0 bytes
+  downloaded. REQUIREMENTS.md "Last audited" + manifest anchor section updated.
+- **UI-2 focus-order pin:** `SystemProfileForm` gained `autofocusFirstField`
+  (default false; `AddSystemDialog` sets it) so the Add-system dialog opens
+  with keyboard focus on the first field (WAI-ARIA dialog pattern); the edit
+  page keeps the old no-scroll-on-load behaviour. Two widget tests pin the
+  dialog focus entry and the full keyboard Tab order
+  Name → Host → Port → TLS switch → auth dropdown → Username → Password →
+  Remember switch → self-signed switch → Add system button. New helpers
+  `_fieldFocused` / `_focusInside` / `_pressTab`. Full unit suite
+  390 → **392 passed / 1 skipped**; analyze 0.
+
+**Decisions:**
+- DOCS per alternation; corpus queue empty → cheap anchor re-verify (the
+  established pattern) — the audit surfaced no trace-row gap this run.
+- Autofocus is dialog-only (`autofocusFirstField` param) rather than
+  unconditional: unconditional autofocus made the two direct-form tests'
+  `ensureVisible(button)` + tap miss (the focused first field's caret-on-screen
+  behaviour scrolled the view back, hiding the submit button). The param keeps
+  the edit page unchanged and confines the behaviour to the surface that needs
+  it.
+- Focus assertions use the focused `EditableText.focusNode.hasFocus` for text
+  fields and an ancestor-walk (`visitAncestorElements`) check for switches,
+  dropdown, and buttons — robust to internal widget-tree details.
+
+**Next:**
+- EMULATOR per alternation: cheap 80/80 re-run and/or the last #016 piece
+  (Boot/IndicatorLED PATCH service+UI flow), then the #022 opening items
+  (task polling/races, NMI terminal state, error dedupe, BMC-id fallback).
+- P1 #015 AuthManager (expiryFromService → login + re-auth; token/location
+  from create RESPONSE HEADERS only).
+- UI-2: remaining dialogs/tables focus audit + any remaining non-card labels.
+  Keep pushing every run.
+
+**Issues touched:**
+- none opened/closed/advanced this run (UI increment only).

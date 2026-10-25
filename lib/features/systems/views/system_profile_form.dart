@@ -38,6 +38,7 @@ class SystemProfileForm extends StatefulWidget {
     required this.onSubmit,
     this.initial,
     this.showButtons = true,
+    this.autofocusFirstField = false,
     super.key,
   });
 
@@ -49,6 +50,12 @@ class SystemProfileForm extends StatefulWidget {
 
   /// Whether to render the action buttons inside the form.
   final bool showButtons;
+
+  /// Whether the first field requests focus on mount (UI-2): set by
+  /// [AddSystemDialog] so keyboard and screen-reader users land inside the
+  /// form as soon as the dialog opens (WAI-ARIA dialog pattern). The
+  /// edit-page embedding leaves it off so the page does not scroll on load.
+  final bool autofocusFirstField;
 
   @override
   State<SystemProfileForm> createState() => _SystemProfileFormState();
@@ -128,6 +135,11 @@ class _SystemProfileFormState extends State<SystemProfileForm> {
         children: <Widget>[
           TextFormField(
             controller: _name,
+            // UI-2: the first field autofocuses when the form is shown in a
+            // dialog (see [autofocusFirstField]) so keyboard and screen-reader
+            // users land inside the form as soon as the Add-system dialog
+            // opens (WAI-ARIA dialog pattern: focus moves into the dialog).
+            autofocus: widget.autofocusFirstField,
             decoration: const InputDecoration(
               labelText: 'Display name (optional)',
               hintText: 'e.g. bmc-lab-01',

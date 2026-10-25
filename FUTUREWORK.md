@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (EMULATOR run — **Control became client-mapped: the #022/#016 SetPoint pre-validation rule is now code** — `ControlResource.validateSetPoint` rejects out-of-bounds SetPoints before any PATCH (mockup applies `9999` unvalidated, EMU 60→63 pin), per-resource bounds never leak (SecureBoot precedent); served `Control.v1_5_0.json` moved into the fixture + `Control` added to the corpus-invariant family list; +11 unit tests, +1 live emulator pin on PowerLimit [150,1000] / CPU1Freq [1500,3700], 79→**80/80**; anchors unchanged — bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index byte-identical — mirror queue EMPTY)
-- **Current focus:** **EMULATOR (2026-10-25)** — Control SetPoint pre-validation landed (EMU 79→80); next per alternation: **DOCS** (cheap anchor re-verify; corpus mirror queue still EMPTY), then the remaining #022/#016 pieces — the **Boot/IndicatorLED PATCH flow in a service + UI** (#016 remaining piece; the transport, If-Match/etag wiring (a), and the SetPoint pre-validation corollary (d) are all in place) and task-polling/races (#022 opening items: poll the 202 task, serialise polling per action, NMI terminal state, error dedupe, BMC-id fallback — untouched so far); then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — the open-ended focus-order/dialogs-tables hunt continues (this run: no UI increment, documented — the primary workstream consumed the budget and the Control model/tests are the more valuable surface)
+- **Last updated:** 2026-10-25 (DOCS run — **anchors re-verified live, no corpus refresh (mirror queue EMPTY)** — bmcweb `63a18f4` + mockup `23d21f9a` still HEAD, DSP0266 1.25.0 + schema index byte-identical, 0 bytes downloaded; no code gap surfaced by the audit; UI-2 focus-order pin landed — `SystemProfileForm.autofocusFirstField` (Add-system dialog autofocuses the first field, WAI-ARIA dialog pattern) + 2 widget tests pinning dialog focus entry and the full keyboard Tab order Name→Host→Port→TLS→auth dropdown→Username→Password→Remember→self-signed→Add system; unit suite 390→**392 passed / 1 skipped**)
+- **Current focus:** **DOCS (2026-10-25)** — anchors re-verified (corpus mirror queue still EMPTY); UI-2 focus-order pin landed (autofocusFirstField + Tab-order tests). Next per alternation: **EMULATOR** (re-run the 80/80 suite cheaply and/or continue the #022/#016 control-surface work), then the remaining #022/#016 pieces — the **Boot/IndicatorLED PATCH flow in a service + UI** (#016 remaining piece; the transport, If-Match/etag wiring (a), and the SetPoint pre-validation corollary (d) are all in place) and task-polling/races (#022 opening items: poll the 202 task, serialise polling per action, NMI terminal state, error dedupe, BMC-id fallback — untouched so far); then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — the open-ended focus-order/dialogs-tables hunt continues (this run: the focus-order pin — dialog entry + Tab order; remaining: dialogs/tables focus audit, remaining non-card labels)
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1418,6 +1418,17 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       isEmpty` renders the merged loading node before the empty branch, while
       refreshes with existing consoles keep the inline spinner under the
       header); +2 widget tests (sensors 14→15, kvm 12→13);
+      **Add-system dialog focus entry + keyboard Tab order pinned done
+      2026-10-25 — `SystemProfileForm` gained `autofocusFirstField` (the
+      Add-system dialog sets it, so keyboard and screen-reader users land
+      inside the form the moment it opens — WAI-ARIA dialog pattern: focus
+      moves into the dialog; the edit page leaves it off so it does not
+      scroll on load); two widget tests pin (1) the dialog opening with
+      keyboard focus on the first field and (2) the full Tab traversal order
+      Name → Host → Port → Use TLS switch → auth-method dropdown → Username →
+      Password → Remember password → Allow self-signed → Add system button —
+      a regression (autofocus removed or a field inserted out of visual
+      order) now fails loudly, systems 31→32;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
