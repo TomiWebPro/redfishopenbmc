@@ -73,6 +73,42 @@ void main() {
       expect(await repo.loadProfiles(), isEmpty);
     });
 
+    test(
+        'removeProfile clears the selected id when the selected (last) '
+        'system is removed', () async {
+      final SystemManager m = buildStubbedManager(storage: InMemoryStorage());
+      final String id = await m.addProfile(
+        const ConnectionProfile(host: 'h', name: 'A'),
+      );
+      expect(m.state.selectedId, id);
+      await m.removeProfile(id);
+      expect(m.state.systems, isEmpty);
+      expect(m.state.selectedId, isNull,
+          reason: 'copyWith cannot clear selectedId via null, so removal '
+              'must build the state directly (regression pin)');
+      expect(m.state.selectedHandle, isNull);
+    });
+
+    test(
+        'removeProfile selects the first remaining system when the selected '
+        'system is removed', () async {
+      final SystemManager m = buildStubbedManager(storage: InMemoryStorage());
+      final String first = await m.addProfile(
+        const ConnectionProfile(host: 'h1', name: 'A'),
+      );
+      final String second = await m.addProfile(
+        const ConnectionProfile(host: 'h2', name: 'B'),
+      );
+      m.select(second);
+      expect(m.state.selectedId, second);
+      await m.removeProfile(second);
+      expect(m.state.systems.containsKey(second), isFalse);
+      expect(m.state.systems.containsKey(first), isTrue);
+      expect(m.state.selectedId, first,
+          reason: 'removing the selected system should fall back to the '
+              'first remaining system');
+    });
+
     test('updateProfile persists and updates the handle', () async {
       final InMemoryProfileRepository repo = InMemoryProfileRepository();
       final SystemManager m = buildStubbedManager(

@@ -324,7 +324,15 @@ class SystemManager extends StateNotifier<SystemState> {
     final String? selectedId = state.selectedId == id
         ? (systems.isNotEmpty ? systems.keys.first : null)
         : state.selectedId;
-    state = state.copyWith(systems: systems, selectedId: selectedId);
+    // NB: `copyWith` cannot clear `selectedId` (its `selectedId ?? this.
+    // selectedId` treats null as "keep current"), so the removal state is
+    // built directly — otherwise the id of a removed system stays selected.
+    state = SystemState(
+      systems: systems,
+      selectedId: selectedId,
+      busy: state.busy,
+      globalError: state.globalError,
+    );
   }
 
   /// Connects (login + discover + snapshot) a system.

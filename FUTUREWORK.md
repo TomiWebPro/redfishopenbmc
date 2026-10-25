@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (EMULATOR run — **#022 power-action correctness: per-action poll handle (no optimistic-state clobbering), NMI keeps current state, error shown once (inline-only), BMC-id reset-URI fallback** — 4 of 5 acceptance criteria; unit suite **432 passed / 1 skipped**, emulator 82/82 re-run green)
-- **Current focus:** **EMULATOR (2026-10-25)** — the #022 opening items mostly landed: poll/race (criterion 2), NMI terminal state (3), error dedupe (4), BMC-id fallback (5). Remaining #022: **202 task-monitor *polling* (criterion 1)** — folds into #008/#020 firmware/task work (GET-on-monitor + TaskState parsing are the only missing pieces; the DMTF mockup never returns a 202 for reset, so it stays unit-level). Next per alternation: **DOCS** — cheap anchor re-verify (mirror queue EMPTY). Then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — the delete-system confirm dialog in EditSystemPage is the last untested dialog + any remaining non-card labels
+- **Last updated:** 2026-10-25 (DOCS run — **anchors re-verified live, no corpus refresh; mirror queue EMPTY; UI-2 remove-system confirmation dialog landed** — the dashboard `Remove` action now requires an explicit destructive confirm (`ConfirmRemoveSystemDialog`, focus on Cancel, Tab Cancel→Remove, ≥48px targets) instead of deleting a profile + stored credentials on one menu tap; the dialog test exposed + fixed a real defect — `removeProfile` could not clear `selectedId` via `copyWith(selectedId: null)` (null = keep current), so the id of a removed system stayed selected; removal now builds the state directly, regression pinned; unit suite **438 passed / 1 skipped**, emulator 82/82 unchanged)
+- **Current focus:** **DOCS (2026-10-25)** — cheap anchor re-verify done (all four unchanged; corpus mirror queue stays EMPTY). Next per alternation: **EMULATOR** — cheap 82/82 suite re-run and/or continue the #022/#008/#020 task-monitor polling work (criterion 1). Then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — remaining focus audit (all dialogs now tested: Add-system, reset-confirm, remove-confirm) + any remaining non-card labels
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1475,7 +1475,26 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       user cannot accidentally trigger a destructive reset), Tab walks
       Cancel → Force and wraps; +2 widget tests (destructive + non-destructive
       dialog focus entry + the Tab order), power 51→53;
-      the last untested dialog is the delete-system confirm in EditSystemPage;
+      **remove-system confirmation dialog landed done 2026-10-25 — the
+      dashboard `Remove` menu action previously deleted a profile (and its
+      stored credentials) on a single tap with NO confirmation; it now opens
+      `ConfirmRemoveSystemDialog` (`lib/features/systems/views/
+      confirm_remove_system_dialog.dart`): focus lands inside the dialog on
+      the least-destructive action (Cancel), Tab walks Cancel → Remove and
+      wraps, both actions expose explicit ≥48 px touch targets, the confirm
+      button uses the error color + destructive semantics label, and the copy
+      makes the permanence explicit ("stored connection profile and its saved
+      credentials will be deleted permanently"); +4 dashboard-integration
+      widget tests (dialog copy, focus entry + Tab order, cancel keeps the
+      system, confirm removes it); the dialog test exposed a small real
+      defect — `removeProfile` tried to clear `selectedId` via
+      `copyWith(selectedId: null)` but `SystemState.copyWith` treats null as
+      "keep current", so the id of a removed system stayed selected; removal
+      now builds the state directly and +2 `system_manager_test.dart` unit
+      tests pin the clear-on-last-removal + fallback-to-first-remaining
+      behaviour; systems 32→36 (widget) + manager CRUD 3→5;
+      all dialogs now have focus/tab tests (Add-system, reset-confirm,
+      remove-confirm);
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

@@ -4383,3 +4383,59 @@
 - #022 advanced (4 of 5 acceptance criteria checked; Progress Log + Tasks
   updated; criterion 1 left open with the #008/#020 note).
 - none opened/closed this run.
+
+## 2026-10-25 — agent:redfish-automation — DOCS anchor re-verify + UI-2 remove-system confirmation dialog
+
+**Done:**
+- DOCS primary per alternation (last primary: EMULATOR 22:05). Corpus mirror
+  queue is EMPTY, so the DOCS run did the documented cheap anchor re-verify.
+  Re-verified live: bmcweb `63a18f4` (git ls-remote, still master HEAD),
+  mockup `23d21f9a` (still main HEAD), DSP0266 1.25.0 PDF **byte-identical**
+  SHA-256 `385ee6d0…` (1,243,359 B), schema index **byte-identical**
+  SHA-256 `e5a29797…` (3,448,133 B) → no corpus refresh, DOCS-27 ZERO
+  advances hold, 0 bytes downloaded. REQUIREMENTS.md "Last audited" + manifest
+  anchor section updated.
+- **UI-2 remove-system confirmation dialog:** the dashboard `Remove` menu
+  action previously deleted a profile AND its stored credentials on a single
+  tap with no confirmation. It now opens `ConfirmRemoveSystemDialog`
+  (`lib/features/systems/views/confirm_remove_system_dialog.dart`) — the
+  ConfirmResetDialog pattern: focus lands inside the dialog on Cancel
+  (least-destructive) via an explicit `_cancelFocus` FocusNode requested
+  after the first frame, Tab walks Cancel → Remove and wraps, ≥48 px touch
+  targets on both actions, error-color confirm button + destructive semantics
+  label, permanence copy ("stored connection profile and its saved
+  credentials will be deleted permanently"). +4 dashboard-integration widget
+  tests.
+- **removeProfile selectedId fix (found by the dialog test):**
+  `SystemState.copyWith` treats `selectedId: null` as "keep current"
+  (`selectedId ?? this.selectedId`), so `removeProfile` could NOT clear the
+  selected id when removing the selected (last) system — the removed id
+  silently stayed selected. Removal now builds the state directly
+  (`SystemState(systems:, selectedId:, busy:, globalError:)`); +2 unit tests
+  pin clear-on-last-removal + fallback-to-first-remaining.
+- Full unit suite 432 → **438 passed / 1 skipped** (+6); analyze 0.
+
+**Decisions:**
+- DOCS per alternation; corpus queue empty → cheap anchor re-verify (the
+  established pattern) — the audit surfaced no trace-row gap this run.
+- Took the "last untested dialog" backlog item literally and found the real
+  gap: there was NO delete-system confirm at all (the tracking assumed an
+  untested dialog existed in EditSystemPage; the destructive remove actually
+  ran unconfirmed from the dashboard menu). Building the missing confirmation
+  is the correct UI-2/UI-5-pattern increment and it immediately surfaced the
+  `copyWith` null-coalescing defect — the value of a destructive-action test.
+- The `copyWith(selectedId:)` API stays unchanged (its null-coalescing is
+  relied on elsewhere, e.g. `addProfile`/`select`); the targeted fix lives in
+  `removeProfile`.
+
+**Next:**
+- EMULATOR per alternation: cheap 82/82 re-run and/or the #022 remaining
+  criterion (202 task-monitor *polling* → folds into #008/#020).
+- P1 #015 AuthManager (expiryFromService → login + re-auth; token/location
+  from create RESPONSE HEADERS only).
+- UI-2: all dialogs now have focus/tab tests (Add-system, reset-confirm,
+  remove-confirm); continue the remaining focus audit + non-card labels.
+  Keep pushing every run.
+
+**Issues touched:**
+- none opened/closed/advanced this run (UI increment + removal-state fix only).

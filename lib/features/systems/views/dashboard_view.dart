@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/features/systems/views/add_system_dialog.dart';
+import 'package:redfishopenbmc/features/systems/views/confirm_remove_system_dialog.dart';
 import 'package:redfishopenbmc/features/systems/views/edit_system_page.dart';
 import 'package:redfishopenbmc/features/systems/widgets/system_card.dart';
 
@@ -154,7 +155,15 @@ class DashboardView extends ConsumerWidget {
       case 'edit':
         showEditSystemDialog(context, handle.profile);
       case 'remove':
-        await manager.removeProfile(id);
+        // UI-2/UI-5: removing a profile is destructive (the stored profile
+        // and its saved credentials are deleted permanently), so it requires
+        // an explicit confirmation — the ConfirmResetDialog focus/Touch-target
+        // pattern (focus lands on Cancel; Tab walks Cancel → Remove).
+        await showConfirmRemoveSystemDialog(
+          context,
+          systemName: handle.displayName,
+          onConfirm: () => manager.removeProfile(id),
+        );
     }
   }
 }

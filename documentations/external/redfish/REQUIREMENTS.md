@@ -6,7 +6,26 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (EMU run — **#022 power-action correctness fixes
+Last audited: 2026-10-25 (DOCS run — **all four upstream anchors
+re-verified live, no corpus refresh; UI-2 remove-system confirmation dialog
+landed + the `removeProfile` selectedId-clear fix**): bmcweb `63a18f4` (git
+ls-remote, still master HEAD), mockup `23d21f9a` (still main HEAD), DSP0266
+1.25.0 PDF **byte-identical** SHA-256 `385ee6d0…` vs the mirrored
+`redfish/spec/DSP0266_1.25.0.pdf`, schema index **byte-identical** SHA-256
+`e5a29797…` (3,448,133 B) vs the mirrored `v1-index.html` → DOCS-27's ZERO
+version advances still hold, corpus mirror queue stays EMPTY, 0 bytes
+downloaded. UI-2 increment: the dashboard **Remove** action now requires an
+explicit destructive confirmation dialog (`ConfirmRemoveSystemDialog`,
+`lib/features/systems/views/confirm_remove_system_dialog.dart` — focus lands
+inside the dialog on Cancel, Tab walks Cancel → Remove, ≥48 px touch targets,
+permanence copy; the ConfirmResetDialog pattern) instead of deleting a profile
+and its stored credentials on a single menu tap; the dialog test exposed a
+small real defect — `removeProfile` cleared the selected system via
+`copyWith(selectedId: null)`, but `SystemState.copyWith` treats null as
+"keep current", so the id of a removed system stayed selected; removal now
+builds the state directly (regression pinned by unit tests).
+
+Prior: 2026-10-25 (EMU run — **#022 power-action correctness fixes
 landed, emulator suite 82/82 green**): the #022 opening items (per-action poll
 handle, NMI terminal state, error dedupe, BMC-id fallback) are now code + tests
 in `lib/features/power/` — see the Power-control trace row. Upstream anchors

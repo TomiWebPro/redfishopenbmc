@@ -1069,4 +1069,174 @@ void main() {
       expect(find.text('Prod'), findsOneWidget);
     });
   });
+
+  group('ConfirmRemoveSystemDialog — destructive confirmation (UI-2/UI-5)', () {
+    // Pumping the real dashboard so the Remove menu action is exercised
+    // end-to-end (the dialog is wired in DashboardView._onMenuAction).
+    Future<void> pumpDashboard(
+      WidgetTester tester,
+      SystemManager m,
+    ) async {
+      final GoRouter router = GoRouter(
+        initialLocation: '/systems',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/systems',
+            builder: (BuildContext c, GoRouterState s) => const DashboardView(),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            secureStorageProvider.overrideWith((ref) => InMemoryStorage()),
+            systemManagerProvider.overrideWith((ref) => m),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> openRemoveDialog(
+      WidgetTester tester,
+      SystemManager m,
+    ) async {
+      await pumpDashboard(tester, m);
+      await tester.tap(find.byType(PopupMenuButton<String>).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+        'Remove menu opens a destructive confirmation dialog with '
+        'permanence copy', (tester) async {
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(
+            id: 'bmc1',
+            name: 'Lab',
+            health: Health.ok,
+            power: PowerState.on,
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+      await openRemoveDialog(tester, m);
+
+      expect(find.text('Remove system?'), findsOneWidget);
+      // The copy makes the permanence explicit: the saved credentials are
+      // deleted and the action cannot be undone.
+      expect(
+        find.textContaining('stored connection profile and its saved '
+            'credentials will be deleted permanently'),
+        findsOneWidget,
+      );
+      final Finder dialog = find.byType(AlertDialog);
+      expect(
+        find.descendant(
+          of: dialog,
+          matching: find.widgetWithText(TextButton, 'Cancel'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: dialog,
+          matching: find.widgetWithText(FilledButton, 'Remove'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+        'dialog opens with keyboard focus on Cancel; Tab walks Cancel → '
+        'Remove and wraps', (tester) async {
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(
+            id: 'bmc1',
+            name: 'Lab',
+            health: Health.ok,
+            power: PowerState.on,
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+      await openRemoveDialog(tester, m);
+
+      final Finder dialog = find.byType(AlertDialog);
+      final Finder cancel = find.descendant(
+        of: dialog,
+        matching: find.widgetWithText(TextButton, 'Cancel'),
+      );
+      final Finder remove = find.descendant(
+        of: dialog,
+        matching: find.widgetWithText(FilledButton, 'Remove'),
+      );
+      // Initial focus lands inside the dialog on the least-destructive
+      // action (WAI-ARIA dialog pattern) — never on the destructive Remove.
+      expect(_focusInside(tester, cancel), isTrue,
+          reason: 'initial focus must land on Cancel');
+      expect(_focusInside(tester, remove), isFalse,
+          reason: 'initial focus must not land on the destructive Remove');
+
+      // Tab walks Cancel → Remove → Cancel (wraps).
+      await _pressTab(tester);
+      expect(_focusInside(tester, remove), isTrue,
+          reason: 'Tab must move focus from Cancel to Remove');
+      await _pressTab(tester);
+      expect(_focusInside(tester, cancel), isTrue,
+          reason: 'Tab from Remove must wrap back to Cancel');
+    });
+
+    testWidgets('cancelling keeps the system on the dashboard', (tester) async {
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(
+            id: 'bmc1',
+            name: 'Lab',
+            health: Health.ok,
+            power: PowerState.on,
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+      await openRemoveDialog(tester, m);
+
+      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Remove system?'), findsNothing);
+      expect(m.state.systems.containsKey('bmc1'), isTrue,
+          reason: 'cancel must not remove the profile');
+      expect(find.text('Lab'), findsOneWidget);
+    });
+
+    testWidgets('confirming removes the system and its profile',
+        (tester) async {
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(
+            id: 'bmc1',
+            name: 'Lab',
+            health: Health.ok,
+            power: PowerState.on,
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+      await openRemoveDialog(tester, m);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Remove'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Remove system?'), findsNothing);
+      expect(m.state.systems.containsKey('bmc1'), isFalse,
+          reason: 'confirm must remove the profile');
+      expect(m.state.selectedId, isNull,
+          reason: 'removing the selected system clears the selection');
+    });
+  });
 }

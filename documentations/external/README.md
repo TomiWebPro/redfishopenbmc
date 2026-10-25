@@ -364,20 +364,20 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-25 20:xx UTC — DOCS run, anchor freshness re-verify + UI-2 dialog focus/order; prior: 2026-10-25 19:3x UTC — DOCS run, anchor freshness re-verify + UI-2 focus-order pin; prior: 2026-10-25 08:06 UTC — DOCS run, Test-platforms description reconciled to 75 tests; prior: 2026-10-25 04:07 UTC DOCS run query-501 gap closed, DOCS-28 02:11 UTC, DOCS-29 02:09 UTC, DOCS-27 00:15 UTC, DOCS-26 20:14 UTC, DOCS-25 18:52 UTC, DOCS-23 15:17 UTC, DOCS-22 12:47 UTC, DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
+## Current upstream anchors (verified 2026-10-25 22:2x UTC — DOCS run, anchor freshness re-verify + UI-2 remove-system confirmation dialog; prior: 2026-10-25 20:xx UTC — DOCS run, anchor freshness re-verify + UI-2 dialog focus/order; prior: 2026-10-25 19:3x UTC — DOCS run, anchor freshness re-verify + UI-2 focus-order pin; prior: 2026-10-25 08:06 UTC — DOCS run, Test-platforms description reconciled to 75 tests; prior: 2026-10-25 04:07 UTC DOCS run query-501 gap closed, DOCS-28 02:11 UTC, DOCS-29 02:09 UTC, DOCS-27 00:15 UTC, DOCS-26 20:14 UTC, DOCS-25 18:52 UTC, DOCS-23 15:17 UTC, DOCS-22 12:47 UTC, DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing;
-  byte-identical SHA-256 `e5a29797…` re-verified 2026-10-25 20:xx UTC)
+  byte-identical SHA-256 `e5a29797…` re-verified 2026-10-25 22:2x UTC)
 - Redfish specification DSP0266 — <https://www.dmtf.org/sites/default/files/standards/documents/DSP0266_1.25.0.pdf>
   (1.24 MB, linked from the hub at `DSP0266_1.25.0.pdf`; probe of `DSP0266_1.26.0.pdf`
   → 404 — 1.25.0 is still the current release. The `redfish.dmtf.org/sites/...`
   path 404s; the hub links the `www.dmtf.org` URL — manifest rows already use
   the working URL; re-verified byte-identical SHA-256 `385ee6d0…` 2026-10-25
-  20:xx UTC)
+  22:2x UTC)
 - Redfish Mockup Server — <https://github.com/DMTF/Redfish-Mockup-Server>
   (default branch `main` @ `23d21f9a` — unchanged, re-verified 2026-10-25
-  20:xx UTC via `git ls-remote`; README saved to `redfish/mockup/`)
+  22:2x UTC via `git ls-remote`; README saved to `redfish/mockup/`)
 - OpenBMC bmcweb docs — <https://github.com/openbmc/bmcweb/tree/master/docs>
   (master advanced `fbb307a` → `63a18f4e6188a77b713a8b22c8a95ab3d6c5a718` at
   2026-10-24 12:15 UTC; Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md,
@@ -389,7 +389,9 @@ redirection), so no fixture referencing a specific version is affected.
   (2026-09-21), the other three docs → `24e758ab` (2025-06-26 docs-folder
   creation) — manifest rows updated to record both anchors; no refresh
   needed; **re-verified 2026-10-25 20:xx UTC — `63a18f4` still HEAD via
-  `git ls-remote`, no refresh needed)**
+  `git ls-remote`, no refresh needed; re-verified 2026-10-25 22:2x UTC —
+  `63a18f4e6188a77b713a8b22c8a95ab3d6c5a718` still HEAD via `git ls-remote`,
+  no refresh needed)**
 
 ### DOCS-27 — corpus freshness audit + mockup README provenance fix (2026-10-25 00:15 UTC)
 
