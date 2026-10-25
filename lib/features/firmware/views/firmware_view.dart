@@ -201,6 +201,21 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                // UI-2: the protocol selector gets a visible + semantic label
+                // ("Transfer protocol") — the bare DropdownButton previously
+                // announced only its value with no field context (unlike the
+                // Image URI TextField above, which carries a labelText), and
+                // sighted users had no cue what the dropdown selected either.
+                // The label is plain Text (its own semantics node, like the
+                // TextField label), so the control keeps its own node and
+                // screen readers hear "Transfer protocol" then the value.
+                Text(
+                  'Transfer protocol',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                ),
+                const SizedBox(height: 4),
                 DropdownButton<String>(
                   value: _transferProtocol,
                   isExpanded: true,

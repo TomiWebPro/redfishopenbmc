@@ -482,6 +482,12 @@ void main() {
           reason: 'the DMTF mockup advertises HttpPushUri; OpenBMC bmcweb '
               'firmware updates are HTTP-push (HttpPushUri), not SimpleUpdate '
               '(DOCS-4, FUTUREWORK #008/#020)');
+      expect(info.multipartHttpPushUri, isNull,
+          reason: '#008/#020: this fixture does NOT serve the bmcweb-style '
+              'MultipartHttpPushUri variant — the client must tolerate a null '
+              'multipart URI and choose the single-push HttpPushUri when that '
+              'is all the service advertises (DOCS-9; the multipart selection '
+              'stays bmcweb-verified)');
       expect(info.inventory, isNotEmpty);
     });
 
@@ -688,6 +694,43 @@ void main() {
       final Map<String, dynamic> created = await client.getJson(location!);
       expect(created['@odata.id'], location);
       expect(created['UserName'], isA<String>());
+    });
+
+    test(
+        'bad login: the mockup runs WITHOUT auth enforcement — a wrong '
+        'password still mints a session, so the client 401 path stays '
+        'unit-level (#015/#026)', () async {
+      // Recorded probe (2026-10-23 18:36, FUTUREWORK EMU-3): the run_tests.sh
+      // profile starts the mockup WITHOUT `-u <user>:<pass>`, so it serves
+      // Sessions to ANY credentials. A wrong password still returns 204 +
+      // X-Auth-Token/Location — there is NO way to pin the client's
+      // bad-login 401 error mapping on this fixture. This test pins that
+      // negative so future runs do not re-open the question: AuthManager's
+      // 401 handling stays covered by spec-conformant unit fixtures.
+      final Response<dynamic> bad = await client.dio.post<dynamic>(
+        '/redfish/v1/SessionService/Sessions',
+        data: <String, String>{
+          'UserName': 'root',
+          'Password': 'definitely-wrong',
+        },
+      );
+      expect(bad.statusCode, 204,
+          reason: '#015: without -u the mockup never authenticates — a wrong '
+              'password mints a session (204); the 401 mapping is not pinable '
+              'on this fixture');
+      final String? token = bad.headers.value('X-Auth-Token') ??
+          bad.headers.value('x-auth-token');
+      expect(token, isNotNull,
+          reason: '#015: even a bad login receives a token on this fixture — '
+              'the client must not treat token presence as proof of valid '
+              'credentials beyond the service contract');
+      final String? location = bad.headers.value('Location') ??
+          bad.headers.value('Content-Location');
+      expect(location, isNotNull);
+      expect(location, isNot(endsWith('/Sessions')),
+          reason: '#015: the Location still names a session resource, never '
+              'the collection — the logout-target rule holds even for bad '
+              'logins');
     });
 
     test(

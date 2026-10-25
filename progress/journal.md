@@ -3451,3 +3451,61 @@
 - none opened/closed this run. DOCS-29 done (anchor re-verification + §7.3.2
   depth-bound trace rows); #018 advanced (design decisions now traceable in
   REQUIREMENTS.md); UI-2 advanced (firmware service-summary merge).
+
+## 2026-10-25 — agent:redfish-automation — EMU 68→69 negative pins + UI-2 firmware form label
+
+**Done:**
+- EMULATOR primary per alternation (last primary: DOCS 02:09; corpus mirror
+  queue EMPTY and verified). Closed the two remaining *negative* facts that
+  were recorded as probes but never pinned as live tests:
+  1. **Bad login still mints a session (#015/#026)** — the mockup runs
+     WITHOUT `-u` (no auth enforcement; a fact noted since 2026-10-23 but
+     never asserted). New pin: POST Sessions with `Password: definitely-wrong`
+     returns 204 + X-Auth-Token + Location naming a session resource (never
+     the collection) → the AuthManager 401 bad-login mapping is provably
+     unit-level on this fixture; token presence proves nothing about
+     credential validity; the logout-target rule holds even for bad logins.
+  2. **`MultipartHttpPushUri` absent (#008/#020)** — extended the
+     UpdateServiceInfo HTTP-push pin: `multipartHttpPushUri` is null while
+     `httpPushUri == '/FWUpdate'` (bmcweb serves the multipart variant via
+     DOCS-9; the DMTF fixture does not) → the upload flow must tolerate null
+     and pick the single-push form when that is all the service advertises.
+  Suite 66→68 gold → **69/69 passed** on pinned `23d21f9a` (all probes
+  GET/POST-204; fixture byte-identical; the run_tests.sh trap stopped the
+  server).
+- UI-2 increment: **firmware start-update form protocol selector labelled** —
+  the bare `DropdownButton<String>` (transfer protocol) had no visible label
+  (the Image URI TextField has `labelText`) and no a11y context. Now a
+  `Transfer protocol` Text renders above the select; the card column merges
+  sibling plain texts so a screen reader hears `Start update, Transfer
+  protocol` as the section node, the dropdown keeps its own button node
+  (`HTTP`). +1 widget test; firmware 18→19.
+
+**Decisions:**
+- EMULATOR per alternation; chose the two negative pins because (a) both are
+  "recorded probe → live test" closures a future run would otherwise re-ask,
+  (b) they are tiny, fixture-true, and safe (no real credentials — the
+  `definitely-wrong` literal is a test string, never a BMC secret), (c) the
+  #015/#008 design notes explicitly tracked them as open.
+- UI increment: the protocol dropdown was a genuine remaining unlabeled
+  control in the "non-card label" class; a visible label follow the existing
+  form pattern. The open-ended focus-order hunt stays skipped per the prior
+  runs' rationale.
+- No new dependencies, no TLS change, no production behaviour change beyond
+  the form label; emulator additions only in `test_integration/emulator/` so
+  plain `flutter test` never needs the emulator.
+
+**Next:**
+- DOCS per alternation: corpus mirror queue EMPTY; cheap candidate —
+  anchor freshness re-verification (bmcweb `63a18f4`, mockup `23d21f9a`,
+  DSP0266 1.25.0, schema index byte-compare), or corpus refresh if the index
+  advanced.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- Keep pushing every run (credentials verified; 0 queued).
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 68 → 69; #015 advanced (401 path provably
+  unit-level — the fixture never 401s); #008/#020 advanced (multipart push URI
+  null-pin on the DMTF fixture); UI-2 advanced (firmware protocol-select
+  label).

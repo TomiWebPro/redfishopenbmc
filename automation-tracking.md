@@ -3947,3 +3947,74 @@ Append-only run log for the `redfish-automation` scheduler job.
   `d87519f..01ce677  main -> main` — the DOCS auto commit (01ce677) pushed.
   `git rev-list --count origin/main..HEAD` = 0 (fully synced), working tree
   clean. Queued local commits ahead of origin/main: **0**.
+
+## 2026-10-25 03:12 UTC — EMULATOR (negative pins: bad login + multipart-null, EMU 68→69) + UI-2 firmware form label
+
+- **Baseline:** analyze 0; tests 354 passed / 1 skipped; starting commit 02eb993
+  (origin/main fully synced, 0 queued local commits); issues validate OK;
+  working tree clean; no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR per alternation (last primary: DOCS 02:09 — EMU is
+  due). The corpus mirror queue is EMPTY after DOCS-28/27 (ZERO advances
+  verified twice yesterday), so the increment closed two remaining *negative*
+  facts that were recorded as probes but never pinned as tests:
+  1. **Bad login still mints a session** (`run_tests.sh` starts the mockup
+     WITHOUT `-u`, so it never authenticates — a fact recorded 2026-10-23 18:36
+     in FUTUREWORK EMU-3 but never asserted in the suite). New test in the
+     session-lifecycle group: POST `/redfish/v1/SessionService/Sessions` with
+     `Password: definitely-wrong` returns 204 + X-Auth-Token + Location naming
+     a session resource (never the collection). Consequences pinned: the
+     AuthManager 401 bad-login mapping is provably unit-level on this fixture
+     (#015/#026); token presence proves nothing about credential validity; the
+     logout-target rule (session resource, not collection) holds even for a
+     bad login.
+  2. **`MultipartHttpPushUri` is absent on the DMTF fixture** — extended the
+     existing UpdateServiceInfo HTTP-push test: `info.multipartHttpPushUri`
+     is null while `httpPushUri == '/FWUpdate'` (bmcweb adds the multipart
+     variant — DOCS-9 — but this fixture serves only the single-push form).
+     The #008/#020 upload flow must tolerate a null multipart URI and pick
+     the single-push `HttpPushUri` when that is all the service advertises.
+  Suite 68 → **69/69 passed** on pinned `23d21f9a` (all probes GET/POST-204,
+  the bad-login POST is auth-surface only, never a real credential; fixture
+  byte-identical; server stopped via the script's trap).
+- **Docs:** none this run (no corpus refresh; anchors verified unchanged by the
+  previous DOCS run ~1 h ago). No new files mirrored — manifest unchanged.
+- **Emulator:** 69/69 on the pinned `23d21f9a`; see Primary work. The
+  corpus-invariant published-types crawl test re-ran green inside the suite
+  (Heater mirror files now covered by the schema fixture check).
+- **Code/tests:** no lib/ production change from the EMU stream (two pins in
+  `test_integration/emulator/emulator_suite_test.dart` only). UI-2 increment
+  below touched `lib/features/firmware/views/firmware_view.dart` + its test.
+- **UI:** one small tested UI-2 increment — **firmware start-update form
+  transfer-protocol selector now labelled**. The `DropdownButton<String>`
+  (transfer protocol picker) had NO visible label — unlike the Image URI
+  TextField above it, which carries `labelText: 'Image URI'` — so sighted
+  users saw a bare dropdown and screen readers heard only the protocol value
+  ("HTTP") with no field context. The select now renders a `Transfer protocol`
+  Text above it (labelLarge + outline color, the established form-label
+  pattern). Semantics: the card column merges the sibling plain Texts, so a
+  screen reader hears `Start update, Transfer protocol` as the section node
+  while the dropdown keeps its own button node (`HTTP`) — the field name is
+  announced before the value instead of a bare dropdown. +1 widget test
+  (visible label findsOneWidget; `bySemanticsLabel(RegExp('Transfer
+  protocol'))` findsWidgets; `bySemanticsLabel('HTTP')` findsOneWidget; tapping
+  the dropdown still opens the menu with `HTTPS` selectable). Targeted run:
+  19/19 passed before the full gate (firmware 18 → 19). No new dependencies;
+  no overflow impact (no-overflow tests at 320/800/1300 still green).
+- **Verification:** analyze 0; tests **355 passed / 1 skipped** (+1 — the new
+  firmware form-label test); emulator 69/69; issues validate OK;
+  `git diff --check` clean; secret scan: Dart test/UI code only, no
+  credentials — the bad-login fixture password `definitely-wrong` is a test
+  literal, never a real BMC secret; `git diff --stat` shows only the three
+  intended files (firmware_view.dart, firmware_widget_test.dart,
+  emulator_suite_test.dart). `dart format` clean on the touched files.
+- **Commit:** (pending this run) —
+  `auto: EMULATOR — bad-login + multipart-null negative pins (EMU 68→69) +
+  UI-2 firmware protocol-select label (run 2026-10-25 03:12)`.
+- **Next:** 1) DOCS per alternation — corpus mirror queue EMPTY and verified;
+   cheap candidate: DOCS-27-style anchor freshness re-verification (bmcweb
+   `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index byte-compare);
+   2) P1 #015 AuthManager — wire `Session.expiryFromService` into login,
+   re-auth on `isExpired`, token/location from create RESPONSE HEADERS only
+   (the bad-login pin clarifies the fixture never returns 401, so the unit
+   fixture carries that path); 3) keep pushing every run (credentials verified;
+   0 queued commits).

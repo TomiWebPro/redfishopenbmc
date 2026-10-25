@@ -7,26 +7,30 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (DOCS run — **anchor re-verification + DOCS-29
-  `$levels=2` depth-bound audit row**): all upstream anchors re-verified
-  UNCHANGED — bmcweb `63a18f4` (still HEAD via GitHub API), mockup
-  `23d21f9a` (still HEAD via GitHub API), DSP0266 1.25.0 (200 on the working
-  `www.dmtf.org` URL), schema index 200 and **byte-identical** to the
-  mirrored `v1-index.html` (SHA `e5a29797…`, 3,448,133 B) → **no corpus
-  refresh, DOCS-27's ZERO advances still hold**; DOCS-29 folded the EMU
-  66→68 query pins into the DOCS-15 §7.3.2 table (all-three-collections
-  `$levels=1` + the `$levels=2` depth bound = no recursion, DSP0266 §7.3.2)
-  so the #018 design decision has a real trace row; UI-2 increment: the
-  firmware `_ServiceSummary` line now announces as ONE merged node
-  (`UpdateService <version>, <http push URI>`) and renders NO dangling
-  `UpdateService ` text while loading (+2 widget tests, firmware 16→18))
-- **Current focus:** **DOCS (2026-10-25)** — anchors verified unchanged, no
-  corpus refresh; DOCS-29 audit row landed (the `$levels=2` depth-bound +
-  all-three-collections `$expand` pin now trace in REQUIREMENTS.md §7.3.2);
-  next primary is **EMULATOR** per alternation — corpus mirror queue EMPTY;
-  candidates: re-run the corpus-invariant published-types crawl (now covers
-  the Heater surface with real mirror files), or pin a remaining un-pinned
-  surface; then P1 #015 (AuthManager) — `expiryFromService` + the Sessions
+- **Last updated:** 2026-10-25 (EMULATOR run — **wrong-password + multipart-null
+  auth/firmware pins, EMU 68→69**): the long-recorded probe that a bad login
+  still mints a session on this fixture (mockup runs WITHOUT `-u`, no auth
+  enforcement) is now a **pinned test** in the session-lifecycle group — POST
+  `Sessions` with `Password: definitely-wrong` returns 204 + X-Auth-Token +
+  Location (never the collection), so the client's 401 bad-login mapping is
+  **provably** unit-level (#015/#026) with the evidence in the suite; the
+  UpdateService firmware test now also pins **`multipartHttpPushUri` is null
+  on the DMTF fixture** (#008/#020: server vs bmcweb push-URI variants —
+  bmcweb serves the multipart form, this fixture only `HttpPushUri` `/FWUpdate`,
+  so the client must tolerate a null multipart URI and pick the single-push
+  form) — same run's UI-2 increment: the firmware **start-update form's
+  transfer-protocol `DropdownButton` now has a visible + announced label**
+  (`Transfer protocol` Text above the select, the Image URI labelText pattern;
+  the card column merges the sibling texts so a screen reader hears
+  `Start update, Transfer protocol` before the protocol value, while the
+  dropdown keeps its own button node; +1 widget test, firmware 18→19); no
+  corpus refresh, no lib/ behaviour change beyond the label)
+- **Current focus:** **EMULATOR (2026-10-25)** — pinned two remaining
+  auth/push negative facts as live tests (EMU 68→69); next primary is
+  **DOCS** per alternation — corpus mirror queue EMPTY; candidates: DOCS-27-
+  style anchor freshness re-verification (bmcweb `63a18f4`, mockup
+  `23d21f9a`, DSP0266 1.25.0, schema index), or corpus refresh if the schema
+  index advanced; then P1 #015 (AuthManager) — `expiryFromService` + the Sessions
   pin are ready, wire the discovered SessionService body into login +
   re-auth on `isExpired`; #016: the PATCH transport + If-Match boundary are
   pinned on all live seams (Boot/IndicatorLED, Control SetPoint,
@@ -767,7 +771,20 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `Links.Chassis` stays a bare `@odata.id` ref (no inlined
       ChassisType/Status), so the #018 discovery pass must follow
       cross-resource URIs explicitly for deeper hops (DSP0266 §7.3.2
-      depth-cap behaviour pinned live))**
+      depth-cap behaviour pinned live))** → **69 tests
+      (two remaining negative facts pinned as live tests 2026-10-25: (1)
+      **bad login still mints a session** — the run_tests.sh profile starts
+      the mockup WITHOUT `-u` (no auth enforcement, a fact recorded since
+      2026-10-23 but never pinned), so POST `Sessions` with a wrong password
+      returns 204 + X-Auth-Token + Location naming a session resource (never
+      the collection) — the client's 401 bad-login error mapping is provably
+      unit-level (#015/#026) and token presence proves nothing about credential
+      validity on this fixture; (2) **`MultipartHttpPushUri` is absent** — the
+      DMTF fixture serves only `HttpPushUri` (`/FWUpdate`), unlike bmcweb which
+      adds the multipart variant (DOCS-4/9), so
+      `UpdateServiceInfo.multipartHttpPushUri` is null on this fixture and the
+      #008/#020 upload flow must pick the single-push URI when that is all the
+      service advertises)**
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -1208,6 +1225,16 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `('Updateable')` now findsNothing while the merged label still finds
       one widget and the visible texts remain); audit: no other
       `Semantics(container: true)` node in `lib/` lacks `excludeSemantics`;
+      **firmware start-update form transfer-protocol selector labelled done
+      2026-10-25 — the bare `DropdownButton<String>` (protocol picker) had NO
+      visible label (unlike the Image URI TextField's `labelText`) and no
+      a11y context — it now renders a `Transfer protocol` Text above the
+      select (the Image URI labelText pattern, labelLarge + outline color);
+      the card column merges sibling plain Texts so a screen reader hears
+      `Start update, Transfer protocol` in the section node before the
+      protocol value while the dropdown keeps its own button node (`HTTP`);
+      +1 widget test (visible label + announced label + dropdown control node
+      + protocol selection still works), firmware 18→19;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

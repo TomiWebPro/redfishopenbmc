@@ -675,4 +675,56 @@ void main() {
       });
     }
   });
+
+  group('FirmwareView — start-update form labels (UI-2)', () {
+    testWidgets(
+        'the transfer-protocol selector carries a visible + semantic '
+        'label', (tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(
+          info: const UpdateServiceInfo(
+            serviceEnabled: true,
+            version: '1.2.3',
+            httpPushUri: '/FWUpdate',
+            transferProtocols: <String>['HTTP', 'HTTPS'],
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The selector is labelled for sighted users (visible Text above the
+      // DropdownButton, the Image URI labelText pattern)…
+      expect(find.text('Transfer protocol'), findsOneWidget);
+      // …and for screen readers the label is announced in context: the Card's
+      // merged section node carries both the "Start update" header and the
+      // "Transfer protocol" label (Flutter merges sibling plain Texts inside
+      // the card column), so assistive tech hears the field's name before the
+      // protocol value instead of a bare dropdown.
+      expect(
+        find.bySemanticsLabel(RegExp('Transfer protocol')),
+        findsWidgets,
+      );
+      // The dropdown control itself keeps its own button node (its label is
+      // the current selection), so it remains a discrete interactive control.
+      expect(find.bySemanticsLabel('HTTP'), findsOneWidget);
+
+      // The dropdown still renders the current selection and both advertised
+      // protocols are selectable.
+      await tester.tap(find.byType(DropdownButton<String>));
+      await tester.pumpAndSettle();
+      expect(find.text('HTTPS'), findsOneWidget);
+      semantics.dispose();
+    });
+  });
 }
