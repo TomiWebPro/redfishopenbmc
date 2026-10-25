@@ -83,7 +83,18 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
         ref.watch(sensorsControllerProvider(widget.systemId));
 
     if (ui.loading) {
-      return const Center(child: CircularProgressIndicator());
+      // UI-2: the in-flight sensor load announces as ONE merged semantics
+      // node ('Loading sensors') instead of a bare unlabeled progress
+      // indicator — the established loading-state pattern (FirmwareView
+      // header/inventory). The visible spinner stays for sighted users.
+      return Center(
+        child: Semantics(
+          container: true,
+          excludeSemantics: true,
+          label: 'Loading sensors',
+          child: const CircularProgressIndicator(),
+        ),
+      );
     }
     if (ui.error != null) {
       return Center(

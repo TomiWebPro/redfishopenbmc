@@ -121,6 +121,23 @@ class _KvmViewState extends ConsumerState<KvmView> {
       );
     }
 
+    // UI-2: an in-flight load with no consoles yet renders ONE merged
+    // semantics node ('Loading KVM consoles') instead of a bare unlabeled
+    // progress indicator — and BEFORE the empty state, so the initial load
+    // never flashes the misleading 'No consoles found.' (the established
+    // loading-state pattern — SensorsView). The visible spinner stays for
+    // sighted users.
+    if (ui.loading && ui.consoles.isEmpty) {
+      return Center(
+        child: Semantics(
+          container: true,
+          excludeSemantics: true,
+          label: 'Loading KVM consoles',
+          child: const CircularProgressIndicator(),
+        ),
+      );
+    }
+
     // UI-2: a successful load with zero consoles renders the established
     // empty-state pattern — one self-describing merged semantics node (icon +
     // visible text), matching the SensorsView empty state. No Retry: the load
@@ -180,9 +197,22 @@ class _KvmViewState extends ConsumerState<KvmView> {
         ),
         const SizedBox(height: 16),
         if (ui.loading)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(child: CircularProgressIndicator()),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              // UI-2: the in-flight console load announces as ONE merged
+              // semantics node ('Loading KVM consoles') instead of a bare
+              // unlabeled progress indicator next to the header — the
+              // established loading-state pattern (FirmwareView
+              // header/inventory). The visible spinner stays for sighted
+              // users.
+              child: Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: 'Loading KVM consoles',
+                child: const CircularProgressIndicator(),
+              ),
+            ),
           )
         else
           for (final KvmConsole console in ui.consoles)

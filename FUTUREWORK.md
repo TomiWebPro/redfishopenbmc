@@ -7,50 +7,32 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (EMULATOR run — **corpus-invariant crawl now
-  covers ALL published @odata.types; 17-family corpus gap closed (DOCS-31)**:
-  the live published-types crawl previously asserted the fixture invariant
-  only for **client-mapped** families — it now ALSO asserts every versioned
-  `@odata.type` the pinned mockup publishes has a served-version schema in
-  the external corpus mirror. The extension immediately exposed that
-  DOCS-30's "corpus mirror queue EMPTY" was only true for client-mapped +
-  EMU-2-pinned families: **17 published families had NO schema at all** in
-  `documentations/external/redfish/schemas/v1/` (AccelerationFunction,
-  Assembly, ExternalAccountProvider, GraphicsController, HostInterface,
-  Memory, MessageRegistryFile, OutboundConnection, Port, Processor,
-  ProcessorMetrics, SecurityPolicy, SerialInterface, Signature, SimpleStorage,
-  TrustedComponent, USBController). Closed with DOCS-31 — 65 files /
-  1,403,838 bytes (17 aggregators + 17 served + 17 newest + 14 collection
-  types, inside DOCS-6); property-delta audit **additive-only** across all 17
-  (Memory +4 / Port +13 / Processor +4 / ProcessorMetrics +1 / SecurityPolicy
-  +1 / SerialInterface +1 / TrustedComponent +1, eight no-ops) — **no client
-  code change**; all 17 stay NOT client-mapped (no fixture duty, corpus-
-  invariant family list unchanged); the extended invariant is a runnable
-  emulator check (78-test suite green on `23d21f9a`); anchors re-verified
-  (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index 200);
-  **corpus mirror queue EMPTY for every published type**)
-- **Current focus:** **EMULATOR (2026-10-25)** — corpus-invariant crawl
-  extended to ALL published types + the 17-family gap closed (DOCS-31);
-  corpus mirror queue **EMPTY for every published type** and the invariant is
-  now a runnable check; next per alternation: DOCS (cheap candidates: anchor
-  freshness re-verification — bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
-  1.25.0, schema index byte-compare — or a REQUIREMENTS.md housekeeping pass),
-  then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are
-  ready, wire the discovered SessionService body into login + re-auth on
-  `isExpired`; #016: the PATCH transport + If-Match boundary are pinned on all
-  live seams (Boot/IndicatorLED, Control SetPoint, Bios/Settings,
-  Manager.Reset), remaining is the actual If-Match/`@odata.etag` wiring in a
-  Boot/IndicatorLED PATCH flow + unit tests for the 412 path; #022/#016: the
-  ActionInfo *resource* crawl on OpenBMC is now shape-pinned on every fixture
-  ActionInfo (EMU 69→78) — the remaining piece is the actual
-  `ResetActionInfo`-resource fetch + `Parameters[].AllowableValues` wiring in
-  FeatureRules + the Control SetPoint AllowableMin/Max pre-validation rule;
-  #018: query-capability surface + live `$expand` contract pinned — remaining:
-  build the lightweight discovery pass + the cache fixes; **new feature
-  candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
-  served versions move into `test/fixtures/redfish/schemas/` + the
-  corpus-invariant family list gains `Bios`/`Settings`; the Bios/Settings
-  PATCH round-trip seam is now pinned); corpus mirror queue: **EMPTY**
+- **Last updated:** 2026-10-25 (DOCS run — **crashed-run recovery verified:
+  DOCS-31 corpus mirror (65 files, a458ded) + extended corpus-invariant crawl
+  re-proven 78/78 live on the pinned `23d21f9a`, every anchor re-verified
+  (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0 byte-identical,
+  schema index byte-identical) — no corpus refresh needed, corpus mirror
+  queue EMPTY for every published type**; UI-2 loading-state semantics merged
+  for Sensors/KVM; both recovery commits + this run pushed)
+- **Current focus:** **DOCS (2026-10-25)** — the crashed 13:20 run's DOCS-31
+  work recovered (commit a458ded) + this run's REQUIREMENTS.md recovery
+  (4753e4f), both verified (analyze 0, 366 unit tests pass / 1 skipped,
+  emulator 78/78) and pushed; corpus mirror queue **EMPTY for every published
+  type** and the invariant re-proven; next per alternation: **EMULATOR**
+  (candidates: the `ResetActionInfo` ActionInfo-*resource* crawl as code work
+  #022/#016 — all other ActionInfo families are pinned; or re-run the
+  invariant suite cheaply), then P1 #015 (AuthManager) — `expiryFromService`
+  + the Sessions pin are ready, wire the discovered SessionService body into
+  login + re-auth on `isExpired`; #016: the PATCH transport + If-Match
+  boundary are pinned on all live seams (Boot/IndicatorLED, Control SetPoint,
+  Bios/Settings, Manager.Reset), remaining is the actual If-Match/
+  `@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit tests for the
+  412 path; #022/#016: the ActionInfo *resource* crawl on OpenBMC is now
+  shape-pinned on every fixture ActionInfo (EMU 69→78) — the remaining piece
+  is the actual `ResetActionInfo`-resource fetch + `Parameters[].
+  AllowableValues` wiring in FeatureRules + the Control SetPoint
+  AllowableMin/Max pre-validation rule; **new UI backlog item: focus order +
+  remaining dialogs/tables (UI-2)**; corpus mirror queue: **EMPTY**
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1403,6 +1385,18 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       control`; visible texts preserved for sighted users; +1 widget test
       asserts the merged label incl. the subtitle + visible text preserved +
       the bare "Power control" node no longer announces separately;
+      **unlabeled loading spinners merge into self-describing nodes done
+      2026-10-25 — the last bare `CircularProgressIndicator` announcements in
+      the feature views: SensorsView's full-screen spinner (the only node on
+      screen) now announces ONE merged `Loading sensors` node, and KvmView's
+      first-load spinner now announces ONE merged `Loading KVM consoles` node
+      (both via the established `Semantics(container + excludeSemantics)`
+      loading pattern, visible spinners preserved; the KVM change also
+      reordered the state branches so a first load no longer flashes the
+      misleading `No consoles found.` empty state — `loading && consoles.
+      isEmpty` renders the merged loading node before the empty branch, while
+      refreshes with existing consoles keep the inline spinner under the
+      header); +2 widget tests (sensors 14→15, kvm 12→13);
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

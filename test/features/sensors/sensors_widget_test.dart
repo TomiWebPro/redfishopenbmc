@@ -1,4 +1,6 @@
 // ignore_for_file: prefer_const_constructors
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -92,6 +94,15 @@ class _EmptySensorsService extends SensorsService {
   Future<List<ChassisSensors>> fetchAll() async => const <ChassisSensors>[];
 }
 
+/// A [SensorsService] double that never completes (loading-state tests).
+class _PendingSensorsService extends SensorsService {
+  _PendingSensorsService() : super(client: null, systemId: 'x');
+
+  @override
+  Future<List<ChassisSensors>> fetchAll() =>
+      Completer<List<ChassisSensors>>().future;
+}
+
 SystemHandle buildHandle({required bool sensorMonitoring}) => SystemHandle(
       profile: ConnectionProfile(id: 'x', host: 'h'),
       status: ConnectionStatus.connected,
@@ -115,6 +126,35 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('CPU1 Temp'), findsNothing);
+    });
+
+    testWidgets(
+        'loading state announces one merged "Loading sensors" node '
+        '(UI-2)', (WidgetTester tester) async {
+      // A never-completing service keeps the controller in `loading: true`
+      // (the state flag is set synchronously before the await), so the view
+      // renders the loading branch. pumpAndSettle would time out — use pump.
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_PendingSensorsService()),
+          ],
+          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+        ),
+      );
+      await tester.pump();
+
+      // The spinner announces as ONE self-describing merged node instead of a
+      // bare unlabeled progress indicator (the established loading-state
+      // pattern — FirmwareView header/inventory).
+      final Finder merged = find.bySemanticsLabel('Loading sensors');
+      expect(merged, findsOneWidget);
+      final SemanticsNode? node = tester.getSemantics(merged);
+      expect(node?.label, contains('Loading sensors'));
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets(

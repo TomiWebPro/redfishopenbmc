@@ -418,6 +418,34 @@ void main() {
             'detached sentence',
       );
     });
+
+    testWidgets(
+        'loading state announces one merged "Loading KVM consoles" '
+        'node (UI-2)', (WidgetTester tester) async {
+      // A pre-seeded loading state (the stub's load() no-ops) keeps the view
+      // on the loading branch; pumpAndSettle would hang on the spinner.
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(loading: true);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pump();
+
+      // The spinner announces as ONE self-describing merged node instead of a
+      // bare unlabeled progress indicator under the header (the established
+      // loading-state pattern — FirmwareView header/inventory).
+      expect(
+        find.bySemanticsLabel('Loading KVM consoles'),
+        findsOneWidget,
+      );
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
   });
 
   group('KvmView — responsive layout (UI-3)', () {

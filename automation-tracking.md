@@ -4605,3 +4605,72 @@ Append-only run log for the `redfish-automation` scheduler job.
   `07d1e57..1e6d841  main -> main` — the DOCS auto commit (1e6d841) pushed.
   `git rev-list --count origin/main..HEAD` = 0 (fully synced), working tree
   clean. Queued local commits ahead of origin/main: **0**.
+
+## 2026-10-25 14:10 UTC — DOCS (crashed-run recovery verified: DOCS-31 corpus + anchors) + UI-2 loading-state semantics
+
+- **Baseline:** analyze 0; tests 364 passed / 1 skipped; starting commit a458ded
+  (ahead of origin/main by 1 — the crashed run's DOCS-31 recovery commit, never
+  pushed); issues validate OK; working tree carried the crashed run's remaining
+  WIP: REQUIREMENTS.md "Last audited" section (anchor freshness re-verification
+  + DOCS-31 newest-version spot audit, 28 lines uncommitted); no stash, no
+  other leftovers. The crashed run had committed a458ded (65 DOCS-31 schema
+  files + manifest + FUTUREWORK + REQUIREMENTS.md header) but crashed before
+  committing the Last-audited tail, writing tracking/journal, and pushing.
+- **Primary work:** DOCS — finish + verify the crashed run, per alternation
+  (last completed primary: EMULATOR 13:10). Per runbook §0 the remaining
+  REQUIREMENTS.md WIP was clearly the previous automation's work → committed it
+  as recovery (`4753e4f`, after correcting one factual drift: the recovered
+  text claimed "365 unit tests pass"; the actual gate is **364 passed / 1
+  skipped**, now recorded truthfully). Then **re-verified every DOCS-31 claim
+  live this run**: (1) corpus-invariant **78/78 emulator suite re-run** on the
+  pinned `23d21f9a` via `tool/emulator/run_tests.sh` — green; (2) anchors —
+  bmcweb master HEAD `63a18f4e…` (via `git ls-remote`, still HEAD), mockup main
+  HEAD `23d21f9a…` (still HEAD), DSP0266 1.25.0 PDF **byte-identical** SHA-256
+  `385ee6d0…` vs the mirrored copy (fetched `www.dmtf.org` live), schema index
+  **byte-identical** SHA-256 `e5a29797…` (3,448,133 B) vs the mirrored
+  `v1-index.html`; (3) the 17 DOCS-31 families' newest versions matched
+  (spot-audit claim in the recovered text) — supported by the byte-identical
+  index + the mirror queue stays EMPTY. **No corpus refresh, no new downloads
+  (0 bytes this run).**
+- **Docs:** no files added; the DOCS-31 corpus mirror (65 files) had been
+  committed in a458ded (recovered last run) and is now **verified end-to-end +
+  pushed**; manifest rows untouched (a458ded already added them);
+  REQUIREMENTS.md Last-audited header now reflects this run's fresh
+  re-verification; corrected test-count prose 365 → "364 pass (1 skipped)".
+- **Emulator:** 78/78 suite re-run live this run (the DOCS-31 extended
+  corpus-invariant crawl included) — all green on the pinned `23d21f9a`;
+  server stopped via trap, nothing left in the repo or running.
+- **Code/tests:** no production behaviour change beyond the UI-2 increment
+  below. `+2` widget tests (sensors 14→15, kvm 12→13). No issues touched.
+- **UI:** one small tested UI-2 increment — **the unlabeled loading spinners
+  merge into self-describing announcements** (the last bare progress nodes in
+  the feature views): SensorsView's full-screen spinner now announces ONE
+  merged `Loading sensors` node, and KvmView's first-load spinner announces ONE
+  merged `Loading KVM consoles` node (both via the established
+  `Semantics(container + excludeSemantics)` loading pattern — FirmwareView
+  header/inventory precedent; visible spinners preserved). The KVM fix also
+  corrected a small state-ordering bug the merge exposed: the view previously
+  checked the empty state BEFORE loading, so a first load flashed the
+  misleading `No consoles found.` — the merged loading node now renders before
+  the empty branch (`loading && consoles.isEmpty`), while refreshes with
+  existing consoles keep the inline spinner under the header. +2 widget tests
+  assert the merged labels + spinner presence. No new dependencies; no layout
+  change to the responsive tests (320/800/1300 unaffected).
+- **Verification:** analyze 0; tests **366 passed / 1 skipped**; emulator
+  78/78; issues validate OK; `git diff --check` clean; secret scan: Dart code +
+  docs prose only, no credentials; `git diff --stat` 4 files (2 views + 2
+  tests). `dart format` on the 4 touched files only (avoiding the documented
+  formatter-drift churn).
+- **Commit:** 4753e4f — `chore: recover previous automation WIP (REQUIREMENTS.md
+  — DOCS anchor re-verification + DOCS-31 newest-version spot audit)` +
+  (pending) `auto: DOCS — crashed-run recovery verified (DOCS-31 corpus +
+  anchors) + UI-2 loading-state semantics merged (Sensors/KVM) (run
+  2026-10-25 14:10)`; pushed: yes after this section (a458ded + 4753e4f +
+  this commit were queued ahead of origin/main).
+- **Next:** 1) EMULATOR per alternation — corpus mirror queue EMPTY and now
+  re-proven 78/78; candidates: the `ResetActionInfo` ActionInfo-*resource*
+  crawl as code work (#022/#016), or re-run the invariant suite cheaply;
+  2) P1 #015 AuthManager — wire `Session.expiryFromService` into login, re-auth
+  on `isExpired`, token/location from create RESPONSE HEADERS only;
+  3) keep pushing every run (credentials verified; 2 commits queued before
+  this run's).

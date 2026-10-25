@@ -3927,3 +3927,61 @@
   real mirror files); #022 advanced (KeyPolicy allow-list shape now has a
   real schema citation); UI-2 advanced (SystemOverviewPage is now fully
   merged — header, error, empty, not-found all single-node announcements).
+
+## 2026-10-25 — agent:redfish-automation — DOCS crashed-run recovery verified (DOCS-31) + UI-2 loading-state semantics
+
+**Done:**
+- **Recovered + verified the crashed 13:20 DOCS run.** Starting state: commit
+  a458ded (the crashed run's DOCS-31 corpus mirror — 65 schema files for the
+  17 published families the extended invariant exposed — plus manifest +
+  FUTUREWORK + REQUIREMENTS.md header) was committed but NEVER pushed, and the
+  run's remaining WIP (REQUIREMENTS.md "Last audited": anchor freshness
+  re-verification + DOCS-31 newest-version spot audit) sat uncommitted in the
+  working tree with no tracking/journal sections. This run: committed the WIP
+  as `4753e4f` (runbook §0 recovery) after correcting one factual drift (the
+  recovered text claimed 365 unit tests; the gate is 364 passed / 1 skipped),
+  then **re-verified every DOCS-31 claim live**: emulator corpus-invariant
+  suite re-run **78/78** on the pinned `23d21f9a`; anchors — bmcweb
+  `63a18f4` (git ls-remote, still master HEAD), mockup `23d21f9a` (still main
+  HEAD), DSP0266 1.25.0 PDF byte-identical SHA-256 `385ee6d0…`, schema index
+  byte-identical SHA-256 `e5a29797…` (3,448,133 B). No corpus refresh, 0
+  bytes downloaded. Pushed a458ded + 4753e4f.
+- **UI-2 increment:** the unlabeled loading spinners merged into
+  self-describing nodes — SensorsView full-screen spinner announces
+  `Loading sensors`; KvmView first-load spinner announces `Loading KVM
+  consoles` (both `Semantics(container + excludeSemantics)`, visible spinner
+  preserved). The KVM merge surfaced + fixed a small state-ordering bug: the
+  empty-state branch previously won over the loading branch, so a first load
+  flashed `No consoles found.`; the merged loading node now renders before
+  the empty branch while refreshes keep the inline spinner under the header.
+  +2 widget tests (sensors 14→15, kvm 12→13); full suite 366 passed / 1
+  skipped; analyze 0.
+
+**Decisions:**
+- DOCS per alternation (last completed primary: EMULATOR 13:10). The crashed
+  run was DOCS; finishing + verifying it beats starting fresh work on an
+  unverified base — the a458ded corpus mirror had to be proven before push.
+- Recovery commit per runbook §0 (working-tree changes were clearly the
+  previous automation's work and passed all gates) instead of stashing.
+- UI increment: the bare loading spinners were the genuine next "unlabeled
+  node" class (the loading-state gaps the 2026-10-24 FirmwareView
+  header/inventory merges left open). Did not rush the open-ended focus-order
+  hunt. Formatted only the 4 touched files to avoid the documented
+  formatter-drift churn (FUTUREWORK refactor note).
+- No new dependencies, no TLS change, no emulator dependency in plain
+  `flutter test`, no production behaviour change beyond the semantics
+  wrapper + the KVM loading-branch reorder.
+
+**Next:**
+- EMULATOR per alternation: corpus mirror queue EMPTY and re-proven 78/78;
+  candidates: the `ResetActionInfo` ActionInfo-*resource* crawl as code work
+  (#022/#016 — the only ActionInfo family left unpinned on OpenBMC), or a
+  cheap invariant re-run.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- Keep pushing every run (credentials verified; 0 queued after this run).
+
+**Issues touched:**
+- none opened/closed this run. DOCS-31 (crashed recovery) now pushed +
+  verified; UI-2 advanced (loading states merged for Sensors/KVM — the last
+  bare progress-indicator announcements in the feature views).
