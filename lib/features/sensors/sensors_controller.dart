@@ -53,7 +53,8 @@ class SensorsUiState {
 ///    [PowerController]).
 class SensorsController extends StateNotifier<SensorsUiState> {
   /// Creates a [SensorsController].
-  SensorsController({required this.service, this.initialState = const SensorsUiState()})
+  SensorsController(
+      {required this.service, this.initialState = const SensorsUiState()})
       : super(initialState);
 
   /// The sensor service used to read chassis telemetry.

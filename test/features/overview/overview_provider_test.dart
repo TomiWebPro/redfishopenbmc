@@ -230,7 +230,8 @@ void main() {
             .hasMemory,
         isTrue,
       );
-      expect(const SystemOverview(leadingTemperatureCelsius: 1).hasTemperature, isTrue);
+      expect(const SystemOverview(leadingTemperatureCelsius: 1).hasTemperature,
+          isTrue);
     });
   });
 
@@ -249,7 +250,8 @@ void main() {
     test('classifies breakpoints by width', () {
       expect(OverviewGridBreakpoints.forWidth(400), OverviewBreakpoint.mobile);
       expect(OverviewGridBreakpoints.forWidth(600), OverviewBreakpoint.tablet);
-      expect(OverviewGridBreakpoints.forWidth(1024), OverviewBreakpoint.desktop);
+      expect(
+          OverviewGridBreakpoints.forWidth(1024), OverviewBreakpoint.desktop);
     });
   });
 

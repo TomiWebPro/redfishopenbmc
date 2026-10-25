@@ -16,7 +16,8 @@ void main() {
 
     test('isCollection true when Members present', () {
       expect(
-        const ODataResource(<String, dynamic>{'Members': <dynamic>[]}).isCollection,
+        const ODataResource(<String, dynamic>{'Members': <dynamic>[]})
+            .isCollection,
         isTrue,
       );
       expect(

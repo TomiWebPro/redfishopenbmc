@@ -26,7 +26,8 @@ void main() {
   group('fetchSystemSnapshot', () {
     test('maps a ComputerSystem member to a populated snapshot', () async {
       final Dio dio = Dio(BaseOptions(baseUrl: 'https://bmc1:443'));
-      final DioAdapter adapter = DioAdapter(dio: dio, matcher: const _PathMatcher());
+      final DioAdapter adapter =
+          DioAdapter(dio: dio, matcher: const _PathMatcher());
       adapter.onGet(
         '/redfish/v1/Systems',
         (server) => server.reply(
@@ -58,8 +59,8 @@ void main() {
         ),
       );
 
-      final SystemSnapshot snap =
-          await fetchSystemSnapshot(RedfishClient(profile: const ConnectionProfile(host: 'bmc1'), dio: dio));
+      final SystemSnapshot snap = await fetchSystemSnapshot(RedfishClient(
+          profile: const ConnectionProfile(host: 'bmc1'), dio: dio));
       expect(snap.health, Health.ok);
       expect(snap.powerState, PowerState.on);
       expect(snap.manufacturer, 'Acme');
@@ -68,9 +69,11 @@ void main() {
       expect(snap.error, isNull);
     });
 
-    test('returns unknown health when no ComputerSystems are reported', () async {
+    test('returns unknown health when no ComputerSystems are reported',
+        () async {
       final Dio dio = Dio(BaseOptions(baseUrl: 'https://bmc1:443'));
-      final DioAdapter adapter = DioAdapter(dio: dio, matcher: const _PathMatcher());
+      final DioAdapter adapter =
+          DioAdapter(dio: dio, matcher: const _PathMatcher());
       adapter.onGet(
         '/redfish/v1/Systems',
         (server) => server.reply(
@@ -82,15 +85,16 @@ void main() {
         ),
       );
 
-      final SystemSnapshot snap =
-          await fetchSystemSnapshot(RedfishClient(profile: const ConnectionProfile(host: 'bmc1'), dio: dio));
+      final SystemSnapshot snap = await fetchSystemSnapshot(RedfishClient(
+          profile: const ConnectionProfile(host: 'bmc1'), dio: dio));
       expect(snap.health, Health.unknown);
       expect(snap.error, 'No ComputerSystems reported');
     });
 
     test('degrades to unknown health on a transport error', () async {
       final Dio dio = Dio(BaseOptions(baseUrl: 'https://bmc1:443'));
-      final DioAdapter adapter = DioAdapter(dio: dio, matcher: const _PathMatcher());
+      final DioAdapter adapter =
+          DioAdapter(dio: dio, matcher: const _PathMatcher());
       adapter.onGet(
         '/redfish/v1/Systems',
         (server) => server.reply(
@@ -102,8 +106,8 @@ void main() {
         ),
       );
 
-      final SystemSnapshot snap =
-          await fetchSystemSnapshot(RedfishClient(profile: const ConnectionProfile(host: 'bmc1'), dio: dio));
+      final SystemSnapshot snap = await fetchSystemSnapshot(RedfishClient(
+          profile: const ConnectionProfile(host: 'bmc1'), dio: dio));
       expect(snap.health, Health.unknown);
       expect(snap.error, isNotNull);
     });

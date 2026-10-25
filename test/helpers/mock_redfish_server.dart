@@ -65,7 +65,8 @@ class MockRedfishServer {
       final String contents = File(filePath).readAsStringSync();
       _respond(request, 200, body: contents);
     } catch (e) {
-      _respond(request, 500, body: _error('Base.1.0.InternalError', e.toString()));
+      _respond(request, 500,
+          body: _error('Base.1.0.InternalError', e.toString()));
     }
   }
 
@@ -111,7 +112,8 @@ class MockRedfishServer {
       ..statusCode = status
       ..headers.contentType = ContentType.json
       ..headers.set('OData-Version', '4.0');
-    headers?.forEach((String k, String v) => request.response.headers.set(k, v));
+    headers
+        ?.forEach((String k, String v) => request.response.headers.set(k, v));
     request.response.write(body);
     request.response.close();
   }

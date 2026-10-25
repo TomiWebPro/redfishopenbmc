@@ -56,8 +56,7 @@ class KvmService {
     }
 
     try {
-      final Map<String, dynamic> root =
-          await c.getJson('/redfish/v1/Managers');
+      final Map<String, dynamic> root = await c.getJson('/redfish/v1/Managers');
       final List<dynamic> members =
           (root['Members'] as List<dynamic>?) ?? <dynamic>[];
 

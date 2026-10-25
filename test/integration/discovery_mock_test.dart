@@ -59,7 +59,8 @@ void main() {
     final ChassisSensors chassis = all.first;
     expect(chassis.thermal, isNotEmpty);
     expect(
-      chassis.thermal.any((t) => t.name == 'CPU1 Temp' && t.readingCelsius == 41.0),
+      chassis.thermal
+          .any((t) => t.name == 'CPU1 Temp' && t.readingCelsius == 41.0),
       isTrue,
     );
   });

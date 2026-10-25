@@ -70,7 +70,9 @@ class FakeBmc {
                 statusCode: 304,
                 requestOptions: options,
                 headers: Headers.fromMap(
-                  <String, List<String>>{'etag': <String>[etag]},
+                  <String, List<String>>{
+                    'etag': <String>[etag]
+                  },
                 ),
               ),
             );

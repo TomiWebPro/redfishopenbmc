@@ -169,8 +169,7 @@ class AuthManager {
   Future<Session> _createSession(String systemId, _SystemAuth auth) async {
     final ConnectionProfile profile = auth.profile;
     try {
-      final Response<dynamic> response =
-          await auth.client.dio.post<dynamic>(
+      final Response<dynamic> response = await auth.client.dio.post<dynamic>(
         '/redfish/v1/SessionService/Sessions',
         data: <String, String>{
           'UserName': profile.username ?? '',

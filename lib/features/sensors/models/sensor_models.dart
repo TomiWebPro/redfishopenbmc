@@ -257,7 +257,8 @@ class ChassisSensors {
     String? chassisName,
     List<SensorReading>? sensors,
   }) {
-    final String base = _asString(json['@odata.id']) ?? '/redfish/v1/Chassis/$chassisId/Thermal';
+    final String base = _asString(json['@odata.id']) ??
+        '/redfish/v1/Chassis/$chassisId/Thermal';
     final List<dynamic> temps = json['Temperatures'] is List<dynamic>
         ? json['Temperatures'] as List<dynamic>
         : const <dynamic>[];
@@ -269,11 +270,13 @@ class ChassisSensors {
       chassisName: chassisName,
       thermal: temps
           .whereType<Map<String, dynamic>>()
-          .map((Map<String, dynamic> e) => ThermalReading.fromJson(e, sourceUri: base))
+          .map((Map<String, dynamic> e) =>
+              ThermalReading.fromJson(e, sourceUri: base))
           .toList(),
       fans: fans
           .whereType<Map<String, dynamic>>()
-          .map((Map<String, dynamic> e) => FanReading.fromJson(e, sourceUri: base))
+          .map((Map<String, dynamic> e) =>
+              FanReading.fromJson(e, sourceUri: base))
           .toList(),
       sensors: sensors ?? const <SensorReading>[],
     );
@@ -295,8 +298,7 @@ class ChassisSensors {
       );
 
   @override
-  String toString() =>
-      'ChassisSensors($chassisId: ${thermal.length} temps, '
+  String toString() => 'ChassisSensors($chassisId: ${thermal.length} temps, '
       '${fans.length} fans, ${sensors.length} sensors)';
 }
 

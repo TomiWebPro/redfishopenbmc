@@ -66,8 +66,7 @@ class SecureStorageProfileRepository implements ProfileRepository {
   @override
   Future<void> saveProfile(ConnectionProfile profile) async {
     final List<ConnectionProfile> existing = await loadProfiles();
-    final Map<String, ConnectionProfile> byId =
-        <String, ConnectionProfile>{
+    final Map<String, ConnectionProfile> byId = <String, ConnectionProfile>{
       for (final ConnectionProfile p in existing) p.id: p,
     };
     byId[profile.id] = profile;
@@ -94,7 +93,8 @@ class SecureStorageProfileRepository implements ProfileRepository {
   }
 
   Future<void> _persist(List<ConnectionProfile> profiles) async {
-    final List<Map<String, dynamic>> sanitized = profiles.map((ConnectionProfile p) {
+    final List<Map<String, dynamic>> sanitized =
+        profiles.map((ConnectionProfile p) {
       final Map<String, dynamic> json = p.toJson();
       // Never persist the plaintext password in the profile blob; the keystore
       // holds it separately (see [saveProfile]) when rememberPassword is set.
@@ -111,8 +111,8 @@ class SecureStorageProfileRepository implements ProfileRepository {
 /// channels involved.
 class InMemoryProfileRepository implements ProfileRepository {
   /// Creates an empty [InMemoryProfileRepository].
-  InMemoryProfileRepository(
-    [Map<String, ConnectionProfile>? initial,
+  InMemoryProfileRepository([
+    Map<String, ConnectionProfile>? initial,
   ]) : _store = Map<String, ConnectionProfile>.from(
           initial ?? <String, ConnectionProfile>{},
         );
@@ -120,7 +120,8 @@ class InMemoryProfileRepository implements ProfileRepository {
   final Map<String, ConnectionProfile> _store;
 
   @override
-  Future<List<ConnectionProfile>> loadProfiles() async => _store.values.toList();
+  Future<List<ConnectionProfile>> loadProfiles() async =>
+      _store.values.toList();
 
   @override
   Future<void> saveProfile(ConnectionProfile profile) async {

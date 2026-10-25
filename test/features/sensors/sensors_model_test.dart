@@ -20,10 +20,10 @@ void main() {
     late Map<String, dynamic> sensorJson;
 
     setUp(() {
-      thermalJson =
-          jsonDecode(File(_thermalFixture).readAsStringSync()) as Map<String, dynamic>;
-      sensorJson =
-          jsonDecode(File(_sensorFixture).readAsStringSync()) as Map<String, dynamic>;
+      thermalJson = jsonDecode(File(_thermalFixture).readAsStringSync())
+          as Map<String, dynamic>;
+      sensorJson = jsonDecode(File(_sensorFixture).readAsStringSync())
+          as Map<String, dynamic>;
     });
 
     test('parses temperatures, fans, and a sensor from real mockup shapes', () {
@@ -40,7 +40,8 @@ void main() {
       );
 
       expect(cs.thermal.length, greaterThanOrEqualTo(3));
-      final ThermalReading cpu1 = cs.thermal.firstWhere((t) => t.name == 'CPU1 Temp');
+      final ThermalReading cpu1 =
+          cs.thermal.firstWhere((t) => t.name == 'CPU1 Temp');
       expect(cpu1.readingCelsius, 41.0);
       expect(cpu1.physicalContext, 'CPU');
       expect(cpu1.upperCritical, 45.0);

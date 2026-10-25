@@ -282,7 +282,8 @@ void main() {
       );
       final PowerService svc = PowerService(
         client: RedfishClient(
-          profile: const ConnectionProfile(host: 'bmc202.local', name: 'bmc202'),
+          profile:
+              const ConnectionProfile(host: 'bmc202.local', name: 'bmc202'),
           dio: adapter.dio,
         ),
         systemId: 'bmc202',

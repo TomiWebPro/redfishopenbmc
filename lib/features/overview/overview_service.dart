@@ -26,7 +26,8 @@ class OverviewService {
   /// Throws [RedfishException] when no ComputerSystem is reported (404-style) or
   /// when the root collection call itself fails.
   Future<SystemOverview> fetchOverview() async {
-    final Map<String, dynamic> root = await client.getJson('/redfish/v1/Systems');
+    final Map<String, dynamic> root =
+        await client.getJson('/redfish/v1/Systems');
     final List<dynamic> members =
         (root['Members'] as List<dynamic>?) ?? const <dynamic>[];
     if (members.isEmpty) {

@@ -173,8 +173,7 @@ void main() {
       expect(f.powerControl, isTrue);
     });
 
-    test('absolute @odata.id links are normalized to relative paths',
-        () async {
+    test('absolute @odata.id links are normalized to relative paths', () async {
       final Map<String, dynamic> root = <String, dynamic>{
         '@odata.id': 'https://bmc1:443/redfish/v1/',
         'Systems': <String, dynamic>{
@@ -234,8 +233,7 @@ void main() {
         () async {
       final FakeBmc bmc = openBmc();
       final DiscoveryEngine engine = DiscoveryEngine();
-      final SystemFeatures a =
-          await engine.discover(bmc.buildClient(), 'bmc1');
+      final SystemFeatures a = await engine.discover(bmc.buildClient(), 'bmc1');
       final int afterFirst = bmc.requests.length;
       expect(afterFirst, greaterThan(0));
 
@@ -252,11 +250,9 @@ void main() {
   group('DiscoveryEngine — injection & concurrency', () {
     test('injected cache + persister are exercised', () async {
       final FakeBmc bmc = openBmc();
-      final InMemoryDiscoveryPersister persister =
-          InMemoryDiscoveryPersister();
+      final InMemoryDiscoveryPersister persister = InMemoryDiscoveryPersister();
       final DiscoveryEngine engine = DiscoveryEngine(persister: persister);
-      final SystemFeatures f =
-          await engine.discover(bmc.buildClient(), 'bmc1');
+      final SystemFeatures f = await engine.discover(bmc.buildClient(), 'bmc1');
       expect(persister.entries.containsKey('bmc1'), isTrue);
       expect(f.powerControl, isTrue);
       engine.invalidate('bmc1');
@@ -327,7 +323,9 @@ void main() {
         '/redfish/v1/Chassis/c1': <String, dynamic>{
           '@odata.id': '/redfish/v1/Chassis/c1',
           '@odata.type': '#Chassis.v1_24_0.Chassis',
-          'Thermal': <String, dynamic>{'@odata.id': '/redfish/v1/Chassis/c1/Thermal'},
+          'Thermal': <String, dynamic>{
+            '@odata.id': '/redfish/v1/Chassis/c1/Thermal'
+          },
         },
         '/redfish/v1/Chassis/c2': <String, dynamic>{
           '@odata.id': '/redfish/v1/Chassis/c2',
@@ -336,7 +334,9 @@ void main() {
         '/redfish/v1/Chassis/c1/Thermal': <String, dynamic>{
           '@odata.id': '/redfish/v1/Chassis/c1/Thermal',
           '@odata.type': '#Thermal.v1_7_0.Thermal',
-          'Temperatures': <dynamic>[<String, dynamic>{'Name': 'T1'}],
+          'Temperatures': <dynamic>[
+            <String, dynamic>{'Name': 'T1'}
+          ],
         },
       };
       final SystemFeatures f = await DiscoveryEngine(maxConcurrency: 4)

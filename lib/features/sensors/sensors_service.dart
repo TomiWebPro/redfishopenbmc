@@ -48,7 +48,8 @@ class SensorsService {
     final RedfishClient? c = client;
     if (c == null) {
       throw RedfishException(
-        message: 'Not connected to "$systemId"; connect before reading sensors.',
+        message:
+            'Not connected to "$systemId"; connect before reading sensors.',
         errorCode: 'Base.1.0.NotConnected',
       );
     }
@@ -99,8 +100,7 @@ class SensorsService {
     List<ThermalReading> temps = const <ThermalReading>[];
     List<FanReading> fans = const <FanReading>[];
     try {
-      final Map<String, dynamic> thermalJson =
-          await c.getJson('$base/Thermal');
+      final Map<String, dynamic> thermalJson = await c.getJson('$base/Thermal');
       temps = _parseThermal(thermalJson, '$base/Thermal');
       fans = _parseFans(thermalJson, '$base/Thermal');
     } on RedfishException {
@@ -109,8 +109,7 @@ class SensorsService {
 
     List<SensorReading> sensors = const <SensorReading>[];
     try {
-      final Map<String, dynamic> sensorColl =
-          await c.getJson('$base/Sensors');
+      final Map<String, dynamic> sensorColl = await c.getJson('$base/Sensors');
       sensors = await _parseSensors(c, sensorColl);
     } on RedfishException {
       // No sensor collection for this chassis.
@@ -132,18 +131,25 @@ class SensorsService {
   ) {
     final List<dynamic> temps =
         (json['Temperatures'] as List<dynamic>?) ?? <dynamic>[];
-    return temps.whereType<Map<String, dynamic>>().map(
-      (Map<String, dynamic> e) => ThermalReading.fromJson(e, sourceUri: sourceUri),
-    ).toList();
+    return temps
+        .whereType<Map<String, dynamic>>()
+        .map(
+          (Map<String, dynamic> e) =>
+              ThermalReading.fromJson(e, sourceUri: sourceUri),
+        )
+        .toList();
   }
 
   /// Parses a `Thermal` resource body into fan readings.
   List<FanReading> _parseFans(Map<String, dynamic> json, String sourceUri) {
-    final List<dynamic> fans =
-        (json['Fans'] as List<dynamic>?) ?? <dynamic>[];
-    return fans.whereType<Map<String, dynamic>>().map(
-      (Map<String, dynamic> e) => FanReading.fromJson(e, sourceUri: sourceUri),
-    ).toList();
+    final List<dynamic> fans = (json['Fans'] as List<dynamic>?) ?? <dynamic>[];
+    return fans
+        .whereType<Map<String, dynamic>>()
+        .map(
+          (Map<String, dynamic> e) =>
+              FanReading.fromJson(e, sourceUri: sourceUri),
+        )
+        .toList();
   }
 
   /// Fetches and parses every member of a `Sensors` collection.

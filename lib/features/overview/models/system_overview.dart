@@ -232,8 +232,7 @@ class SystemOverview {
     String? resourceUri,
   }) {
     double? temp;
-    final List<dynamic>? temps =
-        thermalJson?['Temperatures'] as List<dynamic>?;
+    final List<dynamic>? temps = thermalJson?['Temperatures'] as List<dynamic>?;
     if (temps != null && temps.isNotEmpty) {
       final dynamic first = temps.first;
       if (first is Map<String, dynamic>) {

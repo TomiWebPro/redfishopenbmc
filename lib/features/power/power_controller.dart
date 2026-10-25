@@ -103,7 +103,8 @@ class PowerController extends StateNotifier<PowerUiState> {
     final List<String> allowed = features?.supportedResetTypes ?? <String>[];
     if (allowed.isNotEmpty && !allowed.contains(type.toRedfish())) {
       state = state.copyWith(
-        error: 'Reset type ${type.toRedfish()} is not supported by this system.',
+        error:
+            'Reset type ${type.toRedfish()} is not supported by this system.',
         lastAction: type,
       );
       return;

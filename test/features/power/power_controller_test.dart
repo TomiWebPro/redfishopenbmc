@@ -80,7 +80,8 @@ void main() {
       expect(controller.state.powerState, PowerState.off);
     });
 
-    test('rejects unsupported reset types without calling the service', () async {
+    test('rejects unsupported reset types without calling the service',
+        () async {
       final FakePowerService svc = FakePowerService();
       final PowerController controller = buildController(
         service: svc,

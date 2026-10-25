@@ -88,8 +88,7 @@ class ODataResource {
   List<String> memberIds() {
     final List<String> ids = <String>[];
     for (final dynamic entry in members) {
-      if (entry is Map<dynamic, dynamic> &&
-          entry['@odata.id'] is String) {
+      if (entry is Map<dynamic, dynamic> && entry['@odata.id'] is String) {
         ids.add(entry['@odata.id'] as String);
       } else if (entry is String) {
         ids.add(entry);

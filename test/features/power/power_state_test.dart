@@ -66,7 +66,8 @@ void main() {
 
     test('only On is non-destructive', () {
       expect(ResetType.on.isDestructive, isFalse);
-      for (final ResetType t in ResetType.values.where((t) => t != ResetType.on)) {
+      for (final ResetType t
+          in ResetType.values.where((t) => t != ResetType.on)) {
         expect(t.isDestructive, isTrue);
       }
     });
@@ -74,7 +75,8 @@ void main() {
     test('optimisticState projects the transitional power state', () {
       expect(ResetType.on.optimisticState, PowerState.poweringOn);
       expect(ResetType.forceOff.optimisticState, PowerState.poweringOff);
-      expect(ResetType.gracefulShutdown.optimisticState, PowerState.poweringOff);
+      expect(
+          ResetType.gracefulShutdown.optimisticState, PowerState.poweringOff);
       expect(ResetType.gracefulRestart.optimisticState, PowerState.poweringOn);
       expect(ResetType.forceRestart.optimisticState, PowerState.poweringOn);
       expect(ResetType.powerCycle.optimisticState, PowerState.poweringOn);

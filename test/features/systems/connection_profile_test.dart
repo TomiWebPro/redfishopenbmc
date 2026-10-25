@@ -3,8 +3,10 @@ import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 
 void main() {
   group('ConnectionProfile', () {
-    test('baseUrl combines scheme/host/port and useTls derives from scheme', () {
-      const ConnectionProfile p = ConnectionProfile(host: '10.0.0.5', port: 8443);
+    test('baseUrl combines scheme/host/port and useTls derives from scheme',
+        () {
+      const ConnectionProfile p =
+          ConnectionProfile(host: '10.0.0.5', port: 8443);
       expect(p.baseUrl, 'https://10.0.0.5:8443');
       expect(p.useTls, isTrue);
       expect(p.scheme, 'https');
@@ -57,7 +59,8 @@ void main() {
     });
 
     test('fromJson tolerates missing fields', () {
-      final ConnectionProfile p = ConnectionProfile.fromJson(<String, dynamic>{});
+      final ConnectionProfile p =
+          ConnectionProfile.fromJson(<String, dynamic>{});
       expect(p.id, '');
       expect(p.host, '');
       expect(p.port, 443);
@@ -67,8 +70,10 @@ void main() {
 
     test('generateId returns a UUID v4 string', () {
       final String id = ConnectionProfile.generateId();
-      expect(id, matches(RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-'
-          r'[89ab][0-9a-f]{3}-[0-9a-f]{12}$')));
+      expect(
+          id,
+          matches(RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-'
+              r'[89ab][0-9a-f]{3}-[0-9a-f]{12}$')));
     });
   });
 }

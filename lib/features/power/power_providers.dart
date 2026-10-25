@@ -35,7 +35,8 @@ final StateNotifierProviderFamily<PowerController, PowerUiState, String>
   (ref, String systemId) {
     final SystemHandle? handle = ref.watch(systemHandleProvider(systemId));
     final PowerService service = ref.watch(powerServiceProvider(systemId));
-    final PowerState initial = handle?.snapshot?.powerState ?? PowerState.unknown;
+    final PowerState initial =
+        handle?.snapshot?.powerState ?? PowerState.unknown;
     return PowerController(
       service: service,
       features: handle?.features,

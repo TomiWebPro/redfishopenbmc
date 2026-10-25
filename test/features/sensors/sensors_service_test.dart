@@ -45,13 +45,15 @@ void main() {
         systemId: 'bmc1',
       );
 
-      final ChassisSensors cs = await svc.fetchChassis('/redfish/v1/Chassis/1U');
+      final ChassisSensors cs =
+          await svc.fetchChassis('/redfish/v1/Chassis/1U');
 
       expect(cs.chassisId, '1U');
       expect(cs.chassisName, 'Computer System Chassis');
       expect(cs.thermal, isNotEmpty);
       expect(
-        cs.thermal.any((t) => t.name == 'CPU1 Temp' && t.readingCelsius == 41.0),
+        cs.thermal
+            .any((t) => t.name == 'CPU1 Temp' && t.readingCelsius == 41.0),
         isTrue,
       );
       expect(cs.sensors, isNotEmpty);

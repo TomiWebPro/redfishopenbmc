@@ -96,8 +96,7 @@ class SystemFeatures {
         sensorMonitoring: sensorMonitoring ?? this.sensorMonitoring,
         sensorCount: sensorCount ?? this.sensorCount,
         firmwareUpdate: firmwareUpdate ?? this.firmwareUpdate,
-        updateServiceVersion:
-            updateServiceVersion ?? this.updateServiceVersion,
+        updateServiceVersion: updateServiceVersion ?? this.updateServiceVersion,
         managers: managers ?? this.managers,
         chassis: chassis ?? this.chassis,
         raw: raw ?? this.raw,
@@ -137,9 +136,8 @@ class SystemFeatures {
   /// `system_id` + `features.*` keys).
   factory SystemFeatures.fromJson(Map<String, dynamic> json) {
     final dynamic rawFeatures = json['features'];
-    final Map<String, dynamic> features = rawFeatures is Map<String, dynamic>
-        ? rawFeatures
-        : <String, dynamic>{};
+    final Map<String, dynamic> features =
+        rawFeatures is Map<String, dynamic> ? rawFeatures : <String, dynamic>{};
     final dynamic rawMap = json['raw'];
     return SystemFeatures(
       systemId: json['system_id'] as String? ?? '',
@@ -153,9 +151,7 @@ class SystemFeatures {
       updateServiceVersion: features['firmware_update_version'] as String?,
       managers: features['managers'] as int? ?? 0,
       chassis: features['chassis'] as int? ?? 0,
-      raw: rawMap is Map<String, dynamic>
-          ? rawMap
-          : <String, dynamic>{},
+      raw: rawMap is Map<String, dynamic> ? rawMap : <String, dynamic>{},
     );
   }
 

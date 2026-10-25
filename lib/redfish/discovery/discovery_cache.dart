@@ -31,8 +31,7 @@ class DiscoveryCacheEntry {
   final DateTime fetchedAt;
 
   /// Whether this entry is older than [ttl].
-  bool isExpired(Duration ttl) =>
-      DateTime.now().difference(fetchedAt) > ttl;
+  bool isExpired(Duration ttl) => DateTime.now().difference(fetchedAt) > ttl;
 }
 
 /// In-memory, per-system discovery cache with a sliding TTL.
@@ -42,8 +41,7 @@ class DiscoveryCacheEntry {
 /// An optional [DiscoveryPersister] mirrors entries to slower storage.
 class DiscoveryCache {
   /// Creates a [DiscoveryCache] with the given [ttl] (default 5 minutes).
-  DiscoveryCache({Duration? ttl})
-      : ttl = ttl ?? const Duration(minutes: 5);
+  DiscoveryCache({Duration? ttl}) : ttl = ttl ?? const Duration(minutes: 5);
 
   /// How long a cached entry stays fresh before a re-crawl is required.
   final Duration ttl;
