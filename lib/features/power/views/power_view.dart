@@ -74,30 +74,38 @@ class PowerView extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Semantics(
-                  // UI-2: the card header (title + PowerBadge) announces as
-                  // ONE merged node, the same pattern as the
-                  // SystemCard/InfoCard/chassis/sensor/firmware/KVM card
-                  // headers. The power badge otherwise announces as a separate
-                  // bare node ("Power Off") right after the system name.
+                  // UI-2: the card header (title + PowerBadge + the "Power
+                  // control" subtitle) announces as ONE merged node, the same
+                  // pattern as the KVM/SystemCard/InfoCard headers. The power
+                  // badge otherwise announces as a separate bare node ("Power
+                  // Off") right after the system name, and the subtitle would
+                  // announce as a third detached text. The visible texts are
+                  // preserved for sighted users.
                   container: true,
                   excludeSemantics: true,
-                  label: '${handle.displayName}, power ${ui.powerState.label}',
-                  child: Row(
+                  label: '${handle.displayName}, power ${ui.powerState.label}, '
+                      'Power control',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          handle.displayName,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              handle.displayName,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                          ),
+                          PowerBadge(powerState: ui.powerState),
+                        ],
                       ),
-                      PowerBadge(powerState: ui.powerState),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Power control',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Power control',
-                  style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 12),
                 if (ui.error != null) ...[

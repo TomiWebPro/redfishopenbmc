@@ -3106,6 +3106,190 @@ void main() {
         containsAll(<String>['PEM']),
       );
     });
+
+    test(
+        'event service: SubmitTestEvent action advertises an @Redfish.'
+        'ActionInfo resource that resolves — the DOCS-7 bed for #019 '
+        '(#022/#016 crawl shape)', () async {
+      // The earlier EventService test pins the action target only; the
+      // recurring #022/#016 contract is to *resolve* the advertised
+      // @Redfish.ActionInfo and parse Parameters[]. The fixture serves a
+      // third ActionInfo family here — SubmitTestEventActionInfo — the
+      // exact shape a ResetActionInfo-style crawler must handle (incl. a
+      // Required parameter and a per-parameter AllowableValues array).
+      final Map<String, dynamic> svc =
+          await client.getJson('/redfish/v1/EventService');
+      final Map<dynamic, dynamic> actions =
+          svc['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> submit =
+          actions['#EventService.SubmitTestEvent'] as Map<dynamic, dynamic>;
+      final Object? infoLink = submit['@Redfish.ActionInfo'];
+      expect(infoLink, isA<String>(),
+          reason: '#022/#016: SubmitTestEvent advertises an ActionInfo link '
+              'that must be resolved by the crawler');
+      expect(
+        submit['target'],
+        '/redfish/v1/EventService/Actions/EventService.SubmitTestEvent',
+      );
+
+      final Map<String, dynamic> info =
+          await client.getJson(infoLink! as String);
+      expect(info['@odata.type'], '#ActionInfo.v1_4_1.ActionInfo');
+      final List<dynamic> params =
+          info['Parameters'] as List<dynamic>? ?? <dynamic>[];
+      expect(params.length, 9,
+          reason: 'SubmitTestEventActionInfo publishes 9 documented '
+              'parameters (EventType .. EventGroupId)');
+      // MessageId is the one REQUIRED parameter — the receiver must not
+      // send a test event without it.
+      final List<dynamic> messageId = params
+          .where((Object? p) =>
+              p is Map<dynamic, dynamic> && p['Name'] == 'MessageId')
+          .toList();
+      expect(messageId, isNotEmpty);
+      expect((messageId.first as Map<dynamic, dynamic>)['Required'], isTrue,
+          reason: '#022/#016: Required flags shape validation UX');
+      expect((messageId.first as Map<dynamic, dynamic>)['DataType'], 'String');
+      // EventType carries the per-parameter AllowableValues form (the same
+      // bmcweb ResetActionInfo shape), listing the six standard event types.
+      final List<dynamic> eventType = params
+          .where((Object? p) =>
+              p is Map<dynamic, dynamic> && p['Name'] == 'EventType')
+          .toList();
+      expect(eventType, isNotEmpty);
+      expect(
+        (eventType.first as Map<dynamic, dynamic>)['AllowableValues'],
+        containsAll(<String>[
+          'StatusChange',
+          'ResourceUpdated',
+          'ResourceAdded',
+          'ResourceRemoved',
+          'Alert',
+          'Other',
+        ]),
+      );
+      // MessageArgs is a StringArray, EventGroupId is a Number — the DataType
+      // contract drives the input control a future #019 UI would render.
+      final List<dynamic> messageArgs = params
+          .where((Object? p) =>
+              p is Map<dynamic, dynamic> && p['Name'] == 'MessageArgs')
+          .toList();
+      expect(messageArgs, isNotEmpty);
+      expect((messageArgs.first as Map<dynamic, dynamic>)['DataType'],
+          'StringArray');
+      final List<dynamic> eventGroupId = params
+          .where((Object? p) =>
+              p is Map<dynamic, dynamic> && p['Name'] == 'EventGroupId')
+          .toList();
+      expect(eventGroupId, isNotEmpty);
+      expect(
+          (eventGroupId.first as Map<dynamic, dynamic>)['DataType'], 'Number');
+    });
+
+    test(
+        'certificate rekey: #Certificate.Rekey advertises an @Redfish.'
+        'ActionInfo that resolves — RekeyActionInfo pins the same '
+        'Parameters/AllowableValues crawl contract (#022/#016)', () async {
+      // The certificate resources on the fixture advertise #Certificate.Rekey
+      // with an ActionInfo link to RekeyActionInfo — a FOURTH ActionInfo
+      // family (KeyPairAlgorithm Required + AllowableValues, KeyCurveId
+      // allowable list, KeyBitLength optional Number). This closes the
+      // ActionInfo-resource surface for the certificate stores the
+      // CertificateLocations pin (EMU 75) lists.
+      final Map<String, dynamic> cert =
+          await client.getJson('/redfish/v1/Managers/BMC/NetworkProtocol/HTTPS/'
+              'Certificates/1');
+      final Map<dynamic, dynamic> certActions =
+          cert['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> rekey =
+          certActions['#Certificate.Rekey'] as Map<dynamic, dynamic>;
+      final Object? rekeyInfo = rekey['@Redfish.ActionInfo'];
+      expect(rekeyInfo, isA<String>(),
+          reason: '#022/#016: #Certificate.Rekey advertises an ActionInfo '
+              'link that must be resolved by the crawler');
+      expect(
+        rekey['target'],
+        '/redfish/v1/Managers/BMC/NetworkProtocol/HTTPS/Certificates/1/'
+        'Actions/Certificate.Rekey',
+      );
+
+      final Map<String, dynamic> info =
+          await client.getJson(rekeyInfo! as String);
+      expect(info['@odata.type'], '#ActionInfo.v1_4_1.ActionInfo');
+      final List<dynamic> params =
+          info['Parameters'] as List<dynamic>? ?? <dynamic>[];
+      expect(params.length, 3,
+          reason: 'RekeyActionInfo publishes KeyPairAlgorithm (required), '
+              'KeyBitLength (optional), KeyCurveId (optional)');
+
+      List<dynamic> of(String name) => params
+          .where((Object? p) => p is Map<dynamic, dynamic> && p['Name'] == name)
+          .toList();
+
+      expect(of('KeyPairAlgorithm'), isNotEmpty);
+      expect(
+          (of('KeyPairAlgorithm').first as Map<dynamic, dynamic>)['Required'],
+          isTrue);
+      expect(
+        (of('KeyPairAlgorithm').first as Map<dynamic, dynamic>)['DataType'],
+        'String',
+      );
+      expect(
+        (of('KeyPairAlgorithm').first
+            as Map<dynamic, dynamic>)['AllowableValues'],
+        containsAll(<String>['TPM_ALG_RSA', 'TPM_ALG_ECDSA']),
+      );
+
+      expect(of('KeyBitLength'), isNotEmpty);
+      expect((of('KeyBitLength').first as Map<dynamic, dynamic>)['Required'],
+          isFalse);
+      expect((of('KeyBitLength').first as Map<dynamic, dynamic>)['DataType'],
+          'Number');
+
+      expect(of('KeyCurveId'), isNotEmpty);
+      expect(
+        (of('KeyCurveId').first as Map<dynamic, dynamic>)['AllowableValues'],
+        containsAll(<String>[
+          'TPM_ECC_NIST_P256',
+          'TPM_ECC_NIST_P384',
+          'TPM_ECC_NIST_P521',
+        ]),
+      );
+    });
+
+    test(
+        'certificate rekey: the RekeyActionInfo contract is consistent across '
+        'the other certificate stores (UpdateService + OutboundConnections) '
+        '(#022/#016)', () async {
+      // The CertificateLocations pin (EMU 75) shows the same fixture serves
+      // client certificates under UpdateService and AccountService
+      // OutboundConnections; each advertises the SAME #Certificate.Rekey
+      // ActionInfo contract. The crawler must tolerate the identical shape on
+      // every store, so pin it on the two remaining certificate resources.
+      const List<String> stores = <String>[
+        '/redfish/v1/UpdateService/ClientCertificates/1',
+        '/redfish/v1/AccountService/OutboundConnections/1/Certificates/1',
+      ];
+      for (final String store in stores) {
+        final Map<String, dynamic> cert = await client.getJson(store);
+        final Map<dynamic, dynamic> actions =
+            cert['Actions'] as Map<dynamic, dynamic>;
+        final Map<dynamic, dynamic> rekey =
+            actions['#Certificate.Rekey'] as Map<dynamic, dynamic>;
+        final Object? rekeyInfo = rekey['@Redfish.ActionInfo'];
+        expect(rekeyInfo, isA<String>(),
+            reason: '#022/#016: every certificate store advertises a '
+                'resolvable RekeyActionInfo link (store: $store)');
+        final Map<String, dynamic> info =
+            await client.getJson(rekeyInfo! as String);
+        expect(info['@odata.type'], '#ActionInfo.v1_4_1.ActionInfo');
+        final List<dynamic> params =
+            info['Parameters'] as List<dynamic>? ?? <dynamic>[];
+        expect(params.length, 3,
+            reason: 'the Rekey contract is the same on every store '
+                '($store)');
+      }
+    });
   });
 
   group(

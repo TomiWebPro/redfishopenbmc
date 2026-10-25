@@ -613,11 +613,22 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // The header (display name + power badge) is one merged semantics node.
+      // The header (display name + power badge + "Power control" subtitle) is
+      // one merged semantics node.
       expect(
-        find.bySemanticsLabel(RegExp('^A, power Off')),
+        find.bySemanticsLabel(RegExp('^A, power Off, Power control')),
         findsOneWidget,
-        reason: 'the card header must announce as a single merged node',
+        reason: 'the card header must announce as a single merged node incl. '
+            'the subtitle (the bare "Power control" text must not '
+            'double-announce)',
+      );
+      // The subtitle text is preserved for sighted users…
+      expect(find.text('Power control'), findsOneWidget);
+      // …and does not announce as its own separate node.
+      expect(
+        find.bySemanticsLabel('Power control'),
+        findsNothing,
+        reason: 'the merged header node owns the "Power control" subtitle',
       );
     });
   });

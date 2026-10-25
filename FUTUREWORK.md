@@ -7,43 +7,48 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (DOCS run — **anchors re-verified, no corpus
-  refresh; Test-platforms description reconciled to the 75-test suite**): all
-  upstream anchors still current (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
-  1.25.0 byte-identical, schema index byte-identical — DOCS-27 ZERO advances
-  hold, 0 new downloads); REQUIREMENTS.md "Test platforms" note now describes
-  every one of the 75 emulator tests (was: count 75 but pins described only
-  through EMU 59→60 — added Controls PATCH, Bios/Settings PATCH,
-  Heaters + Manager.Reset, generalized `$expand` + `$levels=2` depth cap, the
-  two negative facts, ActionInfo resource contract, and the three last
-  service-root branches incl. the NVMeoFSecrets collection-metadata-only
-  boundary); UI-2 increment: OverviewView Temperatures + LED card bodies now
-  merged semantics nodes (the last two bare card-body Texts in the overview),
-  +2 widget tests, overview 15→17; corpus mirror queue still EMPTY
-- **Current focus:** **DOCS (2026-10-25)** — anchors re-verified (bmcweb
-  `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index byte-compare; 0
-  new downloads) + REQUIREMENTS.md "Test platforms" description reconciled
-  with the 75-test suite (every EMU pin through 71→75 now described); corpus
-  mirror queue still EMPTY; remaining DOCS candidates: none queued — the
-  corpus is complete and verified for all 38 families; next DOCS per
-  alternation: another cheap anchor freshness re-verification, or a
-  REQUIREMENTS.md audit of the "60 tests" progression wording in
-  `documentations/external/README.md` DOCS-25/28 notes (historical records —
-  verify they read as history, not current state); then P1
-  #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire
-  the discovered SessionService body into login + re-auth on `isExpired`;
-  #016: the PATCH transport + If-Match boundary are pinned on all live seams
+- **Last updated:** 2026-10-25 (EMULATOR run — **last un-pinned ActionInfo
+  families pinned live (EMU 75→78)**: `EventService.SubmitTestEventActionInfo`
+  (9 Parameters, MessageId REQUIRED, EventType 6-value AllowableValues,
+  StringArray/Number DataTypes — the #019/DOCS-7 test-event action) +
+  `#Certificate.Rekey` `RekeyActionInfo` contract on all three certificate
+  stores the CertificateLocations pin lists (KeyPairAlgorithm REQUIRED +
+  AllowableValues, KeyBitLength Number, KeyCurveId 3-curve
+  AllowableValues; shape verified consistent across
+  `Managers/BMC/NetworkProtocol/HTTPS/Certificates/1`,
+  `UpdateService/ClientCertificates/1`,
+  `AccountService/OutboundConnections/1/Certificates/1`) — the fourth
+  ActionInfo family, the #022/#016 crawler now has the resolve + parse shape
+  pinned on every ActionInfo resource the fixture serves; `ResetActionInfo`
+  itself still absent -> the OpenBMC allow-list-source crawl stays a code
+  task); UI-2 increment: PowerView card header now announces as ONE node
+  incl. the "Power control" subtitle (was a bare detached Text under the
+  merged header), + widget test; emulator suite **78/78** on pinned
+  `23d21f9a`; corpus mirror queue still EMPTY
+- **Current focus:** **EMULATOR (2026-10-25)** — last un-pinned ActionInfo
+  families pinned (EMU 75→78, 78/78 green on `23d21f9a`): SubmitTestEvent +
+  Certificate.Rekey contract, verified consistent across all three
+  certificate stores; corpus mirror queue still EMPTY; all service-root
+  branches + all ActionInfo resources the fixture serves are now pinned —
+  remaining #022/#016 surface is the actual `ResetActionInfo`-resource crawl
+  on OpenBMC (a code task, `FirmwareService`/`FeatureRules`); next per
+  alternation: DOCS (cheap anchor freshness re-verification or a
+  REQUIREMENTS.md housekeeping pass), then P1 #015 (AuthManager) —
+  `expiryFromService` + the Sessions pin are ready, wire the discovered
+  SessionService body into login + re-auth on `isExpired`; #016: the PATCH
+  transport + If-Match boundary are pinned on all live seams
   (Boot/IndicatorLED, Control SetPoint, Bios/Settings, Manager.Reset),
   remaining is the actual If-Match/`@odata.etag` wiring in a Boot/IndicatorLED
   PATCH flow + unit tests for the 412 path; #022/#016: the ActionInfo
-  *resource* crawl on OpenBMC is now shape-pinned — the remaining piece is the
-  actual `ResetActionInfo`-resource fetch + `Parameters[].AllowableValues`
-  wiring in FeatureRules + the Control SetPoint AllowableMin/Max pre-validation
-  rule; #018: query-capability surface + live `$expand` contract pinned —
-  remaining: build the lightweight discovery pass + the cache fixes; **new
-  feature candidate #028:** BIOS-config editor (Bios/Settings become
-  client-mapped → served versions move into `test/fixtures/redfish/schemas/` +
-  the corpus-invariant family list gains `Bios`/`Settings`; the Bios/Settings
+  *resource* crawl on OpenBMC is now shape-pinned on every fixture ActionInfo
+  (EMU 69→78) — the remaining piece is the actual
+  `ResetActionInfo`-resource fetch + `Parameters[].AllowableValues` wiring in
+  FeatureRules + the Control SetPoint AllowableMin/Max pre-validation rule;
+  #018: query-capability surface + live `$expand` contract pinned — remaining:
+  build the lightweight discovery pass + the cache fixes; **new feature
+  candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
+  served versions move into `test/fixtures/redfish/schemas/` + the
+  corpus-invariant family list gains `Bios`/`Settings`; the Bios/Settings
   PATCH round-trip seam is now pinned); corpus mirror queue: **EMPTY**
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
@@ -819,7 +824,27 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       non-empty digest Measurements), TPM (PCR measurement set), and the
       **disabled** USB member (enabled-state read per member, never assumed)).
       All three families remain NOT client-mapped → no fixture schema duty
-      (corpus-invariant unchanged); EMU 71→75)**
+      (corpus-invariant unchanged); EMU 71→75)** → **78 tests
+      (the last un-pinned ActionInfo families on the fixture pinned live
+      2026-10-25, EMU 75→78: (1) `EventService.SubmitTestEventActionInfo`
+      — the recurring #022/#016 ActionInfo-*resource* crawl contract applied
+      to the #019/DOCS-7 test-event action: `@Redfish.ActionInfo` resolves to
+      `#ActionInfo.v1_4_1` with 9 `Parameters[]`, `MessageId` the one
+      REQUIRED parameter, `EventType` AllowableValues
+      [StatusChange/ResourceUpdated/ResourceAdded/ResourceRemoved/Alert/Other],
+      `MessageArgs` DataType StringArray, `EventGroupId` DataType Number; (2)
+      `#Certificate.Rekey` `RekeyActionInfo` on the manager HTTPS certificate
+      — `KeyPairAlgorithm` REQUIRED + AllowableValues (TPM_ALG_RSA/
+      TPM_ALG_ECDSA), `KeyBitLength` optional Number, `KeyCurveId`
+      AllowableValues (3 NIST curves) — the fourth ActionInfo family; (3) the
+      SAME RekeyActionInfo contract verified consistent across the other two
+      certificate stores the CertificateLocations pin lists
+      (`UpdateService/ClientCertificates/1`,
+      `AccountService/OutboundConnections/1/Certificates/1`) — a
+      #022/#016-style crawler can rely on the identical
+      Parameters/AllowableValues shape on every store; `ResetActionInfo`
+      itself is still absent on this fixture, the OpenBMC
+      allow-list-source crawl stays a code task)**
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -1300,6 +1325,15 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       announcement (`32 GiB`) that mirrors the visible text, visible text
       preserved for sighted users, +1 widget test asserts the merged label +
       visible text, overview 14→15;
+      **PowerView card header merges the "Power control" subtitle into the
+      header node done 2026-10-25 — the merged header previously announced
+      `<name>, power <state>` with the `Power control` subtitle below it as a
+      bare detached Text (the same list-header class the KVM header merged
+      title+subtitle for); the whole card header (display name + PowerBadge +
+      subtitle) now announces as ONE node `<name>, power <state>, Power
+      control`; visible texts preserved for sighted users; +1 widget test
+      asserts the merged label incl. the subtitle + visible text preserved +
+      the bare "Power control" node no longer announces separately;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

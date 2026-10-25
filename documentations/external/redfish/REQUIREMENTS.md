@@ -490,7 +490,7 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 75 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 78 tests: service root + BFS discovery
      + discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -783,15 +783,28 @@ client-relevant families.
     `UpdateServiceInfo.multipartHttpPushUri` is null and the #008/#020 upload
     flow must pick the single-push URI when that is all the service
     advertises.
-    **ActionInfo resource contract (pinned 2026-10-25, EMU 69→71):** the two
-    `CertificateService` actions each advertise an `@Redfish.ActionInfo` link
-    that resolves to a GET-able `#ActionInfo.v1_4_1.ActionInfo` resource —
-    `GenerateCSRActionInfo` (13 `Parameters[]` with Name/Required/DataType +
-    AllowableValues on KeyPairAlgorithm/KeyCurveId/KeyUsage),
-    `ReplaceCertificateActionInfo` (`CertificateType` AllowableValues
-    `['PEM']`) — the exact `Parameters[].AllowableValues` shape a bmcweb
-    `ResetActionInfo`-style crawl produces (#022/#016; DOCS-4/13);
-    `ResetActionInfo` itself is still absent on this fixture.
+    **ActionInfo resource contract (pinned 2026-10-25, EMU 69→71 then
+    75→78):** the two `CertificateService` actions each advertise an
+    `@Redfish.ActionInfo` link that resolves to a GET-able
+    `#ActionInfo.v1_4_1.ActionInfo` resource — `GenerateCSRActionInfo` (13
+    `Parameters[]` with Name/Required/DataType + AllowableValues on
+    KeyPairAlgorithm/KeyCurveId/KeyUsage), `ReplaceCertificateActionInfo`
+    (`CertificateType` AllowableValues `['PEM']`) — the exact
+    `Parameters[].AllowableValues` shape a bmcweb `ResetActionInfo`-style
+    crawl produces (#022/#016; DOCS-4/13). The EMU 75→78 run closed the
+    remaining ActionInfo families on the fixture: `EventService.
+    SubmitTestEventActionInfo` (9 `Parameters[]`, `MessageId` the one
+    REQUIRED parameter, `EventType` AllowableValues
+    [StatusChange/ResourceUpdated/ResourceAdded/ResourceRemoved/Alert/Other],
+    `MessageArgs` StringArray, `EventGroupId` Number — the #019 test-event
+    surface) and the `#Certificate.Rekey` `RekeyActionInfo` contract on all
+    three certificate stores the `CertificateLocations` pin lists
+    (`Managers/BMC/NetworkProtocol/HTTPS/Certificates/1`,
+    `UpdateService/ClientCertificates/1`,
+    `AccountService/OutboundConnections/1/Certificates/1` —
+    `KeyPairAlgorithm` REQUIRED with AllowableValues TPM_ALG_RSA/TPM_ALG_ECDSA,
+    `KeyBitLength` optional Number, `KeyCurveId` AllowableValues with the three
+    NIST curves). `ResetActionInfo` itself is still absent on this fixture.
     **Last service-root branches (#015/#026/#022, pinned 2026-10-25, EMU
     71→75):** `CertificateService.CertificateLocations`
     (`#CertificateLocations.v1_0_3`) links the three certificate stores;

@@ -4425,3 +4425,79 @@ Append-only run log for the `redfish-automation` scheduler job.
   `ba97fac..650ef31  main -> main` — the DOCS auto commit (650ef31) pushed.
   `git rev-list --count origin/main..HEAD` = 0 (fully synced), working tree
   clean. Queued local commits ahead of origin/main: **0**.
+
+## 2026-10-25 13:10 UTC — EMULATOR (last un-pinned ActionInfo families, EMU 75→78) + UI-2 PowerView header subtitle
+
+- **Baseline:** analyze 0; tests 363 passed / 1 skipped; starting commit a846990
+  (origin/main fully synced, 0 queued local commits); issues validate OK;
+  working tree clean; no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR per alternation (last primary: DOCS 08:06 — EMULATOR
+  is due). All service-root branches were already pinned (EMU 71→75) and the
+  corpus-invariant crawl *visits* every `@Redfish.ActionInfo` link, but the
+  suite's ActionInfo-resource group pinned only the two CertificateService
+  resources. This run closed the remaining **ActionInfo families on the
+  fixture** (EMU 75→78):
+  1. **`EventService.SubmitTestEventActionInfo`** — the recurring #022/#016
+     "crawl the ActionInfo *resource*" contract applied to the #019/DOCS-7
+     test-event action: the action advertises `@Redfish.ActionInfo` that
+     resolves to `#ActionInfo.v1_4_1.ActionInfo` with 9 `Parameters[]`,
+     `MessageId` the one REQUIRED parameter, `EventType` AllowableValues
+     [StatusChange/ResourceUpdated/ResourceAdded/ResourceRemoved/Alert/Other],
+     `MessageArgs` DataType StringArray, `EventGroupId` DataType Number.
+  2. **`#Certificate.Rekey` `RekeyActionInfo`** on the manager HTTPS
+     certificate — a FOURTH ActionInfo family: `KeyPairAlgorithm` REQUIRED
+     + AllowableValues (TPM_ALG_RSA/TPM_ALG_ECDSA), `KeyBitLength` optional
+     Number, `KeyCurveId` AllowableValues (3 NIST curves).
+  3. **Consistency across the other two certificate stores** the
+     `CertificateLocations` pin (EMU 75) lists —
+     `UpdateService/ClientCertificates/1` +
+     `AccountService/OutboundConnections/1/Certificates/1` — the SAME
+     RekeyActionInfo contract (3 Parameters, same shape) is verified on every
+     store, so a #022/#016-style crawler can rely on the identical
+     Parameters/AllowableValues shape everywhere.
+  `ResetActionInfo` itself is still absent on this fixture (the OpenBMC
+  allow-list-source crawl stays a code task #022/#016). Suite 75 → **78/78**
+  passed live on pinned `23d21f9a`; trap cleanup verified, port closed.
+- **Docs:** REQUIREMENTS.md "Test platforms" count 75 → 78 + the ActionInfo
+  trace paragraph extended with the EMU 75→78 pins (SubmitTestEvent +
+  Certificate.Rekey incl. the three-store consistency). No new corpus
+  downloads (corpus mirror queue stays EMPTY).
+- **Emulator:** 78/78 green on pinned `23d21f9a` (verified 13:09 UTC);
+  server stopped after the run; no leftover process.
+- **Code/tests:** no production lib change from the emulator stream.
+  `test_integration/emulator/emulator_suite_test.dart` +3 tests (184 lines).
+  UI-2 increment below touched `lib/features/power/views/power_view.dart` +
+  its test.
+- **UI:** one small tested UI-2 increment — **PowerView card header now
+  announces as ONE node incl. the "Power control" subtitle**. The merged
+  header previously announced `<name>, power <state>` while the
+  `Power control` subtitle rendered below it as a bare detached `Text` (the
+  same list-header class the KVM header merged earlier); the whole card
+  header (display name + PowerBadge + subtitle) now wraps in a Column inside
+  the established `Semantics(container + excludeSemantics)` node and
+  announces `<name>, power <state>, Power control` — one self-describing
+  announcement, visible texts preserved for sighted users. The existing
+  header test extended to assert the merged label incl. subtitle + visible
+  text preserved + `bySemanticsLabel('Power control')` findsNothing (no
+  double-announce). No new dependencies; no layout change (Column wrapper
+  keeps the exact dimensions), so the 320/800/1300 no-overflow tests are
+  unaffected (PowerView card is a single-column Card stack).
+- **Verification:** analyze 0; tests **363 passed / 1 skipped** (header test
+  extended in place, count unchanged); emulator 78/78; issues validate OK;
+  `git diff --check` clean; secret scan: Dart code + JSON-prose docs only, no
+  credentials (the `key`/`certificate`/`token` hits are Redfish protocol
+  prose — RekeyActionInfo/KeyPairAlgorithm resource names, SHA-256 checksums);
+  `git diff --stat` 5 files: FUTUREWORK.md, REQUIREMENTS.md, power_view.dart,
+  power_view_test.dart, emulator_suite_test.dart. `dart format` reflowed the
+  emulator suite only (my new tests needed format; 114 files scanned).
+- **Commit:** (pending this run) —
+  `auto: EMULATOR — last ActionInfo families pinned (SubmitTestEvent +
+  Certificate.Rekey x3 stores, EMU 75→78) + UI-2 PowerView header subtitle
+  merged (run 2026-10-25 13:10)`.
+- **Next:** 1) DOCS per alternation — corpus mirror queue EMPTY and verified;
+   cheap candidates: anchor freshness re-verification (bmcweb `63a18f4`,
+   mockup `23d21f9a`, DSP0266 1.25.0, schema index byte-compare), or a
+   REQUIREMENTS.md housekeeping pass; 2) P1 #015 AuthManager — wire
+   `Session.expiryFromService` into login, re-auth on `isExpired`,
+   token/location from create RESPONSE HEADERS only; 3) keep pushing every
+   run (credentials verified; 0 queued commits).

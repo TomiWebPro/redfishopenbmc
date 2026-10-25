@@ -3807,3 +3807,63 @@
 - none opened/closed this run. DOCS corpus verified current (no row status
   change; "Last audited" header advanced); UI-2 advanced (OverviewView is now
   fully merged-card-body — every card body in the view announces as one node).
+
+## 2026-10-25 — agent:redfish-automation — EMULATOR last ActionInfo families (EMU 75→78) + UI-2 PowerView header subtitle
+
+**Done:**
+- EMULATOR primary per alternation (last primary: DOCS 08:06). All
+  service-root branches were already pinned (EMU 71→75) and the
+  corpus-invariant crawl *visits* every `@Redfish.ActionInfo` link, but the
+  ActionInfo-resource group pinned only CertificateService. Closed the
+  remaining ActionInfo families on the fixture (75 → **78/78** live on pinned
+  `23d21f9a`):
+  1. **`EventService.SubmitTestEventActionInfo`** — the #022/#016
+     ActionInfo-*resource* crawl contract on the #019/DOCS-7 test-event
+     action: resolves to `#ActionInfo.v1_4_1` with 9 `Parameters[]`,
+     `MessageId` REQUIRED, `EventType` 6-value AllowableValues, MessageArgs
+     StringArray, EventGroupId Number.
+  2. **`#Certificate.Rekey` `RekeyActionInfo`** (4th ActionInfo family) on
+     the manager HTTPS certificate — KeyPairAlgorithm REQUIRED +
+     AllowableValues, KeyBitLength Number, KeyCurveId 3-curve list.
+  3. **Same contract verified across `UpdateService/ClientCertificates/1` +
+     `AccountService/OutboundConnections/1/Certificates/1`** — the shape a
+     #022/#016 crawler can rely on at every certificate store the
+     CertificateLocations pin lists.
+  `ResetActionInfo` itself still absent on this fixture → the OpenBMC
+  allow-list-source crawl stays a code task (#022/#016).
+- UI-2 increment: **PowerView card header now one merged node incl. the
+  "Power control" subtitle** — the previously bare detached `Text` under the
+  merged header now lives inside the `Semantics(container + excludeSemantics)`
+  Column and announces `<name>, power <state>, Power control`; visible texts
+  preserved; header test extended (merged label incl. subtitle + no
+  double-announce); 363 passed / 1 skipped (count unchanged — test extended
+  in place).
+
+**Decisions:**
+- EMULATOR per alternation; took the "remaining ActionInfo families" candidate
+  because (a) it is the explicit "Next" from the 07:13/08:06 runs and the last
+  recurring un-pinned note, (b) it is fixture-true, 100% read-only (no action
+  POSTs), and (c) it closes the #022/#016 "crawl the ActionInfo resource"
+  surface — every ActionInfo resource this fixture serves is now pinned live
+  (CertificateService x2, SubmitTestEvent, Rekey x3).
+- UI increment: the PowerView "Power control" subtitle was the genuine next
+  "bare Text under a merged header" class (the KVM header precedent). Did not
+  rush the open-ended focus-order hunt.
+- No new dependencies, no TLS change, no emulator dependency in plain
+  `flutter test` (suite lives in `test_integration/`), no production behaviour
+  change beyond the semantics wrapper.
+
+**Next:**
+- DOCS per alternation: corpus mirror queue EMPTY; cheap candidate — anchor
+  freshness re-verification (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
+  1.25.0, schema index byte-compare), or a REQUIREMENTS.md housekeeping pass.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- Keep pushing every run (credentials verified; 0 queued).
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 75 → 78; #022/#016 advanced (the ActionInfo
+  *resource* crawl shape is now pinned on EVERY ActionInfo resource the fixture
+  serves — SubmitTestEvent + Certificate.Rekey with cross-store consistency);
+  #019 advanced (the DOCS-7 test-event action's parameter contract is now
+  pinned); UI-2 advanced (PowerView header fully merged).
