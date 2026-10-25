@@ -7,38 +7,42 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (DOCS run — **EMU 71→75 branch-pinned
-  families mirrored (DOCS-30)**: the seven certificate/key/component-integrity
-  families the corpus-invariant crawl visits had NO schema in the external
-  corpus — `CertificateService` (v1_0_4 served + v1_2_2 newest; the
-  GenerateCSR/ReplaceCertificate action targets behind the EMU 71 ActionInfo
-  pins), `CertificateLocations` (v1_0_3 + v1_0_4; the three-certificate-store
-  `Links.Certificates` pin list), `Certificate` (v1_8_1 + v1_11_0; `v1_11_0`
-  adds `Password`/`Status` — a #015/#026 never-read-back note),
-  `KeyService` (v1_0_0 + v1_0_1), `KeyPolicy` (v1_0_0 + v1_0_1; the #022-style
-  NVMeoF allow-list surface), `Key` (v1_4_0 + v1_4_1; NVMeoFSecrets members —
-  collection-metadata-only, never `KeyString`), `ComponentIntegrity`
-  (v1_2_2 + v1_5_0; SPDM/TPM/USB member shapes) + the four collection types —
-  25 files / 446,257 bytes, inside DOCS-6; delta audit additive-only → no
-  client code change; all seven families stay NOT client-mapped → no fixture
-  duty; every `@odata.type` the pinned mockup publishes now has a served
-  version in the external corpus; corpus mirror queue **EMPTY**)
-- **Current focus:** **DOCS (2026-10-25)** — EMU 71→75 branch-pinned families
-  mirrored (DOCS-30): all seven certificate/key/component-integrity families
-  now have served+newest schema pairs + collection types in the external
-  corpus (446,257 B, inside DOCS-6); corpus mirror queue **EMPTY**; next per
-  alternation: EMULATOR (cheap candidates: re-run the corpus-invariant
-  published-types crawl on the pinned `23d21f9a`, or pin any remaining
-  un-pinned surface — all service-root branches are pinned; the remaining
-  ActionInfo/`ResetActionInfo` crawl is code work #022/#016), then P1 #015
-  (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the
-  discovered SessionService body into login + re-auth on `isExpired`; #016:
-  the PATCH transport + If-Match boundary are pinned on all live seams
-  (Boot/IndicatorLED, Control SetPoint, Bios/Settings, Manager.Reset),
-  remaining is the actual If-Match/`@odata.etag` wiring in a Boot/IndicatorLED
-  PATCH flow + unit tests for the 412 path; #022/#016: the ActionInfo
-  *resource* crawl on OpenBMC is now shape-pinned on every fixture ActionInfo
-  (EMU 69→78) — the remaining piece is the actual
+- **Last updated:** 2026-10-25 (EMULATOR run — **corpus-invariant crawl now
+  covers ALL published @odata.types; 17-family corpus gap closed (DOCS-31)**:
+  the live published-types crawl previously asserted the fixture invariant
+  only for **client-mapped** families — it now ALSO asserts every versioned
+  `@odata.type` the pinned mockup publishes has a served-version schema in
+  the external corpus mirror. The extension immediately exposed that
+  DOCS-30's "corpus mirror queue EMPTY" was only true for client-mapped +
+  EMU-2-pinned families: **17 published families had NO schema at all** in
+  `documentations/external/redfish/schemas/v1/` (AccelerationFunction,
+  Assembly, ExternalAccountProvider, GraphicsController, HostInterface,
+  Memory, MessageRegistryFile, OutboundConnection, Port, Processor,
+  ProcessorMetrics, SecurityPolicy, SerialInterface, Signature, SimpleStorage,
+  TrustedComponent, USBController). Closed with DOCS-31 — 65 files /
+  1,403,838 bytes (17 aggregators + 17 served + 17 newest + 14 collection
+  types, inside DOCS-6); property-delta audit **additive-only** across all 17
+  (Memory +4 / Port +13 / Processor +4 / ProcessorMetrics +1 / SecurityPolicy
+  +1 / SerialInterface +1 / TrustedComponent +1, eight no-ops) — **no client
+  code change**; all 17 stay NOT client-mapped (no fixture duty, corpus-
+  invariant family list unchanged); the extended invariant is a runnable
+  emulator check (78-test suite green on `23d21f9a`); anchors re-verified
+  (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index 200);
+  **corpus mirror queue EMPTY for every published type**)
+- **Current focus:** **EMULATOR (2026-10-25)** — corpus-invariant crawl
+  extended to ALL published types + the 17-family gap closed (DOCS-31);
+  corpus mirror queue **EMPTY for every published type** and the invariant is
+  now a runnable check; next per alternation: DOCS (cheap candidates: anchor
+  freshness re-verification — bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
+  1.25.0, schema index byte-compare — or a REQUIREMENTS.md housekeeping pass),
+  then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are
+  ready, wire the discovered SessionService body into login + re-auth on
+  `isExpired`; #016: the PATCH transport + If-Match boundary are pinned on all
+  live seams (Boot/IndicatorLED, Control SetPoint, Bios/Settings,
+  Manager.Reset), remaining is the actual If-Match/`@odata.etag` wiring in a
+  Boot/IndicatorLED PATCH flow + unit tests for the 412 path; #022/#016: the
+  ActionInfo *resource* crawl on OpenBMC is now shape-pinned on every fixture
+  ActionInfo (EMU 69→78) — the remaining piece is the actual
   `ResetActionInfo`-resource fetch + `Parameters[].AllowableValues` wiring in
   FeatureRules + the Control SetPoint AllowableMin/Max pre-validation rule;
   #018: query-capability surface + live `$expand` contract pinned — remaining:
@@ -548,6 +552,37 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       publishes now has a served-version schema in the external corpus;
       anchors re-verified: bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
       1.25.0, schema index 200; **the corpus mirror queue is now EMPTY**)
+
+- [x] **DOCS-31** Close the corpus gap the extended invariant exposed: the
+      corpus-invariant **live crawl now asserts EVERY published versioned
+      `@odata.type` has a served-version schema in the external corpus** — not
+      only the client-mapped families (the DOCS-19/20/21 fixture invariant
+      stays, and every type now also checks
+      `documentations/external/redfish/schemas/v1/`). The extension
+      immediately proved DOCS-30's "corpus mirror queue EMPTY" was
+      **overstated**: 17 families the pinned mockup publishes had NO schema at
+      all in the external corpus — `AccelerationFunction` (served v1_0_4 +
+      newest v1_0_5, no-op), `Assembly` (v1_5_0 + v1_6_1, no-op), `Memory`
+      (v1_19_0 + v1_24_0, +4 props), `Processor` (v1_19_0 + v1_24_0, +4),
+      `Port` (v1_11_0 + v1_20_0, +13), `ExternalAccountProvider`
+      (v1_7_1 + v1_9_0, no-op), `GraphicsController` (v1_0_1 + v1_0_2,
+      no-op), `HostInterface` (v1_3_1 + v1_4_0, no-op),
+      `MessageRegistryFile` (v1_1_4 + v1_1_5, no-op), `OutboundConnection`
+      (v1_0_1 + v1_0_3, no-op), `ProcessorMetrics` (v1_6_3 + v1_7_1, +1),
+      `SecurityPolicy` (v1_0_1 + v1_1_0, +1), `SerialInterface`
+      (v1_2_0 + v1_3_0, +1), `Signature` (v1_0_2 + v1_0_3, no-op),
+      `SimpleStorage` (v1_3_1 + v1_3_2, no-op), `TrustedComponent`
+      (v1_3_0 + v1_5_0, +1), `USBController` (v1_0_0 + v1_0_1, no-op) —
+      mirrored the "newest + served" pair + aggregators + the 14 collection
+      types that exist (**65 files / 1,403,838 bytes, inside DOCS-6**) into
+      `documentations/external/redfish/schemas/v1/` only; all 17 stay **NOT
+      client-mapped** (no fixture duty, corpus-invariant family list
+      unchanged); property-delta audit **additive-only** across all 17 — **no
+      client code change**; the extended invariant is a runnable emulator
+      check (78-test suite green on `23d21f9a`); REQUIREMENTS.md header +
+      DOCS-31 trace table cite the real mirror files; anchors re-verified:
+      bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index 200;
+      **corpus mirror queue EMPTY for every published type**)
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across

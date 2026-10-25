@@ -2487,6 +2487,7 @@ void main() {
               'crawl reaching far fewer suggests the link walk is broken');
 
       final List<String> missing = <String>[];
+      final List<String> missingExternal = <String>[];
       for (final String type in publishedTypes) {
         // Only resource types carry a version (collections are
         // `#XxxCollection.XxxCollection` with no version — navigation-level,
@@ -2495,18 +2496,36 @@ void main() {
             RegExp(r'^#([^.]+)\.(v\d+_\d+_\d+)\.').firstMatch(type);
         if (m == null) continue;
         final String family = m.group(1)!;
-        if (!clientMappedFamilies.contains(family)) continue;
         final String version = m.group(2)!;
-        final File schema =
-            File('test/fixtures/redfish/schemas/$family.$version.json');
-        if (!schema.existsSync()) {
-          missing.add('$type (wanted $family.$version.json)');
+        // Client-mapped families must have their served-version schema in the
+        // test fixture (the DOCS-19/20/21 invariant).
+        if (clientMappedFamilies.contains(family)) {
+          final File schema =
+              File('test/fixtures/redfish/schemas/$family.$version.json');
+          if (!schema.existsSync()) {
+            missing.add('$type (wanted $family.$version.json)');
+          }
+        }
+        // EVERY published versioned type — client-mapped or not — must have
+        // its served-version schema in the external corpus mirror (the
+        // DOCS-31 invariant: the mirror tracks every @odata.type the pinned
+        // mockup publishes, not only the client-mapped families).
+        final File external =
+            File('documentations/external/redfish/schemas/v1/'
+                '$family.$version.json');
+        if (!external.existsSync()) {
+          missingExternal.add('$type (wanted $family.$version.json)');
         }
       }
 
       expect(missing, isEmpty,
           reason: 'published client-mapped types without a served-version '
               'schema in the fixture: $missing');
+
+      expect(missingExternal, isEmpty,
+          reason: 'published types without a served-version schema in the '
+              'external corpus mirror (documentations/external/redfish/'
+              'schemas/v1/): $missingExternal');
     });
 
     test(

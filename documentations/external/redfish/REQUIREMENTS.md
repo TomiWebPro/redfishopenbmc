@@ -6,21 +6,28 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (DOCS run — **corpus mirror of the EMU 71→75
-branch-pinned families**: CertificateService / CertificateLocations /
-Certificate / KeyService / KeyPolicy / Key / ComponentIntegrity — 25 files,
-446,257 bytes, DOCS-30): closed the last corpus gap the EMU 71→75 branch pins
-exposed; every `@odata.type` the fixture publishes for these families now has a
-served+newest schema pair in the external corpus; delta audit **additive-only**
-(CertificateService.v1_2_2 adds readonly certificate *enrollment* surface,
-Certificate.v1_11_0 adds `Password`/`Status` — the `Password` is a #015/#026
-never-read-back note — the other five newest versions are property no-ops);
-**no client code change**; all families stay NOT client-mapped — no fixture
-duty, corpus-invariant unchanged; anchors re-verified (bmcweb `63a18f4`,
-mockup `23d21f9a`, DSP0266 1.25.0, schema index 200); **corpus mirror queue
-EMPTY**.
-Prior: 2026-10-25 (DOCS run — **anchors re-verified, no corpus
-refresh; "Test platforms" description reconciled with the 75-test suite**):
+Last audited: 2026-10-25 (EMULATOR run — **corpus-invariant crawl extended to
+ALL published @odata.types + the 17-family corpus gap closed, DOCS-31**): the
+live published-types crawl now asserts **every** versioned `@odata.type` the
+pinned mockup publishes has a served-version schema in the external corpus
+mirror — not only the client-mapped families (the DOCS-19/20/21 fixture
+invariant stays). The extension immediately exposed a **real gap**: 17
+families the mockup publishes had **no schema at all** in
+`documentations/external/redfish/schemas/v1/` (AccelerationFunction, Assembly,
+ExternalAccountProvider, GraphicsController, HostInterface, Memory,
+MessageRegistryFile, OutboundConnection, Port, Processor, ProcessorMetrics,
+SecurityPolicy, SerialInterface, Signature, SimpleStorage, TrustedComponent,
+USBController) — DOCS-30's "corpus mirror queue EMPTY" was only true for the
+client-mapped + EMU-2-pinned families. Closed with DOCS-31: 65 files
+(1,403,838 bytes total, inside DOCS-6) = 17 aggregators + 17 mockup-served +
+17 newest + 14 collection types; property-delta audit **additive-only** across
+all 17 (Memory +4 / Port +13 / Processor +4 / ProcessorMetrics +1 /
+SecurityPolicy +1 / SerialInterface +1 / TrustedComponent +1, eight no-ops) —
+**no client code change**, all 17 stay NOT client-mapped (no fixture duty);
+anchors re-verified (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0,
+schema index 200); the corpus mirror queue is now **EMPTY for every published
+type** and the invariant is runnable.
+Prior: 2026-10-25 (DOCS run — **corpus mirror of the EMU 71→75
 re-verified every upstream anchor — bmcweb `63a18f4` (still HEAD via GitHub
 API), mockup `23d21f9a` (still HEAD of `main` via GitHub API), DSP0266 1.25.0
 (200 on the working `www.dmtf.org` URL, byte-identical SHA-256 `385ee6d0…`),
@@ -1681,3 +1688,51 @@ same run (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index
 200). New bytes this run: 446,257 total — inside the DOCS-6 budget. **The
 corpus mirror queue is now EMPTY** — every EMU-2-pinned family has a schema in
 the external corpus.
+
+## DOCS-31 — corpus-invariant crawl extended to ALL published types + 17-family corpus gap closed (2026-10-25)
+
+The corpus-invariant live crawl (EMU-2 group, `test_integration/emulator/
+emulator_suite_test.dart`) previously asserted **only** the DOCS-19/20/21
+fixture invariant for **client-mapped** families. This run extended it to also
+assert that **every** published versioned `@odata.type` — client-mapped or
+not — has a served-version schema in the **external corpus** mirror
+(`documentations/external/redfish/schemas/v1/`). The extended crawl (101
+published types reached) immediately exposed a real provenance gap: **17
+families the pinned mockup publishes had NO schema at all** in the external
+corpus, despite DOCS-30's "corpus mirror queue EMPTY" note (that claim was
+only true for the client-mapped + EMU-2-pinned families).
+
+Closed with DOCS-31 — the "newest + served" pair precedent
+(DOCS-11/12/13/19/20/21/23/24/25/26/28/30), external corpus only (all 17 stay
+**NOT client-mapped** → no fixture duty, corpus-invariant family list
+unchanged):
+
+| Family | Served (mockup) | Newest | Collection | Client impact |
+|---|---|---|---|---|
+| `AccelerationFunction` | `v1_0_4` | `v1_0_5` | `AccelerationFunctionCollection.json` | none — v1_0_5 **property no-op** (17→17) |
+| `Assembly` | `v1_5_0` | `v1_6_1` | — (no collection type) | none — v1_6_1 **property no-op** (11→11) |
+| `ExternalAccountProvider` | `v1_7_1` | `v1_9_0` | `ExternalAccountProviderCollection.json` | none — v1_9_0 **property no-op** (22→22) |
+| `GraphicsController` | `v1_0_1` | `v1_0_2` | `GraphicsControllerCollection.json` | none — v1_0_2 **property no-op** (22→22) |
+| `HostInterface` | `v1_3_1` | `v1_4_0` | `HostInterfaceCollection.json` | none — v1_4_0 **property no-op** (24→24) |
+| `Memory` | `v1_19_0` | `v1_24_0` | `MemoryCollection.json` | none — v1_24_0 **adds only** `CacheLevel`/`PowerManagementICManufacturerID`/`PowerManagementICRevisionID`/`ProductionDate` (78→82) |
+| `MessageRegistryFile` | `v1_1_4` | `v1_1_5` | `MessageRegistryFileCollection.json` | none — v1_1_5 **property no-op** (12→12) |
+| `OutboundConnection` | `v1_0_1` | `v1_0_3` | `OutboundConnectionCollection.json` | none — v1_0_3 **property no-op** (20→20) |
+| `Port` | `v1_11_0` | `v1_20_0` | `PortCollection.json` | none — v1_20_0 **adds only** `AssociatedPhysicalPort`/`ConfiguredSpeedGbps`/`ConfiguredWidth`/`FirstLane`/`HostDevice`/`IsAggregation`/`IsSplit`/`LinkPartnerExpected`/`LinkPartnerReceived`/`LinkPartnerTransmit`/… (43→56) |
+| `Processor` | `v1_19_0` | `v1_24_0` | `ProcessorCollection.json` | none — v1_24_0 **adds only** `CacheMemory`/`HardwareSecurityVersion`/`TotalEnabledThreads`/`UALink` (63→67) |
+| `ProcessorMetrics` | `v1_6_3` | `v1_7_1` | — (no collection type) | none — v1_7_1 **adds only** `LifetimeStartDateTime` (31→32) |
+| `SecurityPolicy` | `v1_0_1` | `v1_1_0` | — (no collection type) | none — v1_1_0 **adds only** `AllowDeny` (13→14) |
+| `SerialInterface` | `v1_2_0` | `v1_3_0` | `SerialInterfaceCollection.json` | none — v1_3_0 **adds only** `Modbus` (19→20) |
+| `Signature` | `v1_0_2` | `v1_0_3` | `SignatureCollection.json` | none — v1_0_3 **property no-op** (13→13) |
+| `SimpleStorage` | `v1_3_1` | `v1_3_2` | `SimpleStorageCollection.json` | none — v1_3_2 **property no-op** (13→13) |
+| `TrustedComponent` | `v1_3_0` | `v1_5_0` | `TrustedComponentCollection.json` | none — v1_5_0 **adds only** `Location` (21→22) |
+| `USBController` | `v1_0_0` | `v1_0_1` | `USBControllerCollection.json` | none — v1_0_1 **property no-op** (18→18) |
+
+All 65 files fetched 200 from `https://redfish.dmtf.org/schemas/v1/`
+(2026-10-25 12:15 UTC); every file validated as JSON; SHA-256s + byte sizes
+recorded in the manifest. New bytes this run: 1,403,838 total — inside the
+DOCS-6 budget. The served versions are the exact `@odata.type` values the
+pinned mockup publishes (cross-checked live by the crawl itself). All upstream
+anchors re-verified the same run (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
+1.25.0, schema index 200). **The corpus mirror queue is now EMPTY for every
+published type** — and the invariant is a runnable emulator check, so a future
+DOCS run cannot silently overstate it again.
