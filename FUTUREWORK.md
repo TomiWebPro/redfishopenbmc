@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (DOCS run — **anchors re-verified live, no corpus refresh (mirror queue EMPTY)** — bmcweb `63a18f4` + mockup `23d21f9a` still HEAD, DSP0266 1.25.0 + schema index byte-identical, 0 bytes downloaded; no code gap surfaced by the audit; UI-2 focus-order pin landed — `SystemProfileForm.autofocusFirstField` (Add-system dialog autofocuses the first field, WAI-ARIA dialog pattern) + 2 widget tests pinning dialog focus entry and the full keyboard Tab order Name→Host→Port→TLS→auth dropdown→Username→Password→Remember→self-signed→Add system; unit suite 390→**392 passed / 1 skipped**)
-- **Current focus:** **DOCS (2026-10-25)** — anchors re-verified (corpus mirror queue still EMPTY); UI-2 focus-order pin landed (autofocusFirstField + Tab-order tests). Next per alternation: **EMULATOR** (re-run the 80/80 suite cheaply and/or continue the #022/#016 control-surface work), then the remaining #022/#016 pieces — the **Boot/IndicatorLED PATCH flow in a service + UI** (#016 remaining piece; the transport, If-Match/etag wiring (a), and the SetPoint pre-validation corollary (d) are all in place) and task-polling/races (#022 opening items: poll the 202 task, serialise polling per action, NMI terminal state, error dedupe, BMC-id fallback — untouched so far); then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — the open-ended focus-order/dialogs-tables hunt continues (this run: the focus-order pin — dialog entry + Tab order; remaining: dialogs/tables focus audit, remaining non-card labels)
+- **Last updated:** 2026-10-25 (EMULATOR run — **#016 COMPLETE: the Boot/IndicatorLED PATCH flow landed in a service + UI** — `SystemSettingsService.setIndicatorLed`/`setBootOverride` (schema-enum + annotation allow-list pre-validation, If-Match via `@odata.etag`, never-guess local refusal) + Overview-view LED ChoiceChips + capability-gated Boot-override card; unit suite 390→**426 passed / 1 skipped**, emulator 80→**82/82**; **#016 closed**)
+- **Current focus:** **EMULATOR (2026-10-25)** — #016 done end-to-end (transport → If-Match → SetPoint corollary → Boot/IndicatorLED service+UI, closed) and EMU suite re-run 82/82 live. Next per alternation: **DOCS** (corpus mirror queue still EMPTY; cheap anchor re-verify), then the remaining **#022** opening items — task polling/races, NMI terminal state, error dedupe, BMC-id fallback (untouched so far); then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — the focus-order/dialogs-tables hunt continues (done so far: dialog focus entry + Tab order; remaining: other dialogs/tables focus audit + any remaining non-card labels)
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -950,7 +950,28 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       (run 2026-10-22 — closed with evidence: `~/flutter/bin/flutter` on PATH,
       analyze 0 / tests 242 green every run, no orphaned flutter_tester from
       this repo; DEVELOPMENT.md Toolchain documents the setup)
-- [ ] **#016** PATCH / `If-Match` / `@odata.etag` support.
+- [x] **#016** PATCH / `If-Match` / `@odata.etag` support.
+      (**COMPLETE 2026-10-25 EMU run — closed.** The full chain landed:
+      the DSP0266 §6.5.2 `patchJson` partial-update transport (2026-10-24,
+      EMU 57→59 first live pin); the If-Match/`@odata.etag` wiring (2026-10-25
+      DOCS run — `patchJson(..., etag:)` quotes per RFC7232, `ODataResource.
+      etag`, `RedfishException.isPreconditionFailed` 412 classification); the
+      `ResetActionInfo` ActionInfo-*resource* crawl (c) + the Control SetPoint
+      pre-validation corollary (d) (2026-10-25 EMU runs; `ControlResource.
+      validateSetPoint`, fixture + corpus-invariant list); and finally **(b)
+      the Boot/IndicatorLED PATCH flow in a service + UI** — `SystemSettings
+      Service.setIndicatorLed` (schema-enum pre-validation `Lit`/`Blinking`/
+      `Off`, `Unknown` refused) + `setBootOverride` (annotation allow-list +
+      `Once`/`Continuous`/`Disabled` pre-validation, never-guess refusal when no
+      allow-list advertised) + `BootSettings` model + Controller/providers +
+      Overview-view LED ChoiceChips + Boot-override card (capability-gated,
+      320/800/1300 no-overflow). +34 unit/widget tests (392 → 426 passed /
+      1 skipped); +2 live emulator pins (80 → 82/82: service-level round-trips
+      persist through the mockup, unlisted target rejected before the wire).
+      REQUIREMENTS.md PATCH row flipped **OK**. The settings-object ETag
+      `9234ac83b9700123cc32` remains the only pinable concurrency token on the
+      DMTF fixture, so 412 enforcement stays unit-level (documented).)
+      (prior progress preserved below:)
       (**PATCH transport landed 2026-10-24 18:xx + live pin**: `RedfishClient.
       patchJson(path, body:, headers:)` — the DSP0266 §6.5.2 partial-update
       transport (204/200 normalized, non-2xx → `RedfishException`) — 3 unit
@@ -1429,6 +1450,16 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       Password → Remember password → Allow self-signed → Add system button —
       a regression (autofocus removed or a field inserted out of visual
       order) now fails loudly, systems 31→32;
+      **#016 writable IndicatorLED setter + Boot-override card done 2026-10-25
+      — the Overview view's "Indicator LED" card gained the three
+      schema-writable ChoiceChips (Lit/Blinking/Off; capability-gated on a
+      known state; busy spinner + merged inline error) and a capability-gated
+      Boot-override card (dropdown of the advertised
+      `BootSourceOverrideTarget@Redfish.AllowableValues` + Once/Continuous +
+      Apply; hidden entirely when no allow-list is advertised — never a
+      placeholder); the LED state text + chips both announce (the selected
+      chip is its own control node); +8 widget tests incl. 320/800/1300
+      no-overflow (service-level assertions live in settings_service_test.dart);
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

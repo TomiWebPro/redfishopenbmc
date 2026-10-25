@@ -4196,3 +4196,77 @@
 
 **Issues touched:**
 - none opened/closed/advanced this run (UI increment only).
+
+## 2026-10-25 — agent:redfish-automation — EMULATOR: #016 COMPLETE — Boot/IndicatorLED PATCH flow in a service + UI
+
+**Done:**
+- EMULATOR primary per alternation (last primary: DOCS 18:42). Landed the
+  final #016 piece and closed the issue: **the Boot/IndicatorLED PATCH flow
+  in a service + UI** — the first production `patchJson` consumer.
+  `SystemSettingsService` (`lib/features/overview/settings_service.dart`):
+  `setIndicatorLed` pre-validates against the served `ComputerSystem.v1_22_0`
+  `IndicatorLED` schema enum (`Lit`/`Blinking`/`Off`; deprecated `Unknown`
+  refused locally), `setBootOverride` pre-validates the target against the
+  advertised `BootSourceOverrideTarget@Redfish.AllowableValues` annotation +
+  the enabled-state against the schema enum (`Once`/`Continuous`/`Disabled`,
+  default `Once`); both carry the resource `@odata.etag` as `If-Match` when
+  present; a BMC with no boot-target allow-list refuses the mutation locally
+  (never guess). `BootSettings` model + `SystemSettingsController` + providers
+  (Power pattern) + Overview-view UI: LED ChoiceChips (capability-gated) +
+  Boot-override card (dropdown of advertised targets + Once/Continuous +
+  Apply, hidden when no allow-list).
+- **Tests:** +34 (boot_settings 9, settings_service 12, settings_controller 5,
+  system_settings_widget 8 incl. 320/800/1300 no-overflow) — unit suite
+  392 → **426 passed / 1 skipped**. The service tests use a new **method-aware
+  mock matcher** (the http_mock_adapter path-only `_PathMatcher` conflated GET
+  and PATCH rules on the same ComputerSystem path — the handler picks the last
+  matching rule — so the matcher now also checks HTTP method + declared
+  body/headers; never-send guards are proven by missing-mock failure).
+- **Emulator:** 80 → **82/82 green** on pinned `23d21f9a` (official harness).
+  New live group pins both service-level round-trips: `setIndicatorLed`
+  (PATCH persists, restored in `finally`) and `setBootOverride` (unlisted
+  target rejected before the wire; valid PATCH persists, restored).
+- **Docs:** REQUIREMENTS.md PATCH row flipped OK; "Last audited" + Test
+  platforms 80 → 82 updated. No corpus change (mirror queue EMPTY; anchors
+  unchanged: bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index
+  byte-identical).
+- **#016 closed** (all acceptance criteria checked, gates green) — moved
+  `issues/open/016-*` → `issues/closed/016-*`. #022 Progress Log updated
+  (boot-target allow-list pre-validation — the annotation-form rule on a new
+  surface).
+
+**Decisions:**
+- Took the final #016 piece (Boot/IndicatorLED PATCH service + UI) as the
+  EMULATOR-slot candidate — the transport, If-Match wiring, and the SetPoint
+  pre-validation corollary were all in place; this run's increment is the
+  concrete mutation feature that completes the issue.
+- Pre-validation sources per surface: `IndicatorLED` → the schema enum (the
+  fixture serves NO `IndicatorLED@Redfish.AllowableValues` annotation);
+  `BootSourceOverrideTarget` → the advertising annotation (present on the
+  fixture, 10 values). Never-guess rule: no allow-list ⇒ refuse, never send an
+  unvalidated body (the mockup applies any value).
+- If-Match stays unit-level on this fixture (the mockup ignores preconditions,
+  pinned EMU 59→60) — the service sends the resource `@odata.etag` when
+  present (the unit tests prove the header via the method-aware matcher).
+- Closed #016 in the same run per the runbook (every acceptance box checked,
+  `flutter test`/`analyze` green) — consistent with the #014/#027 close
+  precedents.
+- UI increment folded into the feature (LED setter + boot card are part of the
+  #016 service+UI piece), with 8 widget tests incl. responsive no-overflow —
+  the open-ended UI-2 dialogs/tables focus audit remains for a future run.
+
+**Next:**
+- DOCS per alternation (corpus mirror queue EMPTY; cheap anchor re-verify).
+- #022 opening items (task polling/races, NMI terminal state, error dedupe,
+  BMC-id fallback — untouched so far).
+- P1 #015 AuthManager (expiryFromService → login + re-auth; token/location
+  from create RESPONSE HEADERS only), and the UI-2 dialogs/tables focus audit.
+  Keep pushing every run.
+
+**Issues touched:**
+- #016 **closed** (Boot/IndicatorLED PATCH flow landed; acceptance criteria
+  complete; gates green).
+- #022 advanced (Progress Log: boot-target allow-list pre-validation — the
+  annotation-form rule applied to the Boot surface inside #016's service; the
+  remaining #022 items are untouched).
+- none opened this run.

@@ -4,6 +4,23 @@
 
 **Project:** Redfish Multi-System Control App (Flutter) — unified Redfish/OpenBMC control plane. Spec: `documentations/project_goal/goal.md`.
 
+## P2 closed — #016 (2026-10-25)
+
+**#016 P2 — PATCH flows: Boot (BootSourceOverrideTarget/Enabled) + IndicatorLED — CLOSED** (by
+`redfish-automation`, EMULATOR run). Added a proper PATCH service layer —
+`SystemSettingsService` (`setIndicatorLed`, `setBootOverride`, `fetchBootSettings`)
+with pre-validation: schema-enum values for IndicatorLED (Lit/Blinking/Off) and
+`@Redfish.AllowableValues` allow-list for BootSourceOverrideTarget (no allow-list ⇒
+local refuse, never guess), plus `If-Match` via `@odata.etag` when present.
+`IndicatorLed.toRedfish`/`writableValues`, tolerant `BootSettings` model
+(`BootSourceOverrideTarget@Redfish.AllowableValues`), `SystemSettingsController`,
+Riverpod providers, and `system_settings_cards.dart` UI (LED ChoiceChips +
+capability-gated Boot-override card with dropdown + Once/Continuous + Apply)
+wired into the Overview view. Results: `flutter analyze` 0, `flutter test`
+**426 passed / 1 skipped** (34 new tests: model 9, service 12, controller 5,
+widget 8 incl. 320/800/1300 overflow checks), emulator suite **82/82** (live
+service-level PATCH round-trips added). Last #016 piece delivered.
+
 ## P1 closed — #014 (2026-10-22)
 
 **#014 P1 — Fix RedfishError @Message.ExtendedInfo parsing — CLOSED** (by

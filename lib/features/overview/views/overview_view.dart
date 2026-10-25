@@ -9,6 +9,7 @@ import 'package:redfishopenbmc/features/overview/overview_provider.dart';
 import 'package:redfishopenbmc/features/overview/widgets/health_banner.dart';
 import 'package:redfishopenbmc/features/overview/widgets/info_card.dart';
 import 'package:redfishopenbmc/features/overview/widgets/skeleton_card.dart';
+import 'package:redfishopenbmc/features/overview/widgets/system_settings_cards.dart';
 import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/features/systems/widgets/status_badges.dart';
@@ -237,6 +238,7 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
         icon: Icons.lightbulb_outline,
         child: _led(context, o),
       ),
+      BootOverrideCard(systemId: widget.systemId),
     ];
   }
 
@@ -373,14 +375,23 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
     // "Indicator LED" header instead of a detached bare Text — the established
     // card-body pattern (see _memory). The visible text stays for sighted
     // users.
-    return Semantics(
-      container: true,
-      excludeSemantics: true,
-      label: text,
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Semantics(
+          container: true,
+          excludeSemantics: true,
+          label: text,
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+        // #016: writable setter — capability-gated by the service (only the
+        // schema-writable states are offered; Unknown is not). Compact inline
+        // error + busy feedback live with the control.
+        IndicatorLedControl(systemId: widget.systemId, current: o.indicatorLed),
+      ],
     );
   }
 

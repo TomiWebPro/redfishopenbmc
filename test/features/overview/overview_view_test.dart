@@ -134,9 +134,11 @@ void main() {
       expect(find.text('Temperatures'), findsOneWidget);
       expect(find.text('Indicator LED'), findsOneWidget);
       expect(find.text('SN1'), findsOneWidget);
+      // 'Lit' appears twice now: the LED-state text AND the selected "Lit"
+      // setter chip (#016 — the writable LED control under the state).
+      expect(find.text('Lit'), findsNWidgets(2));
       expect(find.text('32 GiB'), findsOneWidget);
       expect(find.text('42.0 °C'), findsOneWidget);
-      expect(find.text('Lit'), findsOneWidget);
       expect(find.text('2 processor(s)'), findsOneWidget);
       // Nothing should be flagged "not exposed" when data is present.
       expect(find.text('Not exposed by this BMC'), findsNothing);
@@ -269,14 +271,18 @@ void main() {
       await tester.pumpAndSettle();
       // The state ("Lit") previously announced as a detached text node under
       // the merged "Indicator LED" header; it now announces as ONE
-      // self-describing node carrying the value.
+      // self-describing node carrying the value. (#016 added a writable
+      // setter under the state: the "Lit" text also appears as the selected
+      // ChoiceChip label, so scope the state node to the Semantics-wrapped
+      // state text — the chip stays its own control node.)
       expect(
         find.bySemanticsLabel('Lit'),
-        findsOneWidget,
-        reason: 'the indicator LED state must announce as a single node',
+        findsNWidgets(2),
+        reason: 'one node is the merged LED-state announcement; the other is '
+            'the selected "Lit" setter chip control (#016)',
       );
-      // The visible text stays for sighted users.
-      expect(find.text('Lit'), findsOneWidget);
+      // The visible state text stays for sighted users.
+      expect(find.text('Lit'), findsNWidgets(2));
     });
 
     testWidgets(

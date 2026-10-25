@@ -28,6 +28,31 @@ enum IndicatorLed {
     }
   }
 
+  /// The Redfish `IndicatorLED` enum value this state maps to, or `null` for
+  /// [IndicatorLed.unknown] (which is not a writable PATCH value — the schema
+  /// marks `Unknown` deprecated in favor of a missing/`null` property).
+  ///
+  /// Per the served `ComputerSystem.v1_22_0` schema, the writable enum is
+  /// `Lit` / `Blinking` / `Off` (#016 PATCH flow; the client pre-validates
+  /// PATCH bodies against the schema enum before sending — the DMTF mockup
+  /// applies ANY body unvalidated, so this guard is the only enforcement).
+  String? get toRedfish {
+    switch (this) {
+      case IndicatorLed.lit:
+        return 'Lit';
+      case IndicatorLed.off:
+        return 'Off';
+      case IndicatorLed.blinking:
+        return 'Blinking';
+      case IndicatorLed.unknown:
+        return null;
+    }
+  }
+
+  /// The schema-valid writable values for a PATCH (`IndicatorLED` enum of
+  /// `ComputerSystem.v1_22_0`, excluding the deprecated `Unknown`).
+  static const List<String> writableValues = <String>['Lit', 'Blinking', 'Off'];
+
   /// Human-readable label.
   String get label {
     switch (this) {

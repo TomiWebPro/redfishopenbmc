@@ -8,8 +8,10 @@ import 'package:redfishopenbmc/features/firmware/firmware_service.dart';
 import 'package:redfishopenbmc/features/firmware/models/firmware_models.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_service.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
+import 'package:redfishopenbmc/features/overview/models/boot_settings.dart';
 import 'package:redfishopenbmc/features/overview/models/system_overview.dart';
 import 'package:redfishopenbmc/features/overview/overview_service.dart';
+import 'package:redfishopenbmc/features/overview/settings_service.dart';
 import 'package:redfishopenbmc/features/power/power_service.dart';
 import 'package:redfishopenbmc/features/sensors/models/sensor_models.dart';
 import 'package:redfishopenbmc/features/sensors/sensors_service.dart';
@@ -3556,6 +3558,100 @@ void main() {
       expect(usb['ComponentIntegrityType'], 'SPDM');
       expect(usb['ComponentIntegrityEnabled'], isFalse,
           reason: 'enabled-state must be read per member, never assumed');
+    });
+  });
+
+  group(
+      'emulator: SystemSettingsService — live Boot/IndicatorLED PATCH flow '
+      '(#016 service+UI piece)', () {
+    late AuthManager manager;
+    late RedfishClient client;
+
+    setUpAll(() async {
+      manager = AuthManager(storage: InMemoryStorage());
+      await manager.login('em-settings', emulatorProfile());
+      client = manager.clientFor('em-settings')!;
+    });
+
+    tearDownAll(() async {
+      await manager.logout('em-settings');
+    });
+
+    test(
+        'setIndicatorLed PATCHes the schema enum value live; the mockup '
+        'persists it — the service normalizes 204 (#016)', () async {
+      // The #016 service-level PATCH flow: SystemSettingsService.setIndicatorLed
+      // PATCHes `IndicatorLED` on the ComputerSystem. The mockup has no
+      // `IndicatorLED@Redfish.AllowableValues` annotation, so the client
+      // pre-validates against the schema enum (`Lit`/`Blinking`/`Off` from
+      // ComputerSystem.v1_22_0). The service's own read-back carries no
+      // resource-level @odata.etag (a documented fixture fact), so no
+      // If-Match header is sent — the etag wiring itself stays unit-level.
+      final SystemSettingsService service = SystemSettingsService(
+        client: client,
+        systemId: '437XR1138R2',
+        systemResourceUri: '/redfish/v1/Systems/437XR1138R2',
+      );
+      try {
+        final Map<String, dynamic> result =
+            await service.setIndicatorLed(IndicatorLed.blinking);
+        // 204 no-content normalizes to the placeholder map ('value' == ''),
+        // never an error.
+        expect(result['value'], '');
+        final Map<String, dynamic> after =
+            await client.getJson('/redfish/v1/Systems/437XR1138R2');
+        expect(after['IndicatorLED'], 'Blinking',
+            reason: '#016: the service-level PATCH persists on this fixture');
+      } finally {
+        // Restore the fixture value so the in-memory server state is
+        // unchanged when the suite ends.
+        await service.setIndicatorLed(IndicatorLed.off);
+      }
+    });
+
+    test(
+        'setBootOverride PATCHes target + enabled live; unlisted targets are '
+        'rejected locally before the wire (#016)', () async {
+      final SystemSettingsService service = SystemSettingsService(
+        client: client,
+        systemId: '437XR1138R2',
+        systemResourceUri: '/redfish/v1/Systems/437XR1138R2',
+      );
+
+      final BootSettings before = await service.fetchBootSettings();
+      expect(before.hasAllowableTargets, isTrue);
+      expect(before.allowableTargets, contains('Pxe'));
+      expect(before.allowableTargets, contains('Cd'));
+
+      // Negative: an unlisted target is rejected by the service's local
+      // pre-validation BEFORE any request reaches the wire — the mockup would
+      // happily PATCH it (it never validates action bodies), so this guard is
+      // the only enforcement.
+      await expectLater(
+        service.setBootOverride(target: 'NotARealTarget'),
+        throwsA(
+          isA<RedfishException>()
+              .having((RedfishException e) => e.statusCode, 'statusCode', 400),
+        ),
+      );
+
+      try {
+        final Map<String, dynamic> result =
+            await service.setBootOverride(target: 'Cd', enabled: 'Once');
+        expect(result['value'], '');
+        final Map<String, dynamic> after =
+            await client.getJson('/redfish/v1/Systems/437XR1138R2');
+        final Map<dynamic, dynamic> boot =
+            after['Boot'] as Map<dynamic, dynamic>;
+        expect(boot['BootSourceOverrideTarget'], 'Cd',
+            reason: '#016: the service-level Boot PATCH persists on this '
+                'fixture');
+        expect(boot['BootSourceOverrideEnabled'], 'Once');
+      } finally {
+        // Restore the fixture value so the in-memory server state is
+        // unchanged when the suite ends.
+        await service.setBootOverride(target: 'Pxe', enabled: 'Once');
+      }
     });
   });
 }

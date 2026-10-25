@@ -6,7 +6,29 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (DOCS run — **anchor freshness re-verification, no
+Last audited: 2026-10-25 (EMULATOR run — **the #016 Boot/IndicatorLED PATCH
+flow landed in a service + UI**): `SystemSettingsService`
+(`lib/features/overview/settings_service.dart`) is the first production
+`patchJson` consumer — `setIndicatorLed` pre-validates against the
+`ComputerSystem.v1_22_0` `IndicatorLED` schema enum (`Lit`/`Blinking`/`Off`;
+`Unknown` deprecated, refused), `setBootOverride` pre-validates the target
+against the advertised `BootSourceOverrideTarget@Redfish.AllowableValues`
+annotation + the enabled-state against the schema enum (`Once`/`Continuous`/
+`Disabled`, default `Once`), both carry the resource `@odata.etag` as
+`If-Match` when present, and a missing boot-target allow-list refuses the
+mutation locally (never guess). The Overview view now renders the writable
+LED ChoiceChips + a capability-gated Boot-override dropdown/apply card.
+Unit tests: settings_service (12) + settings_controller (5) + boot_settings
+(9) + widget tests (8 incl. 320/800/1300 no-overflow); the emulator suite
+**80 → 82/82** pins both service-level PATCH round-trips live (the mockup
+persists the change; an unlisted target is rejected locally before the
+wire). Row "PATCH write support with `If-Match` / `@odata.etag`" flipped
+**OK** (was OK-with-remaining-piece) — the #016 acceptance criteria are
+complete. No corpus change (mirror queue EMPTY; anchors unchanged from the
+18:42 run: bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema
+index byte-identical).
+
+Prior: 2026-10-25 (DOCS run — **anchor freshness re-verification, no
 corpus refresh**): re-verified every upstream anchor this run — (1) **bmcweb
 `63a18f4`** still HEAD of `master` via `git ls-remote`; (2) **mockup
 `23d21f9a`** still HEAD of `main` via `git ls-remote`; (3) **DSP0266 1.25.0**
@@ -489,7 +511,7 @@ Folded into code this run:
 | `@odata.id` link traversal is cycle-safe and depth-bounded (≤3) | DSP0266 §9.6.2 "@odata.id property" + §9.1 "Resources"; `odata.4.0.0.json` (mirrored DOCS-14; the bare `Odata.json` 404s upstream) | `lib/redfish/discovery/discovery_engine.dart` (visited `Set<uri>`, maxDepth) | `test/redfish/discovery/discovery_engine_test.dart` | OK |
 | Feature detection "nothing is assumed": every UI feature gated on discovered capability | OpenBMC `Redfish.md`; DSP0266 §9.1 "Resources" (resource tree traversal) | `lib/redfish/discovery/feature_rules.dart` → `SystemFeatures` | `test/redfish/discovery/feature_rules_test.dart` | OK |
 | Conditional GET re-crawl via `If-None-Match` / ETag (304 short-circuit) | DSP0266 §6.5 "ETags" + §7.2 "GET (read requests)"; `ComputerSystem.json` | `lib/redfish/discovery/discovery_engine.dart` (`_fetchUri` etag map) | `test/redfish/discovery/discovery_engine_test.dart` | OK |
-| PATCH write support with `If-Match` / `@odata.etag` | DSP0266 §6.5 "ETags" (weak/strong validation, RFC7232); §7.6 "PATCH (update)" | `lib/redfish/client/redfish_client.dart` `patchJson()` (partial update transport, landed 2026-10-24 — 204/200 normalized, non-2xx → `RedfishException`); **`If-Match` wiring landed 2026-10-25 (DOCS run)** — `patchJson(..., etag:)` sends the precondition header (RFC7232 entity-tag quoting: unquoted/payload-form `@odata.etag` values are quoted, `W/"..."` weak tags preserved), `ODataResource.etag` reads `@odata.etag` from any resource, and `RedfishException.isPreconditionFailed` classifies 412 so a stale-token caller can re-fetch instead of blind-retrying; Boot/IndicatorLED PATCH *actions in a service + UI* stay #016 | `test/redfish/client/auth_manager_test.dart` "patchJson with etag sends quoted If-Match header" + "keeps weak/pre-quoted tags verbatim" + "If-Match from etag wins over headers" + "412 throws precondition failure RedfishException (isPreconditionFailed, non-retryable)" + "quoteEntityTag grammar helper" (+ `test/redfish/models/odata_test.dart` "@odata.etag accessor, null when absent"; emulator PATCH round-trip pin below: the DMTF mockup IGNORES If-Match and applies any body, so 412 enforcement stays unit-level — pinned 2026-10-24) | OK — transport + precondition wiring; Boot/IndicatorLED PATCH flow in a service + UI stays #016 |
+| PATCH write support with `If-Match` / `@odata.etag` | DSP0266 §6.5 "ETags" (weak/strong validation, RFC7232); §7.6 "PATCH (update)" | `lib/redfish/client/redfish_client.dart` `patchJson()` (partial update transport, landed 2026-10-24 — 204/200 normalized, non-2xx → `RedfishException`); **`If-Match` wiring landed 2026-10-25 (DOCS run)** — `patchJson(..., etag:)` sends the precondition header (RFC7232 entity-tag quoting: unquoted/payload-form `@odata.etag` values are quoted, `W/"..."` weak tags preserved), `ODataResource.etag` reads `@odata.etag` from any resource, and `RedfishException.isPreconditionFailed` classifies 412 so a stale-token caller can re-fetch instead of blind-retrying; **the Boot/IndicatorLED mutation feature landed 2026-10-25 (EMULATOR run)** — `SystemSettingsService` (`lib/features/overview/settings_service.dart`) is the first production `patchJson` consumer: `setIndicatorLed` pre-validates against the `ComputerSystem.v1_22_0` `IndicatorLED` schema enum (`Lit`/`Blinking`/`Off`; `Unknown` is deprecated and refused), `setBootOverride` pre-validates the target against the advertised `BootSourceOverrideTarget@Redfish.AllowableValues` annotation and the enabled-state against the schema enum (`Once`/`Continuous`/`Disabled`, defaulting `Once`), and both carry the resource `@odata.etag` as `If-Match` when present; no advertised boot-target allow-list ⇒ the mutation is refused locally (never guess — the mockup applies any body unvalidated); UI in the Overview view (`system_settings_cards.dart`: LED ChoiceChips + Boot-override dropdown/apply, capability-gated) | `test/redfish/client/auth_manager_test.dart` "patchJson with etag sends quoted If-Match header" + "keeps weak/pre-quoted tags verbatim" + "If-Match from etag wins over headers" + "412 throws precondition failure RedfishException (isPreconditionFailed, non-retryable)" + "quoteEntityTag grammar helper" (+ `test/redfish/models/odata_test.dart` "@odata.etag accessor, null when absent"; `test/features/overview/settings_service_test.dart` (12 service tests: exact PATCH body + If-Match header, enum/target/allow-list pre-validation, never-send guards, not-connected); `settings_controller_test.dart` (5); `boot_settings_test.dart` (9); `system_settings_widget_test.dart` (8 incl. 320/800/1300 no-overflow); **emulator suite 80→82** — the service-level `setIndicatorLed` + `setBootOverride` PATCH round-trips pin live against the mockup, incl. the local rejection of an unlisted target before the wire; the DMTF mockup IGNORES If-Match and applies any body, so 412 enforcement stays unit-level — pinned 2026-10-24) | OK |
 | Error envelope: `error.code`, `error.message`, `error.@Message.ExtendedInfo[]`; message templates from the published `Base.*` MessageRegistry | DSP0266 §8.6 "Error responses" + §11.4 "Message registries"; `redfish_error.md`; `registries/Base.1.5.0.json` + `registries/Base.1.24.0.json` (mirrored DOCS-18 — the 1.5.0 payload is byte-identical to the pinned mockup's, so the emulator-pinned `Base.*` templates resolve against a real mirror file) | `lib/redfish/models/redfish_error.dart` | `test/redfish/models/models_test.dart`; emulator MessageRegistry group pins the Base.1.5.0 discovery + template surface | OK (see #014: ExtendedInfo parsing hardening) |
 | Session auth: `POST SessionService/Sessions` → `X-Auth-Token`, session reuse | DSP0266 §13.3.4 "Redfish session login authentication"; `SessionService.json` + `SessionService.v1_2_0.json` (newest, DOCS-12) | `lib/redfish/client/auth_manager.dart` | `test/redfish/client/auth_manager_test.dart` | OK (see #015: discover session URI instead of hardcoding) |
 | Basic auth fallback | DSP0266 §13.3.3 "HTTP Basic authentication" | `lib/redfish/client/auth_manager.dart` | `test/redfish/client/auth_manager_test.dart` | OK |
@@ -604,13 +626,20 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 80 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 82 tests: service root + BFS discovery
      (incl. the engine following `@Redfish.ActionInfo` links and capturing the
      live `SimpleUpdateActionInfo` resource — the bmcweb `ResetActionInfo`-
      style crawl wired into `FeatureRules.supportedResetTypes`, #022/#016) +
      chassis Controls surface (PowerLimit/CPU1Freq read + SetPoint PATCH
      round-trip + the `ControlResource.validateSetPoint` pre-validation rule
      applied live, #022/#016) +
+     **the #016 service-level Boot/IndicatorLED PATCH flow (pinned
+     2026-10-25)** — `SystemSettingsService.setIndicatorLed` +
+     `setBootOverride` round-trip through the real mockup: the PATCH 204s and
+     PERSISTS into the served ComputerSystem (verified by GET; restored in
+     `finally`), and an unlisted boot target is rejected by the service's
+     local pre-validation BEFORE any request reaches the wire (the mockup
+     would PATCH it — the client-side guard is the only enforcement) +
      discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
