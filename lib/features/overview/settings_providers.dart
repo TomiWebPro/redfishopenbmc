@@ -12,7 +12,8 @@ import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 /// snapshot's ComputerSystem `@odata.id`. When the system is not yet connected
 /// the service is still returned with a `null` client so the controller can
 /// surface a friendly "not connected" error instead of crashing.
-final ProviderFamily<SystemSettingsService, String> systemSettingsServiceProvider =
+final ProviderFamily<SystemSettingsService, String>
+    systemSettingsServiceProvider =
     Provider.family<SystemSettingsService, String>((ref, String systemId) {
   final SystemHandle? handle = ref.watch(systemHandleProvider(systemId));
   return SystemSettingsService(
@@ -26,7 +27,7 @@ final ProviderFamily<SystemSettingsService, String> systemSettingsServiceProvide
 /// Provides the [SystemSettingsController] driving the Boot / IndicatorLED
 /// controls for [systemId].
 final StateNotifierProviderFamily<SystemSettingsController,
-    SystemSettingsUiState, String> systemSettingsControllerProvider =
+        SystemSettingsUiState, String> systemSettingsControllerProvider =
     StateNotifierProvider.family<SystemSettingsController,
         SystemSettingsUiState, String>(
   (ref, String systemId) {

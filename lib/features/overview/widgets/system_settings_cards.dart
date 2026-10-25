@@ -31,7 +31,8 @@ class IndicatorLedControl extends ConsumerStatefulWidget {
   final IndicatorLed current;
 
   @override
-  ConsumerState<IndicatorLedControl> createState() => _IndicatorLedControlState();
+  ConsumerState<IndicatorLedControl> createState() =>
+      _IndicatorLedControlState();
 }
 
 class _IndicatorLedControlState extends ConsumerState<IndicatorLedControl> {
@@ -74,14 +75,15 @@ class _IndicatorLedControlState extends ConsumerState<IndicatorLedControl> {
               ),
           ],
         ),
-        if (ui.actionInFlight) const Padding(
-          padding: EdgeInsets.only(top: 8),
-          child: SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
+        if (ui.actionInFlight)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
           ),
-        ),
         if (ui.error != null && !ui.actionInFlight)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -182,7 +184,8 @@ class _BootOverrideForm extends ConsumerStatefulWidget {
 }
 
 class _BootOverrideFormState extends ConsumerState<_BootOverrideForm> {
-  late String _target = widget.settings.target ?? widget.settings.allowableTargets.first;
+  late String _target =
+      widget.settings.target ?? widget.settings.allowableTargets.first;
   late String _enabled = 'Once';
 
   @override
@@ -192,7 +195,8 @@ class _BootOverrideFormState extends ConsumerState<_BootOverrideForm> {
     if (!identical(oldWidget.settings, widget.settings) &&
         widget.settings.allowableTargets.isNotEmpty &&
         !widget.settings.allowableTargets.contains(_target)) {
-      _target = widget.settings.target ?? widget.settings.allowableTargets.first;
+      _target =
+          widget.settings.target ?? widget.settings.allowableTargets.first;
     }
   }
 

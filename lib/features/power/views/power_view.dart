@@ -315,6 +315,31 @@ class ConfirmResetDialog extends StatefulWidget {
 class _ConfirmResetDialogState extends State<ConfirmResetDialog> {
   bool _busy = false;
 
+  /// UI-2: owns keyboard focus for the least-destructive action (Cancel) so
+  /// the dialog opens with focus INSIDE it (WAI-ARIA dialog pattern — the
+  /// Add-system dialog precedent). An Enter/Tab user cannot accidentally
+  /// trigger a destructive reset.
+  final FocusNode _cancelFocus = FocusNode(
+    debugLabel: 'ConfirmResetDialog.cancel',
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    // Requested after the first frame so the dialog route's FocusScope is
+    // already active (requesting during initState would target the page's
+    // scope).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _cancelFocus.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _cancelFocus.dispose();
+    super.dispose();
+  }
+
   Future<void> _confirm() async {
     setState(() => _busy = true);
     await widget.onConfirm();
@@ -338,7 +363,11 @@ class _ConfirmResetDialogState extends State<ConfirmResetDialog> {
                 'Continue?',
       ),
       actions: <Widget>[
+        // UI-2: the Cancel button owns the dialog's initial keyboard focus
+        // (see `_cancelFocus` — focus moves into the dialog and lands on the
+        // least-destructive action; Tab then walks Cancel → Force).
         TextButton(
+          focusNode: _cancelFocus,
           // UI-2: explicit ≥48px touch target for the dialog actions; the
           // Material default visible height is 36dp (tap target padded to
           // 48dp only for gestures, not for the visual affordance).

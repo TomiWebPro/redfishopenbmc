@@ -58,7 +58,8 @@ class BootSettings {
     final dynamic boot = json['Boot'];
     final Map<String, dynamic> bootMap =
         boot is Map<String, dynamic> ? boot : const <String, dynamic>{};
-    final dynamic allowed = bootMap['BootSourceOverrideTarget@Redfish.AllowableValues'];
+    final dynamic allowed =
+        bootMap['BootSourceOverrideTarget@Redfish.AllowableValues'];
     return BootSettings(
       enabled: bootMap['BootSourceOverrideEnabled'] as String?,
       target: bootMap['BootSourceOverrideTarget'] as String?,

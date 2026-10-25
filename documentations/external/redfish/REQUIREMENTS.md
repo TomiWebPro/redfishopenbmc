@@ -6,7 +6,26 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (EMULATOR run — **the #016 Boot/IndicatorLED PATCH
+Last audited: 2026-10-25 (DOCS run — **anchor freshness re-verification,
+no corpus refresh** + UI-2 dialog focus entry/order): re-verified every
+upstream anchor this run — (1) **bmcweb `63a18f4`** still HEAD of `master`
+via `git ls-remote`; (2) **mockup `23d21f9a`** still HEAD of `main` via
+`git ls-remote`; (3) **DSP0266 1.25.0** from `www.dmtf.org` **byte-identical**
+SHA-256 `385ee6d0…` vs the mirrored `redfish/spec/DSP0266_1.25.0.pdf`;
+(4) **schema index** from `redfish.dmtf.org/schemas/v1/` **byte-identical**
+SHA-256 `e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86`
+(3,448,133 B) vs the mirrored `v1-index.html` → **no corpus refresh needed**
+(DOCS-27 ZERO version advances hold; the corpus mirror queue stays EMPTY for
+every published type; 0 bytes downloaded). No code gap surfaced by the audit
+this run. **UI-2 dialog focus entry pin:** the `ConfirmResetDialog` (power
+reset confirmation) now opens with keyboard focus INSIDE the dialog on the
+least-destructive action (Cancel) — WAI-ARIA dialog pattern, the Add-system
+dialog precedent — via an explicit `_cancelFocus` `FocusNode` requested after
+the first frame (an Enter/Tab user cannot accidentally trigger a destructive
+reset), and Tab walks Cancel → Force and wraps; +2 widget tests pin the
+destructive + non-destructive dialog focus entry and the Tab order.
+
+Prior: 2026-10-25 (EMULATOR run — **the #016 Boot/IndicatorLED PATCH
 flow landed in a service + UI**): `SystemSettingsService`
 (`lib/features/overview/settings_service.dart`) is the first production
 `patchJson` consumer — `setIndicatorLed` pre-validates against the

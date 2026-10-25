@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -376,6 +377,115 @@ void main() {
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(find.text('Confirm Force Off?'), findsNothing);
+    });
+  });
+
+  group('PowerView — focus order (UI-2)', () {
+    /// Whether the primary keyboard focus currently sits inside any widget
+    /// matched by [finder]; walks up from the focused element to the root
+    /// (the ui_widget_test.dart helper pattern).
+    bool focusInside(WidgetTester tester, Finder finder) {
+      final FocusNode? node = tester.binding.focusManager.primaryFocus;
+      final BuildContext? focused = node?.context;
+      if (focused == null) return false;
+      final List<Element> matches = finder.evaluate().toList();
+      return matches.any((Element candidate) {
+        if (identical(candidate, focused)) return true;
+        bool inside = false;
+        (focused as Element).visitAncestorElements((Element ancestor) {
+          if (identical(ancestor, candidate)) {
+            inside = true;
+            return false; // Stop visiting: found.
+          }
+          return true;
+        });
+        return inside;
+      });
+    }
+
+    /// Sends a Tab key event and pumps one frame so focus traversal moves.
+    Future<void> pressTab(WidgetTester tester) async {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+    }
+
+    testWidgets(
+        'dialog opens with keyboard focus on Cancel (the '
+        'least-destructive action)', (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      await tester.pumpWidget(
+        harness(manager: manager, controller: _fakeController()),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the destructive action; the dialog must open with primary focus
+      // inside the dialog (WAI-ARIA: focus moves into the dialog) and on
+      // Cancel — never on the destructive Force button, so an Enter/Tab
+      // user cannot accidentally trigger a reset.
+      await tester.tap(find.text('Force Off'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Confirm Force Off?'), findsOneWidget);
+      final Finder dialog = find.byType(AlertDialog);
+      final Finder cancel = find.descendant(
+        of: dialog,
+        matching: find.widgetWithText(TextButton, 'Cancel'),
+      );
+      final Finder force = find.descendant(
+        of: dialog,
+        matching: find.widgetWithText(FilledButton, 'Force'),
+      );
+      expect(focusInside(tester, cancel), isTrue,
+          reason: 'initial focus must land on the least-destructive Cancel');
+      expect(focusInside(tester, force), isFalse,
+          reason: 'initial focus must not land on the destructive Force');
+
+      // Tab walks Cancel → Force inside the dialog.
+      await pressTab(tester);
+      expect(focusInside(tester, force), isTrue,
+          reason: 'Tab must move focus from Cancel to Force');
+      await pressTab(tester);
+      expect(focusInside(tester, cancel), isTrue,
+          reason: 'Tab from Force must wrap back to Cancel');
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.text('Confirm Force Off?'), findsNothing);
+    });
+
+    testWidgets('non-destructive dialog also opens with focus on Cancel',
+        (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      await tester.pumpWidget(
+        harness(manager: manager, controller: _fakeController()),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Power On'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Confirm Power On?'), findsOneWidget);
+      final Finder dialog = find.byType(AlertDialog);
+      final Finder cancel = find.descendant(
+        of: dialog,
+        matching: find.widgetWithText(TextButton, 'Cancel'),
+      );
+      expect(focusInside(tester, cancel), isTrue,
+          reason: 'the confirmation dialog always focuses Cancel first');
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.text('Confirm Power On?'), findsNothing);
     });
   });
 

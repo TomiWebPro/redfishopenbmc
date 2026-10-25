@@ -74,8 +74,7 @@ void main() {
       expect(empty.hasAllowableTargets, isFalse);
       expect(empty.allows('Pxe'), isFalse);
 
-      final BootSettings partial =
-          BootSettings.fromRedfish(<String, dynamic>{
+      final BootSettings partial = BootSettings.fromRedfish(<String, dynamic>{
         'Boot': <String, dynamic>{'BootSourceOverrideTarget': 'Hdd'},
       });
       expect(partial.target, 'Hdd');

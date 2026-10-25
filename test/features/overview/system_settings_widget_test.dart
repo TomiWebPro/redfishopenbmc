@@ -41,7 +41,8 @@ SystemManager seededManager() {
       'bmc1': SystemHandle(
         profile: const ConnectionProfile(id: 'bmc1', host: 'h'),
         status: ConnectionStatus.connected,
-        session: Session(systemId: 'bmc1', token: 't', location: '', username: ''),
+        session:
+            Session(systemId: 'bmc1', token: 't', location: '', username: ''),
         features: const SystemFeatures(systemId: 'bmc1'),
         snapshot: SystemSnapshot(
           powerState: PowerState.on,
@@ -235,7 +236,8 @@ void main() {
   group('SystemSettingsCard — Boot override (#016)', () {
     testWidgets('renders the dropdown + apply when an allow-list is advertised',
         (tester) async {
-      final _FakeSettingsService fake = _FakeSettingsService(bootResult: bootSettings);
+      final _FakeSettingsService fake =
+          _FakeSettingsService(bootResult: bootSettings);
       await tester.pumpWidget(
         ProviderScope(
           overrides: <Override>[
@@ -260,9 +262,11 @@ void main() {
       expect(find.text('Apply boot override'), findsOneWidget);
     });
 
-    testWidgets('applying a target issues setBootOverride through the controller',
+    testWidgets(
+        'applying a target issues setBootOverride through the controller',
         (tester) async {
-      final _FakeSettingsService fake = _FakeSettingsService(bootResult: bootSettings);
+      final _FakeSettingsService fake =
+          _FakeSettingsService(bootResult: bootSettings);
       await tester.pumpWidget(
         ProviderScope(
           overrides: <Override>[

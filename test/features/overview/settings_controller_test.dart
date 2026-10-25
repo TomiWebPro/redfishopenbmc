@@ -22,8 +22,7 @@ class _FakeSettingsService implements SystemSettingsService {
   int setBootCount = 0;
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
   Future<BootSettings> fetchBootSettings() async {
@@ -64,8 +63,10 @@ void main() {
 
   group('SystemSettingsController — loadBootSettings', () {
     test('loads settings into the state and clears errors', () async {
-      final _FakeSettingsService service = _FakeSettingsService(bootResult: boot);
-      final SystemSettingsController c = SystemSettingsController(service: service);
+      final _FakeSettingsService service =
+          _FakeSettingsService(bootResult: boot);
+      final SystemSettingsController c =
+          SystemSettingsController(service: service);
       await c.loadBootSettings();
       expect(c.state.bootSettings?.target, 'Pxe');
       expect(c.state.error, isNull);
@@ -87,10 +88,10 @@ void main() {
   });
 
   group('SystemSettingsController — setIndicatorLed', () {
-    test('applies the value optimistically and clears the busy flag',
-        () async {
+    test('applies the value optimistically and clears the busy flag', () async {
       final _FakeSettingsService service = _FakeSettingsService();
-      final SystemSettingsController c = SystemSettingsController(service: service);
+      final SystemSettingsController c =
+          SystemSettingsController(service: service);
       final Future<void> future = c.setIndicatorLed(IndicatorLed.blinking);
       expect(c.state.actionInFlight, isTrue);
       await future;
@@ -101,8 +102,7 @@ void main() {
       c.dispose();
     });
 
-    test('records the error on failure and leaves the LED unchanged',
-        () async {
+    test('records the error on failure and leaves the LED unchanged', () async {
       final _FakeSettingsService service = _FakeSettingsService(
         setLedError: const RedfishException(
           message: 'led denied',
@@ -121,8 +121,10 @@ void main() {
 
   group('SystemSettingsController — setBootOverride', () {
     test('applies the override then refreshes the boot settings', () async {
-      final _FakeSettingsService service = _FakeSettingsService(bootResult: boot);
-      final SystemSettingsController c = SystemSettingsController(service: service);
+      final _FakeSettingsService service =
+          _FakeSettingsService(bootResult: boot);
+      final SystemSettingsController c =
+          SystemSettingsController(service: service);
       final Future<void> future =
           c.setBootOverride(target: 'Cd', enabled: 'Once');
       expect(c.state.actionInFlight, isTrue);
@@ -152,7 +154,8 @@ void main() {
           errorCode: 'Base.1.0.PropertyValueNotInList',
         ),
       );
-      final SystemSettingsController c = SystemSettingsController(service: service);
+      final SystemSettingsController c =
+          SystemSettingsController(service: service);
       await c.setBootOverride(target: 'Bogus');
       expect(c.state.error, 'target rejected');
       expect(c.state.actionInFlight, isFalse);

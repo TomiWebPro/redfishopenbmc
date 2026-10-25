@@ -4270,3 +4270,52 @@
   annotation-form rule applied to the Boot surface inside #016's service; the
   remaining #022 items are untouched).
 - none opened this run.
+
+## 2026-10-25 — agent:redfish-automation — DOCS: anchors re-verified + UI-2 ConfirmResetDialog focus entry/order
+
+**Done:**
+- DOCS primary per alternation (last primary: EMULATOR 19:52). Corpus mirror
+  queue is EMPTY, so the DOCS run did the documented cheap anchor re-verify.
+  Re-verified live: bmcweb `63a18f4` (git ls-remote, still master HEAD),
+  mockup `23d21f9a` (still main HEAD), DSP0266 1.25.0 PDF **byte-identical**
+  SHA-256 `385ee6d0…` (1,243,359 B), schema index **byte-identical**
+  SHA-256 `e5a29797…` (3,448,133 B) → no corpus refresh, DOCS-27 ZERO
+  advances hold, 0 bytes downloaded. REQUIREMENTS.md "Last audited" + manifest
+  anchor section updated.
+- **UI-2 dialog focus pin:** `ConfirmResetDialog` (power reset confirmation)
+  now opens with keyboard focus INSIDE the dialog on the least-destructive
+  action (Cancel) — WAI-ARIA dialog pattern, the Add-system dialog
+  precedent — via an explicit `_cancelFocus` FocusNode requested after the
+  first frame (an Enter/Tab user cannot accidentally trigger a destructive
+  reset); Tab walks Cancel → Force and wraps. +2 widget tests (destructive +
+  non-destructive dialog focus entry + Tab order). Full unit suite
+  426 → **428 passed / 1 skipped**; analyze 0.
+- Absorbed the sanctioned Flutter 3.47.6 formatter drift on the previously
+  committed #016 files (8 files: line-join/no-newline-EOF reflows) — the
+  FUTUREWORK note's dedicated-format-commit moment; gates green after.
+
+**Decisions:**
+- DOCS per alternation; corpus queue empty → cheap anchor re-verify (the
+  established pattern) — the audit surfaced no trace-row gap this run.
+- Initial attempt wrapped Cancel in `Focus(autofocus: true)`; the probe test
+  proved that creates a separate focus node OUTSIDE the button (primary focus
+  lands on the wrapper, the button shows no keyboard highlight and Enter does
+  not activate it). The explicit FocusNode on the button itself is the correct
+  dialog-focus pattern; recorded so future dialog work skips the dead end.
+- Focus lands on Cancel (least-destructive) per the WAI-ARIA APG guidance for
+  confirmation dialogs — safer than focusing the destructive Force for
+  keyboard users.
+- Formatter drift absorbed in the same commit (formatting-only, analyze + full
+  suite green) rather than a separate empty chore commit — one finished
+  increment, no build risk.
+
+**Next:**
+- EMULATOR per alternation: cheap 82/82 re-run and/or the #022 opening items
+  (task polling/races, NMI terminal state, error dedupe, BMC-id fallback).
+- P1 #015 AuthManager (expiryFromService → login + re-auth; token/location
+  from create RESPONSE HEADERS only).
+- UI-2: the delete-system confirm dialog in EditSystemPage is the last
+  untested dialog; then any remaining non-card labels. Keep pushing every run.
+
+**Issues touched:**
+- none opened/closed/advanced this run (UI increment only).

@@ -62,7 +62,8 @@ class _MethodPathMatcher extends HttpRequestMatcher {
     return true;
   }
 
-  bool _mapContains(Map<dynamic, dynamic> actual, Map<dynamic, dynamic> expected) {
+  bool _mapContains(
+      Map<dynamic, dynamic> actual, Map<dynamic, dynamic> expected) {
     for (final dynamic key in expected.keys) {
       final dynamic actualValue = actual[key];
       final dynamic expectedValue = expected[key];
@@ -157,9 +158,8 @@ void main() {
       await expectLater(
         service.fetchBootSettings(),
         throwsA(
-          isA<RedfishException>()
-              .having((RedfishException e) => e.errorCode, 'errorCode',
-                  'Base.1.0.NotConnected'),
+          isA<RedfishException>().having((RedfishException e) => e.errorCode,
+              'errorCode', 'Base.1.0.NotConnected'),
         ),
       );
     });
@@ -170,7 +170,9 @@ void main() {
         '/redfish/v1/Systems/system',
         (server) => server.reply(
           403,
-          <String, dynamic>{'error': <String, dynamic>{'code': 'Base.1.0.Ins'}},
+          <String, dynamic>{
+            'error': <String, dynamic>{'code': 'Base.1.0.Ins'}
+          },
         ),
       );
       final SystemSettingsService service = SystemSettingsService(
@@ -241,9 +243,8 @@ void main() {
       await expectLater(
         service.setIndicatorLed(IndicatorLed.lit),
         throwsA(
-          isA<RedfishException>()
-              .having((RedfishException e) => e.errorCode, 'errorCode',
-                  'Base.1.0.NotConnected'),
+          isA<RedfishException>().having((RedfishException e) => e.errorCode,
+              'errorCode', 'Base.1.0.NotConnected'),
         ),
       );
     });
@@ -384,9 +385,8 @@ void main() {
       await expectLater(
         service.setBootOverride(target: 'Pxe'),
         throwsA(
-          isA<RedfishException>()
-              .having((RedfishException e) => e.errorCode, 'errorCode',
-                  'Base.1.0.NotConnected'),
+          isA<RedfishException>().having((RedfishException e) => e.errorCode,
+              'errorCode', 'Base.1.0.NotConnected'),
         ),
       );
     });

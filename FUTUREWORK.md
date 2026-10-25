@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (EMULATOR run — **#016 COMPLETE: the Boot/IndicatorLED PATCH flow landed in a service + UI** — `SystemSettingsService.setIndicatorLed`/`setBootOverride` (schema-enum + annotation allow-list pre-validation, If-Match via `@odata.etag`, never-guess local refusal) + Overview-view LED ChoiceChips + capability-gated Boot-override card; unit suite 390→**426 passed / 1 skipped**, emulator 80→**82/82**; **#016 closed**)
-- **Current focus:** **EMULATOR (2026-10-25)** — #016 done end-to-end (transport → If-Match → SetPoint corollary → Boot/IndicatorLED service+UI, closed) and EMU suite re-run 82/82 live. Next per alternation: **DOCS** (corpus mirror queue still EMPTY; cheap anchor re-verify), then the remaining **#022** opening items — task polling/races, NMI terminal state, error dedupe, BMC-id fallback (untouched so far); then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — the focus-order/dialogs-tables hunt continues (done so far: dialog focus entry + Tab order; remaining: other dialogs/tables focus audit + any remaining non-card labels)
+- **Last updated:** 2026-10-25 (DOCS run — **anchors re-verified live (no corpus refresh; mirror queue EMPTY; bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index byte-identical) + UI-2 ConfirmResetDialog focus entry/order pinned** — the dialog opens with keyboard focus inside it on the least-destructive Cancel (WAI-ARIA dialog pattern), Tab walks Cancel → Force, +2 widget tests; unit suite **426 passed / 1 skipped**)
+- **Current focus:** **DOCS (2026-10-25)** — corpus mirror queue still EMPTY; anchors unchanged; UI-2 dialog-focus hunt continues (ConfirmResetDialog pinned this run). Next per alternation: **EMULATOR** — the **#022** opening items (task polling/races, NMI terminal state, error dedupe, BMC-id fallback — untouched so far) + cheap 82/82 suite re-run; then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — the remaining dialogs/tables focus audit (delete-system confirm dialog in EditSystemPage is the last untested dialog) + any remaining non-card labels
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1460,6 +1460,15 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       placeholder); the LED state text + chips both announce (the selected
       chip is its own control node); +8 widget tests incl. 320/800/1300
       no-overflow (service-level assertions live in settings_service_test.dart);
+      **ConfirmResetDialog focus entry + Tab order pinned done 2026-10-25 —
+      the power reset-confirmation dialog now opens with keyboard focus
+      INSIDE it on the least-destructive action (Cancel) — WAI-ARIA dialog
+      pattern, the Add-system dialog precedent — via an explicit
+      `_cancelFocus` FocusNode requested after the first frame (an Enter/Tab
+      user cannot accidentally trigger a destructive reset), Tab walks
+      Cancel → Force and wraps; +2 widget tests (destructive + non-destructive
+      dialog focus entry + the Tab order), power 51→53;
+      the last untested dialog is the delete-system confirm in EditSystemPage;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add
