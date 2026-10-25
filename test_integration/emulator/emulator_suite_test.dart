@@ -19,6 +19,7 @@ import 'package:redfishopenbmc/redfish/client/redfish_client.dart';
 import 'package:redfishopenbmc/redfish/discovery/discovery_engine.dart';
 import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
 import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
+import 'package:redfishopenbmc/redfish/models/control.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/session.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
@@ -2402,6 +2403,52 @@ void main() {
         );
       }
     });
+
+    test(
+        'Control SetPoint pre-validation rule applied live: in/out-of-bounds '
+        'SetPoints against the advertised AllowableMin/Max (#022/#016)',
+        () async {
+      // The client-side rule the #022/#016 audit demands is now implemented
+      // (ControlResource.validateSetPoint). Pin it LIVE: parse the served
+      // #Control.v1_5_0.Control PowerLimit and CPU1Freq resources and run
+      // the validator against the exact Allowable ranges the fixture
+      // advertises — in-range/boundary values pass, out-of-range values are
+      // rejected BEFORE any PATCH is sent (the mockup would apply them
+      // unvalidated — the previous test's `SetPoint: 9999` pin proves it).
+      final ControlResource powerLimit = ControlResource.fromJson(
+          await client.getJson('/redfish/v1/Chassis/1U/Controls/PowerLimit'));
+      expect(powerLimit.id, 'PowerLimit');
+      expect(powerLimit.setPoint, 500);
+      expect(powerLimit.allowableMin, 150);
+      expect(powerLimit.allowableMax, 1000);
+      expect(powerLimit.hasAllowableBounds, isTrue);
+
+      for (final num value in <num>[500, 400, 150, 1000]) {
+        expect(powerLimit.validateSetPoint(value).valid, isTrue,
+            reason: '$value is within [150, 1000] and must pass');
+      }
+      for (final num value in <num>[149, 1001, 0]) {
+        final SetPointValidation v = powerLimit.validateSetPoint(value);
+        expect(v.valid, isFalse,
+            reason: '$value is outside [150, 1000] and must be rejected');
+        expect(v.message, contains('[150, 1000]'));
+      }
+      expect(powerLimit.validateSetPoint(null).valid, isFalse);
+
+      // CPU1Freq advertises a DIFFERENT range — bounds are per-resource and
+      // the validator must follow the resource it parsed (the SecureBoot
+      // per-resource allow-list precedent, #022).
+      final ControlResource cpu1Freq = ControlResource.fromJson(
+          await client.getJson('/redfish/v1/Chassis/1U/Controls/CPU1Freq'));
+      expect(cpu1Freq.allowableMin, 1500);
+      expect(cpu1Freq.allowableMax, 3700);
+      expect(cpu1Freq.validateSetPoint(2400).valid, isTrue);
+      expect(cpu1Freq.validateSetPoint(1499).valid, isFalse);
+      expect(cpu1Freq.validateSetPoint(3701).valid, isFalse);
+      // Cross-resource leakage guard: 1500 is valid for CPU1Freq but far
+      // above PowerLimit's AllowableMax.
+      expect(powerLimit.validateSetPoint(1500).valid, isFalse);
+    });
   });
 
   group(
@@ -2437,6 +2484,7 @@ void main() {
         'BatteryMetrics',
         'Chassis',
         'ComputerSystem',
+        'Control',
         'EnvironmentMetrics',
         'EthernetInterface',
         'EventService',

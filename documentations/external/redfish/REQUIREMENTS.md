@@ -6,9 +6,29 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (DOCS run — **anchor freshness re-verification +
-small safe #016 If-Match code gap closed**): re-verified every upstream anchor
-this run. (1) **bmcweb `63a18f4`** — still HEAD of `master` via `git ls-remote`;
+Last audited: 2026-10-25 (EMULATOR run — **Control SetPoint pre-validation
+rule implemented; Control family became client-mapped**): the #022/#016
+client-side rule the pinned Control surface demands is now code —
+`ControlResource` (`lib/redfish/models/control.dart`) parses
+`#Control.v1_5_0.Control` (Id / ControlType / ControlMode / SetPoint /
+SetPointUnits / AllowableMin / AllowableMax / Sensor.DataSourceUri) and
+`ControlResource.validateSetPoint` rejects out-of-bounds SetPoints BEFORE any
+PATCH is sent (the emulator proves the mockup applies `SetPoint: 9999`
+unvalidated — EMU 60→63 pin; `AllowableMax`/`AllowableMin` schema wording:
+"Services shall not accept values for SetPoint ... above/below this value");
+per-resource bounds never leak across controls (the SecureBoot per-resource
+allow-list precedent, #022). Because the client now maps Control, the family
+entered the client-mapped set: the served `Control.v1_5_0.json` was copied
+into `test/fixtures/redfish/schemas/` (byte-identical to the DOCS-26 mirror,
+SHA-256 `de1614b0…`) and added to the emulator corpus-invariant family list
+(the DOCS-19/20/21 fixture invariant). +11 unit tests
+(`test/redfish/models/control_test.dart`), +1 live emulator test pinning the
+rule against the served PowerLimit/CPU1Freq allowable ranges (79 → **80/80**
+green on pinned `23d21f9a`). Corpus anchor notes from the 16:50 DOCS run
+still hold (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index
+byte-identical — no refresh, mirror queue EMPTY).
+
+Prior: 2026-10-25 (DOCS run — **anchor freshness re-verification + small safe #016 If-Match code gap closed**): re-verified every upstream anchor this run. (1) **bmcweb `63a18f4`** — still HEAD of `master` via `git ls-remote`;
 (2) **mockup `23d21f9a`** — still HEAD of `main` via `git ls-remote`;
 (3) **DSP0266 1.25.0** — 200 on the working `www.dmtf.org` URL and
 **byte-identical** SHA-256 `385ee6d0…` vs the mirrored
@@ -220,8 +240,13 @@ against AllowableMin/Max. Control is NOT client-mapped — no fixture-schema
 duty. **Corpus mirror done (DOCS-26)**: every Control citation in this file
 now resolves to a real mirrored file — served `Control.v1_5_0.json` + newest
 `Control.v1_8_1.json` (adds only `SetPointError`, additive) + aggregator +
-`ControlCollection.json` (4 files / 129,851 bytes, external corpus only —
-Control stays NOT client-mapped).
+`ControlCollection.json` (4 files / 129,853 bytes, external corpus only —
+Control stays NOT client-mapped). **Updated 2026-10-25 (EMULATOR run):**
+Control IS now client-mapped — the 16:50→17:50 run implemented
+`ControlResource.validateSetPoint` (#022/#016 pre-validation), copied the
+served `Control.v1_5_0.json` into `test/fixtures/redfish/schemas/`, added
+`Control` to the emulator corpus-invariant family list, and pinned the rule
+live (80/80).
 Prior: 2026-10-24 (DOCS-25 run — **SecureBoot/SecureBootDatabase corpus
 mirror for the EMU-pinned boot-integrity surface, EMU 57→60**): the mockup's
 `/Systems/437XR1138R2/SecureBoot` publishes the secure-boot read surface
@@ -560,10 +585,13 @@ client-relevant families.
   2. `test_integration/emulator/emulator_suite_test.dart` — real DMTF
      Redfish-Mockup-Server over HTTPS (self-signed, test-only TLS) via
      `tool/emulator/run_tests.sh` (pin `23d21f9a`); skipped unless
-     `REDFISH_EMULATOR_URL` is defined. 79 tests: service root + BFS discovery
+     `REDFISH_EMULATOR_URL` is defined. 80 tests: service root + BFS discovery
      (incl. the engine following `@Redfish.ActionInfo` links and capturing the
      live `SimpleUpdateActionInfo` resource — the bmcweb `ResetActionInfo`-
      style crawl wired into `FeatureRules.supportedResetTypes`, #022/#016) +
+     chassis Controls surface (PowerLimit/CPU1Freq read + SetPoint PATCH
+     round-trip + the `ControlResource.validateSetPoint` pre-validation rule
+     applied live, #022/#016) +
      discoverable `SessionService` URI (#017), sensors (Thermal + 41-member
      Sensors collection #007/#019), firmware inventory + `HttpPushUri` +
      SimpleUpdateActionInfo (#008/#020), KVM console, systems detail
@@ -814,8 +842,12 @@ client-relevant families.
     (SettingMin/Max + Allowable ranges) — and the **second live PATCH pin**:
     PATCHing `SetPoint: 600` answers 204 AND persists (in-memory), while a
     bogus `SetPoint: 9999` is ALSO applied unvalidated — the #016/#022 client
-    must pre-validate against AllowableMin/Max. Control stays NOT
-    client-mapped (corpus DOCS-26).
+    must pre-validate against AllowableMin/Max. **The pre-validation rule is
+    now code (2026-10-25, EMULATOR run):** `ControlResource.validateSetPoint`
+    rejects out-of-bounds SetPoints before any PATCH (+11 unit tests + 1 live
+    emulator pin on the served PowerLimit/CPU1Freq ranges); Control became
+    client-mapped — the served `Control.v1_5_0.json` is in the fixture and
+    the family is in the corpus-invariant list (see "Last audited").
     **Bios/Settings PATCH round-trip (#016/#028, pinned 2026-10-24, EMU
     63→64):** PATCH `/Bios/Settings` (the `@Redfish.Settings` SettingsObject
     carrying the only ETag the mockup serves — `9234ac83b9700123cc32`) with
@@ -1610,13 +1642,17 @@ in the served `v1_5_0` (readonly, matches the fixture's `W`/`Hz` values); the
 `Sensor` property is an `anyOf` SensorExcerpt/null in both versions (the
 DataSourceUri link shape the emulator pin reads).
 
-**Client-mapped decision:** **Control stays NOT client-mapped.** The 33-family
-list in the emulator corpus-invariant test is untouched, and no fixture-schema
-duty attaches (the crawl skips non-client-mapped families). REQUIREMENTS.md
+**Client-mapped decision:** **Control became client-mapped 2026-10-25
+(EMULATOR run).** The #022/#016 SetPoint pre-validation rule is implemented
+(`ControlResource.validateSetPoint`, `test/redfish/models/control_test.dart`,
++11 tests), so the client now maps the served `#Control.v1_5_0.Control`
+resources. Per the DOCS-19/20/21 invariant the served `Control.v1_5_0.json`
+was copied into `test/fixtures/redfish/schemas/` (byte-identical SHA-256
+`de1614b0…` vs the DOCS-26 mirror) and `Control` was added to the
+corpus-invariant family list in the emulator suite; the corpus-invariant test
+(80/80) now verifies the served Control schema presence live. REQUIREMENTS.md
 rows that cite the EMU-pinned Control surface (this header's "Last audited"
-paragraph + the powerControl/#022 rows) now resolve to real mirror files. If a
-future power-capping feature client-maps Control, the served v1_5_0 must be
-copied into `test/fixtures/redfish/schemas/` (the DOCS-19/20/21 invariant).
+paragraph + the powerControl/#022 rows) resolve to real mirror files.
 
 Anchors re-verified this run (2026-10-24 20:14 UTC): bmcweb master
 `63a18f4` (still HEAD via GitHub API), mockup pin `23d21f9a` (still HEAD of

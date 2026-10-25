@@ -4080,3 +4080,74 @@
 **Issues touched:**
 - #016 advanced: transport-level acceptance criteria (patchJson `{etag}` + OData.etag + conditional-header unit tests) now checked; Boot/IndicatorLED PATCH service/UI flow stays open (documented).
 - none opened/closed this run.
+
+## 2026-10-25 — agent:redfish-automation — EMULATOR: Control SetPoint pre-validation rule implemented (Control client-mapped, EMU 79→80) — #022/#016
+
+**Done:**
+- EMULATOR primary per alternation (last primary: DOCS 16:50). Landed the
+  agreed #022/#016 candidate: **the Control SetPoint AllowableMin/Max
+  pre-validation rule is now code** — the "client must pre-validate" rule the
+  pinned Control surface demands (EMU 60→63: the mockup applies any PATCH
+  value unvalidated — `SetPoint: 9999` 204s AND persists — so the client must
+  reject out-of-bounds SetPoints before sending). `ControlResource`
+  (`lib/redfish/models/control.dart`) parses the served `#Control.v1_5_0.Control`
+  resources (Id/ControlType/ControlMode/SetPoint/SetPointUnits/AllowableMin/
+  AllowableMax/Sensor.DataSourceUri; null SetPoint tolerated per the schema;
+  string-numbers tolerated) and `validateSetPoint(value)` returns a
+  `SetPointValidation`: in-range + exact boundary values pass (inclusive),
+  below/above fail with an Allowable-range message, null fails, and a control
+  with no advertised bounds is a documented best-effort (valid + informational
+  message). Per-resource bounds never leak across controls (the SecureBoot
+  per-resource allow-list precedent applied to numeric bounds). Because the
+  client now maps Control, the family **became client-mapped**: served
+  `Control.v1_5_0.json` copied into `test/fixtures/redfish/schemas/`
+  (byte-identical SHA-256 `de1614b0…`, 47,414 B, to the DOCS-26 external
+  mirror) + `Control` added to the emulator corpus-invariant family list.
+- **Emulator:** 79 → **80/80 green** on pinned `23d21f9a` (official
+  `tool/emulator/run_tests.sh`, trap cleanup). New live test: parses the
+  served PowerLimit + CPU1Freq via the model, asserts the pinned allowable
+  ranges ([150,1000] / [1500,3700]), runs `validateSetPoint` over
+  in-range/boundary/out-of-range/null values, and pins the cross-resource
+  leakage guard (1500 valid for CPU1Freq, rejected for PowerLimit).
+- **Docs:** REQUIREMENTS.md — "Last audited" header, the Control trace rows,
+  the DOCS-26 "Client-mapped decision" block (flipped NOT → client-mapped),
+  and "Test platforms" 79 → 80 all updated; the historical DOCS-26 Prior entry
+  got a dated update note. No corpus downloads; anchors unchanged (bmcweb
+  `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index byte-identical).
+- **UI:** skipped, documented — the primary workstream is a substantial
+  finished increment; the remaining UI-2 item is the open-ended
+  focus-order/dialogs-tables hunt (every concrete "last bare text" surface is
+  already merged, re-audited this run).
+
+**Decisions:**
+- Took the agreed EMULATOR-slot candidate (Control SetPoint pre-validation)
+  over a cheap invariant re-run — the rule had been pinned live EMU 60→63 and
+  the audit explicitly demands the client-side pre-validation; the model gave
+  the run a real, testable surface.
+- Control became client-mapped, fully documented: fixture copy + corpus-
+  invariant family-list addition + REQUIREMENTS.md decision flip. No
+  half-state — the invariant test now verifies the served Control schema live.
+- Validation semantics: boundaries inclusive (AllowableMin/Max are the limits
+  the service "shall not accept above/below" — equal is accepted); null
+  prospective value always invalid; absent bounds = best-effort with an
+  informational message (documented, never silently dropped).
+- No new dependencies, no TLS change, no emulator dependency in plain
+  `flutter test`.
+
+**Next:**
+- DOCS per alternation (corpus mirror queue EMPTY; cheap anchor re-verify).
+- Remaining #016: Boot/IndicatorLED PATCH flow in a service + UI ((a) transport,
+  If-Match/etag wiring, (d) pre-validation corollary all in place; the
+  settings-object ETag `9234ac83b9700123cc32` is the only pinable token); then
+  the #022 opening items (task polling, poll/reset race, NMI terminal state,
+  error dedupe, BMC-id fallback — untouched so far).
+- P1 #015 AuthManager (expiryFromService → login + re-auth; token/location
+  from create RESPONSE HEADERS only). Keep pushing every run.
+
+**Issues touched:**
+- #022 advanced (Progress Log: Control SetPoint pre-validation rule
+  implemented + tested + live-pinned; remaining: task polling/races/NMI/
+  error-dedupe/BMC-id fallback).
+- #016 advanced (Progress Log: (d) SetPoint pre-validation corollary landed;
+  remaining: (b) Boot/IndicatorLED PATCH service/UI flow).
+- none opened/closed this run.

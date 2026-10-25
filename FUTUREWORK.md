@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (DOCS run — all four upstream anchors re-verified: bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0 byte-identical, schema index byte-identical — **no corpus refresh, DOCS-27 ZERO advances hold, mirror queue EMPTY**; #016 If-Match/`@odata.etag` **wiring landed** — `patchJson(..., etag:)` sends quoted `If-Match` (RFC7232), `ODataResource.etag` accessor, `RedfishException.isPreconditionFailed` 412 classification, +6 unit tests; UI-2 KVM connect-type chips merged into one semantics node, +1 widget test)
-- **Current focus:** **DOCS (2026-10-25)** — anchor re-verify done (corpus mirror queue still EMPTY); the #016 transport-level acceptance criteria are done (PATCH + If-Match/`@odata.etag` wiring + 412 classification); next: **EMULATOR** per alternation, then the remaining #022/#016 pieces — the Control SetPoint AllowableMin/Max pre-validation rule (#006/#019/#022) and the **Boot/IndicatorLED PATCH flow in a service + UI** (#016 remaining, the #028 BIOS-editor input, settings-object ETag `9234ac83b9700123cc32`); then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — the open-ended focus-order/dialogs-tables hunt continues (the KVM connect-type chip merge this run closed another concrete "detached node" surface)
+- **Last updated:** 2026-10-25 (EMULATOR run — **Control became client-mapped: the #022/#016 SetPoint pre-validation rule is now code** — `ControlResource.validateSetPoint` rejects out-of-bounds SetPoints before any PATCH (mockup applies `9999` unvalidated, EMU 60→63 pin), per-resource bounds never leak (SecureBoot precedent); served `Control.v1_5_0.json` moved into the fixture + `Control` added to the corpus-invariant family list; +11 unit tests, +1 live emulator pin on PowerLimit [150,1000] / CPU1Freq [1500,3700], 79→**80/80**; anchors unchanged — bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index byte-identical — mirror queue EMPTY)
+- **Current focus:** **EMULATOR (2026-10-25)** — Control SetPoint pre-validation landed (EMU 79→80); next per alternation: **DOCS** (cheap anchor re-verify; corpus mirror queue still EMPTY), then the remaining #022/#016 pieces — the **Boot/IndicatorLED PATCH flow in a service + UI** (#016 remaining piece; the transport, If-Match/etag wiring (a), and the SetPoint pre-validation corollary (d) are all in place) and task-polling/races (#022 opening items: poll the 202 task, serialise polling per action, NMI terminal state, error dedupe, BMC-id fallback — untouched so far); then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — the open-ended focus-order/dialogs-tables hunt continues (this run: no UI increment, documented — the primary workstream consumed the budget and the Control model/tests are the more valuable surface)
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -397,7 +397,15 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       corpus-invariant list untouched; REQUIREMENTS.md Control rows now cite
       real mirror files; anchors re-verified: bmcweb `63a18f4`, mockup
       `23d21f9a`, DSP0266 1.25.0, schema index 200 — the corpus mirror queue
-      is now EMPTY)**
+      is now EMPTY)**;
+      **UPDATED 2026-10-25 (EMULATOR run): Control became client-mapped** —
+      the #022/#016 SetPoint pre-validation rule is now code
+      (`ControlResource.validateSetPoint`), so the served `Control.v1_5_0.json`
+      was copied into `test/fixtures/redfish/schemas/` (byte-identical SHA-256
+      `de1614b0…`, 47,414 B) and `Control` was added to the emulator
+      corpus-invariant family list (the DOCS-19/20/21 fixture invariant now
+      covers it); the external corpus pair (served + newest) already existed
+      from DOCS-26 — no new downloads this run.
 
 - [x] **DOCS-27** Corpus freshness audit (the DOCS-22 precedent, now covering
       **38 families**): extract the newest published version per family from
@@ -965,6 +973,13 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       **(b) Boot/IndicatorLED PATCH actions in a service + UI** — the
       transport + precondition wiring are in place, a mutation feature (boot
       override / BIOS editor #028) consumes them;
+      **(d) the Control SetPoint pre-validation corollary landed 2026-10-25
+      (EMU run)** — `ControlResource.validateSetPoint` rejects out-of-bounds
+      SetPoints before any PATCH (the EMU 60→63 negative pin: the mockup
+      applies `SetPoint: 9999` unvalidated), boundaries inclusive, per-resource
+      bounds never leak across controls; Control became client-mapped (served
+      schema in the fixture + corpus-invariant list) — +11 unit tests, +1 live
+      emulator pin (79 → 80/80);
       **If-Match boundary pinned live 2026-10-24 20:xx (EMU
       59→60)**: a PATCH with a stale `If-Match: "bogus-stale-etag"` header is
       answered 204 AND persists — the mockup never evaluates preconditions
@@ -1057,7 +1072,15 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       source — bmcweb's `ResetActionInfo` shape parsed from the real resource
       (unit + engine tests; REQUIREMENTS.md row updated; `ResetActionInfo`
       itself is still absent on the DMTF fixture, so the live crawl pin uses
-      the fixture's served ActionInfo resources). **Emulator negative finding
+      the fixture's served ActionInfo resources). **Control SetPoint
+      pre-validation landed 2026-10-25 (EMU run)**: `ControlResource.
+      validateSetPoint` rejects out-of-bounds SetPoints before any PATCH
+      (PowerLimit [150,1000], CPU1Freq [1500,3700]; boundaries inclusive;
+      per-resource bounds never leak across controls — the SecureBoot
+      allow-list precedent applied to numeric bounds); Control became
+      client-mapped (served `Control.v1_5_0.json` in the fixture +
+      corpus-invariant list) — +11 unit tests, +1 live emulator pin (79 →
+      80/80). **Emulator negative finding
       2026-10-23 17:07**: the DMTF mockup fixture ships NO `ResetActionInfo`
       ActionInfo resource for `#ComputerSystem.Reset` — it serves only the
       annotation form (= the 16:05 fallback); the ActionInfo-resource crawl is
