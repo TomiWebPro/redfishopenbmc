@@ -6,7 +6,35 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (EMULATOR run — **corpus-invariant crawl extended to
+Last audited: 2026-10-25 (DOCS run — **anchor freshness re-verification, no
+corpus refresh needed**): re-verified every upstream anchor this run.
+(1) **bmcweb `63a18f4`** — still HEAD of the `master` branch, verified via
+`git ls-remote https://github.com/openbmc/bmcweb.git refs/heads/master`
+(bmcweb's default branch is `master`, not `main` — the GitHub REST
+`commits/main` endpoint returns 422; the DOCS-27/29 "still HEAD via GitHub
+API" notes were checked against the correct branch, this run records it
+explicitly); (2) **mockup `23d21f9a`** — still HEAD of `main` via GitHub API;
+(3) **DSP0266 1.25.0** — 200 on the working `www.dmtf.org` URL,
+**byte-identical** SHA-256 `385ee6d0…`; (4) **schema index** — 200 and
+**byte-identical** to the mirrored `v1-index.html` (SHA-256
+`e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86`,
+3,448,133 bytes) → **no corpus refresh needed** (DOCS-27's ZERO version
+advances still hold). **DOCS-31 newest-version spot audit**: all 17
+DOCS-31-mirrored families' newest versions re-extracted from the live index
+with numeric version comparison and compared to the corpus files — **ALL
+MATCH** (AccelerationFunction v1_0_5, Assembly v1_6_1, ExternalAccountProvider
+v1_9_0, GraphicsController v1_0_2, HostInterface v1_4_0, Memory v1_24_0,
+MessageRegistryFile v1_1_5, OutboundConnection v1_0_3, Port v1_20_0,
+Processor v1_24_0, ProcessorMetrics v1_7_1, SecurityPolicy v1_1_0,
+SerialInterface v1_3_0, Signature v1_0_3, SimpleStorage v1_3_2,
+TrustedComponent v1_5_0, USBController v1_0_1) — the corpus mirror queue
+stays **EMPTY for every published type**. No new downloads, no code change.
+(The DOCS-31 corpus mirror + extended invariant were recovered this run from
+a crashed-run working tree and re-verified: analyze 0, 364 unit tests pass
+(1 skipped),
+and the extended corpus-invariant crawl passes **78/78 live** against the
+pinned mockup — commit `a458ded`.)
+Prior: 2026-10-25 (EMULATOR run — **corpus-invariant crawl extended to
 ALL published @odata.types + the 17-family corpus gap closed, DOCS-31**): the
 live published-types crawl now asserts **every** versioned `@odata.type` the
 pinned mockup publishes has a served-version schema in the external corpus
