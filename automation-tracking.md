@@ -3793,3 +3793,77 @@ Append-only run log for the `redfish-automation` scheduler job.
   recorded); 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
   login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS
   only; 3) keep pushing every run (credentials verified; no queued commits).
+
+## 2026-10-25 01:23 UTC — EMULATOR (generalized $expand pins for #018) + UI-2 firmware card fix
+
+- **Baseline:** analyze 0; tests 352 passed / 1 skipped; starting commit 41c1779
+  (origin/main fully synced, 0 queued local commits); issues validate OK;
+  working tree clean; no stash, no crashed-run leftovers.
+- **Primary work:** EMULATOR per alternation (last primary: DOCS 00:34 — EMU is
+  due; the corpus mirror queue is EMPTY after DOCS-28, so the natural EMU
+  increment is pinning a remaining discovery surface). The Systems `$expand`
+  contract was already pinned (17:07 `$levels=1` / 18:36 `$expand=*` / 22:45
+  map-form); this run generalized the shape to the OTHER two top-level
+  collections the #018 lightweight discovery pass walks (Systems→Chassis→
+  Manager) and pinned the depth bound. **+2 emulator tests (EMU 66 → 68):**
+  (1) `$expand=.($levels=1)` via the map-form `getJson(path, query:)` on
+  `/redfish/v1/Chassis` AND `/redfish/v1/Managers` inlines FULL member bodies
+  — Chassis identity/ChassisType/Status/IndicatorLED/Links.ComputerSystems/
+  ManagedBy and Manager ManagerType/FirmwareVersion/Model/Links.
+  ManagerForServers/ManagerInChassis + the **manager-level reset allow-list
+  (`#Manager.Reset` `ResetType@Redfish.AllowableValues` == exactly
+  `[ForceRestart, GracefulRestart]`)** visible through the expanded payload —
+  the #022/#016 rule that the gate never conflates the manager list with the
+  system list (pinned 2026-10-23 03:02), now also enforced on the inlined
+  shape; (2) `$levels=2` on Systems does NOT recurse beyond one level —
+  the member's own `Links.Chassis` stays a bare `@odata.id` ref (no inlined
+  ChassisType/Status), so the discovery pass must follow cross-resource URIs
+  explicitly for deeper hops (DSP0266 §7.3.2 default-1 / depth cap behaviour
+  pinned against the live mockup). Suite 66 → **68/68 passed** on the pinned
+  `23d21f9a`. Server stopped after the run; all probes were GETs (no fixture
+  mutations).
+- **Docs:** none this run (EMU stream). The corpus-invariant published-types
+  crawl (EMU 52) re-ran green inside the 68 — the DOCS-28 Heater mirror left
+  the invariant intact.
+- **Emulator:** server prepared from the pinned `23d21f9a`, healthy on 8443,
+  suite **66 → 68 tests, 68/68 passed** (+2 general-`$expand` pins for #018).
+  Server stopped; on-disk fixture byte-identical (all probes were GETs).
+- **Code/tests:** no lib/ production change from the EMU stream (emulator-only
+  pins in `test_integration/emulator/emulator_suite_test.dart`). UI-2
+  increment below touched `lib/features/firmware/views/firmware_view.dart` +
+  its test only.
+- **UI:** one small tested UI-2 increment — **FirmwareView inventory card
+  merged-node fix**. The per-item inventory card wrapped its `ListTile` in
+  `Semantics(container: true, label: ...)` WITHOUT `excludeSemantics: true`,
+  so the inner title/subtitle/chip `Text`s still announced as separate nodes —
+  a screen reader heard the merged summary `Firmware BMC Firmware, 3.2.1, OK,
+  updateable` and then `BMC Firmware`, `BMC · 3.2.1 · OK`, `Updateable` again
+  (the exact double-announcement defect fixed for HealthBadge/PowerBadge at
+  00:34). The card now adds `excludeSemantics: true` so the merged label is the
+  ONLY announcement; visible texts preserved for sighted users. The existing
+  inventory a11y label test in `test/features/firmware/firmware_widget_test.dart`
+  extended with single-node pins: `bySemanticsLabel('BMC Firmware')` /
+  `('Updateable')` now findsNothing while the merged label still finds one
+  widget and the visible texts remain (+3 assertions in the one test). Targeted
+  run: 16/16 passed before the full gate. Audit: no other
+  `Semantics(container: true)` node in `lib/` lacks `excludeSemantics` (scanned
+  all lib/**/*.dart — the firmware card was the last one).
+- **Verification:** analyze 0; tests **352 passed / 1 skipped** (unchanged —
+  the firmware test was extended, not added); emulator 68/68; issues validate
+  OK; `git diff --check` clean; secret scan: Dart test code + docs prose only,
+  no credentials. **Format note:** the Flutter 3.47.6 `dart format` reflowed 26
+  unrelated Dart files (the known line-join drift, FUTUREWORK note 2026-10-25)
+  — per the recorded plan they are committed as a separate dedicated
+  `chore: dart format` commit after analyze+test stayed green (0 issues, 352
+  pass), NOT mixed into the auto commit.
+- **Commit:** (auto) `auto: EMULATOR — generalized $expand pins for #018
+  (Chassis+Managers inlined, $levels=2 depth bound, EMU 66→68) + UI-2 firmware
+  card excludeSemantics fix (run 2026-10-25 01:23)` + (chore) `chore: dart
+  format` drift absorption; pushed: **yes** (see push record).
+- **Next:** 1) DOCS per alternation — corpus mirror queue is EMPTY and
+  verified; candidates: DOCS-27-style freshness re-verification of anchors
+  (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0) is cheap, or a
+  REQUIREMENTS.md audit of the new `$levels=2` depth-bound row; 2) P1 #015
+  AuthManager — wire `Session.expiryFromService` into login, re-auth on
+  `isExpired`, token/location from create RESPONSE HEADERS only; 3) keep
+  pushing every run (credentials verified; 0 queued commits).

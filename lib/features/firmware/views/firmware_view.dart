@@ -360,6 +360,7 @@ class _InventoryList extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Semantics(
               container: true,
+              excludeSemantics: true,
               label: 'Firmware ${item.name ?? item.id}, '
                   '${item.version ?? 'version unknown'}, '
                   '${item.health ?? 'health unknown'}, '

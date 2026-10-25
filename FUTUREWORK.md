@@ -7,63 +7,42 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (DOCS run — **DOCS-28** done: the Heater +
-  HeaterMetrics corpus mirror the EMU Heaters pin (64→66) exposed —
-  `Heater.json`/`HeaterMetrics.json` aggregators ($ref v1_0_2 newest) +
-  served `Heater.v1_0_1`/`HeaterMetrics.v1_0_1` + newest `v1_0_2` pair +
-  `HeaterCollection.json`, 7 files / 60,045 bytes / external corpus only —
-  delta audit: **v1_0_1 → v1_0_2 is a property no-op for both families**
-  (26 diff lines each, `$id`/copyright/description formatting/`language`/
-  title), the emulator-pinned contract holds, no client code change; both
-  families stay NOT client-mapped — no fixture duty, corpus-invariant list
-  unchanged; v1_0_3 probes 404 — v1_0_2 is current; **the corpus mirror
-  queue is now EMPTY** — every EMU-2-pinned family has a schema in the
-  external corpus); next primary is EMULATOR per alternation — candidates:
-  re-run the corpus-invariant crawl after the mirror (it now covers the
-  Heater surface), or pin a remaining un-pinned surface; next P1: #015
-  (AuthManager — `expiryFromService` + the Sessions pin are ready, wire the
-  discovered SessionService body into login + re-auth on `isExpired`);
-  #016: the PATCH transport + If-Match boundary are pinned on all live seams
+- **Last updated:** 2026-10-25 (EMULATOR run — **EMU 66→68**: the `$expand`
+  query contract is now pinned on ALL THREE top-level collections the #018
+  discovery pass walks (Systems + **Chassis + Managers**, full member bodies
+  inlined via the map-form `getJson(path, query:)`) AND the depth bound is
+  pinned (`$levels=2` does NOT recurse — nested `Links` stay bare `@odata.id`
+  refs, so the pass must follow cross-resource URIs explicitly); the
+  **manager-level reset allow-list (`#Manager.Reset` == exactly
+  `[ForceRestart, GracefulRestart]`) is now visible through the expanded
+  Manager payload** — the #022/#016 conflation guard holds on the inlined
+  shape too; UI-2 advanced (FirmwareView inventory card `excludeSemantics`
+  fix — the last merged node missing it); corpus mirror queue: **EMPTY**;
+  a dedicated `chore: dart format` commit absorbed the 26-file formatter
+  drift recorded 2026-10-25)
+- **Current focus:** **EMULATOR (2026-10-25)** — the `$expand` contract is
+  now pinned on all three top-level collections (#018 walk: Systems +
+  Chassis + Managers inlined via map-form, `$levels=2` depth bound = no
+  recursion; EMU 66→68); next primary is DOCS per alternation — corpus
+  mirror queue is EMPTY; candidates: DOCS-27-style freshness re-verification
+  of anchors (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema
+  index 200), a REQUIREMENTS.md audit row for the new `$levels=2` depth-bound
+  pin, or a small corpus addition if the index advanced; then P1 #015
+  (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the
+  discovered SessionService body into login + re-auth on `isExpired`; #016:
+  the PATCH transport + If-Match boundary are pinned on all live seams
   (Boot/IndicatorLED, Control SetPoint, Bios/Settings, Manager.Reset),
   remaining is the actual If-Match/`@odata.etag` wiring in a
   Boot/IndicatorLED PATCH flow + unit tests for the 412 path; #022/#016:
   `ResetActionInfo` ActionInfo resource crawl (bmcweb-style BMCs; NOT
   pinable on the DMTF mockup) + the Control SetPoint AllowableMin/Max
   pre-validation rule; #018: query-capability surface + live `$expand`
-  contract pinned — remaining: build the lightweight discovery pass + the
-  cache fixes; **new feature candidate #028:** BIOS-config editor
-  (Bios/Settings become client-mapped → served versions move into
-  `test/fixtures/redfish/schemas/` + the corpus-invariant family list gains
-  `Bios`/`Settings`; the Bios/Settings PATCH round-trip seam is now pinned);
-  corpus mirror queue: **EMPTY**
-- **Current focus:** **DOCS (2026-10-25)** — DOCS-28 closed the last
-  EMU-2-pinned corpus gap (Heater + HeaterMetrics mirror, 7 files, external
-  corpus only; deltas audited as property no-ops; queue now EMPTY); next
-  primary is EMULATOR per alternation — candidates: (a) re-run the
-  corpus-invariant published-types crawl against the live mockup (it now
-  reaches the Heater surface — the mirror closed every served-version gap
-  for the 33 client-mapped families), (b) pin a remaining un-pinned surface
-  (#028 BIOS-config editor remains the P2 candidate with its fixture duty
-  recorded, VirtualMedia InsertMedia/EjectMedia stay advertised-as-candidate
-  pins, or a second `$expand`-shape pin for #018); then P1 #015 (AuthManager)
-  — `expiryFromService` + the Sessions pin are ready, wire the discovered
-  SessionService body into login + re-auth on `isExpired`; #016: the PATCH
-  transport landed (`patchJson`) + the If-Match boundary is pinned on all
-  live seams (Boot/IndicatorLED, Control SetPoint, Bios/Settings — the
-  mockup ignores preconditions, the client must send the settings-object
-  ETag `9234ac83b9700123cc32` itself, EMU 53/60/63/64 — plus the
-  Manager.Reset 204 round-trip), remaining is the actual
-  If-Match/`@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit
-  tests for the 412 path; #022/#016: `ResetActionInfo` ActionInfo resource
-  crawl (bmcweb-style BMCs; NOT pinable on the DMTF mockup — it serves only
-  the annotation form and now provably ignores ResetType/ResetKeysType
-  values; the Control SetPoint PATCH pin adds the AllowableMin/Max
-  pre-validation rule for power capping); #018: query-capability surface +
-  live `$expand` contract pinned — remaining: build the lightweight
-  discovery pass + the cache fixes; **new feature candidate #028:** BIOS-
-  config editor (Bios/Settings become client-mapped → served versions move
-  into `test/fixtures/redfish/schemas/` + the corpus-invariant family list
-  gains `Bios`/`Settings`); corpus mirror queue: **EMPTY**
+  contract pinned (now all three collections + depth bound) — remaining:
+  build the lightweight discovery pass + the cache fixes; **new feature
+  candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
+  served versions move into `test/fixtures/redfish/schemas/` + the
+  corpus-invariant family list gains `Bios`/`Settings`; the Bios/Settings
+  PATCH round-trip seam is now pinned); corpus mirror queue: **EMPTY**
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -751,7 +730,22 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       204s — the mockup never validates action bodies, so the 400
       `ResetTypeInvalid` path stays unit-level and the #022/#016 client must
       pre-validate against the manager's OWN allow-list
-      (ForceRestart/GracefulRestart, never the system list))
+      (ForceRestart/GracefulRestart, never the system list))** → **68 tests
+      (generalized `$expand` pins for #018 2026-10-25: (1) the SAME
+      `$expand=.($levels=1)` map-form query, applied to `/redfish/v1/Chassis`
+      AND `/redfish/v1/Managers`, inlines FULL member bodies — Chassis
+      identity/ChassisType/Status/IndicatorLED/Links.ComputerSystems/
+      ManagedBy and Manager ManagerType/FirmwareVersion/Model/Links.
+      ManagerForServers/ManagerInChassis + the **manager-level reset
+      allow-list (`#Manager.Reset` == exactly `[ForceRestart,
+      GracefulRestart]`) visible through the expanded payload** — the #022/
+      #016 rule that the gate never conflates the manager list with the
+      system list now also enforced on the inlined shape; (2) `$levels=2` on
+      Systems does NOT recurse beyond one level — the member's own
+      `Links.Chassis` stays a bare `@odata.id` ref (no inlined
+      ChassisType/Status), so the #018 discovery pass must follow
+      cross-resource URIs explicitly for deeper hops (DSP0266 §7.3.2
+      depth-cap behaviour pinned live))**
 - [~] **EMU-3** Cover auth and power actions where the emulator supports them.
       If an action is unsupported, assert the client's error mapping instead of
       skipping silently.
@@ -899,7 +893,15 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `getJson('/redfish/v1/Systems', query: {'\$expand': '.($levels=1)'})`
       against the live mockup returns the same inlined full member bodies as
       the URL-string form — the exact call shape the #018 pass will make,
-      end-to-end verified)
+      end-to-end verified; **generalized across all three top-level
+      collections 2026-10-25 (EMU 66→68)**: the same map-form `$expand` on
+      `/redfish/v1/Chassis` + `/redfish/v1/Managers` inlines FULL member
+      bodies (Chassis identity/Status/Links, Manager FirmwareVersion/Model/
+      Links + the manager-level reset allow-list), and **`$levels=2` does
+      NOT recurse — the member's own `Links.Chassis` stays a bare
+      `@odata.id` ref** (DSP0266 §7.3.2 depth-cap pinned), so the pass gets
+      one full inlined hop per collection and must follow cross-resource
+      URIs explicitly for the graph)
 - [ ] **#022** Power: task polling, races, and error fixes.
       (bmcweb `ResetActionInfo` ActionInfo `Parameters/AllowableValues` is the
       allow-list source on OpenBMC; add fallback — DOCS-4. **Annotation-form
@@ -1170,6 +1172,20 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       label test extended to pin the single-node behavior
       (`bySemanticsLabel('Warning')`/`('Off')` now findsNothing while the
       merged labels still find one widget and the visible texts remain);
+      **FirmwareView inventory card merged node fixed (added
+      `excludeSemantics`) done 2026-10-25 — the per-item firmware card
+      wrapped its `ListTile` in `Semantics(container: true, label: ...)`
+      WITHOUT `excludeSemantics: true`, so the inner title/subtitle/chip
+      `Text`s still announced separately (a screen reader heard the merged
+      summary `Firmware BMC Firmware, 3.2.1, OK, updateable` AND then `BMC
+      Firmware`, `BMC · 3.2.1 · OK`, `Updateable` — the double-announcement
+      pattern merged everywhere else in the app). The card now adds
+      `excludeSemantics: true` so the merged label is the ONLY announcement;
+      visible text preserved for sighted users; the a11y label test extended
+      to pin the single-node behavior (`bySemanticsLabel('BMC Firmware')`/
+      `('Updateable')` now findsNothing while the merged label still finds
+      one widget and the visible texts remain); audit: no other
+      `Semantics(container: true)` node in `lib/` lacks `excludeSemantics`;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

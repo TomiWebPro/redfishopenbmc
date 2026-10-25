@@ -3330,3 +3330,71 @@
 **Issues touched:**
 - none opened/closed this run. DOCS-28 done (corpus mirror queue EMPTY);
   UI-2 advanced (badge merged node fix); #015 remains the next P1.
+
+## 2026-10-25 — agent:redfish-automation — EMU 66→68 (#018 expand pins) + UI-2 firmware card fix
+
+**Done:**
+- EMULATOR primary per alternation (last primary: DOCS 00:34; corpus mirror
+  queue EMPTY after DOCS-28, so the increment targeted a remaining discovery
+  surface). Generalized the `$expand` contract the #018 lightweight discovery
+  pass relies on:
+  1. **Chassis + Managers collections inline full member bodies** via the
+     map-form `getJson(path, query: {'\$expand': '.($levels=1)'})` — Chassis
+     identity/ChassisType/Status/IndicatorLED/Links.ComputerSystems/ManagedBy
+     and Manager ManagerType/FirmwareVersion/Model/Links.ManagerForServers/
+     ManagerInChassis; the **manager-level reset allow-list
+     (`#Manager.Reset` == exactly `[ForceRestart, GracefulRestart]`) is
+     visible through the expanded payload** — the #022/#016 conflation guard
+     (manager list never reused for the system gate) now enforced on the
+     inlined shape too.
+  2. **`$levels=2` depth bound pinned**: expanding Systems two levels does NOT
+     recurse — the member's own `Links.Chassis` stays a bare `@odata.id` ref
+     (no inlined ChassisType/Status), so the pass must follow cross-resource
+     URIs explicitly for deeper hops (DSP0266 §7.3.2).
+  Suite 66 → **68/68 passed** on pinned `23d21f9a`. All probes GETs; fixture
+  byte-identical; server stopped.
+- UI-2 increment: the **FirmwareView inventory card** was the last
+  `Semantics(container: true, label:)` node in `lib/` lacking
+  `excludeSemantics: true` — its inner title/subtitle/chip texts
+  double-announced under the merged summary. Fixed + single-node pins added
+  to the a11y label test (16/16 firmware widget tests pass). Full `lib/`
+  scan confirms no other merged node misses `excludeSemantics`.
+- Absorbed the Flutter 3.47.6 `dart format` drift (26 unrelated files, the
+  known line-join reflow) as a dedicated `chore: dart format` commit after
+  analyze 0 + tests 352 pass — per the 2026-10-25 DOCS-run note, it is NOT
+  mixed into the auto commit.
+
+**Decisions:**
+- EMULATOR per alternation; within it chose the generalized-`$expand` pin
+  because (a) the #018 pass walks Systems→Chassis→Manager and only the
+  Systems hop was pinned, (b) the `$levels=2` depth-cap question was open
+  and is a real discovery design input (fetch one full hop per collection,
+  follow bare URIs for the graph), (c) the manager reset allow-list needed
+  pinning on the inlined shape to close the conflation guard.
+- UI increment: the firmware card was a genuine remaining defect of the same
+  class as the 00:34 badge fix; small, pattern-consistent, fully tested. The
+  open-ended focus-order hunt (the only other open UI-2 item) kept skipped
+  per the prior runs' rationale.
+- Format drift: absorbed as a separate chore commit (sanctioned by the
+  queue note), keeping the auto commit clean and reviewable.
+- No new dependencies, no TLS change, no production behaviour change beyond
+  the semantics fix; emulator suite additions only in
+  `test_integration/emulator/` so plain `flutter test` never needs the
+  emulator.
+
+**Next:**
+- DOCS next per alternation: corpus mirror queue EMPTY and verified;
+  candidates — DOCS-27-style anchor freshness re-verification (bmcweb
+  `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0), a REQUIREMENTS.md audit row
+  for the new `$levels=2` depth-bound pin, or corpus refresh if the schema
+  index advanced.
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- Keep pushing every run (credentials verified at 01:36 UTC; 0 queued).
+
+**Issues touched:**
+- none opened/closed this run. EMU-2 66 → 68; #018 advanced (expand pinned
+  on all three top-level collections + `$levels=2` depth bound); #022/#016
+  advanced (manager reset allow-list on the inlined Manager payload); UI-2
+  advanced (firmware inventory card excludeSemantics fix — last merged node
+  missing it).

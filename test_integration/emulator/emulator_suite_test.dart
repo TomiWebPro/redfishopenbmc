@@ -1349,6 +1349,119 @@ void main() {
       expect(proc['Count'], 2);
     });
 
+    test(
+        'query transport: \$expand generalizes to the Chassis + Managers '
+        'collections — the whole discovery graph in one pass (#018)', () async {
+      // The 17:07/18:36/22:45 pins prove the Systems collection inlines full
+      // member bodies for `$expand=.($levels=1)`, `$expand=*`, and the
+      // map-form call. The #018 lightweight discovery pass walks
+      // Systems→Chassis→Manager Links (the 18:xx graph pin), so this closes
+      // the last gap: the SAME query, applied to the OTHER two top-level
+      // collections, must also inline the full resource bodies the pass
+      // hydrates — Chassis identity/status/IndicatorLED/Links and Manager
+      // ManagerType/FirmwareVersion/Model/Links + the #Manager.Reset
+      // allow-list in the Actions. One pass over all three collections gives
+      // the complete graph root without an N+1 per member.
+      final Map<String, dynamic> chassis = await client.getJson(
+        '/redfish/v1/Chassis',
+        query: <String, dynamic>{'\$expand': '.(\$levels=1)'},
+      );
+      expect(chassis['@odata.type'], startsWith('#ChassisCollection.'));
+      final List<dynamic> chassisMembers = chassis['Members'] as List<dynamic>;
+      expect(chassisMembers, isNotEmpty);
+      final Map<dynamic, dynamic> chassisMember =
+          chassisMembers.first as Map<dynamic, dynamic>;
+      expect(chassisMember['@odata.id'], '/redfish/v1/Chassis/1U');
+      // Full resource body inline (not a bare @odata.id link): the identity
+      // fields the overview (#006) and discovery graph (#018) read.
+      expect(chassisMember['ChassisType'], 'RackMount');
+      expect(chassisMember['Manufacturer'], isA<String>());
+      expect(chassisMember['Model'], isA<String>());
+      expect(chassisMember['IndicatorLED'], 'Lit');
+      final Map<dynamic, dynamic> chassisStatus =
+          chassisMember['Status'] as Map<dynamic, dynamic>;
+      expect(chassisStatus['Health'], isA<String>());
+      final Map<dynamic, dynamic> chassisLinks =
+          chassisMember['Links'] as Map<dynamic, dynamic>;
+      expect(chassisLinks['ComputerSystems'], isNotEmpty);
+      expect(chassisLinks['ManagedBy'], isNotEmpty);
+
+      final Map<String, dynamic> managers = await client.getJson(
+        '/redfish/v1/Managers',
+        query: <String, dynamic>{'\$expand': '.(\$levels=1)'},
+      );
+      expect(managers['@odata.type'], startsWith('#ManagerCollection.'));
+      final List<dynamic> managerMembers = managers['Members'] as List<dynamic>;
+      expect(managerMembers, isNotEmpty);
+      final Map<dynamic, dynamic> managerMember =
+          managerMembers.first as Map<dynamic, dynamic>;
+      expect(managerMember['@odata.id'], '/redfish/v1/Managers/BMC');
+      expect(managerMember['ManagerType'], 'BMC');
+      expect(managerMember['FirmwareVersion'], isA<String>());
+      expect(managerMember['Model'], isA<String>());
+      // The manager-level reset allow-list must be visible through the
+      // expanded payload too (the #022/#016 gate source; never conflate with
+      // the system-level list — the manager list has exactly 2 values).
+      final Map<dynamic, dynamic> managerActions =
+          managerMember['Actions'] as Map<dynamic, dynamic>;
+      final Map<dynamic, dynamic> managerReset =
+          managerActions['#Manager.Reset'] as Map<dynamic, dynamic>;
+      expect(
+        managerReset['ResetType@Redfish.AllowableValues'],
+        <String>['ForceRestart', 'GracefulRestart'],
+        reason: '#022/#016: the manager reset allow-list is exactly '
+            'ForceRestart/GracefulRestart — the pass must never reuse the '
+            'system-level list (On/ForceOff/…/Nmi, pinned 2026-10-23 03:02)',
+      );
+      final Map<dynamic, dynamic> managerLinks =
+          managerMember['Links'] as Map<dynamic, dynamic>;
+      expect(managerLinks['ManagerForServers'], isNotEmpty);
+      expect(managerLinks['ManagerInChassis'], isNotNull);
+    });
+
+    test(
+        'query transport: \$expand \$levels=2 does NOT recurse beyond one '
+        'level — nested Links stay bare refs (#018)', () async {
+      // DSP0266 §7.3.2: `$levels=1` is the default and each level inlines one
+      // more hop. The pass must decide how deep to expand BEFORE fetching:
+      // the pinned mockup's `$levels=2` still serves only ONE inlined hop on
+      // the top-level member (Systems → full ComputerSystem body), and the
+      // member's OWN Links (e.g. `Links.Chassis`) remain bare `@odata.id`
+      // refs — they are NOT recursively expanded in-app. A pass that relies
+      // on `$expand` for payload shaping therefore gets the full resource
+      // bodies of the collection's members (what the 17:07–22:45 + Chassis/
+      // Managers pins cover) but must still follow cross-resource Links as
+      // bare URIs for graph traversal — there is no server-side deep
+      // expansion beyond the first hop on this fixture.
+      final Map<String, dynamic> systems = await client.getJson(
+        '/redfish/v1/Systems',
+        query: <String, dynamic>{'\$expand': '.(\$levels=2)'},
+      );
+      expect(systems['@odata.type'], startsWith('#ComputerSystemCollection.'));
+      final List<dynamic> members = systems['Members'] as List<dynamic>;
+      expect(members, isNotEmpty);
+      final Map<dynamic, dynamic> member =
+          members.first as Map<dynamic, dynamic>;
+      expect(member['@odata.id'], '/redfish/v1/Systems/437XR1138R2');
+      // First hop IS inlined (the ComputerSystem body is full).
+      expect(member['Model'], '3500');
+      expect(member['PowerState'], 'On');
+      // Nested cross-resource Links stay bare @odata.id refs — no second
+      // expansion hop.
+      final Map<dynamic, dynamic> links =
+          member['Links'] as Map<dynamic, dynamic>;
+      final List<dynamic> chassisRefs = links['Chassis'] as List<dynamic>;
+      expect(chassisRefs, isNotEmpty);
+      final Map<dynamic, dynamic> chassisRef =
+          chassisRefs.first as Map<dynamic, dynamic>;
+      expect(chassisRef['@odata.id'], '/redfish/v1/Chassis/1U');
+      expect(chassisRef.containsKey('ChassisType'), isFalse,
+          reason: '#018: \$levels=2 does not recurse — a bare link has no '
+              'inlined resource body; the discovery pass must follow the URI '
+              'explicitly to hydrate deeper hops');
+      expect(chassisRef.containsKey('Status'), isFalse);
+    });
+
     test('account service: lockout policy + Roles link contract (#015/#026)',
         () async {
       // #015 AuthManager (logout/expiry reasoning) and #026 (duplicate auth

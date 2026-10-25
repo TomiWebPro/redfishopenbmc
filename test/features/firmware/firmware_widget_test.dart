@@ -316,6 +316,19 @@ void main() {
         ),
         findsOneWidget,
       );
+      // UI-2 single-node pin: the merged card label is the ONLY announcement
+      // for that surface — the inner title/subtitle/chip texts must NOT leave
+      // detached semantics nodes (the excludeSemantics fix, badge precedent).
+      // The visible texts stay for sighted users.
+      expect(find.bySemanticsLabel('BMC Firmware'), findsNothing,
+          reason: 'the inner title must not double-announce under the merged '
+              'card label');
+      expect(find.bySemanticsLabel('Updateable'), findsNothing,
+          reason: 'the chip text must not double-announce under the merged '
+              'card label');
+      expect(find.text('BMC Firmware'), findsOneWidget);
+      expect(find.text('BMC · 3.2.1 · OK'), findsOneWidget);
+      expect(find.text('Updateable'), findsOneWidget);
     });
 
     testWidgets(
