@@ -3782,8 +3782,10 @@ Append-only run log for the `redfish-automation` scheduler job.
   count — the badge test was extended, not added); issues validate OK;
   `git diff --check` clean; secret scan: JSON schemas, docs prose, Dart
   widget code only, no credentials. `dart format` clean on the touched files.
-- **Commit:** (after §7.2/§7.3 below) — pushed: expected yes (credentials
-  confirmed working at 01:36 UTC).
+- **Commit:** 620f77f — `auto: DOCS — DOCS-28 Heater+HeaterMetrics corpus
+  mirror (7 files, queue EMPTY) + UI-2 badge excludeSemantics merge (run
+  2026-10-25 00:34)`; pushed: **yes** (`4e7e8f3..620f77f main -> main`,
+  origin/main fully synced, 0 queued local commits).
 - **Next:** 1) EMULATOR per alternation — corpus mirror queue is EMPTY and
   verified; candidates: re-run the corpus-invariant published-types crawl
   (now covers the Heater surface), or pin a remaining un-pinned surface
