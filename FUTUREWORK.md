@@ -7,36 +7,33 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (EMULATOR run — **last un-pinned ActionInfo
-  families pinned live (EMU 75→78)**: `EventService.SubmitTestEventActionInfo`
-  (9 Parameters, MessageId REQUIRED, EventType 6-value AllowableValues,
-  StringArray/Number DataTypes — the #019/DOCS-7 test-event action) +
-  `#Certificate.Rekey` `RekeyActionInfo` contract on all three certificate
-  stores the CertificateLocations pin lists (KeyPairAlgorithm REQUIRED +
-  AllowableValues, KeyBitLength Number, KeyCurveId 3-curve
-  AllowableValues; shape verified consistent across
-  `Managers/BMC/NetworkProtocol/HTTPS/Certificates/1`,
-  `UpdateService/ClientCertificates/1`,
-  `AccountService/OutboundConnections/1/Certificates/1`) — the fourth
-  ActionInfo family, the #022/#016 crawler now has the resolve + parse shape
-  pinned on every ActionInfo resource the fixture serves; `ResetActionInfo`
-  itself still absent -> the OpenBMC allow-list-source crawl stays a code
-  task); UI-2 increment: PowerView card header now announces as ONE node
-  incl. the "Power control" subtitle (was a bare detached Text under the
-  merged header), + widget test; emulator suite **78/78** on pinned
-  `23d21f9a`; corpus mirror queue still EMPTY
-- **Current focus:** **EMULATOR (2026-10-25)** — last un-pinned ActionInfo
-  families pinned (EMU 75→78, 78/78 green on `23d21f9a`): SubmitTestEvent +
-  Certificate.Rekey contract, verified consistent across all three
-  certificate stores; corpus mirror queue still EMPTY; all service-root
-  branches + all ActionInfo resources the fixture serves are now pinned —
-  remaining #022/#016 surface is the actual `ResetActionInfo`-resource crawl
-  on OpenBMC (a code task, `FirmwareService`/`FeatureRules`); next per
-  alternation: DOCS (cheap anchor freshness re-verification or a
-  REQUIREMENTS.md housekeeping pass), then P1 #015 (AuthManager) —
-  `expiryFromService` + the Sessions pin are ready, wire the discovered
-  SessionService body into login + re-auth on `isExpired`; #016: the PATCH
-  transport + If-Match boundary are pinned on all live seams
+- **Last updated:** 2026-10-25 (DOCS run — **EMU 71→75 branch-pinned
+  families mirrored (DOCS-30)**: the seven certificate/key/component-integrity
+  families the corpus-invariant crawl visits had NO schema in the external
+  corpus — `CertificateService` (v1_0_4 served + v1_2_2 newest; the
+  GenerateCSR/ReplaceCertificate action targets behind the EMU 71 ActionInfo
+  pins), `CertificateLocations` (v1_0_3 + v1_0_4; the three-certificate-store
+  `Links.Certificates` pin list), `Certificate` (v1_8_1 + v1_11_0; `v1_11_0`
+  adds `Password`/`Status` — a #015/#026 never-read-back note),
+  `KeyService` (v1_0_0 + v1_0_1), `KeyPolicy` (v1_0_0 + v1_0_1; the #022-style
+  NVMeoF allow-list surface), `Key` (v1_4_0 + v1_4_1; NVMeoFSecrets members —
+  collection-metadata-only, never `KeyString`), `ComponentIntegrity`
+  (v1_2_2 + v1_5_0; SPDM/TPM/USB member shapes) + the four collection types —
+  25 files / 446,257 bytes, inside DOCS-6; delta audit additive-only → no
+  client code change; all seven families stay NOT client-mapped → no fixture
+  duty; every `@odata.type` the pinned mockup publishes now has a served
+  version in the external corpus; corpus mirror queue **EMPTY**)
+- **Current focus:** **DOCS (2026-10-25)** — EMU 71→75 branch-pinned families
+  mirrored (DOCS-30): all seven certificate/key/component-integrity families
+  now have served+newest schema pairs + collection types in the external
+  corpus (446,257 B, inside DOCS-6); corpus mirror queue **EMPTY**; next per
+  alternation: EMULATOR (cheap candidates: re-run the corpus-invariant
+  published-types crawl on the pinned `23d21f9a`, or pin any remaining
+  un-pinned surface — all service-root branches are pinned; the remaining
+  ActionInfo/`ResetActionInfo` crawl is code work #022/#016), then P1 #015
+  (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the
+  discovered SessionService body into login + re-auth on `isExpired`; #016:
+  the PATCH transport + If-Match boundary are pinned on all live seams
   (Boot/IndicatorLED, Control SetPoint, Bios/Settings, Manager.Reset),
   remaining is the actual If-Match/`@odata.etag` wiring in a Boot/IndicatorLED
   PATCH flow + unit tests for the 412 path; #022/#016: the ActionInfo
@@ -514,6 +511,43 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       header updated; UI-2 increment landed separately — firmware
       `_ServiceSummary` merged semantics + no dangling loading label, +2
       widget tests)
+
+- [x] **DOCS-30** Mirror the **EMU 71→75 branch-pinned families** the
+      corpus-invariant crawl visits but the external corpus had **no schema
+      at all** for: `CertificateService` (`v1_0_4` served + `v1_2_2` newest —
+      the GenerateCSR/ReplaceCertificate action targets + the
+      CertificateLocations link behind the EMU 71 ActionInfo pins),
+      `CertificateLocations` (`v1_0_3` served + `v1_0_4` newest — the
+      three-certificate-store `Links.Certificates` pin list),
+      `Certificate` (`v1_8_1` served + `v1_11_0` newest — the store members
+      the Rekey/GenerateCSR pins type; `v1_11_0` adds `Password`/`Status` —
+      a #015/#026 never-read-back note),
+      `KeyService` (`v1_0_0` served + `v1_0_1` newest — the NVMeoFSecrets +
+      NVMeoFKeyPolicies links), `KeyPolicy` (`v1_0_0` served + `v1_0_1`
+      newest — the NVMeoF allow-list surface, the #022-style read-only shape),
+      `Key` (`v1_4_0` served + `v1_4_1` newest — the NVMeoFSecrets members;
+      the suite pins collection-metadata only, never the `KeyString` body),
+      `ComponentIntegrity` (`v1_2_2` served + `v1_5_0` newest — the
+      SPDM/TPM/USB member shapes incl. the disabled USB member). Mirror the
+      **mockup-served** versions plus the **newest** published versions plus
+      the aggregators + collection types where they exist
+      (`CertificateCollection`, `KeyPolicyCollection`, `KeyCollection`,
+      `ComponentIntegrityCollection`) into
+      `documentations/external/redfish/schemas/v1/` only — all seven families
+      stay **NOT client-mapped** (no fixture duty; the corpus-invariant family
+      list unchanged; the DOCS-24/25/26/28 "newest + served" pair precedent).
+      Source: `https://redfish.dmtf.org/schemas/v1/<Name>.json`. Keep inside
+      the DOCS-6 budget. (run 2026-10-25, 25 files / 446,257 bytes, inside
+      DOCS-6; SHA-256s + manifest rows verified; delta audit **additive-only**
+      — CertificateService.v1_2_2 adds readonly certificate-enrollment
+      surface, Certificate.v1_11_0 adds `Password`/`Status` (#015/#026 note),
+      the other five newest versions are property no-ops — **no client code
+      change**; all seven families stay NOT client-mapped — no fixture duty,
+      corpus-invariant list untouched; REQUIREMENTS.md DOCS-30 trace table
+      cites the real mirror files; every `@odata.type` the pinned mockup
+      publishes now has a served-version schema in the external corpus;
+      anchors re-verified: bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
+      1.25.0, schema index 200; **the corpus mirror queue is now EMPTY**)
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across

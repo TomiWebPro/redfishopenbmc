@@ -84,10 +84,35 @@ class SystemOverviewPage extends ConsumerWidget {
                   if (handle.status == ConnectionStatus.error &&
                       handle.lastError != null) ...<Widget>[
                     const SizedBox(height: 12),
-                    Text(
-                      'Connection error: ${handle.lastError}',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+                    // UI-2: the connection error announces as ONE merged
+                    // semantics node (icon + message) instead of a bare
+                    // detached Text — the established error-state pattern
+                    // (OverviewView/SensorsView/FirmwareView/KVM/PowerView
+                    // inline errors). The visible text stays for sighted
+                    // users; the Connect button below keeps its own control
+                    // node.
+                    Semantics(
+                      container: true,
+                      excludeSemantics: true,
+                      label: 'Connection error: ${handle.lastError}',
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Icon(
+                            Icons.error_outline,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Connection error: ${handle.lastError}',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

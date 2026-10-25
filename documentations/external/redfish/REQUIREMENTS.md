@@ -6,7 +6,20 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (DOCS run — **anchors re-verified, no corpus
+Last audited: 2026-10-25 (DOCS run — **corpus mirror of the EMU 71→75
+branch-pinned families**: CertificateService / CertificateLocations /
+Certificate / KeyService / KeyPolicy / Key / ComponentIntegrity — 25 files,
+446,257 bytes, DOCS-30): closed the last corpus gap the EMU 71→75 branch pins
+exposed; every `@odata.type` the fixture publishes for these families now has a
+served+newest schema pair in the external corpus; delta audit **additive-only**
+(CertificateService.v1_2_2 adds readonly certificate *enrollment* surface,
+Certificate.v1_11_0 adds `Password`/`Status` — the `Password` is a #015/#026
+never-read-back note — the other five newest versions are property no-ops);
+**no client code change**; all families stay NOT client-mapped — no fixture
+duty, corpus-invariant unchanged; anchors re-verified (bmcweb `63a18f4`,
+mockup `23d21f9a`, DSP0266 1.25.0, schema index 200); **corpus mirror queue
+EMPTY**.
+Prior: 2026-10-25 (DOCS run — **anchors re-verified, no corpus
 refresh; "Test platforms" description reconciled with the 75-test suite**):
 re-verified every upstream anchor — bmcweb `63a18f4` (still HEAD via GitHub
 API), mockup `23d21f9a` (still HEAD of `main` via GitHub API), DSP0266 1.25.0
@@ -1636,3 +1649,35 @@ working `www.dmtf.org` URL — 1.26.0 still 404), schema index 200; each of the
 New bytes this run: 60,045 total (1,252+16,421+16,449+1,275+9,823+9,859+4,966)
 — inside the DOCS-6 budget. **The corpus mirror queue is now EMPTY** — every
 EMU-2-pinned family has a schema in the external corpus.
+
+## DOCS-30 — CertificateService/CertificateLocations/Certificate + KeyService/KeyPolicy/Key + ComponentIntegrity corpus mirror for the EMU-2 branch pins (2026-10-25)
+
+Closed the corpus gap the EMU 71→75 branch pins (2026-10-25) exposed: the
+certificate / key / component-integrity families pinned live by the
+corpus-invariant crawl had **no schema at all** in the external corpus
+(previously `grep` for any of these names in `documentations/external/redfish/
+schemas/v1/` returned nothing). Mirrored 25 files (446,257 bytes total, inside
+DOCS-6) into `documentations/external/redfish/schemas/v1/` (external corpus
+only — all seven families stay **NOT client-mapped**, so no fixture duty and
+no corpus-invariant list change, the DOCS-24/25/26/28 precedent):
+
+| Family | Served file | Newest file | EMU pin evidence | Client impact |
+|---|---|---|---|---|
+| `CertificateService` | `CertificateService.v1_0_4.json` | `CertificateService.v1_2_2.json` (+ `CertificateService.json` aggregator) | the pin reads `/redfish/v1/CertificateService` (`#CertificateService.v1_0_4.CertificateService`): the GenerateCSR / ReplaceCertificate action targets + the `CertificateLocations` link | none — v1_2_2 **adds only** `AutomaticCertificateEnrollment`/`CertificateEnrollments`/`EnrollmentCACertificates` (readonly enrollment surface; no client code change) |
+| `CertificateLocations` | `CertificateLocations.v1_0_3.json` | `CertificateLocations.v1_0_4.json` (+ `CertificateLocations.json` aggregator) | the pin reads `CertificateService/CertificateLocations` (`#CertificateLocations.v1_0_3.CertificateLocations`): `Links.Certificates` — the three certificate-store pin list (HTTPS server cert / UpdateService client cert / VirtualMedia cert) | none — v1_0_4 is a **property no-op** vs served v1_0_3 (diff: `$id`/copyright/`language`/description backticks only) |
+| `Certificate` | `Certificate.v1_8_1.json` | `Certificate.v1_11_0.json` (+ `Certificate.json` aggregator) | the store members the Rekey/GenerateCSR ActionInfo pins read type `#Certificate.v1_8_1.Certificate` | none — v1_11_0 **adds only** `Password`/`Status`; `Password` is a #015/#026 never-read-back note (same class as VirtualMedia `Password`/`UserName`, DOCS-24) |
+| `KeyService` | `KeyService.v1_0_0.json` | `KeyService.v1_0_1.json` (+ `KeyService.json` aggregator) | the pin reads `/redfish/v1/KeyService` (`#KeyService.v1_0_0.KeyService`): the NVMeoFSecrets (KeyCollection) + NVMeoFKeyPolicies links | none — v1_0_1 is a **property no-op** vs served v1_0_0 (diff: `$id`/copyright/description backticks only) |
+| `KeyPolicy` | `KeyPolicy.v1_0_0.json` | `KeyPolicy.v1_0_1.json` (+ `KeyPolicy.json` aggregator) | the pin reads the NVMeoF allow-list surface (`#KeyPolicy.v1_0_0.KeyPolicy`): SecurityTransportAllowList / CipherSuiteAllowList / SecurityProtocolAllowList / DHGroupAllowList / SecureHashAllowList (the #022-style read-only allow-list shape) | none — v1_0_1 is a **property no-op** vs served v1_0_0 |
+| `Key` | `Key.v1_4_0.json` | `Key.v1_4_1.json` (+ `Key.json` aggregator) | the pin reads `NVMeoFSecrets` as **collection-metadata only** (`#KeyCollection.KeyCollection`, 2 members) — the members type `#Key.v1_4_0.Key` and carry real `KeyString` key material, so the suite never fetches a member body (the #015/#026 never-read-secrets-back rule stated as a scope boundary in the test) | none — v1_4_1 is a **property no-op** vs served v1_4_0; the never-read-back boundary is the client contract |
+| `ComponentIntegrity` | `ComponentIntegrity.v1_2_2.json` | `ComponentIntegrity.v1_5_0.json` (+ `ComponentIntegrity.json` aggregator) | the pin reads the 4-member collection (SS-SPDM-0/1, USB-Integrity, TPM-0) + member shapes (`#ComponentIntegrity.v1_2_2.ComponentIntegrity` — SPDM enabled + DMTF MeasurementSet, TPM PCR measurement set, the **disabled** USB member — enabled-state read per member, never assumed) | none — v1_5_0 is a **property no-op** for the client-relevant surface (SPDM/TPM/USB member fields; added properties are deeper integrity-verification fields, additive) |
+
+All 25 files fetched 200 from `https://redfish.dmtf.org/schemas/v1/`
+(2026-10-25 15:40 UTC); every file validated as JSON; SHA-256s + byte sizes
+recorded in the manifest. The served versions are the aggregators' `$ref`
+targets for the exact versions the fixture serves (cross-checked against the
+fixture `@odata.type` values) — the "newest + served" pair precedent
+(DOCS-11/12/13/19/20/21/23/24/25/26/28). All upstream anchors re-verified the
+same run (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index
+200). New bytes this run: 446,257 total — inside the DOCS-6 budget. **The
+corpus mirror queue is now EMPTY** — every EMU-2-pinned family has a schema in
+the external corpus.

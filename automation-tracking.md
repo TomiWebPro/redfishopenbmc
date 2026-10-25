@@ -4508,3 +4508,93 @@ Append-only run log for the `redfish-automation` scheduler job.
   `a846990..3d22264  main -> main` — the EMULATOR auto commit (3d22264)
   pushed. `git rev-list --count origin/main..HEAD` = 0 (fully synced),
   working tree clean. Queued local commits ahead of origin/main: **0**.
+
+## 2026-10-25 10:27 UTC — DOCS (EMU 71→75 branch-pinned families mirrored, DOCS-30) + UI-2 SystemOverviewPage connection error
+
+- **Baseline:** analyze 0; tests 363 passed / 1 skipped; starting commit 07d1e57
+  (origin/main fully synced, 0 queued local commits); issues validate OK;
+  working tree clean; no stash, no crashed-run leftovers.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 13:10 — DOCS
+  is due). The corpus-invariant crawl *visits* the EMU 71→75 branch pins, but
+  the external corpus had **no schema at all** for any of the certificate /
+  key / component-integrity families (`grep` for CertificateService /
+  CertificateLocations / Certificate / KeyService / KeyPolicy / Key /
+  ComponentIntegrity in `documentations/external/redfish/schemas/v1/`
+  returned nothing). Closed that gap with **DOCS-30** — the "newest + served"
+  pair precedent (DOCS-24/25/26/28): mirrored **25 files / 446,257 bytes**
+  (inside the DOCS-6 budget) into the external corpus only (all seven
+  families stay **NOT client-mapped** → no fixture duty, corpus-invariant
+  unchanged):
+  1. **`CertificateService`** — served `v1_0_4` (the GenerateCSR /
+     ReplaceCertificate action targets + the CertificateLocations link behind
+     the EMU 71 ActionInfo pins) + newest `v1_2_2` (adds only
+     AutomaticCertificateEnrollment/CertificateEnrollments/
+     EnrollmentCACertificates, readonly — additive) + aggregator.
+  2. **`CertificateLocations`** — served `v1_0_3` (the three-certificate-store
+     `Links.Certificates` pin list) + newest `v1_0_4` (property no-op) +
+     aggregator.
+  3. **`Certificate`** — served `v1_8_1` (the store members the Rekey /
+     GenerateCSR pins type) + newest `v1_11_0` (**adds `Password`/`Status`** —
+     `Password` is a #015/#026 never-read-back note, same class as the
+     VirtualMedia `Password`/`UserName`, DOCS-24) + aggregator +
+     `CertificateCollection`.
+  4. **`KeyService`** — served `v1_0_0` (the NVMeoFSecrets + NVMeoFKeyPolicies
+     links) + newest `v1_0_1` (property no-op) + aggregator.
+  5. **`KeyPolicy`** — served `v1_0_0` (the NVMeoF allow-list surface:
+     SecurityTransport/CipherSuite/SecurityProtocol/DHGroup/SecureHash
+     AllowLists — the #022-style read-only shape) + newest `v1_0_1` (property
+     no-op) + aggregator + `KeyPolicyCollection`.
+  6. **`Key`** — served `v1_4_0` (the NVMeoFSecrets members; the suite pins
+     collection-metadata only, never the `KeyString` body — the #015/#026
+     never-read-secrets-back boundary) + newest `v1_4_1` (property no-op) +
+     aggregator + `KeyCollection`.
+  7. **`ComponentIntegrity`** — served `v1_2_2` (the SPDM/TPM/USB member
+     shapes incl. the disabled USB member) + newest `v1_5_0` (property no-op
+     for the client-relevant surface) + aggregator +
+     `ComponentIntegrityCollection`.
+  Delta audit **additive-only** across all seven families — **no client code
+  change**. Every `@odata.type` the pinned mockup publishes now has a
+  served-version schema in the external corpus; **corpus mirror queue EMPTY**.
+- **Docs:** 25 files fetched 200 from `https://redfish.dmtf.org/schemas/v1/`
+  (15:40 UTC), JSON-validated, SHA-256s + byte sizes verified; manifest rows
+  added (133 rows total), the "Downloaded schema set" list grew 25 → 32
+  aggregator names; REQUIREMENTS.md "Last audited" header rotated + DOCS-30
+  trace table added citing the real mirror files; FUTUREWORK.md DOCS-30 entry
+  added. Anchors re-verified the same run: bmcweb `63a18f4`, mockup
+  `23d21f9a`, DSP0266 1.25.0, schema index 200.
+- **Emulator:** none this run (78/78 suite stays green on `23d21f9a` from the
+  13:10 run; plain `flutter test` never touches it).
+- **Code/tests:** no production lib change from the docs stream. UI-2
+  increment below touched `lib/features/systems/views/system_overview_page.dart`
+  + `test/features/systems/ui_widget_test.dart` (+1 test).
+- **UI:** one small tested UI-2 increment — **SystemOverviewPage connection
+  error now announces as ONE merged node (icon + message)**. The inline
+  `Connection error: <msg>` was the last bare detached error `Text` in the
+  app (the 2026-10-23 note deliberately left it as its own node); every other
+  error state (OverviewView/SensorsView/FirmwareView/KVM/PowerView inline
+  errors) uses the established `Semantics(container + excludeSemantics)`
+  icon+text pattern. It now renders inside that pattern (`Connection error:
+  boom` as one self-describing announcement, `Icons.error_outline` +
+  visible text preserved, the Connect button below keeps its own control
+  node); +1 widget test asserts the merged `bySemanticsLabel` node + visible
+  text + icon. No new dependencies; no layout change (Row wrapper keeps
+  natural height), so the 320/800/1300 no-overflow tests are unaffected.
+- **Verification:** analyze 0; tests **364 passed / 1 skipped** (+1 — the new
+  merged-node test); issues validate OK; `git diff --check` clean; secret
+  scan: Dart code + JSON-prose docs only, no credentials (the `password`/
+  `key`/`KeyString` hits are Redfish protocol prose — session-login
+  description, KeyService/KeyPolicy/Key resource names, SHA-256 checksums);
+  `git diff --stat` 5 modified + 25 new schema files; `dart format` reflowed
+  114 files scanned, 0 changed.
+- **Commit:** (pending this run) —
+  `auto: DOCS — EMU 71→75 branch-pinned families mirrored (CertificateService/
+  CertificateLocations/Certificate/KeyService/KeyPolicy/Key/ComponentIntegrity,
+  DOCS-30) + UI-2 SystemOverviewPage connection error merged (run 2026-10-25
+  10:27)`.
+- **Next:** 1) EMULATOR per alternation — corpus mirror queue EMPTY and
+  verified; candidates: re-run the corpus-invariant published-types crawl on
+  the pinned `23d21f9a` (cheap re-proof; it now also covers the 7 newly
+  mirrored families), or the `ResetActionInfo`-crawler code task #022/#016;
+  2) P1 #015 AuthManager — wire `Session.expiryFromService` into login,
+  re-auth on `isExpired`, token/location from create RESPONSE HEADERS only;
+  3) keep pushing every run (credentials verified; 0 queued commits).

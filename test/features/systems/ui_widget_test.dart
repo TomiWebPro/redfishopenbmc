@@ -607,6 +607,31 @@ void main() {
       expect(find.textContaining('Connection error: boom'), findsOneWidget);
     });
 
+    testWidgets(
+        'connection error announces one merged node — icon + message (UI-2)',
+        (tester) async {
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(
+            id: 'bmc1',
+            status: ConnectionStatus.error,
+            health: Health.unknown,
+            lastError: 'boom',
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+      await pumpOverviewDirect(tester, m, 'bmc1');
+      expect(
+        find.bySemanticsLabel('Connection error: boom'),
+        findsOneWidget,
+        reason: 'expected one merged connection-error node (icon + message)',
+      );
+      // Visible text preserved for sighted users.
+      expect(find.textContaining('Connection error: boom'), findsOneWidget);
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+    });
+
     testWidgets('renders "System not found" for an unknown id', (tester) async {
       final SystemManager m = seededManager(systems: <String, SystemHandle>{});
       await pumpOverviewDirect(tester, m, 'ghost');

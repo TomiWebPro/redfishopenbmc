@@ -3867,3 +3867,63 @@
   serves — SubmitTestEvent + Certificate.Rekey with cross-store consistency);
   #019 advanced (the DOCS-7 test-event action's parameter contract is now
   pinned); UI-2 advanced (PowerView header fully merged).
+
+## 2026-10-25 — agent:redfish-automation — DOCS-30 corpus mirror (EMU 71→75 branch-pinned families) + UI-2 SystemOverviewPage connection error
+
+**Done:**
+- DOCS primary per alternation (last primary: EMULATOR 13:10). The
+  corpus-invariant crawl visits the EMU 71→75 branch pins but the external
+  corpus had **no schema for any** of the certificate/key/component-integrity
+  families. Closed the gap with **DOCS-30** (25 files / 446,257 bytes, inside
+  DOCS-6; the DOCS-24/25/26/28 "newest + served" precedent; external corpus
+  only — all seven families stay NOT client-mapped, no fixture duty):
+  `CertificateService` (v1_0_4 served + v1_2_2 newest), `CertificateLocations`
+  (v1_0_3 + v1_0_4), `Certificate` (v1_8_1 + v1_11_0; **v1_11_0 adds
+  `Password`/`Status`** — a #015/#026 never-read-back note) +
+  `CertificateCollection`, `KeyService` (v1_0_0 + v1_0_1), `KeyPolicy`
+  (v1_0_0 + v1_0_1; the #022-style NVMeoF allow-list surface) +
+  `KeyPolicyCollection`, `Key` (v1_4_0 + v1_4_1; NVMeoFSecrets members —
+  collection-metadata-only boundary, never `KeyString`) + `KeyCollection`,
+  `ComponentIntegrity` (v1_2_2 + v1_5_0; SPDM/TPM/USB member shapes incl. the
+  disabled USB member) + `ComponentIntegrityCollection`. Delta audit
+  **additive-only** → no client code change; manifest rows + SHA-256s
+  verified; REQUIREMENTS.md DOCS-30 trace table + Last-audited header;
+  FUTUREWORK DOCS-30 entry; anchors re-verified (bmcweb `63a18f4`, mockup
+  `23d21f9a`, DSP0266 1.25.0, schema index 200); **corpus mirror queue EMPTY**.
+- UI-2 increment: **SystemOverviewPage connection error merged semantics
+  node** — the last bare detached error `Text` in the app now renders in the
+  established `Semantics(container + excludeSemantics)` icon+message pattern
+  (visible text preserved, `Icons.error_outline`); the Connect control keeps
+  its own node; +1 widget test; suite 363 → **364 passed / 1 skipped**.
+
+**Decisions:**
+- DOCS per alternation; took the "mirror the EMU 71→75 pinned families"
+  candidate because (a) the 13:10 run's own tracking noted all branches are
+  pinned but the corpus had no schemas for these families — a genuine
+  provenance gap the DOCS-24/25/26/28 precedent says to close, (b) it makes
+  every fixture-published `@odata.type` traceable to a real mirror file, and
+  (c) the delta audit confirmed additive-only so no code risk.
+- UI increment: the connection-error line was the last non-merged error
+  surface (explicitly deferred in the 2026-10-23 log); the goal line
+  "extend to remaining cards, dialogs" made it the correct next pick. Did not
+  rush the open-ended focus-order hunt.
+- No new dependencies, no TLS change, no emulator dependency in plain
+  `flutter test`, no production behaviour change beyond the semantics
+  wrapper.
+
+**Next:**
+- EMULATOR per alternation: corpus mirror queue EMPTY; re-run the
+  corpus-invariant published-types crawl on the pinned `23d21f9a` (cheap
+  re-proof — now covers the 7 newly mirrored families), or take the
+  ActionInfo/`ResetActionInfo` crawler as code work (#022/#016).
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- Keep pushing every run (credentials verified; 0 queued).
+
+**Issues touched:**
+- none opened/closed this run. DOCS corpus advanced (DOCS-30 — 7 families now
+  have served+newest schema pairs in the external corpus); #015/#026 advanced
+  (Certificate `Password` + Key `KeyString` never-read-back notes now cite
+  real mirror files); #022 advanced (KeyPolicy allow-list shape now has a
+  real schema citation); UI-2 advanced (SystemOverviewPage is now fully
+  merged — header, error, empty, not-found all single-node announcements).
