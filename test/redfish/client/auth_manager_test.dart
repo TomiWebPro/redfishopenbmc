@@ -604,6 +604,9 @@ void main() {
       final RedfishException e403 = RedfishException.fromResponse(resp403);
       expect(e403.retryable, isFalse);
       expect(e403.message, 'forbidden');
+      expect(e403.isPreconditionFailed, isFalse,
+          reason: '#016: only 412 identifies a stale optimistic-concurrency '
+              'token; ordinary 4xx are not precondition failures');
 
       final Response<dynamic> respPlain = Response<dynamic>(
         requestOptions: RequestOptions(path: '/x'),
@@ -864,6 +867,135 @@ void main() {
         thrown = e;
       }
       expect(thrown.statusCode, 405);
+    });
+
+    test('patchJson with etag sends quoted If-Match header (#016)', () async {
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
+      final List<Map<String, dynamic>> captured = <Map<String, dynamic>>[];
+      client.dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+            captured.add(Map<String, dynamic>.from(options.headers));
+            handler.next(options);
+          },
+        ),
+      );
+      adapter.onPatch(
+        _systemUrl('bmc1'),
+        (server) => server.reply(204, <String, dynamic>{}),
+      );
+      await client.patchJson(
+        _systemUrl('bmc1'),
+        body: <String, dynamic>{'IndicatorLED': 'Blinking'},
+        etag: '9234ac83b9700123cc32',
+      );
+      expect(captured, hasLength(1));
+      expect(captured.single['If-Match'], '"9234ac83b9700123cc32"',
+          reason: 'RFC7232 entity-tag: an unquoted @odata.etag must be '
+              'quoted before it is sent in If-Match');
+    });
+
+    test('patchJson with etag keeps weak/pre-quoted tags verbatim (#016)',
+        () async {
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
+      final List<Map<String, dynamic>> captured = <Map<String, dynamic>>[];
+      client.dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+            captured.add(Map<String, dynamic>.from(options.headers));
+            handler.next(options);
+          },
+        ),
+      );
+      adapter.onPatch(
+        _systemUrl('bmc1'),
+        (server) => server.reply(204, <String, dynamic>{}),
+      );
+      await client.patchJson(
+        _systemUrl('bmc1'),
+        etag: 'W/"v1"',
+      );
+      await client.patchJson(
+        _systemUrl('bmc1'),
+        etag: '"already-quoted"',
+      );
+      expect(captured, hasLength(2));
+      expect(captured[0]['If-Match'], 'W/"v1"');
+      expect(captured[1]['If-Match'], '"already-quoted"');
+    });
+
+    test('patchJson If-Match from etag wins over headers (#016)', () async {
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
+      final List<Map<String, dynamic>> captured = <Map<String, dynamic>>[];
+      client.dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+            captured.add(Map<String, dynamic>.from(options.headers));
+            handler.next(options);
+          },
+        ),
+      );
+      adapter.onPatch(
+        _systemUrl('bmc1'),
+        (server) => server.reply(204, <String, dynamic>{}),
+      );
+      await client.patchJson(
+        _systemUrl('bmc1'),
+        headers: <String, String>{'If-Match': '"stale"'},
+        etag: 'fresh',
+      );
+      expect(captured.single['If-Match'], '"fresh"');
+    });
+
+    test('patchJson 412 throws precondition failure RedfishException (#016)',
+        () async {
+      final (RedfishClient client, DioAdapter adapter) =
+          await clientFor('bmc1');
+      adapter.onPatch(
+        _systemUrl('bmc1'),
+        (server) => server.reply(
+          412,
+          <String, dynamic>{
+            'error': <String, dynamic>{
+              'code': 'Base.1.0.PreconditionFailed',
+              'message': 'The ETag supplied did not match the current ETag.',
+            },
+          },
+        ),
+      );
+      late RedfishException thrown;
+      try {
+        await client.patchJson(
+          _systemUrl('bmc1'),
+          body: <String, dynamic>{'IndicatorLED': 'Blinking'},
+          etag: 'stale-tag',
+        );
+      } on RedfishException catch (e) {
+        thrown = e;
+      }
+      expect(thrown.statusCode, 412);
+      expect(thrown.isPreconditionFailed, isTrue,
+          reason: '#016: a stale optimistic-concurrency token surfaces as a '
+              '412 the caller can distinguish from other 4xx failures');
+      expect(thrown.retryable, isFalse,
+          reason: 'retrying the identical request with the same stale tag '
+              'cannot succeed (#016: re-fetch @odata.etag, then retry)');
+    });
+
+    test('quoteEntityTag grammar helper (#016)', () {
+      expect(RedfishClient.quoteEntityTag('abc'), '"abc"');
+      expect(RedfishClient.quoteEntityTag('"abc"'), '"abc"');
+      expect(RedfishClient.quoteEntityTag('W/"v1"'), 'W/"v1"');
+      expect(RedfishClient.quoteEntityTag('w/"v1"'), 'W/"v1"');
+      expect(RedfishClient.quoteEntityTag('W/ abc'), 'W/"abc"');
+      expect(RedfishClient.quoteEntityTag(' a"b '), '"ab"');
+      expect(RedfishClient.quoteEntityTag(''), '""');
     });
 
     test('builds its own Dio from profile (default transport + TLS-first)',

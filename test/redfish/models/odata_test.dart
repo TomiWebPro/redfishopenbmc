@@ -14,6 +14,17 @@ void main() {
       expect(r.context, '/redfish/v1/\$metadata#ComputerSystem');
     });
 
+    test('reads @odata.etag, null when absent (#016)', () {
+      expect(
+        const ODataResource(<String, dynamic>{'@odata.etag': 'W/"v1"'}).etag,
+        'W/"v1"',
+      );
+      expect(
+        const ODataResource(<String, dynamic>{'Id': 'x'}).etag,
+        isNull,
+      );
+    });
+
     test('isCollection true when Members present', () {
       expect(
         const ODataResource(<String, dynamic>{'Members': <dynamic>[]})

@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (EMULATOR run — `ResetActionInfo` ActionInfo-*resource* crawl wired into `FeatureRules.supportedResetTypes`: the discovery engine now follows `@Redfish.ActionInfo` links and captures the resources, FeatureRules unions `Parameters[].AllowableValues` on `ResetType` as the third allow-list source — unit + engine tests + live emulator pin (79/79); #022/#016 advanced; Control SetPoint AllowableMin/Max pre-validation still open)
-- **Current focus:** **EMULATOR (2026-10-25)** — the bmcweb `ResetActionInfo` ActionInfo-*resource* crawl is no longer a TODO: the engine follows `@Redfish.ActionInfo` links (EMU 79th test pins the live `SimpleUpdateActionInfo` capture), `FeatureRules.supportedResetTypes` unions `SupportedResetTypes` + annotation + ActionInfo `Parameters[].AllowableValues` on `ResetType`, with the manager-list conflation guard (unit + engine tests). Next per alternation: **DOCS** (corpus mirror queue still EMPTY; cheap re-verify), then the remaining #022/#016 pieces — the Control SetPoint AllowableMin/Max pre-validation rule (#006/#019/#022) and the Boot/IndicatorLED PATCH flow + 412 unit tests; then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; **UI-2 remaining is the open-ended focus-order/dialogs-tables hunt** (every concrete "last bare text" surface audited 2026-10-25 is already merged)
+- **Last updated:** 2026-10-25 (DOCS run — all four upstream anchors re-verified: bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0 byte-identical, schema index byte-identical — **no corpus refresh, DOCS-27 ZERO advances hold, mirror queue EMPTY**; #016 If-Match/`@odata.etag` **wiring landed** — `patchJson(..., etag:)` sends quoted `If-Match` (RFC7232), `ODataResource.etag` accessor, `RedfishException.isPreconditionFailed` 412 classification, +6 unit tests; UI-2 KVM connect-type chips merged into one semantics node, +1 widget test)
+- **Current focus:** **DOCS (2026-10-25)** — anchor re-verify done (corpus mirror queue still EMPTY); the #016 transport-level acceptance criteria are done (PATCH + If-Match/`@odata.etag` wiring + 412 classification); next: **EMULATOR** per alternation, then the remaining #022/#016 pieces — the Control SetPoint AllowableMin/Max pre-validation rule (#006/#019/#022) and the **Boot/IndicatorLED PATCH flow in a service + UI** (#016 remaining, the #028 BIOS-editor input, settings-object ETag `9234ac83b9700123cc32`); then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — the open-ended focus-order/dialogs-tables hunt continues (the KVM connect-type chip merge this run closed another concrete "detached node" surface)
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -952,16 +952,26 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       byte-identical), while the mockup applies ANY body value unvalidated
       (`IndicatorLED: "Bogus"` persists) — the client must pre-validate
       against advertised `AllowableValues` (Boot-override + Reset list now
-      both pinned); **If-Match boundary pinned live 2026-10-24 20:xx (EMU
+      both pinned);
+      **the If-Match/`@odata.etag` *wiring* landed 2026-10-25 (DOCS run)** —
+      the transport-level acceptance criteria are done: `patchJson(..., etag:)`
+      sends a properly-quoted `If-Match` (RFC7232 entity-tag grammar; the
+      settings-object ETag `9234ac83b9700123cc32` is the only pinable token on
+      the fixture, header-level ETags stay unit-level), `ODataResource.etag`
+      reads `@odata.etag`, and `RedfishException.isPreconditionFailed`
+      classifies 412 (non-retryable — the caller re-fetches instead of
+      blind-retrying); +6 unit tests; the 412 negative pin stays unit-level
+      because the DMTF mockup IGNORES If-Match (pinned 2026-10-24); remaining:
+      **(b) Boot/IndicatorLED PATCH actions in a service + UI** — the
+      transport + precondition wiring are in place, a mutation feature (boot
+      override / BIOS editor #028) consumes them;
+      **If-Match boundary pinned live 2026-10-24 20:xx (EMU
       59→60)**: a PATCH with a stale `If-Match: "bogus-stale-etag"` header is
       answered 204 AND persists — the mockup never evaluates preconditions
       (no resource-level `@odata.etag`/HTTP ETag; the settings-object ETag
       `9234ac83b9700123cc32` is the only concurrency token it serves), so 412
       enforcement stays unit-level and the #016 client must send the
-      settings-object ETag itself; remaining: (a) If-Match/`@odata.etag`
-      wiring — the settings-object ETag `9234ac83b9700123cc32` (EMU 53) is the
-      only pinable concurrency token on the fixture, header-level ETags stay
-      unit-level, (b) Boot/IndicatorLED PATCH actions in a service + UI,
+      settings-object ETag itself;
       (c) ~~the `ResetActionInfo` ActionInfo *resource* crawl~~ **landed
       2026-10-25 (EMU run)** — the engine follows `@Redfish.ActionInfo` links,
       `FeatureRules.supportedResetTypes` unions `Parameters[].AllowableValues`

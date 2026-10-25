@@ -103,16 +103,33 @@ class RedfishClient {
   /// body carries only the properties being changed (e.g. a
   /// `ComputerSystem.Boot` override or `IndicatorLED`). Successful responses
   /// are 200-with-body or 204-no-content.
+  ///
+  /// When [etag] is provided the request carries an `If-Match` precondition
+  /// header (DSP0266 §6.5 "ETags" / RFC7232), so a stale optimistic-
+  /// concurrency token makes the service answer 412 instead of silently
+  /// overwriting. The value is quoted per the RFC7232 entity-tag grammar
+  /// (`"<etag>"`, or `W/"<etag>"` when the caller passes a weak tag).
+  /// When [etag] and [headers] both carry an `If-Match`, [etag] wins.
   Future<Map<String, dynamic>> patchJson(
     String path, {
     Map<String, dynamic>? body,
     Map<String, String>? headers,
+    String? etag,
   }) async {
+    final Map<String, String>? mergedHeaders;
+    if (etag != null) {
+      mergedHeaders = <String, String>{
+        if (headers != null) ...headers,
+        'If-Match': quoteEntityTag(etag),
+      };
+    } else {
+      mergedHeaders = headers;
+    }
     try {
       final response = await _dio.patch<dynamic>(
         path,
         data: body,
-        options: Options(headers: headers),
+        options: Options(headers: mergedHeaders),
       );
       return _asMap(response.data);
     } on DioException catch (e) {
@@ -121,6 +138,31 @@ class RedfishClient {
         uri: Uri.tryParse(profile.baseUrl + path),
       );
     }
+  }
+
+  /// Quotes [etag] for use in an `If-Match` precondition header per the
+  /// RFC7232 §2.3.2 entity-tag grammar (`[ weak ] opaque-tag` where
+  /// `opaque-tag = DQUOTE *etagc DQUOTE`).
+  ///
+  /// Redfish payloads usually carry the token *unquoted* (`@odata.etag` /
+  /// `@Redfish.Settings.ETag` values like `9234ac83b9700123cc32`), but the
+  /// header grammar requires the quotes; an already-quoted tag (including the
+  /// weak `W/"..."` form) is passed through unchanged.
+  static String quoteEntityTag(String etag) {
+    final String trimmed = etag.trim();
+    if (trimmed.startsWith('W/') || trimmed.startsWith('w/')) {
+      final String rest = trimmed.substring(2).trim();
+      if (rest.startsWith('"') && rest.endsWith('"')) {
+        return 'W/$rest';
+      }
+      return 'W/"${rest.replaceAll('"', '')}"';
+    }
+    if (trimmed.startsWith('"') &&
+        trimmed.endsWith('"') &&
+        trimmed.length >= 2) {
+      return trimmed;
+    }
+    return '"${trimmed.replaceAll('"', '')}"';
   }
 
   /// DELETE [path]; returns `true` on success (204 or 200).

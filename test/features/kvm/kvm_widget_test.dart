@@ -212,6 +212,48 @@ void main() {
     });
 
     testWidgets(
+        'console card connect-type chips announce as one merged semantics '
+        'node (UI-2)', (tester) async {
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(
+          consoles: <KvmConsole>[
+            KvmConsole(
+              type: KvmConsoleType.graphical,
+              managerId: 'BMC',
+              connectTypesSupported: <String>['KVMIP', 'HTML5'],
+              serviceEnabled: true,
+              sourceManagerUri: '/redfish/v1/Managers/BMC',
+            ),
+          ],
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The chips are ONE self-describing announcement — a screen reader
+      // hears 'Supported connection types: KVMIP, HTML5' instead of two
+      // detached chip nodes next to the merged card rows.
+      expect(
+        find.bySemanticsLabel('Supported connection types: KVMIP, HTML5'),
+        findsOneWidget,
+        reason: 'UI-2: the connect-type chips announce one merged label',
+      );
+      // The bare chip labels no longer announce separately (excluded).
+      expect(find.bySemanticsLabel('KVMIP'), findsNothing);
+      expect(find.bySemanticsLabel('HTML5'), findsNothing);
+      // Visible texts stay for sighted users.
+      expect(find.text('KVMIP'), findsOneWidget);
+      expect(find.text('HTML5'), findsOneWidget);
+    });
+
+    testWidgets(
         'console card header announces one merged semantics node — '
         'enabled (UI-2)', (WidgetTester tester) async {
       final KvmController controller = _StubController()

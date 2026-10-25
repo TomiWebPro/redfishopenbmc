@@ -291,18 +291,32 @@ class _ConsoleCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: <Widget>[
-                for (final String type in console.connectTypesSupported)
-                  Chip(
-                    label: Text(type),
-                    visualDensity: VisualDensity.compact,
-                  ),
-              ],
-            ),
+            if (console.connectTypesSupported.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 8),
+              // UI-2: the connect-type chips announce as ONE self-describing
+              // node (e.g. 'Supported connection types: KVMIP, HTML5') — each
+              // Chip otherwise announces as its own detached node next to the
+              // merged card rows, the same "bare text class" every other row in
+              // this card already merged. The visible chips stay for sighted
+              // users.
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: 'Supported connection types: '
+                    '${console.connectTypesSupported.join(', ')}',
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    for (final String type in console.connectTypesSupported)
+                      Chip(
+                        label: Text(type),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                  ],
+                ),
+              ),
+            ],
             if (console.maxConcurrentSessions != null) ...<Widget>[
               const SizedBox(height: 8),
               // UI-2: same merged card-row pattern — label + value as one node.

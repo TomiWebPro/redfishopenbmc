@@ -6,7 +6,29 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (DOCS run — **anchor freshness re-verification, no
+Last audited: 2026-10-25 (DOCS run — **anchor freshness re-verification +
+small safe #016 If-Match code gap closed**): re-verified every upstream anchor
+this run. (1) **bmcweb `63a18f4`** — still HEAD of `master` via `git ls-remote`;
+(2) **mockup `23d21f9a`** — still HEAD of `main` via `git ls-remote`;
+(3) **DSP0266 1.25.0** — 200 on the working `www.dmtf.org` URL and
+**byte-identical** SHA-256 `385ee6d0…` vs the mirrored
+`redfish/spec/DSP0266_1.25.0.pdf`; (4) **schema index** — 200 and
+**byte-identical** SHA-256 `e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48
+f8dc9c0b86` (3,448,133 B) vs the mirrored `v1-index.html` → **no corpus
+refresh needed** (DOCS-27 ZERO version advances hold; the corpus mirror queue
+stays EMPTY for every published type). **Code gap closed (#016):** the
+If-Match/`@odata.etag` wiring the §6.5 row below flagged as Partial is now
+landed — `patchJson(..., etag:)` sends a properly-quoted `If-Match`
+(RFC7232 entity-tag grammar; unquoted payload-form tokens quoted, `W/"..."`
+weak tags preserved), `ODataResource.etag` reads `@odata.etag`, and
+`RedfishException.isPreconditionFailed` classifies 412 (non-retryable, so a
+stale-token caller re-fetches instead of blind-retrying) — 6 new unit tests
+(+1 OData accessor, +5 client/exception). What stays #016: the Boot/
+IndicatorLED PATCH *actions in a service + UI* (the transport + precondition
+wiring a future flow needs are in place; the settings-object ETag
+`9234ac83b9700123cc32` is the only pinable token on the DMTF fixture, and the
+mockup IGNORES If-Match — enforcement stays unit-level).
+Prior: 2026-10-25 (DOCS run — **anchor freshness re-verification, no
 corpus refresh needed**): re-verified every upstream anchor this run.
 (1) **bmcweb `63a18f4`** — still HEAD of the `master` branch, verified via
 `git ls-remote https://github.com/openbmc/bmcweb.git refs/heads/master`
@@ -423,7 +445,7 @@ Folded into code this run:
 | `@odata.id` link traversal is cycle-safe and depth-bounded (≤3) | DSP0266 §9.6.2 "@odata.id property" + §9.1 "Resources"; `odata.4.0.0.json` (mirrored DOCS-14; the bare `Odata.json` 404s upstream) | `lib/redfish/discovery/discovery_engine.dart` (visited `Set<uri>`, maxDepth) | `test/redfish/discovery/discovery_engine_test.dart` | OK |
 | Feature detection "nothing is assumed": every UI feature gated on discovered capability | OpenBMC `Redfish.md`; DSP0266 §9.1 "Resources" (resource tree traversal) | `lib/redfish/discovery/feature_rules.dart` → `SystemFeatures` | `test/redfish/discovery/feature_rules_test.dart` | OK |
 | Conditional GET re-crawl via `If-None-Match` / ETag (304 short-circuit) | DSP0266 §6.5 "ETags" + §7.2 "GET (read requests)"; `ComputerSystem.json` | `lib/redfish/discovery/discovery_engine.dart` (`_fetchUri` etag map) | `test/redfish/discovery/discovery_engine_test.dart` | OK |
-| PATCH write support with `If-Match` / `@odata.etag` | DSP0266 §6.5 "ETags" (weak/strong validation, RFC7232); §7.6 "PATCH (update)" | `lib/redfish/client/redfish_client.dart` `patchJson()` (partial update transport, landed 2026-10-24 — 204/200 normalized, non-2xx → `RedfishException`); If-Match header wiring + the settings-object ETag flow stay #016 | `test/redfish/client/auth_manager_test.dart` "patchJson 204 no-content / 200 with body / non-2xx" (+ emulator PATCH round-trip pin below) | Partial — transport done; If-Match + Boot/IndicatorLED PATCH actions stay #016 |
+| PATCH write support with `If-Match` / `@odata.etag` | DSP0266 §6.5 "ETags" (weak/strong validation, RFC7232); §7.6 "PATCH (update)" | `lib/redfish/client/redfish_client.dart` `patchJson()` (partial update transport, landed 2026-10-24 — 204/200 normalized, non-2xx → `RedfishException`); **`If-Match` wiring landed 2026-10-25 (DOCS run)** — `patchJson(..., etag:)` sends the precondition header (RFC7232 entity-tag quoting: unquoted/payload-form `@odata.etag` values are quoted, `W/"..."` weak tags preserved), `ODataResource.etag` reads `@odata.etag` from any resource, and `RedfishException.isPreconditionFailed` classifies 412 so a stale-token caller can re-fetch instead of blind-retrying; Boot/IndicatorLED PATCH *actions in a service + UI* stay #016 | `test/redfish/client/auth_manager_test.dart` "patchJson with etag sends quoted If-Match header" + "keeps weak/pre-quoted tags verbatim" + "If-Match from etag wins over headers" + "412 throws precondition failure RedfishException (isPreconditionFailed, non-retryable)" + "quoteEntityTag grammar helper" (+ `test/redfish/models/odata_test.dart` "@odata.etag accessor, null when absent"; emulator PATCH round-trip pin below: the DMTF mockup IGNORES If-Match and applies any body, so 412 enforcement stays unit-level — pinned 2026-10-24) | OK — transport + precondition wiring; Boot/IndicatorLED PATCH flow in a service + UI stays #016 |
 | Error envelope: `error.code`, `error.message`, `error.@Message.ExtendedInfo[]`; message templates from the published `Base.*` MessageRegistry | DSP0266 §8.6 "Error responses" + §11.4 "Message registries"; `redfish_error.md`; `registries/Base.1.5.0.json` + `registries/Base.1.24.0.json` (mirrored DOCS-18 — the 1.5.0 payload is byte-identical to the pinned mockup's, so the emulator-pinned `Base.*` templates resolve against a real mirror file) | `lib/redfish/models/redfish_error.dart` | `test/redfish/models/models_test.dart`; emulator MessageRegistry group pins the Base.1.5.0 discovery + template surface | OK (see #014: ExtendedInfo parsing hardening) |
 | Session auth: `POST SessionService/Sessions` → `X-Auth-Token`, session reuse | DSP0266 §13.3.4 "Redfish session login authentication"; `SessionService.json` + `SessionService.v1_2_0.json` (newest, DOCS-12) | `lib/redfish/client/auth_manager.dart` | `test/redfish/client/auth_manager_test.dart` | OK (see #015: discover session URI instead of hardcoding) |
 | Basic auth fallback | DSP0266 §13.3.3 "HTTP Basic authentication" | `lib/redfish/client/auth_manager.dart` | `test/redfish/client/auth_manager_test.dart` | OK |

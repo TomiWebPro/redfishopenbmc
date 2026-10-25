@@ -4057,3 +4057,26 @@
 - #016 advanced (Progress Log: (c) ActionInfo-resource crawl landed; remaining:
   If-Match/`@odata.etag` wiring + 412 tests, Boot/IndicatorLED PATCH flow).
 - none opened/closed this run.
+
+## 2026-10-25 — agent:redfish-automation — DOCS: anchors re-verified + #016 If-Match wiring + UI-2 KVM chip merge
+
+**Done:**
+- DOCS primary per alternation (last primary: EMULATOR 15:47). Corpus mirror queue is EMPTY, so the DOCS run did the documented cheap anchor re-verify + a small safe code-gap close from the trace table. Re-verified live: bmcweb `63a18f4` (git ls-remote, still master HEAD), mockup `23d21f9a` (still main HEAD), DSP0266 1.25.0 PDF **byte-identical** SHA-256 `385ee6d0…`, schema index **byte-identical** SHA-256 `e5a29797…` → no corpus refresh, DOCS-27 ZERO advances hold, 0 bytes downloaded.
+- **#016 If-Match/`@odata.etag` wiring landed (the §6.5 trace-row gap):** `RedfishClient.patchJson(..., etag:)` sends a quoted `If-Match` (RFC7232 entity-tag grammar via new `quoteEntityTag` — unquoted `@odata.etag` values quoted, `W/"…"`/pre-quoted preserved, `etag` wins over a `headers` If-Match); `ODataResource.etag` accessor; `RedfishException.isPreconditionFailed` (412, non-retryable — re-fetch the current etag, don't blind-retry). +6 unit tests; full suite 372 → **379 passed / 1 skipped**; analyze 0.
+- **Emulator:** 79/79 re-run live after the transport-signature change (official harness, trap cleanup) — green incl. the Bios/Settings PATCH pins and the If-Match-ignored negative pin.
+- **UI-2:** KVM console card `connectTypesSupported` chip Wrap merged into ONE `Semantics(container + excludeSemantics)` node (`Supported connection types: KVMIP, HTML5`); empty list renders nothing; +1 widget test; KVM 13→14 (12→13 for the chips test itself).
+
+**Decisions:**
+- DOCS per alternation; corpus queue empty → the runbook's "prefer fixing small, safe gaps immediately (with tests)" (the trace-table §6.5 row was the exact #016 acceptance criterion, small and additive).
+- Backward-compatible signature (`etag` optional; existing callers/tests untouched) — verified by the live emulator suite re-run.
+- The DMTF fixture's If-Match-ignored negative stays the boundary; 412 enforcement is unit-level by design (documented in issue + REQUIREMENTS.md).
+- Did not rush the open-ended UI-2 focus-order hunt; the KVM chip merge was a concrete remaining "detached node" surface.
+
+**Next:**
+- EMULATOR per alternation: 79/79 cheap re-run and/or Control SetPoint AllowableMin/Max pre-validation (#006/#019/#022).
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth on `isExpired`.
+- Keep pushing every run.
+
+**Issues touched:**
+- #016 advanced: transport-level acceptance criteria (patchJson `{etag}` + OData.etag + conditional-header unit tests) now checked; Boot/IndicatorLED PATCH service/UI flow stays open (documented).
+- none opened/closed this run.

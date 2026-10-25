@@ -31,6 +31,14 @@ class ODataResource {
   /// The `@odata.context` of this resource, or `null` when absent.
   String? get context => _asString(raw['@odata.context']);
 
+  /// The `@odata.etag` of this resource, or `null` when absent.
+  ///
+  /// DSP0266 §6.5: services that support optimistic concurrency publish the
+  /// current entity-tag on the resource; a mutation should send it back via
+  /// `If-Match` so a stale write is answered 412 instead of silently
+  /// overwriting (#016).
+  String? get etag => _asString(raw['@odata.etag']);
+
   /// Whether this resource is a Redfish *collection* (it has a `Members` array).
   bool get isCollection => raw.containsKey('Members');
 

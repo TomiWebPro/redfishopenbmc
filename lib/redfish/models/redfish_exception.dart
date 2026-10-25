@@ -48,6 +48,15 @@ class RedfishException implements Exception {
   /// Whether a structured [RedfishError] envelope was parsed from the body.
   bool get hasDetails => details != null;
 
+  /// Whether this failure is a 412 Precondition Failed — the service rejected
+  /// the request's `If-Match`/`If-None-Match` precondition.
+  ///
+  /// DSP0266 §6.5 (RFC7232): a stale optimistic-concurrency token makes a
+  /// PATCH answer 412 instead of overwriting. Callers should re-fetch the
+  /// resource for the current `@odata.etag` and retry, not blindly re-issue
+  /// the identical request (which cannot succeed against the same stale tag).
+  bool get isPreconditionFailed => statusCode == 412;
+
   /// Network-level failure (timeout / connection error). Retryable.
   factory RedfishException.network(String message) => RedfishException(
         message: message,
