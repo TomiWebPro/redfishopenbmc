@@ -146,6 +146,63 @@ void main() {
     });
 
     testWidgets(
+        'service summary announces one merged semantics label + visible text '
+        '(UI-2)', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(
+          info: const UpdateServiceInfo(
+            serviceEnabled: true,
+            version: '1.2.3',
+            httpPushUri: '/FWUpdate',
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // The summary line (version + HTTP push URI) is ONE self-describing
+      // node — a screen reader hears the label and value together instead of
+      // a bare detached 'UpdateService ' text.
+      expect(
+        find.bySemanticsLabel('UpdateService 1.2.3, /FWUpdate'),
+        findsOneWidget,
+      );
+      // The visible summary text still renders for sighted users.
+      expect(find.text('UpdateService 1.2.3 · /FWUpdate'), findsOneWidget);
+    });
+
+    testWidgets('no dangling summary text while the service is loading (UI-2)',
+        (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: _NeverCompletingFirmwareService(),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      // The auto-load never completes, so the service summary must NOT render
+      // a half-baked 'UpdateService ' line — the header row + inventory area
+      // already announce the in-flight state.
+      await tester.pump();
+      expect(find.textContaining('UpdateService'), findsNothing,
+          reason: 'no dangling summary label while the fetch is in flight');
+    });
+
+    testWidgets(
         'header announces one merged semantics label with the loading state '
         '(UI-2)', (tester) async {
       final SystemHandle handle = makeHandle(firmwareUpdate: true);

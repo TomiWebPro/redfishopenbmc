@@ -260,13 +260,32 @@ class _ServiceSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String? version = info?.version;
-    final String? httpPushUri = info?.httpPushUri;
-    final String text = 'UpdateService ${version ?? ''}'
-        '${httpPushUri != null ? ' · $httpPushUri' : ''}';
-    return Text(
-      text,
-      style: Theme.of(context).textTheme.bodySmall,
+    final UpdateServiceInfo? data = info;
+    if (data == null) {
+      // UI-2: no update-service data yet (in-flight or the fetch failed). Do
+      // NOT render a dangling 'UpdateService ' label — the header row already
+      // announces the in-flight state and, on failure, the error card is the
+      // message.
+      return const SizedBox.shrink();
+    }
+    final String? version = data.version;
+    final String? httpPushUri = data.httpPushUri;
+    final List<String> parts = <String>[
+      if (version != null) version,
+      if (httpPushUri != null) httpPushUri,
+    ];
+    // UI-2: the summary is ONE self-describing announcement (label + value
+    // together) instead of a bare detached text node next to the merged
+    // header row.
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label:
+          parts.isEmpty ? 'UpdateService' : 'UpdateService ${parts.join(', ')}',
+      child: Text(
+        parts.isEmpty ? 'UpdateService' : 'UpdateService ${parts.join(' · ')}',
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
     );
   }
 }

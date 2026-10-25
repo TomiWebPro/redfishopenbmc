@@ -3398,3 +3398,56 @@
   advanced (manager reset allow-list on the inlined Manager payload); UI-2
   advanced (firmware inventory card excludeSemantics fix — last merged node
   missing it).
+
+## 2026-10-25 — agent:redfish-automation — DOCS-29 depth-bound audit row + UI-2 firmware summary merge
+
+**Done:**
+- DOCS primary workstream (alternation: EMU 01:23 → DOCS due). Corpus mirror
+  queue EMPTY + DOCS-27's ZERO advances verified ~1.5 h ago, so this run did
+  the planned pair:
+  1. **Anchor re-verification (all unchanged):** bmcweb `63a18f4` still HEAD
+     via GitHub API; mockup `23d21f9a` still HEAD via GitHub API; DSP0266
+     1.25.0 returns 200 on the working `www.dmtf.org` URL; schema index 200
+     and **byte-identical** to the mirrored `v1-index.html`
+     (`e5a29797…`, 3,448,133 B, `cmp` verified) → **no corpus refresh**.
+  2. **DOCS-29 audit rows:** folded the EMU 66→68 query pins into the
+     REQUIREMENTS.md DOCS-15 §7.3.2 table — `$expand=.($levels=1)` on all
+     three top-level collections (Systems + Chassis + Managers, full member
+     bodies inlined, manager reset allow-list visible through the expanded
+     Manager payload) + a new `$levels=2` depth-bound row (no recursion;
+     nested `Links` stay bare `@odata.id` refs; DSP0266 §7.3.2 depth-cap).
+     Bottom-line paragraph + Last-audited header updated. No downloads
+     (DOCS-6 budget untouched).
+- UI-2 increment: **FirmwareView `_ServiceSummary` merged semantics + no
+  dangling loading label** — the summary line previously rendered
+  `'UpdateService '` (trailing space) as a bare detached Text while the
+  fetch was in flight; now renders `SizedBox.shrink()` until data lands and
+  then announces as ONE merged node (`UpdateService <version>, <http push
+  URI>`) with visible text preserved. +2 widget tests (firmware 16 → 18).
+
+**Decisions:**
+- DOCS per alternation; within it, the anchor re-verification + DOCS-29
+  audit row were the queued candidates and both are cheap + high-value (the
+  #018 depth-bound decision now has a real trace row; the "no corpus
+  refresh" claim is re-proven each run). Did not re-run the full 120-file
+  byte-verify (DOCS-27 did it hours ago; the index being byte-identical plus
+  all four anchors unchanged is sufficient evidence).
+- UI increment: the dangling summary label was a genuine remaining UI-2
+  "non-card label" defect; small, pattern-consistent, fully tested. Did not
+  rush the open-ended focus-order hunt (per the prior runs' rationale).
+- No new dependencies, no TLS change, no production behaviour change beyond
+  the semantics fix.
+
+**Next:**
+- EMULATOR next per alternation: corpus mirror queue EMPTY; re-run the
+  corpus-invariant published-types crawl (now covers the Heater surface with
+  real mirror files), or pin a remaining un-pinned surface; #028 remains the
+  P2 candidate (BIOS-config editor with its exact fixture duty recorded).
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth
+  when `isExpired` flips, token/location from create RESPONSE HEADERS only.
+- Keep pushing every run (credentials verified; 0 queued).
+
+**Issues touched:**
+- none opened/closed this run. DOCS-29 done (anchor re-verification + §7.3.2
+  depth-bound trace rows); #018 advanced (design decisions now traceable in
+  REQUIREMENTS.md); UI-2 advanced (firmware service-summary merge).

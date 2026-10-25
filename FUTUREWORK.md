@@ -7,42 +7,41 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (EMULATOR run — **EMU 66→68**: the `$expand`
-  query contract is now pinned on ALL THREE top-level collections the #018
-  discovery pass walks (Systems + **Chassis + Managers**, full member bodies
-  inlined via the map-form `getJson(path, query:)`) AND the depth bound is
-  pinned (`$levels=2` does NOT recurse — nested `Links` stay bare `@odata.id`
-  refs, so the pass must follow cross-resource URIs explicitly); the
-  **manager-level reset allow-list (`#Manager.Reset` == exactly
-  `[ForceRestart, GracefulRestart]`) is now visible through the expanded
-  Manager payload** — the #022/#016 conflation guard holds on the inlined
-  shape too; UI-2 advanced (FirmwareView inventory card `excludeSemantics`
-  fix — the last merged node missing it); corpus mirror queue: **EMPTY**;
-  a dedicated `chore: dart format` commit absorbed the 26-file formatter
-  drift recorded 2026-10-25)
-- **Current focus:** **EMULATOR (2026-10-25)** — the `$expand` contract is
-  now pinned on all three top-level collections (#018 walk: Systems +
-  Chassis + Managers inlined via map-form, `$levels=2` depth bound = no
-  recursion; EMU 66→68); next primary is DOCS per alternation — corpus
-  mirror queue is EMPTY; candidates: DOCS-27-style freshness re-verification
-  of anchors (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema
-  index 200), a REQUIREMENTS.md audit row for the new `$levels=2` depth-bound
-  pin, or a small corpus addition if the index advanced; then P1 #015
-  (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the
-  discovered SessionService body into login + re-auth on `isExpired`; #016:
-  the PATCH transport + If-Match boundary are pinned on all live seams
-  (Boot/IndicatorLED, Control SetPoint, Bios/Settings, Manager.Reset),
-  remaining is the actual If-Match/`@odata.etag` wiring in a
-  Boot/IndicatorLED PATCH flow + unit tests for the 412 path; #022/#016:
-  `ResetActionInfo` ActionInfo resource crawl (bmcweb-style BMCs; NOT
-  pinable on the DMTF mockup) + the Control SetPoint AllowableMin/Max
-  pre-validation rule; #018: query-capability surface + live `$expand`
-  contract pinned (now all three collections + depth bound) — remaining:
-  build the lightweight discovery pass + the cache fixes; **new feature
-  candidate #028:** BIOS-config editor (Bios/Settings become client-mapped →
-  served versions move into `test/fixtures/redfish/schemas/` + the
-  corpus-invariant family list gains `Bios`/`Settings`; the Bios/Settings
-  PATCH round-trip seam is now pinned); corpus mirror queue: **EMPTY**
+- **Last updated:** 2026-10-25 (DOCS run — **anchor re-verification + DOCS-29
+  `$levels=2` depth-bound audit row**): all upstream anchors re-verified
+  UNCHANGED — bmcweb `63a18f4` (still HEAD via GitHub API), mockup
+  `23d21f9a` (still HEAD via GitHub API), DSP0266 1.25.0 (200 on the working
+  `www.dmtf.org` URL), schema index 200 and **byte-identical** to the
+  mirrored `v1-index.html` (SHA `e5a29797…`, 3,448,133 B) → **no corpus
+  refresh, DOCS-27's ZERO advances still hold**; DOCS-29 folded the EMU
+  66→68 query pins into the DOCS-15 §7.3.2 table (all-three-collections
+  `$levels=1` + the `$levels=2` depth bound = no recursion, DSP0266 §7.3.2)
+  so the #018 design decision has a real trace row; UI-2 increment: the
+  firmware `_ServiceSummary` line now announces as ONE merged node
+  (`UpdateService <version>, <http push URI>`) and renders NO dangling
+  `UpdateService ` text while loading (+2 widget tests, firmware 16→18))
+- **Current focus:** **DOCS (2026-10-25)** — anchors verified unchanged, no
+  corpus refresh; DOCS-29 audit row landed (the `$levels=2` depth-bound +
+  all-three-collections `$expand` pin now trace in REQUIREMENTS.md §7.3.2);
+  next primary is **EMULATOR** per alternation — corpus mirror queue EMPTY;
+  candidates: re-run the corpus-invariant published-types crawl (now covers
+  the Heater surface with real mirror files), or pin a remaining un-pinned
+  surface; then P1 #015 (AuthManager) — `expiryFromService` + the Sessions
+  pin are ready, wire the discovered SessionService body into login +
+  re-auth on `isExpired`; #016: the PATCH transport + If-Match boundary are
+  pinned on all live seams (Boot/IndicatorLED, Control SetPoint,
+  Bios/Settings, Manager.Reset), remaining is the actual If-Match/
+  `@odata.etag` wiring in a Boot/IndicatorLED PATCH flow + unit tests for
+  the 412 path; #022/#016: `ResetActionInfo` ActionInfo resource crawl
+  (bmcweb-style BMCs; NOT pinable on the DMTF mockup) + the Control SetPoint
+  AllowableMin/Max pre-validation rule; #018: query-capability surface +
+  live `$expand` contract pinned (now all three collections + depth bound,
+  trace row landed) — remaining: build the lightweight discovery pass + the
+  cache fixes; **new feature candidate #028:** BIOS-config editor
+  (Bios/Settings become client-mapped → served versions move into
+  `test/fixtures/redfish/schemas/` + the corpus-invariant family list gains
+  `Bios`/`Settings`; the Bios/Settings PATCH round-trip seam is now
+  pinned); corpus mirror queue: **EMPTY**
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -484,6 +483,29 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       DOCS-28 trace table cites the real mirror files; anchors re-verified:
       bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index 200;
       **the corpus mirror queue is now EMPTY**)
+
+- [x] **DOCS-29** Fold the EMU 66→68 (2026-10-25) query pins into the
+      DOCS-15 §7.3.2 audit table so the #018 design decisions have real trace
+      rows: (1) the `$expand=.($levels=1)` shape is now pinned on **all
+      three** top-level collections the #018 pass walks (Systems + Chassis +
+      Managers inline full member bodies via the map-form
+      `getJson(path, query:)`, incl. the manager-level reset allow-list
+      `[ForceRestart, GracefulRestart]` visible through the expanded Manager
+      payload — the #022/#016 conflation guard on the inlined shape); (2) the
+      **`$levels=2` depth bound is pinned** — the mockup does NOT recurse,
+      nested `Links` stay bare `@odata.id` refs, so the pass must follow
+      cross-resource URIs explicitly for deeper hops (DSP0266 §7.3.2
+      depth-cap behaviour). Also re-verified every upstream anchor this run:
+      bmcweb `63a18f4` (still HEAD via GitHub API), mockup `23d21f9a` (still
+      HEAD via GitHub API), DSP0266 1.25.0 (200 on the working
+      `www.dmtf.org` URL), schema index 200 and **byte-identical** to the
+      mirrored `v1-index.html` (SHA-256 `e5a2979727a7fc030fce29b8d7d2be2301f4
+      507df03ed76e2aef48f8dc9c0b86`, 3,448,133 B) → **no corpus refresh
+      needed, DOCS-27's ZERO version advances still hold**. (run
+      2026-10-25, REQUIREMENTS.md DOCS-15 table + bottom line + Last-audited
+      header updated; UI-2 increment landed separately — firmware
+      `_ServiceSummary` merged semantics + no dangling loading label, +2
+      widget tests)
 
 - [x] **DOCS-16** Audit the DSP0266 clause citations in `REQUIREMENTS.md`
       against the **mirrored `DSP0266_1.25.0.pdf`** (the rows added across

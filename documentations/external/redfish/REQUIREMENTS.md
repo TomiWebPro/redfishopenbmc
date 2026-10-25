@@ -6,7 +6,25 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (DOCS-28 run — **Heater + HeaterMetrics corpus
+Last audited: 2026-10-25 (DOCS run — **`$levels=2` depth-bound audit row**):
+extended the DOCS-15 §7.3.2 query-parameter table with the new EMU pins
+(2026-10-25, EMU 66→68): the `$expand=.($levels=1)` shape is now pinned on
+**all three** top-level collections the #018 discovery pass walks (Systems +
+Chassis + Managers inline full member bodies via the map-form
+`getJson(path, query:)`, incl. the manager-level reset allow-list
+`[ForceRestart, GracefulRestart]` visible through the expanded Manager
+payload — the #022/#016 conflation guard on the inlined shape), and the
+**depth bound is pinned**: `$levels=2` does NOT recurse — nested `Links`
+stay bare `@odata.id` refs, so the pass must follow cross-resource URIs
+explicitly for deeper hops (DSP0266 §7.3.2 depth-cap). Also re-verified all
+upstream anchors this run: bmcweb `63a18f4` (still HEAD via GitHub API),
+mockup `23d21f9a` (still HEAD via GitHub API), DSP0266 1.25.0 (200 on the
+working `www.dmtf.org` URL), schema index 200 — and **the live schema index
+is byte-identical** to the mirrored `v1-index.html`
+(SHA-256 `e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86`,
+3,448,133 bytes) → **no corpus refresh needed this run** (DOCS-27's ZERO
+version advances still hold).
+Prior: 2026-10-25 (DOCS-28 run — **Heater + HeaterMetrics corpus
 mirror**): mirrored the 7-file Heater family pair the EMU-2 Heaters pin
 (64→66 tests) reads — `Heater.json` + `HeaterMetrics.json` (aggregators,
 `$ref` v1_0_2 newest) + served `Heater.v1_0_1` / `HeaterMetrics.v1_0_1`
@@ -903,7 +921,8 @@ pinned mockup.
 | Query parameters apply only to **GET** operations; service shall process them in order `$filter` → `$skip` → `$top` → server-side pagination → `$expand` → `excerpt` → `$select` | DSP0266 §7.3.1 "Query parameter overview" | `RedfishClient.getJson` accepts `query` (Dio `queryParameters`) — GET only; no feature passes a query today | (new, this run) `redfish_client_extra_test.dart` pins `getJson` forwards `query` to the wire | OK — transport ready for #018 |
 | Service **shall** advertise query support via `ProtocolFeaturesSupported` in the service root; service **may** support `$expand`/`$filter`/`$select`, **should** support `$top`/`$skip`/`only`/`excerpt` | DSP0266 §7.3.1; `ServiceRoot.v1_22_0.json` `ProtocolFeaturesSupported` (mirrored DOCS-13) | `FeatureRules` reads the service root (discovery crawl) but does not yet gate query usage on the advertised flags | emulator service-root group asserts `ProtocolFeaturesSupported` publishes `ExpandQuery{ExpandAll,Levels}` + `FilterQuery`/`SelectQuery` | GAP: #018 must gate its `$expand` usage on `ExpandQuery` (Levels/ExpandAll) and assume NO `$filter`/`$select` application |
 | Service shall return **501 Not Implemented** for unsupported `$`-prefixed query parameters, with an extended error naming the unsupported parameter; **400 Bad Request** for invalid values; **400 QueryNotSupportedOnResource** for implemented-but-unsupported-on-resource params | DSP0266 §7.3.1; `Base` Message Registry `QueryNotSupportedOnResource` | `RedfishException.fromDioException` normalizes 400/501 into typed errors | `redfish_error_test` / `models_test.dart` cover error envelope; no query-specific 400/501 unit fixture yet | Partial: generic error mapping OK; #018 should add a unit fixture for the query-501 path |
-| `$expand` options: `*` (all hyperlinks incl. payload annotations), `$levels` (default 1), `.` (all but `links` properties), `~` (only `links` properties); when `$levels` advertised, `MaxLevels` caps the depth; combine with `$select` using full property path | DSP0266 §7.3.2 "The $expand query parameter"; `ServiceRoot.v1_22_0.json` `Expand` definition | none (client does not send `$expand` today) | emulator pins: `$expand=.($levels=1)` **and** `$expand=*` both inline full member bodies (17:07 + 18:36 runs) | OK pinned on the mockup; #018 may use either form (`*` or `$levels=1`) for collection fetch |
+| `$expand` options: `*` (all hyperlinks incl. payload annotations), `$levels` (default 1), `.` (all but `links` properties), `~` (only `links` properties); when `$levels` advertised, `MaxLevels` caps the depth; combine with `$select` using full property path | DSP0266 §7.3.2 "The $expand query parameter"; `ServiceRoot.v1_22_0.json` `Expand` definition | none (client does not send `$expand` today) | emulator pins: `$expand=.($levels=1)` **and** `$expand=*` both inline full member bodies (17:07 + 18:36 runs); **generalized 2026-10-25 (EMU 66→68)**: the same map-form `$levels=1` on **Chassis + Managers** also inlines full member bodies — Chassis identity/ChassisType/Status/IndicatorLED/Links.ComputerSystems/ManagedBy and Manager ManagerType/FirmwareVersion/Model/Links.ManagerForServers/ManagerInChassis + the **manager-level reset allow-list (`#Manager.Reset` `ResetType@Redfish.AllowableValues` == exactly `[ForceRestart, GracefulRestart]`) visible through the expanded payload** (the #022/#016 conflation guard — the gate never reuses the manager list for the system gate — now pinned on the inlined shape) | OK pinned on the mockup; #018 may use either form (`*` or `$levels=1`) for collection fetch on all three top-level collections |
+| `$levels=N` depth cap: `$levels` is transitive up to the advertised `MaxLevels`; the service determines the actual depth from the first `$levels` occurrence in the `$expand` query | DSP0266 §7.3.2 "The $expand query parameter" | none (client does not send `$expand` today) | **depth-bound pinned live 2026-10-25 (EMU 66→68)**: `$levels=2` on Systems does **NOT** recurse beyond one level — the member's own `Links.Chassis` stays a bare `@odata.id` ref (no inlined ChassisType/Status) — so the #018 discovery pass gets exactly one full inlined hop per collection and must follow cross-resource URIs explicitly for deeper hops | OK — depth-cap behaviour pinned; #018 discovery design input (fetch one full hop per collection, walk the graph via bare `@odata.id` refs) |
 | Service shall not expand referenced resources the client lacks privileges for (no request failure); **507 Insufficient Storage** when the expanded payload exceeds service limits; partial collection expansion → 200 + `@odata.id` for unexpandable members + extended info | DSP0266 §7.3.2 | none | — | Note for #018 (payload-growth guard + 507 mapping) |
 | `$select`: returns a subset of properties per the comma-separated expression; `/` separates nested property paths; array indices not allowed; response keeps `@odata.id`/`@odata.type` (and `@odata.context`/`@odata.etag` when supported) with the same values as an unselected response; unsupported requested properties are omitted | DSP0266 §7.3.3 "The $select query parameter" | none (client sends no `$select`) | emulator pins `$select=Model` is **advertised but NOT applied** by the mockup (full body returned, 18:36) | GAP: #018 must do projection client-side — never rely on server-side `$select` |
 | `$filter`: subset of collection members per built-in operators `() and or not eq ne ge gt le lt` with fixed operator precedence; strings in single quotes | DSP0266 §7.3.4 "The $filter query parameter" | none (client sends no `$filter`) | emulator pins `$filter=Id eq 'NOPE'` returns **all** members (advertised but NOT applied, 18:36) | GAP: #018 must filter client-side — never rely on server-side `$filter` |
@@ -916,6 +935,14 @@ lightweight discovery pass must (a) gate `$expand` usage on the advertised
 and (c) map `501`/`507` from query requests. `RedfishClient.getJson` already
 supports a `query` map — the transport contract is now pinned by unit test
 (added this run). No production code change this run.
+**Updated 2026-10-25 (EMU 66→68)**: the `$expand=.($levels=1)` shape is pinned
+on **all three** top-level collections the #018 pass walks (Systems + Chassis +
+Managers, full member bodies inlined via the map-form `getJson(path, query:)`),
+and the **`$levels=2` depth bound is pinned** — the mockup does NOT recurse, so
+nested `Links` stay bare `@odata.id` refs and the pass must follow
+cross-resource URIs explicitly for deeper hops (DSP0266 §7.3.2 depth-cap
+behaviour). The manager-level reset allow-list is visible through the expanded
+Manager payload, closing the #022/#016 conflation guard on the inlined shape.
 
 ## DOCS-16 — DSP0266 1.25.0 citation audit + §9.9 payload-annotation pin (2026-10-24)
 

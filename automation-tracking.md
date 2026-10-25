@@ -3875,3 +3875,68 @@ Append-only run log for the `redfish-automation` scheduler job.
   `chore: dart format` drift absorption (c0a5cdc) both pushed.
   `git rev-list --count origin/main..HEAD` = 0 (fully synced), working tree
   clean. Queued local commits ahead of origin/main: **0**.
+
+## 2026-10-25 02:09 UTC — DOCS (anchor re-verification + DOCS-29 depth-bound audit row) + UI-2 firmware summary merge
+
+- **Baseline:** analyze 0; tests 352 passed / 1 skipped; starting commit d87519f
+  (origin/main fully synced, 0 queued local commits); issues validate OK;
+  working tree clean; no stash, no crashed-run leftovers.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 01:23 — DOCS
+  is due). The corpus mirror queue is EMPTY after DOCS-28 and DOCS-27's full
+  freshness audit found ZERO advances ~1.5 h ago, so this run took the
+  planned pair: (a) **anchor re-verification** — bmcweb `63a18f4` still HEAD
+  via GitHub API, mockup `23d21f9a` still HEAD via GitHub API, DSP0266 1.25.0
+  returns 200 on the working `www.dmtf.org` URL, schema index returns 200 and
+  is **byte-identical** to the mirrored `v1-index.html` (SHA-256
+  `e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86`,
+  3,448,133 bytes, verified with `cmp`) → **no corpus refresh needed**;
+  (b) **DOCS-29 audit row** — folded the EMU 66→68 (01:23) query pins into
+  the REQUIREMENTS.md DOCS-15 §7.3.2 table: the `$expand=.($levels=1)` shape
+  is now pinned on **all three** top-level collections the #018 discovery
+  pass walks (Systems + Chassis + Managers inline full member bodies via the
+  map-form `getJson(path, query:)`, incl. the manager-level reset allow-list
+  `[ForceRestart, GracefulRestart]` visible through the expanded Manager
+  payload — the #022/#016 conflation guard on the inlined shape), and a new
+  row pins the **`$levels=2` depth bound** — the mockup does NOT recurse,
+  nested `Links` stay bare `@odata.id` refs, so the pass must follow
+  cross-resource URIs explicitly for deeper hops (DSP0266 §7.3.2 depth-cap).
+  Updated the DOCS-15 bottom-line paragraph + the REQUIREMENTS.md
+  Last-audited header. No schema/PDF downloads this run (all anchors
+  unchanged; DOCS-6 budget untouched).
+- **Docs:** anchors verified unchanged (bmcweb `63a18f4`, mockup `23d21f9a`,
+  DSP0266 1.25.0, schema index 200 byte-identical); DOCS-29 trace rows added
+  (see above); no new files mirrored — manifest unchanged.
+- **Emulator:** none this run (DOCS stream). The 68-test suite from the
+  01:23 EMU run stays green on the pinned `23d21f9a`; the DOCS-29 rows make
+  its query pins traceable in REQUIREMENTS.md.
+- **Code/tests:** no lib/ production change from the DOCS stream. UI-2
+  increment below touched `lib/features/firmware/views/firmware_view.dart` +
+  its test only.
+- **UI:** one small tested UI-2 increment — **FirmwareView `_ServiceSummary`
+  merged semantics + no dangling loading label**. The UpdateService summary
+  line rendered a half-baked `'UpdateService '` (trailing space, empty value)
+  as a bare detached `Text` while the fetch was in flight — a screen reader
+  heard a dangling label with nothing after it (the UI-2 "non-card label"
+  class). Now: (1) while `info == null` the summary renders
+  `SizedBox.shrink()` — the header row + inventory area already announce the
+  in-flight state, so nothing half-baked is announced; (2) once loaded the
+  summary is ONE `Semantics(container + excludeSemantics)` node
+  (`UpdateService <version>, <http push URI>`) with the visible text
+  preserved (`UpdateService 1.2.3 · /FWUpdate`), so the label and value
+  announce together. +2 widget tests: merged-label + visible-text assertion,
+  and a no-dangling-text-while-loading pin. Targeted run: 18/18 passed
+  before the full gate (firmware 16 → 18).
+- **Verification:** analyze 0; tests **354 passed / 1 skipped** (+2 — the new
+  summary tests); issues validate OK; `git diff --check` clean; secret scan:
+  JSON/docs prose + Dart widget code only, no credentials. `dart format`
+  clean on the touched files.
+- **Commit:** (pending this run) — `auto: DOCS — DOCS-29 $levels=2 depth-bound
+  audit row + anchor re-verification (no corpus refresh) + UI-2 firmware
+  service-summary merge (run 2026-10-25 02:09)`.
+- **Next:** 1) EMULATOR per alternation — corpus mirror queue EMPTY and
+  verified; re-run the corpus-invariant published-types crawl (now covers
+  the Heater surface), or pin a remaining un-pinned surface (#028
+  BIOS-config editor remains the P2 candidate with its fixture duty
+  recorded); 2) P1 #015 AuthManager — wire `Session.expiryFromService` into
+  login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS
+  only; 3) keep pushing every run (credentials verified; 0 queued commits).
