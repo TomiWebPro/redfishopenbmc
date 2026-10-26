@@ -4439,3 +4439,65 @@
 
 **Issues touched:**
 - none opened/closed/advanced this run (UI increment + removal-state fix only).
+
+## 2026-10-26 — agent:redfish-automation — #022 task-monitor polling (COMPLETE, issue closed)
+
+**Done:**
+- EMULATOR primary per alternation (last primary: DOCS 22:35). Landed the
+  last #022 acceptance criterion — **202 task-monitor polling** — via the
+  shared #008/#020 poller, as one finished, tested increment:
+  1. **`RedfishTask` + `TaskMessage`** (`lib/redfish/models/redfish_task.dart`)
+     parse the served `#Task.v1_7_3.Task` shape: TaskState (13 values per
+     `Task.v1_7_4.json`), TaskStatus, optional `PercentComplete`, RFC3339
+     Start/EndTime, `Messages[]`, `TaskMonitor`. Terminal classification:
+     Completed/OK (or absent status) = success; Killed/Exception/Service/
+     Cancelled + Completed-with-Warning/Critical = failure with a reason from
+     `Message.Message` → `MessageId` → bare TaskState. The fixture's 545 never
+     publishes PercentComplete — the parse tolerates it (unknown).
+  2. **`FirmwareService.pollTask(UpdateTask)`** — GET-on-monitor loop honoring
+     the 202 `Retry-After` hint for the first wait, then polling at `interval`
+     up to `maxPolls`; terminal success returns the task, terminal failure
+     throws a normalized `RedfishException`, budget exhaustion throws a
+     retryable `TaskMonitorTimeout`, a missing monitor throws
+     `Base.1.0.NoTaskMonitor` (the 204-no-Location fixture norm).
+  3. **`FirmwareController.pollLastTask`** — raises `polling`, stores the final
+     `RedfishTask` in `lastResult` (or the error); no-monitor is a documented
+     no-op.
+  4. **Task banner UI** — the firmware queued banner now renders queued →
+     polling (spinner) → final state (success check / warning note); merged
+     semantics label, no new dependencies.
+- **Tests:** unit suite 438 → **478 passed / 1 skipped** (+40: 25 model, 8
+  service, 4 controller, 5 widget incl. 320-px no-overflow for the task
+  banner). Emulator suite **82 → 84/84 green** on pinned `23d21f9a`: the
+  poller resolves the fixture's own Task 545 live (GET-on-monitor +
+  TaskState-parse seam) and a stale monitor URI normalizes to a 404
+  `RedfishException`. Analyze 0.
+- **Docs:** REQUIREMENTS.md DOCS-10 §12.2 rows + Firmware-update + Task-monitor
+  rows flipped to OK (firmware path); DELETE-cancel GAP noted for #008/#020.
+  No corpus change (mirror queue EMPTY; anchors unchanged).
+- **Issue:** **#022 closed** (all five acceptance criteria checked). #020
+  Progress Log advanced (task-polling piece done; binary upload + progress bar
+  + timeline remain open).
+
+**Decisions:**
+- The poller lives on `FirmwareService` (the current `UpdateTask` consumer) as
+  a reusable method + the general `RedfishTask` model, so a future power-side
+  202 path (and the #008/#020 timeline) reuses it without duplication.
+- "No monitor" is an explicit, documented error on the service
+  (`Base.1.0.NoTaskMonitor`) but a **no-op** on the controller/view — the
+  204-no-Location fixture norm means a queued update without a monitor is
+  expected, not a failure (the queued banner already covers it).
+- The polling-spinner widget test uses stepped `pump()` (not `pumpAndSettle`)
+  — the spinner animates forever, the 22:05 journal trap, re-confirmed.
+
+**Next:**
+- DOCS per alternation (corpus mirror queue EMPTY; cheap anchor re-verify).
+- #008/#020 — binary/multipart upload via `HttpPushUri`/`MultipartHttpPushUri`
+  (file picker + upload progress + apply-time selection) + live progress from
+  `PercentComplete` + the task-timeline UI.
+- P1 #015 AuthManager (expiryFromService → login + re-auth; token/location
+  from create RESPONSE HEADERS only) + UI-2 remaining focus audit.
+
+**Issues touched:**
+- #022 **closed** (criterion 1 — task-monitor polling — landed).
+- #020 advanced (Progress Log; task-polling piece done, upload/progress remain).

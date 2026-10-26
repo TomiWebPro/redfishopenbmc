@@ -5,7 +5,7 @@ status: open
 priority: P2
 type: bug
 created: 2026-08-30
-updated: 2026-08-30
+updated: 2026-10-26
 closed: null
 assignee: unassigned
 labels: [firmware, upload, error-handling]
@@ -53,6 +53,29 @@ estimated_tokens: 18000
 
 ## Progress Log
 
+- 2026-10-26 — EMU run: **the task-polling piece of #020 (and the shared
+  #022 criterion) landed**. `RedfishTask`/`TaskMessage`
+  (`lib/redfish/models/redfish_task.dart`) parse the served `#Task.v1_7_3.Task`
+  resource (TaskState, TaskStatus, optional `PercentComplete`, RFC3339
+  Start/EndTime, `Messages[]`) and `FirmwareService.pollTask` follows the 202
+  `Location` task-monitor URI the way a real firmware update's async operation
+  does (DSP0266 §12.2): first wait honors `Retry-After`, then polls at
+  `interval` up to `maxPolls`; terminal Completed/OK → success, terminal
+  failure → `RedfishException` with the task's failure reason, budget
+  exhaustion → retryable `TaskMonitorTimeout`. `FirmwareController.
+  pollLastTask` + the firmware-view task banner (queued → polling spinner →
+  final state / success check) consume it, so a BMC-side task failure now
+  surfaces as an error instead of leaving the view stuck on "Update queued…".
+  +25 model tests, +8 service tests, +4 controller tests, +5 widget tests;
+  unit suite 438 → **478 passed / 1 skipped**; emulator 82 → **84/84 green**
+  (2 new live pins: poller resolves the fixture Task 545 end-to-end + stale
+  monitor → normalized 404). **Remaining #020 items unchanged:** binary/
+  multipart upload via `httpPushUri`/`MultipartHttpPushUri` (file picker +
+  upload progress), a live progress bar from `PercentComplete` (absent on the
+  fixture; the poller already tolerates it), and the non-202 masking fix
+  (`startSimpleUpdate` already throws on non-2xx via `_toFriendly` — the
+  "returns '' for any non-202" defect from the original description is fixed
+  by the 202/204 normalization in `startSimpleUpdate`).
 - 2026-08-30 — Created from triage analysis (feature #13). See also #008.
 
 ## References

@@ -3,22 +3,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:redfishopenbmc/features/firmware/firmware_service.dart';
 import 'package:redfishopenbmc/features/firmware/models/firmware_models.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
+import 'package:redfishopenbmc/redfish/models/redfish_task.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
 /// Immutable UI state for the firmware & update screen (issue #008).
 ///
 /// Tracks whether an operation is in flight ([loading]), whether a
-/// `SimpleUpdate` is specifically being submitted ([starting]), the latest
+/// `SimpleUpdate` is specifically being submitted ([starting]), whether the
+/// returned task monitor is being polled ([polling]), the latest
 /// [UpdateServiceInfo] snapshot, the most recent queued [lastTask] handle,
-/// and the most recent [error] message. Kept as a value type so Riverpod
-/// rebuilds only dependents when something actually changes.
+/// the polled [lastResult] (when the task reached a terminal state), and the
+/// most recent [error] message. Kept as a value type so Riverpod rebuilds
+/// only dependents when something actually changes.
 class FirmwareUiState {
   /// Creates a [FirmwareUiState].
   const FirmwareUiState({
     this.loading = false,
     this.starting = false,
+    this.polling = false,
     this.info,
     this.lastTask,
+    this.lastResult,
     this.error,
   });
 
@@ -32,12 +37,23 @@ class FirmwareUiState {
   /// implying the whole screen is re-loading.
   final bool starting;
 
+  /// Whether the task monitor returned by the last `SimpleUpdate` is being
+  /// polled (issue #022 criterion 1 — 202 task-monitor polling).
+  ///
+  /// Raised while [pollLastTask] runs and the monitor has not yet reached a
+  /// terminal state; cleared when it completes or fails.
+  final bool polling;
+
   /// The latest [UpdateServiceInfo] snapshot, or `null` before the first load.
   final UpdateServiceInfo? info;
 
   /// The [UpdateTask] handle returned by the most recent `SimpleUpdate`
   /// (task monitor URI + optional `Retry-After`), or `null`.
   final UpdateTask? lastTask;
+
+  /// The final [RedfishTask] read from the task monitor once the task
+  /// reached a terminal state, or `null` while queued / not yet polled.
+  final RedfishTask? lastResult;
 
   /// Last error message, or `null` when the last operation succeeded.
   final String? error;
@@ -46,23 +62,29 @@ class FirmwareUiState {
   FirmwareUiState copyWith({
     bool? loading,
     bool? starting,
+    bool? polling,
     UpdateServiceInfo? info,
     UpdateTask? lastTask,
     bool clearLastTask = false,
+    RedfishTask? lastResult,
+    bool clearLastResult = false,
     String? error,
     bool clearError = false,
   }) =>
       FirmwareUiState(
         loading: loading ?? this.loading,
         starting: starting ?? this.starting,
+        polling: polling ?? this.polling,
         info: info ?? this.info,
         lastTask: clearLastTask ? null : (lastTask ?? this.lastTask),
+        lastResult: clearLastResult ? null : (lastResult ?? this.lastResult),
         error: clearError ? null : (error ?? this.error),
       );
 
   @override
   String toString() => 'FirmwareUiState(loading=$loading, starting=$starting, '
-      'info=${info != null}, lastTask=$lastTask, error=$error)';
+      'polling=$polling, info=${info != null}, lastTask=$lastTask, '
+      'lastResult=$lastResult, error=$error)';
 }
 
 /// Riverpod controller driving the firmware & update screen.
@@ -118,6 +140,7 @@ class FirmwareController extends StateNotifier<FirmwareUiState> {
       starting: true,
       clearError: true,
       clearLastTask: true,
+      clearLastResult: true,
     );
     try {
       final UpdateTask task = await service.startSimpleUpdate(req);
@@ -130,6 +153,43 @@ class FirmwareController extends StateNotifier<FirmwareUiState> {
       if (!mounted) return;
       state =
           state.copyWith(loading: false, starting: false, error: e.toString());
+    }
+  }
+
+  /// Polls the task monitor of the last [FirmwareUiState.lastTask] until the
+  /// task reaches a terminal state (issue #022 criterion 1).
+  ///
+  /// Raises [FirmwareUiState.polling] while polling; on success stores the
+  /// final [RedfishTask] in [FirmwareUiState.lastResult]; on failure records
+  /// the error. A task with no monitor URI (204-no-Location services) is a
+  /// no-op: the queued [FirmwareUiState.lastTask] remains meaning "queued,
+  /// no monitor returned", and no error is raised — the caller must not treat
+  /// a missing monitor as a failure.
+  ///
+  /// [interval] and [maxPolls] are forwarded to
+  /// [FirmwareService.pollTask] (tests inject a zero interval / small bound).
+  Future<void> pollLastTask({
+    Duration interval = const Duration(seconds: 2),
+    int maxPolls = 30,
+  }) async {
+    final UpdateTask? task = state.lastTask;
+    if (task == null || task.taskUri == null || task.taskUri!.isEmpty) {
+      // No monitor to poll (the BMC answered 204 without a Location, or no
+      // update was ever queued). The queued label already covers this state.
+      return;
+    }
+    state = state.copyWith(polling: true);
+    try {
+      final RedfishTask result =
+          await service.pollTask(task, interval: interval, maxPolls: maxPolls);
+      if (!mounted) return;
+      state = state.copyWith(polling: false, lastResult: result);
+    } on RedfishException catch (e) {
+      if (!mounted) return;
+      state = state.copyWith(polling: false, error: e.message);
+    } catch (e) {
+      if (!mounted) return;
+      state = state.copyWith(polling: false, error: e.toString());
     }
   }
 }

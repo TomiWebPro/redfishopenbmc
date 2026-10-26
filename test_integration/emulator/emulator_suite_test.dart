@@ -23,6 +23,7 @@ import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
 import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 import 'package:redfishopenbmc/redfish/models/control.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
+import 'package:redfishopenbmc/redfish/models/redfish_task.dart';
 import 'package:redfishopenbmc/redfish/models/session.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
@@ -955,6 +956,68 @@ void main() {
       expect(task.containsKey('PercentComplete'), isFalse,
           reason: '#008: PercentComplete is optional on Task; the poller must '
               'handle a task that never publishes it');
+    });
+
+    test(
+        'task polling: FirmwareService.pollTask follows the monitor URI and '
+        'resolves the served Task live (#022 criterion 1)', () async {
+      // The remaining #022 criterion is the 202 task-monitor poller (folding
+      // into #008/#020). The DMTF mockup never returns a 202 + Location for
+      // its actions (204-only, pinned above), so the poller's GET-on-monitor
+      // + TaskState parsing is the seam live-verifiable here: point
+      // pollTask at the service's own task resource (the same shape a real
+      // BMC's 202 Location would name) and it must GET it, parse the
+      // served Task (Completed/OK, no PercentComplete), and return the final
+      // RedfishTask in one poll.
+      final FirmwareService svc =
+          FirmwareService(client: client, systemId: 'em1');
+      final RedfishTask result = await svc.pollTask(
+        const UpdateTask(
+          taskUri: '/redfish/v1/TaskService/Tasks/545',
+        ),
+        interval: Duration.zero,
+        maxPolls: 1,
+      );
+      expect(result.id, '545');
+      expect(result.state, 'Completed');
+      expect(result.status, 'OK');
+      expect(result.isTerminal, isTrue);
+      expect(result.isSuccess, isTrue,
+          reason: '#022: a Completed/OK task must resolve as a success, not '
+              'an error');
+      // EndTime parses from the served RFC3339 value — the poller's final
+      // result carries the task's completion timestamp.
+      expect(result.endTime, isNotNull);
+      // The served task carries Messages; the poller exports them so a
+      // failure reason can be normalized from Message.Message.
+      expect(result.messages, isNotEmpty);
+      // Absent PercentComplete never trips the parse (the documented mockup
+      // shape).
+      expect(result.percentComplete, isNull);
+    });
+
+    test(
+        'task polling: pollTask wraps a stale/404 monitor in a friendly '
+        'RedfishException (#022 criterion 1)', () async {
+      // Negative live pin: a Location that no longer resolves must surface as
+      // a normalized RedfishException (404 → statusCode 404 with context),
+      // not a raw transport error — the task-timeline UI depends on the
+      // normalized shape.
+      final FirmwareService svc =
+          FirmwareService(client: client, systemId: 'em1');
+      await expectLater(
+        svc.pollTask(
+          const UpdateTask(taskUri: '/redfish/v1/TaskService/Tasks/999'),
+          interval: Duration.zero,
+          maxPolls: 1,
+        ),
+        throwsA(
+          isA<RedfishException>()
+              .having((RedfishException e) => e.statusCode, 'statusCode', 404)
+              .having((RedfishException e) => e.message, 'message',
+                  contains('Failed to read the task monitor')),
+        ),
+      );
     });
 
     test(

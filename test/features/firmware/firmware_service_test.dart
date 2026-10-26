@@ -6,6 +6,8 @@ import 'package:redfishopenbmc/features/firmware/firmware_service.dart';
 import 'package:redfishopenbmc/features/firmware/models/firmware_models.dart';
 import 'package:redfishopenbmc/redfish/client/redfish_client.dart';
 import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
+import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
+import 'package:redfishopenbmc/redfish/models/redfish_task.dart';
 
 import '../../helpers/mock_redfish_server.dart';
 
@@ -159,6 +161,219 @@ void main() {
       );
       expect(task.taskUri, isNull);
       expect(task.retryAfterSeconds, isNull);
+    });
+
+    test('pollTask GETs the monitor and returns a terminal success task',
+        () async {
+      final DioAdapter adapter = DioAdapter(
+        dio: Dio(BaseOptions(baseUrl: 'https://bmc-task.local:443')),
+        matcher: const _PathMatcher(),
+      );
+      adapter.onGet(
+        '/redfish/v1/TaskService/TaskMonitors/42',
+        (server) => server.reply(
+          200,
+          <String, dynamic>{
+            '@odata.type': '#Task.v1_7_3.Task',
+            '@odata.id': '/redfish/v1/TaskService/TaskMonitors/42',
+            'Id': '42',
+            'Name': 'Task 42',
+            'TaskState': 'Completed',
+            'TaskStatus': 'OK',
+          },
+        ),
+      );
+      final RedfishClient taskClient = RedfishClient(
+        profile:
+            const ConnectionProfile(host: 'bmc-task.local', name: 'bmc-task'),
+        dio: adapter.dio,
+      );
+      final FirmwareService svc =
+          FirmwareService(client: taskClient, systemId: 'bmc-task');
+
+      final RedfishTask result = await svc.pollTask(
+        const UpdateTask(taskUri: '/redfish/v1/TaskService/TaskMonitors/42'),
+        interval: Duration.zero,
+        maxPolls: 1,
+      );
+      expect(result.id, '42');
+      expect(result.state, 'Completed');
+      expect(result.status, 'OK');
+      expect(result.isSuccess, isTrue);
+    });
+
+    test('pollTask round-trips the served fixture task (mock 545 shape)',
+        () async {
+      // The real DMTF mockup fixture task (545) is Completed/OK with no
+      // PercentComplete — the poller must resolve it without a percent value.
+      final FirmwareService svc =
+          FirmwareService(client: client, systemId: 'bmc1');
+      final RedfishTask result = await svc.pollTask(
+        const UpdateTask(taskUri: '/redfish/v1/TaskService/Tasks/545'),
+        interval: Duration.zero,
+        maxPolls: 1,
+      );
+      expect(result.id, '545');
+      expect(result.state, 'Completed');
+      expect(result.status, 'OK');
+      expect(result.percentComplete, isNull);
+      expect(result.isSuccess, isTrue);
+    });
+
+    test('pollTask throws the failure reason for a terminal failure task',
+        () async {
+      final DioAdapter adapter = DioAdapter(
+        dio: Dio(BaseOptions(baseUrl: 'https://bmc-fail.local:443')),
+        matcher: const _PathMatcher(),
+      );
+      adapter.onGet(
+        '/redfish/v1/TaskService/TaskMonitors/7',
+        (server) => server.reply(
+          200,
+          <String, dynamic>{
+            '@odata.id': '/redfish/v1/TaskService/TaskMonitors/7',
+            'Id': '7',
+            'TaskState': 'Exception',
+            'Messages': <dynamic>[
+              <String, dynamic>{
+                'MessageId': 'Update.1.0.UpdateFailed',
+                'Message': 'The update image was rejected.',
+                'Severity': 'Critical',
+              },
+            ],
+          },
+        ),
+      );
+      final RedfishClient failClient = RedfishClient(
+        profile:
+            const ConnectionProfile(host: 'bmc-fail.local', name: 'bmc-fail'),
+        dio: adapter.dio,
+      );
+      final FirmwareService svc =
+          FirmwareService(client: failClient, systemId: 'bmc-fail');
+
+      await expectLater(
+        svc.pollTask(
+          const UpdateTask(taskUri: '/redfish/v1/TaskService/TaskMonitors/7'),
+          interval: Duration.zero,
+          maxPolls: 1,
+        ),
+        throwsA(
+          isA<RedfishException>()
+              .having((RedfishException e) => e.message, 'message',
+                  contains('The update image was rejected.'))
+              .having((RedfishException e) => e.errorCode, 'errorCode',
+                  'Update.1.0.UpdateFailed'),
+        ),
+      );
+    });
+
+    test('pollTask times out when the task never reaches a terminal state',
+        () async {
+      final DioAdapter adapter = DioAdapter(
+        dio: Dio(BaseOptions(baseUrl: 'https://bmc-slow.local:443')),
+        matcher: const _PathMatcher(),
+      );
+      adapter.onGet(
+        '/redfish/v1/TaskService/TaskMonitors/9',
+        (server) => server.reply(
+          200,
+          <String, dynamic>{
+            '@odata.id': '/redfish/v1/TaskService/TaskMonitors/9',
+            'Id': '9',
+            'TaskState': 'Running',
+            'PercentComplete': 10,
+          },
+        ),
+      );
+      final RedfishClient slowClient = RedfishClient(
+        profile:
+            const ConnectionProfile(host: 'bmc-slow.local', name: 'bmc-slow'),
+        dio: adapter.dio,
+      );
+      final FirmwareService svc =
+          FirmwareService(client: slowClient, systemId: 'bmc-slow');
+
+      await expectLater(
+        svc.pollTask(
+          const UpdateTask(taskUri: '/redfish/v1/TaskService/TaskMonitors/9'),
+          interval: Duration.zero,
+          maxPolls: 2,
+        ),
+        throwsA(
+          isA<RedfishException>()
+              .having((RedfishException e) => e.errorCode, 'errorCode',
+                  'Update.1.0.TaskMonitorTimeout')
+              .having((RedfishException e) => e.retryable, 'retryable', isTrue),
+        ),
+      );
+    });
+
+    test('pollTask throws NoTaskMonitor when no task URI was returned',
+        () async {
+      final FirmwareService svc =
+          FirmwareService(client: client, systemId: 'bmc1');
+      await expectLater(
+        svc.pollTask(const UpdateTask()),
+        throwsA(
+          isA<RedfishException>().having((RedfishException e) => e.errorCode,
+              'errorCode', 'Base.1.0.NoTaskMonitor'),
+        ),
+      );
+    });
+
+    test('pollTask throws NotConnected when there is no client', () async {
+      final FirmwareService svc =
+          FirmwareService(client: null, systemId: 'bmc1');
+      await expectLater(
+        svc.pollTask(
+          const UpdateTask(taskUri: '/redfish/v1/TaskService/TaskMonitors/1'),
+        ),
+        throwsA(
+          isA<RedfishException>().having((RedfishException e) => e.errorCode,
+              'errorCode', 'Base.1.0.NotConnected'),
+        ),
+      );
+    });
+
+    test('pollTask wraps a monitor GET failure with context', () async {
+      final DioAdapter adapter = DioAdapter(
+        dio: Dio(BaseOptions(baseUrl: 'https://bmc-404.local:443')),
+        matcher: const _PathMatcher(),
+      );
+      adapter.onGet(
+        '/redfish/v1/TaskService/TaskMonitors/404',
+        (server) => server.reply(
+          404,
+          <String, dynamic>{
+            'error': <String, dynamic>{
+              'code': 'Base.1.0.ResourceNotFound',
+              'message': 'Not Found',
+            },
+          },
+        ),
+      );
+      final RedfishClient missingClient = RedfishClient(
+        profile:
+            const ConnectionProfile(host: 'bmc-404.local', name: 'bmc-404'),
+        dio: adapter.dio,
+      );
+      final FirmwareService svc =
+          FirmwareService(client: missingClient, systemId: 'bmc-404');
+
+      await expectLater(
+        svc.pollTask(
+          const UpdateTask(taskUri: '/redfish/v1/TaskService/TaskMonitors/404'),
+          interval: Duration.zero,
+          maxPolls: 1,
+        ),
+        throwsA(
+          isA<RedfishException>()
+              .having((RedfishException e) => e.message, 'message',
+                  contains('Failed to read the task monitor'))
+              .having((RedfishException e) => e.statusCode, 'statusCode', 404),
+        ),
+      );
     });
   });
 }

@@ -13,6 +13,7 @@ import 'package:redfishopenbmc/features/firmware/views/firmware_view.dart';
 import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
+import 'package:redfishopenbmc/redfish/models/redfish_task.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
 /// A [FirmwareService] double returning a canned [UpdateServiceInfo].
@@ -524,6 +525,125 @@ void main() {
     });
 
     testWidgets(
+        'task banner shows the polling state with a spinner while the monitor '
+        'is being polled (#022 criterion 1)', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(),
+        initialState: const FirmwareUiState(
+          lastTask: UpdateTask(
+            taskUri: '/redfish/v1/TaskService/TaskMonitors/42',
+          ),
+          polling: true,
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      // Stepped pump, not pumpAndSettle: the banner's spinner animates
+      // forever, so pumpAndSettle would time out (the 22:05 journal trap).
+      await tester.pump();
+      // The banner announces the in-progress poll in one merged node and
+      // shows a visible spinner.
+      expect(
+        find.bySemanticsLabel(
+          'Update in progress, polling /redfish/v1/TaskService/'
+          'TaskMonitors/42',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Update in progress: polling'),
+        findsOneWidget,
+      );
+      expect(
+        find.byType(CircularProgressIndicator),
+        findsOneWidget,
+        reason: 'the polling banner must show a visible spinner',
+      );
+    });
+
+    testWidgets(
+        'task banner shows the final task state once the monitor returns a '
+        'terminal result (#022 criterion 1)', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(),
+        initialState: const FirmwareUiState(
+          lastTask: UpdateTask(
+            taskUri: '/redfish/v1/TaskService/TaskMonitors/42',
+          ),
+          lastResult: RedfishTask(
+            id: '545',
+            name: 'Task 545',
+            state: 'Completed',
+            status: 'OK',
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.bySemanticsLabel('Update task 545, Completed'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Update task 545: Completed'), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+      // A finished task no longer shows the poll spinner.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets(
+        'task banner shows a warning note for Completed with non-OK status '
+        '(#022 criterion 1)', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(),
+        initialState: const FirmwareUiState(
+          lastTask: UpdateTask(
+            taskUri: '/redfish/v1/TaskService/TaskMonitors/42',
+          ),
+          lastResult: RedfishTask(
+            id: '545',
+            state: 'Completed',
+            status: 'Warning',
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.bySemanticsLabel('Update task 545, Completed with Warning'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Completed with Warning'), findsOneWidget);
+      // Not a clean success → no success check icon.
+      expect(find.byIcon(Icons.check_circle_outline), findsNothing);
+    });
+
+    testWidgets(
         'Start-update button shows a disabled busy state while the update is '
         'in flight (UI-5)', (tester) async {
       final SystemHandle handle = makeHandle(firmwareUpdate: true);
@@ -674,6 +794,46 @@ void main() {
         expect(find.text('Start update'), findsOneWidget);
       });
     }
+
+    testWidgets(
+        'completed-task banner does not overflow at the narrowest width '
+        '(320 px, UI-3)', (tester) async {
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(
+          info: const UpdateServiceInfo(serviceEnabled: true),
+        ),
+        initialState: const FirmwareUiState(
+          lastTask: UpdateTask(
+            taskUri: '/redfish/v1/TaskService/TaskMonitors/42',
+          ),
+          lastResult: RedfishTask(
+            id: '545',
+            state: 'Completed',
+            status: 'OK',
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'the completed-task banner must not overflow at 320 px',
+      );
+      expect(find.textContaining('Update task 545: Completed'), findsOneWidget);
+    });
   });
 
   group('FirmwareView — start-update form labels (UI-2)', () {

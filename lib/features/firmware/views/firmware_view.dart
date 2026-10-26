@@ -5,6 +5,7 @@ import 'package:redfishopenbmc/features/firmware/firmware_controller.dart';
 import 'package:redfishopenbmc/features/firmware/firmware_providers.dart';
 import 'package:redfishopenbmc/features/firmware/models/firmware_models.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
+import 'package:redfishopenbmc/redfish/models/redfish_task.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
 /// Firmware & update management screen for a single system (issue #008).
@@ -168,12 +169,37 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                     child: Semantics(
                       container: true,
                       excludeSemantics: true,
-                      label: _queuedLabel(ui.lastTask!),
-                      child: Text(
-                        _queuedText(ui.lastTask!),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                      label: _taskLabel(ui),
+                      child: Row(
+                        children: <Widget>[
+                          if (ui.polling) ...<Widget>[
+                            const SizedBox.square(
+                              dimension: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          Expanded(
+                            child: Text(
+                              _taskText(ui),
+                              style: TextStyle(
+                                color: ui.lastResult != null
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant
+                                    : Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                          if (ui.lastResult != null && ui.lastResult!.isSuccess)
+                            const SizedBox(width: 8),
+                          if (ui.lastResult != null && ui.lastResult!.isSuccess)
+                            Icon(
+                              Icons.check_circle_outline,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                        ],
                       ),
                     ),
                   ),
@@ -305,28 +331,49 @@ class _ServiceSummary extends StatelessWidget {
   }
 }
 
-/// Human-readable queued-update text for the firmware banner.
+/// Human-readable queued/polled update text for the firmware banner.
 ///
 /// Shows the task monitor URI from the 202 `Location` header and, when the
-/// service sent a `Retry-After` delay (DSP0266 §12.2), the wait hint.
-String _queuedText(UpdateTask task) {
+/// service sent a `Retry-After` delay (DSP0266 §12.2), the wait hint. While
+/// [FirmwareUiState.polling] the text switches to the in-progress form;
+/// once the monitor returns a terminal [FirmwareUiState.lastResult] it shows
+/// the final task state instead.
+String _taskText(FirmwareUiState ui) {
+  final UpdateTask task = ui.lastTask!;
+  final RedfishTask? result = ui.lastResult;
+  if (result != null) {
+    final String status = result.statusNote ?? result.state;
+    return 'Update task ${result.id}: $status';
+  }
   final String uri = task.taskUri == null || task.taskUri!.isEmpty
       ? '(no task URI returned)'
       : task.taskUri!;
   final String retry = task.retryAfterSeconds != null
       ? ' · retry after ${task.retryAfterSeconds}s'
       : '';
+  if (ui.polling) {
+    return 'Update in progress: polling $uri$retry';
+  }
   return 'Update queued: $uri$retry';
 }
 
-/// Concise accessibility label for the queued-update banner (UI-2).
-String _queuedLabel(UpdateTask task) {
+/// Concise accessibility label for the queued/polled update banner (UI-2).
+String _taskLabel(FirmwareUiState ui) {
+  final UpdateTask task = ui.lastTask!;
+  final RedfishTask? result = ui.lastResult;
+  if (result != null) {
+    final String status = result.statusNote ?? result.state;
+    return 'Update task ${result.id}, $status';
+  }
   final String uri = task.taskUri == null || task.taskUri!.isEmpty
       ? 'no task URI'
       : task.taskUri!;
   final String retry = task.retryAfterSeconds != null
       ? ', retry after ${task.retryAfterSeconds} seconds'
       : '';
+  if (ui.polling) {
+    return 'Update in progress, polling $uri$retry';
+  }
   return 'Update queued, $uri$retry';
 }
 

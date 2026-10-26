@@ -7,6 +7,7 @@ import 'package:redfishopenbmc/redfish/client/redfish_client.dart';
 import 'package:redfishopenbmc/redfish/models/odata.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_error.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
+import 'package:redfishopenbmc/redfish/models/redfish_task.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
 /// Service implementing Redfish firmware update control (issue #008).
@@ -163,7 +164,97 @@ class FirmwareService {
     return trimmed.isEmpty ? null : trimmed;
   }
 
-  /// Parses the `Retry-After` response header per RFC 7231 / DSP0266 §12.2.
+  /// Polls the task monitor a 202 async action returned, until the task
+  /// reaches a terminal state or the poll budget is exhausted (issue #022
+  /// criterion 1 — 202 task-monitor polling, folding into #008/#020).
+  ///
+  /// Every [UpdateTask] from [startSimpleUpdate] may carry a `Location` task
+  /// monitor URI (DSP0266 §12.2). This method GETs that monitor, parses the
+  /// `Task` resource ([RedfishTask]), and returns the final task once
+  /// [RedfishTask.isTerminal] is true:
+  ///   * [RedfishTask.isSuccess] → returns the finished task;
+  ///   * terminal failure → throws [RedfishException] with the task's
+  ///     [RedfishTask.failureReason] (first `Message.Message`, then
+  ///     `MessageId`, then the bare `TaskState`).
+  ///
+  /// The first wait honors the `Retry-After` hint the 202 carried
+  /// ([UpdateTask.retryAfterSeconds]); subsequent polls wait [interval].
+  /// A task that never reaches a terminal state within [maxPolls] polls
+  /// throws [RedfishException] (retryable — the caller may poll again).
+  /// A task whose [UpdateTask.taskUri] is null/empty has no monitor to poll
+  /// (204-no-Location services — the pinned DMTF mockup never returns one);
+  /// an explicit [RedfishException] documents that the caller must not treat
+  /// a missing monitor as pollable.
+  Future<RedfishTask> pollTask(
+    UpdateTask task, {
+    Duration interval = const Duration(seconds: 2),
+    int maxPolls = 30,
+  }) async {
+    final RedfishClient? c = client;
+    if (c == null) {
+      throw RedfishException(
+        message: 'Not connected to "$systemId"; cannot poll the task '
+            'monitor.',
+        errorCode: 'Base.1.0.NotConnected',
+      );
+    }
+    final String? monitorUri = task.taskUri;
+    if (monitorUri == null || monitorUri.isEmpty) {
+      throw const RedfishException(
+        message: 'The BMC returned no task monitor URI (the action '
+            'completed synchronously or the service does not publish a '
+            'monitor); nothing to poll.',
+        errorCode: 'Base.1.0.NoTaskMonitor',
+      );
+    }
+
+    final Duration firstWait = task.retryAfterSeconds != null
+        ? Duration(seconds: task.retryAfterSeconds!)
+        : interval;
+
+    for (int i = 0; i < maxPolls; i++) {
+      if (i == 0) {
+        await Future<void>.delayed(firstWait);
+      } else {
+        await Future<void>.delayed(interval);
+      }
+
+      final Map<String, dynamic> body;
+      try {
+        body = await c.getJson(monitorUri);
+      } on RedfishException catch (e) {
+        throw RedfishException(
+          message: 'Failed to read the task monitor $monitorUri: '
+              '${e.message}',
+          statusCode: e.statusCode,
+          errorCode: e.errorCode,
+          retryable: e.retryable,
+          uri: e.uri,
+          details: e.details,
+        );
+      }
+
+      final RedfishTask taskState = RedfishTask.fromJson(body);
+      if (taskState.isTerminal) {
+        if (taskState.isSuccess) return taskState;
+        throw RedfishException(
+          message: 'Firmware update task ${taskState.id} failed: '
+              '${taskState.failureReason ?? taskState.state}',
+          errorCode: 'Update.1.0.UpdateFailed',
+          details: RedfishError.tryParse(body),
+          raw: body.toString(),
+        );
+      }
+    }
+
+    throw RedfishException(
+      message: 'Firmware update task did not complete within $maxPolls '
+          'polls; it may still be running. Poll again later.',
+      errorCode: 'Update.1.0.TaskMonitorTimeout',
+      retryable: true,
+    );
+  }
+
   ///
   /// Accepts either a decimal number of seconds or an HTTP-date (converted to
   /// a whole number of seconds from now, clamped to `>= 0`). Returns `null`

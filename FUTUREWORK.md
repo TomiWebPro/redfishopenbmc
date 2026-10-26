@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-25 (DOCS run — **anchors re-verified live, no corpus refresh; mirror queue EMPTY; UI-2 remove-system confirmation dialog landed** — the dashboard `Remove` action now requires an explicit destructive confirm (`ConfirmRemoveSystemDialog`, focus on Cancel, Tab Cancel→Remove, ≥48px targets) instead of deleting a profile + stored credentials on one menu tap; the dialog test exposed + fixed a real defect — `removeProfile` could not clear `selectedId` via `copyWith(selectedId: null)` (null = keep current), so the id of a removed system stayed selected; removal now builds the state directly, regression pinned; unit suite **438 passed / 1 skipped**, emulator 82/82 unchanged)
-- **Current focus:** **DOCS (2026-10-25)** — cheap anchor re-verify done (all four unchanged; corpus mirror queue stays EMPTY). Next per alternation: **EMULATOR** — cheap 82/82 suite re-run and/or continue the #022/#008/#020 task-monitor polling work (criterion 1). Then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — remaining focus audit (all dialogs now tested: Add-system, reset-confirm, remove-confirm) + any remaining non-card labels
+- **Last updated:** 2026-10-26 (EMULATOR run — **#022 COMPLETE: the last criterion, 202 task-monitor *polling*, landed via the shared #008/#020 poller** — `RedfishTask`/`TaskMessage` models + `FirmwareService.pollTask` (GET-on-monitor, Retry-After first-wait, terminal detection, bounded polls) + `FirmwareController.pollLastTask` + the firmware-view task banner (queued → polling spinner → final state); unit suite **478 passed / 1 skipped**, emulator **84/84** with 2 new live pins (poller resolves fixture Task 545; stale monitor → normalized 404); #022 closed)
+- **Current focus:** **EMULATOR (2026-10-26)** — #022 closed with the task-monitor poller landed (criterion 1 was the last open item). Next per alternation: **DOCS** — cheap anchor re-verify (mirror queue stays EMPTY). Then the #008/#020 opening items (binary/multipart upload via `HttpPushUri`/`MultipartHttpPushUri`, live progress from `PercentComplete` — the poller already tolerates its absence) and P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — remaining focus audit (all dialogs now have focus/tab tests) + any remaining non-card labels
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1078,13 +1078,27 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `@odata.id` ref** (DSP0266 §7.3.2 depth-cap pinned), so the pass gets
       one full inlined hop per collection and must follow cross-resource
       URIs explicitly for the graph)
-- [ ] **#022** Power: task polling, races, and error fixes.
-      (bmcweb `ResetActionInfo` ActionInfo `Parameters/AllowableValues` is the
-      allow-list source on OpenBMC; add fallback — DOCS-4. **Annotation-form
-      fallback landed 2026-10-23 16:05**: `FeatureRules.supportedResetTypes`
-      unions `SupportedResetTypes` + the `ResetType@Redfish.AllowableValues`
-      annotation on `#ComputerSystem.Reset` (the DMTF mockup / bmcweb-style
-      shape), with the manager-list conflation guard — emulator-pinned;
+- [x] **#022** Power: task polling, races, and error fixes.
+      (**COMPLETE 2026-10-26 — closed.** All five acceptance criteria checked.
+      The final one — **202 task-monitor polling** — landed via the shared
+      #008/#020 poller: `RedfishTask`/`TaskMessage`
+      (`lib/redfish/models/redfish_task.dart`) parse the served
+      `#Task.v1_7_3.Task` shape (13 TaskStates per `Task.v1_7_4.json`,
+      TaskStatus, optional PercentComplete, RFC3339 Start/EndTime,
+      `Messages[]`) and `FirmwareService.pollTask` follows the 202
+      `Location` monitor URI (first wait honors `Retry-After`, then polls at
+      `interval` up to `maxPolls`; Completed/OK → success, terminal failure →
+      `RedfishException` with the task's failure reason, budget exhaustion →
+      retryable `TaskMonitorTimeout`, missing monitor → `NoTaskMonitor`).
+      `FirmwareController.pollLastTask` + the firmware-view task banner
+      (queued → polling spinner → final state) surface it. +25 model / +8
+      service / +4 controller / +5 widget tests; unit suite 438 → **478
+      passed / 1 skipped**; emulator 82 → **84/84** (2 new live pins: poller
+      resolves fixture Task 545 end-to-end; stale monitor → normalized 404).
+      Power-side 202 invocation stays unit-level on the DMTF fixture — the
+      mockup answers 204 for reset with no monitor (pinned live);
+      `PowerService` already captures the Location and reuses the same poller.
+      (prior progress preserved below:)
       **the ActionInfo-*resource* crawl is now WIRED (2026-10-25 EMU run)**:
       the discovery engine follows `@Redfish.ActionInfo` links and captures the
       resources (live emulator pin — 79th test captures `SimpleUpdateActionInfo`
@@ -1169,7 +1183,17 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       and **no `PercentComplete`** (poller must treat it as unknown), and
       TaskService publishes `CompletedTaskOverWritePolicy=Manual` +
       `LifeCycleEventOnTaskStateChange=true` — the poller only lacks
-      GET-on-monitor + TaskState parsing)
+      GET-on-monitor + TaskState parsing;
+      **TASK-MONITOR POLLING LANDED 2026-10-26 (#022 closed on it)** —
+      `RedfishTask`/`TaskMessage` models + `FirmwareService.pollTask`
+      (GET-on-monitor, Retry-After first-wait, terminal detection, bounded
+      polls) + `FirmwareController.pollLastTask` + the firmware-view task
+      banner; unit 478/1 skipped, emulator 84/84 with 2 new live pins.
+      **Remaining #008/#020:** binary/multipart upload via
+      `HttpPushUri`/`MultipartHttpPushUri` (file picker + upload progress +
+      apply-time selection), a live progress bar from `PercentComplete`
+      (absent on the fixture; the poller tolerates it), and the task-timeline
+      UI)
 - [ ] **#009 / #021** Remote KVM capability detection and console rendering.
       (emulator now pins the manager network surface the console renderer
       needs: `Manager.NetworkProtocol.KVMIP` ProtocolEnabled + port 5288, plus

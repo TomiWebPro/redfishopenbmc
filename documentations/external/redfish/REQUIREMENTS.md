@@ -6,7 +6,25 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-25 (DOCS run — **all four upstream anchors
+Last audited: 2026-10-26 (EMULATOR run — **the last #022 criterion, 202
+task-monitor *polling*, is now code + tests, emulator suite 84/84 green**):
+`RedfishTask` (`lib/redfish/models/redfish_task.dart`) parses the served
+`#Task.v1_7_3.Task` shape (13 TaskStates per `Task.v1_7_4.json`, TaskStatus,
+optional PercentComplete, RFC3339 Start/EndTime, `Messages[]`) and
+`FirmwareService.pollTask` follows the 202 `Location` monitor URI — GET +
+TaskState parse, first wait honors `Retry-After`, terminal detection
+(Completed/OK = success; Killed/Exception/Service/Cancelled = failure with the
+first `Message.Message` as the reason), bounded polls with a retryable timeout;
+`FirmwareController.pollLastTask` + the firmware-view task banner (queued →
+polling spinner → final state). **Two live emulator pins** (82 → 84): the
+poller resolves the fixture's own Task 545 end-to-end (Completed/OK, absent
+PercentComplete) and a stale monitor URI normalizes to a 404 `RedfishException`.
+Upstream anchors unchanged (bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266
+1.25.0, schema index byte-identical); corpus mirror queue stays EMPTY, 0 bytes
+downloaded. DOCS-10 rows §12.2 flipped from Partial to OK/Partial — see the
+DOCS-10 audit table.
+
+Prior: 2026-10-25 (DOCS run — **all four upstream anchors
 re-verified live, no corpus refresh; UI-2 remove-system confirmation dialog
 landed + the `removeProfile` selectedId-clear fix**): bmcweb `63a18f4` (git
 ls-remote, still master HEAD), mockup `23d21f9a` (still main HEAD), DSP0266
@@ -517,14 +535,14 @@ Mirrored the official DMTF `Task` schemas (`Task.json` aggregator,
 
 | Requirement | Source (section/URL) | Code | Test | Status |
 |---|---|---|---|---|
-| Async operation → 202 Accepted + `Location` task monitor URI (may also include `Retry-After`) | DSP0266 §12.2; `Task.json` | `FirmwareService.startSimpleUpdate` + `PowerService.reset` read `Location`; `FirmwareService` now also reads `Retry-After` into `UpdateTask.retryAfterSeconds` (DOCS-10) | `firmware_service_test.dart` (+1 Retry-After parse), `firmware_model_test.dart` (+1 UpdateTask), emulator firmware row | Partial: 202 accepted + Location captured; task *polling* still #008/#020 (firmware) + #022 (power) |
+| Async operation → 202 Accepted + `Location` task monitor URI (may also include `Retry-After`) | DSP0266 §12.2; `Task.json` | `FirmwareService.startSimpleUpdate` + `PowerService.reset` read `Location`; `FirmwareService` also reads `Retry-After` into `UpdateTask.retryAfterSeconds` (DOCS-10) | `firmware_service_test.dart` (+1 Retry-After parse), `firmware_model_test.dart` (+1 UpdateTask), emulator firmware row | OK — 202 accepted + Location captured; **`FirmwareService.pollTask` now follows the monitor (landed 2026-10-26)** |
 | Task monitor URI format `/redfish/v1/TaskService/TaskMonitors/<TaskMonitorId>` | DSP0266 §12.2 (task monitor "should be in the format") | n/a — client treats the `Location` value as opaque | emulator asserts client accepts the mockup's task URI | Note for #008/#020/#022 |
-| GET on the task monitor returns 202 while in process, then the final status + headers + body of the initial operation | DSP0266 §12.2 | not implemented — no task poller | — | GAP: #008/#020 (firmware), #022 (power) |
+| GET on the task monitor returns 202 while in process, then the final status + headers + body of the initial operation | DSP0266 §12.2 | **`FirmwareService.pollTask` (landed 2026-10-26)** — GET-on-monitor loop: first wait honors `Retry-After` from the 202, then polls at `interval` up to `maxPolls`; terminal TaskState resolves (Completed/OK → success; Killed/Exception/Service/Cancelled → `RedfishException` with the first `Message.Message`); non-terminal budget exhaustion → retryable `TaskMonitorTimeout`; a missing monitor URI → explicit `Base.1.0.NoTaskMonitor` (the 204-no-Location fixture norm) | `firmware_service_test.dart` (+8: success / fixture 545 round-trip / terminal failure reason / timeout / NoTaskMonitor / NotConnected / GET-404 context); **emulator 84/84: poller resolves the fixture's own Task 545 live + stale monitor → 404 normalized** (2026-10-26) | OK (firmware path; power 202-monitor path stays unit-level — the DMTF mockup never returns one for reset) |
 | DELETE task monitor or Task resource cancels; subsequent GET → 410 Gone / 404 Not Found | DSP0266 §12.2 | not implemented | — | GAP: #008/#020 (upload cancel) |
-| `Task.TaskState` (13 values incl. `Cancelled`/`Cancelling`/`Exception`); `TaskStatus` (Health) set only at completion; `PercentComplete` 0–100 (0 before start) | `Task.v1_7_4.json` `TaskState`/`TaskStatus`/`PercentComplete`; DSP0266 §12.2 | `UpdateTask` model captures `taskUri` + `retryAfterSeconds` only (no TaskState parsing yet) | `firmware_model_test.dart`; **emulator pins the mockup Task resource end-to-end: `TaskState Completed`, `TaskStatus OK`, RFC3339 Start/EndTime — and PercentComplete is ABSENT on the fixture, so the poller must treat it as unknown** (pinned 2026-10-23) | Partial: state machine comes with the #008/#020 poller |
-| `Task.Messages[]` carries task-associated messages (e.g. `ManagerGoingOfflineTemporarily` for service reboot during firmware update) | `Task.v1_7_4.json` `Messages`; DSP0266 §12.2 | not parsed | **emulator pins the mockup Task `Messages[]` shape: `MessageId` (`Base.*`), `Message`, `MessageArgs[]`, `Severity`** (pinned 2026-10-23) | GAP: #008/#020 task timeline |
+| `Task.TaskState` (13 values incl. `Cancelled`/`Cancelling`/`Exception`); `TaskStatus` (Health) set only at completion; `PercentComplete` 0–100 (0 before start) | `Task.v1_7_4.json` `TaskState`/`TaskStatus`/`PercentComplete`; DSP0266 §12.2 | **`RedfishTask` model (landed 2026-10-26)** — `lib/redfish/models/redfish_task.dart` parses TaskState/TaskStatus/PercentComplete (optional, 0–100)/RFC3339 Start-EndTime/Messages/TaskMonitor; terminal classification per the schema enum, success = Completed with OK (or absent) status, failure = Killed/Exception/Service/Cancelled + Completed-with-Warning/Critical; `failureReason` prefers `Message.Message` → `MessageId` → bare TaskState | `redfish_task_test.dart` (+25: full fixture 545 parse, id derivation, tolerant timestamps, all 13 states classified, warning/critical notes, message args/related props) | OK |
+| `Task.Messages[]` carries task-associated messages (e.g. `ManagerGoingOfflineTemporarily` for service reboot during firmware update) | `Task.v1_7_4.json` `Messages`; DSP0266 §12.2 | **`TaskMessage` model (landed 2026-10-26)** — MessageId/Message/MessageArgs/Severity/RelatedProperties; consumed by `RedfishTask.failureReason` and surfaced on `RedfishException.details` | `redfish_task_test.dart` (+2 message parse) + emulator pins the mockup `Messages[]` shape | OK |
 | `TaskService.CompletedTaskOverWritePolicy`, `LifeCycleEventOnTaskStateChange`, `Tasks` collection | `TaskService.v1_2_1.json` | not read (client only uses `SessionService` etc.) | **emulator pins `CompletedTaskOverWritePolicy=Manual`, `LifeCycleEventOnTaskStateChange=true`, and the enumerable `Tasks` collection** (pinned 2026-10-23) | vendor/feature row for #008/#020 task timeline |
-| `Retry-After` on the 202 tells the client how long to wait before polling; services may go offline (firmware update) and shall include `ManagerGoingOfflineTemporarily` + `Retry-After` | DSP0266 §12.2 | `FirmwareService.startSimpleUpdate` parses `Retry-After` (seconds or HTTP-date) into `UpdateTask.retryAfterSeconds` | `firmware_service_test.dart` | Partial: captured but not yet used to schedule the poll (that is #008/#020/#022) |
+| `Retry-After` on the 202 tells the client how long to wait before polling; services may go offline (firmware update) and shall include `ManagerGoingOfflineTemporarily` + `Retry-After` | DSP0266 §12.2 | `FirmwareService.startSimpleUpdate` parses `Retry-After` (seconds or HTTP-date) into `UpdateTask.retryAfterSeconds`; **`pollTask` now honors it as the first-wait duration (landed 2026-10-26)** | `firmware_service_test.dart`; `firmware_controller_test.dart` (+4 pollLastTask) | OK |
 
 Folded into code this run:
 
@@ -533,6 +551,17 @@ Folded into code this run:
   seconds or HTTP-date form). `FirmwareService.startSimpleUpdate` builds the
   handle instead of returning a bare `String`, so a future task poller has the
   wait hint without guessing.
+- **Task-monitor polling landed 2026-10-26 (EMULATOR run, #022 criterion 1):**
+  `RedfishTask` + `TaskMessage` (`lib/redfish/models/redfish_task.dart`) parse
+  the served `#Task.v1_7_3.Task` shape; `FirmwareService.pollTask` follows the
+  202 `Location` monitor URI (first wait honors `Retry-After`, then polls at
+  `interval` up to `maxPolls`; Completed/OK → success, terminal failure →
+  `RedfishException` with the task's `Message.Message`, budget exhaustion →
+  retryable `TaskMonitorTimeout`, no monitor → `Base.1.0.NoTaskMonitor` —
+  the 204-no-Location fixture norm); `FirmwareController.pollLastTask` +
+  the firmware-view task banner (queued → polling spinner → final state)
+  surface it to the UI. Unit tests (+25 model, +8 service, +4 controller,
+  +5 widget incl. 320-px no-overflow) and **2 live emulator pins (82 → 84)**.
 
 | Requirement | Source (section/URL) | Code | Test | Status |
 |---|---|---|---|---|
@@ -549,12 +578,12 @@ Folded into code this run:
 | Sensor telemetry: `Chassis[*].Thermal` / `Sensors`, reading + units | DSP0266 §9.6.15 `Oem`/§9.1 links; schema contracts in `Sensor.json` + `Sensor.v1_8_1.json` (mockup-served) + `Sensor.v1_14_0.json` (newest) + `Thermal.json` + `Thermal.v1_7_3.json` (newest, DOCS-12); DSP0266 does not enumerate per-resource schemas — the schema files are the normative property source | `lib/features/sensors/sensors_controller.dart` | `test/features/sensors/` | OK |
 | System overview: `ComputerSystem` identity (`Manufacturer`/`Model`/`SKU`/`SerialNumber`/`PartNumber`/`BiosVersion`), `PowerState`, `Status.Health`(+Rollup), `ProcessorSummary`/`MemorySummary`, `IndicatorLED`, leading `Chassis` thermal | DSP0266 §9.1 "Resources" + §9.6 "Properties"; schema contracts in `ComputerSystem.v1_22_0.json` (mockup-served) + `ComputerSystem.v1_29_0.json` (newest, DOCS-2) + `Thermal.v1_7_3.json` (DSP0266 does not carry per-resource property lists) | `lib/features/overview/overview_service.dart` (+ `models/system_overview.dart`) hydrates system + best-effort chassis thermal | `test/features/overview/overview_provider_test.dart` + `overview_view_test.dart`; **emulator suite now pins the full hydrate end-to-end** against the DMTF mockup (#006) | OK |
 | Firmware inventory: `UpdateService` / `SoftwareInventory` collection | DSP0266 §12.7 "Update service" + §7.2.2 "Resource collection requests"; `SoftwareInventory.json` + `SoftwareInventory.v1_10_1.json` (mockup-served) + `SoftwareInventory.v1_15_0.json` (newest, DOCS-2) (schema contract) | `lib/features/firmware/firmware_models.dart` | `test/features/firmware/` | OK |
-| Firmware update: `UpdateService.SimpleUpdate` (entity-upload mode TBD); `UpdateService.ServiceEnabled` gates the capability | DSP0266 §12.7 "Update service" (§12.7.2.1 "Simple updates"); `UpdateService.json` (`ServiceEnabled`) + `UpdateService.v1_17_1.json` (newest, DOCS-12); OpenBMC `Redfish.md` §UpdateService | `lib/features/firmware/firmware_service.dart`; `FeatureRules.firmwareUpdate` honors `ServiceEnabled` (DOCS-5) | `test/features/firmware/`; `feature_rules_test.dart` (ServiceEnabled case) | Partial — task monitoring in #008/#020 |
+| Firmware update: `UpdateService.SimpleUpdate` (entity-upload mode TBD); `UpdateService.ServiceEnabled` gates the capability | DSP0266 §12.7 "Update service" (§12.7.2.1 "Simple updates"); `UpdateService.json` (`ServiceEnabled`) + `UpdateService.v1_17_1.json` (newest, DOCS-12); OpenBMC `Redfish.md` §UpdateService | `lib/features/firmware/firmware_service.dart`; `FeatureRules.firmwareUpdate` honors `ServiceEnabled` (DOCS-5) | `test/features/firmware/`; `feature_rules_test.dart` (ServiceEnabled case) | OK — SimpleUpdate + **task-monitor polling** (`pollTask`) landed 2026-10-26 |
 | KVM capability: `Manager.GraphicalConsole` / OEM console detection | OpenBMC `Redfish.md`; `Manager.json` + `Manager.v1_25_0.json` (newest, DOCS-12) | `lib/redfish/discovery/feature_rules.dart` (`kvm`, `kvmType`) | `test/redfish/discovery/feature_rules_test.dart` | OK (rendering gated in #009/#021) |
 | Event subscription: `EventService.Subscriptions` — POST → 201 + `Location`; DELETE to unsubscribe | DSP0266 §12.1.1–§12.1.2 "Eventing"; `EventService.json` + `EventService.v1_12_0.json` (newest, DOCS-12) | **not implemented** | — | GAP: DOCS-7 — decision recorded below (out-of-scope this milestone) |
 | SSE event stream: GET `EventService.ServerSentEventUri` | DSP0266 §12.1.3 "Open an SSE connection"; `EventService.v1_6_9+` | **not implemented** (no SSE transport dependency in `pubspec.yaml`) | — | GAP: DOCS-7 — revisit when telemetry/eventing lands (#007/#019) |
 | EventType-based eventing deprecated; filter subscriptions by `RegistryPrefixes` / `ResourceTypes` / `MessageIds` | DSP0266 §12.1.4–§12.1.5 | n/a (no subscriber yet) | — | Note for a future implementation |
-| Task monitor: 202 + `Location` + optional `Retry-After`; GET monitor → 202 while running, then final status + body; DELETE cancels; 404/410 after completion | DSP0266 §12.2 "Asynchronous operations"; `TaskService.json` | `lib/features/firmware/firmware_service.dart` + `lib/features/power/power_service.dart` read `Location`, store the task URI, do **not** poll | tests cover 202+`Location` acceptance | Partial/GAP: #008/#020 (firmware), #022 (power) |
+| Task monitor: 202 + `Location` + optional `Retry-After`; GET monitor → 202 while running, then final status + body; DELETE cancels; 404/410 after completion | DSP0266 §12.2 "Asynchronous operations"; `TaskService.json` | `lib/features/firmware/firmware_service.dart` (`startSimpleUpdate` + **`pollTask`** — GET-on-monitor, Retry-After first-wait, terminal detection, bounded polls; landed 2026-10-26) + `lib/features/power/power_service.dart` read `Location`, store the task URI; power-side polling stays #022-unit-level (the DMTF mockup never returns a 202 monitor for reset) | tests cover 202+`Location` acceptance, `Retry-After` parse, poll success/failure/timeout/no-monitor/404 (unit) + **2 live emulator pins** (poller resolves fixture Task 545; stale monitor → 404 normalized) | OK (firmware); Partial (power 202-monitor path unit-level); DELETE-cancel still GAP (#008/#020) |
 | bmcweb `EventService`: `SubmitTestEvent`, `DeliveryRetryAttempts` (default 3), `DeliveryRetryIntervalSeconds`, `EventFormatTypes`, `SSEFilterPropertiesSupported` | OpenBMC `Redfish.md` §EventService | not implemented | — | vendor row (bmcweb) |
 | bmcweb `TaskService`: `CompletedTaskOverWritePolicy`, `LifeCycleEventOnTaskStateChange`, `Tasks` collection | OpenBMC `Redfish.md` §TaskService | not implemented (202 accepted only) | — | vendor row (bmcweb) |
 | Session timeout handling (`SessionService.SessionTimeout` + v1_2_0 `AbsoluteSessionTimeout`/`AbsoluteSessionTimeoutEnabled`) | DSP0266 §13.3.4.3 "Session lifetime"; `SessionService.json` + `SessionService.v1_2_0.json` (newest, DOCS-12) | `lib/redfish/models/session.dart` — `Session.expiryFromService` computes the conservative *earlier* deadline (`createdAt + min(SessionTimeout, AbsoluteSessionTimeout)` when the absolute timeout is enabled, else `SessionTimeout`) — DOCS-17 | `test/redfish/models/models_test.dart` (+6 DOCS-17 expiry tests); emulator `SessionService.SessionTimeout == 30` published (#015) | Partial: model-level contract pinned; AuthManager has no SessionService fetch yet — wiring expiry into login is #015 |
