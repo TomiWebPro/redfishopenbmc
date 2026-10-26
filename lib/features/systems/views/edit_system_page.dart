@@ -37,6 +37,11 @@ class EditSystemPage extends StatelessWidget {
 }
 
 /// Opens the [EditSystemPage] as a dialog for [profile].
+///
+/// Unlike the full-page [EditSystemPage] (which deliberately leaves
+/// autofocus off so the page does not scroll on load), the dialog moves
+/// keyboard focus inside the form on open — the WAI-ARIA dialog pattern
+/// already applied to the Add-system dialog (see [AddSystemDialog]).
 void showEditSystemDialog(BuildContext context, ConnectionProfile profile) {
   showDialog<void>(
     context: context,
@@ -47,6 +52,7 @@ void showEditSystemDialog(BuildContext context, ConnectionProfile profile) {
         child: SingleChildScrollView(
           child: SystemProfileForm(
             initial: profile,
+            autofocusFirstField: true,
             onSubmit: (ConnectionProfile updated) {
               ProviderScope.containerOf(ctx)
                   .read(systemManagerProvider.notifier)

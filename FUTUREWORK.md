@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-26 (EMULATOR run — **#022 COMPLETE: the last criterion, 202 task-monitor *polling*, landed via the shared #008/#020 poller** — `RedfishTask`/`TaskMessage` models + `FirmwareService.pollTask` (GET-on-monitor, Retry-After first-wait, terminal detection, bounded polls) + `FirmwareController.pollLastTask` + the firmware-view task banner (queued → polling spinner → final state); unit suite **478 passed / 1 skipped**, emulator **84/84** with 2 new live pins (poller resolves fixture Task 545; stale monitor → normalized 404); #022 closed)
-- **Current focus:** **EMULATOR (2026-10-26)** — #022 closed with the task-monitor poller landed (criterion 1 was the last open item). Next per alternation: **DOCS** — cheap anchor re-verify (mirror queue stays EMPTY). Then the #008/#020 opening items (binary/multipart upload via `HttpPushUri`/`MultipartHttpPushUri`, live progress from `PercentComplete` — the poller already tolerates its absence) and P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — remaining focus audit (all dialogs now have focus/tab tests) + any remaining non-card labels
+- **Last updated:** 2026-10-26 (DOCS run — **all four upstream anchors re-verified live, no corpus refresh** — bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0 PDF + schema index both byte-identical, mirror queue EMPTY, 0 new bytes; **UI-2 increment: the edit-system dialog focus entry pinned** — `showEditSystemDialog` sets `autofocusFirstField: true` (the Add-system dialog precedent; the full-page editor keeps the flag off), +2 widget tests pin dialog focus entry + the full Tab order to the Save button; unit suite **480 passed / 1 skipped**)
+- **Current focus:** **DOCS (2026-10-26)** — anchor re-verify done (mirror queue stays EMPTY; anchors unchanged). Next per alternation: **EMULATOR** — cheap 84/84 re-run and/or the #008/#020 opening items (binary/multipart upload via `HttpPushUri`/`MultipartHttpPushUri`, live progress from `PercentComplete` — the poller already tolerates its absence, task-timeline UI). Then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — remaining focus audit (all dialogs now have focus/tab tests: Add-system, edit-system, reset-confirm, remove-confirm) + any remaining non-card labels
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1519,6 +1519,16 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       behaviour; systems 32→36 (widget) + manager CRUD 3→5;
       all dialogs now have focus/tab tests (Add-system, reset-confirm,
       remove-confirm);
+      **edit-system dialog focus entry pinned done 2026-10-26 — the last
+      dialog without focus entry: `showEditSystemDialog` now sets
+      `autofocusFirstField: true` (keyboard/screen-reader users land on the
+      first field the moment the dialog opens — WAI-ARIA dialog pattern, the
+      Add-system dialog precedent); the full-page `EditSystemPage` keeps the
+      flag off so it does not scroll on load (the documented reason for the
+      flag); +2 widget tests pin the dialog focus entry + the full Tab order
+      to the Save button (Name → Host → Port → TLS → auth-method → Username →
+      Password → Remember → self-signed → Save, the edit-mode button label
+      asserted so a regression to 'Add system' fails loudly), systems 36→38;
       extend to
       remaining cards, dialogs, tables)
 - [ ] **UI-3** Responsive layout: no overflow at 320 / 800 / 1300 px widths; add

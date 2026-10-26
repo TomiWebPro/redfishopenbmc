@@ -6,7 +6,27 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-26 (EMULATOR run — **the last #022 criterion, 202
+Last audited: 2026-10-26 (DOCS run — **all four upstream anchors
+re-verified live, no corpus refresh; UI-2 edit-system dialog focus entry
+pinned**): bmcweb `63a18f4` (git ls-remote, still master HEAD), mockup
+`23d21f9a` (still main HEAD), DSP0266 1.25.0 PDF **byte-identical** SHA-256
+`385ee6d0…` (1,243,359 B) vs the mirrored `redfish/spec/DSP0266_1.25.0.pdf`,
+schema index **byte-identical** SHA-256 `e5a29797…` (3,448,133 B) vs the
+mirrored `v1-index.html` → DOCS-27's ZERO version advances still hold, the
+corpus mirror queue stays EMPTY for every published type, 0 bytes of new
+corpus data. The audit surfaced no trace-row gap (all rows cited during
+previous DOCS runs remain current). UI-2 increment: the **edit-system dialog**
+(`showEditSystemDialog`, the dashboard Edit menu path) now sets
+`autofocusFirstField: true` on the shared `SystemProfileForm` so keyboard and
+screen-reader users land inside the dialog the moment it opens — the
+WAI-ARIA dialog pattern already applied to the Add-system dialog; the
+full-page `EditSystemPage` still leaves the flag off so the page does not
+scroll on load (the documented reason for the flag). +2 widget tests pin the
+edit-dialog focus entry and the full Tab order to the Save button
+(Name → Host → Port → TLS → auth-method → Username → Password → Remember →
+self-signed → Save); systems 36→38.
+
+Prior: 2026-10-26 (EMULATOR run — **the last #022 criterion, 202
 task-monitor *polling*, is now code + tests, emulator suite 84/84 green**):
 `RedfishTask` (`lib/redfish/models/redfish_task.dart`) parses the served
 `#Task.v1_7_3.Task` shape (13 TaskStates per `Task.v1_7_4.json`, TaskStatus,

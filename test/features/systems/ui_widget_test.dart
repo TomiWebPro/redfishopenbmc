@@ -1023,6 +1023,106 @@ void main() {
       await _pressTab(tester);
       expect(_focusInside(tester, find.byType(FilledButton)), isTrue);
     });
+
+    testWidgets(
+        'showEditSystemDialog opens with keyboard focus on the first field',
+        (tester) async {
+      // The dashboard Edit menu opens the SAME profile form as a dialog —
+      // WAI-ARIA dialog pattern: focus must move inside the dialog (the
+      // Add-system dialog precedent). The edit DIALOG sets
+      // autofocusFirstField; only the full-page EditSystemPage leaves it off
+      // so the page does not scroll on load.
+      final SystemManager m = seededManager(systems: <String, SystemHandle>{});
+      final ConnectionProfile profile = const ConnectionProfile(
+        id: 'bmc1',
+        name: 'Edit Me',
+        host: 'edit.host',
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            secureStorageProvider.overrideWith((ref) => InMemoryStorage()),
+            systemManagerProvider.overrideWith((ref) => m),
+          ],
+          child: MaterialApp(
+            home: Builder(
+              builder: (BuildContext context) => ElevatedButton(
+                onPressed: () => showEditSystemDialog(context, profile),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SystemProfileForm), findsOneWidget);
+      // Keyboard focus landed inside the dialog on the first field — a user
+      // editing a profile can start typing without hunting for the form.
+      expect(_fieldFocused(tester, field('Display name (optional)')), isTrue);
+      expect(_fieldFocused(tester, field('Host / IP')), isFalse);
+    });
+
+    testWidgets(
+        'Edit dialog Tab order walks the profile form to the Save '
+        'button', (tester) async {
+      // The edit dialog pre-populates the form (initial profile → 'Save'
+      // button), and the same visual Tab order as the Add-system dialog must
+      // hold: Name -> Host -> Port -> TLS -> auth-method -> Username ->
+      // Password -> Remember -> self-signed -> Save.
+      final ConnectionProfile profile = const ConnectionProfile(
+        id: 'bmc1',
+        name: 'Edit Me',
+        host: 'edit.host',
+      );
+      await tester.pumpWidget(
+        _formScreen(
+          SystemProfileForm(
+            initial: profile,
+            autofocusFirstField: true, // the showEditSystemDialog path
+            onSubmit: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Autofocus puts the first field in focus.
+      expect(_fieldFocused(tester, field('Display name (optional)')), isTrue);
+      expect(find.widgetWithText(FilledButton, 'Save'), findsOneWidget);
+
+      // Name -> Host -> Port.
+      await _pressTab(tester);
+      expect(_fieldFocused(tester, field('Host / IP')), isTrue);
+      await _pressTab(tester);
+      expect(_fieldFocused(tester, field('Port')), isTrue);
+
+      // Port -> TLS switch -> auth-method dropdown -> Username.
+      await _pressTab(tester);
+      expect(_focusInside(tester, switchTile('Use TLS (HTTPS)')), isTrue);
+      await _pressTab(tester);
+      expect(
+        _focusInside(tester, find.byType(DropdownButton<AuthMethod>)),
+        isTrue,
+      );
+      await _pressTab(tester);
+      expect(_fieldFocused(tester, field('Username')), isTrue);
+
+      // Username -> Password -> Remember switch -> self-signed switch.
+      await _pressTab(tester);
+      expect(_fieldFocused(tester, field('Password')), isTrue);
+      await _pressTab(tester);
+      expect(_focusInside(tester, switchTile('Remember password')), isTrue);
+      await _pressTab(tester);
+      expect(
+        _focusInside(tester, switchTile('Allow self-signed certificate')),
+        isTrue,
+      );
+
+      // Self-signed switch -> Save button.
+      await _pressTab(tester);
+      expect(_focusInside(tester, find.byType(FilledButton)), isTrue);
+    });
   });
 
   group('DashboardView integration', () {

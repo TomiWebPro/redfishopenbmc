@@ -4501,3 +4501,53 @@
 **Issues touched:**
 - #022 **closed** (criterion 1 — task-monitor polling — landed).
 - #020 advanced (Progress Log; task-polling piece done, upload/progress remain).
+
+## 2026-10-26 — agent:redfish-automation — DOCS anchor re-verify + UI-2 edit-system dialog focus entry
+
+**Done:**
+- DOCS primary per alternation (last primary: EMULATOR 00:25). Corpus mirror
+  queue is EMPTY, so the DOCS run did the documented cheap anchor re-verify.
+  Re-verified live: bmcweb `63a18f4` (git ls-remote, still master HEAD),
+  mockup `23d21f9a` (still main HEAD), DSP0266 1.25.0 PDF **byte-identical**
+  SHA-256 `385ee6d0…` (1,243,359 B), schema index **byte-identical**
+  SHA-256 `e5a29797…` (3,448,133 B) → no corpus refresh, DOCS-27 ZERO
+  advances hold, 0 new bytes of corpus data. REQUIREMENTS.md "Last audited"
+  + manifest README anchor section updated (01:0x UTC).
+- **UI-2 edit-system dialog focus entry:** `showEditSystemDialog` (the
+  dashboard Edit menu path) previously rendered the shared
+  `SystemProfileForm` as a dialog without `autofocusFirstField` — keyboard
+  focus stayed on the triggering Edit control (unlike the Add-system dialog).
+  It now sets `autofocusFirstField: true` so keyboard/screen-reader users
+  land inside the dialog on the first field the moment it opens (WAI-ARIA
+  dialog pattern); the full-page `EditSystemPage` keeps the flag off (no
+  scroll on load — the documented reason for the flag). +2 widget tests:
+  (1) the real dialog opens with focus on "Display name (optional)" and NOT
+  on "Host / IP"; (2) the pre-populated edit form walks Tab in visual order
+  Name → Host → Port → TLS → auth-method → Username → Password → Remember →
+  self-signed → **Save** (the edit-mode button label asserted so a regression
+  to 'Add system' fails loudly). Systems widget file 36→38.
+- Full unit suite 478 → **480 passed / 1 skipped** (+2); analyze 0.
+
+**Decisions:**
+- DOCS per alternation; corpus queue empty → cheap anchor re-verify (the
+  established pattern) — the audit surfaced no trace-row gap this run.
+- Picked the last dialog without focus entry: only Add-system, reset-confirm,
+  and remove-confirm had focus/tab pins; the edit dialog (edit_system_page
+  `showEditSystemDialog`, used by the dashboard Edit action) was the gap.
+  The fix is one flag on the dialog path — the full-page editor behaviour is
+  preserved and the doc comment on the flag already stated the intended
+  split (dialog autofocus ON, page autofocus OFF).
+
+**Next:**
+- EMULATOR per alternation: cheap 84/84 re-run and/or the #008/#020 opening
+  items (binary/multipart upload via `HttpPushUri`/`MultipartHttpPushUri` —
+  file picker + upload progress + apply-time selection; live progress from
+  `PercentComplete`; task-timeline UI).
+- P1 #015 AuthManager (expiryFromService → login + re-auth; token/location
+  from create RESPONSE HEADERS only).
+- UI-2: all four dialogs now have focus/tab tests (Add-system, edit-system,
+  reset-confirm, remove-confirm); continue the remaining focus audit +
+  non-card labels. Keep pushing every run.
+
+**Issues touched:**
+- none opened/closed/advanced this run (anchor re-verify + UI increment only).
