@@ -163,6 +163,62 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                     ),
                   ),
                 _InventoryList(info: ui.info),
+                if (ui.uploading)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Semantics(
+                              container: true,
+                              excludeSemantics: true,
+                              label: 'Uploading firmware image',
+                              child: Row(
+                                children: <Widget>[
+                                  const SizedBox.square(
+                                    dimension: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Uploading firmware image…',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (ui.uploadProgress != null) ...<Widget>[
+                              const SizedBox(height: 8),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: ui.uploadProgress!.total == 0
+                                      ? null
+                                      : ui.uploadProgress!.sent /
+                                          ui.uploadProgress!.total,
+                                  minHeight: 6,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${ui.uploadProgress!.sent} / '
+                                '${ui.uploadProgress!.total} bytes',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 if (ui.lastTask != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 12),

@@ -6,7 +6,31 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-26 (DOCS run — **all four upstream anchors
+Last audited: 2026-10-26 (EMULATOR run — **the #008/#020 binary/multipart
+push upload transport is now code + tests, emulator suite 85/85 green**):
+`FirmwareService.pushImage(PushImageRequest)` uploads image bytes either as a
+single-push `Uint8List` body to `HttpPushUri` (dio computes Content-Length so
+`onSendProgress` fires) or as a multipart `FormData` (`UpdateFile` part +
+optional `UpdateParameters` JSON for targets/apply-time) when
+`MultipartHttpPushUri` is advertised; the chosen URI is resolved against the
+UpdateService resource URI per DSP0266's relative-reference rule (mockup
+`/FWUpdate` → `/redfish/v1/UpdateService/FWUpdate`). Non-2xx uploads normalize
+to friendly `RedfishException`s carrying the served body (the mockup's 400 on
+the unimplemented `/FWUpdate` seam surfaces with no error envelope, no
+masking); missing push URI / disconnected → dedicated `NoPushUri` /
+`NotConnected` errors; a 202 + `Location` hands off to the existing `pollTask`
+monitor. `FirmwareController.pushImage` (uploading / uploadProgress state) +
+the firmware-view upload banner (merged semantics label + byte-count
+LinearProgressIndicator) drive the flow. **+1 live emulator pin (85/85)**:
+`pushImage` picks the single-push URI and normalizes the mockup's
+unimplemented upload seam to a friendly 400 error — the pinned "Multipart
+absent → pick single-push" fact is now code, and the bmcweb firmware-update
+trace row flips Partial → OK (transport). Upstream anchors unchanged since the
+previous DOCS run's live re-verification (bmcweb `63a18f4`, mockup `23d21f9a`,
+DSP0266 1.25.0, schema index byte-identical); no corpus refresh. File-picker
+UI + apply-time selection widget + task-timeline UI remain GAP (#008/#020).
+
+Prior: 2026-10-26 (DOCS run — **all four upstream anchors
 re-verified live, no corpus refresh; UI-2 edit-system dialog focus entry
 pinned**): bmcweb `63a18f4` (git ls-remote, still master HEAD), mockup
 `23d21f9a` (still main HEAD), DSP0266 1.25.0 PDF **byte-identical** SHA-256
@@ -607,7 +631,7 @@ Folded into code this run:
 | bmcweb `EventService`: `SubmitTestEvent`, `DeliveryRetryAttempts` (default 3), `DeliveryRetryIntervalSeconds`, `EventFormatTypes`, `SSEFilterPropertiesSupported` | OpenBMC `Redfish.md` §EventService | not implemented | — | vendor row (bmcweb) |
 | bmcweb `TaskService`: `CompletedTaskOverWritePolicy`, `LifeCycleEventOnTaskStateChange`, `Tasks` collection | OpenBMC `Redfish.md` §TaskService | not implemented (202 accepted only) | — | vendor row (bmcweb) |
 | Session timeout handling (`SessionService.SessionTimeout` + v1_2_0 `AbsoluteSessionTimeout`/`AbsoluteSessionTimeoutEnabled`) | DSP0266 §13.3.4.3 "Session lifetime"; `SessionService.json` + `SessionService.v1_2_0.json` (newest, DOCS-12) | `lib/redfish/models/session.dart` — `Session.expiryFromService` computes the conservative *earlier* deadline (`createdAt + min(SessionTimeout, AbsoluteSessionTimeout)` when the absolute timeout is enabled, else `SessionTimeout`) — DOCS-17 | `test/redfish/models/models_test.dart` (+6 DOCS-17 expiry tests); emulator `SessionService.SessionTimeout == 30` published (#015) | Partial: model-level contract pinned; AuthManager has no SessionService fetch yet — wiring expiry into login is #015 |
-| bmcweb firmware update: `HttpPushUri` / `MultipartHttpPushUri` upload (no `SimpleUpdate` action) | OpenBMC `Redfish.md` §UpdateService (bmcweb `27e0930b`); `UpdateService.v1_17_1.json` `MultipartHttpPushUri` | `UpdateServiceInfo` exposes `httpPushUri` **and** `multipartHttpPushUri` (DOCS-9); `startSimpleUpdate` POSTs `#UpdateService.SimpleUpdate` — **will not match bmcweb** | unit: `test/features/firmware/firmware_model_test.dart` (+3 DOCS-9: multipart parse, absent fallback, copyWithInventory); emulator: `emulator_suite_test.dart` asserts `UpdateServiceInfo.httpPushUri == '/FWUpdate'` on the DMTF mockup | Partial: push *upload path* still #008/#020, but both push URIs now surfaced |
+| bmcweb firmware update: `HttpPushUri` / `MultipartHttpPushUri` upload (no `SimpleUpdate` action) | OpenBMC `Redfish.md` §UpdateService (bmcweb `63a18f4`); `UpdateService.v1_17_1.json` `MultipartHttpPushUri` | `UpdateServiceInfo` exposes `httpPushUri` **and** `multipartHttpPushUri` (DOCS-9); `FirmwareService.pushImage` uploads raw bytes single-push or multipart FormData, resolves the push URI against the UpdateService resource URI, and hands a 202 + `Location` to `pollTask` (landed 2026-10-26 EMU) | unit: `test/features/firmware/firmware_model_test.dart` (DOCS-9 multipart parse + `PushImageRequest` serialization); `firmware_service_test.dart` (+6: single-push body, multipart FormData, UpdateParameters + Retry-After, real-server byte progress, NoPushUri, NotConnected, 400 no-masking); `firmware_controller_test.dart` (+3 upload state); `firmware_widget_test.dart` (+5 banner); emulator: `emulator_suite_test.dart` asserts `UpdateServiceInfo.httpPushUri == '/FWUpdate'` + live pin — `pushImage` picks the single-push URI and normalizes the mockup's 400 seam | OK — binary/multipart push *transport* landed 2026-10-26 (85/85 emulator); the file-picker UI + apply-time selection widget stay GAP (#008/#020) |
 | bmcweb reset types: `ResetActionInfo` ActionInfo (`Parameters/AllowableValues`) instead of system-level `SupportedResetTypes` | OpenBMC `Redfish.md` §ComputerSystem (`ResetActionInfo` resource) | `FeatureRules.supportedResetTypes` unions all three sources: `SupportedResetTypes`, the `ResetType@Redfish.AllowableValues` annotation on `#ComputerSystem.Reset` (DOCS-4/13 fix, run 2026-10-23), **and the `@Redfish.ActionInfo` resource the action links to (`Parameters[].AllowableValues` on `ResetType` — the bmcweb `ResetActionInfo` crawl, wired 2026-10-25 EMU run)** | `feature_rules_test.dart` "falls back to the ResetType@Redfish.AllowableValues annotation" + "never reads the manager-level guard" + "unions the ActionInfo resource allow-list" + "resetTypesFromActionInfo follows the action's @Redfish.ActionInfo link"; discovery-engine test "follows @Redfish.ActionInfo links and folds Parameters[].AllowableValues into the reset allow-list"; emulator pin "engine follows @Redfish.ActionInfo links" (live `SimpleUpdateActionInfo`) | OK: empty-`SupportedResetTypes` BMCs surface the true allow-list from the action annotation **and** from a linked `ResetActionInfo` resource; ActionInfo *resource* crawling is no longer a TODO — the engine follows the links and FeatureRules parses them |
 | bmcweb serial console lives on the ComputerSystem (`SerialConsole/SSH|IPMI`), not the Manager | OpenBMC `Redfish.md` §ComputerSystem (`SerialConsole` fields) | `FeatureRules._managerConsoleType` only checks `Manager.GraphicalConsole/SerialConsole/Oem` | `feature_rules_test.dart` | Partial: GraphicalConsole detection still correct; System-level SerialConsole not yet mapped (see #009/#021 KVM) |
 | bmcweb auth surface: `AccountService.Oem.OpenBMC.AuthMethods.*` (`BasicAuth`, `Cookie`, `SessionToken`, `TLS`, `XToken`) + `HTTPBasicAuth` | OpenBMC `Redfish.md` §AccountService | `AuthManager` prefers session, falls back to basic | `test/redfish/client/auth_manager_test.dart` | Partial: vendor auth-method negotiation is #015/#026 |
@@ -774,9 +798,12 @@ client-relevant families.
       handle); (b) negative pin — the advertised `HttpPushUri` (`/FWUpdate`)
       is NOT implemented: POSTing a binary upload body fails with 400 and an
       EMPTY body (no `@Message.ExtendedInfo` envelope; connection closed;
-      GET /FWUpdate 404s), so the #020 binary-push upload flow stays
-      unit-level and the client normalizes it as `RedfishException` HTTP 400
-      with no error code,
+      GET /FWUpdate 404s) — the client normalizes it as `RedfishException`
+      HTTP 400 with no error code (unit-level since 2026-10-24; **now also
+      pinned live at the service level** — the 85th emulator pin runs
+      `FirmwareService.pushImage` against the real fixture and asserts the
+      normalized friendly 400, so the pick-single-push + normalize path is
+      proven end-to-end while the mockup keeps the seam unimplemented),
       **OverviewService end-to-end hydration (#006: identity/health/power/
      processor-memory summaries/indicator-LED/leading-thermal), LogService +
      LogEntry collection incl. ClearLog action + `@odata.nextLink` pagination
@@ -1013,7 +1040,9 @@ client-relevant families.
     `HttpPushUri` (`/FWUpdate`) unlike bmcweb's multipart variant, so
     `UpdateServiceInfo.multipartHttpPushUri` is null and the #008/#020 upload
     flow must pick the single-push URI when that is all the service
-    advertises.
+    advertises (**implemented + pinned 2026-10-26 EMU**: `pushImage` resolves
+    the single-push URI against the UpdateService resource URI and the 85th
+    live pin asserts that choice end-to-end).
     **ActionInfo resource contract (pinned 2026-10-25, EMU 69→71 then
     75→78):** the two `CertificateService` actions each advertise an
     `@Redfish.ActionInfo` link that resolves to a GET-able

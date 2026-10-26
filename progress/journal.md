@@ -4551,3 +4551,66 @@
 
 **Issues touched:**
 - none opened/closed/advanced this run (anchor re-verify + UI increment only).
+
+## 2026-10-26 — agent:redfish-automation — #008/#020 binary/multipart push upload transport (EMULATOR)
+
+**Done:**
+- EMULATOR primary per alternation (last primary: DOCS 01:18). Landed the
+  #008/#020 **push upload transport**: `PushImageRequest` (bytes, filename,
+  contentType, optional applyTime + targets; `toUpdateParametersJson()` emits
+  the Redfish `UpdateParameters` body only when set) and
+  `FirmwareService.pushImage`:
+  - Single-push: POST the raw `Uint8List` body to `HttpPushUri` — dio
+    computes Content-Length so `onSendProgress` fires (the bare-Stream
+    without Content-Length never fires; the 22:05 journal trap).
+  - Multipart: `FormData` with an `UpdateFile` part + optional
+    `UpdateParameters` JSON when `MultipartHttpPushUri` is advertised.
+  - Chosen push URI resolved against the UpdateService resource URI per
+    DSP0266's relative-reference rule (mockup `/FWUpdate` →
+    `/redfish/v1/UpdateService/FWUpdate`).
+  - Non-2xx normalizes to friendly `RedfishException`s (the mockup's 400 on
+    the unimplemented `/FWUpdate` seam surfaces as HTTP 400, no masking);
+    `NoPushUri` / `NotConnected` dedicated errors; a 202 + `Location` returns
+    an `UpdateTask` for the existing `pollTask`.
+- `FirmwareController.pushImage` (uploading + uploadProgress `({sent,
+  total})?`) + the firmware-view upload banner (merged semantics label +
+  byte-count LinearProgressIndicator) drive the flow.
+- REQUIREMENTS.md: "Last audited" header rewritten; the bmcweb firmware-update
+  trace row flips **Partial → OK** (transport); the two historical pins that
+  described the push flow as unit-only updated with the new live pin + the
+  implemented pick-single-push behavior.
+- Full unit suite 480 → **496 passed / 1 skipped** (+16); analyze 0; emulator
+  84 → **85/85 green** (+1 live pin: `pushImage` picks the single-push URI and
+  normalizes the mockup's 400 seam end-to-end).
+
+**Decisions:**
+- EMULATOR per alternation; the FUTUREWORK focus pointed at the #008/#020
+  opening items — the transport was the code-first piece (the file-picker /
+  apply-time / timeline UI needs the transport underneath to test against).
+- `Uint8List` body instead of a raw Stream for the single-push path because
+  dio can only compute Content-Length (and therefore fire onSendProgress)
+  for length-known bodies; the multipart path uses `FormData` which dio also
+  measures. Progress-bytes UX stays honest even when the fixture never
+  completes an upload (its 400 seam is normalized before any banner noise).
+- Kept the mockup's 400 normalization un-masked: no fabricated error code,
+  the served text (or "HTTP 400") surfaces — the OLD #020 masking defect is
+  the exact opposite behaviour and stays pinned by the 400-no-masking test.
+- Chose the 85/85 emulator pin over expanding the harness: one service-level
+  pin proves the pick-single-push + normalize seam end-to-end against the
+  real fixture without depending on the fixture gaining multipart support.
+
+**Next:**
+- DOCS per alternation: cheap anchor re-verify (mirror queue EMPTY; anchors
+  unchanged from 01:18).
+- #008/#020 remaining UI: file-picker integration (desktop/web), apply-time
+  selection widget (mockup publishes `HttpPushUriOptions.HttpPushUriApplyTime`
+  — Immediate/OnReset/AtMaintenanceWindowStart/InMaintenanceWindowOnReset;
+  `UpdateServiceInfo` already parses both), task-timeline UI + live progress
+  from `PercentComplete` (absent on the fixture; the poller tolerates it).
+- P1 #015 AuthManager (expiryFromService → login + re-auth; token/location
+  from create RESPONSE HEADERS only).
+- UI-2: remaining focus audit + non-card labels. Keep pushing every run.
+
+**Issues touched:**
+- #008/#020 progress logs updated (transport piece done; remaining items
+  restated); no issues opened/closed this run.

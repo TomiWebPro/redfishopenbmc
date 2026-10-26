@@ -161,6 +161,54 @@ void main() {
     });
   });
 
+  group('PushImageRequest', () {
+    test('builds UpdateParameters only when targets or applyTime are set', () {
+      const PushImageRequest bare = PushImageRequest(
+        bytes: <int>[1, 2, 3],
+        filename: 'fw.bin',
+      );
+      expect(bare.hasUpdateParameters, isFalse);
+      expect(bare.toUpdateParametersJson(), isEmpty);
+
+      const PushImageRequest withTargets = PushImageRequest(
+        bytes: <int>[1, 2, 3],
+        filename: 'fw.bin',
+        targets: <String>['/redfish/v1/UpdateService/FirmwareInventory/BMC'],
+      );
+      expect(withTargets.hasUpdateParameters, isTrue);
+      expect(withTargets.toUpdateParametersJson(), <String, dynamic>{
+        'Targets': <String>[
+          '/redfish/v1/UpdateService/FirmwareInventory/BMC',
+        ],
+      });
+
+      const PushImageRequest withApplyTime = PushImageRequest(
+        bytes: <int>[1, 2, 3],
+        filename: 'fw.bin',
+        applyTime: 'OnReset',
+      );
+      expect(withApplyTime.hasUpdateParameters, isTrue);
+      expect(withApplyTime.toUpdateParametersJson(), <String, dynamic>{
+        '@Redfish.OperationApplyTime': 'OnReset',
+      });
+    });
+
+    test('combines targets + applyTime in one UpdateParameters body', () {
+      const PushImageRequest req = PushImageRequest(
+        bytes: <int>[1, 2, 3],
+        filename: 'fw.bin',
+        applyTime: 'Immediate',
+        targets: <String>['/redfish/v1/UpdateService/FirmwareInventory/BMC'],
+      );
+      expect(req.toUpdateParametersJson(), <String, dynamic>{
+        'Targets': <String>[
+          '/redfish/v1/UpdateService/FirmwareInventory/BMC',
+        ],
+        '@Redfish.OperationApplyTime': 'Immediate',
+      });
+    });
+  });
+
   group('UpdateTask', () {
     test('carries the task URI + optional Retry-After (DSP0266 §12.2)', () {
       const UpdateTask task = UpdateTask(

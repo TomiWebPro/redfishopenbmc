@@ -375,6 +375,257 @@ void main() {
         ),
       );
     });
+
+    group('FirmwareService.pushImage (#008/#020 binary upload)', () {
+      test('single-push path POSTs raw bytes to HttpPushUri and returns the '
+          'Location task URI (DMTF mockup /FWUpdate shape)', () async {
+        final FirmwareService svc =
+            FirmwareService(client: client, systemId: 'bmc1');
+        // The fixture UpdateService advertises HttpPushUri=/FWUpdate (no
+        // MultipartHttpPushUri), so the upload must choose the single-push
+        // vendor-specific shape.
+        final UpdateTask task = await svc.pushImage(
+          const PushImageRequest(
+            bytes: <int>[1, 2, 3, 4, 5],
+            filename: 'fw.bin',
+          ),
+        );
+        // The in-process mock server 202s with Location "$path/Tasks/1".
+        expect(task.taskUri, isNotEmpty);
+        expect(task.taskUri, endsWith('FWUpdate/Tasks/1'));
+        expect(task.retryAfterSeconds, isNull);
+      });
+
+      test('multipart path prefers MultipartHttpPushUri and posts a FormData '
+          'UpdateFile part (#008/#020)', () async {
+        final DioAdapter adapter = DioAdapter(
+          dio: Dio(BaseOptions(baseUrl: 'https://bmc-multi.local:443')),
+          matcher: const _PathMatcher(),
+        );
+        adapter.onGet(
+          '/redfish/v1/UpdateService',
+          (server) => server.reply(
+            200,
+            <String, dynamic>{
+              '@odata.id': '/redfish/v1/UpdateService',
+              '@odata.type': '#UpdateService.v1_17_1.UpdateService',
+              'Id': 'UpdateService',
+              'ServiceEnabled': true,
+              'HttpPushUri': '/FWUpdate',
+              'MultipartHttpPushUri': '/upload/image',
+            },
+          ),
+        );
+        adapter.onPost(
+          '/upload/image',
+          (server) => server.reply(
+            202,
+            <String, dynamic>{},
+            headers: <String, List<String>>{
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+              'Location': <String>['/redfish/v1/TaskService/TaskMonitors/77'],
+            },
+          ),
+        );
+        final RedfishClient multiClient = RedfishClient(
+          profile: const ConnectionProfile(
+              host: 'bmc-multi.local', name: 'bmc-multi'),
+          dio: adapter.dio,
+        );
+        final FirmwareService svc =
+            FirmwareService(client: multiClient, systemId: 'bmc-multi');
+
+        final UpdateTask task = await svc.pushImage(
+          const PushImageRequest(
+            bytes: <int>[1, 2, 3, 4, 5],
+            filename: 'fw.bin',
+            targets: <String>[
+              '/redfish/v1/UpdateService/FirmwareInventory/BMC',
+            ],
+            applyTime: 'OnReset',
+          ),
+        );
+        expect(task.taskUri, '/redfish/v1/TaskService/TaskMonitors/77');
+        expect(task.retryAfterSeconds, isNull);
+      });
+
+      test('multipart upload carries UpdateParameters (targets + apply-time) '
+          'and returns the task handle', () async {
+        final DioAdapter adapter = DioAdapter(
+          dio: Dio(BaseOptions(baseUrl: 'https://bmc-multi2.local:443')),
+          matcher: const _PathMatcher(),
+        );
+        adapter.onGet(
+          '/redfish/v1/UpdateService',
+          (server) => server.reply(
+            200,
+            <String, dynamic>{
+              '@odata.id': '/redfish/v1/UpdateService',
+              '@odata.type': '#UpdateService.v1_17_1.UpdateService',
+              'Id': 'UpdateService',
+              'ServiceEnabled': true,
+              'MultipartHttpPushUri': '/upload/image',
+            },
+          ),
+        );
+        adapter.onPost(
+          '/upload/image',
+          (server) => server.reply(
+            202,
+            <String, dynamic>{},
+            headers: <String, List<String>>{
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+              'Location': <String>['/redfish/v1/TaskService/TaskMonitors/9'],
+              'Retry-After': <String>['15'],
+            },
+          ),
+        );
+        final RedfishClient multiClient = RedfishClient(
+          profile: const ConnectionProfile(
+              host: 'bmc-multi2.local', name: 'bmc-multi2'),
+          dio: adapter.dio,
+        );
+        final FirmwareService svc =
+            FirmwareService(client: multiClient, systemId: 'bmc-multi2');
+
+        final UpdateTask task = await svc.pushImage(
+          PushImageRequest(
+            bytes: List<int>.filled(2048, 7),
+            filename: 'fw.bin',
+            applyTime: 'Immediate',
+          ),
+        );
+        expect(task.taskUri, '/redfish/v1/TaskService/TaskMonitors/9');
+        expect(task.retryAfterSeconds, 15);
+      });
+
+      test('single-push reports byte progress over the real in-process server '
+          '(progress callback wiring)', () async {
+        // DioAdapter never fires onSendProgress (it replies without
+        // streaming), so the progress-seam assertion uses the real in-process
+        // MockRedfishServer (a real localhost socket — dio streams the upload
+        // body and invokes the callback).
+        final FirmwareService svc =
+            FirmwareService(client: client, systemId: 'bmc1');
+        final List<(int, int)> progress = <(int, int)>[];
+        final UpdateTask task = await svc.pushImage(
+          PushImageRequest(
+            bytes: List<int>.filled(65536, 3),
+            filename: 'fw.bin',
+          ),
+          onProgress: (int sent, int total) {
+            progress.add((sent, total));
+          },
+        );
+        expect(task.taskUri, isNotEmpty);
+        expect(progress, isNotEmpty,
+            reason: 'dio must report byte progress while streaming the upload '
+                'body to the real server');
+        expect(progress.last.$2, 65536,
+            reason: 'the final progress event carries the full upload size');
+      });
+
+      test('throws NoPushUri when the service advertises no push URI',
+          () async {
+        final DioAdapter adapter = DioAdapter(
+          dio: Dio(BaseOptions(baseUrl: 'https://bmc-nopush.local:443')),
+          matcher: const _PathMatcher(),
+        );
+        adapter.onGet(
+          '/redfish/v1/UpdateService',
+          (server) => server.reply(
+            200,
+            <String, dynamic>{
+              '@odata.id': '/redfish/v1/UpdateService',
+              '@odata.type': '#UpdateService.v1_13_0.UpdateService',
+              'Id': 'UpdateService',
+              'ServiceEnabled': true,
+            },
+          ),
+        );
+        final RedfishClient noPushClient = RedfishClient(
+          profile: const ConnectionProfile(
+              host: 'bmc-nopush.local', name: 'bmc-nopush'),
+          dio: adapter.dio,
+        );
+        final FirmwareService svc =
+            FirmwareService(client: noPushClient, systemId: 'bmc-nopush');
+
+        await expectLater(
+          svc.pushImage(
+            const PushImageRequest(bytes: <int>[1], filename: 'fw.bin'),
+          ),
+          throwsA(
+            isA<RedfishException>().having((RedfishException e) => e.errorCode,
+                'errorCode', 'Update.1.0.NoPushUri'),
+          ),
+        );
+      });
+
+      test('throws NotConnected when there is no client', () async {
+        final FirmwareService svc =
+            FirmwareService(client: null, systemId: 'bmc1');
+        await expectLater(
+          svc.pushImage(
+            const PushImageRequest(bytes: <int>[1], filename: 'fw.bin'),
+          ),
+          throwsA(
+            isA<RedfishException>().having((RedfishException e) => e.errorCode,
+                'errorCode', 'Base.1.0.NotConnected'),
+          ),
+        );
+      });
+
+      test('normalizes a 400 from the push seam without an error envelope '
+          '(the #020 no-masking rule)', () async {
+        final DioAdapter adapter = DioAdapter(
+          dio: Dio(BaseOptions(baseUrl: 'https://bmc-400.local:443')),
+          matcher: const _PathMatcher(),
+        );
+        adapter.onGet(
+          '/redfish/v1/UpdateService',
+          (server) => server.reply(
+            200,
+            <String, dynamic>{
+              '@odata.id': '/redfish/v1/UpdateService',
+              '@odata.type': '#UpdateService.v1_13_0.UpdateService',
+              'Id': 'UpdateService',
+              'ServiceEnabled': true,
+              'HttpPushUri': '/FWUpdate',
+            },
+          ),
+        );
+        adapter.onPost(
+          '/FWUpdate',
+          (server) => server.reply(
+            400,
+            '',
+            headers: <String, List<String>>{
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          ),
+        );
+        final RedfishClient badClient = RedfishClient(
+          profile:
+              const ConnectionProfile(host: 'bmc-400.local', name: 'bmc-400'),
+          dio: adapter.dio,
+        );
+        final FirmwareService svc =
+            FirmwareService(client: badClient, systemId: 'bmc-400');
+
+        await expectLater(
+          svc.pushImage(
+            const PushImageRequest(bytes: <int>[1], filename: 'fw.bin'),
+          ),
+          throwsA(
+            isA<RedfishException>()
+                .having((RedfishException e) => e.statusCode, 'statusCode', 400)
+                .having((RedfishException e) => e.message, 'message',
+                    contains('Invalid update request')),
+          ),
+        );
+      });
+    });
   });
 }
 

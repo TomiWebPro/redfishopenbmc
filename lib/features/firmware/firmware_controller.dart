@@ -12,7 +12,8 @@ import 'package:redfishopenbmc/redfish/models/system_features.dart';
 /// `SimpleUpdate` is specifically being submitted ([starting]), whether the
 /// returned task monitor is being polled ([polling]), the latest
 /// [UpdateServiceInfo] snapshot, the most recent queued [lastTask] handle,
-/// the polled [lastResult] (when the task reached a terminal state), and the
+/// the polled [lastResult] (when the task reached a terminal state), the
+/// progress of an in-flight binary push upload ([uploadProgress]), and the
 /// most recent [error] message. Kept as a value type so Riverpod rebuilds
 /// only dependents when something actually changes.
 class FirmwareUiState {
@@ -21,6 +22,8 @@ class FirmwareUiState {
     this.loading = false,
     this.starting = false,
     this.polling = false,
+    this.uploading = false,
+    this.uploadProgress,
     this.info,
     this.lastTask,
     this.lastResult,
@@ -36,6 +39,21 @@ class FirmwareUiState {
   /// state (spinner + disabled) only while the POST is pending, without
   /// implying the whole screen is re-loading.
   final bool starting;
+
+  /// Whether a binary push upload ([FirmwareController.pushImage]) is
+  /// currently in flight (issue #008/#020 — binary/multipart upload).
+  ///
+  /// Distinct from [starting] so an upload-in-progress UI (progress bar +
+  /// disabled controls) does not imply a `SimpleUpdate` submission.
+  final bool uploading;
+
+  /// Upload progress (sent/total bytes) of the in-flight push upload, or
+  /// `null` when no upload is in flight / no progress has been reported yet.
+  ///
+  /// Consumed by a future upload-progress UI (#008/#020); the [pollTask]
+  /// path reports task-level progress via [RedfishTask.percentComplete]
+  /// instead.
+  final ({int sent, int total})? uploadProgress;
 
   /// Whether the task monitor returned by the last `SimpleUpdate` is being
   /// polled (issue #022 criterion 1 — 202 task-monitor polling).
@@ -63,6 +81,9 @@ class FirmwareUiState {
     bool? loading,
     bool? starting,
     bool? polling,
+    bool? uploading,
+    ({int sent, int total})? uploadProgress,
+    bool clearUploadProgress = false,
     UpdateServiceInfo? info,
     UpdateTask? lastTask,
     bool clearLastTask = false,
@@ -75,6 +96,9 @@ class FirmwareUiState {
         loading: loading ?? this.loading,
         starting: starting ?? this.starting,
         polling: polling ?? this.polling,
+        uploading: uploading ?? this.uploading,
+        uploadProgress:
+            clearUploadProgress ? null : (uploadProgress ?? this.uploadProgress),
         info: info ?? this.info,
         lastTask: clearLastTask ? null : (lastTask ?? this.lastTask),
         lastResult: clearLastResult ? null : (lastResult ?? this.lastResult),
@@ -83,8 +107,9 @@ class FirmwareUiState {
 
   @override
   String toString() => 'FirmwareUiState(loading=$loading, starting=$starting, '
-      'polling=$polling, info=${info != null}, lastTask=$lastTask, '
-      'lastResult=$lastResult, error=$error)';
+      'polling=$polling, uploading=$uploading, '
+      'uploadProgress=$uploadProgress, info=${info != null}, '
+      'lastTask=$lastTask, lastResult=$lastResult, error=$error)';
 }
 
 /// Riverpod controller driving the firmware & update screen.
@@ -153,6 +178,66 @@ class FirmwareController extends StateNotifier<FirmwareUiState> {
       if (!mounted) return;
       state =
           state.copyWith(loading: false, starting: false, error: e.toString());
+    }
+  }
+
+  /// Pushes a local firmware image via [FirmwareService.pushImage]
+  /// (issue #008/#020 — binary/multipart upload).
+  ///
+  /// Raises [FirmwareUiState.uploading] for the duration of the upload,
+  /// forwards byte-level progress to [FirmwareUiState.uploadProgress]
+  /// (sent/total), and on success stores the returned [UpdateTask] handle in
+  /// [FirmwareUiState.lastTask] (exactly like [startUpdate], so the existing
+  /// queued/polled banner + poller cover the async task). On failure the
+  /// error is recorded.
+  ///
+  /// [interval]/[maxPolls] are not used here — call [pollLastTask] after a
+  /// successful upload when a task monitor URI was returned.
+  Future<void> pushImage(
+    PushImageRequest req, {
+    void Function(int sent, int total)? onProgress,
+  }) async {
+    state = state.copyWith(
+      loading: true,
+      uploading: true,
+      clearError: true,
+      clearUploadProgress: true,
+      clearLastTask: true,
+      clearLastResult: true,
+    );
+    try {
+      final UpdateTask task = await service.pushImage(
+        req,
+        onProgress: (int sent, int total) {
+          onProgress?.call(sent, total);
+          if (mounted) {
+            state = state.copyWith(uploadProgress: (sent: sent, total: total));
+          }
+        },
+      );
+      if (!mounted) return;
+      state = state.copyWith(
+        loading: false,
+        uploading: false,
+        clearUploadProgress: true,
+        lastTask: task,
+      );
+    } on RedfishException catch (e) {
+      if (!mounted) return;
+      state = state.copyWith(
+        loading: false,
+        uploading: false,
+        clearUploadProgress: true,
+        error: e.message,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      state = state.copyWith(
+        loading: false,
+        uploading: false,
+        clearUploadProgress: true,
+        error: e.toString(),
+      );
     }
   }
 

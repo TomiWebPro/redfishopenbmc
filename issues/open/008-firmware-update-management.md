@@ -5,7 +5,7 @@ status: open
 priority: P2
 type: feature
 created: 2026-08-26
-updated: 2026-08-30
+updated: 2026-10-26
 closed: null
 assignee: unassigned
 labels: [firmware, update, redfish, jobs]
@@ -71,8 +71,32 @@ estimated_tokens: 45000
 
 ## Progress Log
 
-- 2026-08-26 — Created. Depends on #001 #003 #004.
+- 2026-10-26 — EMU run: **the binary/multipart push upload *transport* of #008
+  landed (the file-picker + apply-time selection + task-timeline UI remain)**.
+  `PushImageRequest` (bytes, filename, contentType, applyTime, targets) +
+  `FirmwareService.pushImage`: single-push POST of the raw `Uint8List` body to
+  `HttpPushUri` (dio computes Content-Length so `onSendProgress` fires) or
+  multipart `FormData` (`UpdateFile` part + optional `UpdateParameters` JSON)
+  on `MultipartHttpPushUri`; the chosen URI is resolved against the
+  UpdateService resource URI per DSP0266's relative-reference rule (mockup
+  `/FWUpdate` → `/redfish/v1/UpdateService/FWUpdate`). Non-2xx normalizes to
+  friendly `RedfishException`s (no masking; the mockup's 400 seam surfaces as
+  HTTP 400); missing push URI → `NoPushUri`; disconnected → `NotConnected`; a
+  202 + `Location` hands off to `pollTask`. `FirmwareController.pushImage`
+  (uploading/uploadProgress) + the firmware-view upload banner (merged
+  semantics + byte-count progress). +16 unit tests; unit 480 → **496 passed /
+  1 skipped**; emulator 84 → **85/85 green** (+1 live pin). Checked off the
+  transport acceptance criteria: `uploadImage`-style binary POST via
+  `HttpPushUri` (single + multipart), streamed-with-progress callback, and
+  non-2xx → throw (no silent `''`). Remaining: file picker (desktop/web),
+  apply-time selection widget (mockup publishes
+  `HttpPushUriOptions.HttpPushUriApplyTime` — Immediate/OnReset/
+  AtMaintenanceWindowStart/InMaintenanceWindowOnReset; `UpdateServiceInfo`
+  parses both), task-timeline UI + live progress bar from `PercentComplete`
+  (absent on the fixture; the poller tolerates it), cancel task
+  (`DELETE /TaskService/Tasks/{id}`), 413-too-large + 401 handling.
 - 2026-08-30 — STALE (triage): no Progress Log update for 4 days (>1-day threshold).
+- 2026-08-26 — Created. Depends on #001 #003 #004.
 
 ## References
 

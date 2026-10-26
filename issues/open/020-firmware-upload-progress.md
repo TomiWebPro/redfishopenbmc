@@ -53,6 +53,35 @@ estimated_tokens: 18000
 
 ## Progress Log
 
+- 2026-10-26 — EMU run: **the binary/multipart push upload *transport* of #020
+  landed (the file-picker + apply-time selection + task-timeline UI remain)**.
+  `PushImageRequest` (`lib/features/firmware/models/firmware_models.dart`:
+  bytes, filename, contentType, applyTime, targets; `toUpdateParametersJson()`
+  emits the `UpdateParameters` body only when targets/applyTime are set) and
+  `FirmwareService.pushImage` (`lib/features/firmware/firmware_service.dart`):
+  single-push path POSTs the raw `Uint8List` body to `HttpPushUri` (dio
+  computes Content-Length so `onSendProgress` fires), multipart path posts a
+  `FormData` with an `UpdateFile` part + optional `UpdateParameters` JSON when
+  `MultipartHttpPushUri` is advertised; the chosen URI is resolved against the
+  UpdateService resource URI per DSP0266's relative-reference rule (mockup
+  `/FWUpdate` → `/redfish/v1/UpdateService/FWUpdate`). Non-2xx uploads
+  normalize to friendly `RedfishException`s carrying the served body — the
+  mockup's 400 on the unimplemented `/FWUpdate` seam surfaces as HTTP 400, no
+  masking; missing push URI → `NoPushUri`; no client → `NotConnected`; a 202 +
+  `Location` returns an `UpdateTask` handle for the existing `pollTask`.
+  `FirmwareController.pushImage` (uploading + uploadProgress record) + the
+  firmware-view upload banner (spinner + merged semantics label "Uploading
+  firmware image" + byte-count `LinearProgressIndicator`) drive the flow.
+  +2 model, +6 service (single-push, multipart, UpdateParameters+Retry-After,
+  real-server byte progress, NoPushUri, NotConnected, 400-no-masking), +3
+  controller, +5 widget tests; unit suite 480 → **496 passed / 1 skipped**;
+  emulator 84 → **85/85 green** (+1 live pin: `pushImage` picks the
+  single-push URI and normalizes the mockup's 400 seam to a friendly error).
+  **Remaining #020 items:** file-picker UI integration, apply-time selection
+  widget (mockup publishes `HttpPushUriOptions.HttpPushUriApplyTime` — the
+  `UpdateServiceInfo` parse landed earlier; don't assume Immediate), and the
+  task-timeline UI with a live progress bar from `PercentComplete` (absent on
+  the fixture; the poller already tolerates it).
 - 2026-10-26 — EMU run: **the task-polling piece of #020 (and the shared
   #022 criterion) landed**. `RedfishTask`/`TaskMessage`
   (`lib/redfish/models/redfish_task.dart`) parse the served `#Task.v1_7_3.Task`

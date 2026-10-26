@@ -1838,6 +1838,37 @@ void main() {
               'push seam');
       expect(normalized.message, 'HTTP 400');
     });
+
+    test(
+        'firmware actions: FirmwareService.pushImage chooses the single-push '
+        'URI and normalizes the unimplemented seam to a 400 error — no '
+        'masking (#008/#020 service-level pin)', () async {
+      // The service-level upload path (#020 criterion 1) is now live here:
+      // the fixture advertises HttpPushUri=/FWUpdate but NO
+      // MultipartHttpPushUri (pinned above), so pushImage must pick the
+      // single-push vendor shape and POST the local bytes to
+      // /redfish/v1/UpdateService/FWUpdate (relative-reference resolved
+      // against the UpdateService URI — the DSP0266 clause the raw pin
+      // follows). The mockup does not implement the seam (400, empty body,
+      // no Location — the raw pin), so pushImage must surface the normalized
+      // RedfishException (statusCode 400) instead of a fake success — the
+      // #020 "non-2xx throws, no silent '' success" rule end-to-end.
+      final FirmwareService svc =
+          FirmwareService(client: client, systemId: 'em1');
+      await expectLater(
+        svc.pushImage(
+          const PushImageRequest(
+            bytes: <int>[1, 2, 3, 4, 5],
+            filename: 'fw.bin',
+          ),
+        ),
+        throwsA(
+          isA<RedfishException>()
+              .having((RedfishException e) => e.statusCode, 'statusCode', 400)
+              .having((RedfishException e) => e.errorCode, 'errorCode', isNull),
+        ),
+      );
+    });
   });
 
   group('emulator: message registry + error-mapping contract (#014)', () {

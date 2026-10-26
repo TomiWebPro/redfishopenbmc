@@ -221,6 +221,66 @@ class SimpleUpdateRequest {
       };
 }
 
+/// Request payload for a binary/multipart firmware **push** upload (issue
+/// #008/#020 acceptance criterion 1).
+///
+/// Carries the local image bytes + filename plus the optional
+/// `UpdateParameters` fields the service applies to the pushed image:
+/// [targets] (`Targets` — where to apply the image; empty = apply everywhere)
+/// and [applyTime] (the `@Redfish.OperationApplyTime` value, e.g. `Immediate`
+/// / `OnReset` — the DSP0266 §12.7 apply-time contract the push service
+/// advertises via `HttpPushUriOptions.HttpPushUriApplyTime`).
+///
+/// The upload transport picks the service's advertised URI:
+///   * `MultipartHttpPushUri` (bmcweb, DMTF v1_17_1) — Redfish-defined
+///     multipart/form-data with an `UpdateFile` part (+ optional
+///     `UpdateParameters` JSON part) — preferred when advertised;
+///   * `HttpPushUri` (DMTF mockup `/FWUpdate`, vendor-specific) — a raw
+///     octet-stream POST — the fallback when only the single-push URI exists.
+class PushImageRequest {
+  /// Creates a [PushImageRequest].
+  const PushImageRequest({
+    required this.bytes,
+    required this.filename,
+    this.contentType = 'application/octet-stream',
+    this.applyTime,
+    this.targets = const <String>[],
+  });
+
+  /// The local firmware image bytes to push.
+  final List<int> bytes;
+
+  /// The image filename (used for the multipart `UpdateFile` part name and
+  /// the fallback content-type lookup).
+  final String filename;
+
+  /// Explicit content type for the upload; defaults to
+  /// `application/octet-stream` (the vendor-push convention).
+  final String contentType;
+
+  /// Optional apply-time mode (`@Redfish.OperationApplyTime`) — one of the
+  /// values the service advertises via
+  /// `HttpPushUriOptions.HttpPushUriApplyTime.ApplyTime` +
+  /// `ApplyTime@Redfish.AllowableValues`; `null` = let the service default.
+  final String? applyTime;
+
+  /// Optional resource URIs to apply the image to (`UpdateParameters.Targets`).
+  /// Empty = apply to all applicable targets (the service default).
+  final List<String> targets;
+
+  /// The `UpdateParameters` JSON body sent with a `MultipartHttpPushUri`
+  /// upload (DSP0266 §12.7 / `UpdateService.v1_17_1.json` `UpdateParameters`).
+  Map<String, dynamic> toUpdateParametersJson() => <String, dynamic>{
+        if (targets.isNotEmpty) 'Targets': targets,
+        if (applyTime != null) '@Redfish.OperationApplyTime': applyTime,
+      };
+
+  /// Whether the multipart body needs an `UpdateParameters` part (the service
+  /// requires the field when the caller provided targets or an apply time).
+  bool get hasUpdateParameters =>
+      targets.isNotEmpty || applyTime != null;
+}
+
 /// A SimpleUpdate task monitor handle returned after a queued update (issue #008).
 ///
 /// A real BMC responds 202 `Location: <task URI>`; [taskUri] captures that,

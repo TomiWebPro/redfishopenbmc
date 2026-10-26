@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data' show Uint8List;
 
 import 'package:dio/dio.dart';
 
@@ -164,6 +165,93 @@ class FirmwareService {
     return trimmed.isEmpty ? null : trimmed;
   }
 
+  /// Pushes a local firmware image to the UpdateService's advertised push
+  /// URI (issue #008/#020 acceptance criterion 1 — binary upload).
+  ///
+  /// Resolves the push target from the cached/live `UpdateService` body:
+  ///   * `MultipartHttpPushUri` (bmcweb; DMTF `UpdateService.v1_17_1`) — the
+  ///     Redfish-defined multipart/form-data upload — preferred when
+  ///     advertised;
+  ///   * `HttpPushUri` (DMTF mockup `/FWUpdate`, vendor-specific raw push) —
+  ///     the fallback when only the single-push URI exists.
+  ///
+  /// For the multipart URI the request body is multipart/form-data with an
+  /// `UpdateFile` part carrying [PushImageRequest.bytes] plus an optional
+  /// `UpdateParameters` JSON part ([PushImageRequest.toUpdateParametersJson])
+  /// carrying the targets / `@Redfish.OperationApplyTime` apply-time
+  /// (DSP0266 §12.7). For the single-push URI the bytes are sent raw with
+  /// [PushImageRequest.contentType].
+  ///
+  /// [onProgress] receives the sent/total byte counts as Dio streams the
+  /// upload (`onSendProgress`) so the UI can render a progress bar (#008/
+  /// #020). A 202 `Location` task monitor + optional `Retry-After` are
+  /// returned as an [UpdateTask] exactly like [startSimpleUpdate]; a 204
+  /// without a Location yields an [UpdateTask] with a null [UpdateTask.taskUri]
+  /// (the no-monitor norm on the DMTF fixture). Non-2xx responses always throw
+  /// via the issue #008 error taxonomy (403 privilege, 409 busy, 400 extended
+  /// info) — the "no silent '' success" rule (#020 criterion 3).
+  ///
+  /// Throws [RedfishException] when the service advertises no push URI at all
+  /// (`Update.1.0.NoPushUri`) or when the system is not connected.
+  Future<UpdateTask> pushImage(
+    PushImageRequest req, {
+    void Function(int sent, int total)? onProgress,
+  }) async {
+    final RedfishClient? c = client;
+    if (c == null) {
+      throw RedfishException(
+        message: 'Not connected to "$systemId"; connect before uploading a '
+            'firmware image.',
+        errorCode: 'Base.1.0.NotConnected',
+      );
+    }
+
+    final _PushTarget? target = await _resolvePushTarget();
+    if (target == null) {
+      throw const RedfishException(
+        message: 'UpdateService advertises no HTTP push URI; this service '
+            'cannot accept a local firmware image upload.',
+        errorCode: 'Update.1.0.NoPushUri',
+      );
+    }
+
+    try {
+      final Response<dynamic> response;
+      if (target.multipart) {
+        response = await c.dio.post<dynamic>(
+          target.uri,
+          data: FormData.fromMap(<String, dynamic>{
+            if (req.hasUpdateParameters)
+              'UpdateParameters': req.toUpdateParametersJson(),
+            'UpdateFile': MultipartFile.fromBytes(
+              req.bytes,
+              filename: req.filename,
+              contentType: DioMediaType.parse(req.contentType),
+            ),
+          }),
+          onSendProgress: onProgress,
+        );
+      } else {
+        response = await c.dio.post<dynamic>(
+          target.uri,
+          data: Uint8List.fromList(req.bytes),
+          options: Options(
+            headers: <String, String>{
+              Headers.contentTypeHeader: req.contentType,
+            },
+          ),
+          onSendProgress: onProgress,
+        );
+      }
+      return UpdateTask(
+        taskUri: _headerValue(response.headers, 'location'),
+        retryAfterSeconds: _retryAfterSeconds(response.headers),
+      );
+    } on DioException catch (e) {
+      throw _toFriendly(e);
+    }
+  }
+
   /// Polls the task monitor a 202 async action returned, until the task
   /// reaches a terminal state or the poll budget is exhausted (issue #022
   /// criterion 1 — 202 task-monitor polling, folding into #008/#020).
@@ -315,6 +403,79 @@ class FirmwareService {
     return '$serviceUri/Actions/UpdateService.SimpleUpdate';
   }
 
+  /// Resolves the push-upload target for [pushImage].
+  ///
+  /// Preference (per `UpdateService.v1_17_1.json` / bmcweb `Redfish.md` §
+  /// UpdateService — DOCS-4/9/12): the Redfish-defined `MultipartHttpPushUri`
+  /// first, then the vendor-specific `HttpPushUri` (the only push URI the
+  /// pinned DMTF mockup advertises — `/FWUpdate`). Returns `null` when the
+  /// service advertises neither.
+  ///
+  /// Push URI values are resolved against the UpdateService resource URI per
+  /// the DSP0266 "Redfish-defined URIs and relative reference rules" clause:
+  /// the mockup's `HttpPushUri: /FWUpdate` means
+  /// `/redfish/v1/UpdateService/FWUpdate` (the EMU-45 live pin posts there),
+  /// not the server root. An absolute `http(s)` value is used unchanged.
+  ///
+  /// Reads the cached/live `UpdateService` body (cached by
+  /// [fetchUpdateService] / [_resolveSimpleUpdateTarget]); a failed live GET
+  /// degrades to `null` — the caller reports the missing-capability error.
+  Future<_PushTarget?> _resolvePushTarget() async {
+    final String serviceUri = await _resolveServiceUri();
+    late Map<String, dynamic> body;
+    if (_cachedServiceBody != null) {
+      body = _cachedServiceBody!;
+    } else {
+      try {
+        body = await client!.getJson(serviceUri);
+        _cachedServiceBody = body;
+      } on RedfishException {
+        return null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    final String? multipart = _asString(body['MultipartHttpPushUri']);
+    if (multipart != null && multipart.isNotEmpty) {
+      return _PushTarget(
+        uri: _resolvePushUri(multipart, serviceUri),
+        multipart: true,
+      );
+    }
+    final String? single = _asString(body['HttpPushUri']);
+    if (single != null && single.isNotEmpty) {
+      return _PushTarget(
+        uri: _resolvePushUri(single, serviceUri),
+        multipart: false,
+      );
+    }
+    return null;
+  }
+
+  /// Resolves an advertised push URI ([value]) against the UpdateService
+  /// resource URI ([serviceUri]) per the DSP0266 relative-reference rules.
+  ///
+  /// `http(s)://` values are absolute and used unchanged. A leading-`/` value
+  /// is appended to the UpdateService resource URI (the DMTF mockup +
+  /// bmcweb convention — `HttpPushUri: /FWUpdate` → `/redfish/v1/UpdateService/
+  /// FWUpdate`, the URI the EMU-45 pin POSTs to); a bare path is appended to
+  /// the resource's directory.
+  static String _resolvePushUri(String value, String serviceUri) {
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return value;
+    }
+    if (value.startsWith('/')) {
+      final String base =
+          serviceUri.endsWith('/') ? serviceUri.substring(0, serviceUri.length - 1) : serviceUri;
+      return '$base$value';
+    }
+    final int lastSlash = serviceUri.lastIndexOf('/');
+    final String dir =
+        lastSlash > 0 ? serviceUri.substring(0, lastSlash + 1) : '$serviceUri/';
+    return '$dir$value';
+  }
+
   /// Returns the first `UpdateService` `@odata.id` found in the discovery raw
   /// tree, or `null` when absent.
   String? _serviceUriFromRaw() {
@@ -397,3 +558,21 @@ class FirmwareService {
     return RedfishException.fromDioException(e);
   }
 }
+
+/// A resolved push-upload target: the [uri] to POST to, plus whether the
+/// upload must use the Redfish-defined multipart/form-data shape
+/// (`MultipartHttpPushUri`) or the vendor-specific raw octet-stream shape
+/// (`HttpPushUri`).
+class _PushTarget {
+  /// Creates a [_PushTarget].
+  const _PushTarget({required this.uri, required this.multipart});
+
+  /// The push-upload URI (e.g. `/upload/image` or `/FWUpdate`).
+  final String uri;
+
+  /// Whether the upload must be multipart/form-data.
+  final bool multipart;
+}
+
+/// Returns [value] as a [String] or `null` when it is not a string.
+String? _asString(Object? value) => value is String ? value : null;

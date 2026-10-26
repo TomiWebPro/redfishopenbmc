@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-26 (DOCS run — **all four upstream anchors re-verified live, no corpus refresh** — bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0 PDF + schema index both byte-identical, mirror queue EMPTY, 0 new bytes; **UI-2 increment: the edit-system dialog focus entry pinned** — `showEditSystemDialog` sets `autofocusFirstField: true` (the Add-system dialog precedent; the full-page editor keeps the flag off), +2 widget tests pin dialog focus entry + the full Tab order to the Save button; unit suite **480 passed / 1 skipped**)
-- **Current focus:** **DOCS (2026-10-26)** — anchor re-verify done (mirror queue stays EMPTY; anchors unchanged). Next per alternation: **EMULATOR** — cheap 84/84 re-run and/or the #008/#020 opening items (binary/multipart upload via `HttpPushUri`/`MultipartHttpPushUri`, live progress from `PercentComplete` — the poller already tolerates its absence, task-timeline UI). Then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — remaining focus audit (all dialogs now have focus/tab tests: Add-system, edit-system, reset-confirm, remove-confirm) + any remaining non-card labels
+- **Last updated:** 2026-10-26 (EMULATOR run — **the #008/#020 binary/multipart push upload transport landed** — `FirmwareService.pushImage(PushImageRequest)` uploads raw bytes single-push on `HttpPushUri` or multipart `FormData` (`UpdateFile` + optional `UpdateParameters`) on `MultipartHttpPushUri`, resolves the push URI against the UpdateService resource URI (DSP0266 relative-reference rule), normalizes non-2xx to friendly `RedfishException`s (no masking), and hands a 202 + `Location` to `pollTask`; `FirmwareController.pushImage` (uploading/uploadProgress) + the firmware-view upload banner drive the flow; +16 unit tests + 1 live emulator pin — suite **496 passed / 1 skipped**, emulator **85/85 green**; the bmcweb firmware-update trace row flips Partial → OK (transport); file-picker UI + apply-time selection + task-timeline UI remain GAP (#008/#020))
+- **Current focus:** **EMULATOR (2026-10-26)** — #008/#020 upload transport done (85/85 emulator; anchors unchanged from the 01:18 DOCS re-verify: bmcweb `63a18f4`, mockup `23d21f9a`, DSP0266 1.25.0, schema index byte-identical). Next per alternation: **DOCS** — cheap anchor re-verify when the slot returns. Then #008/#020 remaining UI: the **file-picker** integration (desktop/web `file_picker` abstraction + upload wiring into the firmware view), **apply-time selection** widget (the mockup publishes `HttpPushUriOptions.HttpPushUriApplyTime` with Immediate/OnReset/AtMaintenanceWindowStart/InMaintenanceWindowOnReset — `UpdateServiceInfo` already parses both; don't assume Immediate), and the **task-timeline** UI (progress from `PercentComplete` — absent on the fixture, the poller tolerates it). Then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — remaining focus audit + any remaining non-card labels
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1188,12 +1188,26 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       `RedfishTask`/`TaskMessage` models + `FirmwareService.pollTask`
       (GET-on-monitor, Retry-After first-wait, terminal detection, bounded
       polls) + `FirmwareController.pollLastTask` + the firmware-view task
-      banner; unit 478/1 skipped, emulator 84/84 with 2 new live pins.
-      **Remaining #008/#020:** binary/multipart upload via
-      `HttpPushUri`/`MultipartHttpPushUri` (file picker + upload progress +
-      apply-time selection), a live progress bar from `PercentComplete`
-      (absent on the fixture; the poller tolerates it), and the task-timeline
-      UI)
+      banner; unit 478/1 skipped, emulator 84/84 with 2 new live pins;
+      **PUSH UPLOAD TRANSPORT LANDED 2026-10-26 (EMU)** —
+      `FirmwareService.pushImage(PushImageRequest)` uploads raw bytes
+      single-push on `HttpPushUri` or multipart `FormData` (`UpdateFile` +
+      optional `UpdateParameters` JSON for targets/apply-time) on
+      `MultipartHttpPushUri`, resolves the push URI against the UpdateService
+      resource URI (DSP0266 relative-reference rule), normalizes non-2xx to
+      friendly `RedfishException`s (400/413/5xx surfaces the served body, no
+      masking; missing push URI → `NoPushUri`; disconnected →
+      `NotConnected`), reports byte progress via dio `onSendProgress`, and
+      hands a 202 + `Location` to `pollTask`; `FirmwareController.pushImage`
+      (uploading/uploadProgress) + the firmware-view upload banner (merged
+      semantics label + byte-count progress) drive the flow; +16 unit tests,
+      +1 live emulator pin — unit 496/1 skipped, emulator 85/85.
+      **Remaining #008/#020:** the file-picker UI integration (desktop/web),
+      the **apply-time selection** widget (mockup publishes `HttpPushUriOptions.
+      HttpPushUriApplyTime` — Immediate/OnReset/AtMaintenanceWindowStart/
+      InMaintenanceWindowOnReset; `UpdateServiceInfo` already parses both;
+      don't assume Immediate), and the task-timeline UI — a live progress bar
+      from `PercentComplete` (absent on the fixture; the poller tolerates it))
 - [ ] **#009 / #021** Remote KVM capability detection and console rendering.
       (emulator now pins the manager network surface the console renderer
       needs: `Manager.NetworkProtocol.KVMIP` ProtocolEnabled + port 5288, plus

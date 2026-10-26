@@ -33,6 +33,23 @@ class FakeFirmwareService extends FirmwareService {
       const UpdateTask(taskUri: 'http://task/1');
 }
 
+/// A [FirmwareService] double whose [FirmwareService.pushImage] reports byte
+/// progress then blocks until the test completes [gate] — the in-flight upload
+/// shape the upload banner renders (#008/#020).
+class _UploadingFirmwareService extends FakeFirmwareService {
+  /// Completes the pending `pushImage` when the test is ready.
+  final Completer<UpdateTask> gate = Completer<UpdateTask>();
+
+  @override
+  Future<UpdateTask> pushImage(
+    PushImageRequest req, {
+    void Function(int sent, int total)? onProgress,
+  }) async {
+    onProgress?.call(1024, 2048);
+    return gate.future;
+  }
+}
+
 /// A [FakeFirmwareService] that fails on the first fetch, then succeeds —
 /// the transient-failure shape the error+retry path exists for.
 class _FlakyFirmwareService extends FakeFirmwareService {
@@ -745,6 +762,126 @@ void main() {
     });
   });
 
+  group('FirmwareView — push-upload banner (#008/#020)', () {
+    testWidgets(
+        'upload banner announces one merged semantics label + spinner while '
+        'uploading', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(),
+        initialState: const FirmwareUiState(uploading: true),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      // Stepped pump, not pumpAndSettle: the banner's spinner animates
+      // forever.
+      await tester.pump();
+      expect(
+        find.bySemanticsLabel('Uploading firmware image'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Uploading firmware image'), findsOneWidget);
+      expect(
+        find.byType(CircularProgressIndicator),
+        findsOneWidget,
+        reason: 'the upload banner must show a visible spinner',
+      );
+    });
+
+    testWidgets(
+        'upload banner renders byte progress once reported', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final _UploadingFirmwareService service = _UploadingFirmwareService();
+      final FirmwareController controller = FirmwareController(
+        service: service,
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Start a push upload; the service reports 1024/2048 bytes then stays
+      // in flight (gated), so the banner renders the byte progress.
+      final Future<void> done = controller.pushImage(
+        const PushImageRequest(bytes: <int>[1], filename: 'fw.bin'),
+      );
+      await tester.pump();
+      expect(find.text('1024 / 2048 bytes'), findsOneWidget);
+      final LinearProgressIndicator bar =
+          tester.widget<LinearProgressIndicator>(find.byType(
+        LinearProgressIndicator,
+      ));
+      expect(bar.value, closeTo(0.5, 0.001));
+
+      // Releasing the upload clears the banner and feeds the queued banner.
+      service.gate.complete(
+        const UpdateTask(taskUri: '/redfish/v1/TaskService/TaskMonitors/5'),
+      );
+      await done;
+      await tester.pumpAndSettle();
+      expect(find.text('1024 / 2048 bytes'), findsNothing);
+      expect(find.textContaining('Update queued'), findsOneWidget);
+    });
+
+    testWidgets(
+        'upload banner disappears after the upload resolves into a task '
+        '(no dangling banner)', (tester) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final _UploadingFirmwareService service = _UploadingFirmwareService();
+      final FirmwareController controller = FirmwareController(
+        service: service,
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Future<void> done = controller.pushImage(
+        const PushImageRequest(bytes: <int>[1], filename: 'fw.bin'),
+      );
+      await tester.pump();
+      expect(
+        find.textContaining('Uploading firmware image'),
+        findsOneWidget,
+      );
+
+      service.gate.complete(
+        const UpdateTask(taskUri: '/redfish/v1/TaskService/TaskMonitors/5'),
+      );
+      await done;
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Uploading firmware image'),
+        findsNothing,
+        reason: 'uploading=false must remove the upload banner',
+      );
+      expect(
+        find.textContaining('Update queued'),
+        findsOneWidget,
+        reason: 'the returned task handle feeds the existing queued banner',
+      );
+    });
+  });
+
   group('FirmwareView — responsive layout (UI-3)', () {
     Future<void> pumpAtWidth(WidgetTester tester, double width) async {
       tester.view.physicalSize = Size(width, 800);
@@ -833,6 +970,38 @@ void main() {
         reason: 'the completed-task banner must not overflow at 320 px',
       );
       expect(find.textContaining('Update task 545: Completed'), findsOneWidget);
+    });
+
+    testWidgets(
+        'upload progress banner does not overflow at the narrowest width '
+        '(320 px, UI-3)', (tester) async {
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(),
+        initialState: const FirmwareUiState(
+          uploading: true,
+          uploadProgress: (sent: 1048576, total: 16777216),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pump();
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'the upload progress banner must not overflow at 320 px',
+      );
+      expect(find.text('1048576 / 16777216 bytes'), findsOneWidget);
     });
   });
 

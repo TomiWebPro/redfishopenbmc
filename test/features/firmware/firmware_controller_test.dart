@@ -20,6 +20,28 @@ class _GateService extends FirmwareService {
       startGate.future;
 }
 
+/// A [FirmwareService] double whose [FirmwareService.pushImage] blocks until
+/// the test completes [pushGate], optionally reporting upload progress first —
+/// the in-flight push-upload shape (#008/#020).
+class _PushGateService extends FirmwareService {
+  _PushGateService() : super(client: null, systemId: 'bmc1');
+
+  /// Completes the pending `pushImage` when the test is ready.
+  final Completer<UpdateTask> pushGate = Completer<UpdateTask>();
+
+  /// Bytes reported by the caller via `onProgress`, captured for assertions.
+  final List<(int, int)> progress = <(int, int)>[];
+
+  @override
+  Future<UpdateTask> pushImage(
+    PushImageRequest req, {
+    void Function(int sent, int total)? onProgress,
+  }) async {
+    onProgress?.call(1024, 2048);
+    return pushGate.future;
+  }
+}
+
 void main() {
   group('FirmwareController.startUpdate — starting state (UI-5)', () {
     test('raises starting while the POST is in flight and clears on success',
@@ -173,6 +195,88 @@ void main() {
 
       expect(service.pollCalls, 0);
       expect(controller.state.polling, isFalse);
+    });
+  });
+
+  group('FirmwareController.pushImage — upload state (#008/#020)', () {
+    test('raises uploading, stores uploadProgress and the returned task '
+        'on success', () async {
+      final _PushGateService service = _PushGateService();
+      final FirmwareController controller = FirmwareController(
+        service: service,
+      );
+
+      final Future<void> done = controller.pushImage(
+        const PushImageRequest(bytes: <int>[1, 2], filename: 'fw.bin'),
+      );
+      expect(controller.state.uploading, isTrue,
+          reason: 'the upload surface must know the push is in flight');
+      expect(controller.state.loading, isTrue);
+      expect(controller.state.uploadProgress, (sent: 1024, total: 2048),
+          reason: 'byte progress must land in state for a progress UI');
+
+      service.pushGate.complete(
+        const UpdateTask(taskUri: '/redfish/v1/TaskService/TaskMonitors/3'),
+      );
+      await done;
+
+      expect(controller.state.uploading, isFalse);
+      expect(controller.state.loading, isFalse);
+      expect(controller.state.uploadProgress, isNull,
+          reason: 'the byte progress is cleared once the upload finishes');
+      expect(controller.state.lastTask?.taskUri,
+          '/redfish/v1/TaskService/TaskMonitors/3');
+      expect(controller.state.error, isNull);
+    });
+
+    test('clears uploading and records the error on failure', () async {
+      final _PushGateService service = _PushGateService();
+      final FirmwareController controller = FirmwareController(
+        service: service,
+      );
+
+      final Future<void> done = controller.pushImage(
+        const PushImageRequest(bytes: <int>[1, 2], filename: 'fw.bin'),
+      );
+      expect(controller.state.uploading, isTrue);
+
+      service.pushGate.completeError(
+        const RedfishException(
+          message: 'Insufficient privilege to perform this firmware update.',
+          statusCode: 403,
+          errorCode: 'Base.1.0.InsufficientPrivilege',
+        ),
+      );
+      await done;
+
+      expect(controller.state.uploading, isFalse,
+          reason: 'a failed upload must not leave the surface busy');
+      expect(controller.state.loading, isFalse);
+      expect(controller.state.uploadProgress, isNull);
+      expect(controller.state.lastTask, isNull);
+      expect(controller.state.error,
+          'Insufficient privilege to perform this firmware update.');
+    });
+
+    test('forwards progress to an external callback when provided', () async {
+      final _PushGateService service = _PushGateService();
+      final FirmwareController controller = FirmwareController(
+        service: service,
+      );
+
+      final List<(int, int)> external = <(int, int)>[];
+      final Future<void> done = controller.pushImage(
+        const PushImageRequest(bytes: <int>[1, 2], filename: 'fw.bin'),
+        onProgress: (int sent, int total) {
+          external.add((sent, total));
+        },
+      );
+      expect(external, <(int, int)>[(1024, 2048)]);
+
+      service.pushGate.complete(
+        const UpdateTask(taskUri: '/redfish/v1/TaskService/Tasks/3'),
+      );
+      await done;
     });
   });
 }
