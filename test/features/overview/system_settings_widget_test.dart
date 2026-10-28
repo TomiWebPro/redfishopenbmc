@@ -262,6 +262,37 @@ void main() {
       expect(find.text('Apply boot override'), findsOneWidget);
     });
 
+    testWidgets('Apply button meets the 48px minimum touch target (UI-2, a11y)',
+        (tester) async {
+      final _FakeSettingsService fake =
+          _FakeSettingsService(bootResult: bootSettings);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemManagerProvider.overrideWith((ref) => seededManager()),
+            overviewProvider.overrideWith(
+              (ref, id) => Future<SystemOverview>.value(ledSample()),
+            ),
+            systemSettingsControllerProvider.overrideWith(
+              (ref, id) => SystemSettingsController(service: fake),
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const Scaffold(body: OverviewView(systemId: 'bmc1')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Apply boot override'));
+      await tester.pumpAndSettle();
+
+      final Size size = tester.getSize(find.byType(FilledButton));
+      expect(size.height, greaterThanOrEqualTo(48));
+      expect(size.width, greaterThanOrEqualTo(48));
+    });
+
     testWidgets(
         'applying a target issues setBootOverride through the controller',
         (tester) async {

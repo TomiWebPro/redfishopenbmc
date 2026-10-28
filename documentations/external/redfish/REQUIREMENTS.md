@@ -6,7 +6,19 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-26 (EMULATOR run — **the #008/#020 binary/multipart
+Last audited: 2026-10-26 07:5x (DOCS run — anchor freshness re-verify,
+**bmcweb master HEAD advanced**): bmcweb master `63a18f4` →
+`c846fb5d6f816a85c27b9f54a012058a75c0b7f4` (detected via `git ls-remote`), but
+**all four mirrored bmcweb docs byte-identical at the new HEAD** (SHA-256
+verified against freshly downloaded `c846fb5d` copies — no refresh needed);
+mockup still `23d21f9a`; DSP0266 1.25.0 PDF **byte-identical** SHA-256
+`385ee6d0…` vs the mirror; schema index **byte-identical** SHA-256
+`e5a29797…` (3,448,133 B) vs the mirror — DOCS-27's ZERO version advances
+still hold, the corpus mirror queue stays EMPTY. No new downloads, no
+client code change; the run's UI increment (Boot-override Apply button
+48 px minimum touch target) landed as the recovered-WIP commit.
+
+Prior: 2026-10-26 (EMULATOR run — **the #008/#020 binary/multipart
 push upload transport is now code + tests, emulator suite 85/85 green**):
 `FirmwareService.pushImage(PushImageRequest)` uploads image bytes either as a
 single-push `Uint8List` body to `HttpPushUri` (dio computes Content-Length so

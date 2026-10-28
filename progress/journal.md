@@ -4614,3 +4614,32 @@
 **Issues touched:**
 - #008/#020 progress logs updated (transport piece done; remaining items
   restated); no issues opened/closed this run.
+
+## 2026-10-28 00:29 — agent:redfish-automation — DOCS (anchor re-verify)
+
+**Done:**
+- Recovered prior-run WIP as commit 0250a0f (Boot-override Apply 48 px touch
+  target in `system_settings_cards.dart`, +8 lines, suite green with it).
+- DOCS anchor re-verify: bmcweb master HEAD advanced `63a18f4` → `c846fb5d`
+  (git ls-remote); all four mirrored bmcweb docs byte-identical at the new
+  HEAD (SHA-256 verified); mockup still `23d21f9a`; DSP0266 1.25.0 PDF and
+  the 3.4 MB schema index byte-identical — no corpus refresh, 0 downloads.
+- Provenance updated in `documentations/external/README.md` (4 bmcweb rows +
+  mockup row + anchors section) and the REQUIREMENTS.md "Last audited"
+  header rewritten.
+- UI-2: pinned the recovered touch-target fix with +1 widget test
+  (FilledButton ≥48 px both axes) — systems settings file 8→9 tests.
+
+**Decisions:**
+- Committed the recovered WIP separately (`chore: recover previous
+  automation WIP`) per runbook §0 instead of folding it into the DOCS commit,
+  so provenance of the crash-recovery is explicit.
+- No emulator run this DOCS slot (established precedent; none needed for an
+  anchors-only verification).
+
+**Next:**
+- EMULATOR slot: cheap 85/85 re-run; #008/#020 file-picker / apply-time /
+  timeline UI.
+- P1 #015 AuthManager wiring.
+
+**Issues touched:** none opened/closed.
