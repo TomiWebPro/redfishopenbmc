@@ -466,8 +466,9 @@ class FirmwareService {
       return value;
     }
     if (value.startsWith('/')) {
-      final String base =
-          serviceUri.endsWith('/') ? serviceUri.substring(0, serviceUri.length - 1) : serviceUri;
+      final String base = serviceUri.endsWith('/')
+          ? serviceUri.substring(0, serviceUri.length - 1)
+          : serviceUri;
       return '$base$value';
     }
     final int lastSlash = serviceUri.lastIndexOf('/');

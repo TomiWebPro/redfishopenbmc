@@ -199,7 +199,8 @@ void main() {
   });
 
   group('FirmwareController.pushImage — upload state (#008/#020)', () {
-    test('raises uploading, stores uploadProgress and the returned task '
+    test(
+        'raises uploading, stores uploadProgress and the returned task '
         'on success', () async {
       final _PushGateService service = _PushGateService();
       final FirmwareController controller = FirmwareController(

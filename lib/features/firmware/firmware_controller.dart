@@ -97,8 +97,9 @@ class FirmwareUiState {
         starting: starting ?? this.starting,
         polling: polling ?? this.polling,
         uploading: uploading ?? this.uploading,
-        uploadProgress:
-            clearUploadProgress ? null : (uploadProgress ?? this.uploadProgress),
+        uploadProgress: clearUploadProgress
+            ? null
+            : (uploadProgress ?? this.uploadProgress),
         info: info ?? this.info,
         lastTask: clearLastTask ? null : (lastTask ?? this.lastTask),
         lastResult: clearLastResult ? null : (lastResult ?? this.lastResult),

@@ -277,8 +277,7 @@ class PushImageRequest {
 
   /// Whether the multipart body needs an `UpdateParameters` part (the service
   /// requires the field when the caller provided targets or an apply time).
-  bool get hasUpdateParameters =>
-      targets.isNotEmpty || applyTime != null;
+  bool get hasUpdateParameters => targets.isNotEmpty || applyTime != null;
 }
 
 /// A SimpleUpdate task monitor handle returned after a queued update (issue #008).

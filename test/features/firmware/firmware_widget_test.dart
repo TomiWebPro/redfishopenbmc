@@ -795,8 +795,8 @@ void main() {
       );
     });
 
-    testWidgets(
-        'upload banner renders byte progress once reported', (tester) async {
+    testWidgets('upload banner renders byte progress once reported',
+        (tester) async {
       final SystemHandle handle = makeHandle(firmwareUpdate: true);
       final _UploadingFirmwareService service = _UploadingFirmwareService();
       final FirmwareController controller = FirmwareController(

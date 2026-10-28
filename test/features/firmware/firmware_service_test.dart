@@ -377,7 +377,8 @@ void main() {
     });
 
     group('FirmwareService.pushImage (#008/#020 binary upload)', () {
-      test('single-push path POSTs raw bytes to HttpPushUri and returns the '
+      test(
+          'single-push path POSTs raw bytes to HttpPushUri and returns the '
           'Location task URI (DMTF mockup /FWUpdate shape)', () async {
         final FirmwareService svc =
             FirmwareService(client: client, systemId: 'bmc1');
@@ -396,7 +397,8 @@ void main() {
         expect(task.retryAfterSeconds, isNull);
       });
 
-      test('multipart path prefers MultipartHttpPushUri and posts a FormData '
+      test(
+          'multipart path prefers MultipartHttpPushUri and posts a FormData '
           'UpdateFile part (#008/#020)', () async {
         final DioAdapter adapter = DioAdapter(
           dio: Dio(BaseOptions(baseUrl: 'https://bmc-multi.local:443')),
@@ -449,7 +451,8 @@ void main() {
         expect(task.retryAfterSeconds, isNull);
       });
 
-      test('multipart upload carries UpdateParameters (targets + apply-time) '
+      test(
+          'multipart upload carries UpdateParameters (targets + apply-time) '
           'and returns the task handle', () async {
         final DioAdapter adapter = DioAdapter(
           dio: Dio(BaseOptions(baseUrl: 'https://bmc-multi2.local:443')),
@@ -499,7 +502,8 @@ void main() {
         expect(task.retryAfterSeconds, 15);
       });
 
-      test('single-push reports byte progress over the real in-process server '
+      test(
+          'single-push reports byte progress over the real in-process server '
           '(progress callback wiring)', () async {
         // DioAdapter never fires onSendProgress (it replies without
         // streaming), so the progress-seam assertion uses the real in-process
@@ -576,7 +580,8 @@ void main() {
         );
       });
 
-      test('normalizes a 400 from the push seam without an error envelope '
+      test(
+          'normalizes a 400 from the push seam without an error envelope '
           '(the #020 no-masking rule)', () async {
         final DioAdapter adapter = DioAdapter(
           dio: Dio(BaseOptions(baseUrl: 'https://bmc-400.local:443')),
