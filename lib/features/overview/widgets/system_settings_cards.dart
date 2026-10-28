@@ -253,6 +253,14 @@ class _BootOverrideFormState extends ConsumerState<_BootOverrideForm> {
         Align(
           alignment: Alignment.centerLeft,
           child: FilledButton.icon(
+            // UI-2: explicit 48x48px minimum touch target (the
+            // ConfirmResetDialog precedent) — the primary destructive-adjacent
+            // control of this card never renders under the minimum size.
+            // `minimumSize` is style-level, not a direct constructor param,
+            // so it rides on the button's FilledButton.styleFrom.
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(48, 48),
+            ),
             onPressed: widget.busy
                 ? null
                 : () => ref
