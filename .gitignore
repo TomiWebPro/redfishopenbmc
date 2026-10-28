@@ -13,6 +13,9 @@
 # Web / Desktop build outputs
 # build/ already ignored above
 
+# Flutter plugin ephemeral artifacts (generated symlinks etc.)
+**/ephemeral/
+
 # Secrets — never commit
 .env
 .env.*
