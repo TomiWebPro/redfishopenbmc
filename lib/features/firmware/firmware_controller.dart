@@ -23,6 +23,7 @@ class FirmwareUiState {
     this.starting = false,
     this.polling = false,
     this.uploading = false,
+    this.pollProgress,
     this.uploadProgress,
     this.info,
     this.lastTask,
@@ -46,6 +47,16 @@ class FirmwareUiState {
   /// Distinct from [starting] so an upload-in-progress UI (progress bar +
   /// disabled controls) does not imply a `SimpleUpdate` submission.
   final bool uploading;
+
+  /// Latest `PercentComplete` (0–100) reported by the task monitor while
+  /// [pollLastTask] polls a non-terminal task, or `null` when the service
+  /// never published a percentage (the common case on the pinned DMTF mockup
+  /// — the queued banner must treat a missing value as unknown, never throw).
+  ///
+  /// Consumed by the queued/polling task-timeline progress bar (issue
+  /// #008/#020); [lastResult]'s own [RedfishTask.percentComplete] is the
+  /// terminal value, not this in-flight one.
+  final int? pollProgress;
 
   /// Upload progress (sent/total bytes) of the in-flight push upload, or
   /// `null` when no upload is in flight / no progress has been reported yet.
@@ -82,6 +93,8 @@ class FirmwareUiState {
     bool? starting,
     bool? polling,
     bool? uploading,
+    int? pollProgress,
+    bool clearPollProgress = false,
     ({int sent, int total})? uploadProgress,
     bool clearUploadProgress = false,
     UpdateServiceInfo? info,
@@ -97,6 +110,8 @@ class FirmwareUiState {
         starting: starting ?? this.starting,
         polling: polling ?? this.polling,
         uploading: uploading ?? this.uploading,
+        pollProgress:
+            clearPollProgress ? null : (pollProgress ?? this.pollProgress),
         uploadProgress: clearUploadProgress
             ? null
             : (uploadProgress ?? this.uploadProgress),
@@ -109,7 +124,7 @@ class FirmwareUiState {
   @override
   String toString() => 'FirmwareUiState(loading=$loading, starting=$starting, '
       'polling=$polling, uploading=$uploading, '
-      'uploadProgress=$uploadProgress, info=${info != null}, '
+      'pollProgress=$pollProgress, uploadProgress=$uploadProgress, info=${info != null}, '
       'lastTask=$lastTask, lastResult=$lastResult, error=$error)';
 }
 
@@ -253,7 +268,8 @@ class FirmwareController extends StateNotifier<FirmwareUiState> {
   /// a missing monitor as a failure.
   ///
   /// [interval] and [maxPolls] are forwarded to
-  /// [FirmwareService.pollTask] (tests inject a zero interval / small bound).
+  /// [FirmwareService.pollTask]; [onInterim] (if given) is called for each
+  /// non-terminal poll so the UI can show live `PercentComplete` progress.
   Future<void> pollLastTask({
     Duration interval = const Duration(seconds: 2),
     int maxPolls = 30,
@@ -264,12 +280,28 @@ class FirmwareController extends StateNotifier<FirmwareUiState> {
       // update was ever queued). The queued label already covers this state.
       return;
     }
-    state = state.copyWith(polling: true);
+    state = state.copyWith(polling: true, clearPollProgress: true);
     try {
-      final RedfishTask result =
-          await service.pollTask(task, interval: interval, maxPolls: maxPolls);
+      final RedfishTask result = await service.pollTask(
+        task,
+        interval: interval,
+        maxPolls: maxPolls,
+        // Surface the monitor's in-flight PercentComplete so the view can
+        // draw a live task-timeline bar (#008/#020). Absent on this fixture —
+        // the state simply stays null and the banner stays text-only.
+        onInterim: (RedfishTask interim) {
+          if (!mounted) return;
+          if (interim.percentComplete != null) {
+            state = state.copyWith(pollProgress: interim.percentComplete);
+          }
+        },
+      );
       if (!mounted) return;
-      state = state.copyWith(polling: false, lastResult: result);
+      state = state.copyWith(
+        polling: false,
+        lastResult: result,
+        clearPollProgress: true,
+      );
     } on RedfishException catch (e) {
       if (!mounted) return;
       state = state.copyWith(polling: false, error: e.message);

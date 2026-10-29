@@ -259,6 +259,28 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                       ),
                     ),
                   ),
+                // Task-timeline progress (#008/#020): while the monitor is
+                // being polled and the task published a `PercentComplete`
+                // (absent on the pinned DMTF mockup — treated as unknown),
+                // render a determinate bar + percentage so users see the
+                // update advancing. Determinate value only — never an
+                // indeterminate spinner here (the pumpAndSettle trap).
+                if (ui.polling && ui.pollProgress != null) ...<Widget>[
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (ui.pollProgress!.clamp(0, 100)) / 100,
+                      minHeight: 6,
+                      semanticsLabel: 'Task progress',
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${ui.pollProgress!.clamp(0, 100)}% complete',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
               ],
             ),
           ),

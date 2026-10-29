@@ -277,6 +277,7 @@ class FirmwareService {
     UpdateTask task, {
     Duration interval = const Duration(seconds: 2),
     int maxPolls = 30,
+    void Function(RedfishTask interim)? onInterim,
   }) async {
     final RedfishClient? c = client;
     if (c == null) {
@@ -333,6 +334,9 @@ class FirmwareService {
           raw: body.toString(),
         );
       }
+      // Non-terminal: hand the interim snapshot to the UI (live
+      // PercentComplete progress, #008/#020) before waiting again.
+      onInterim?.call(taskState);
     }
 
     throw RedfishException(

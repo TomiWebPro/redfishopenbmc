@@ -135,6 +135,94 @@ void main() {
       expect(controller.state.error, isNull);
     });
 
+    test('surfaces the interim PercentComplete while polling and clears it '
+        'at the terminal state (#008/#020 task timeline)', () async {
+      // One interim Running@60 then the terminal Completed result; the fake
+      // service fires onInterim for every non-terminal snapshot it handed in
+      // (mirroring the real FirmwareService.pollTask contract).
+      final _InterimPollService service = _InterimPollService(
+        interims: <RedfishTask>[
+          const RedfishTask(id: '42', state: 'Running', percentComplete: 60),
+        ],
+        finalResult: const RedfishTask(
+            id: '42', state: 'Completed', percentComplete: 100),
+      );
+      final FirmwareController controller = FirmwareController(
+        service: service,
+        initialState: const FirmwareUiState(
+          lastTask: UpdateTask(taskUri: '/redfish/v1/TaskService/Tasks/42'),
+        ),
+      );
+
+      // Listen for every state change so the interim PercentComplete cannot
+      // be missed between microtasks (listeners fire synchronously on set).
+      final List<int?> history = <int?>[];
+      controller.addListener((s) => history.add(s.pollProgress));
+
+      final Future<void> done = controller.pollLastTask(
+        interval: Duration.zero,
+        maxPolls: 2,
+      );
+      await done;
+
+      expect(service.interimCalls, 1);
+      expect(
+        history,
+        contains(60),
+        reason: 'the interim RunningPercentComplete=60 must be surfaced '
+            'as FirmwareUiState.pollProgress mid-poll',
+      );
+      // The controller clears the interim progress once the terminal result
+      // lands, so the banner never shows a stale percentage.
+      expect(
+        history.last,
+        isNull,
+        reason: 'the terminal state must clear the interim progress',
+      );
+      expect(controller.state.pollProgress, isNull);
+      expect(controller.state.lastResult?.isSuccess, isTrue);
+      expect(controller.state.polling, isFalse);
+      expect(controller.state.error, isNull);
+    });
+
+    test('does not surface an interim percent when the task publishes none',
+        () async {
+      // The pinned DMTF mockup task (545) never publishes PercentComplete —
+      // the state must simply stay null (text-only banner), never throw.
+      final _InterimPollService service = _InterimPollService(
+        interims: const <RedfishTask>[
+          RedfishTask(id: '42', state: 'Running'),
+        ],
+        finalResult: const RedfishTask(
+          id: '42',
+          state: 'Completed',
+          percentComplete: 100,
+        ),
+      );
+      final FirmwareController controller = FirmwareController(
+        service: service,
+        initialState: const FirmwareUiState(
+          lastTask: UpdateTask(taskUri: '/redfish/v1/TaskService/Tasks/42'),
+        ),
+      );
+
+      final List<int?> history = <int?>[];
+      controller.addListener((s) => history.add(s.pollProgress));
+
+      await controller.pollLastTask(
+        interval: Duration.zero,
+        maxPolls: 2,
+      );
+
+      expect(service.interimCalls, 1);
+      // The state changes twice (polling start + terminal) and neither
+      // snapshot carries a percent — every history entry must be null.
+      expect(history, everyElement(isNull),
+          reason: 'no PercentComplete anywhere in the timeline');
+      expect(controller.state.lastResult?.isSuccess, isTrue);
+      expect(controller.state.error, isNull);
+    });
+
     test('records the failure reason when the task failed terminally',
         () async {
       final _PollService service = _PollService(
@@ -282,6 +370,46 @@ void main() {
   });
 }
 
+/// A [FirmwareService] double whose [pollTask] fires [onInterim] for each
+/// canned non-terminal snapshot, then resolves (or throws) with
+/// [finalResult] — the 202-task-monitor polling shape with in-flight
+/// `PercentComplete` progress (#008/#020).
+class _InterimPollService extends FirmwareService {
+  _InterimPollService({required this.interims, required this.finalResult})
+      : super(client: null, systemId: 'bmc1');
+
+  /// Non-terminal snapshots delivered through `onInterim`, in order.
+  final List<RedfishTask> interims;
+
+  /// The terminal snapshot handed back after all interims fired.
+  final RedfishTask finalResult;
+
+  /// Number of `onInterim` invocations.
+  int interimCalls = 0;
+
+  @override
+  Future<RedfishTask> pollTask(
+    UpdateTask task, {
+    Duration interval = const Duration(seconds: 2),
+    int maxPolls = 30,
+    void Function(RedfishTask interim)? onInterim,
+  }) async {
+    for (final RedfishTask interim in interims) {
+      interimCalls++;
+      onInterim?.call(interim);
+      await Future<void>.delayed(interval);
+    }
+    if (finalResult.isFailed) {
+      throw RedfishException(
+        message: 'Firmware update task ${finalResult.id} failed: '
+            '${finalResult.failureReason ?? finalResult.state}',
+        errorCode: 'Update.1.0.UpdateFailed',
+      );
+    }
+    return finalResult;
+  }
+}
+
 /// A [FirmwareService] double whose [pollTask] pops the next canned
 /// [RedfishTask] (or throws the matching exception) and records the calls.
 class _PollService extends FirmwareService {
@@ -298,6 +426,7 @@ class _PollService extends FirmwareService {
     UpdateTask task, {
     Duration interval = const Duration(seconds: 2),
     int maxPolls = 30,
+    void Function(RedfishTask interim)? onInterim,
   }) async {
     pollCalls++;
     if (results.isEmpty) {
