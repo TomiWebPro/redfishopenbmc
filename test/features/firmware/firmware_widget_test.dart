@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -93,6 +95,60 @@ class _GateFirmwareService extends FakeFirmwareService {
   @override
   Future<UpdateTask> startSimpleUpdate(SimpleUpdateRequest req) =>
       startGate.future;
+}
+
+/// A [FirmwareService] double advertising a single-push URI whose
+/// [FirmwareService.pushImage] records the request and returns a 202 task
+/// handle, and whose [FirmwareService.pollTask] resolves the task
+/// immediately — the successful push-upload → auto-poll seam (#008/#020).
+class _PushCapableFirmwareService extends FakeFirmwareService {
+  _PushCapableFirmwareService()
+      : super(
+          info: const UpdateServiceInfo(
+            serviceEnabled: true,
+            httpPushUri: '/FWUpdate',
+          ),
+        );
+
+  /// The last [PushImageRequest] the view pushed.
+  PushImageRequest? lastPush;
+
+  /// How many times `pollTask` was called (the auto-poll after the 202).
+  int pollCalls = 0;
+
+  @override
+  Future<UpdateTask> pushImage(
+    PushImageRequest req, {
+    void Function(int sent, int total)? onProgress,
+  }) async {
+    lastPush = req;
+    onProgress?.call(req.bytes.length, req.bytes.length);
+    return const UpdateTask(taskUri: 'https://bmc/task/9');
+  }
+
+  @override
+  Future<RedfishTask> pollTask(
+    UpdateTask task, {
+    Duration interval = const Duration(seconds: 2),
+    int maxPolls = 30,
+    void Function(RedfishTask interim)? onInterim,
+  }) async {
+    pollCalls++;
+    return const RedfishTask(id: '9', state: 'Completed');
+  }
+}
+
+/// A [_PushCapableFirmwareService] whose `pushImage` fails — the mocked
+/// `HttpPushUri` seam answers 400 on this fixture; the view must surface the
+/// normalized error, not push the request blindly.
+class _PushFailingFirmwareService extends _PushCapableFirmwareService {
+  @override
+  Future<UpdateTask> pushImage(
+    PushImageRequest req, {
+    void Function(int sent, int total)? onProgress,
+  }) async {
+    throw const RedfishException(message: 'HTTP 400: upload seam');
+  }
 }
 
 SystemHandle makeHandle({required bool firmwareUpdate}) {
@@ -950,6 +1006,154 @@ void main() {
       );
       expect(find.bySemanticsLabel('Task progress'), findsNothing);
       expect(find.text('60% complete'), findsNothing);
+    });
+  });
+
+  group('FirmwareView — push upload local image (#008/#020)', () {
+    Future<void> pumpView(
+      WidgetTester tester, {
+      required FirmwareService service,
+      Future<XFile?> Function()? picker,
+    }) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller =
+          FirmwareController(service: service);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+            firmwareImagePickerProvider.overrideWith(
+              (ref) => picker ?? () async => null,
+            ),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      // First pump runs the post-frame auto-load; second renders the
+      // load-driven UI (pumpAndSettle would hang on the header spinner).
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('hides the push-upload section when no push URI is advertised',
+        (tester) async {
+      await pumpView(tester, service: FakeFirmwareService());
+      expect(find.text('Push upload'), findsNothing);
+      expect(find.text('Choose image…'), findsNothing);
+    });
+
+    testWidgets('shows the section with Upload disabled before a selection',
+        (tester) async {
+      await pumpView(tester, service: _PushCapableFirmwareService());
+      expect(find.text('Push upload'), findsOneWidget);
+      final FilledButton upload =
+          tester.widget<FilledButton>(find.widgetWithText(
+        FilledButton,
+        'Upload',
+      ));
+      expect(
+        upload.onPressed,
+        isNull,
+        reason: 'Upload must be disabled until a file is picked',
+      );
+      expect(find.text('No file selected'), findsOneWidget);
+    });
+
+    testWidgets('picker cancel keeps no selection and stays disabled',
+        (tester) async {
+      await pumpView(
+        tester,
+        service: _PushCapableFirmwareService(),
+        // Default override already returns null — explicit for the intent.
+        picker: () async => null,
+      );
+      // Scroll the card (below the fold in the default viewport) into view
+      // before tapping — a raw tap on an off-screen widget silently misses.
+      await tester.ensureVisible(find.text('Choose image…'));
+      await tester.pump();
+      await tester.tap(find.text('Choose image…'));
+      await tester.pump();
+      expect(find.text('No file selected'), findsOneWidget);
+      final FilledButton upload = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Upload'),
+      );
+      expect(upload.onPressed, isNull);
+    });
+
+    testWidgets(
+        'picked image uploads via controller.pushImage and auto-polls the '
+        '202 task monitor', (tester) async {
+      final _PushCapableFirmwareService service = _PushCapableFirmwareService();
+      // 8 bytes named fw.bin — the bytes must reach the request untouched.
+      // XFile.fromData with `path: 'fw.bin'`: the IO XFile derives `.name`
+      // from the path (its `name:` parameter is ignored) and stays fully
+      // memory-backed — no real filesystem IO, which does not resolve inside
+      // the fake-async testWidgets zone and hung the first draft of this
+      // test when it used a temp file.
+      final Uint8List imageBytes = Uint8List.fromList(
+        List<int>.generate(8, (int i) => i + 1),
+      );
+      await pumpView(
+        tester,
+        service: service,
+        picker: () async => XFile.fromData(imageBytes, path: 'fw.bin'),
+      );
+      // Scroll the push card (below the fold) into view before tapping —
+      // a raw tap on an off-screen widget silently misses.
+      await tester.ensureVisible(find.text('Choose image…'));
+      await tester.pump();
+      await tester.tap(find.text('Choose image…'));
+      await tester.pump();
+      // Selection state rendered.
+      expect(find.text('fw.bin'), findsOneWidget);
+      final FilledButton upload = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Upload'),
+      );
+      expect(upload.onPressed, isNotNull, reason: 'a selection enables Upload');
+      await tester.ensureVisible(find.text('Upload'));
+      await tester.pump();
+      await tester.tap(find.text('Upload'));
+      await tester.pump(); // push resolves → poll resolves (fake)
+      await tester.pump();
+      expect(service.lastPush, isNotNull, reason: 'the upload must be pushed');
+      expect(service.lastPush!.filename, 'fw.bin');
+      expect(service.lastPush!.bytes, imageBytes);
+      expect(service.lastPush!.contentType, 'application/octet-stream');
+      expect(
+        service.pollCalls,
+        1,
+        reason: 'a 202 task monitor URI must hand off to pollLastTask',
+      );
+      expect(find.text('Update task 9: Completed'), findsOneWidget);
+    });
+
+    testWidgets('upload failure surfaces the normalized error, no poll',
+        (tester) async {
+      final _PushCapableFirmwareService service = _PushFailingFirmwareService();
+      // Same no-real-IO rule as above: fromData(path:) names it and keeps
+      // reads memory-backed (fake-async zone).
+      await pumpView(
+        tester,
+        service: service,
+        picker: () async =>
+            XFile.fromData(Uint8List.fromList(<int>[1, 2, 3]), path: 'fw.bin'),
+      );
+      // Scroll the push card (below the fold) into view before tapping —
+      // a raw tap on an off-screen widget silently misses.
+      await tester.ensureVisible(find.text('Choose image…'));
+      await tester.pump();
+      await tester.tap(find.text('Choose image…'));
+      await tester.pump();
+      await tester.ensureVisible(find.text('Upload'));
+      await tester.pump();
+      await tester.tap(find.text('Upload'));
+      await tester.pump();
+      await tester.pump();
+      expect(service.pollCalls, 0,
+          reason: 'a failed upload must never reach the poller');
+      expect(find.textContaining('HTTP 400'), findsOneWidget,
+          reason: 'the normalized error must surface in the error card');
     });
   });
 

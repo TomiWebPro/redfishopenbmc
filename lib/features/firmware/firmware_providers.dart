@@ -1,3 +1,4 @@
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:redfishopenbmc/features/firmware/firmware_controller.dart';
@@ -20,6 +21,30 @@ final ProviderFamily<FirmwareService, String> firmwareServiceProvider =
     systemId: id,
     features: handle?.features,
   );
+});
+
+/// The local-image picker for the push-upload flow (#008/#020).
+///
+/// Returns the picked image file, or `null` when the user cancels the dialog.
+typedef FirmwareImagePicker = Future<XFile?> Function();
+
+/// Provides the [FirmwareImagePicker] the firmware view drives the
+/// `HttpPushUri` / `MultipartHttpPushUri` push-upload flow with (#008/#020).
+///
+/// The default opens the system file dialog (`file_selector.openFile`,
+/// desktop + web) filtered to common firmware-image extensions; the view never
+/// assumes an apply time or any other parameter of the picked file.
+///
+/// Widget tests override this provider so `flutter test` never opens a real
+/// dialog — the factory is only invoked on press.
+final Provider<FirmwareImagePicker> firmwareImagePickerProvider =
+    Provider<FirmwareImagePicker>((ref) {
+  return () => openFile(acceptedTypeGroups: const <XTypeGroup>[
+        XTypeGroup(
+          label: 'Firmware image',
+          extensions: <String>['bin', 'rom', 'img', 'iso', 'tar', 'gz'],
+        ),
+      ]);
 });
 
 /// Provides the [FirmwareController] driving the firmware screen for [systemId].

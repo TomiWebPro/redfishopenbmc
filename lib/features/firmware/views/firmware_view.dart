@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,6 +33,11 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
   final TextEditingController _imageUriController = TextEditingController();
   String _transferProtocol = 'HTTP';
 
+  // The local image chosen for the push-upload flow (#008/#020 file-picker
+  // integration). `null` = nothing selected (or the user cancelled the
+  // dialog) — the Upload control stays disabled.
+  XFile? _pickedImage;
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +54,57 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
   void dispose() {
     _imageUriController.dispose();
     super.dispose();
+  }
+
+  // Push-upload availability (#008/#020): shown only when the service
+  // advertises a push URI — the same data the upload transport resolves
+  // (`HttpPushUri` single-push, `MultipartHttpPushUri` multipart, or both).
+  // Not advertised → no card, no placeholder (the capability-gated pattern).
+  bool _pushAvailable(FirmwareUiState ui) =>
+      (ui.info?.httpPushUri != null) || (ui.info?.multipartHttpPushUri != null);
+
+  /// True while an inventory load or a push upload is in flight — the shared
+  /// disable condition for both push-upload controls.
+  bool _isBusy(FirmwareUiState ui) => ui.loading || ui.uploading;
+
+  /// Opens the system file dialog (via [firmwareImagePickerProvider]) and
+  /// stores the picked image; a cancel (null) keeps the current selection —
+  /// the Upload control then stays disabled.
+  Future<void> _chooseImage(FirmwareUiState ui) async {
+    if (_isBusy(ui)) return;
+    final XFile? picked = await ref.read(firmwareImagePickerProvider)();
+    if (picked == null || !mounted) return;
+    setState(() => _pickedImage = picked);
+  }
+
+  /// Reads the picked image bytes and pushes them via
+  /// [FirmwareController.pushImage]; on success with a task-monitor URI,
+  /// hands the update off to [FirmwareController.pollLastTask] — the
+  /// controller's documented contract ("call [pollLastTask] after a
+  /// successful upload when a task monitor URI was returned").
+  Future<void> _pushUpload(FirmwareUiState ui) async {
+    final XFile? file = _pickedImage;
+    if (file == null || _isBusy(ui)) return;
+    final FirmwareController controller =
+        ref.read(firmwareControllerProvider(widget.systemId).notifier);
+    final Uint8List bytes = await file.readAsBytes();
+    if (!mounted) return;
+    await controller.pushImage(
+      PushImageRequest(bytes: bytes, filename: file.name),
+    );
+    if (!mounted) return;
+    final FirmwareUiState after =
+        ref.read(firmwareControllerProvider(widget.systemId));
+    final UpdateTask? task = after.lastTask;
+    if (after.error != null ||
+        task == null ||
+        task.taskUri == null ||
+        task.taskUri!.isEmpty) {
+      // Failed upload (the error card covers it) or 204-no-Location service:
+      // the queued label covers the latter; do not poll nothing.
+      return;
+    }
+    await controller.pollLastTask();
   }
 
   @override
@@ -368,6 +427,84 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        // Push upload (#008/#020 file-picker integration): only when the
+        // service advertises a push URI (HttpPushUri / MultipartHttpPushUri).
+        // Not advertised → no card, no placeholder (capability-gated).
+        if (_pushAvailable(ui))
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'Push upload',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  // UI-2: the selection state announces as ONE merged node
+                  // ("No firmware image selected" / "Selected firmware
+                  // image: <name>") — the established summary-row pattern
+                  // (icon + text are decorative/context, not two bare nodes).
+                  Semantics(
+                    container: true,
+                    excludeSemantics: true,
+                    label: _pickedImage == null
+                        ? 'No firmware image selected'
+                        : 'Selected firmware image: ${_pickedImage!.name}',
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          _pickedImage == null
+                              ? Icons.description_outlined
+                              : Icons.check_circle_outline,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _pickedImage?.name ?? 'No file selected',
+                            style: Theme.of(context).textTheme.bodySmall,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Both controls disabled while a load or upload is in
+                  // flight; Upload additionally requires a selection.
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: <Widget>[
+                      OutlinedButton.icon(
+                        onPressed: _isBusy(ui) ? null : () => _chooseImage(ui),
+                        icon: const Icon(Icons.file_open),
+                        label: const Text('Choose image…'),
+                      ),
+                      FilledButton.icon(
+                        onPressed: (_pickedImage == null || _isBusy(ui))
+                            ? null
+                            : () => _pushUpload(ui),
+                        icon: ui.uploading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.upload_file),
+                        label: Text(ui.uploading ? 'Uploading…' : 'Upload'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
