@@ -882,6 +882,77 @@ void main() {
     });
   });
 
+  group('FirmwareView — poll task-timeline progress (#008/#020)', () {
+    // The poll-progress banner drives off FirmwareUiState directly (the
+    // controller sets pollProgress from the monitor's interim snapshots), so
+    // the tests seed the state rather than driving a live poll — the same
+    // shape as the upload-banner tests above.
+    Future<void> pumpState(
+      WidgetTester tester,
+      FirmwareUiState state,
+    ) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(),
+        initialState: state,
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets(
+        'renders a determinate bar + percentage while polling with '
+        'PercentComplete', (tester) async {
+      await pumpState(
+        tester,
+        const FirmwareUiState(polling: true, pollProgress: 60),
+      );
+      final LinearProgressIndicator bar =
+          tester.widget<LinearProgressIndicator>(find.byType(
+        LinearProgressIndicator,
+      ));
+      expect(bar.value, closeTo(0.6, 0.001),
+          reason: '60% complete must render as a determinate 0.6 bar');
+      expect(find.text('60% complete'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Task progress'),
+        findsOneWidget,
+        reason: 'the bar must announce its purpose to screen readers',
+      );
+    });
+
+    testWidgets(
+        'shows no percentage bar when the task publishes none '
+        '(text-only banner)', (tester) async {
+      // The pinned DMTF mockup task (545) never publishes PercentComplete —
+      // the banner must stay text-only, never throw or render a stale bar.
+      await pumpState(
+        tester,
+        const FirmwareUiState(polling: true),
+      );
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+      expect(find.textContaining('complete'), findsNothing);
+      expect(find.bySemanticsLabel('Task progress'), findsNothing);
+    });
+
+    testWidgets('shows no poll-progress UI when not polling', (tester) async {
+      await pumpState(
+        tester,
+        const FirmwareUiState(pollProgress: 60),
+      );
+      expect(find.bySemanticsLabel('Task progress'), findsNothing);
+      expect(find.text('60% complete'), findsNothing);
+    });
+  });
+
   group('FirmwareView — responsive layout (UI-3)', () {
     Future<void> pumpAtWidth(WidgetTester tester, double width) async {
       tester.view.physicalSize = Size(width, 800);

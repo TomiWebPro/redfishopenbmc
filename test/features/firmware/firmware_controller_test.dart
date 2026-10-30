@@ -135,7 +135,8 @@ void main() {
       expect(controller.state.error, isNull);
     });
 
-    test('surfaces the interim PercentComplete while polling and clears it '
+    test(
+        'surfaces the interim PercentComplete while polling and clears it '
         'at the terminal state (#008/#020 task timeline)', () async {
       // One interim Running@60 then the terminal Completed result; the fake
       // service fires onInterim for every non-terminal snapshot it handed in

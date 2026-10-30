@@ -53,6 +53,26 @@ estimated_tokens: 18000
 
 ## Progress Log
 
+- 2026-10-29 — EMU run: **the task-timeline live-progress piece of #020
+  landed** (recovered from the prior crashed run's WIP, then pinned). The
+  poller now exposes in-flight progress: `FirmwareService.pollTask`
+  (`lib/features/firmware/firmware_service.dart`) gained an `onInterim`
+  callback that hands each non-terminal task snapshot to the caller;
+  `FirmwareController.pollLastTask` (`firmware_controller.dart`) surfaces
+  `interim.percentComplete` as `FirmwareUiState.pollProgress` and clears it
+  when the terminal result lands (no stale percentage); the firmware view
+  (`views/firmware_view.dart`) adds a determinate `LinearProgressIndicator` +
+  "`N% complete`" text with merged "Task progress" semantics while polling
+  *and* the task published a percent — the pinned mockup's Task 545 never
+  publishes `PercentComplete`, so the banner stays text-only there (absent
+  value tolerated, never throws). +2 controller tests (interim surfaced +
+  cleared; no-percent timeline all-null), +3 widget tests (0.6 determinate
+  bar + label, text-only when absent, nothing when not polling); unit suite
+  499 → **502 passed / 1 skipped**; emulator **85/85 green** (cheap re-run on
+  pinned `23d21f9a`). **Remaining #020 items:** file-picker UI integration,
+  apply-time selection widget (don't assume Immediate), task-timeline UI
+  polish (per-message timeline text now merges into the existing banner
+  semantics — a dedicated per-message timeline view is optional).
 - 2026-10-26 — EMU run: **the binary/multipart push upload *transport* of #020
   landed (the file-picker + apply-time selection + task-timeline UI remain)**.
   `PushImageRequest` (`lib/features/firmware/models/firmware_models.dart`:

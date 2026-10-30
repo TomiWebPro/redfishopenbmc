@@ -267,12 +267,16 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                 // indeterminate spinner here (the pumpAndSettle trap).
                 if (ui.polling && ui.pollProgress != null) ...<Widget>[
                   const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: (ui.pollProgress!.clamp(0, 100)) / 100,
-                      minHeight: 6,
-                      semanticsLabel: 'Task progress',
+                  Semantics(
+                    container: true,
+                    excludeSemantics: true,
+                    label: 'Task progress',
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: (ui.pollProgress!.clamp(0, 100)) / 100,
+                        minHeight: 6,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),
