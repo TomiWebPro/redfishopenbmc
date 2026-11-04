@@ -4851,3 +4851,19 @@
 - UI-2 remaining focus audit + non-card labels
 
 **Issues touched:** none (verification run)
+
+## 2026-11-04 — agent:redfish-automation — DOCS
+
+**Done:**
+- DOCS per alternation (last primary: EMULATOR 2026-11-04 22:51). Anchor freshness re-verify of all four upstream sources (bmcweb openbmc/bmcweb @ ade964e7, DMTF Redfish-Mockup-Server @ 23d21f9a, DSP0266 1.25.0, schema index) — all current; mirror queue EMPTY, 0 new downloads. Updated `documentations/external/README.md` "Current upstream anchors", `documentations/external/redfish/REQUIREMENTS.md` "Last audited" header, `FUTUREWORK.md` Last updated.
+- Verification: analyze 0, tests 517 passed / 1 skipped, issues validate OK, git diff --check clean.
+
+**Decisions:**
+- No corpus refresh needed; anchors all byte-identical/current. Docs-only metadata updates.
+
+**Next:**
+- EMULATOR per alternation — cheap 85/85 re-run
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff)
+- UI-2 remaining focus audit + non-card labels
+
+**Issues touched:** none

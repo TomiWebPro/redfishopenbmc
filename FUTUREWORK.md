@@ -7,7 +7,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-04 22:51 UTC (EMULATOR — 85/85 DMTF mockup re-run, all contracts green)
+- **Last updated: 2026-11-04 23:24 UTC (DOCS — anchor re-verify, all sources current; mirror queue EMPTY)
 - **Current focus:** #020 closed, #015 closed (2026-11-04). DOCS/EMULATOR alternation current; EMULATOR 85/85 verified (2026-11-04 21:16). Next per alternation: **DOCS** (anchor re-verify, mirror queue EMPTY); then #008 remaining resilience (cancel task `DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff), UI-2 — remaining focus audit + non-card labels.
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
