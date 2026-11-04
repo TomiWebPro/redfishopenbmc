@@ -4821,3 +4821,10 @@
 - **Decisions:** Followed alternation (EMULATOR → DOCS). Skipped UI improvement (no obvious small tested change identified within time).
 - **Next:** EMULATOR 85/85 re-run next per alternation; focus #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff); UI-2 focus audit + non-card labels.
 - **Issues touched:** none (no issues opened/closed this run).
+
+## 2026-11-04 — agent:redfish-automation — #015
+
+- **Done:** EMULATOR alternation run — re-ran official DMTF Redfish-Mockup-Server (pin 23d21f9a) via tool/emulator/run_tests.sh; all 85/85 emulator tests passed (service root, discovery, systems/chassis/manager, power/actions, sensors/metrics/controls, firmware/update paths, tasks, ActionInfo, VirtualMedia/SecureBoot, sessions/accounts, log entries, subscriptions/event destinations, corpus invariants, SystemSettingsService Boot/LocationIndicatorActive PATCH flows). No code/tests/docs changes (verification only).
+- **Decisions:** Follow alternation (DOCS→EMULATOR) as per FUTUREWORK; mirror queue remains EMPTY, anchors unchanged (bmcweb ade964e7, mockup 23d21f9a, DSP0266 1.25.0).
+- **Next:** DOCS anchor re-verify next per alternation; focus on #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff) and UI-2 remaining focus audit + non-card labels.
+- **Issues touched:** none (verification run).
