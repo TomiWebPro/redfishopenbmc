@@ -102,12 +102,13 @@ class _GateFirmwareService extends FakeFirmwareService {
 /// handle, and whose [FirmwareService.pollTask] resolves the task
 /// immediately — the successful push-upload → auto-poll seam (#008/#020).
 class _PushCapableFirmwareService extends FakeFirmwareService {
-  _PushCapableFirmwareService()
+  _PushCapableFirmwareService({UpdateServiceInfo? info})
       : super(
-          info: const UpdateServiceInfo(
-            serviceEnabled: true,
-            httpPushUri: '/FWUpdate',
-          ),
+          info: info ??
+              const UpdateServiceInfo(
+                serviceEnabled: true,
+                httpPushUri: '/FWUpdate',
+              ),
         );
 
   /// The last [PushImageRequest] the view pushed.
@@ -149,6 +150,27 @@ class _PushFailingFirmwareService extends _PushCapableFirmwareService {
   }) async {
     throw const RedfishException(message: 'HTTP 400: upload seam');
   }
+}
+
+/// A [_PushCapableFirmwareService] whose `UpdateServiceInfo` advertises the
+/// four mockup-served push apply-time modes (`HttpPushUriOptions.
+/// HttpPushUriApplyTime.ApplyTime@Redfish.AllowableValues`) — the wire shape
+/// the apply-time selector exists for (#008/#020).
+class _ApplyTimeCapableFirmwareService extends _PushCapableFirmwareService {
+  _ApplyTimeCapableFirmwareService()
+      : super(
+          info: const UpdateServiceInfo(
+            serviceEnabled: true,
+            httpPushUri: '/FWUpdate',
+            httpPushApplyTime: 'Immediate',
+            httpPushApplyTimes: <String>[
+              'Immediate',
+              'OnReset',
+              'AtMaintenanceWindowStart',
+              'InMaintenanceWindowOnReset',
+            ],
+          ),
+        );
 }
 
 SystemHandle makeHandle({required bool firmwareUpdate}) {
@@ -1006,6 +1028,117 @@ void main() {
       );
       expect(find.bySemanticsLabel('Task progress'), findsNothing);
       expect(find.text('60% complete'), findsNothing);
+    });
+  });
+
+  group('FirmwareView — push upload apply-time selector (#008/#020)', () {
+    Future<void> pumpView(
+      WidgetTester tester, {
+      required FirmwareService service,
+      bool withImage = false,
+    }) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller =
+          FirmwareController(service: service);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+            if (withImage)
+              firmwareImagePickerProvider.overrideWith(
+                (ref) => () async => XFile.fromData(
+                      Uint8List.fromList(<int>[1, 2, 3]),
+                      path: 'fw.bin',
+                    ),
+              ),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      // First pump runs the post-frame auto-load; second renders the
+      // load-driven UI (pumpAndSettle would hang on the header spinner).
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets(
+        'hides the selector when the service advertises no apply-time modes '
+        '(capability-gated)', (tester) async {
+      // _PushCapableFirmwareService has a push URI but no advertised modes.
+      await pumpView(tester, service: _PushCapableFirmwareService());
+      expect(find.text('Apply time'), findsNothing);
+      expect(find.text('Service default'), findsNothing);
+    });
+
+    testWidgets(
+        'shows labelled selector with Service default selected for the '
+        'advertised modes', (tester) async {
+      await pumpView(tester, service: _ApplyTimeCapableFirmwareService());
+      expect(find.text('Apply time'), findsOneWidget);
+      expect(find.text('Service default'), findsOneWidget);
+    });
+
+    testWidgets(
+        'choosing a mode carries it on the pushed request; Service default '
+        'omits @Redfish.OperationApplyTime', (tester) async {
+      final _ApplyTimeCapableFirmwareService service =
+          _ApplyTimeCapableFirmwareService();
+      await pumpView(tester, service: service, withImage: true);
+      // The picker override pre-selects fw.bin through the Choose control —
+      // drive the real flow so the request is read from the picker.
+      await tester.ensureVisible(find.text('Choose image…'));
+      await tester.pump();
+      await tester.tap(find.text('Choose image…'));
+      await tester.pump();
+      // Default: "Service default" — the request omits the apply time
+      // entirely (hasUpdateParameters false for an empty targets list).
+      await tester.ensureVisible(find.text('Upload'));
+      await tester.pump();
+      await tester.tap(find.text('Upload'));
+      await tester.pump();
+      await tester.pump();
+      expect(service.lastPush, isNotNull);
+      expect(service.lastPush!.applyTime, isNull);
+      expect(service.lastPush!.hasUpdateParameters, isFalse,
+          reason:
+              '"Service default" must omit @Redfish.OperationApplyTime entirely');
+      expect(service.lastPush!.toUpdateParametersJson(), isEmpty,
+          reason: '"Service default" must omit @Redfish.OperationApplyTime');
+      expect(find.text('Update task 9: Completed'), findsOneWidget);
+    });
+
+    testWidgets('selecting OnReset pushes it as the apply-time mode',
+        (tester) async {
+      final _ApplyTimeCapableFirmwareService service =
+          _ApplyTimeCapableFirmwareService();
+      await pumpView(tester, service: service, withImage: true);
+      await tester.ensureVisible(find.text('Choose image…'));
+      await tester.pump();
+      await tester.tap(find.text('Choose image…'));
+      await tester.pump();
+      // Open the dropdown — tap the current value label ("Service default").
+      await tester.ensureVisible(find.text('Service default'));
+      await tester.pump();
+      await tester.tap(find.text('Service default'));
+      await tester.pumpAndSettle();
+      expect(find.text('Immediate'), findsOneWidget);
+      expect(find.text('OnReset'), findsOneWidget);
+      await tester.tap(find.text('OnReset'));
+      await tester.pumpAndSettle();
+      expect(find.text('OnReset'), findsOneWidget,
+          reason: 'the selected mode becomes the field value');
+      // Push with the selected mode.
+      await tester.ensureVisible(find.text('Upload'));
+      await tester.pump();
+      await tester.tap(find.text('Upload'));
+      await tester.pump();
+      await tester.pump();
+      expect(service.lastPush!.applyTime, 'OnReset');
+      expect(
+          service.lastPush!
+              .toUpdateParametersJson()['@Redfish.OperationApplyTime'],
+          'OnReset');
     });
   });
 

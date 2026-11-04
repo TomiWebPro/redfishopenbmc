@@ -1,17 +1,16 @@
 ---
 id: "020"
 title: "Firmware: binary upload, task progress tracking & fix non-202 masking"
-status: open
+status: closed
 priority: P2
 type: bug
 created: 2026-08-30
-updated: 2026-10-26
-closed: null
+updated: 2026-11-04
+closed: 2026-11-04
 assignee: unassigned
 labels: [firmware, upload, error-handling]
 estimated_tokens: 18000
 ---
-
 # 020 — Firmware: implement real update flow
 
 > Only `SimpleUpdate` with a remote `ImageURI` is implemented (`firmware_service.dart:127-152`). No file picker, no binary/multipart POST, and the advertised `httpPushUri` (`firmware_models.dart:131`) is shown but never used. `startUpdate` stores `lastTaskUri` but never polls the task; `UpdateTask` model is unused; no progress UI. Critically, `firmware_service.dart:147-148` returns `''` for *any* non-202 status (including 400/500), so real failures are masked as success ("no task URI returned").
@@ -29,17 +28,17 @@ estimated_tokens: 18000
 
 ## Goals / Acceptance Criteria
 
-- [ ] Binary upload via `httpPushUri` (file picker + multipart).
-- [ ] Task polling drives a progress bar using `UpdateTask`.
-- [ ] Non-2xx responses throw (no silent `''` success).
-- [ ] Tests cover success, task-failure, and error masking.
+- [x] Binary upload via `httpPushUri` (file picker + multipart). (run 2026-11-04)
+- [x] Task polling drives a progress bar using `UpdateTask`. (2026-10-26 00:25)
+- [x] Non-2xx responses throw (no silent `''` success). (2026-10-26 00:25)
+- [x] Tests cover success, task-failure, and error masking. (2026-10-26 03:5x)
 
 ## Tasks
 
-- [ ] Add upload path in `firmware_service.dart`.
-- [ ] Add task polling in `firmware_controller.dart` + progress UI.
-- [ ] Fix `:147-148` to throw on failure.
-- [ ] Tests in `test/features/firmware/`.
+- [x] Add upload path in `firmware_service.dart`. (2026-10-26 03:5x)
+- [x] Add task polling in `firmware_controller.dart` + progress UI. (2026-10-26 00:25)
+- [x] Fix `:147-148` to throw on failure. (2026-10-23 03:02)
+- [x] Tests in `test/features/firmware/`.
 
 ## Redfish Mapping
 
@@ -53,6 +52,27 @@ estimated_tokens: 18000
 
 ## Progress Log
 
+- 2026-11-04 — EMU run: **#020 COMPLETE — the last item, the apply-time
+  selection widget, landed and all four acceptance criteria close.** The
+  push-upload card now offers a capability-gated "Apply time" selector built
+  ONLY from the service's own
+  `HttpPushUriOptions.HttpPushUriApplyTime.ApplyTime@Redfish.AllowableValues`
+  list (`ui.info.httpPushApplyTimes` — no mode is ever assumed; no
+  advertisement → no selector at all). Default choice is **"Service
+  default"** (`null`): the pushed `PushImageRequest` omits
+  `@Redfish.OperationApplyTime` entirely (`hasUpdateParameters == false`),
+  so the service applies its own current mode — the client must NOT assume
+  Immediate. Choosing an advertised mode (e.g. OnReset) sends it as
+  `@Redfish.OperationApplyTime` in the `UpdateParameters` body.
+  `firmware_view.dart` gained the selector + `_applyTime` state +
+  `_kServiceDefault` sentinel + `_applyTimeOptions(ui)` helper; `_pushUpload`
+  passes `applyTime: _applyTime`. +4 widget tests in a new "push upload
+  apply-time selector" group (hidden when unadvertised; labelled selector
+  with Service default; Service default omits the annotation on the wire;
+  OnReset round-trips into the pushed request). Unit suite 507 → **511
+  passed / 1 skipped**; analyze 0; emulator 85/85 green. Remaining out of
+  #020 scope: #008's own resilience items (cancel task, 413/401,
+  maxImageSize) stay there.
 - 2026-10-29 — EMU run: **the task-timeline live-progress piece of #020
   landed** (recovered from the prior crashed run's WIP, then pinned). The
   poller now exposes in-flight progress: `FirmwareService.pollTask`
@@ -136,6 +156,10 @@ estimated_tokens: 18000
 - Related: #008
 
 ## Closed Criteria
+
+- Resolution: All four acceptance criteria complete: binary push upload via HttpPushUri (single + multipart transport + file-picker UI), task polling drives the progress bar/timeline from PercentComplete, non-2xx responses throw (400-no-masking pinned), and the apply-time selection widget (the last item) landed 2026-11-04 — capability-gated from the service's own AllowableValues, Service-default omission of @Redfish.OperationApplyTime pinned on the wire; suites green (unit 511/1 skipped, EMU 85/85).
+- Closed: 2026-11-04
+
 
 - Resolution:
 - Closed reason:

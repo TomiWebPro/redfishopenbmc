@@ -7,8 +7,19 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-10-26 (DOCS run — **anchor re-verify: bmcweb master HEAD advanced `63a18f4` → `c846fb5d` but all four mirrored docs byte-identical, no refresh; mockup `23d21f9a`, DSP0266 1.25.0, schema index byte-identical; mirror queue EMPTY, 0 new downloads**)
-- **Current focus:** DOCS anchors current as of 2026-10-26 07:5x UTC. Next per alternation: **EMULATOR** — cheap 85/85 suite re-run, or #008/#020 remaining UI: the **file-picker** integration (desktop/web `file_picker` abstraction + upload wiring into the firmware view), **apply-time selection** widget (the mockup publishes `HttpPushUriOptions.HttpPushUriApplyTime` with Immediate/OnReset/AtMaintenanceWindowStart/InMaintenanceWindowOnReset — `UpdateServiceInfo` already parses both; don't assume Immediate), and the **task-timeline** UI (progress from `PercentComplete` — absent on the fixture, the poller tolerates it). Then P1 #015 (AuthManager) — `expiryFromService` + the Sessions pin are ready, wire the discovered SessionService body into login + re-auth on `isExpired`; then UI-2 — remaining focus audit + any remaining non-card labels
+- **Last updated:** 2026-11-04 (EMULATOR run — **#020 CLOSED**: the apply-time
+  selection widget (the last remaining #020 item) landed capability-gated from
+  the service's own `HttpPushUriApplyTime.ApplyTime@Redfish.AllowableValues`;
+  unit suite 511/1 skipped, EMU 85/85 re-run green on `23d21f9a`; anchors
+  unchanged from 2026-10-28)
+- **Current focus:** #020 closed (commit pending). All four mirrored upstream
+  docs + spec/index were re-verified byte-identical on 2026-10-28; the corpus
+  mirror queue stays EMPTY. Next per alternation: **DOCS** — cheap anchor
+  re-verify; then P1 #015 (AuthManager) — `expiryFromService` + the Sessions
+  pin are ready, wire the discovered SessionService body into login + re-auth
+  on `isExpired`; then #008 remaining resilience (cancel task
+  `DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth
+  backoff), UI-2 — remaining focus audit + non-card labels
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1159,7 +1170,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       milestone (see P1 docs section); revisit when telemetry (#007/#019) or task
       monitoring (#008/#020/#022) creates a receiver. Spec: DSP0266 §12.1,
       bmcweb field set audited in REQUIREMENTS.md "bmcweb field notes".
-- [ ] **#008 / #020** Firmware update management, upload progress, task timeline.
+- [~] **#008** Firmware update management resilience + polish (**#020 split
+      off, now CLOSED** — commit pending on 2026-11-04).
       (bmcweb: update is HTTP-push via `HttpPushUri`/`MultipartHttpPushUri`, no
       `SimpleUpdate` — our `startSimpleUpdate` would 405 on OpenBMC; add push
       path — DOCS-4, REQUIREMENTS.md; emulator asserts `UpdateServiceInfo.
@@ -1202,12 +1214,19 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       (uploading/uploadProgress) + the firmware-view upload banner (merged
       semantics label + byte-count progress) drive the flow; +16 unit tests,
       +1 live emulator pin — unit 496/1 skipped, emulator 85/85.
-      **Remaining #008/#020:** the file-picker UI integration (desktop/web),
-      the **apply-time selection** widget (mockup publishes `HttpPushUriOptions.
-      HttpPushUriApplyTime` — Immediate/OnReset/AtMaintenanceWindowStart/
-      InMaintenanceWindowOnReset; `UpdateServiceInfo` already parses both;
-      don't assume Immediate), and the task-timeline UI — a live progress bar
-      from `PercentComplete` (absent on the fixture; the poller tolerates it))
+      **FILE-PICKER Landed 2026-10-28 (recovered WIP commits 297b6bf–4ac306d)** —
+      the push-upload card (`Choose image…` picker + Upload/auto-poll seam,
+      5 picker widget tests, fake-async-safe via `XFile.fromData(path:)`).
+      **TASK-TIMELINE PROGRESS LANDED 2026-10-29 (EMU)** — `pollTask`
+      `onInterim` → `FirmwareUiState.pollProgress` → determinate bar +
+      `N% complete` while polling (absent `PercentComplete` tolerated).
+      **APPLY-TIME SELECTOR LANDED 2026-11-04 (EMU — #020 CLOSED)** — the
+      capability-gated "Apply time" dropdown in the push-upload card built
+      ONLY from `info.httpPushApplyTimes` (the served
+      `ApplyTime@Redfish.AllowableValues`); default **"Service default"**
+      (`null`) omits `@Redfish.OperationApplyTime` on the wire entirely —
+      never an assumed Immediate; +4 widget tests; unit 511/1 skipped,
+      EMU 85/85; #020 closed.)
 - [ ] **#009 / #021** Remote KVM capability detection and console rendering.
       (emulator now pins the manager network surface the console renderer
       needs: `Manager.NetworkProtocol.KVMIP` ProtocolEnabled + port 5288, plus

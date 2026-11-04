@@ -30,6 +30,11 @@ class FirmwareView extends ConsumerStatefulWidget {
 }
 
 class _FirmwareViewState extends ConsumerState<FirmwareView> {
+  /// Dropdown sentinel for the "Service default" apply-time choice — not a
+  /// real mode; maps back to `null` so the request body omits
+  /// `@Redfish.OperationApplyTime`.
+  static const String _kServiceDefault = '_serviceDefault';
+
   final TextEditingController _imageUriController = TextEditingController();
   String _transferProtocol = 'HTTP';
 
@@ -37,6 +42,13 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
   // integration). `null` = nothing selected (or the user cancelled the
   // dialog) — the Upload control stays disabled.
   XFile? _pickedImage;
+
+  // The selected push-apply-time mode (`@Redfish.OperationApplyTime`,
+  // #008/#020 apply-time selection). `null` = "Service default" — the
+  // service's current `HttpPushUriApplyTime.ApplyTime` mode applies and the
+  // client MUST NOT assume Immediate (the schema-only contract: the mode is
+  // whatever the service advertises and applies it its own way).
+  String? _applyTime;
 
   @override
   void initState() {
@@ -67,6 +79,13 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
   /// disable condition for both push-upload controls.
   bool _isBusy(FirmwareUiState ui) => ui.loading || ui.uploading;
 
+  /// The renderable apply-time options for the push-upload card: only the
+  /// modes the service itself advertises (`HttpPushUriOptions.
+  /// HttpPushUriApplyTime.ApplyTime@Redfish.AllowableValues`), never an
+  /// assumed set; an empty list means the card shows no selector at all.
+  List<String> _applyTimeOptions(FirmwareUiState ui) =>
+      ui.info?.httpPushApplyTimes ?? const <String>[];
+
   /// Opens the system file dialog (via [firmwareImagePickerProvider]) and
   /// stores the picked image; a cancel (null) keeps the current selection —
   /// the Upload control then stays disabled.
@@ -90,7 +109,14 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
     final Uint8List bytes = await file.readAsBytes();
     if (!mounted) return;
     await controller.pushImage(
-      PushImageRequest(bytes: bytes, filename: file.name),
+      PushImageRequest(
+        bytes: bytes,
+        filename: file.name,
+        // `null` = "Service default" — the request body omits
+        // `@Redfish.OperationApplyTime` entirely (toUpdateParametersJson only
+        // emits it when set), so the service applies its own current mode.
+        applyTime: _applyTime,
+      ),
     );
     if (!mounted) return;
     final FirmwareUiState after =
@@ -474,6 +500,46 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                     ),
                   ),
                   const SizedBox(height: 12),
+                  // Apply-time selection (#008/#020): only when the service
+                  // advertises `HttpPushUriApplyTime.ApplyTime@
+                  // Redfish.AllowableValues` — capability-gated, never an
+                  // assumed set. Default is "Service default" (`null`): the
+                  // request omits `@Redfish.OperationApplyTime` and the
+                  // service applies its own current mode — the client must
+                  // NOT assume Immediate.
+                  if (_applyTimeOptions(ui).isNotEmpty) ...<Widget>[
+                    Text(
+                      'Apply time',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    DropdownButton<String>(
+                      value: _applyTime ?? _kServiceDefault,
+                      isExpanded: true,
+                      items: <DropdownMenuItem<String>>[
+                        const DropdownMenuItem<String>(
+                          value: _kServiceDefault,
+                          child: Text('Service default'),
+                        ),
+                        for (final String mode in _applyTimeOptions(ui))
+                          DropdownMenuItem<String>(
+                            value: mode,
+                            child: Text(mode),
+                          ),
+                      ],
+                      onChanged: (String? value) {
+                        if (value != null) {
+                          setState(() {
+                            _applyTime =
+                                value == _kServiceDefault ? null : value;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   // Both controls disabled while a load or upload is in
                   // flight; Upload additionally requires a selection.
                   Wrap(

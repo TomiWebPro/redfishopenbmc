@@ -4643,3 +4643,62 @@
 - P1 #015 AuthManager wiring.
 
 **Issues touched:** none opened/closed.
+
+## 2026-11-04 — agent:redfish-automation — EMULATOR (#020 COMPLETE, apply-time selector)
+
+**Done:**
+- EMULATOR per alternation; #020's last remaining item landed and the issue
+  closed: the capability-gated push-upload **apply-time selector** — an
+  "Apply time" dropdown built ONLY from the service's own
+  `HttpPushUriOptions.HttpPushUriApplyTime.ApplyTime@Redfish.AllowableValues`
+  (`ui.info.httpPushApplyTimes`; no advertisement → no selector).
+  Default **"Service default"** (`null`) omits `@Redfish.OperationApplyTime`
+  from the pushed `UpdateParameters` entirely (`hasUpdateParameters ==
+  false`) — the service applies its own current mode; the client never
+  assumes Immediate. An advertised mode (e.g. OnReset) round-trips into
+  `PushImageRequest.applyTime` → `@Redfish.OperationApplyTime`.
+- Only the view changed (`firmware_view.dart`: selector + `_applyTime` +
+  `_kServiceDefault` sentinel + `_applyTimeOptions(ui)` helper +
+  `_pushUpload` passes applyTime) — model/service/controller/transport were
+  already apply-time-capable.
+- Emulator: cheap 85/85 re-run on pinned `23d21f9a` via the official
+  harness (trap cleanup; server stopped). No new live pin needed — the
+  apply-time wire shape was pinned live 2026-10-23 and the `/FWUpdate` 400
+  seam already normalizes; the dropdown only changes the request *body*,
+  so the omission rule is pinned unit-level.
+- +4 widget tests (hidden-when-unadvertised; labelled selector with
+  Service default; Service-default omission on the wire; OnReset
+  round-trip); `FakeFirmwareService` doubles extended
+  (`_PushCapableFirmwareService` takes optional `info`;
+  `_ApplyTimeCapableFirmwareService` advertises the four mockup-served
+  modes). Unit suite 507 → **511 passed / 1 skipped**; analyze 0.
+- Issues: **#020 closed** (all four AC + all four tasks checked). #008
+  stays open with its own resilience items (cancel task, 413/401,
+  maxImageSize, coverage).
+- Preflight: one pre-existing stash from an earlier crashed run
+  (`automation-preflight-1793045959`, a stale REQUIREMENTS.md header
+  rewrite) inspected and **preserved** — popping it would clobber the
+  current header.
+
+**Decisions:**
+- Closed #020 on the view-layer completion: the transport (2026-10-26),
+  poller/progress (2026-10-26 00:25 / 2026-10-29 recovered WIP), non-2xx
+  normalization, and file-picker integration (2026-10-28 recovered WIP)
+  were all already landed + tested; the apply-time widget was the only
+  unchecked box.
+- "Service default" over preselecting the service's current ApplyTime mode:
+  sending `@Redfish.OperationApplyTime` unprompted could override the
+  service's own scheduled/ongoing apply behaviour; omitting it is the
+  schema-safe no-op.
+- Left #008 open rather than stretching this slot: its remaining boxes
+  (cancel task, 413/401, low-bandwidth backoff, ≥80% coverage) are their
+  own increment.
+
+**Next:**
+- DOCS per alternation: cheap anchor re-verify (mirror queue EMPTY).
+- P1 #015 AuthManager: `Session.expiryFromService` wiring + re-auth on
+  `isExpired`; token/location from create RESPONSE HEADERS only.
+- Then #008 resilience or UI-2 (remaining focus audit + non-card labels).
+  Keep pushing every run.
+
+**Issues touched:** #020 closed; #008 progress unchanged this run.
