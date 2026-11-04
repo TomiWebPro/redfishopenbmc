@@ -4764,3 +4764,20 @@
 
 **Issues touched**
 - none opened/closed
+
+## 2026-11-04 — agent:redfish-automation — DOCS (anchor re-verify)
+
+**Done:**
+- DOCS per alternation (after EMULATOR 2026-11-04 19:xx). Performed anchor freshness re-verify across all four sources: bmcweb openbmc/bmcweb (ade964e7), DMTF Redfish-Mockup-Server (23d21f9a), DSP0266 1.25.0 PDF, DMTF schema index — all current/byte-identical; mirror queue EMPTY, 0 new downloads.
+- Updated `documentations/external/README.md` (current upstream anchors timestamp/notes) and `documentations/external/redfish/REQUIREMENTS.md` (Last audited header).
+- UI-2 a11y: added tooltip "Retry connection to failed systems" to dashboard `_ErrorSummary` Retry button (`lib/features/systems/views/dashboard_view.dart`). Existing tests pass.
+
+**Decisions:**
+- Alternation followed (EMULATOR → DOCS). No corpus refresh needed; kept changes minimal with provenance updates.
+
+**Next:**
+- EMULATOR per alternation (cheap 85/85 re-run)
+- P1 #015 AuthManager (Session.expiryFromService + Sessions pin, login/re-auth)
+- #008 remaining resilience or UI-2 focus audit/non-card labels
+
+**Issues touched:** none opened/closed

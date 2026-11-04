@@ -290,9 +290,12 @@ class _ErrorSummary extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              TextButton(
-                onPressed: onRetry,
-                child: const Text('Retry'),
+              Tooltip(
+                message: 'Retry connection to failed systems',
+                child: TextButton(
+                  onPressed: onRetry,
+                  child: const Text('Retry'),
+                ),
               ),
             ],
           ),

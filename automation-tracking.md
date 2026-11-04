@@ -5003,3 +5003,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 517 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean (no secrets/keys).
 - **Commit:** pending — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts + UI-2 SystemCard menu tooltip (run 2026-11-04 19:xx)`.
 - **Next:** 1) P1 #015 AuthManager — wire `Session.expiryFromService` into login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS only; 2) #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels or continue per alternation (next would be DOCS if desired, but focus on P1 issues).
+
+## 2026-11-04 19:xx — DOCS
+
+- **Baseline:** analyze 0; tests 517 passed / 1 skipped; starting commit 3c2b92c; issues validate OK; branch `main` clean.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 2026-11-04 19:xx). Anchor freshness re-verify of all four upstream sources (bmcweb openbmc/bmcweb, DMTF Redfish-Mockup-Server, DSP0266 PDF, schema index). All anchors unchanged (bmcweb ade964e7, mockup 23d21f9a, DSP0266 1.25.0 byte-identical, schema index byte-identical); mirror queue EMPTY, 0 new downloads.
+- **Docs:** Updated `documentations/external/README.md` "Current upstream anchors" timestamp/notes for this run; updated `documentations/external/redfish/REQUIREMENTS.md` "Last audited" header.
+- **Emulator:** none this run (docs anchor re-verify only).
+- **Code/tests:** Added tooltip to dashboard error-summary Retry button for improved accessibility (`lib/features/systems/views/dashboard_view.dart`); no test changes required (existing dashboard error-summary tests still pass).
+- **UI:** Small UI-2 a11y improvement — `_ErrorSummary` Retry button now has tooltip "Retry connection to failed systems".
+- **Verification:** analyze 0; tests 517 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (pending) `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY), UI-2 dashboard error-summary Retry tooltip (run 2026-11-04 19:xx)`.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS only; 3) #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff) or UI-2 remaining focus audit + non-card labels.
