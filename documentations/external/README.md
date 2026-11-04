@@ -34,11 +34,11 @@ documentations/external/
 | File | Source URL | Fetched (UTC) | SHA-256 | Bytes | Upstream version/commit | Notes |
 |---|---|---|---|---|---|---|
 | `redfish/spec/DSP0266_1.25.0.pdf` | https://www.dmtf.org/sites/default/files/standards/documents/DSP0266_1.25.0.pdf | 2026-10-22 12:17 | `385ee6d0039a2dbc610c7af9fa9bba304fc2a461ceb5a8eda0adb33630c82149` | 1,243,359 | DSP0266 1.25.0 | Redfish specification PDF; linked from redfish.dmtf.org hub |
-| `redfish/openbmc/Redfish.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/Redfish.md | 2026-10-22 12:31 (re-verified 2026-10-26 07:5x UTC @ `c846fb5d`) | `9be2748b017c1657631565b747ff38fc3e74afaaeae1f39cdb6b3a519d786105` | 25,689 | bmcweb master `c846fb5d` (verified 2026-10-26 07:5x UTC); file last-touch `bb6b9ebc` (2026-09-21) | OpenBMC Redfish overview — byte-identical at current master HEAD; file-level provenance pinned 2026-10-25 via GitHub path API (repo HEAD has moved past the file's last content change) |
-| `redfish/openbmc/REDFISH_CHECKLIST.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/REDFISH_CHECKLIST.md | 2026-10-22 12:31 (re-verified 2026-10-26 07:5x UTC @ `c846fb5d`) | `98ff60be5d6592dd592b267a36f86224c121aba7ad23c34d8e93ceb2f8cdb5ce` | 1,761 | bmcweb master `c846fb5d` (verified 2026-10-26 07:5x UTC); file last-touch `24e758ab` (2025-06-26) | OpenBMC compliance checklist — byte-identical at current master HEAD; untouched since the docs-folder creation commit |
-| `redfish/openbmc/OEM_SCHEMAS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/OEM_SCHEMAS.md | 2026-10-22 12:31 (re-verified 2026-10-26 07:5x UTC @ `c846fb5d`) | `7d651fd19bc715b64497fdd466fae03cf043acd50c9efacbacb4a5def469d726` | 5,687 | bmcweb master `c846fb5d` (verified 2026-10-26 07:5x UTC); file last-touch `24e758ab` (2025-06-26) | OpenBMC OEM schema extensions — byte-identical at current master HEAD; untouched since the docs-folder creation commit |
-| `redfish/openbmc/CLIENTS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/master/docs/CLIENTS.md | 2026-10-22 23:40 (re-verified 2026-10-26 07:5x UTC @ `c846fb5d`) | `cfea5163ec820bb4edaba449ef837c9906ce3a2b690e22c4ce16132e526a735f` | 2,695 | bmcweb master `c846fb5d` (verified 2026-10-26 07:5x UTC); file last-touch `24e758ab` (2025-06-26) | Client-compat map: DMTF validators, python-redfish-library, redfishtool, fwupd — byte-identical at current master HEAD; untouched since the docs-folder creation commit |
-| `redfish/mockup/README-mockup-server.md` | https://raw.githubusercontent.com/DMTF/Redfish-Mockup-Server/master/README.md | 2026-10-22 12:31 (re-verified 2026-10-26 07:5x UTC @ `23d21f9a`) | `0d79a16595033b72b3dea70c14326fa31cfc1e8a2ac4e14bbf4c721222ba15ed` | 7,316 | Redfish-Mockup-Server `23d21f9a` (re-verified 2026-10-26 07:5x UTC) | Mockup server usage + DSP2043 link; committed with trailing whitespace normalized on 2 `cert = `/`key = ` lines (2 bytes) — content identical to upstream `b3af2ff369dcfd78c75f156bd1ddedfca46750d185c59eefdffaa2f11c289431` (7,318 B) — DOCS-27 provenance fix |
+| `redfish/openbmc/Redfish.md` | https://raw.githubusercontent.com/openbmc/bmcweb/ade964e7/docs/Redfish.md | 2026-11-04 12:45 (refresh landed; prior 2026-10-22 12:31 @ `c846fb5d`) | `07e770c9b925590a362d55b472d15f087035a88cae4dbc41141ed19892554bea` | 25,674 | bmcweb master `ade964e7` (verified 2026-11-04 12:2x UTC); file last-touch `522e6b7e` (2026-10-19, "IndicatorLED: Remove deprecated property") | OpenBMC Redfish overview — **refreshed 2026-11-04**: master advanced `c846fb5d` → `ade964e7` and the file's single delta is the removed `- IndicatorLED` bullet (−15 B) from the upstream IndicatorLED-removal commit; the other three docs + schema index + spec PDF + mockup anchor all byte-identical this run |
+| `redfish/openbmc/REDFISH_CHECKLIST.md` | https://raw.githubusercontent.com/openbmc/bmcweb/ade964e7/docs/REDFISH_CHECKLIST.md | 2026-10-22 12:31 (re-verified 2026-11-04 12:2x UTC @ `ade964e7`) | `98ff60be5d6592dd592b267a36f86224c121aba7ad23c34d8e93ceb2f8cdb5ce` | 1,761 | bmcweb master `ade964e7` (verified 2026-11-04 12:2x UTC); file last-touch `24e758ab` (2025-06-26) | OpenBMC compliance checklist — byte-identical at current master HEAD; untouched since the docs-folder creation commit |
+| `redfish/openbmc/OEM_SCHEMAS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/ade964e7/docs/OEM_SCHEMAS.md | 2026-10-22 12:31 (re-verified 2026-11-04 12:2x UTC @ `ade964e7`) | `7d651fd19bc715b64497fdd466fae03cf043acd50c9efacbacb4a5def469d726` | 5,687 | bmcweb master `ade964e7` (verified 2026-11-04 12:2x UTC); file last-touch `24e758ab` (2025-06-26) | OpenBMC OEM schema extensions — byte-identical at current master HEAD; untouched since the docs-folder creation commit |
+| `redfish/openbmc/CLIENTS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/ade964e7/docs/CLIENTS.md | 2026-10-22 23:40 (re-verified 2026-11-04 12:2x UTC @ `ade964e7`) | `cfea5163ec820bb4edaba449ef837c9906ce3a2b690e22c4ce16132e526a735f` | 2,695 | bmcweb master `ade964e7` (verified 2026-11-04 12:2x UTC); file last-touch `24e758ab` (2025-06-26) | Client-compat map: DMTF validators, python-redfish-library, redfishtool, fwupd — byte-identical at current master HEAD; untouched since the docs-folder creation commit |
+| `redfish/mockup/README-mockup-server.md` | https://raw.githubusercontent.com/DMTF/Redfish-Mockup-Server/master/README.md | 2026-10-22 12:31 (re-verified 2026-11-04 12:2x UTC @ `23d21f9a`) | `0d79a16595033b72b3dea70c14326fa31cfc1e8a2ac4e14bbf4c721222ba15ed` | 7,316 | Redfish-Mockup-Server `23d21f9a` (re-verified 2026-11-04 12:2x UTC) | Mockup server usage + DSP2043 link; committed with trailing whitespace normalized on 2 `cert = `/`key = ` lines (2 bytes) — content identical to upstream `b3af2ff369dcfd78c75f156bd1ddedfca46750d185c59eefdffaa2f11c289431` (7,318 B) — DOCS-27 provenance fix |
 | `redfish/schemas/v1-index.html` | https://redfish.dmtf.org/schemas/v1/ | 2026-10-22 12:17 | `e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86` | 3,448,133 | n/a | Full DMTF schema index listing (14,259 JSON/YAML entries) |
 | `redfish/schemas/v1/<16 schemas>.json` | https://redfish.dmtf.org/schemas/v1/<Name>.json | 2026-10-22 12:34 | see `sha256sum` in run notes | 106,322 (total) | latest per aggregator | Base aggregator stubs for the 16 resources the client maps |
 | `redfish/schemas/v1/<6 versioned>.json` | https://redfish.dmtf.org/schemas/v1/<Name>.json | 2026-10-22 21:51 | see below | 619,774 (total) | DMTF 2026.2 | DOCS-2 refresh: versioned defs advanced upstream (ComputerSystem/Chassis/Sensor/AccountService/EthernetInterface/SoftwareInventory) |
@@ -364,30 +364,35 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-10-26 07:5x UTC — DOCS run, anchor freshness re-verify + bmcweb HEAD advance; prior: 2026-10-26 01:0x UTC — DOCS run, anchor freshness re-verify + UI-2 edit-system dialog focus entry; prior: 2026-10-25 22:2x UTC — DOCS run, anchor freshness re-verify + UI-2 remove-system confirmation dialog; prior: 2026-10-25 20:xx UTC — DOCS run, anchor freshness re-verify + UI-2 dialog focus/order; prior: 2026-10-25 19:3x UTC — DOCS run, anchor freshness re-verify + UI-2 focus-order pin; prior: 2026-10-25 08:06 UTC — DOCS run, Test-platforms description reconciled to 75 tests; prior: 2026-10-25 04:07 UTC DOCS run query-501 gap closed, DOCS-28 02:11 UTC, DOCS-29 02:09 UTC, DOCS-27 00:15 UTC, DOCS-26 20:14 UTC, DOCS-25 18:52 UTC, DOCS-23 15:17 UTC, DOCS-22 12:47 UTC, DOCS-21 12:15 UTC, DOCS-17 01:07 UTC, DOCS-16 23:32 UTC, DOCS-15 19:20 UTC, DOCS-13 12:40 UTC, DOCS-14 16:45 UTC)
+## Current upstream anchors (verified 2026-11-04 12:2x UTC — DOCS run, anchor freshness re-verify + bmcweb HEAD advance + Redfish.md corpus refresh; prior: 2026-10-26 07:5x UTC — DOCS run, anchor freshness re-verify + bmcweb HEAD advance; prior: 2026-10-26 01:0x UTC — DOCS run, anchor freshness re-verify + UI-2 edit-system dialog focus entry; prior: 2026-10-25 22:2x UTC — DOCS run, anchor freshness re-verify + UI-2 remove-system confirmation dialog; prior: 2026-10-25 20:xx/19:3x/08:06 UTC + DOCS-28/29/27/26/25/23/22/21/17/16/15/13/14 runs)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing;
-  byte-identical SHA-256 `e5a29797…` re-verified 2026-10-26 07:5x UTC)
+  byte-identical SHA-256 `e5a29797…` re-verified 2026-11-04 12:2x UTC)
 - Redfish specification DSP0266 — <https://www.dmtf.org/sites/default/files/standards/documents/DSP0266_1.25.0.pdf>
   (1.24 MB, linked from the hub at `DSP0266_1.25.0.pdf`; probe of `DSP0266_1.26.0.pdf`
   → 404 — 1.25.0 is still the current release. The `redfish.dmtf.org/sites/...`
   path 404s; the hub links the `www.dmtf.org` URL — manifest rows already use
-  the working URL; re-verified byte-identical SHA-256 `385ee6d0…` 2026-10-26
-  07:5x UTC)
+  the working URL; re-verified byte-identical SHA-256 `385ee6d0…` 2026-11-04
+  12:2x UTC)
 - Redfish Mockup Server — <https://github.com/DMTF/Redfish-Mockup-Server>
-  (default branch `main` @ `23d21f9a` — unchanged, re-verified 2026-10-26
-  07:5x UTC via `git ls-remote`; README saved to `redfish/mockup/`)
+  (default branch `main` @ `23d21f9a` — unchanged, re-verified 2026-11-04
+  12:2x UTC via `git ls-remote`; README saved to `redfish/mockup/`)
 - OpenBMC bmcweb docs — <https://github.com/openbmc/bmcweb/tree/master/docs>
-  (**master advanced `63a18f4` → `c846fb5d6f816a85c27b9f54a012058a75c0b7f4`**,
-  detected 2026-10-26 07:5x UTC via `git ls-remote`; Redfish.md,
-  REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md all **byte-identical at the
-  new HEAD** — verified by SHA-256 against the mirrors, no refresh needed;
-  prior: `63a18f4e6188a77b713a8b22c8a95ab3d6c5a718` was HEAD from
-  2026-10-24 12:15 UTC, re-verified byte-identical repeatedly through
-  2026-10-26 01:0x UTC; file-level last-touch commits remain: `Redfish.md` →
-  `bb6b9ebc` (2026-09-21), the other three docs → `24e758ab` (2025-06-26
-  docs-folder creation) — no doc content change has landed in the interim)
+  (**master advanced `c846fb5d` → `ade964e738c3ac75027e042d42af310650054de9`**,
+  detected 2026-11-04 12:2x UTC via `git ls-remote`; REDFISH_CHECKLIST.md,
+  OEM_SCHEMAS.md, CLIENTS.md came over **byte-identical** at the new HEAD, but
+  **Redfish.md changed** — its only delta is the removed `- IndicatorLED` bullet
+  from upstream commit `522e6b7e` (2026-10-19, "IndicatorLED: Remove deprecated
+  property": redfish-allow-deprecated-indicatorled was disabled by default in
+  2025 and scheduled for removal by 2026-03 — IndicatorLED GETs/PATCHes now
+  answer `Base.1.19.PropertyUnknown`, `LocationIndicatorActive` is unchanged),
+  so the mirror was **refreshed** to the new SHA `07e770c9…` (25,674 B) and the
+  audit trace updated (see the DOCS-30 note below); prior: `c846fb5d` was HEAD
+  from 2026-10-26 07:5x UTC with the corpus byte-identical; 2026-10-26 07:5x UTC with the corpus
+  byte-identical; file-level last-touch commits now: `Redfish.md` → `522e6b7e`
+  (2026-10-19), the other three docs → `24e758ab` (2025-06-26 docs-folder
+  creation))
 
 ### DOCS-27 — corpus freshness audit + mockup README provenance fix (2026-10-25 00:15 UTC)
 
@@ -409,6 +414,48 @@ note that the content is byte-identical to upstream apart from the 2-byte
 whitespace normalisation (restoring the trailing whitespace would fail
 `git diff --check`). The 33-family emulator corpus-invariant list is
 untouched (no family became client-mapped).
+
+### DOCS-30 — bmcweb HEAD advance + Redfish.md corpus refresh (IndicatorLED removal) (2026-11-04 12:2x UTC)
+
+Anchor re-verify this run: bmcweb master advanced `c846fb5d` → `ade964e7`
+(`git ls-remote`); `REDFISH_CHECKLIST.md`, `OEM_SCHEMAS.md`, `CLIENTS.md` all
+**byte-identical** at the new HEAD (SHA-256 vs mirrors — 24e758ab/2025-06-26
+remains their last-touch), the DMTF schema index (`e5a29797…`), the DSP0266
+1.25.0 PDF (`385ee6d0…`), and the mockup anchor (`23d21f9a`) all unchanged —
+but **`Redfish.md` changed** (SHA `9be2748b…` → `07e770c9…`, 25,689 → 25,674 B)
+for exactly one delta: the removed `- IndicatorLED` bullet, from upstream
+commit **`522e6b7e` (2026-10-19, "IndicatorLED: Remove deprecated property")** —
+the `redfish-allow-deprecated-indicatorled` option was disabled by default in
+2025 and scheduled for removal by March 2026, and the removal crossed these
+surfaces: Chassis + ComputerSystem `IndicatorLED` GET/PATCH (a PATCH now
+answers `Base.1.19.PropertyUnknown`), the Thermal Fans + Power PowerSupplies
+entries that fed it, and sensor inventory LED lookups. Redfish deprecated
+`IndicatorLED` in favour of `LocationIndicatorActive`, which is unchanged.
+
+**Client-impact audit (requirement trace):** the mirrored doc's `Chassis` and
+`ComputerSystem` `PATCHable-properties` lists are audit-only (the client does
+not parse the doc), but the change intersects the **#016 Boot/IndicatorLED
+PATCH flow** in production code:
+
+- `SystemSettingsUiState`/`IndicatorLed.fromRedfish(json['IndicatorLED'])`
+  already degrades correctly: a service that no longer serves `IndicatorLED`
+  yields `IndicatorLed.unknown`, and the Overview LED card renders
+  `NotExposed()` for `unknown` (`overview_view.dart` `_led`) — the control is
+  capability-gated by absence, so on a current bmcweb the card self-hides and
+  the client never PATCHes the removed property. No client defect.
+- On services that still expose the deprecated property (the Redfish schemas
+  still permit it — `ComputerSystem.v1_22_0` keeps the enum, deprecated), the
+  `setIndicatorLed` PATCH flow remains valid, and the pre-validation rule
+  ("unknown → refused locally") matches bmcweb's own 2026-era behaviour.
+- Follow-up surfaced, not implemented this run: a `LocationIndicatorActive`
+  boolean setter as the bmcweb-current successor surface — recorded in
+  `FUTUREWORK.md` as **DOCS-30-a** (references: bmcweb `Redfish.md` @
+  `ade964e7`, commit `522e6b7e`; DSP0266/`ComputerSystem.v1_29_0`
+  `LocationIndicatorActive`; `Chassis.v1_*` same).
+
+Manifest row for `redfish/openbmc/Redfish.md` updated (new SHA/bytes/fetch
+date/HEAD/last-touch); the "Current upstream anchors" header + bullets
+rewritten for this run.
 
 ### DOCS-28 — Heater + HeaterMetrics corpus mirror for the EMU-2 Heaters pin (2026-10-25 02:11 UTC)
 

@@ -7,15 +7,20 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-11-04 (EMULATOR run — **#020 CLOSED**: the apply-time
-  selection widget (the last remaining #020 item) landed capability-gated from
-  the service's own `HttpPushUriApplyTime.ApplyTime@Redfish.AllowableValues`;
-  unit suite 511/1 skipped, EMU 85/85 re-run green on `23d21f9a`; anchors
-  unchanged from 2026-10-28)
-- **Current focus:** #020 closed (commit pending). All four mirrored upstream
-  docs + spec/index were re-verified byte-identical on 2026-10-28; the corpus
-  mirror queue stays EMPTY. Next per alternation: **DOCS** — cheap anchor
-  re-verify; then P1 #015 (AuthManager) — `expiryFromService` + the Sessions
+- **Last updated:** 2026-11-04 (DOCS run — anchor re-verify with a **real
+  upstream change**: bmcweb `c846fb5d` → `ade964e7`, and its `Redfish.md`
+  delta is one removed `- IndicatorLED` bullet from upstream commit
+  `522e6b7e` "IndicatorLED: Remove deprecated property" (2026-10-19; removal
+  deadline 2026-03 passed) — mirror `redfish/openbmc/Redfish.md` refreshed
+  (`9be2748b…` → `07e770c9…`, 25,674 B); client impact audited: **no
+  defect** — the #016 LED flow is capability-gated by absence and self-hides
+  on property-less services; new follow-up **DOCS-30-a**
+  (`LocationIndicatorActive` setter); all other anchors byte-identical:
+  mockup `23d21f9a`, DSP0266 1.25.0 `385ee6d0…`, schema index `e5a29797…`)
+- **Current focus:** #020 closed. DOCS run 2026-11-04 landed the bmcweb
+  `Redfish.md` corpus refresh (IndicatorLED removal) + the DOCS-30-a
+  follow-up below. Next per alternation: **EMULATOR** — cheap 85/85 re-run;
+  then P1 #015 (AuthManager) — `expiryFromService` + the Sessions
   pin are ready, wire the discovered SessionService body into login + re-auth
   on `isExpired`; then #008 remaining resilience (cancel task
   `DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth
@@ -94,6 +99,22 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - [ ] **DOCS-6** Keep the downloaded corpus bounded: max 25 MB per file and 50 MB
       of new downloads per run. For larger artifacts store the URL + hash +
       extracted notes instead of the binary.
+- [ ] **DOCS-30-a** Optional `LocationIndicatorActive` boolean setter (the
+      current-bmcweb successor surface to the deprecated `IndicatorLED` that
+      #016's LED flow already handles by absence). Source: bmcweb
+      `Redfish.md` @ `ade964e7` — upstream commit `522e6b7e` (2026-10-19,
+      "IndicatorLED: Remove deprecated property"; a `IndicatorLED` PATCH now
+      answers `Base.1.19.PropertyUnknown` while a
+      `LocationIndicatorActive` PATCH 200s) —
+      https://github.com/openbmc/bmcweb/commit/522e6b7e94163565f4644d19f4a7703823d1a8a2
+      and the mirror `documentations/external/redfish/openbmc/Redfish.md`
+      (refreshed 2026-11-04, SHA `07e770c9…`); DMTF side:
+      `ComputerSystem.v1_29_0.json` `LocationIndicatorActive` (boolean,
+      writable; the newest mirrored def). Scope when picked: capability-gate
+      on the served property itself (never assume), reuse the #016
+      `SystemSettingsService` PATCH/If-Match pattern (`patchJson etag:`),
+      unit + widget tests + an emulator live pin only if the mockup serves
+      the property, and a `REQUIREMENTS.md` trace row update.
 - [x] **DOCS-7** Event subscription support: client has no EventService /
       Subscriptions implementation yet; DSP0266 §12.1 "Eventing" +
       `EventService.json` are mirrored. **Decision (2026-10-22): out-of-scope

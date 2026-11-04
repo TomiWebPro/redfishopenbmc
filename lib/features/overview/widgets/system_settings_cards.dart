@@ -76,12 +76,21 @@ class _IndicatorLedControlState extends ConsumerState<IndicatorLedControl> {
           ],
         ),
         if (ui.actionInFlight)
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
-            child: SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            // UI-2: the in-flight spinner announces ONE self-describing node
+            // ("Applying IndicatorLED change") instead of a bare spinner —
+            // the established loading pattern (SensorsView/KvmView loaded
+            // spinners, Boot-override Apply 'Applying…' label).
+            child: Semantics(
+              container: true,
+              excludeSemantics: true,
+              label: 'Applying IndicatorLED change',
+              child: const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
             ),
           ),
         if (ui.error != null && !ui.actionInFlight)

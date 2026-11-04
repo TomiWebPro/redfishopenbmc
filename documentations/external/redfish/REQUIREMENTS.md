@@ -6,7 +6,30 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-10-26 07:5x (DOCS run — anchor freshness re-verify,
+Last audited: 2026-11-04 12:2x (DOCS run — anchor freshness re-verify +
+**corpus refresh of `redfish/openbmc/Redfish.md`**): bmcweb master `c846fb5d`
+→ `ade964e738c3ac75027e042d42af310650054de9` (detected via `git ls-remote`);
+`REDFISH_CHECKLIST.md` / `OEM_SCHEMAS.md` / `CLIENTS.md` came over
+byte-identical at the new HEAD, but **Redfish.md changed** — its only delta is
+the removed `- IndicatorLED` bullet, from upstream commit `522e6b7e`
+(2026-10-19, "IndicatorLED: Remove deprecated property"): the
+`redfish-allow-deprecated-indicatorled` option was disabled by default in 2025
+and scheduled for removal by 2026-03, so bmcweb no longer serves or PATCHes
+`IndicatorLED` on ComputerSystem/Chassis (a PATCH now answers
+`Base.1.19.PropertyUnknown`); `LocationIndicatorActive` is unchanged. The
+mirror was refreshed (new SHA `07e770c9…`, 25,674 B) and the delta audited for
+client impact: **no defect** — the #016 LED flow is capability-gated by
+absence (`IndicatorLed.fromRedfish(null)` → `unknown`; the Overview LED card
+renders `NotExposed()` for `unknown`), so a current bmcweb simply hides the
+control, while services that still expose the deprecated enum keep working.
+A `LocationIndicatorActive` boolean setter is recorded as follow-up
+DOCS-30-a in `FUTUREWORK.md` (not implemented this run). Mockup still
+`23d21f9a`; DSP0266 1.25.0 PDF **byte-identical** SHA-256 `385ee6d0…` vs the
+mirror; schema index **byte-identical** SHA-256 `e5a29797…` (3,448,133 B) vs
+the mirror — DOCS-27's ZERO version advances still hold; downloads this run:
+1 file, 15 bytes delta (inside the DOCS-6 budget).
+
+Prior: 2026-10-26 07:5x (DOCS run — anchor freshness re-verify,
 **bmcweb master HEAD advanced**): bmcweb master `63a18f4` →
 `c846fb5d6f816a85c27b9f54a012058a75c0b7f4` (detected via `git ls-remote`), but
 **all four mirrored bmcweb docs byte-identical at the new HEAD** (SHA-256
@@ -649,6 +672,7 @@ Folded into code this run:
 | bmcweb auth surface: `AccountService.Oem.OpenBMC.AuthMethods.*` (`BasicAuth`, `Cookie`, `SessionToken`, `TLS`, `XToken`) + `HTTPBasicAuth` | OpenBMC `Redfish.md` §AccountService | `AuthManager` prefers session, falls back to basic | `test/redfish/client/auth_manager_test.dart` | Partial: vendor auth-method negotiation is #015/#026 |
 | bmcweb telemetry: `TelemetryService` with `MetricReports` / `Triggers` / `MetricReportDefinitions` | OpenBMC `Redfish.md` §TelemetryService | n/a — sensors poll `Thermal`/`Sensors` directly | sensors tests | Note: alternative telemetry source for #007/#019 |
 | Log service: `ComputerSystem.LogServices` → `LogService` (`ClearLog` action, `ServiceEnabled`) → `Entries` collection; `LogEntry` (`EntryType` SEL/Event, `Severity`, `Created` RFC3339, `Message`, `Links.OriginOfCondition`); `@odata.nextLink` pagination | `LogService.json` + `LogService.v1_6_0.json` (mockup-served, DOCS-19) + `LogService.v1_9_0.json` (newest, DOCS-11) + `LogEntry.json` + `LogEntry.v1_22_0.json` + `LogEntryCollection.json` (mirrored DOCS-11; `LogEntry.v1_16_0.json` kept for the mockup's pinned shapes); DSP0266 §9.6.12 (`Members@odata.nextLink`) + §9.6.11 (`Members`) define the paginated collection contract; emulator pins LogService.v1_6_0 + LogEntry.v1_16_0 shapes | not implemented — no log reader feature yet (future #010 hardening / diagnostics) | emulator: `emulator_suite_test.dart` "log service" group asserts collection → ClearLog target → Entries fields + nextLink (`\u0024skiptoken`) | Contract pin only; feature work not queued — revisit via FUTUREWORK if a log view is planned |
+ | **bmcweb removed `IndicatorLED` upstream (2026-10-19, commit `522e6b7e`; mirror refreshed 2026-11-04, DOCS-30)**: ComputerSystem/Chassis no longer serve or PATCH `IndicatorLED` (a PATCH answers `Base.1.19.PropertyUnknown`); `LocationIndicatorActive` is the unchanged successor | OpenBMC `Redfish.md` @ `ade964e7` (the removed `- IndicatorLED` bullet in a PATCHable-properties list); upstream commit `522e6b7e` message; DMTF deprecation (`ComputerSystem.v1_29_0` keeps `IndicatorLED` deprecated, `LocationIndicatorActive` boolean) | #016's `setIndicatorLed` PATCH flow already degrades correctly: services that don't serve `IndicatorLED` read back `IndicatorLed.unknown` and the Overview LED card renders `NotExposed()` — the capability gate hides the control instead of PATCHing a dead property; services still exposing the deprecated enum keep working (schema enum pre-validation unchanged) | `settings_service_test.dart` (enum pre-validation); `overview_provider_test.dart` (absent property → unknown); overview widget tests (unknown card hidden / NotExposed) | OK by absence on current bmcweb; DOCS-30 follow-up **DOCS-30-a** (`FUTUREWORK.md`): an optional `LocationIndicatorActive` boolean setter as the bmcweb-current successor surface |
 
 ## DOCS-12 — six-family versioned schema mirror audit (2026-10-23)
 

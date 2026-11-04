@@ -4955,3 +4955,15 @@ Append-only run log for the `redfish-automation` scheduler job.
   EMULATOR auto commit (f435442) pushed. `git rev-list --count origin/main..HEAD`
   = 0 (fully synced), working tree clean. Queued local commits ahead of
   origin/main: **0**.
+
+## 2026-11-04 15:52 — DOCS
+
+- **Baseline:** analyze 0 (after const fixes); tests 511 passed / 1 skipped; starting commit f435442 (origin/main fully synced); issues validate OK; working tree had DOCS updates in progress (bmcweb HEAD advance + Redfish.md refresh) — finalized and verified.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 2026-11-04 00:4x). **Anchor re-verify + bmcweb HEAD advance + Redfish.md corpus refresh:** upstream `openbmc/bmcweb` master advanced `c846fb5d` → `ade964e7`; downloaded all four docs at new HEAD from `raw.githubusercontent.com` and verified. `Redfish.md` refreshed (25,674 B, SHA-256 `07e770c9…`) — single delta from upstream commit `522e6b7e` "IndicatorLED: Remove deprecated property" (2026-10-19): removed `- IndicatorLED` bullet from PATCHable-properties list. `REDFISH_CHECKLIST.md`, `OEM_SCHEMAS.md`, `CLIENTS.md` byte-identical at new HEAD. All other anchors unchanged: mockup `23d21f9a`, DSP0266 1.25.0 `385ee6d0…` (1,243,359 B), schema index `e5a29797…` (3,448,133 B). Mirror queue EMPTY.
+- **Docs:** Updated `documentations/external/README.md` manifest (bmcweb rows pointed to `ade964e7`, re-verified timestamps, notes on IndicatorLED removal / byte-identical others). Updated `documentations/external/redfish/REQUIREMENTS.md` — added trace noting bmcweb removed `IndicatorLED` upstream (commit `522e6b7e`, mirror refreshed 2026-11-04); #016 LED flow degrades correctly by absence/capability-gate (no defect). Added follow-up **DOCS-30-a** (`LocationIndicatorActive` setter) tracked in FUTUREWORK. `documentations/external/redfish/openbmc/Redfish.md` refreshed.
+- **Emulator:** none this run (docs-only work; 85/85 already green).
+- **Code/tests:** Fixed `prefer_const_constructors` in `lib/features/overview/widgets/system_settings_cards.dart` (analyze clean). No production behavior change. Tests unchanged count (511 passed / 1 skipped). No issues opened/closed.
+- **UI:** none new (const fixes only). No widget test changes.
+- **Verification:** analyze 0; tests 511 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan: docs prose + SHA-256 hashes only, no credentials.
+- **Commit:** (pending) `auto: DOCS — anchor re-verify (bmcweb c846fb5d→ade964e7), Redfish.md refresh (IndicatorLED removed upstream 522e6b7e), requirements/FUTUREWORK updated, README manifest refreshed; const fixes in system_settings_cards.dart (run 2026-11-04 15:52)`.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS only; 3) #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413 too-large, 401, low-bandwidth backoff) or UI-2 remaining focus audit + non-card labels; keep pushing every run (0 queued after this run).

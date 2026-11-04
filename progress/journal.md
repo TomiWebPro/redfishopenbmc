@@ -4702,3 +4702,21 @@
   Keep pushing every run.
 
 **Issues touched:** #020 closed; #008 progress unchanged this run.
+
+## 2026-11-04 — agent:redfish-automation — DOCS (bmcweb anchor advance + IndicatorLED removal)
+
+**Done:**
+- DOCS per alternation: bmcweb master `c846fb5d` → `ade964e7` (verified). Refreshed `documentations/external/redfish/openbmc/Redfish.md` (25,674 B) — single delta from upstream `522e6b7e` "IndicatorLED: Remove deprecated property": removed `- IndicatorLED` bullet from PATCHable-properties list. `REDFISH_CHECKLIST.md`/`OEM_SCHEMAS.md`/`CLIENTS.md` byte-identical at new HEAD. Mockup `23d21f9a`, DSP0266 1.25.0, schema index unchanged; mirror queue EMPTY.
+- Updated `documentations/external/README.md` manifest and `documentations/external/redfish/REQUIREMENTS.md` (added trace of IndicatorLED removal; #016 flow degrades correctly by capability-gate/absence; no defect). Added **DOCS-30-a** (`LocationIndicatorActive` setter) to FUTUREWORK.
+- Fixed `prefer_const_constructors` in `lib/features/overview/widgets/system_settings_cards.dart` for analyze-clean state.
+- Verification: analyze 0, tests 511 passed / 1 skipped, issues validate OK, git diff --check clean.
+
+**Decisions:**
+- Treated upstream IndicatorLED removal as non-breaking: existing #016 LED control already hides when property absent/unknown (capability-gated). Follow-up is to consider `LocationIndicatorActive` as successor if needed.
+
+**Next:**
+- EMULATOR per alternation (85/85 cheap re-run)
+- P1 #015 AuthManager (expiryFromService + Sessions)
+- #008 resilience items or UI-2 focus audit/non-card labels
+
+**Issues touched:** none opened/closed (DOCS-30-a added to FUTUREWORK)
