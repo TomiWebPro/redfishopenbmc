@@ -4814,3 +4814,10 @@
 - UI-2 remaining focus audit + non-card labels
 
 **Issues touched:** #015 (closed)
+
+## 2026-11-04 — agent:redfish-automation — #NNN
+
+- **Done:** DOCS anchor re-verify (bmcweb ade964e7 / Redfish-Mockup-Server 23d21f9a / DSP0266 1.25.0 / schema index) — all current, mirror queue EMPTY. Updated `documentations/external/README.md` and `documentations/external/redfish/REQUIREMENTS.md` metadata. No code/tests/UI changes.
+- **Decisions:** Followed alternation (EMULATOR → DOCS). Skipped UI improvement (no obvious small tested change identified within time).
+- **Next:** EMULATOR 85/85 re-run next per alternation; focus #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff); UI-2 focus audit + non-card labels.
+- **Issues touched:** none (no issues opened/closed this run).

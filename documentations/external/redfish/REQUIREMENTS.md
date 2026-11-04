@@ -6,7 +6,7 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-11-04 18:20 (DOCS run — anchor freshness re-verify;
+Last audited: 2026-11-04 20:43 (DOCS run — anchor freshness re-verify;
 **corpus refresh of `redfish/openbmc/Redfish.md`**): bmcweb master `c846fb5d`
 → `ade964e738c3ac75027e042d42af310650054de9` (detected via `git ls-remote`);
 `REDFISH_CHECKLIST.md` / `OEM_SCHEMAS.md` / `CLIENTS.md` came over

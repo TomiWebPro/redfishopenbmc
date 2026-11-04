@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-11-04 (EMULATOR 85/85; closed #015 AuthManager — all tests green)
-- **Current focus:** #020 closed, #015 closed (2026-11-04). DOCS/EMULATOR alternation current; EMULATOR 85/85 verified. Next per alternation: **DOCS** (anchor re-verify); then #008 remaining resilience (cancel task `DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff), UI-2 — remaining focus audit + non-card labels.
+- **Last updated:** 2026-11-04 20:43 UTC (DOCS anchor re-verify — all sources current; mirror queue EMPTY)
+- **Current focus:** #020 closed, #015 closed (2026-11-04). DOCS/EMULATOR alternation current; EMULATOR 85/85 verified. Next per alternation: **EMULATOR** (re-run 85/85); then #008 remaining resilience (cancel task `DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff), UI-2 — remaining focus audit + non-card labels.
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
