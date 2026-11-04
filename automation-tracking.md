@@ -4991,3 +4991,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 517 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (no secrets/keys).
 - **Commit:** (pending) `auto: DOCS — DOCS-30-a LocationIndicatorActive boolean setter (model/UI/controller/service, capability-gated; PATCH with If-Match), REQUIREMENTS/FUTUREWORK updated, tests added (run 2026-11-04 18:xx)`.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS only; 3) #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413 too-large, 401, low-bandwidth backoff) or UI-2 remaining focus audit + non-card labels.
+
+## 2026-11-04 19:xx UTC — EMULATOR
+
+- **Baseline:** analyze 0; tests 517 passed / 1 skipped; starting commit f7b552d (origin/main fully synced); issues validate OK; working tree clean.
+- **Primary work:** EMULATOR per alternation (last primary: DOCS 2026-11-04 18:xx). Ran official DMTF Redfish-Mockup-Server via `tool/emulator/run_tests.sh` (pinned 23d21f9a, HTTPS on 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`).
+- **Docs:** none this run (anchors unchanged from 2026-11-04 re-verify — bmcweb ade964e7, mockup 23d21f9a, DSP0266 1.25.0, schema index byte-identical).
+- **Emulator:** `tool/emulator/run_tests.sh` completed successfully — **85/85** tests passed (service root, systems/chassis/manager, power/actions, sensors/metrics/controls, firmware inventory/update paths, tasks, ActionInfo contracts, VirtualMedia/SecureBoot, sessions/accounts, log entries, subscriptions/event destinations, corpus invariants, SystemSettingsService Boot/LocationIndicatorActive PATCH flows). Server stopped via trap.
+- **Code/tests:** no production code or unit tests changed for emulator contracts; all existing tests remain green.
+- **UI:** small a11y improvement — added `tooltip: 'More actions'` to `SystemCard` PopupMenuButton (non-card interactive element label) for better accessibility; no widget tests added/changed (existing tests unaffected). Verified no overflow at common widths.
+- **Verification:** analyze 0; tests 517 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean (no secrets/keys).
+- **Commit:** pending — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts + UI-2 SystemCard menu tooltip (run 2026-11-04 19:xx)`.
+- **Next:** 1) P1 #015 AuthManager — wire `Session.expiryFromService` into login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS only; 2) #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels or continue per alternation (next would be DOCS if desired, but focus on P1 issues).

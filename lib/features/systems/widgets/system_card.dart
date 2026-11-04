@@ -129,6 +129,7 @@ class SystemCard extends StatelessWidget {
   }
 
   Widget _menu(BuildContext context) => PopupMenuButton<String>(
+        tooltip: 'More actions',
         onSelected: onMenuAction,
         itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
           const PopupMenuItem<String>(

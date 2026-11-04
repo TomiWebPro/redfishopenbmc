@@ -4745,3 +4745,22 @@
 - #008 remaining resilience or UI-2 focus audit/non-card labels
 
 **Issues touched:** none opened/closed (DOCS-30-a completed)
+
+## 2026-11-04 — agent:redfish-automation — #068
+
+**Done**
+- Preflight green (analyze 0, tests 517/1 skipped). EMULATOR per alternation (last DOCS).
+- Ran official DMTF Redfish-Mockup-Server via `tool/emulator/run_tests.sh` (pinned 23d21f9a): **85/85** passed; server stopped via trap. Verified live Redfish contracts.
+- UI-2 small increment: added `tooltip: 'More actions'` to `SystemCard` PopupMenuButton (a11y). Tests still green.
+
+**Decisions**
+- EMULATOR verification only this run (contracts already pinned previously); added minimal a11y polish since time remained.
+- No docs/emulator corpus changes needed.
+
+**Next**
+- P1 #015 AuthManager: wire `Session.expiryFromService` into login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS only.
+- #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff).
+- UI-2 remaining focus audit + non-card labels.
+
+**Issues touched**
+- none opened/closed

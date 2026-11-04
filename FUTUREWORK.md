@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-11-04 (DOCS run — bmcweb `c846fb5d` → `ade964e7`, `Redfish.md` refreshed for IndicatorLED removal upstream; **DOCS-30-a landed**: capability-gated `LocationIndicatorActive` boolean setter in model/UI/controller/service with tests; REQUIREMENTS.md updated)
-- **Current focus:** #020 closed. EMULATOR run 2026-11-04 verified 85/85 against pinned mockup; DOCS-30-a completed this run. Next P1 #015 (AuthManager) — wire Session.expiryFromService + Sessions pin into login + re-auth on isExpired; then #008 remaining resilience (cancel task `DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff), UI-2 — remaining focus audit + non-card labels. Next per alternation: **EMULATOR** — cheap 85/85 re-run.
+- **Last updated:** 2026-11-04 (EMULATOR run — re-ran DMTF mockup server suite 85/85 against pinned `23d21f9a`, verified live Redfish contracts; small UI-2 a11y: SystemCard menu tooltip)
+- **Current focus:** #020 closed. EMULATOR run 2026-11-04 verified 85/85 against pinned mockup; DOCS-30-a completed. Next P1 #015 (AuthManager) — wire Session.expiryFromService + Sessions pin into login + re-auth on isExpired; then #008 remaining resilience (cancel task `DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff), UI-2 — remaining focus audit + non-card labels. Next per alternation: **DOCS** (EMULATOR completed).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
