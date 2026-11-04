@@ -4720,3 +4720,10 @@
 - #008 resilience items or UI-2 focus audit/non-card labels
 
 **Issues touched:** none opened/closed (DOCS-30-a added to FUTUREWORK)
+
+## 2026-11-04 — agent:redfish-automation — #NNN
+
+- **Done:** EMULATOR run (alternating after DOCS). Ran `tool/emulator/run_tests.sh` with official DMTF Redfish-Mockup-Server pinned at `23d21f9a` against fixture `test/fixtures/redfish/dmtf_mockup` (HTTPS, `-S`). All 85/85 emulator integration tests passed (service root, systems/chassis/manager, power/actions, sensors/controls/metrics, firmware inventory/update paths, tasks, ActionInfo contracts, VirtualMedia/SecureBoot, sessions/accounts, logs, subscriptions/event destinations, corpus invariants, SystemSettingsService). No production code/tests changed.
+- **Decisions:** Followed alternation (DOCS → EMULATOR). Kept changes minimal (verification only); documented why UI not added this run (emulator verification consumed time). Verified anchors unchanged.
+- **Next:** #015 AuthManager (expiryFromService + Sessions pin), #008 firmware resilience (cancel task, 413/401, backoff), or DOCS-30-a LocationIndicatorActive setter.
+- **Issues touched:** none

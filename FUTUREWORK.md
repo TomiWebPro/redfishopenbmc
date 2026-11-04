@@ -7,7 +7,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-11-04 (DOCS run — anchor re-verify with a **real
+- **Last updated:** 2026-11-04 (EMULATOR run — DMTF mockup suite 85/85 re-run on pinned 23d21f9a; live Redfish contracts verified, no code changes)
   upstream change**: bmcweb `c846fb5d` → `ade964e7`, and its `Redfish.md`
   delta is one removed `- IndicatorLED` bullet from upstream commit
   `522e6b7e` "IndicatorLED: Remove deprecated property" (2026-10-19; removal
@@ -17,7 +17,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
   on property-less services; new follow-up **DOCS-30-a**
   (`LocationIndicatorActive` setter); all other anchors byte-identical:
   mockup `23d21f9a`, DSP0266 1.25.0 `385ee6d0…`, schema index `e5a29797…`)
-- **Current focus:** #020 closed. DOCS run 2026-11-04 landed the bmcweb
+- **Current focus:** #020 closed. EMULATOR run 2026-11-04 verified 85/85 against pinned mockup; next P1 #015 (AuthManager) — wire Session.expiryFromService + Sessions pin into login + re-auth on isExpired; then #008 remaining resilience or DOCS-30-a (LocationIndicatorActive setter).
   `Redfish.md` corpus refresh (IndicatorLED removal) + the DOCS-30-a
   follow-up below. Next per alternation: **EMULATOR** — cheap 85/85 re-run;
   then P1 #015 (AuthManager) — `expiryFromService` + the Sessions
