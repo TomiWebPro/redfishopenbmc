@@ -116,6 +116,108 @@ class _IndicatorLedControlState extends ConsumerState<IndicatorLedControl> {
   }
 }
 
+/// Writable LocationIndicatorActive setter shown inside the overview
+/// "Indicator LED" card (DOCS-30-a — boolean successor to deprecated
+/// IndicatorLED on newer bmcweb services).
+///
+/// Capability-gated: rendered only when the ComputerSystem serves
+/// `LocationIndicatorActive` (boolean). Offers On/Off as [ChoiceChip]s;
+/// the active chip tracks the last applied / read state. A PATCH failure
+/// surfaces as a compact inline error using the same [SystemSettingsService]
+/// PATCH/If-Match pattern.
+class LocationIndicatorActiveControl extends ConsumerStatefulWidget {
+  /// Creates a [LocationIndicatorActiveControl] for [systemId].
+  const LocationIndicatorActiveControl({
+    required this.systemId,
+    required this.current,
+    super.key,
+  });
+
+  /// System whose location indicator this control mutates.
+  final String systemId;
+
+  /// The currently-read location indicator state.
+  final bool current;
+
+  @override
+  ConsumerState<LocationIndicatorActiveControl> createState() =>
+      _LocationIndicatorActiveControlState();
+}
+
+class _LocationIndicatorActiveControlState
+    extends ConsumerState<LocationIndicatorActiveControl> {
+  /// Mirrors the last applied value so the chip stays in sync.
+  bool? _lastApplied;
+
+  @override
+  Widget build(BuildContext context) {
+    final SystemSettingsUiState ui =
+        ref.watch(systemSettingsControllerProvider(widget.systemId));
+    final bool active =
+        _lastApplied ?? ui.locationIndicatorActive ?? widget.current;
+
+    void select(bool value) {
+      if (ui.actionInFlight || active == value) return;
+      setState(() => _lastApplied = value);
+      ref
+          .read(systemSettingsControllerProvider(widget.systemId).notifier)
+          .setLocationIndicatorActive(value);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            ChoiceChip(
+              label: const Text('Active'),
+              selected: active,
+              onSelected: ui.actionInFlight ? null : (_) => select(true),
+            ),
+            ChoiceChip(
+              label: const Text('Inactive'),
+              selected: !active,
+              onSelected: ui.actionInFlight ? null : (_) => select(false),
+            ),
+          ],
+        ),
+        if (ui.actionInFlight)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Semantics(
+              container: true,
+              excludeSemantics: true,
+              label: 'Applying LocationIndicatorActive change',
+              child: const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ),
+        if (ui.error != null && !ui.actionInFlight)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Semantics(
+              container: true,
+              excludeSemantics: true,
+              label: 'Setting LocationIndicatorActive failed. ${ui.error}',
+              child: Text(
+                ui.error!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 /// Boot-override control card (issue #016 — the Boot/IndicatorLED PATCH flow).
 ///
 /// Capability-gated on the BMC advertising `BootSourceOverrideTarget@

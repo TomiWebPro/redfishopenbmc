@@ -16,6 +16,7 @@ class SystemSettingsUiState {
   const SystemSettingsUiState({
     this.bootSettings,
     this.indicatorLed,
+    this.locationIndicatorActive,
     this.actionInFlight = false,
     this.error,
   });
@@ -25,6 +26,10 @@ class SystemSettingsUiState {
 
   /// Last indicator LED state read from the system (or optimistically applied).
   final IndicatorLed? indicatorLed;
+
+  /// Last LocationIndicatorActive state read from the system (or optimistically
+  /// applied). `null` when not exposed.
+  final bool? locationIndicatorActive;
 
   /// Whether a PATCH request is currently being sent.
   final bool actionInFlight;
@@ -40,6 +45,7 @@ class SystemSettingsUiState {
   SystemSettingsUiState copyWith({
     BootSettings? bootSettings,
     IndicatorLed? indicatorLed,
+    Object? locationIndicatorActive = _undefined,
     bool? actionInFlight,
     String? error,
     bool clearError = false,
@@ -47,6 +53,9 @@ class SystemSettingsUiState {
       SystemSettingsUiState(
         bootSettings: bootSettings ?? this.bootSettings,
         indicatorLed: indicatorLed ?? this.indicatorLed,
+        locationIndicatorActive: locationIndicatorActive == _undefined
+            ? this.locationIndicatorActive
+            : locationIndicatorActive as bool?,
         actionInFlight: actionInFlight ?? this.actionInFlight,
         error: clearError ? null : (error ?? this.error),
       );
@@ -54,8 +63,10 @@ class SystemSettingsUiState {
   @override
   String toString() =>
       'SystemSettingsUiState(boot=$bootSettings, led=$indicatorLed, '
-      'inFlight=$actionInFlight, error=$error)';
+      'loc=$locationIndicatorActive, inFlight=$actionInFlight, error=$error)';
 }
+
+const Object _undefined = Object();
 
 /// Riverpod controller driving the Boot / IndicatorLED controls (issue #016).
 ///
@@ -108,6 +119,33 @@ class SystemSettingsController extends StateNotifier<SystemSettingsUiState> {
         state = state.copyWith(
           actionInFlight: false,
           indicatorLed: value,
+          clearError: true,
+        );
+      }
+    } on RedfishException catch (e) {
+      if (mounted) {
+        state = state.copyWith(actionInFlight: false, error: e.message);
+      }
+    } catch (e) {
+      if (mounted) {
+        state = state.copyWith(actionInFlight: false, error: e.toString());
+      }
+    }
+  }
+
+  /// PATCHes [value] as the ComputerSystem `LocationIndicatorActive`.
+  ///
+  /// Success updates [SystemSettingsUiState.locationIndicatorActive]
+  /// optimistically; a validation or transport error is recorded and the state
+  /// is left unchanged.
+  Future<void> setLocationIndicatorActive(bool value) async {
+    state = state.copyWith(actionInFlight: true, clearError: true);
+    try {
+      await service.setLocationIndicatorActive(value);
+      if (mounted) {
+        state = state.copyWith(
+          actionInFlight: false,
+          locationIndicatorActive: value,
           clearError: true,
         );
       }

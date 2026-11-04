@@ -250,6 +250,44 @@ void main() {
     });
   });
 
+  group('SystemSettingsService — setLocationIndicatorActive', () {
+    test('PATCHes the exact boolean body + carries the @odata.etag as If-Match',
+        () async {
+      final DioAdapter a = adapter();
+      a.onGet(
+        '/redfish/v1/Systems/system',
+        (server) => server.reply(200, computerSystemBody(etag: 'loc-etag')),
+      );
+      a.onPatch(
+        '/redfish/v1/Systems/system',
+        (server) => server.reply(204, null),
+        data: <String, dynamic>{'LocationIndicatorActive': true},
+        headers: <String, dynamic>{'If-Match': '"loc-etag"'},
+      );
+
+      final SystemSettingsService service = SystemSettingsService(
+        client: clientWithAdapter(a),
+        systemId: 'bmc1',
+        features: featuresWithSystem(),
+      );
+      final Map<String, dynamic> result =
+          await service.setLocationIndicatorActive(true);
+      expect(result, isEmpty);
+    });
+
+    test('surfaces a friendly not-connected error', () async {
+      final SystemSettingsService service =
+          SystemSettingsService(client: null, systemId: 'bmc1');
+      await expectLater(
+        service.setLocationIndicatorActive(false),
+        throwsA(
+          isA<RedfishException>().having((RedfishException e) => e.errorCode,
+              'errorCode', 'Base.1.0.NotConnected'),
+        ),
+      );
+    });
+  });
+
   group('SystemSettingsService — setBootOverride', () {
     test('PATCHes Boot target + enabled with the etag precondition', () async {
       final DioAdapter a = adapter();

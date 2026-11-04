@@ -125,6 +125,41 @@ class SystemSettingsService {
     }
   }
 
+  /// PATCHes the ComputerSystem `LocationIndicatorActive` property to [value].
+  ///
+  /// The boolean successor to the deprecated `IndicatorLED` on newer bmcweb
+  /// services (capability-gated by the property being served). Reuses the
+  /// standard `PATCH` + `If-Match` pattern via [RedfishClient.patchJson].
+  ///
+  /// Returns the response body (usually empty for 204). When the read-back
+  /// resource carried an `@odata.etag`, it is sent as the `If-Match`
+  /// precondition so a stale write is answered 412 instead of overwriting.
+  Future<Map<String, dynamic>> setLocationIndicatorActive(bool value) async {
+    final RedfishClient? c = client;
+    if (c == null) {
+      throw RedfishException(
+        message:
+            'Not connected to "$systemId"; cannot set LocationIndicatorActive.',
+        errorCode: 'Base.1.0.NotConnected',
+      );
+    }
+    final String uri = await _resolveSystemUri();
+    try {
+      final Map<String, dynamic> current = await c.getJson(uri);
+      final String? etag = ODataResource(current).etag;
+      return await c.patchJson(
+        uri,
+        body: <String, dynamic>{'LocationIndicatorActive': value},
+        etag: etag,
+      );
+    } on RedfishException {
+      rethrow;
+    } catch (e) {
+      throw RedfishException(
+          message: 'Failed to set LocationIndicatorActive: $e');
+    }
+  }
+
   /// PATCHes the ComputerSystem `Boot` override to boot [target] with
   /// [enabled] state.
   ///

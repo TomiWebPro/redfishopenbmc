@@ -4727,3 +4727,21 @@
 - **Decisions:** Followed alternation (DOCS → EMULATOR). Kept changes minimal (verification only); documented why UI not added this run (emulator verification consumed time). Verified anchors unchanged.
 - **Next:** #015 AuthManager (expiryFromService + Sessions pin), #008 firmware resilience (cancel task, 413/401, backoff), or DOCS-30-a LocationIndicatorActive setter.
 - **Issues touched:** none
+
+## 2026-11-04 — agent:redfish-automation — DOCS (DOCS-30-a)
+
+**Done:**
+- DOCS per alternation (after EMULATOR 17:35). Implemented **DOCS-30-a**: capability-gated `LocationIndicatorActive` boolean setter as successor to deprecated `IndicatorLED`.
+- Model: `SystemOverview` parses `LocationIndicatorActive` (bool). Service: `SystemSettingsService.setLocationIndicatorActive(bool)` PATCHes with `If-Match` via `patchJson`. Controller: added method + state. UI: overview LED card prefers `LocationIndicatorActive` when served via new `LocationIndicatorActiveControl` (Active/Inactive chips), falls back to existing `IndicatorLED` flow when absent.
+- Updated `documentations/external/redfish/REQUIREMENTS.md` (PATCH trace + IndicatorLED/LocationIndicatorActive row) and marked **DOCS-30-a** complete in `FUTUREWORK.md` (refreshed focus/Last updated).
+- Tests: added service/controller/widget tests for LocationIndicatorActive; fixed related fakes. Suite 511 → **517 passed / 1 skipped**. Analyze 0, issues validate OK.
+
+**Decisions:**
+- Followed "capability-gate on the served property itself (never assume)", reused `SystemSettingsService` PATCH/If-Match pattern, and kept backward compatibility with existing `IndicatorLED` path.
+
+**Next:**
+- EMULATOR per alternation (cheap 85/85 re-run)
+- P1 #015 AuthManager (expiryFromService + Sessions pin)
+- #008 remaining resilience or UI-2 focus audit/non-card labels
+
+**Issues touched:** none opened/closed (DOCS-30-a completed)

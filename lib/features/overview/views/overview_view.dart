@@ -369,6 +369,31 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
   }
 
   Widget _led(BuildContext context, SystemOverview o) {
+    // LocationIndicatorActive is the boolean successor to the deprecated
+    // IndicatorLED on newer bmcweb services (capability-gated).
+    if (o.locationIndicatorActive != null) {
+      final bool active = o.locationIndicatorActive!;
+      final String text = active ? 'Active' : 'Inactive';
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Semantics(
+            container: true,
+            excludeSemantics: true,
+            label: text,
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          LocationIndicatorActiveControl(
+            systemId: widget.systemId,
+            current: active,
+          ),
+        ],
+      );
+    }
+
     if (o.indicatorLed == IndicatorLed.unknown) return const NotExposed();
     final String text = o.indicatorLed.label;
     // UI-2: the state announces as ONE merged node ("Lit") under the merged

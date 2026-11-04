@@ -4979,3 +4979,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 511 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** pending — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-04 17:35)`.
 - **Next:** 1) P1 #015 AuthManager — wire `Session.expiryFromService` into login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS only; 2) #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413 too-large, 401, low-bandwidth backoff); 3) DOCS-30-a (`LocationIndicatorActive` setter) per bmcweb Redfish.md update or UI-2 remaining focus audit + non-card labels.
+
+## 2026-11-04 18:xx — DOCS
+
+- **Baseline:** analyze 0; tests 511 passed / 1 skipped; starting commit d49a8ad (origin/main fully synced); issues validate OK; working tree clean.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 2026-11-04 17:35). **DOCS-30-a: LocationIndicatorActive boolean setter** as successor to deprecated IndicatorLED on newer bmcweb services.
+- **Docs:** Updated `documentations/external/redfish/REQUIREMENTS.md` (PATCH trace row extended; IndicatorLED/LocationIndicatorActive row updated to mark DOCS-30-a done). Updated `FUTUREWORK.md` to mark DOCS-30-a complete and refreshed focus/Last updated.
+- **Emulator:** none this run.
+- **Code/tests:** Model `SystemOverview` reads `LocationIndicatorActive` (boolean, capability-gated); `SystemSettingsService.setLocationIndicatorActive(bool)` adds PATCH with `If-Match` via `patchJson` (mirrors `setIndicatorLed`); `SystemSettingsController` adds `setLocationIndicatorActive` + state; UI prefers `LocationIndicatorActive` when served via new `LocationIndicatorActiveControl` (On/Inactive chips) in overview LED card, falls back to existing `IndicatorLED` flow otherwise. Added unit tests (service/controller/widget) for LocationIndicatorActive; fixed related fakes. Tests: 511 → **517 passed / 1 skipped** (+6).
+- **UI:** Capability-gated boolean toggle for LocationIndicatorActive alongside existing IndicatorLED behavior; chips follow existing patterns with busy/error semantics.
+- **Verification:** analyze 0; tests 517 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (no secrets/keys).
+- **Commit:** (pending) `auto: DOCS — DOCS-30-a LocationIndicatorActive boolean setter (model/UI/controller/service, capability-gated; PATCH with If-Match), REQUIREMENTS/FUTUREWORK updated, tests added (run 2026-11-04 18:xx)`.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS only; 3) #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413 too-large, 401, low-bandwidth backoff) or UI-2 remaining focus audit + non-card labels.

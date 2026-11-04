@@ -142,6 +142,7 @@ class SystemOverview {
     this.processorSummary = const ProcessorSummary(),
     this.memorySummary = const MemorySummary(),
     this.indicatorLed = IndicatorLed.unknown,
+    this.locationIndicatorActive,
     this.leadingTemperatureCelsius,
     this.resourceUri,
     this.lastUpdated,
@@ -182,6 +183,11 @@ class SystemOverview {
 
   /// Indicator LED state (`IndicatorLED`).
   final IndicatorLed indicatorLed;
+
+  /// Location indicator state (`LocationIndicatorActive`) — the boolean
+  /// successor to the deprecated `IndicatorLED` on newer bmcweb/Redfish
+  /// services. `null` when not exposed by this BMC (capability-gated).
+  final bool? locationIndicatorActive;
 
   /// Leading temperature in °C from the first chassis thermal reading, when a
   /// thermal resource is discoverable; `null` otherwise (card omitted).
@@ -240,6 +246,9 @@ class SystemOverview {
         json['MemorySummary'] as Map<String, dynamic>?,
       ),
       indicatorLed: IndicatorLed.fromRedfish(json['IndicatorLED'] as String?),
+      locationIndicatorActive: json['LocationIndicatorActive'] is bool
+          ? json['LocationIndicatorActive'] as bool
+          : null,
       leadingTemperatureCelsius: leadingTemperatureCelsius,
       resourceUri: resourceUri ?? json['@odata.id'] as String?,
       lastUpdated: DateTime.now(),
@@ -286,6 +295,7 @@ class SystemOverview {
     ProcessorSummary? processorSummary,
     MemorySummary? memorySummary,
     IndicatorLed? indicatorLed,
+    Object? locationIndicatorActive = _undefined,
     double? leadingTemperatureCelsius,
     String? resourceUri,
     DateTime? lastUpdated,
@@ -303,6 +313,9 @@ class SystemOverview {
         processorSummary: processorSummary ?? this.processorSummary,
         memorySummary: memorySummary ?? this.memorySummary,
         indicatorLed: indicatorLed ?? this.indicatorLed,
+        locationIndicatorActive: locationIndicatorActive == _undefined
+            ? this.locationIndicatorActive
+            : locationIndicatorActive as bool?,
         leadingTemperatureCelsius:
             leadingTemperatureCelsius ?? this.leadingTemperatureCelsius,
         resourceUri: resourceUri ?? this.resourceUri,
@@ -324,11 +337,14 @@ class SystemOverview {
         'processor_model': processorSummary.model,
         'memory_gib': memorySummary.totalGiB,
         'indicator_led': indicatorLed.name,
+        'location_indicator_active': locationIndicatorActive,
         'leading_temperature_celsius': leadingTemperatureCelsius,
         'resource_uri': resourceUri,
         'last_updated': lastUpdated?.toIso8601String(),
       };
 }
+
+const Object _undefined = Object();
 
 /// Resolves the adaptive column count for the overview card grid (issue #006).
 ///

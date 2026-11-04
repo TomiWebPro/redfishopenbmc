@@ -11,15 +11,18 @@ class _FakeSettingsService implements SystemSettingsService {
     this.bootResult,
     this.setLedError,
     this.setBootError,
+    this.setLocError,
   });
 
   final BootSettings? bootResult;
   final RedfishException? setLedError;
   final RedfishException? setBootError;
+  final RedfishException? setLocError;
 
   int fetchCount = 0;
   int setLedCount = 0;
   int setBootCount = 0;
+  int setLocCount = 0;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -40,6 +43,13 @@ class _FakeSettingsService implements SystemSettingsService {
   Future<Map<String, dynamic>> setIndicatorLed(IndicatorLed value) async {
     setLedCount++;
     if (setLedError != null) throw setLedError!;
+    return <String, dynamic>{};
+  }
+
+  @override
+  Future<Map<String, dynamic>> setLocationIndicatorActive(bool value) async {
+    setLocCount++;
+    if (setLocError != null) throw setLocError!;
     return <String, dynamic>{};
   }
 
@@ -115,6 +125,38 @@ void main() {
       expect(c.state.actionInFlight, isFalse);
       expect(c.state.error, 'led denied');
       expect(c.state.indicatorLed, isNull);
+      c.dispose();
+    });
+  });
+
+  group('SystemSettingsController — setLocationIndicatorActive', () {
+    test('applies the value optimistically and clears the busy flag', () async {
+      final _FakeSettingsService service = _FakeSettingsService();
+      final SystemSettingsController c =
+          SystemSettingsController(service: service);
+      final Future<void> future = c.setLocationIndicatorActive(true);
+      expect(c.state.actionInFlight, isTrue);
+      await future;
+      expect(c.state.actionInFlight, isFalse);
+      expect(c.state.locationIndicatorActive, isTrue);
+      expect(c.state.error, isNull);
+      expect(service.setLocCount, 1);
+      c.dispose();
+    });
+
+    test('records the error on failure and leaves state unchanged', () async {
+      final _FakeSettingsService service = _FakeSettingsService(
+        setLocError: const RedfishException(
+          message: 'loc denied',
+          errorCode: 'Base.1.0.InsufficientPrivilege',
+        ),
+      );
+      final SystemSettingsController c =
+          SystemSettingsController(service: service);
+      await c.setLocationIndicatorActive(false);
+      expect(c.state.actionInFlight, isFalse);
+      expect(c.state.error, 'loc denied');
+      expect(c.state.locationIndicatorActive, isNull);
       c.dispose();
     });
   });

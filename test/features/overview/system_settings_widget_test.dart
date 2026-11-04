@@ -31,6 +31,18 @@ SystemOverview ledSample() => SystemOverview(
       resourceUri: '/redfish/v1/Systems/system',
     );
 
+/// A [SystemOverview] with a boolean LocationIndicatorActive (DOCS-30-a).
+SystemOverview locationLedSample({bool active = false}) => SystemOverview(
+      manufacturer: 'Acme',
+      model: 'Server-9',
+      powerState: PowerState.on,
+      health: Health.ok,
+      healthRollup: Health.ok,
+      indicatorLed: IndicatorLed.unknown,
+      locationIndicatorActive: active,
+      resourceUri: '/redfish/v1/Systems/system',
+    );
+
 SystemManager seededManager() {
   final SystemManager m = SystemManager(
     repository: InMemoryProfileRepository(),
@@ -68,6 +80,7 @@ class _FakeSettingsService implements SystemSettingsService {
 
   int setLedCount = 0;
   int setBootCount = 0;
+  int setLocCount = 0;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -87,6 +100,12 @@ class _FakeSettingsService implements SystemSettingsService {
   Future<Map<String, dynamic>> setIndicatorLed(IndicatorLed value) async {
     setLedCount++;
     if (setLedError != null) throw setLedError!;
+    return <String, dynamic>{};
+  }
+
+  @override
+  Future<Map<String, dynamic>> setLocationIndicatorActive(bool value) async {
+    setLocCount++;
     return <String, dynamic>{};
   }
 
@@ -124,7 +143,7 @@ void main() {
           ],
           child: MaterialApp(
             theme: AppTheme.lightTheme,
-            home: const Scaffold(body: OverviewView(systemId: 'bmc1')),
+            home: Scaffold(body: OverviewView(systemId: 'bmc1')),
           ),
         ),
       );
@@ -151,7 +170,7 @@ void main() {
           ],
           child: MaterialApp(
             theme: AppTheme.lightTheme,
-            home: const Scaffold(body: OverviewView(systemId: 'bmc1')),
+            home: Scaffold(body: OverviewView(systemId: 'bmc1')),
           ),
         ),
       );
@@ -187,7 +206,7 @@ void main() {
           ],
           child: MaterialApp(
             theme: AppTheme.lightTheme,
-            home: const Scaffold(body: OverviewView(systemId: 'bmc1')),
+            home: Scaffold(body: OverviewView(systemId: 'bmc1')),
           ),
         ),
       );
@@ -251,7 +270,7 @@ void main() {
           ],
           child: MaterialApp(
             theme: AppTheme.lightTheme,
-            home: const Scaffold(body: OverviewView(systemId: 'bmc1')),
+            home: Scaffold(body: OverviewView(systemId: 'bmc1')),
           ),
         ),
       );
@@ -279,7 +298,7 @@ void main() {
           ],
           child: MaterialApp(
             theme: AppTheme.lightTheme,
-            home: const Scaffold(body: OverviewView(systemId: 'bmc1')),
+            home: Scaffold(body: OverviewView(systemId: 'bmc1')),
           ),
         ),
       );
@@ -311,7 +330,7 @@ void main() {
           ],
           child: MaterialApp(
             theme: AppTheme.lightTheme,
-            home: const Scaffold(body: OverviewView(systemId: 'bmc1')),
+            home: Scaffold(body: OverviewView(systemId: 'bmc1')),
           ),
         ),
       );
@@ -343,7 +362,7 @@ void main() {
           ],
           child: MaterialApp(
             theme: AppTheme.lightTheme,
-            home: const Scaffold(body: OverviewView(systemId: 'bmc1')),
+            home: Scaffold(body: OverviewView(systemId: 'bmc1')),
           ),
         ),
       );
@@ -382,6 +401,67 @@ void main() {
         expect(tester.takeException(), isNull, reason: 'no overflow at $width');
         expect(find.text('Apply boot override'), findsOneWidget);
       }
+    });
+  });
+
+  group('SystemSettingsCard — LocationIndicatorActive setter (DOCS-30-a)', () {
+    testWidgets(
+        'renders Active/Inactive chips when LocationIndicatorActive is served',
+        (tester) async {
+      final _FakeSettingsService fake = _FakeSettingsService();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemManagerProvider.overrideWith((ref) => seededManager()),
+            overviewProvider.overrideWith(
+              (ref, id) => Future<SystemOverview>.value(
+                  locationLedSample(active: false)),
+            ),
+            systemSettingsServiceProvider.overrideWith((ref, id) => fake),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(body: OverviewView(systemId: 'bmc1')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Indicator LED'), findsOneWidget);
+      expect(find.text('Inactive'), findsWidgets);
+      expect(find.text('Active'), findsOneWidget);
+      expect(find.text('Lit'), findsNothing);
+      expect(find.text('Blinking'), findsNothing);
+      expect(find.text('Off'), findsNothing);
+    });
+
+    testWidgets('PATCHes LocationIndicatorActive true on tap', (tester) async {
+      final _FakeSettingsService fake = _FakeSettingsService();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemManagerProvider.overrideWith((ref) => seededManager()),
+            overviewProvider.overrideWith(
+              (ref, id) => Future<SystemOverview>.value(
+                  locationLedSample(active: false)),
+            ),
+            systemSettingsServiceProvider.overrideWith((ref, id) => fake),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(body: OverviewView(systemId: 'bmc1')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder activeFinder = find.text('Active');
+      await tester.ensureVisible(activeFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(activeFinder);
+      await tester.pump();
+      expect(fake.setLocCount, 1);
+      await tester.pumpAndSettle();
     });
   });
 }
