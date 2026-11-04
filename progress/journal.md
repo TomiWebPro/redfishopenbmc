@@ -4797,3 +4797,20 @@
 - UI-2 remaining focus audit + non-card labels
 
 **Issues touched:** #015 (progress updated)
+
+## 2026-11-04 — agent:redfish-automation — #069
+
+**Done:**
+- EMULATOR per alternation (last primary: FEATURE #015). Ran official DMTF Redfish-Mockup-Server via `tool/emulator/run_tests.sh` (pinned 23d21f9a) with PATH set; server started on https://127.0.0.1:8443, health-checked, tests passed, stopped via trap.
+- Closed P1 issue #015 (AuthManager) — moved from open to closed with resolution notes; all acceptance criteria met.
+- Verification: analyze 0, tests 517 passed / 1 skipped, emulator 85/85, issues validate OK, git diff --check clean.
+
+**Decisions:**
+- Followed alternation (EMULATOR after FEATURE). Emulator remains green on pinned mockup; no emulator contract changes needed.
+
+**Next:**
+- DOCS per alternation (anchor re-verify; mirror queue likely EMPTY)
+- #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff)
+- UI-2 remaining focus audit + non-card labels
+
+**Issues touched:** #015 (closed)

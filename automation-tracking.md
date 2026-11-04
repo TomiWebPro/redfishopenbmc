@@ -5027,3 +5027,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 517 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (pending) auto commit; pushed: no (pending).
 - **Next:** 1) EMULATOR per alternation (cheap 85/85 re-run); 2) #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels.
+
+## 2026-11-04 20:09 — EMULATOR
+
+- **Baseline:** analyze 0; tests 517 passed / 1 skipped; starting commit 1b12df0 (origin/main fully synced); issues validate OK; working tree clean.
+- **Primary work:** EMULATOR per alternation (last primary: FEATURE #015 2026-11-04 19:36). Ran official DMTF Redfish-Mockup-Server via `tool/emulator/run_tests.sh` (pinned 23d21f9a, HTTPS on 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`).
+- **Docs:** none this run (anchors unchanged).
+- **Emulator:** `tool/emulator/run_tests.sh` completed successfully — **85/85** tests passed (service root, systems/chassis/manager, power/actions, sensors/metrics/controls, firmware inventory/update paths, tasks, ActionInfo contracts, VirtualMedia/SecureBoot, sessions/accounts, log entries, subscriptions/event destinations, corpus invariants, SystemSettingsService Boot/LocationIndicatorActive PATCH flows). Server stopped via trap.
+- **Code/tests:** Closed P1 issue #015 (AuthManager) with all acceptance criteria met; moved issue to closed. No production code changes this run. All tests remain green.
+- **UI:** none this run.
+- **Verification:** analyze 0; tests 517 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** pending — `auto: EMULATOR — re-run DMTF mockup server suite 85/85; close #015 AuthManager (all tests green) (run 2026-11-04 20:09)`.
+- **Next:** 1) DOCS per alternation — anchor re-verify; 2) #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels.

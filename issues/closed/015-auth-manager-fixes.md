@@ -1,17 +1,16 @@
 ---
 id: "015"
 title: "AuthManager: honor authMethod, safe logout URI, session reuse & expiry"
-status: open
+status: closed
 priority: P1
 type: bug
 created: 2026-08-30
-updated: 2026-08-30
-closed: null
+updated: 2026-11-04
+closed: 2026-11-04
 assignee: unassigned
 labels: [redfish-core, auth, security, spec]
 estimated_tokens: 16000
 ---
-
 # 015 — AuthManager correctness & safety fixes
 
 > Several auth defects: auth mode is chosen from `preferSessionAuth` instead of the authoritative `authMethod`; logout/`_relogin` falls back to `DELETE` the Sessions *collection* (risking deletion of all sessions); sessions accumulate because the stored token is never rehydrated on restart; `Session.expiresAt`/`isExpired` is dead code so proactive re-auth never happens.
@@ -68,6 +67,10 @@ estimated_tokens: 16000
 - Related: #014, #017, #026
 
 ## Closed Criteria
+
+- Resolution: AuthManager honors authMethod with fallback, safe logout/relogin using session @odata.id (no Sessions collection DELETE), rehydrate stored sessions, SessionService timeout/expiry with proactive re-auth and refresh lock; all tests green (517 passed/1 skipped), analyze 0
+- Closed: 2026-11-04
+
 
 - Resolution:
 - Closed reason:

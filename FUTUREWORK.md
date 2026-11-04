@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated:** 2026-11-04 (FEATURE/REFACTOR #015 AuthManager — authMethod/rehydrate/expiry/proactive re-auth; safe logout; all tests green)
-- **Current focus:** #020 closed. DOCS run 2026-11-04 verified anchors current (all sources up to date, mirror queue EMPTY); DOCS-30-a completed. **FEATURE/REFACTOR (2026-11-04):** #015 AuthManager — honor authMethod, safe logout/relogin (no collection DELETE), require Location, SessionService expiry via Session.expiryFromService, proactive re-auth on isExpired + 401, added rehydrate() + login reuse of stored sessions. Next per alternation: **EMULATOR** (DOCS completed); then #008 remaining resilience (cancel task `DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff), UI-2 — remaining focus audit + non-card labels.
+- **Last updated:** 2026-11-04 (EMULATOR 85/85; closed #015 AuthManager — all tests green)
+- **Current focus:** #020 closed, #015 closed (2026-11-04). DOCS/EMULATOR alternation current; EMULATOR 85/85 verified. Next per alternation: **DOCS** (anchor re-verify); then #008 remaining resilience (cancel task `DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff), UI-2 — remaining focus audit + non-card labels.
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
