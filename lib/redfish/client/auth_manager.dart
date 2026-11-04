@@ -67,12 +67,16 @@ class AuthManager {
 
   /// Authenticate [systemId] using [profile].
   ///
-  /// Picks session auth when [ConnectionProfile.preferSessionAuth] is true
-  /// and credentials are present, otherwise Basic auth. Returns the active
-  /// [Session].
+  /// Picks session auth when [ConnectionProfile.authMethod] indicates session
+  /// (or when [ConnectionProfile.preferSessionAuth] is true for backwards
+  /// compatibility) and credentials are present, otherwise Basic auth. Returns
+  /// the active [Session].
   Future<Session> login(String systemId, ConnectionProfile profile) async {
     final RedfishClient client = _createClient(profile);
-    final _AuthMode mode = (profile.preferSessionAuth &&
+    final bool useSession = profile.authMethod == AuthMethod.session ||
+        (profile.preferSessionAuth &&
+            profile.authMethod != AuthMethod.basic);
+    final _AuthMode mode = (useSession &&
             profile.username != null &&
             profile.password != null)
         ? _AuthMode.session
@@ -140,15 +144,21 @@ class AuthManager {
     if (auth.mode == _AuthMode.session &&
         auth.session != null &&
         auth.session!.location.isNotEmpty) {
-      try {
-        await auth.client.dio.delete<dynamic>(
-          auth.session!.location,
-          options: Options(headers: <String, String>{
-            'X-Auth-Token': auth.session!.token,
-          }),
-        );
-      } on DioException {
-        // best-effort cleanup; ignore
+      final String loc = auth.session!.location;
+      // Only delete a specific session resource; never delete the collection.
+      final bool isCollection = loc.endsWith('/Sessions') &&
+          !loc.contains('/Sessions/');
+      if (!isCollection) {
+        try {
+          await auth.client.dio.delete<dynamic>(
+            loc,
+            options: Options(headers: <String, String>{
+              'X-Auth-Token': auth.session!.token,
+            }),
+          );
+        } on DioException {
+          // best-effort cleanup; ignore
+        }
       }
     }
     await storage.delete(_tokenKey(systemId));
@@ -177,6 +187,7 @@ class AuthManager {
         },
       );
 
+      // Token and location must come from response headers only.
       final String? token = response.headers.value('X-Auth-Token') ??
           response.headers.value('x-auth-token');
       final String? location = response.headers.value('Location') ??
@@ -187,20 +198,40 @@ class AuthManager {
           message: 'Session login returned no X-Auth-Token',
         );
       }
+      if (location == null || location.isEmpty) {
+        throw const RedfishException(
+          message: 'Session login returned no Location/Content-Location',
+        );
+      }
+
+      final DateTime createdAt = DateTime.now();
+      DateTime? expiresAt;
+      try {
+        final Response<dynamic> sessionServiceResp =
+            await auth.client.dio.get<dynamic>('/redfish/v1/SessionService');
+        if (sessionServiceResp.data is Map<String, dynamic>) {
+          expiresAt = Session.expiryFromService(
+            sessionServiceResp.data as Map<String, dynamic>,
+            createdAt: createdAt,
+          );
+        }
+      } on DioException {
+        // Best-effort: if SessionService cannot be read, proceed without
+        // a known TTL (session remains valid until a 401).
+      }
 
       final Session session = Session(
         systemId: systemId,
         token: token,
-        location: location ?? '/redfish/v1/SessionService/Sessions',
+        location: location,
         username: profile.username ?? '',
-        createdAt: DateTime.now(),
+        createdAt: createdAt,
+        expiresAt: expiresAt,
       );
 
       // Persist ONLY the token — never the password.
       await storage.write(_tokenKey(systemId), token);
-      if (location != null && location.isNotEmpty) {
-        await storage.write(_locationKey(systemId), location);
-      }
+      await storage.write(_locationKey(systemId), location);
       return session;
     } on DioException catch (e) {
       throw RedfishException.fromDioException(e);
@@ -213,15 +244,20 @@ class AuthManager {
     if (auth.mode == _AuthMode.session &&
         auth.session != null &&
         auth.session!.location.isNotEmpty) {
-      try {
-        await auth.client.dio.delete<dynamic>(
-          auth.session!.location,
-          options: Options(headers: <String, String>{
-            'X-Auth-Token': auth.session!.token,
-          }),
-        );
-      } on DioException {
-        // ignore — old session is dead anyway
+      final String loc = auth.session!.location;
+      final bool isCollection = loc.endsWith('/Sessions') &&
+          !loc.contains('/Sessions/');
+      if (!isCollection) {
+        try {
+          await auth.client.dio.delete<dynamic>(
+            loc,
+            options: Options(headers: <String, String>{
+              'X-Auth-Token': auth.session!.token,
+            }),
+          );
+        } on DioException {
+          // ignore — old session is dead anyway
+        }
       }
     }
     auth.session = null;
@@ -233,19 +269,43 @@ class AuthManager {
   void _installAuthInterceptor(_SystemAuth auth) {
     auth.client.dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
+        onRequest: (RequestOptions options, RequestInterceptorHandler handler) async {
           if (auth.mode == _AuthMode.basic) {
             final String? basic = auth.basicCredentials;
             if (basic != null) {
               options.headers['Authorization'] = basic;
             }
+            handler.next(options);
+            return;
           } else {
-            final Session? session = auth.session;
+            Session? session = auth.session;
+            // Proactive re-auth if session is expired.
+            if (session != null && session.isExpired) {
+              try {
+                if (auth.refreshLock != null) {
+                  await auth.refreshLock;
+                  session = auth.session;
+                } else {
+                  final Completer<void> completer = Completer<void>();
+                  auth.refreshLock = completer.future;
+                  try {
+                    session = await _relogin(auth.systemId, auth);
+                  } finally {
+                    auth.refreshLock = null;
+                    completer.complete();
+                  }
+                }
+              } on DioException {
+                // Fall through to let the request proceed/fail as-is.
+                session = auth.session;
+              }
+            }
             if (session != null) {
               options.headers['X-Auth-Token'] = session.token;
             }
+            handler.next(options);
+            return;
           }
-          handler.next(options);
         },
         onError: (DioException err, ErrorInterceptorHandler handler) async {
           // Only session auth supports transparent refresh.

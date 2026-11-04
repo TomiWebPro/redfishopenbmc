@@ -356,6 +356,7 @@ void main() {
         const ConnectionProfile(
           host: 'bmc1',
           preferSessionAuth: false,
+          authMethod: AuthMethod.basic,
           username: 'root',
           password: 'calvin',
         ),

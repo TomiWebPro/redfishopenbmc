@@ -313,16 +313,27 @@ void main() {
             a.onPost(
               '/redfish/v1/SessionService/Sessions',
               (server) => server.reply(
-                200,
+                201,
                 <String, dynamic>{},
                 headers: <String, List<String>>{
-                  // http_mock_adapter only JSON-encodes the body when it
-                  // recognizes the content-type header (case-sensitive
-                  // 'content-type'); otherwise it tries to treat the Map body
-                  // as a String and throws a cast error.
                   Headers.contentTypeHeader: <String>[Headers.jsonContentType],
                   'X-Auth-Token': <String>['tok-$host'],
+                  'Location': <String>['/redfish/v1/SessionService/Sessions/1'],
                 },
+              ),
+            );
+            a.onGet(
+              '/redfish/v1/SessionService',
+              (server) => server.reply(
+                200,
+                <String, dynamic>{'@odata.id': '/redfish/v1/SessionService'},
+              ),
+            );
+            a.onGet(
+              '/redfish/v1/',
+              (server) => server.reply(
+                200,
+                <String, dynamic>{'@odata.id': '/redfish/v1/'},
               ),
             );
             return a;
