@@ -5015,3 +5015,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 517 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (pending) `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY), UI-2 dashboard error-summary Retry tooltip (run 2026-11-04 19:xx)`.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS only; 3) #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff) or UI-2 remaining focus audit + non-card labels.
+
+## 2026-11-04 19:36 — FEATURE
+
+- **Baseline:** analyze 0; tests 517 passed / 1 skipped; starting commit 306c32e (after recovering previous automation WIP).
+- **Primary work:** FEATURE/REFACTOR on P1 issue #015 (AuthManager). Honored `ConnectionProfile.authMethod` (with `preferSessionAuth` fallback), avoided creating new sessions on restart by adding `rehydrate()` and having `login()` reuse stored sessions; persisted only token+location; logout/relogin DELETE the session resource `@odata.id` (never the Sessions collection), require Location header, best-effort cleanup; read `SessionService` for `SessionTimeout`/`AbsoluteSessionTimeout` via `Session.expiryFromService`, store `expiresAt`, proactive re-auth in interceptor when expired with refresh lock.
+- **Docs:** none this run.
+- **Emulator:** none this run.
+- **Code/tests:** Modified `lib/redfish/client/auth_manager.dart` (auth method selection, safe logout/relogin, expiry fetch, proactive re-auth, rehydrate + login reuse). Tests unchanged in count (all pass). Updated issue #015 progress log.
+- **UI:** none this run.
+- **Verification:** analyze 0; tests 517 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (pending) auto commit; pushed: no (pending).
+- **Next:** 1) EMULATOR per alternation (cheap 85/85 re-run); 2) #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels.

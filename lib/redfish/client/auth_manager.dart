@@ -74,13 +74,20 @@ class AuthManager {
   Future<Session> login(String systemId, ConnectionProfile profile) async {
     final RedfishClient client = _createClient(profile);
     final bool useSession = profile.authMethod == AuthMethod.session ||
-        (profile.preferSessionAuth &&
-            profile.authMethod != AuthMethod.basic);
-    final _AuthMode mode = (useSession &&
-            profile.username != null &&
-            profile.password != null)
-        ? _AuthMode.session
-        : _AuthMode.basic;
+        (profile.preferSessionAuth && profile.authMethod != AuthMethod.basic);
+    final _AuthMode mode =
+        (useSession && profile.username != null && profile.password != null)
+            ? _AuthMode.session
+            : _AuthMode.basic;
+
+    // Try to rehydrate an existing stored session first to avoid
+    // accumulating sessions on restart/reconnect.
+    if (mode == _AuthMode.session) {
+      final Session? restored = await rehydrate(systemId, profile);
+      if (restored != null) {
+        return restored;
+      }
+    }
 
     final _SystemAuth auth = _SystemAuth(
       systemId: systemId,
@@ -135,6 +142,66 @@ class AuthManager {
   /// Whether [systemId] currently has a usable session/token.
   bool isAuthenticated(String systemId) => _systems[systemId]?.session != null;
 
+  /// Rehydrate a stored session from [SecureStorage] if one exists and is
+  /// still usable. This avoids creating new sessions on app restart and
+  /// orphaning server-side sessions.
+  Future<Session?> rehydrate(String systemId, ConnectionProfile profile) async {
+    if (_systems.containsKey(systemId) && _systems[systemId]?.session != null) {
+      return _systems[systemId]!.session;
+    }
+
+    final String? token = await storage.read(_tokenKey(systemId));
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+    final String location = await storage.read(_locationKey(systemId)) ?? '';
+
+    final RedfishClient client = _createClient(profile);
+    final bool useSession = profile.authMethod == AuthMethod.session ||
+        (profile.preferSessionAuth && profile.authMethod != AuthMethod.basic);
+    final _AuthMode mode = useSession ? _AuthMode.session : _AuthMode.basic;
+
+    final _SystemAuth auth = _SystemAuth(
+      systemId: systemId,
+      client: client,
+      profile: profile,
+      mode: mode,
+    );
+    _systems[systemId] = auth;
+
+    Session session;
+    if (mode == _AuthMode.session) {
+      session = Session(
+        systemId: systemId,
+        token: token,
+        location: location,
+        username: profile.username ?? '',
+        createdAt: DateTime.now(),
+      );
+      // If we know it's expired, treat as not restorable.
+      if (session.isExpired) {
+        _systems.remove(systemId);
+        await storage.delete(_tokenKey(systemId));
+        await storage.delete(_locationKey(systemId));
+        return null;
+      }
+    } else {
+      auth.basicCredentials = token.startsWith('Basic ')
+          ? token
+          : _basicValue(profile.username, profile.password);
+      session = Session(
+        systemId: systemId,
+        token: auth.basicCredentials!,
+        location: '',
+        username: profile.username ?? '',
+        createdAt: DateTime.now(),
+      );
+    }
+    auth.session = session;
+    _installAuthInterceptor(auth);
+    return session;
+  }
+
   /// Log out: delete the server-side session (if any) and purge the stored
   /// token. Best-effort — network errors during `DELETE` are ignored.
   Future<void> logout(String systemId) async {
@@ -146,8 +213,8 @@ class AuthManager {
         auth.session!.location.isNotEmpty) {
       final String loc = auth.session!.location;
       // Only delete a specific session resource; never delete the collection.
-      final bool isCollection = loc.endsWith('/Sessions') &&
-          !loc.contains('/Sessions/');
+      final bool isCollection =
+          loc.endsWith('/Sessions') && !loc.contains('/Sessions/');
       if (!isCollection) {
         try {
           await auth.client.dio.delete<dynamic>(
@@ -245,8 +312,8 @@ class AuthManager {
         auth.session != null &&
         auth.session!.location.isNotEmpty) {
       final String loc = auth.session!.location;
-      final bool isCollection = loc.endsWith('/Sessions') &&
-          !loc.contains('/Sessions/');
+      final bool isCollection =
+          loc.endsWith('/Sessions') && !loc.contains('/Sessions/');
       if (!isCollection) {
         try {
           await auth.client.dio.delete<dynamic>(
@@ -269,7 +336,8 @@ class AuthManager {
   void _installAuthInterceptor(_SystemAuth auth) {
     auth.client.dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (RequestOptions options, RequestInterceptorHandler handler) async {
+        onRequest:
+            (RequestOptions options, RequestInterceptorHandler handler) async {
           if (auth.mode == _AuthMode.basic) {
             final String? basic = auth.basicCredentials;
             if (basic != null) {

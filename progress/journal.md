@@ -4781,3 +4781,19 @@
 - #008 remaining resilience or UI-2 focus audit/non-card labels
 
 **Issues touched:** none opened/closed
+
+## 2026-11-04 — agent:redfish-automation — FEATURE #015
+
+**Done:**
+- FEATURE/REFACTOR on P1 #015 (AuthManager). Auth mode now honors `authMethod` (with `preferSessionAuth` fallback). Added `rehydrate()` and `login()` reuses stored sessions to prevent accumulation on restart. Persist only token+location; logout/relogin DELETE the specific session resource (`@odata.id`/Location), never the Sessions collection; require Location header. Read `SessionService` (`SessionTimeout`/`AbsoluteSessionTimeoutEnabled`/`AbsoluteSessionTimeout`) via `Session.expiryFromService` for `expiresAt`; proactive re-auth on expiry in interceptor with refresh lock; 401 refresh unchanged. Updated issue #015 progress log.
+- Verification: analyze 0, tests 517 passed / 1 skipped, issues validate OK, git diff --check clean.
+
+**Decisions:**
+- Reuse stored sessions on login when available (rehydrate) to avoid orphaning sessions; treat missing Location as error for session auth; best-effort SessionService read for expiry (no TTL if unavailable).
+
+**Next:**
+- EMULATOR per alternation (cheap 85/85 re-run)
+- #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff)
+- UI-2 remaining focus audit + non-card labels
+
+**Issues touched:** #015 (progress updated)

@@ -58,6 +58,7 @@ estimated_tokens: 16000
 ## Progress Log
 
 - 2026-08-30 — Created from triage analysis (core correctness #6,#7,#8).
+- 2026-11-04 — AuthManager: honor authMethod (with preferSessionAuth fallback), safe logout/relogin (no Sessions collection DELETE; require Location/@odata.id), store token+location only; read SessionService for SessionTimeout/AbsoluteSessionTimeout via Session.expiryFromService; proactive re-auth on isExpired + 401 refresh with lock; added rehydrate() and login reuses stored sessions to avoid accumulation; all tests pass.
 
 ## References
 
