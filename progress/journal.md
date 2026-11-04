@@ -4828,3 +4828,10 @@
 - **Decisions:** Follow alternation (DOCS→EMULATOR) as per FUTUREWORK; mirror queue remains EMPTY, anchors unchanged (bmcweb ade964e7, mockup 23d21f9a, DSP0266 1.25.0).
 - **Next:** DOCS anchor re-verify next per alternation; focus on #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff) and UI-2 remaining focus audit + non-card labels.
 - **Issues touched:** none (verification run).
+
+## 2026-11-04 — agent:redfish-automation — #NNN
+
+- **Done:** DOCS anchor re-verify (bmcweb ade964e7 / Redfish-Mockup-Server 23d21f9a / DSP0266 1.25.0 / schema index) — all current, mirror queue EMPTY. Updated `documentations/external/README.md`, `documentations/external/redfish/REQUIREMENTS.md`, and `FUTUREWORK.md` metadata. No production code/tests changes; UI improvement skipped due to time focus.
+- **Decisions:** Followed alternation (DOCS after EMULATOR). Mirror queue remains EMPTY per DOCS-27/28/29/30/31; no new downloads needed.
+- **Next:** EMULATOR per alternation (85/85 re-run), #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff), UI-2 remaining focus audit + non-card labels.
+- **Issues touched:** none
