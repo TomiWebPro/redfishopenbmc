@@ -4867,3 +4867,19 @@
 - UI-2 remaining focus audit + non-card labels
 
 **Issues touched:** none
+
+## 2026-11-04 — agent:redfish-automation — EMULATOR
+
+**Done:**
+- EMULATOR per alternation (last primary: DOCS 2026-11-04 23:24). Ran official DMTF Redfish-Mockup-Server via `tool/emulator/run_tests.sh` (pinned 23d21f9a, HTTPS on 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`); all **85/85** emulator tests passed (service root, discovery, systems/chassis/manager, power/actions, sensors/metrics/controls, firmware inventory/update paths, tasks, ActionInfo contracts, VirtualMedia/SecureBoot, sessions/accounts, log entries, subscriptions/event destinations, corpus invariants, SystemSettingsService Boot/LocationIndicatorActive PATCH flows). Server stopped via trap.
+- Verification: analyze 0, tests 517 passed / 1 skipped, issues validate OK, git diff --check clean.
+
+**Decisions:**
+- Followed alternation (DOCS → EMULATOR). Mirror/anchors unchanged; no code changes needed.
+
+**Next:**
+- DOCS per alternation (anchor re-verify; mirror queue EMPTY)
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff)
+- UI-2 remaining focus audit + non-card labels
+
+**Issues touched:** none (verification run)
