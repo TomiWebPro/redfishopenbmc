@@ -5220,3 +5220,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; issues validate OK (unchanged); `git diff --check` clean; secret scan clean.
 - **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY); UI-2 KVM Retry tooltip (run 2026-11-05 08:00 UTC)`.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow.
+
+## 2026-11-05 08:47 UTC — EMULATOR
+
+- **Baseline:** analyze 0; tests 518 passed / 1 skipped; starting commit bb0f2ea (origin/main synced); issues validate OK; working tree clean.
+- **Primary work:** EMULATOR per alternation (last primary: DOCS 2026-11-05 08:00 UTC). Ran official DMTF Redfish-Mockup-Server via `tool/emulator/run_tests.sh` (pinned 23d21f9a, HTTPS on 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, trap cleanup).
+- **Docs:** none this run (anchors unchanged — bmcweb ade964e7, mockup 23d21f9a, DSP0266 1.25.0, schema index current).
+- **Emulator:** **85/85 tests passed** (service root, discovery, systems/chassis/manager, power/actions, sensors/metrics/controls, firmware inventory/update paths, tasks, ActionInfo contracts, VirtualMedia/SecureBoot, sessions/accounts, logs, subscriptions/event destinations, corpus invariants, SystemSettingsService Boot/LocationIndicatorActive PATCH flows). Server stopped cleanly via trap.
+- **Code/tests:** no production code or unit tests changed this run (verification only).
+- **UI:** none this run (no small tested UI improvement identified within time; skipped).
+- **Verification:** analyze 0; tests 518 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** pending — tracking/docs update for this run.
+- **Next:** 1) DOCS per alternation — anchor re-verify (mirror queue EMPTY); 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow; 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
