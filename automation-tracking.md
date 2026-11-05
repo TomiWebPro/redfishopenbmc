@@ -5208,3 +5208,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** pending — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-05 06:08 UTC)`.
 - **Next:** 1) DOCS per alternation — anchor re-verify (mirror queue likely EMPTY); 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels or pick next issue from issues/open.
+
+## 2026-11-05 08:00 UTC — DOCS
+
+- **Baseline:** analyze 0; tests 518 passed / 1 skipped; starting commit d0d50a8 (origin/main synced); issues validate OK; working tree clean.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 2026-11-05 06:08). Anchor freshness re-verify: bmcweb openbmc/bmcweb @ ade964e738c3 (unchanged), DMTF Redfish-Mockup-Server @ 23d21f9a3610 (unchanged), DSP0266 1.25.0 (200 OK), schema index (200 OK). All sources current; mirror queue EMPTY, 0 new downloads.
+- **Docs:** Updated `documentations/external/README.md` "Current upstream anchors" (2026-11-05 08:00 UTC); updated `documentations/external/redfish/REQUIREMENTS.md` "Last audited" header. Updated `FUTUREWORK.md` Last updated/current focus.
+- **Emulator:** none this run (anchor re-verify only).
+- **Code/tests:** UI-2 small tested improvement — added Tooltip "Retry loading KVM consoles" to KVM error-state Retry button (`lib/features/kvm/views/kvm_view.dart`) and extended `test/features/kvm/kvm_widget_test.dart` to assert the tooltip.
+- **UI:** KVMView error Retry tooltip added (UI-2 accessibility, consistent with dashboard/firmware/sensors patterns).
+- **Verification:** analyze 0; tests 518 passed / 1 skipped; issues validate OK (unchanged); `git diff --check` clean; secret scan clean.
+- **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY); UI-2 KVM Retry tooltip (run 2026-11-05 08:00 UTC)`.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow.

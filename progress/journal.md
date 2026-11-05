@@ -5012,3 +5012,20 @@
 
 **Issues touched:**
 - none opened/closed this run (EMULATOR verification only).
+
+## 2026-11-05 — agent:redfish-automation — DOCS
+
+**Done:**
+- DOCS per alternation (last primary: EMULATOR 2026-11-05 06:08). Anchor freshness re-verify: bmcweb `ade964e7` (unchanged), Redfish-Mockup-Server `23d21f9a` (unchanged), DSP0266 1.25.0 (200 OK), schema index (200 OK). Mirror queue EMPTY; 0 new downloads.
+- Updated `documentations/external/README.md` anchors header and `documentations/external/redfish/REQUIREMENTS.md` "Last audited"; updated `FUTUREWORK.md` focus/last updated.
+- UI-2: added Tooltip "Retry loading KVM consoles" to KVM error Retry button; extended `test/features/kvm/kvm_widget_test.dart` to verify tooltip.
+
+**Decisions:**
+- Followed alternation (EMULATOR → DOCS). No corpus refresh needed (anchors unchanged). Landed one small tested UI improvement (UI-2 accessibility) as time permitted.
+
+**Next:**
+- EMULATOR per alternation — cheap 85/85 re-run
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+
+**Issues touched:** none

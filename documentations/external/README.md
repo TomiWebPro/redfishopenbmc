@@ -364,25 +364,16 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-11-05 05:32 UTC — DOCS run, anchor freshness re-verify (all sources current; mirror queue EMPTY))
+## Current upstream anchors (verified 2026-11-05 08:00 UTC — DOCS run, anchor freshness re-verify: all sources current; mirror queue EMPTY)
 
-- Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK, curl + UA)
-- DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK, 3.4 MB listing;
-  byte-identical SHA-256 `e5a29797…` re-verified 2026-11-04 12:2x UTC)
+- Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK)
+- DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK)
 - Redfish specification DSP0266 — <https://www.dmtf.org/sites/default/files/standards/documents/DSP0266_1.25.0.pdf>
-  (1.24 MB, linked from the hub at `DSP0266_1.25.0.pdf`; probe of `DSP0266_1.26.0.pdf`
-  → 404 — 1.25.0 is still the current release. The `redfish.dmtf.org/sites/...`
-  path 404s; the hub links the `www.dmtf.org` URL — manifest rows already use
-  the working URL; re-verified byte-identical SHA-256 `385ee6d0…` 2026-11-04
-  12:2x UTC)
+  (DSP0266 1.25.0 still current; 200 OK)
 - Redfish Mockup Server — <https://github.com/DMTF/Redfish-Mockup-Server>
-  (default branch `main` @ `23d21f9a` — unchanged, re-verified 2026-11-04
-  12:2x UTC via `git ls-remote`; README saved to `redfish/mockup/`)
+  (default branch `main` @ `23d21f9a3610f3272144a5d708f1c26957f574f8` — unchanged, re-verified 2026-11-05 08:00 UTC)
 - OpenBMC bmcweb docs — <https://github.com/openbmc/bmcweb/tree/master/docs>
-  (**master advanced `c846fb5d` → `ade964e738c3ac75027e042d42af310650054de9`**,
-  detected 2026-11-04 12:2x UTC via `git ls-remote`; REDFISH_CHECKLIST.md,
-  OEM_SCHEMAS.md, CLIENTS.md came over **byte-identical** at the new HEAD, but
-  **Redfish.md changed** — its only delta is the removed `- IndicatorLED` bullet
+  (master @ `ade964e738c3ac75027e042d42af310650054de9` — unchanged, re-verified 2026-11-05 08:00 UTC; no corpus refresh needed, mirror queue EMPTY)
   from upstream commit `522e6b7e` (2026-10-19, "IndicatorLED: Remove deprecated
   property": redfish-allow-deprecated-indicatorled was disabled by default in
   2025 and scheduled for removal by 2026-03 — IndicatorLED GETs/PATCHes now

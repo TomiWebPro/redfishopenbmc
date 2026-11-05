@@ -110,10 +110,13 @@ class _KvmViewState extends ConsumerState<KvmView> {
                 ),
               ),
               const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: () => controller.load(),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+              Tooltip(
+                message: 'Retry loading KVM consoles',
+                child: FilledButton.icon(
+                  onPressed: () => controller.load(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
               ),
             ],
           ),
