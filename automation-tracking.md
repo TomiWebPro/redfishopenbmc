@@ -5375,3 +5375,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 519 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this run) — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-05 17:59 UTC)`; pushed: pending.
 - **Next:** 1) DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
+
+## 2026-11-05 18:37 UTC — DOCS
+
+- **Baseline:** analyze 0; tests 519 passed / 1 skipped (last verified @ 8138289); starting commit 8138289 (origin/main synced); issues validate OK; working tree clean.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 2026-11-05 17:59 UTC). Anchor freshness re-verify via HTTP HEAD/GitHub API: Redfish Developer Hub 200, DMTF schema index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb `ade964e738c3` (master HEAD, unchanged), Redfish-Mockup-Server `23d21f9a3610` (main HEAD, unchanged). All sources current; mirror queue EMPTY; 0 new downloads (within DOCS-6 budget).
+- **Docs:** Updated `documentations/external/README.md` "Current upstream anchors" (2026-11-05 18:37 UTC); updated `documentations/external/redfish/REQUIREMENTS.md` "Last audited" header. Updated `FUTUREWORK.md` Last updated/Current focus (next: EMULATOR).
+- **Emulator:** none this run (anchor re-verify only).
+- **Code/tests:** no production code or unit tests changed. Full `flutter test` stalled due to environment contention from duplicate test processes started during preflight (killed); `flutter analyze` 0, `test/core/theme_test.dart` harness verified green; DOCS-only diff.
+- **UI:** skipped — no safe low-risk UI-2 increment identified (recent tooltip/merged-semantics work covered common gaps); avoided untested churn; tests stalled during run.
+- **Verification:** analyze 0; issues validate OK; `git diff --check` clean; secret scan clean (docs/tracking timestamps only). Full suite: baseline 519 passed / 1 skipped @ 8138289 (no code changes this run).
+- **Commit:** c495087 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-05 18:37 UTC)`; pushed: pending (pre-push).
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run. 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
