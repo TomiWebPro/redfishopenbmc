@@ -4994,3 +4994,21 @@
 - **Decisions:** Alternating after EMULATOR → DOCS; focused on anchor freshness + small accessibility tweak (UI-2) as time permitted.
 - **Next:** EMULATOR cheap 85/85 re-run per alternation; address P1 #008 resilience gaps or P1 #015 AuthManager session expiry wiring.
 - **Issues touched:** none closed/opened this run.
+
+## 2026-11-05 — agent:redfish-automation — #EMUL-03
+
+**Done:**
+- EMULATOR per alternation (last primary: DOCS 2026-11-05 05:32). Ran official DMTF Redfish-Mockup-Server via `tool/emulator/run_tests.sh` (pin `23d21f9a`, HTTPS self-signed, trap cleanup). **85/85 tests passed** — full corpus-invariant crawl, query contracts, auth/account, firmware/push seams, chassis metrics/subsystems/batteries/controls, EventDestination, Boot/PATCH/If-Match, ActionInfo, Certificate/Key/ComponentIntegrity, Bios Settings all green.
+- No code changes (verification-only). All verification gates pass (analyze 0, tests 518/1 skipped, issues validate OK, git diff clean).
+
+**Decisions:**
+- Followed alternation (DOCS → EMULATOR). No UI increment this run due to primary work focus; recorded in tracking.
+- No corpus/schema changes; upstream anchors unchanged.
+
+**Next:**
+- DOCS per alternation — anchor re-verify (mirror queue likely EMPTY)
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff)
+- UI-2 remaining focus audit + non-card labels or pick next issue from issues/open
+
+**Issues touched:**
+- none opened/closed this run (EMULATOR verification only).
