@@ -5076,3 +5076,20 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-05 — agent:redfish-automation — DOCS
+
+**Done:**
+- DOCS per alternation (last primary: EMULATOR 2026-11-05 10:52 UTC). Anchor freshness re-verify: Redfish Developer Hub 200, DMTF schema index 200, DSP0266 1.25.0 200, bmcweb `ade964e738c3` (unchanged), Redfish-Mockup-Server `23d21f9a3610` (unchanged). Mirror queue EMPTY; 0 new downloads.
+- Updated `documentations/external/README.md`, `documentations/external/redfish/REQUIREMENTS.md`, `FUTUREWORK.md` timestamps/focus.
+- UI-2 (small tested): PowerView discovery-pending state now announces one merged `Loading power control` semantics node (not a bare spinner); added widget test in `test/features/power/power_view_test.dart`.
+
+**Decisions:**
+- Followed alternation (EMULATOR → DOCS). No corpus refresh (anchors unchanged). Landed small tested UI accessibility improvement within time.
+
+**Next:**
+- EMULATOR per alternation — cheap 85/85 re-run
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
+
+**Issues touched:** none

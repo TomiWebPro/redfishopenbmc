@@ -48,8 +48,18 @@ class PowerView extends ConsumerWidget {
         ),
       );
     }
+    // UI-2: discovery is still resolving capabilities for this system; announce
+    // a single merged "Loading power control" node (no Retry — there is nothing
+    // to reload yet) instead of a bare unlabeled progress indicator.
     if (features == null) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: Semantics(
+          container: true,
+          excludeSemantics: true,
+          label: 'Loading power control',
+          child: const CircularProgressIndicator(),
+        ),
+      );
     }
     // Hard gate: no power control → render nothing (no placeholder).
     if (!features.powerControl) {

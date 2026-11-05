@@ -5256,3 +5256,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** pending — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-05 10:52 UTC)`.
 - **Next:** 1) DOCS per alternation — anchor re-verify (mirror queue EMPTY); 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow; 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff).
+
+## 2026-11-05 11:29 UTC — DOCS
+
+- **Baseline:** analyze 0; tests 518 passed / 1 skipped; starting commit 6e48cf0 (origin/main synced); issues validate OK; working tree clean.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 2026-11-05 10:52 UTC). Anchor freshness re-verify: Redfish Developer Hub 200, DMTF schema index 200, DSP0266 1.25.0 PDF 200, bmcweb `ade964e738c3` (master, unchanged), Redfish-Mockup-Server `23d21f9a3610` (main, unchanged). All sources current; mirror queue EMPTY; 0 new downloads (within DOCS-6 budget).
+- **Docs:** Updated `documentations/external/README.md` "Current upstream anchors" (2026-11-05 11:29 UTC); updated `documentations/external/redfish/REQUIREMENTS.md` "Last audited" header. Updated `FUTUREWORK.md` Last updated/Current focus.
+- **Emulator:** none this run (anchor re-verify only).
+- **Code/tests:** UI-2 small tested improvement — PowerView discovery-pending state (features resolving) now announces one merged semantics node `Loading power control` instead of a bare unlabeled progress indicator; added widget test in `test/features/power/power_view_test.dart`. `lib/features/power/views/power_view.dart`, `test/features/power/power_view_test.dart`.
+- **UI:** PowerView discovery-pending loading semantics added (UI-2 accessibility, consistent with established loading patterns). No Retry shown (nothing to reload yet).
+- **Verification:** analyze 0; tests 519 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** COMMIT_HASH — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY); UI-2 power loading semantics (run 2026-11-05 11:29 UTC)`; pushed: PUSH_STATUS.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow; 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).

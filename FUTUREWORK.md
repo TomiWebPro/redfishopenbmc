@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-05 10:52 UTC (EMULATOR — re-run DMTF mockup server suite 85/85, all contracts verified; mirror queue EMPTY)**
-- **Current focus:** EMULATOR run completed (85/85 passed). DOCS/EMULATOR alternation (last EMULATOR 10:52). Next per alternation: **DOCS** (anchor re-verify). P1 #015 AuthManager (session expiry wiring)  (cheap 85/85 re-run) or proceed to P1 #015 AuthManager (session expiry wiring) / #008 resilience as time permits; UI-2 — remaining focus audit + non-card labels.
+- **Last updated: 2026-11-05 11:29 UTC (DOCS — anchor re-verify, all sources current, mirror queue EMPTY; UI-2 power discovery-pending loading semantics)**
+- **Current focus:** DOCS run completed (anchors current, 0 downloads). Next per alternation: **EMULATOR** (cheap 85/85 re-run). P1 #015 AuthManager (session expiry wiring) / #008 resilience; UI-2 — remaining focus audit + non-card labels.
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked

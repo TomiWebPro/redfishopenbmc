@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -901,6 +902,35 @@ void main() {
         find.bySemanticsLabel('Power control failed. boom'),
         findsOneWidget,
       );
+    });
+
+    testWidgets(
+        'discovery-pending state announces one merged "Loading power control" '
+        'node (UI-2)', (WidgetTester tester) async {
+      // Features are still resolving (discovery not complete) — the view must
+      // announce a self-describing merged node, not a bare unlabeled spinner,
+      // and must not show a Retry (there is nothing to reload yet).
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(
+              SystemHandle(
+                profile: ConnectionProfile(id: 'bmc1', host: 'h'),
+                features: null,
+              ),
+            ),
+          ],
+          child: const MaterialApp(home: PowerView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pump();
+
+      final Finder merged = find.bySemanticsLabel('Loading power control');
+      expect(merged, findsOneWidget);
+      final SemanticsNode node = tester.getSemantics(merged);
+      expect(node.label, contains('Loading power control'));
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('Retry'), findsNothing);
     });
   });
 }
