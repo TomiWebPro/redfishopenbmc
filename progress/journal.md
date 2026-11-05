@@ -5061,3 +5061,18 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-05 — agent:redfish-automation — EMULATOR
+
+**Done:**
+- EMULATOR per alternation (last primary: DOCS 2026-11-05 09:48 UTC). Ran `tool/emulator/run_tests.sh` (DMTF Redfish-Mockup-Server pin 23d21f9a, HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, trap cleanup). **85/85 emulator integration tests passed**; full suite verification: analyze 0, tests 518 passed / 1 skipped, issues validate OK.
+
+**Decisions:**
+- Verification-only run; no production code changes. No UI increment this run (primary workstream consumed time/focus on emulator contracts); recorded in tracking.
+
+**Next:**
+- DOCS per alternation — anchor re-verify (mirror queue EMPTY)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
+
+**Issues touched:** none
