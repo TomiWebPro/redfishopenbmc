@@ -4934,3 +4934,21 @@
 - UI-2 remaining focus audit + non-card labels
 
 **Issues touched:** none
+
+## 2026-11-05 — agent:redfish-automation — #NNN
+
+**Done:**
+- EMULATOR (alternation after DOCS): re-ran official DMTF Redfish-Mockup-Server suite via `tool/emulator/run_tests.sh` (pin `23d21f9a`, HTTPS self-signed, trap cleanup). **85/85 tests passed** — full corpus-invariant crawl, query contracts, auth/account, firmware/push seams, chassis metrics/subsystems/batteries/controls, EventDestination, Boot/PATCH/If-Match, ActionInfo, Certificate/Key/ComponentIntegrity, Bios Settings all green.
+- No code changes (suite already comprehensive). All verification gates pass (analyze 0, tests 518/1 skipped, issues validate OK).
+
+**Decisions:**
+- Followed alternation (DOCS 01:45 → EMULATOR). No UI increment this run due to primary work focus; recorded in tracking.
+- No corpus/schema changes; upstream anchors unchanged.
+
+**Next:**
+- Push queued local commits from a machine with GitHub credentials (known blocker on this host).
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth (schemas mirrored).
+- #008/#020 task poller + bmcweb HTTP-push firmware upload resilience.
+
+**Issues touched:**
+- none opened/closed this run (EMULATOR verification only).

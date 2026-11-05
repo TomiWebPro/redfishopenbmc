@@ -5148,3 +5148,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (docs prose + timestamps/hashes only).
 - **Commit:** pending — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY); docs metadata updated (run 2026-11-05 01:45)`.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels.
+
+## 2026-11-05 02:42 — EMULATOR
+
+- **Baseline:** analyze 0; tests 518 passed / 1 skipped; starting commit bcb51eb. Working tree clean (no crashed-run leftovers). Issues validate OK.
+- **Primary work:** EMULATOR (alternation after DOCS 01:45) — re-ran the official DMTF Redfish-Mockup-Server integration suite via `tool/emulator/run_tests.sh` (pin `23d21f9a`, HTTPS with self-signed test cert, trap cleanup). All contract tests passed.
+- **Docs:** none fetched this run (EMULATOR workstream). Anchors unchanged; no corpus modifications.
+- **Emulator:** **85/85 tests passed** via `test_integration/emulator` against `https://127.0.0.1:8443` (full published-types crawl + query-contract + auth/account + firmware/push + chassis metrics/subsystems/batteries/controls + EventDestination + Boot/PATCH/If-Match + ActionInfo + Certificate/Key/ComponentIntegrity + Bios Settings + corpus invariant all green). Server stopped cleanly via trap; no background processes left.
+- **Code/tests:** no production code changes; emulator suite already up to date and passing. No new tests added (suite comprehensive).
+- **UI:** none this run (primary workstream consumed time; UI-2 increment skipped — recorded below).
+- **Verification:** analyze 0; tests 518 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean. `dart format` on lib/test/test_integration/tool: 0 changed.
+- **Commit:** none (working tree clean, no code changes to commit). pushed: n/a.
+- **Next:** 1) Push queued local commits from a machine with GitHub credentials (repo ahead of origin/main by many commits; known credential blocker on this host). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow (schemas already mirrored). 3) #008/#020 task poller (GET-on-monitor, TaskState/PercentComplete/Messages) + bmcweb HTTP-push firmware upload path.
