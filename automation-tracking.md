@@ -5278,5 +5278,5 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed (verification-only run). Recovery commit fca7df9 corrected prior tracking hash only.
 - **UI:** none this run (verification-only primary workstream; no urgent small UI increment identified within time — recorded).
 - **Verification:** analyze 0; tests 519 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
-- **Commit:** PENDING — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a), recovery+tracking (run 2026-11-05 12:07 UTC)`; pushed: pending (credential blocker on this host expected).
+- **Commit:** 5fa6457 (+ follow-up) — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a), recovery+tracking (run 2026-11-05 12:07 UTC)`; pushed: yes.
 - **Next:** 1) DOCS per alternation — anchor re-verify (mirror queue EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
