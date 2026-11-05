@@ -5291,3 +5291,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 519 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (docs prose + timestamps only).
 - **Commit:** (this run) — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-05 12:45 UTC)`; pushed: pending.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run. 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
+
+## 2026-11-05 13:47 UTC — EMULATOR
+
+- **Baseline:** analyze 0; tests 519 passed / 1 skipped; starting commit 085eb6d (origin/main synced); issues validate OK; working tree clean.
+- **Primary work:** EMULATOR per alternation (last primary: DOCS 2026-11-05 12:45 UTC). Ran `tool/emulator/run_tests.sh` (DMTF Redfish-Mockup-Server pin 23d21f9a3610f6b6fbb71ffc941296b159a524d2, HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, trap cleanup). Full contract re-run.
+- **Docs:** none this run (verification only). Anchors unchanged from recent re-verify (bmcweb ade964e738c3, mockup 23d21f9a3610, DSP0266 1.25.0, schema index current).
+- **Emulator:** **85/85 tests passed** via `test_integration/emulator --dart-define=REDFISH_EMULATOR_URL=https://127.0.0.1:8443` (service root/discovery, systems/chassis/manager, power/actions, sensors/metrics/controls/heaters, firmware inventory+update/push seams, tasks, ActionInfo, VirtualMedia/SecureBoot, sessions/accounts, logs, subscriptions/event destinations, corpus invariants, SystemSettingsService Boot/LocationIndicatorActive PATCH flows). Server stopped cleanly via trap.
+- **Code/tests:** no production code or unit tests changed (verification-only run).
+- **UI:** none this run (verification-only primary workstream; no urgent small tested UI increment identified within time — recorded).
+- **Verification:** analyze 0; tests 519 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** pending — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-05 13:47 UTC)`; pushed: pending.
+- **Next:** 1) DOCS per alternation — anchor re-verify (mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
