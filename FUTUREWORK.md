@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-05 14:15 UTC (DOCS — anchor freshness re-verify: hub/index/DSP0266 200, bmcweb `ade964e738c3` + mockup `23d21f9a3610` unchanged; mirror queue EMPTY, 0 downloads; UI skipped — no low-risk/testable UI-2 gap identified)**
-- **Current focus:** DOCS run completed (anchors current). Next per alternation: **EMULATOR** (cheap 85/85 re-run). P1 #015 AuthManager (session expiry wiring) / #008 resilience (cancel task DELETE, 413/401, low-bandwidth backoff); UI-2 — remaining focus audit + non-card labels.
+- **Last updated: 2026-11-05 15:42 UTC (EMULATOR — DMTF mockup-server pin `23d21f9a`, HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` -S: **85/85** emulator tests passed; full suite analyze 0, 519 passed/1 skipped; anchors unchanged; UI skipped — verification-only run)**
+- **Current focus:** EMULATOR run completed (85/85 green). Next per alternation: **DOCS** (anchor re-verify, mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE, 413/401, low-bandwidth backoff); UI-2 — remaining focus audit + non-card labels.
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
