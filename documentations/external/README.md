@@ -364,16 +364,16 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-11-05 12:45 UTC — DOCS run, anchor freshness re-verify: all sources current — hub/index 200, DSP0266 1.25.0 200, bmcweb `ade964e738c3` (HEAD/master), mockup `23d21f9a3610` (main/HEAD) unchanged; mirror queue EMPTY, 0 downloads)
+## Current upstream anchors (verified 2026-11-05 14:15 UTC — DOCS run, anchor freshness re-verify: all sources current — hub/index 200, DSP0266 1.25.0 200, bmcweb `ade964e738c3`/HEAD master unchanged, mockup `23d21f9a3610`/main unchanged; mirror queue EMPTY, 0 downloads)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK)
 - Redfish specification DSP0266 — <https://www.dmtf.org/sites/default/files/standards/documents/DSP0266_1.25.0.pdf>
   (DSP0266 1.25.0 still current; 200 OK)
 - Redfish Mockup Server — <https://github.com/DMTF/Redfish-Mockup-Server>
-  (default branch `main` @ `23d21f9a3610f3272144a5d708f1c26957f574f8` — unchanged, re-verified 2026-11-05 08:00 UTC)
+  (default branch `main` @ `23d21f9a3610f3272144a5d708f1c26957f574f8` — unchanged, re-verified 2026-11-05 14:15 UTC)
 - OpenBMC bmcweb docs — <https://github.com/openbmc/bmcweb/tree/master/docs>
-  (master @ `ade964e738c3ac75027e042d42af310650054de9` — unchanged, re-verified 2026-11-05 08:00 UTC; no corpus refresh needed, mirror queue EMPTY)
+  (master @ `ade964e738c3ac75027e042d42af310650054de9` — unchanged, re-verified 2026-11-05 14:15 UTC; no corpus refresh needed, mirror queue EMPTY)
   from upstream commit `522e6b7e` (2026-10-19, "IndicatorLED: Remove deprecated
   property": redfish-allow-deprecated-indicatorled was disabled by default in
   2025 and scheduled for removal by 2026-03 — IndicatorLED GETs/PATCHes now
