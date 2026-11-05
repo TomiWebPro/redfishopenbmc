@@ -5337,5 +5337,5 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed.
 - **UI:** skipped this run — UI-2 scan found no obvious low-risk/testable accessibility gap beyond recent tooltip+merged-semantics work; avoided untested UI churn.
 - **Verification:** analyze 0; tests 519 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (docs/tracking timestamps only).
-- **Commit:** 180e357 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-05 16:16 UTC)`; pushed: pending.
+- **Commit:** 8f77103 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-05 16:16 UTC)`; pushed: pending.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run. 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
