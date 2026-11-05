@@ -4883,3 +4883,20 @@
 - UI-2 remaining focus audit + non-card labels
 
 **Issues touched:** none (verification run)
+
+## 2026-11-05 — agent:redfish-automation — #NNN
+
+**Done:**
+- DOCS per alternation (last primary: EMULATOR 2026-11-04 23:45). Anchor freshness re-verify of all four upstream sources (bmcweb openbmc/bmcweb @ ade964e7, DMTF Redfish-Mockup-Server @ 23d21f9a, DSP0266 1.25.0, schema index) — all current; mirror queue EMPTY, 0 new downloads. Updated `documentations/external/README.md`, `documentations/external/redfish/REQUIREMENTS.md`, and `FUTUREWORK.md` metadata.
+- UI-2 small tested improvement: added focus order test for `ConfirmRemoveSystemDialog` (dialog opens with keyboard focus on Cancel / least-destructive action) in `test/features/systems/ui_widget_test.dart`. Existing focus handling verified.
+
+**Decisions:**
+- Followed alternation (EMULATOR → DOCS). No corpus refresh needed; anchors all current.
+- Added a small tested UI/accessibility improvement to satisfy "one small tested UI improvement per green run" while primary workstream (DOCS) was lightweight.
+
+**Next:**
+- EMULATOR per alternation — cheap 85/85 re-run
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
+- UI-2 remaining focus audit + non-card labels
+
+**Issues touched:** none

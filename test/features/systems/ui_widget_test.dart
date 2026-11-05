@@ -1171,6 +1171,27 @@ void main() {
   });
 
   group('ConfirmRemoveSystemDialog — destructive confirmation (UI-2/UI-5)', () {
+    /// Whether the primary keyboard focus currently sits inside any widget
+    /// matched by [finder]; walks up from the focused element to the root.
+    bool focusInside(WidgetTester tester, Finder finder) {
+      final FocusNode? node = tester.binding.focusManager.primaryFocus;
+      final BuildContext? focused = node?.context;
+      if (focused == null) return false;
+      final List<Element> matches = finder.evaluate().toList();
+      return matches.any((Element candidate) {
+        if (identical(candidate, focused)) return true;
+        bool inside = false;
+        (focused as Element).visitAncestorElements((Element ancestor) {
+          if (identical(ancestor, candidate)) {
+            inside = true;
+            return false;
+          }
+          return true;
+        });
+        return inside;
+      });
+    }
+
     // Pumping the real dashboard so the Remove menu action is exercised
     // end-to-end (the dialog is wired in DashboardView._onMenuAction).
     Future<void> pumpDashboard(
@@ -1312,6 +1333,43 @@ void main() {
       expect(m.state.systems.containsKey('bmc1'), isTrue,
           reason: 'cancel must not remove the profile');
       expect(find.text('Lab'), findsOneWidget);
+    });
+
+    testWidgets(
+        'dialog opens with keyboard focus on Cancel (the least-destructive action)',
+        (tester) async {
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(
+            id: 'bmc1',
+            name: 'Lab',
+            health: Health.ok,
+            power: PowerState.on,
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+      await openRemoveDialog(tester, m);
+
+      expect(find.text('Remove system?'), findsOneWidget);
+      final Finder dialog = find.byType(AlertDialog);
+      final Finder cancel = find.descendant(
+        of: dialog,
+        matching: find.widgetWithText(TextButton, 'Cancel'),
+      );
+      final Finder remove = find.descendant(
+        of: dialog,
+        matching: find.widgetWithText(FilledButton, 'Remove'),
+      );
+      expect(cancel, findsOneWidget);
+      expect(remove, findsOneWidget);
+
+      // Focus moves into the dialog and lands on Cancel (least destructive),
+      // so keyboard users cannot accidentally trigger removal.
+      expect(focusInside(tester, cancel), isTrue,
+          reason: 'Cancel must receive initial focus');
+      expect(focusInside(tester, remove), isFalse,
+          reason: 'Remove must not receive initial focus');
     });
 
     testWidgets('confirming removes the system and its profile',
