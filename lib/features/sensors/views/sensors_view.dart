@@ -131,10 +131,13 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
                 ),
               ),
               const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+              Tooltip(
+                message: 'Retry loading sensors',
+                child: FilledButton.icon(
+                  onPressed: _load,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
               ),
             ],
           ),

@@ -4987,3 +4987,10 @@
 - P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
 
 **Issues touched:** none
+
+## 2026-11-05 — agent:redfish-automation — #DOCS-04
+
+- **Done:** Anchors re-verified (all sources current, mirror queue EMPTY); updated external README + REQUIREMENTS.md + FUTUREWORK.md timestamps. UI-2: added Tooltip to SensorsView error Retry button.
+- **Decisions:** Alternating after EMULATOR → DOCS; focused on anchor freshness + small accessibility tweak (UI-2) as time permitted.
+- **Next:** EMULATOR cheap 85/85 re-run per alternation; address P1 #008 resilience gaps or P1 #015 AuthManager session expiry wiring.
+- **Issues touched:** none closed/opened this run.

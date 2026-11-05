@@ -5184,3 +5184,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** none (working tree clean, no code changes to commit). pushed: n/a.
 - **Next:** 1) DOCS per alternation — anchor re-verify (mirror queue EMPTY); 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow.
+
+## 2026-11-05 05:32 UTC — DOCS
+
+- **Baseline:** analyze 0; tests 518 passed / 1 skipped; starting commit 18ef7ff (origin/main synced after recovery commit); issues validate OK; working tree clean.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 2026-11-05 04:35 UTC). Anchor freshness re-verify of all four upstream sources (Redfish Developer Hub, DMTF schema index, DSP0266 1.25.0, Redfish-Mockup-Server 23d21f9a, openbmc/bmcweb ade964e7) — all accessible (200 OK); mirror queue EMPTY, 0 new downloads.
+- **Docs:** Updated `documentations/external/README.md` "Current upstream anchors" timestamp (2026-11-05 05:32 UTC); updated `documentations/external/redfish/REQUIREMENTS.md` "Last audited" header. Updated `FUTUREWORK.md` Last updated.
+- **Emulator:** none this run (docs anchor re-verify only).
+- **Code/tests:** Added small tested UI improvement (UI-2 accessibility) — `SensorsView` error-state Retry button now has tooltip "Retry loading sensors" for consistency with dashboard/firmware patterns. No test changes required; all tests pass.
+- **UI:** SensorsView error Retry tooltip added (UI-2).
+- **Verification:** analyze 0; tests 518 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (docs prose + timestamps only).
+- **Commit:** pending — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY), UI-2 sensors Retry tooltip (run 2026-11-05 05:32 UTC)`.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow.
