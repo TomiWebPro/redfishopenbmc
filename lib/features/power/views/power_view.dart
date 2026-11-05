@@ -132,10 +132,13 @@ class PowerView extends ConsumerWidget {
                     alignment: Alignment.centerLeft,
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: TextButton.icon(
-                        onPressed: () => controller.refresh(),
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Retry'),
+                      child: Tooltip(
+                        message: 'Retry loading power state',
+                        child: TextButton.icon(
+                          onPressed: () => controller.refresh(),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Retry'),
+                        ),
                       ),
                     ),
                   ),

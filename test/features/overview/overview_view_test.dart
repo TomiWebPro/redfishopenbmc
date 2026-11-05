@@ -358,6 +358,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Unable to load overview'), findsOneWidget);
       expect(find.widgetWithText(FilledButton, 'Retry'), findsOneWidget);
+      expect(find.byTooltip('Retry loading overview'), findsOneWidget);
 
       // Tapping retry must not crash (re-runs the failing provider).
       await tester.tap(find.widgetWithText(FilledButton, 'Retry'));

@@ -457,10 +457,13 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
               ),
             ),
             const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: _refresh,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+            Tooltip(
+              message: 'Retry loading overview',
+              child: FilledButton.icon(
+                onPressed: _refresh,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
             ),
           ],
         ),

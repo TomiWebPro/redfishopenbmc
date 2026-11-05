@@ -5232,3 +5232,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** pending — tracking/docs update for this run.
 - **Next:** 1) DOCS per alternation — anchor re-verify (mirror queue EMPTY); 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow; 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
+
+## 2026-11-05 09:48 UTC — DOCS
+
+- **Baseline:** analyze 0; tests 518 passed / 1 skipped; starting commit 513d359 (origin/main synced); issues validate OK; working tree clean.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 2026-11-05 08:47 UTC). Anchor freshness re-verify: Redfish Developer Hub 200, DMTF schema index 200, DSP0266 1.25.0 PDF 200, bmcweb `ade964e738c3` (master, unchanged), Redfish-Mockup-Server `23d21f9a3610` (main, unchanged). All sources current; mirror queue EMPTY; 0 new downloads (within DOCS-6 budget).
+- **Docs:** Updated `documentations/external/README.md` "Current upstream anchors" (2026-11-05 09:48 UTC); updated `documentations/external/redfish/REQUIREMENTS.md` "Last audited" header. Updated `FUTUREWORK.md` Last updated/Current focus.
+- **Emulator:** none this run (anchor re-verify only).
+- **Code/tests:** UI-2 small tested improvement — added Tooltip "Retry loading overview" to OverviewView error-state Retry button and Tooltip "Retry loading power state" to PowerView error-state Retry button; extended `test/features/overview/overview_view_test.dart` and `test/features/power/power_view_test.dart` with tooltip assertions. `lib/features/overview/views/overview_view.dart`, `lib/features/power/views/power_view.dart`, 2 test files updated.
+- **UI:** OverviewView + PowerView error Retry tooltips added (UI-2 accessibility, consistent with dashboard/firmware/sensors/KVM patterns).
+- **Verification:** analyze 0; tests 518 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY); UI-2 overview+power Retry tooltips (run 2026-11-05 09:48 UTC)`; pushed: pending.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow; 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).

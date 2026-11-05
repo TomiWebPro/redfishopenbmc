@@ -858,6 +858,7 @@ void main() {
       );
       // The Retry control is still separately announced (it is a control).
       expect(find.bySemanticsLabel(RegExp('^Retry')), findsOneWidget);
+      expect(find.byTooltip('Retry loading power state'), findsOneWidget);
     });
 
     testWidgets('tapping Retry re-runs the power-state fetch without crashing',
