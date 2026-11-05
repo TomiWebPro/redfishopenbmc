@@ -4969,3 +4969,21 @@
 - UI-2 remaining focus audit + non-card labels
 
 **Issues touched:** none
+
+## 2026-11-05 — agent:redfish-automation — EMUL-02
+
+**Done:**
+- EMULATOR per alternation (last primary: DOCS 2026-11-05 03:24 UTC). Fresh setup of DMTF Redfish-Mockup-Server (clone, venv, deps, self-signed cert), served fixture with `-S` on https://127.0.0.1:8443; health check OK.
+- Ran emulator integration tests: **85/85 passed** verifying service root, discovery, systems/chassis/manager, power/actions, sensors/metrics/controls, firmware/update paths, tasks, ActionInfo, VirtualMedia/SecureBoot, sessions/accounts, logs, subscriptions/event destinations, corpus invariants, SystemSettingsService PATCH flows. Server stopped cleanly.
+- Verification: analyze 0, tests 518 passed / 1 skipped, issues validate OK, git diff --check clean.
+
+**Decisions:**
+- Followed alternation (DOCS → EMULATOR). No code changes required; verification-only run confirms contracts remain green.
+- No UI increment this run due to primary workstream focus; recorded in tracking.
+
+**Next:**
+- DOCS per alternation — anchor re-verify (mirror queue EMPTY)
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+
+**Issues touched:** none
