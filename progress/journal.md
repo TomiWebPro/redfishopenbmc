@@ -4900,3 +4900,20 @@
 - UI-2 remaining focus audit + non-card labels
 
 **Issues touched:** none
+
+## 2026-11-05 — agent:redfish-automation — #EMUL-01
+
+**Done:**
+- EMULATOR per alternation (last primary: DOCS 2026-11-05 00:38 UTC). Started fresh DMTF Redfish-Mockup-Server (cloned /tmp/redfish-mockup-server, venv + deps, self-signed cert for 127.0.0.1), served `test/fixtures/redfish/dmtf_mockup` with `-S` on https://127.0.0.1:8443. Health check passed.
+- Ran emulator integration tests: `flutter test test_integration/emulator --dart-define=REDFISH_EMULATOR_URL=https://127.0.0.1:8443` — **85/85 passed**. Verified live Redfish contracts (discovery, systems/chassis/manager, power/actions, sensors/metrics/controls, firmware/update, tasks, ActionInfo, VirtualMedia/SecureBoot, sessions/accounts, logs, subscriptions/event destinations, corpus invariants, SystemSettingsService PATCH flows). Stopped server.
+- Verification: analyze 0, tests 518 passed / 1 skipped, issues validate OK, git diff --check clean.
+
+**Decisions:**
+- Followed alternation (DOCS → EMULATOR). No code changes required; verification-only run confirms contracts remain green.
+
+**Next:**
+- DOCS per alternation (anchor re-verify; mirror queue EMPTY)
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff)
+- UI-2 remaining focus audit + non-card labels or pick next issue from issues/open
+
+**Issues touched:** none
