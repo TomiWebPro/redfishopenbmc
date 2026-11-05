@@ -4917,3 +4917,20 @@
 - UI-2 remaining focus audit + non-card labels or pick next issue from issues/open
 
 **Issues touched:** none
+
+## 2026-11-05 01:45 — agent:redfish-automation — #DOCS-02
+
+**Done:**
+- DOCS per alternation (last primary: EMULATOR 2026-11-05 01:15). Anchor freshness re-verify of all four upstream sources (Redfish Developer Hub, DMTF schema index, DSP0266 1.25.0, Redfish-Mockup-Server 23d21f9a, openbmc/bmcweb ade964e7) — all current (200 OK); mirror queue EMPTY, 0 new downloads.
+- Updated `documentations/external/README.md` "Current upstream anchors" timestamp; updated `documentations/external/redfish/REQUIREMENTS.md` "Last audited" header. Updated `FUTUREWORK.md` Last updated and next focus.
+- Verification: analyze 0, tests 518 passed / 1 skipped, issues validate OK, git diff --check clean.
+
+**Decisions:**
+- Followed alternation (EMULATOR → DOCS). No corpus refresh needed; all anchors current. No obvious small tested UI improvement identified within time budget for this lightweight docs run.
+
+**Next:**
+- EMULATOR per alternation — cheap 85/85 re-run
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff)
+- UI-2 remaining focus audit + non-card labels
+
+**Issues touched:** none
