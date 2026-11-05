@@ -4952,3 +4952,20 @@
 
 **Issues touched:**
 - none opened/closed this run (EMULATOR verification only).
+
+## 2026-11-05 — agent:redfish-automation — #DOCS-03
+
+**Done:**
+- DOCS per alternation (last primary: EMULATOR 2026-11-05 02:42). Anchor freshness re-verify of all four upstream sources (Redfish Developer Hub, DMTF schema index, DSP0266 1.25.0, Redfish-Mockup-Server 23d21f9a, openbmc/bmcweb ade964e7) — all current; mirror queue EMPTY, 0 new downloads.
+- Updated `documentations/external/README.md` "Current upstream anchors" timestamp; updated `documentations/external/redfish/REQUIREMENTS.md` "Last audited" header. Updated `FUTUREWORK.md` Last updated.
+- UI-2: Added tooltip to `FirmwareView` error-state Retry button ("Retry loading firmware inventory") for improved accessibility (consistent with dashboard pattern). All tests pass.
+
+**Decisions:**
+- Followed alternation (EMULATOR → DOCS). No corpus refresh needed. Added small tested UI improvement as time permitted.
+
+**Next:**
+- EMULATOR per alternation — cheap 85/85 re-run
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff)
+- UI-2 remaining focus audit + non-card labels
+
+**Issues touched:** none

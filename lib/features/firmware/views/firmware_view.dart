@@ -237,10 +237,13 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            TextButton(
-                              onPressed:
-                                  ui.loading ? null : () => controller.load(),
-                              child: const Text('Retry'),
+                            Tooltip(
+                              message: 'Retry loading firmware inventory',
+                              child: TextButton(
+                                onPressed:
+                                    ui.loading ? null : () => controller.load(),
+                                child: const Text('Retry'),
+                              ),
                             ),
                           ],
                         ),

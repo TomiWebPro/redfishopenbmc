@@ -5160,3 +5160,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean. `dart format` on lib/test/test_integration/tool: 0 changed.
 - **Commit:** none (working tree clean, no code changes to commit). pushed: n/a.
 - **Next:** 1) Push queued local commits from a machine with GitHub credentials (repo ahead of origin/main by many commits; known credential blocker on this host). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow (schemas already mirrored). 3) #008/#020 task poller (GET-on-monitor, TaskState/PercentComplete/Messages) + bmcweb HTTP-push firmware upload path.
+
+## 2026-11-05 03:24 UTC — DOCS
+
+- **Baseline:** analyze 0; tests 518 passed / 1 skipped; starting commit 1d82930 (origin/main fully synced); issues validate OK; branch `main` clean.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 2026-11-05 02:42). Anchor freshness re-verify of all four upstream sources (Redfish Developer Hub, DMTF schema index, DSP0266 1.25.0, Redfish-Mockup-Server 23d21f9a, openbmc/bmcweb ade964e7) — all current (200 OK); mirror queue EMPTY, 0 new downloads.
+- **Docs:** Updated `documentations/external/README.md` "Current upstream anchors" timestamp; updated `documentations/external/redfish/REQUIREMENTS.md` "Last audited" header. Updated `FUTUREWORK.md` Last updated and Next focus.
+- **Emulator:** none this run (docs anchor re-verify only).
+- **Code/tests:** Added small tested UI improvement for UI-2 accessibility — `FirmwareView` Retry button now has tooltip "Retry loading firmware inventory" (consistent with dashboard error summary pattern). No test changes required (all tests pass).
+- **UI:** FirmwareView error-state Retry button tooltip added for better accessibility.
+- **Verification:** analyze 0; tests 518 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (docs prose + timestamps only).
+- **Commit:** pending — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY), UI-2 firmware Retry tooltip (run 2026-11-05 03:24 UTC)`.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels.
