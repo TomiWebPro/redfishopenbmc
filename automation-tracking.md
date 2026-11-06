@@ -5457,5 +5457,5 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed (verification-only run).
 - **UI:** skipped — verification-only primary workstream; scanned for a small safe/testable UI-2 gap (dashboard Add IconButton already has tooltip per prior notes) — no obvious low-risk increment identified; avoided untested UI churn.
 - **Verification:** analyze 0; tests 519 passed / 1 skipped (baseline, no code changes); emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
-- **Commit:** (this run) — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-06 02:45 UTC)`; pushed: pending.
+- **Commit:** 604124d — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-06 02:45 UTC)`; pushed: yes.
 - **Next:** 1) DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
