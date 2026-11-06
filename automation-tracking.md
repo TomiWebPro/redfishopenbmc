@@ -5565,5 +5565,5 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed.
 - **UI:** skipped — scanned lib (dashboard Add/PopupMenuButton/FAB have tooltips); no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn.
 - **Verification:** analyze 0; tests 519 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (docs/tracking/timestamps only).
-- **Commit:** PENDING — `auto: DOCS — anchor re-verify (bmcweb advanced to d5a6ea1, docs refreshed) (run 2026-11-06 21:15 UTC)`; pushed: pending.
+- **Commit:** d1f03fa — auto: DOCS — anchor re-verify (bmcweb d5a6ea1, docs refreshed) (run 2026-11-06 21:15 UTC); pushed: yes
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run. 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
