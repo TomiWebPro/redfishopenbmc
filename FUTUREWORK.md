@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-06 00:38 UTC (DOCS — anchor freshness re-verify: all sources current — hub/index 200, schema index 200, DSP0266 1.25.0 200, bmcweb `ade964e738c3` unchanged, mockup `23d21f9a3610` unchanged; mirror queue EMPTY, 0 downloads; analyze 0, flutter test 519 passed/1 skipped `--concurrency=1`, issues validate OK; UI skipped — no obvious safe low-risk/testable gap)**
-- **Current focus:** DOCS run completed (mirror queue EMPTY). Next per alternation: **EMULATOR** (cheap 85/85 re-run). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-06 01:14 UTC (EMULATOR — DMTF mockup 85/85 re-run, pin 23d21f9a3610, HTTPS 127.0.0.1:8443, trap cleanup; anchors unchanged; analyze 0, flutter test 519 passed/1 skipped `--concurrency=1`, issues validate OK; UI skipped — verification-only run, no safe low-risk/testable gap identified)**
+- **Current focus:** EMULATOR run completed (85/85 green). Next per alternation: **DOCS** (anchor re-verify; mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
