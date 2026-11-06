@@ -6,7 +6,7 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-11-06 02:07 UTC (DOCS run — anchor freshness re-verify + divergence reconciliation: all sources current — hub/index 200, DMTF schema index 200, DSP0266 1.25.0 200, bmcweb `ade964e738c3` HEAD/master unchanged, Redfish-Mockup-Server `23d21f9a3610` main unchanged; mirror queue EMPTY, 0 new downloads, inside DOCS-6 budget; no corpus/code changes; merged origin divergence preserving EMULATOR 01:14 commits)
+Last audited: 2026-11-06 03:21 UTC (DOCS run — anchor freshness re-verify: all sources current — hub/index 200, DMTF schema index 200, DSP0266 1.25.0 200, bmcweb `ade964e738c3` HEAD/master unchanged, Redfish-Mockup-Server `23d21f9a3610` main unchanged; mirror queue EMPTY, 0 new downloads, inside DOCS-6 budget; no corpus/code changes; next per alternation EMULATOR 85/85 re-run)
 
 Prior: 2026-11-05 18:37 UTC (DOCS run — anchor freshness re-verify: all sources current — hub/index 200, DSP0266 1.25.0 200, bmcweb `ade964e738c3` HEAD/master unchanged, mockup `23d21f9a3610` main unchanged; mirror queue EMPTY, 0 downloads; no corpus changes)
 
