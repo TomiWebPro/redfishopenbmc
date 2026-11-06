@@ -5435,3 +5435,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 519 passed / 1 skipped (`--concurrency=1`); issues validate OK; `git diff --check` clean (post-stage); secret scan clean (docs/tracking timestamps only).
 - **Commit:** 981915c — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-06 00:38 UTC)`; pushed: yes.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run. 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
+
+## 2026-11-06 02:07 UTC — DOCS
+
+- **Baseline:** analyze 0; tests 519 passed / 1 skipped (`--concurrency=1`); starting state `main` ahead 3 / behind 1 of origin (`29b5108` local, `fe002aa` origin) — **divergence reconciled** via `git merge --no-edit origin/main` (merge commit `893aaae`, conflicts resolved in FUTUREWORK.md/automation-tracking.md/progress/journal.md preserving EMULATOR 01:14 entries); post-merge verify: analyze 0, 519 passed/1 skipped; issues validate OK.
+- **Primary work:** DOCS per alternation (last primary completed in reconciled history: EMULATOR 2026-11-06 01:14 UTC, 81588d1, 85/85). Anchor freshness re-verify: Redfish Developer Hub 200, DMTF schema index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb `ade964e738c3` (HEAD/master, unchanged), Redfish-Mockup-Server `23d21f9a3610` (main HEAD, unchanged). All sources current; mirror queue EMPTY; 0 new downloads (inside DOCS-6 budget).
+- **Docs:** Updated `documentations/external/README.md` "Current upstream anchors" (2026-11-06 02:07 UTC, notes divergence reconciliation); updated `documentations/external/redfish/REQUIREMENTS.md` "Last audited" header. Updated `FUTUREWORK.md` Last updated/Current focus (next: EMULATOR).
+- **Emulator:** none this run (anchor re-verify only).
+- **Code/tests:** no production code or unit tests changed. Merge reconciliation touched only tracking/docs files; full suite re-verified green post-merge.
+- **UI:** skipped — scanned for a small safe/testable UI-2 accessibility gap; no obvious low-risk increment identified beyond recent work; avoided untested UI churn.
+- **Verification:** analyze 0; tests 519 passed / 1 skipped (`--concurrency=1`); issues validate OK; `git diff --check` clean (post-stage); secret scan clean (docs/tracking/timestamps only).
+- **Commit:** (this run) — `auto: DOCS — anchor re-verify + merge reconcile divergence (run 2026-11-06 02:07 UTC)`; pushed: pending.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run. 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).

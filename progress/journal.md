@@ -5293,3 +5293,20 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-06 02:07 UTC — agent:redfish-automation — DOCS
+
+**Done:**
+- Reconciled `main`/`origin/main` divergence (local ahead 3 / behind 1; origin had `fe002aa` DOCS 00:38 while local had `25365a0`+`81588d1` EMULATOR 01:14+tracking). Merged `origin/main` (no force-push/rebase), resolved conflicts in FUTUREWORK/automation-tracking/progress/journal preserving EMULATOR 01:14 work; post-merge verify green (analyze 0, 519 passed/1 skipped `--concurrency=1`, issues validate OK).
+- DOCS per alternation (last primary: EMULATOR 01:14, 81588d1). Anchor freshness re-verify: Redfish Developer Hub 200, DMTF schema index 200, DSP0266 1.25.0 200, bmcweb `ade964e738c3` (HEAD/master unchanged), Redfish-Mockup-Server `23d21f9a3610` (main HEAD unchanged). Mirror queue EMPTY; 0 new downloads.
+- Updated `documentations/external/README.md`, `documentations/external/redfish/REQUIREMENTS.md`, `FUTUREWORK.md` timestamps/focus.
+
+**Decisions:**
+- Followed alternation (EMULATOR → DOCS). No corpus refresh (anchors unchanged). Divergence handled via merge commit (preserves history) — never force-push. UI-2 skipped — no obvious safe low-risk/testable accessibility gap; avoided untested churn.
+
+**Next:**
+- EMULATOR per alternation — cheap 85/85 re-run
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
+
+**Issues touched:** none
