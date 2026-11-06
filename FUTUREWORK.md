@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-06 09:02 UTC (EMULATOR — DMTF Redfish-Mockup-Server pin `23d21f9a3610` (HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` `-S`, trap cleanup) full contract re-run: **85/85 passed**. Baseline: analyze 0, tests 519 passed/1 skipped, issues validate OK @ 3c57250. No production code or unit tests changed (verification-only). Anchors unchanged (bmcweb `ade964e738c3`, mockup `23d21f9a3610`, DSP0266 1.25.0). UI skipped — verification-only run; no obvious safe low-risk/testable UI-2 gap; avoided untested churn.)**
-- **Current focus:** DOCS anchors current (mirror queue EMPTY). Next per alternation: **DOCS** (anchor freshness re-verify). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-06 12:57 UTC (DOCS — anchor freshness re-verify per alternation (last primary EMULATOR 09:02, 80b0ab4). Hub 200, DMTF schema index 200, DSP0266 1.25.0 200, bmcweb `ade964e738c3` HEAD/master unchanged, Redfish-Mockup-Server `23d21f9a3610` main HEAD unchanged. Mirror queue EMPTY; 0 new downloads (inside DOCS-6). Baseline: analyze 0, tests 519 passed/1 skipped, issues validate OK @ 80b0ab4. No corpus/code changes. UI skipped — scanned lib (1 IconButton/dashboard Add has tooltip, PopupMenuButton has tooltip, FAB has tooltip); no obvious safe low-risk/testable UI-2 gap; avoided untested churn.)**
+- **Current focus:** DOCS anchors current (mirror queue EMPTY). Next per alternation: **EMULATOR** (85/85 re-run). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
