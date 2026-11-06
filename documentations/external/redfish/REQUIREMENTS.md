@@ -6,28 +6,11 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-11-05 18:37 UTC (DOCS run — anchor freshness re-verify: all sources current — hub/index 200, DSP0266 1.25.0 200, bmcweb `ade964e738c3` HEAD/master unchanged, mockup `23d21f9a3610` main unchanged; mirror queue EMPTY, 0 downloads; no corpus changes)
-**corpus refresh of `redfish/openbmc/Redfish.md`**): bmcweb master `c846fb5d`
-→ `ade964e738c3ac75027e042d42af310650054de9` (detected via `git ls-remote`);
-`REDFISH_CHECKLIST.md` / `OEM_SCHEMAS.md` / `CLIENTS.md` came over
-byte-identical at the new HEAD, but **Redfish.md changed** — its only delta is
-the removed `- IndicatorLED` bullet, from upstream commit `522e6b7e`
-(2026-10-19, "IndicatorLED: Remove deprecated property"): the
-`redfish-allow-deprecated-indicatorled` option was disabled by default in 2025
-and scheduled for removal by 2026-03, so bmcweb no longer serves or PATCHes
-`IndicatorLED` on ComputerSystem/Chassis (a PATCH now answers
-`Base.1.19.PropertyUnknown`); `LocationIndicatorActive` is unchanged. The
-mirror was refreshed (new SHA `07e770c9…`, 25,674 B) and the delta audited for
-client impact: **no defect** — the #016 LED flow is capability-gated by
-absence (`IndicatorLed.fromRedfish(null)` → `unknown`; the Overview LED card
-renders `NotExposed()` for `unknown`), so a current bmcweb simply hides the
-control, while services that still expose the deprecated enum keep working.
-A `LocationIndicatorActive` boolean setter is recorded as follow-up
-DOCS-30-a in `FUTUREWORK.md` (not implemented this run). Mockup still
-`23d21f9a`; DSP0266 1.25.0 PDF **byte-identical** SHA-256 `385ee6d0…` vs the
-mirror; schema index **byte-identical** SHA-256 `e5a29797…` (3,448,133 B) vs
-the mirror — DOCS-27's ZERO version advances still hold; downloads this run:
-1 file, 15 bytes delta (inside the DOCS-6 budget).
+Last audited: 2026-11-06 00:38 UTC (DOCS run — anchor freshness re-verify: all sources current — hub/index 200, DMTF schema index 200, DSP0266 1.25.0 200, bmcweb `ade964e738c3` HEAD/master unchanged, Redfish-Mockup-Server `23d21f9a3610` main unchanged; mirror queue EMPTY, 0 new downloads, inside DOCS-6 budget; no corpus/code changes)
+
+Prior: 2026-11-05 18:37 UTC (DOCS run — anchor freshness re-verify: all sources current — hub/index 200, DSP0266 1.25.0 200, bmcweb `ade964e738c3` HEAD/master unchanged, mockup `23d21f9a3610` main unchanged; mirror queue EMPTY, 0 downloads; no corpus changes)
+
+Prior: 2026-11-04 12:2x (DOCS run — **corpus refresh of `redfish/openbmc/Redfish.md`**): bmcweb master `c846fb5d` → `ade964e738c3ac75027e042d42af310650054de9` (detected via `git ls-remote`); `REDFISH_CHECKLIST.md` / `OEM_SCHEMAS.md` / `CLIENTS.md` came over byte-identical at the new HEAD, but **Redfish.md changed** — its only delta is the removed `- IndicatorLED` bullet, from upstream commit `522e6b7e` (2026-10-19, "IndicatorLED: Remove deprecated property"): bmcweb no longer serves/PATCHes `IndicatorLED` on ComputerSystem/Chassis (a PATCH now answers `Base.1.19.PropertyUnknown`); `LocationIndicatorActive` is unchanged. The mirror was refreshed (SHA `07e770c9…`, 25,674 B) and audited: **no defect** — the #016 LED flow is capability-gated by absence (`IndicatorLed.fromRedfish(null)` → `unknown`; Overview renders `NotExposed()`), so a current bmcweb hides the control while services still exposing the deprecated enum keep working. A `LocationIndicatorActive` boolean setter is recorded as DOCS-30-a (not implemented that run). Mockup still `23d21f9a`; DSP0266 1.25.0 PDF byte-identical `385ee6d0…`; schema index byte-identical `e5a29797…` (3,448,133 B) — DOCS-27 ZERO version advances still hold; 1 file, 15 bytes delta (inside DOCS-6).
 
 Prior: 2026-10-26 07:5x (DOCS run — anchor freshness re-verify,
 **bmcweb master HEAD advanced**): bmcweb master `63a18f4` →
