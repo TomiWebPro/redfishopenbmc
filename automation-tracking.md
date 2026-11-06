@@ -5397,5 +5397,5 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed (verification-only run).
 - **UI:** skipped — flutter-test contention diagnosis consumed time; scanned for a small safe/testable UI-2 gap but avoided rushed/untested UI churn.
 - **Verification:** analyze 0; tests 519 passed / 1 skipped (`--concurrency=1`); emulator 85/85; issues validate OK; `git diff --check` clean (post-stage); secret scan clean.
-- **Commit:** 7b4e758 — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-06 00:03 UTC)`; pushed: pending (pre-push).
+- **Commit:** 4b3d1cb — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-06 00:03 UTC)`; pushed: pending (pre-push).
 - **Next:** 1) DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
