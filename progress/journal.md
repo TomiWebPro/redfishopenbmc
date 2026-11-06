@@ -5449,3 +5449,20 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-06 — agent:redfish-automation — #DOCS-21:15
+
+**Done**
+- DOCS: anchor freshness re-verify (Redfish hub/schemas 200, DSP0266 1.25.0 200). bmcweb advanced HEAD/master to `d5a6ea1cbada` (from `ade964e738c3`); refreshed `documentations/external/redfish/openbmc/Redfish.md`, `REDFISH_CHECKLIST.md`, `OEM_SCHEMAS.md` (verified current). mockup `23d21f9a3610` unchanged. Mirror queue EMPTY; 0 new downloads.
+- Updated `documentations/external/README.md` and `documentations/external/redfish/REQUIREMENTS.md` anchors/last-audited; updated `FUTUREWORK.md` focus/last-updated.
+- No code/tests/UI changes. Gates: analyze 0, tests 519 passed/1 skipped, issues validate OK.
+
+**Decisions**
+- Follow alternation: last EMULATOR 13:37 → DOCS anchor re-verify. Mirror queue empty, only provenance/anchor updates needed.
+- No corpus refresh required; bmcweb doc diffs none (files same content) but HEAD advanced — recorded in anchors.
+
+**Next**
+- EMULATOR per alternation (85/85 re-run). P1 #015 AuthManager (wire Session.expiryFromService), P1 #008 resilience (task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+
+**Issues touched**
+- none

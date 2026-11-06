@@ -5555,3 +5555,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 519 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** f585703 — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-06 13:37 UTC)`; pushed: yes.
 - **Next:** 1) DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
+
+## 2026-11-06 21:15 — DOCS
+
+- **Baseline:** analyze 0; tests 519 passed / 1 skipped; starting commit 748accf (origin/main synced, clean tree); issues validate OK.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 2026-11-06 13:37 UTC, f585703/748accf). Anchor freshness re-verify: Redfish Developer Hub 200, DMTF schema index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb `d5a6ea1cbada` HEAD/master (advanced from ade964e738c3), Redfish-Mockup-Server `23d21f9a3610` main HEAD unchanged. Mirrored bmcweb docs refreshed (Redfish.md/OEM_SCHEMAS.md/REDFISH_CHECKLIST.md) and verified current; mirror queue EMPTY; 0 new downloads (inside DOCS-6 budget).
+- **Docs:** Updated `documentations/external/README.md` "Current upstream anchors" (2026-11-06 21:15 UTC); updated `documentations/external/redfish/REQUIREMENTS.md` "Last audited" header. Updated `FUTUREWORK.md` Last updated/Current focus (next: EMULATOR). No corpus refresh needed.
+- **Emulator:** none this run (anchor re-verify only).
+- **Code/tests:** no production code or unit tests changed.
+- **UI:** skipped — scanned lib (dashboard Add/PopupMenuButton/FAB have tooltips); no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn.
+- **Verification:** analyze 0; tests 519 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (docs/tracking/timestamps only).
+- **Commit:** PENDING — `auto: DOCS — anchor re-verify (bmcweb advanced to d5a6ea1, docs refreshed) (run 2026-11-06 21:15 UTC)`; pushed: pending.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run. 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
