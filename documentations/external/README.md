@@ -364,7 +364,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-11-07 00:37 UTC — DOCS run, anchor freshness re-verify: all sources current — hub 200, DMTF schema index 200, DSP0266 1.25.0 200, bmcweb `d5a6ea1cbada` HEAD/master unchanged, Redfish-Mockup-Server `23d21f9a3610` main unchanged; mirrored bmcweb docs verified current; mirror queue EMPTY, 0 new downloads, inside DOCS-6 budget)
+## Current upstream anchors (verified 2026-11-07 01:45 UTC — DOCS run, anchor freshness re-verify: all sources current — hub 200, DMTF schema index 200, DSP0266 1.25.0 200, bmcweb `d5a6ea1cbada` HEAD/master unchanged, Redfish-Mockup-Server `23d21f9a3610` main unchanged; mirrored bmcweb docs verified current; mirror queue EMPTY, 0 new downloads, inside DOCS-6 budget)
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK)
