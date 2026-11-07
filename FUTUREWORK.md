@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-07 (DOCS — anchor freshness re-verify, sources current, mirror queue EMPTY; last primary EMULATOR 14:33 UTC, 371b8a0/f40f1fe; baseline green analyze 0, 519 passed/1 skipped, issues validate OK). Hub/index/DSP0266 1.25.0 200; bmcweb `d5a6ea1cbada` + mockup `23d21f9a3610` HEADs unchanged (GitHub API verified). Mirrored bmcweb docs byte-identical at HEAD; 0 new downloads (DOCS-6). No production code changes. UI skipped — scanned lib; no obvious safe low-risk/testable UI-2 gap identified (dashboard IconButtons have tooltips).)**
-- **Current focus:** Next per alternation: **EMULATOR** — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-07 (EMULATOR — DMTF mockup 85/85 re-run, pin 23d21f9a3610, fixture dmtf_mockup -S, trap cleanup; last primary DOCS 15:59 UTC, 3454644/5bc0d6c; baseline green analyze 0, 519 passed/1 skipped, issues validate OK). Full contract suite passed (discovery/power/sensors/firmware/tasks/ActionInfo/VirtualMedia+SecureBoot/sessions+accounts/logs/subscriptions/corpus/SystemSettings). Anchors unchanged. No production code changes. UI skipped — verification-only run; no obvious safe low-risk/testable UI-2 gap identified.)**
+- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
