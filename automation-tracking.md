@@ -5676,3 +5676,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 519 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean.
 - **Commit:** 9964ca3 — auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-07 05:14 UTC); pushed: yes.
 - **Next:** 1) DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
+
+## 2026-11-07 05:54 UTC — DOCS
+
+- **Baseline:** analyze 0; tests 519 passed / 1 skipped (`--concurrency=1`); starting commit b1616b1 (origin/main synced, clean tree); issues validate OK.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 2026-11-07 05:14 UTC, 9964ca3/b1616b1). Anchor freshness re-verify via `curl -sSIL`/GitHub API: Redfish Developer Hub 200, DMTF schema index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb `d5a6ea1cbada50abe8655d8ef7a515d94ee6b558` (HEAD/master unchanged), Redfish-Mockup-Server `23d21f9a3610f3272144a5d708f1c26957f574f8` (main HEAD unchanged). Mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) verified byte-identical to repo copies — no corpus refresh needed. Mirror queue EMPTY; 0 new downloads (inside DOCS-6 budget).
+- **Docs:** Updated `documentations/external/README.md` "Current upstream anchors" (2026-11-07 05:54 UTC); updated `documentations/external/redfish/REQUIREMENTS.md` Last audited (shifted 04:38 to Prior). Updated `FUTUREWORK.md` Last updated/Current focus (next: EMULATOR).
+- **Emulator:** none this run (anchor re-verify only).
+- **Code/tests:** no production code or unit tests changed.
+- **UI:** skipped — scanned lib (1 IconButton with tooltip in `lib/features/systems/views/dashboard_view.dart`) — no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn.
+- **Verification:** analyze 0; tests 519 passed / 1 skipped; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
+- **Commit:** PENDING — auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-07 05:54 UTC); pushed: pending.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
