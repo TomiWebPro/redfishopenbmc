@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-07 02:59 UTC (DOCS — anchor freshness re-verify per alternation (last primary EMULATOR 02:22, af3bf94/e6341fa). Hub/index 200, DSP0266 1.25.0 200, bmcweb `d5a6ea1cbada` HEAD/master unchanged, mockup `23d21f9a3610` main unchanged. Mirror queue EMPTY; 0 new downloads, inside DOCS-6 budget. No corpus/code changes. UI skipped — scanned lib (dashboard Add IconButton, PopupMenuButton, FAB have tooltips) — no obvious safe low-risk/testable UI-2 gap identified.)**
-- **Current focus:** DOCS anchor re-verify complete (sources current). Next per alternation: **EMULATOR** — cheap 85/85 re-run. P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-07 03:52 UTC (EMULATOR — DMTF mockup 85/85 re-run per alternation (last primary DOCS 02:59, 672b4ba/c1828a7). Pin 23d21f9a3610, HTTPS 127.0.0.1:8443, fixture dmtf_mockup -S, trap cleanup. Full contract suite passed: discovery/power/sensors/firmware/tasks/ActionInfo/VirtualMedia+SecureBoot/sessions+accounts/logs/subscriptions/corpus invariants/SystemSettingsService flows. Anchors unchanged. No code changes. UI skipped — verification-only run; no obvious safe low-risk/testable UI-2 gap identified.)**
+- **Current focus:** EMULATOR 85/85 re-run complete (contracts stable). Next per alternation: **DOCS** — anchor freshness re-verify (mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
