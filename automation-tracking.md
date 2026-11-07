@@ -5567,3 +5567,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 519 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (docs/tracking/timestamps only).
 - **Commit:** d1f03fa — auto: DOCS — anchor re-verify (bmcweb d5a6ea1, docs refreshed) (run 2026-11-06 21:15 UTC); pushed: yes
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run. 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
+
+## 2026-11-07 00:04 UTC — EMULATOR
+
+- **Baseline:** analyze 0; tests 519 passed / 1 skipped; starting commit e9c9dc4 (origin/main synced, clean tree); issues validate OK.
+- **Primary work:** EMULATOR per alternation (last primary: DOCS 2026-11-06 21:15 UTC, d1f03fa/e9c9dc4). Ran `tool/emulator/run_tests.sh` (DMTF Redfish-Mockup-Server pin 23d21f9a3610f6b6fbb71ffc941296b159a524d2, HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, trap cleanup). Full contract re-run.
+- **Docs:** none this run (verification only). Anchors unchanged (bmcweb d5a6ea1cbada, mockup 23d21f9a3610, DSP0266 1.25.0, schema index current).
+- **Emulator:** **85/85 tests passed** via `test_integration/emulator --dart-define=REDFISH_EMULATOR_URL=https://127.0.0.1:8443` (service root/discovery, systems/chassis/manager, power/actions, sensors/metrics/controls/heaters, firmware inventory+update/push seams, tasks, ActionInfo, VirtualMedia/SecureBoot, sessions/accounts, logs, subscriptions/event destinations, corpus invariants, SystemSettingsService Boot/LocationIndicatorActive + Controls PATCH flows). Server stopped cleanly via trap.
+- **Code/tests:** no production code or unit tests changed (verification-only run).
+- **UI:** skipped — verification-only primary workstream; scanned lib (dashboard Add IconButton, PopupMenuButton, FAB all have tooltips) — no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn.
+- **Verification:** analyze 0; tests 519 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (pending — recorded in follow-up chore commit); pushed: pending.
+- **Next:** 1) DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
