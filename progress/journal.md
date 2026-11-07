@@ -5576,3 +5576,18 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-07 04:38 UTC — agent:redfish-automation — DOCS
+
+**Done:**
+- DOCS per alternation (last primary: EMULATOR 2026-11-07 03:52 UTC, a48c064). Preflight green (analyze 0, 519 passed / 1 skipped, issues validate OK, clean tree). Anchor freshness re-verify: hub/index 200, DSP0266 1.25.0 200, bmcweb `d5a6ea1cbada` HEAD/master unchanged, Redfish-Mockup-Server `23d21f9a3610` main HEAD unchanged. Mirrored bmcweb docs byte-identical at `d5a6ea1c` (no refresh). Fixed `documentations/external/README.md` provenance (corrupted "Current upstream anchors" block corrected; bmcweb manifest rows updated to `d5a6ea1c`, re-verified 2026-11-07). Mirror queue EMPTY; 0 new downloads (inside DOCS-6 budget).
+
+**Decisions:**
+- Followed alternation (EMULATOR → DOCS). No corpus refresh (anchors/content unchanged). Corrected stale/corrupted provenance in README as a safe docs fix. UI-2 skipped — scanned lib (dashboard Add IconButton, PopupMenuButton, FAB have tooltips); no obvious safe low-risk/testable gap identified; avoided untested UI churn.
+
+**Next:**
+- EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
+
+**Issues touched:** none

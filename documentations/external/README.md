@@ -34,10 +34,10 @@ documentations/external/
 | File | Source URL | Fetched (UTC) | SHA-256 | Bytes | Upstream version/commit | Notes |
 |---|---|---|---|---|---|---|
 | `redfish/spec/DSP0266_1.25.0.pdf` | https://www.dmtf.org/sites/default/files/standards/documents/DSP0266_1.25.0.pdf | 2026-10-22 12:17 | `385ee6d0039a2dbc610c7af9fa9bba304fc2a461ceb5a8eda0adb33630c82149` | 1,243,359 | DSP0266 1.25.0 | Redfish specification PDF; linked from redfish.dmtf.org hub |
-| `redfish/openbmc/Redfish.md` | https://raw.githubusercontent.com/openbmc/bmcweb/ade964e7/docs/Redfish.md | 2026-11-04 12:45 (refresh landed; prior 2026-10-22 12:31 @ `c846fb5d`) | `07e770c9b925590a362d55b472d15f087035a88cae4dbc41141ed19892554bea` | 25,674 | bmcweb master `ade964e7` (verified 2026-11-04 12:2x UTC); file last-touch `522e6b7e` (2026-10-19, "IndicatorLED: Remove deprecated property") | OpenBMC Redfish overview — **refreshed 2026-11-04**: master advanced `c846fb5d` → `ade964e7` and the file's single delta is the removed `- IndicatorLED` bullet (−15 B) from the upstream IndicatorLED-removal commit; the other three docs + schema index + spec PDF + mockup anchor all byte-identical this run |
-| `redfish/openbmc/REDFISH_CHECKLIST.md` | https://raw.githubusercontent.com/openbmc/bmcweb/ade964e7/docs/REDFISH_CHECKLIST.md | 2026-10-22 12:31 (re-verified 2026-11-04 12:2x UTC @ `ade964e7`) | `98ff60be5d6592dd592b267a36f86224c121aba7ad23c34d8e93ceb2f8cdb5ce` | 1,761 | bmcweb master `ade964e7` (verified 2026-11-04 12:2x UTC); file last-touch `24e758ab` (2025-06-26) | OpenBMC compliance checklist — byte-identical at current master HEAD; untouched since the docs-folder creation commit |
-| `redfish/openbmc/OEM_SCHEMAS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/ade964e7/docs/OEM_SCHEMAS.md | 2026-10-22 12:31 (re-verified 2026-11-04 12:2x UTC @ `ade964e7`) | `7d651fd19bc715b64497fdd466fae03cf043acd50c9efacbacb4a5def469d726` | 5,687 | bmcweb master `ade964e7` (verified 2026-11-04 12:2x UTC); file last-touch `24e758ab` (2025-06-26) | OpenBMC OEM schema extensions — byte-identical at current master HEAD; untouched since the docs-folder creation commit |
-| `redfish/openbmc/CLIENTS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/ade964e7/docs/CLIENTS.md | 2026-10-22 23:40 (re-verified 2026-11-04 12:2x UTC @ `ade964e7`) | `cfea5163ec820bb4edaba449ef837c9906ce3a2b690e22c4ce16132e526a735f` | 2,695 | bmcweb master `ade964e7` (verified 2026-11-04 12:2x UTC); file last-touch `24e758ab` (2025-06-26) | Client-compat map: DMTF validators, python-redfish-library, redfishtool, fwupd — byte-identical at current master HEAD; untouched since the docs-folder creation commit |
+| `redfish/openbmc/Redfish.md` | https://raw.githubusercontent.com/openbmc/bmcweb/d5a6ea1cbada/docs/Redfish.md | 2026-11-04 12:45 (refreshed to `07e770c9`/IndicatorLED removal; re-verified 2026-11-07 byte-identical @ `d5a6ea1c`) | `07e770c9b925590a362d55b472d15f087035a88cae4dbc41141ed19892554bea` | 25,674 | bmcweb master `d5a6ea1cbada` (re-verified 2026-11-07); file last-touch `522e6b7e` (2026-10-19, "IndicatorLED: Remove deprecated property") | OpenBMC Redfish overview — byte-identical at current master HEAD (no content change since 2026-11-04 refresh) |
+| `redfish/openbmc/REDFISH_CHECKLIST.md` | https://raw.githubusercontent.com/openbmc/bmcweb/d5a6ea1cbada/docs/REDFISH_CHECKLIST.md | 2026-10-22 12:31 (re-verified 2026-11-07 byte-identical @ `d5a6ea1c`) | `98ff60be5d6592dd592b267a36f86224c121aba7ad23c34d8e93ceb2f8cdb5ce` | 1,761 | bmcweb master `d5a6ea1cbada` (re-verified 2026-11-07); file last-touch `24e758ab` (2025-06-26) | OpenBMC compliance checklist — byte-identical at current master HEAD |
+| `redfish/openbmc/OEM_SCHEMAS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/d5a6ea1cbada/docs/OEM_SCHEMAS.md | 2026-10-22 12:31 (re-verified 2026-11-07 byte-identical @ `d5a6ea1c`) | `7d651fd19bc715b64497fdd466fae03cf043acd50c9efacbacb4a5def469d726` | 5,687 | bmcweb master `d5a6ea1cbada` (re-verified 2026-11-07); file last-touch `24e758ab` (2025-06-26) | OpenBMC OEM schema extensions — byte-identical at current master HEAD |
+| `redfish/openbmc/CLIENTS.md` | https://raw.githubusercontent.com/openbmc/bmcweb/d5a6ea1cbada/docs/CLIENTS.md | 2026-10-22 23:40 (re-verified 2026-11-07 byte-identical @ `d5a6ea1c`) | `cfea5163ec820bb4edaba449ef837c9906ce3a2b690e22c4ce16132e526a735f` | 2,695 | bmcweb master `d5a6ea1cbada` (re-verified 2026-11-07); file last-touch `24e758ab` (2025-06-26) | Client-compat map — byte-identical at current master HEAD |
 | `redfish/mockup/README-mockup-server.md` | https://raw.githubusercontent.com/DMTF/Redfish-Mockup-Server/master/README.md | 2026-10-22 12:31 (re-verified 2026-11-04 12:2x UTC @ `23d21f9a`) | `0d79a16595033b72b3dea70c14326fa31cfc1e8a2ac4e14bbf4c721222ba15ed` | 7,316 | Redfish-Mockup-Server `23d21f9a` (re-verified 2026-11-04 12:2x UTC) | Mockup server usage + DSP2043 link; committed with trailing whitespace normalized on 2 `cert = `/`key = ` lines (2 bytes) — content identical to upstream `b3af2ff369dcfd78c75f156bd1ddedfca46750d185c59eefdffaa2f11c289431` (7,318 B) — DOCS-27 provenance fix |
 | `redfish/schemas/v1-index.html` | https://redfish.dmtf.org/schemas/v1/ | 2026-10-22 12:17 | `e5a2979727a7fc030fce29b8d7d2be2301f4507df03ed76e2aef48f8dc9c0b86` | 3,448,133 | n/a | Full DMTF schema index listing (14,259 JSON/YAML entries) |
 | `redfish/schemas/v1/<16 schemas>.json` | https://redfish.dmtf.org/schemas/v1/<Name>.json | 2026-10-22 12:34 | see `sha256sum` in run notes | 106,322 (total) | latest per aggregator | Base aggregator stubs for the 16 resources the client maps |
@@ -364,26 +364,24 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-11-07 02:59 UTC — DOCS run, anchor freshness re-verify: all sources current — hub 200, DMTF schema index 200, DSP0266 1.25.0 200, bmcweb `d5a6ea1cbada` HEAD/master unchanged, Redfish-Mockup-Server `23d21f9a3610` main unchanged; mirrored bmcweb docs verified current; mirror queue EMPTY, 0 new downloads, inside DOCS-6 budget)
+## Current upstream anchors (verified 2026-11-07 — DOCS run, anchor freshness re-verify)
+
+All sources current (0 new downloads, inside DOCS-6 budget; mirror queue EMPTY).
+Hub 200, DMTF schema index 200, DSP0266 1.25.0 200.
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK)
 - Redfish specification DSP0266 — <https://www.dmtf.org/sites/default/files/standards/documents/DSP0266_1.25.0.pdf>
   (DSP0266 1.25.0 still current; 200 OK)
 - Redfish Mockup Server — <https://github.com/DMTF/Redfish-Mockup-Server>
-  (default branch `main` @ `23d21f9a3610f3272144a5d708f1c26957f574f8` — unchanged, re-verified 2026-11-05 16:16 UTC)
+  (default branch `main` @ `23d21f9a3610f3272144a5d708f1c26957f574f8` — unchanged, re-verified 2026-11-07)
 - OpenBMC bmcweb docs — <https://github.com/openbmc/bmcweb/tree/master/docs>
-  (master @ `ade964e738c3ac75027e042d42af310650054de9` — unchanged, re-verified 2026-11-05 14:15 UTC; no corpus refresh needed, mirror queue EMPTY)
-  from upstream commit `522e6b7e` (2026-10-19, "IndicatorLED: Remove deprecated
-  property": redfish-allow-deprecated-indicatorled was disabled by default in
-  2025 and scheduled for removal by 2026-03 — IndicatorLED GETs/PATCHes now
-  answer `Base.1.19.PropertyUnknown`, `LocationIndicatorActive` is unchanged),
-  so the mirror was **refreshed** to the new SHA `07e770c9…` (25,674 B) and the
-  audit trace updated (see the DOCS-30 note below); prior: `c846fb5d` was HEAD
-  from 2026-10-26 07:5x UTC with the corpus byte-identical; 2026-10-26 07:5x UTC with the corpus
-  byte-identical; file-level last-touch commits now: `Redfish.md` → `522e6b7e`
-  (2026-10-19), the other three docs → `24e758ab` (2025-06-26 docs-folder
-  creation))
+  (master @ `d5a6ea1cbada50abe8655d8ef7a515d94ee6b558` — unchanged, re-verified 2026-11-07; mirrored `Redfish.md`/`REDFISH_CHECKLIST.md`/`OEM_SCHEMAS.md`/`CLIENTS.md` byte-identical to repo copies, no corpus refresh needed)
+
+File-level last-touch commits (for context): `Redfish.md` → `522e6b7e`
+(2026-10-19, "IndicatorLED: Remove deprecated property"); `REDFISH_CHECKLIST.md`,
+`OEM_SCHEMAS.md`, `CLIENTS.md` → `24e758ab` (2025-06-26 docs-folder creation).
+See the DOCS-30 note below for the IndicatorLED-removal corpus refresh history.
 
 ### DOCS-27 — corpus freshness audit + mockup README provenance fix (2026-10-25 00:15 UTC)
 
