@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-07 (DOCS — anchor freshness re-verify per alternation (last primary EMULATOR 05:14, 9964ca3/b1616b1). Hub/index/DSP0266 1.25.0 200; bmcweb `d5a6ea1cbada` HEAD/master unchanged; Redfish-Mockup-Server `23d21f9a3610` main unchanged. Mirrored bmcweb docs byte-identical (no refresh); mirror queue EMPTY, 0 new downloads (DOCS-6). Baseline green (analyze 0, 519 passed/1 skipped). No production code changes. UI skipped — scanned lib (1 IconButton with tooltip in `lib/features/systems/views/dashboard_view.dart`) — no obvious safe low-risk/testable UI-2 gap identified.)**
-- **Current focus:** DOCS verification complete (anchors current). Next per alternation: **EMULATOR** — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-07 (EMULATOR — DMTF mockup 85/85 re-run per alternation (last primary DOCS 05:54, ed39718/a9a9ae0; pin 23d21f9a3610, HTTPS 127.0.0.1:8443, fixture dmtf_mockup -S). Baseline green (analyze 0, 519 passed/1 skipped); issues validate OK. No production code changes (verification-only). UI skipped — verification-only primary workstream; scanned lib (dashboard Add IconButton/PopupMenuButton/FAB have tooltips) — no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn.)**
+- **Current focus:** EMULATOR verification complete (85/85). Next per alternation: **DOCS** — anchor freshness re-verify (mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
