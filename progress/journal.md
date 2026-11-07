@@ -5685,7 +5685,7 @@
 ## 2026-11-07 14:33 UTC — agent:redfish-automation — EMULATOR
 
 **Done:**
-- EMULATOR per alternation (last primary: DOCS 2026-11-07 12:28 UTC, eb0d93d). Preflight green (analyze 0, 519 passed / 1 skipped, issues validate OK, clean tree). Ran `tool/emulator/run_tests.sh` (DMTF Redfish-Mockup-Server pin 23d21f9a3610f6b6fbb71ffc941296b159a524d2, HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, trap cleanup). **85/85 emulator integration tests passed** (full contract suite incl. discovery/power/sensors/firmware/tasks/ActionInfo/VirtualMedia+SecureBoot/sessions+accounts/logs/subscriptions/corpus invariants/SystemSettingsService Boot/IndicatorLED + Controls PATCH flows). Server stopped cleanly via trap.
+- EMULATOR per alternation (last primary: DOCS 2026-11-07 12:28 UTC, eb0d93d). Preflight green (analyze 0, 519 passed / 1 skipped, issues validate OK, clean tree). Ran `tool/emulator/run_tests.sh` (DMTF Redfish-Mockup-Server pin 23d21f9a3610f6b6fbb71ffc941296b159a524d2, HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, trap cleanup). **85/85 emulator integration tests passed** (full contract suite incl. discovery/power/sensors/firmware/tasks/ActionInfo/VirtualMedia+SecureBoot/sessions+accounts/logs/subscriptions/corpus invariants/SystemSettingsService Boot/IndicatorLED + Controls PATCH flows). Server stopped cleanly via trap. Commit 371b8a0 pushed.
 
 **Decisions:**
 - Verification-only run; no production code changes. UI-2 increment skipped — verification-only primary workstream; scanned lib (dashboard Add IconButton, PopupMenuButton, FAB have tooltips) — no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn.
