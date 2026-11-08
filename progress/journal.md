@@ -5801,3 +5801,18 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-08 01:27 UTC — agent:redfish-automation — EMULATOR
+
+**Done:**
+- EMULATOR per alternation (last primary: DOCS 2026-11-08 00:48 UTC, e153e32). Preflight green (analyze 0, 519 passed / 1 skipped with `TMPDIR=/home/tomi/.cache/flutter-tmp`, issues validate OK); recovered prior tracking-hash WIP (e153e32). Ran `tool/emulator/run_tests.sh` (DMTF Redfish-Mockup-Server pin 23d21f9a3610f6b6fbb71ffc941296b159a524d2, HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, trap cleanup). **85/85 emulator integration tests passed** (full contract suite incl. discovery/power/sensors/firmware/tasks/ActionInfo/VirtualMedia+SecureBoot/sessions+accounts/logs/subscriptions/corpus invariants/SystemSettingsService Boot/IndicatorLED + Controls PATCH/SetPoint flows). Server stopped cleanly via trap. Small UI-2 a11y increment: `FirmwareView` discovery-pending (`handle == null || features == null`) now announces one merged `Loading firmware` semantics node (container+excludeSemantics, established pattern) instead of a bare unlabeled spinner; +1 widget test (`test/features/firmware/firmware_widget_test.dart`, firmware widgets 40→41). Unit suite 520 passed / 1 skipped.
+
+**Decisions:**
+- Followed alternation (DOCS → EMULATOR). Landed one small, tested UI-2 improvement (firmware discovery-pending loading semantics) — low risk, follows established pattern, covered by widget test. Did not touch other views' discovery spinners in this run to keep the increment focused/tested.
+
+**Next:**
+- DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
+
+**Issues touched:** none

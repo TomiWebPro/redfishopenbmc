@@ -140,8 +140,17 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
     final SystemFeatures? features = handle?.features;
 
     // Discovery not complete yet (or tab shown before capability gate).
+    // UI-2: announce a single merged "Loading firmware" node instead of a bare
+    // unlabeled progress indicator (the established discovery-pending pattern).
     if (handle == null || features == null) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: Semantics(
+          container: true,
+          excludeSemantics: true,
+          label: 'Loading firmware',
+          child: const CircularProgressIndicator(),
+        ),
+      );
     }
     // Hard gate: no firmware update capability → render nothing (no placeholder).
     if (!features.firmwareUpdate) {

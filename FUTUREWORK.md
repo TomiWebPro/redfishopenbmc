@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-08 (DOCS — anchor freshness re-verify, 00:48 UTC; last primary EMULATOR 00:04 UTC, f593867/cdca9e5; baseline green analyze 0, 519 passed/1 skipped, issues validate OK; tests re-verified this run with `TMPDIR` workaround due to /tmp EDQUOT). Hub/index/DSP0266 200; bmcweb `d5a6ea1cbada` + mockup `23d21f9a3610` unchanged (GitHub API/ls-remote). Mirrored bmcweb docs re-fetched byte-identical (SHA-256s match) — no corpus refresh. Mirror queue EMPTY; 0 new downloads (DOCS-6). No production code changes. UI skipped — no obvious safe low-risk/testable UI-2 gap identified.)**
-- **Current focus:** Next per alternation: **EMULATOR** — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-08 (EMULATOR — DMTF mockup 85/85 re-run, 01:27 UTC, pin 23d21f9a3610, fixture dmtf_mockup -S, trap cleanup; last primary DOCS 00:48 UTC; baseline green analyze 0, 519 passed/1 skipped preflight, 520 passed/1 skipped post-run with TMPDIR workaround; issues validate OK). Anchors unchanged (bmcweb d5a6ea1cbada, mockup 23d21f9a3610, DSP0266 1.25.0). Small UI-2 increment: FirmwareView discovery-pending loading merged semantics `Loading firmware` + widget test.)**
+- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1510,6 +1510,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       isEmpty` renders the merged loading node before the empty branch, while
       refreshes with existing consoles keep the inline spinner under the
       header); +2 widget tests (sensors 14→15, kvm 12→13);
+      **FirmwareView discovery-pending state merged semantics node
+      (`Loading firmware`) done 2026-11-08 — capability-gate/discovery-pending
+      path (`handle == null || features == null`) now announces ONE merged
+      `Loading firmware` node (container+excludeSemantics, established
+      pattern) instead of a bare unlabeled progress indicator; +1 widget test
+      (firmware 40→41);
       **Add-system dialog focus entry + keyboard Tab order pinned done
       2026-10-25 — `SystemProfileForm` gained `autofocusFirstField` (the
       Add-system dialog sets it, so keyboard and screen-reader users land

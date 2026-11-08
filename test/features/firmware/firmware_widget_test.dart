@@ -1413,6 +1413,42 @@ void main() {
     });
   });
 
+  group('FirmwareView — discovery-pending state (UI-2)', () {
+    testWidgets(
+        'announces one merged "Loading firmware" node while capabilities '
+        'resolve', (tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      const SystemHandle handle = SystemHandle(
+        profile: ConnectionProfile(
+          id: 'bmc1',
+          host: '127.0.0.1',
+          name: 'bmc1',
+        ),
+        features: null,
+      );
+      final FirmwareController controller = FirmwareController(
+        service: FakeFirmwareService(),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pump();
+
+      final Finder merged = find.bySemanticsLabel('Loading firmware');
+      expect(merged, findsOneWidget);
+      final SemanticsNode node = tester.getSemantics(merged);
+      expect(node.label, contains('Loading firmware'));
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      semantics.dispose();
+    });
+  });
+
   group('FirmwareView — start-update form labels (UI-2)', () {
     testWidgets(
         'the transfer-protocol selector carries a visible + semantic '
