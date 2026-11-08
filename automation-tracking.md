@@ -5963,3 +5963,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
 - **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-08 20:35 UTC)`; pushed: pending.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator` if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
+
+## 2026-11-08 22:06 UTC — EMULATOR
+
+- **Baseline:** analyze 0; tests 522 passed / 1 skipped (TMPDIR=/home/tomi/.cache/flutter-tmp, /tmp EDQUOT workaround); starting commit 717d9bf (clean tree except untracked `testing/`); issues validate OK.
+- **Primary work:** EMULATOR per alternation (last primary: DOCS 2026-11-08 20:35 UTC, 717d9bf). DMTF Redfish-Mockup-Server contract re-run (pin 23d21f9a3610f6b6fbb71ffc941296b159a524d2, HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`). `/tmp` EDQUOT blocked git lock writes/flutter temp + harness temp paths; server already at pinned commit in `/tmp` and cert/venv present, so executed equivalent steps with `TMPDIR=/home/tomi/.cache/flutter-tmp` and log in `/home/tomi/.cache/redfish-emulator` (no repo/script changes, same pin/fixture/flags; health-checked; trap cleanup).
+- **Docs:** none this run (emulator contract re-run).
+- **Emulator:** **85/85 tests passed** via `test_integration/emulator --dart-define=REDFISH_EMULATOR_URL=https://127.0.0.1:8443` (full contract suite: discovery/power/sensors/firmware/tasks/ActionInfo/VirtualMedia+SecureBoot/sessions+accounts/logs/subscriptions/corpus invariants/SystemSettingsService Boot/IndicatorLED + Controls PATCH/SetPoint flows). Pin 23d21f9a3610 confirmed; server stopped cleanly via trap.
+- **Code/tests:** no production code or unit tests changed (verification-only run).
+- **UI:** skipped — scanned lib (1 IconButton has tooltip; PopupMenuButton/FAB have tooltips; key loading/error states use merged Semantics labels); no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn.
+- **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); emulator 85/85; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean.
+- **Commit:** pending — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-08 22:06 UTC)`; pushed: pending.
+- **Next:** 1) DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).

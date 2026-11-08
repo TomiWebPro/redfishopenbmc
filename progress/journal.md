@@ -5957,3 +5957,11 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-08 22:06 UTC — agent:redfish-automation — EMULATOR
+
+- **Done:** EMULATOR per alternation (last primary DOCS 20:35 UTC). Re-ran DMTF Redfish-Mockup-Server integration contract suite: pin `23d21f9a3610f6b6fbb71ffc941296b159a524d2`, HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`. **85/85 emulator tests passed** (`test_integration/emulator --dart-define=REDFISH_EMULATOR_URL=https://127.0.0.1:8443`, `TMPDIR=/home/tomi/.cache/flutter-tmp`). Server at pinned commit reused (git fetch in `/tmp` hit EDQUOT lock); log routed to `/home/tomi/.cache/redfish-emulator`; health-checked, trap cleanup. No production code changes.
+- **Decisions:** No harness/script edits (kept diff minimal; equivalent manual steps matched pin/fixture/flags). UI increment skipped — scanned lib; dashboard Add IconButton/PopupMenuButton/FAB have tooltips and key states use merged Semantics; no obvious safe low-risk/testable UI-2 gap.
+- **Verification:** `flutter analyze` 0 issues; `flutter test` 522 passed / 1 skipped (TMPDIR workaround); `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Next:** 1) DOCS per alternation — anchor freshness re-verify. 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 resilience (cancel task DELETE, 413/401, low-bandwidth backoff).
+- **Issues touched:** none (verification-only EMULATOR run).

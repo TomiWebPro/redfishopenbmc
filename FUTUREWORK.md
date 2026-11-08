@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-08 (DOCS — anchor freshness re-verify, 20:35 UTC; last primary EMULATOR 18:50 UTC; baseline green analyze 0, 522 passed/1 skipped with TMPDIR workaround; issues validate OK). Anchors unchanged (hub/index 200, DSP0266 1.25.0, bmcweb d5a6ea1cbada HEAD/master, mockup 23d21f9a3610 main HEAD); mirrored bmcweb docs byte-identical (SHA-256s match). Mirror queue EMPTY; 0 new downloads (DOCS-6). UI skipped (scanned lib; no safe low-risk/testable UI-2 gap; existing loading semantics covered).**
-- **Current focus:** Next per alternation: **EMULATOR** — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator` if `/tmp` EDQUOT recurs). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-08 (EMULATOR — DMTF mockup contract re-run 85/85, 22:06 UTC, pin 23d21f9a3610, fixture dmtf_mockup -S HTTPS 127.0.0.1:8443; ran with TMPDIR=/home/tomi/.cache/flutter-tmp + cache-dir workaround due to /tmp EDQUOT; baseline green analyze 0, 522 passed/1 skipped; issues validate OK). Last primary DOCS 20:35 UTC (anchors unchanged, mirror queue EMPTY). UI skipped (scanned lib; no safe low-risk/testable UI-2 gap; tooltips/merged-semantics patterns in place).**
+- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
