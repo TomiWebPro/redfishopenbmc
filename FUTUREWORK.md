@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-08 (EMULATOR — DMTF mockup 85/85 re-run, 02:34 UTC; last primary DOCS 02:01 UTC; baseline green analyze 0, 521 passed/1 skipped with TMPDIR workaround; issues validate OK). Anchors unchanged (bmcweb `d5a6ea1cbada`, mockup `23d21f9a3610`, DSP0266 1.25.0, schema index current). Server pin 23d21f9a3610, fixture dmtf_mockup -S, trap cleanup — full contract suite green. UI-2: SensorsView discovery-pending now announces one merged `Loading sensors` semantics node (+1 widget test).**
-- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-08 (DOCS — anchor freshness re-verify, 03:08 UTC; last primary EMULATOR 02:34 UTC; baseline green analyze 0, 522 passed/1 skipped with TMPDIR workaround; issues validate OK). Anchors unchanged (bmcweb `d5a6ea1cbada`, mockup `23d21f9a3610`, DSP0266 1.25.0, schema index current). Mirrored bmcweb docs byte-identical at HEAD; mirror queue EMPTY, 0 downloads. UI-2: KVMView discovery-pending now announces one merged `Loading KVM` semantics node (+1 widget test).**
+- **Current focus:** Next per alternation: **EMULATOR** — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked

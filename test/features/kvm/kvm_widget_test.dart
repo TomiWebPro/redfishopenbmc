@@ -489,6 +489,37 @@ void main() {
       );
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
+
+    testWidgets(
+        'discovery-pending state announces one merged "Loading KVM" node '
+        '(UI-2)', (WidgetTester tester) async {
+      // Handle known but capabilities not resolved yet → announce a single
+      // merged loading node instead of a bare unlabeled spinner.
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(
+              const SystemHandle(
+                profile: ConnectionProfile(id: 'bmc1', host: 'localhost'),
+                status: ConnectionStatus.connected,
+                features: null,
+              ),
+            ),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.bySemanticsLabel('Loading KVM'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // 320 px no-overflow check.
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('KvmView — responsive layout (UI-3)', () {

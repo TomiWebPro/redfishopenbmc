@@ -364,7 +364,7 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-11-08 01:45 UTC — DOCS run, anchor freshness re-verify)
+## Current upstream anchors (verified 2026-11-08 03:08 UTC — DOCS run, anchor freshness re-verify)
 
 All sources current (0 new downloads, inside DOCS-6 budget; mirror queue EMPTY).
 Hub 200, DMTF schema index 200, DSP0266 1.25.0 200. Anchors re-verified (GitHub

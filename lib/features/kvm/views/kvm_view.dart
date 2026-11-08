@@ -64,7 +64,17 @@ class _KvmViewState extends ConsumerState<KvmView> {
       );
     }
     if (features == null) {
-      return const Center(child: CircularProgressIndicator());
+      // Discovery-pending: handle known but capabilities not resolved yet.
+      // Announce one merged semantics node (UI-2, established pattern) instead
+      // of a bare unlabeled spinner.
+      return Center(
+        child: Semantics(
+          container: true,
+          excludeSemantics: true,
+          label: 'Loading KVM',
+          child: const CircularProgressIndicator(),
+        ),
+      );
     }
     // Hard gate: no KVM → render nothing (no placeholder).
     if (!features.kvm) {
