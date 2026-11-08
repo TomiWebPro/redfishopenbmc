@@ -5876,3 +5876,18 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-08 04:19 UTC — agent:redfish-automation — DOCS
+
+**Done:**
+- DOCS per alternation (last primary: EMULATOR 2026-11-08 03:44 UTC, 507d946). Preflight green (analyze 0, 522 passed / 1 skipped with TMPDIR workaround due to /tmp EDQUOT, issues validate OK, clean tree). Anchor freshness re-verify: hub/index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb `d5a6ea1cbada` HEAD/master unchanged (2026-11-06T17:28:06Z), Redfish-Mockup-Server `23d21f9a3610` main unchanged (2026-09-04T19:25:03Z) — verified via GitHub API + curl. Mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) byte-identical to repo copies (SHA-256s match manifest) — no corpus refresh. Mirror queue EMPTY; 0 new downloads (inside DOCS-6 budget). Updated `documentations/external/README.md`, `documentations/external/redfish/REQUIREMENTS.md`, `FUTUREWORK.md`, `automation-tracking.md`, `progress/journal.md`.
+
+**Decisions:**
+- Followed alternation (EMULATOR → DOCS). No corpus refresh (anchors/content unchanged). UI-2 skipped — scanned lib; previously noted bare `CircularProgressIndicator()` instances in key views are already wrapped with merged Semantics labels; no obvious safe low-risk/testable gap identified; avoided untested UI churn.
+
+**Next:**
+- EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
+
+**Issues touched:** none

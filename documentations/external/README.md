@@ -364,21 +364,24 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-11-08 03:08 UTC — DOCS run, anchor freshness re-verify)
+## Current upstream anchors (verified 2026-11-08 04:19 UTC — DOCS run, anchor freshness re-verify)
 
 All sources current (0 new downloads, inside DOCS-6 budget; mirror queue EMPTY).
 Hub 200, DMTF schema index 200, DSP0266 1.25.0 200. Anchors re-verified (GitHub
-API + curl/ls-remote); mirrored bmcweb docs re-fetched and byte-identical at
-HEAD (SHA-256s match manifest) — no corpus refresh.
+API + curl). Mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md,
+OEM_SCHEMAS.md, CLIENTS.md) byte-identical to repo copies (SHA-256s match
+manifest) — no corpus refresh. Baseline green (analyze 0; 522 passed/1 skipped
+with TMPDIR workaround); no production code changes; UI skipped (no obvious
+safe/testable gap; recent discovery-pending/loading semantics already merged).
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK)
 - Redfish specification DSP0266 — <https://www.dmtf.org/sites/default/files/standards/documents/DSP0266_1.25.0.pdf>
   (DSP0266 1.25.0 still current; 200 OK)
 - Redfish Mockup Server — <https://github.com/DMTF/Redfish-Mockup-Server>
-  (default branch `main` @ `23d21f9a3610f3272144a5d708f1c26957f574f8` — unchanged, re-verified 2026-11-08 01:45 UTC via GitHub API; HEAD commit 2026-09-04T19:25:03Z)
+  (default branch `main` @ `23d21f9a3610f3272144a5d708f1c26957f574f8` — unchanged, re-verified 2026-11-08 04:19 UTC via GitHub API; HEAD commit 2026-09-04T19:25:03Z)
 - OpenBMC bmcweb docs — <https://github.com/openbmc/bmcweb/tree/master/docs>
-  (master @ `d5a6ea1cbada50abe8655d8ef7a515d94ee6b558` — unchanged, re-verified 2026-11-08 01:45 UTC via GitHub API/ls-remote; HEAD commit 2026-11-06T17:28:06Z; mirrored `Redfish.md`/`REDFISH_CHECKLIST.md`/`OEM_SCHEMAS.md`/`CLIENTS.md` byte-identical to repo copies, no corpus refresh needed)
+  (master @ `d5a6ea1cbada50abe8655d8ef7a515d94ee6b558` — unchanged, re-verified 2026-11-08 04:19 UTC via GitHub API; HEAD commit 2026-11-06T17:28:06Z; mirrored docs byte-identical, no corpus refresh needed)
 
 File-level last-touch commits (for context): `Redfish.md` → `522e6b7e`
 (2026-10-19, "IndicatorLED: Remove deprecated property"); `REDFISH_CHECKLIST.md`,
