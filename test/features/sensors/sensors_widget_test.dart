@@ -183,6 +183,34 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets(
+        'discovery-pending state announces one merged "Loading sensors" node '
+        '(UI-2)', (WidgetTester tester) async {
+      // Handle known but capabilities not resolved yet → announce a single
+      // merged loading node (no Retry) instead of a bare unlabeled spinner.
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x').overrideWithValue(
+              SystemHandle(
+                profile: ConnectionProfile(id: 'x', host: 'h'),
+                status: ConnectionStatus.connected,
+                features: null,
+              ),
+            ),
+          ],
+          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+        ),
+      );
+      await tester.pump();
+
+      final Finder merged = find.bySemanticsLabel('Loading sensors');
+      expect(merged, findsOneWidget);
+      final SemanticsNode? node = tester.getSemantics(merged);
+      expect(node?.label, contains('Loading sensors'));
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
     testWidgets('renders temperatures when sensorMonitoring is enabled',
         (WidgetTester tester) async {
       await tester.pumpWidget(

@@ -71,8 +71,18 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
         ),
       );
     }
+    // UI-2: discovery is still resolving capabilities for this system; announce
+    // a single merged "Loading sensors" node (no Retry — nothing to reload yet)
+    // instead of a bare unlabeled progress indicator.
     if (features == null) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: Semantics(
+          container: true,
+          excludeSemantics: true,
+          label: 'Loading sensors',
+          child: const CircularProgressIndicator(),
+        ),
+      );
     }
     // Hard gate: no sensor monitoring → render nothing (no placeholder).
     if (!features.sensorMonitoring) {

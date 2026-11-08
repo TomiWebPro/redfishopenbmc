@@ -5856,3 +5856,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 520 passed / 1 skipped (TMPDIR workaround); issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
 - **Commit:** 4feee73 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-08 02:01 UTC)`; pushed: yes.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
+
+## 2026-11-08 02:34 UTC — EMULATOR
+
+- **Baseline:** analyze 0; tests 520 passed / 1 skipped (TMPDIR=/home/tomi/.cache/flutter-tmp); starting commit 26c087b (origin/main synced, clean tree); issues validate OK.
+- **Primary work:** EMULATOR per alternation (last primary: DOCS 2026-11-08 02:01 UTC, 26c087b). Ran `tool/emulator/run_tests.sh` (DMTF Redfish-Mockup-Server pin 23d21f9a3610f6b6fbb71ffc941296b159a524d2, HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, trap cleanup). Full contract re-run.
+- **Docs:** none this run (verification only). Anchors unchanged (bmcweb d5a6ea1cbada, mockup 23d21f9a3610, DSP0266 1.25.0, schema index current).
+- **Emulator:** **85/85 tests passed** via `test_integration/emulator --dart-define=REDFISH_EMULATOR_URL=https://127.0.0.1:8443` (service root/discovery, systems/chassis/manager, power/actions, sensors/metrics/controls/heaters, firmware inventory+update/push seams, tasks, ActionInfo, VirtualMedia/SecureBoot, sessions/accounts, logs, subscriptions/event destinations, corpus invariants, SystemSettingsService Boot/IndicatorLED + Controls PATCH/SetPoint flows). Server stopped cleanly via trap.
+- **Code/tests:** UI-2 a11y fix in `lib/features/sensors/views/sensors_view.dart` — discovery-pending state (`handle != null && features == null`) now announces one merged `Loading sensors` semantics node (container+excludeSemantics, established pattern) instead of a bare unlabeled spinner. +1 widget test in `test/features/sensors/sensors_widget_test.dart` (discovery-pending merged label). Sensors widget tests 16 passed; unit suite 521 passed / 1 skipped.
+- **UI:** SensorsView discovery-pending loading state merged semantics label (`Loading sensors`) — covered by new widget test; no overflow/layout change.
+- **Verification:** analyze 0; tests 521 passed / 1 skipped (TMPDIR workaround); emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** pending — `auto: EMULATOR — DMTF mockup 85/85 re-run + UI-2 sensors discovery loading semantics (run 2026-11-08 02:34 UTC)`; pushed: pending.
+- **Next:** 1) DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).

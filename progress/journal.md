@@ -5831,3 +5831,18 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-08 02:34 UTC — agent:redfish-automation — EMULATOR
+
+**Done:**
+- EMULATOR per alternation (last primary: DOCS 2026-11-08 02:01 UTC, 26c087b). Preflight green (analyze 0, 520 passed / 1 skipped with TMPDIR workaround, issues validate OK, clean tree). Ran `tool/emulator/run_tests.sh` (DMTF Redfish-Mockup-Server pin 23d21f9a3610f6b6fbb71ffc941296b159a524d2, HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, trap cleanup). **85/85 emulator integration tests passed** (full contract suite incl. discovery/power/sensors/firmware/tasks/ActionInfo/VirtualMedia+SecureBoot/sessions+accounts/logs/subscriptions/corpus invariants/SystemSettingsService Boot/IndicatorLED + Controls PATCH/SetPoint flows). Server stopped cleanly via trap. UI-2 increment: `SensorsView` discovery-pending (`handle != null && features == null`) now announces one merged `Loading sensors` semantics node (container+excludeSemantics) instead of a bare unlabeled spinner; +1 widget test (`test/features/sensors/sensors_widget_test.dart`). Unit suite 521 passed / 1 skipped.
+
+**Decisions:**
+- Followed alternation (DOCS → EMULATOR). Landed one small, tested UI-2 improvement (sensors discovery-pending loading semantics) — low risk, established pattern, covered by widget test. Kept scope to sensors view (KVM has similar gap; defer to future run).
+
+**Next:**
+- DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
+
+**Issues touched:** none
