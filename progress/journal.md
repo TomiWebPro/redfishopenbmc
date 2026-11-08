@@ -5906,3 +5906,9 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-08 05:47Z — build agent (EMULATOR, env-blocked)
+- Baseline green at start (analyze 0, 85 tests). Selected EMULATOR.
+- DMTF interface-emulator curl smoke: 200 on Systems/Managers; mockup-server ad-hoc run had readiness issues. Evidence in `testing/emulator-results/2026-11-08/curl_smoke_20261108T054520Z.log` (untracked).
+- Restored missing untracked `testing/run_emulator_harness.sh` locally (FLUTTER_BIN fix); not committed.
+- Blocked: environment disk quota (errno 122) prevented flutter test verification; no commits/push. UI improvement skipped.

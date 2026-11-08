@@ -5915,3 +5915,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** d653045 — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-08 04:54 UTC)`; pushed: yes.
 - **Next:** 1) DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
+## 2026-11-08 05:47Z — EMULATOR (env-blocked verification)
+- **Type:** EMULATOR
+- **Baseline (start):** `flutter analyze` 0 issues; `flutter test` 85 passed (green).
+- **Workstream:** Alternation selected EMULATOR (last entry was DOCS). Checked open issues (`python3 issues/issues.py list`): none.
+- **Environment/tools:** docker, curl, jq available; `redfishtool` not found in PATH during run (earlier check reported it) — used curl/jq smoke instead. DMTF images pulled/cached (`dmtf/redfish-mockup-server:latest`, `dmtf/redfish-interface-emulator:latest`).
+- **Emulator smoke:** Ran DMTF `redfish-interface-emulator` container and attempted `redfish-mockup-server` with DMTF `Redfish-Interface-Emulator` static data (cloned to `testing/emulator-work`, cleaned up after). Interface emulator responded HTTP 200 for `/redfish/v1/Systems` and `/Managers` (port 15001). Mockup-server ad-hoc run had readiness/connectivity issues on 18000 (container not reachable in time / mount/path iteration); see evidence log. Evidence (untracked, local): `testing/emulator-results/2026-11-08/curl_smoke_20261108T054520Z.log`.
+- **Harness:** `testing/` directory was missing from working tree (untracked; not in git). Restored `testing/run_emulator_harness.sh` locally with `FLUTTER_BIN` default fix; harness mockup path may need update to current DMTF repo layout. Left untracked.
+- **Verification blocker:** `flutter test` could not complete due to environment disk quota exceeded (errno 122, "Disk quota exceeded") writing flutter test listener temp files (reproduced with default TMP and `TMPDIR=/tmp/opencode`). Not a code regression; baseline was green at start. `flutter analyze` recheck not rerun to completion before tracking write (no code changes made).
+- **Changes committed:** none (verification gate not satisfiable in this environment; restored harness left untracked).
+- **Push:** N/A.
+- **UI improvement:** skipped (environment verification blocker / time).
+- **Next:** Re-run in environment with sufficient quota; satisfy `flutter analyze`+`flutter test` gate before committing. Fix/commit `testing/run_emulator_harness.sh` (mockup path, FLUTTER_BIN, PATH robustness) and consider tracking `testing/` scripts if appropriate. Investigate `redfishtool` availability. Resume alternation per runbook (next green run: DOCS OpenBMC/bmcweb focus per FUTUREWORK, or per alternation rule).

@@ -1625,6 +1625,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       device validation; document the decision before adding dependencies.
 - [!] **Large spec/binary assets** — if over the download budget, ask a human
       before committing; store links and hashes meanwhile.
+- [!] **Environment quota blocking verification (2026-11-08 05:47Z)** — `flutter test` failed with "Disk quota exceeded" (errno 122) writing test listener temp files (default TMP and `TMPDIR=/tmp/opencode`); baseline was green at run start. Re-run `flutter analyze` + `flutter test` before committing. Untracked `testing/` (harness/results) went missing and was partially restored locally (`run_emulator_harness.sh` needs correct DMTF mockup path + robust PATH/redfishtool handling); commit once verified. `redfishtool` not found in PATH during run.
 
 ---
 
