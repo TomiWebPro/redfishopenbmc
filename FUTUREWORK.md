@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-07 (DOCS — anchor freshness re-verify, 22:33 UTC; last primary EMULATOR 21:56 UTC, 81ae6b1/2124bac; baseline green analyze 0, 519 passed/1 skipped, issues validate OK). Hub/index/DSP0266 1.25.0 200; bmcweb `d5a6ea1cbada` + mockup `23d21f9a3610` unchanged (GitHub API/ls-remote); mirrored bmcweb docs byte-identical (SHA-256 verified) — mirror queue EMPTY, 0 new downloads (DOCS-6). No production code changes. UI skipped — scanned lib; no obvious safe low-risk/testable UI-2 gap committed in this DOCS run.)**
-- **Current focus:** Next per alternation: **EMULATOR** — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-08 (EMULATOR — DMTF mockup re-run, 00:04 UTC; last primary DOCS 22:33 UTC 2026-11-07, 3b7246f/c957eec; baseline green analyze 0, 519 passed/1 skipped, issues validate OK). tool/emulator/run_tests.sh (pin 23d21f9a3610, HTTPS 127.0.0.1:8443, fixture dmtf_mockup -S, trap cleanup): **85/85 emulator tests passed** (full contract suite). Anchors unchanged (bmcweb d5a6ea1cbada, mockup 23d21f9a3610, DSP0266 1.25.0). No production code changes. UI skipped — verification-only run; no obvious safe low-risk/testable UI-2 gap identified.)**
+- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
