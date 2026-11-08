@@ -5927,3 +5927,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Push:** N/A.
 - **UI improvement:** skipped (environment verification blocker / time).
 - **Next:** Re-run in environment with sufficient quota; satisfy `flutter analyze`+`flutter test` gate before committing. Fix/commit `testing/run_emulator_harness.sh` (mockup path, FLUTTER_BIN, PATH robustness) and consider tracking `testing/` scripts if appropriate. Investigate `redfishtool` availability. Resume alternation per runbook (next green run: DOCS OpenBMC/bmcweb focus per FUTUREWORK, or per alternation rule).
+
+## 2026-11-08 11:09 UTC — DOCS
+
+- **Baseline:** analyze 0; tests 522 passed / 1 skipped (TMPDIR=/home/tomi/.cache/flutter-tmp, /tmp EDQUOT workaround); starting commit 37546da (origin/main synced after recovery of env-blocked 05:47Z WIP); issues validate OK.
+- **Primary work:** DOCS per alternation (last successful primary: EMULATOR 2026-11-08 04:54 UTC, d653045/f4a3901; 05:47Z EMULATOR was env-blocked/unverified). Recovered previous run's tracking WIP as `chore: recover previous automation WIP` (37546da). Anchor freshness re-verify via `curl -sSIL` + `git ls-remote`: Redfish Developer Hub 200, DMTF schema index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb `d5a6ea1cbada50abe8655d8ef7a515d94ee6b558` (HEAD/master unchanged, 2026-11-06T17:28:06Z), Redfish-Mockup-Server `23d21f9a3610f6b6fbb71ffc941296b159a524d2` (main HEAD unchanged). Mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) SHA-256s match manifest/local — no corpus refresh. Mirror queue EMPTY; 0 new downloads (inside DOCS-6 budget).
+- **Docs:** Updated `documentations/external/README.md` "Current upstream anchors" (2026-11-08 11:09 UTC, git ls-remote+curl); updated `documentations/external/redfish/REQUIREMENTS.md` Last audited/Prior (shifted 04:19 to Prior). Updated `FUTUREWORK.md` Last updated/Current focus (next: EMULATOR 85/85 re-run). No corpus refresh needed.
+- **Emulator:** none this run (anchor re-verify only).
+- **Code/tests:** no production code or unit tests changed.
+- **UI:** skipped — scanned lib for bare/unlabeled loading states; key views already have merged Semantics labels; no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn.
+- **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
+- **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-08 11:09 UTC)`; pushed: pending.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator` if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).

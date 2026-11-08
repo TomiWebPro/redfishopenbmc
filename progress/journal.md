@@ -5912,3 +5912,18 @@
 - DMTF interface-emulator curl smoke: 200 on Systems/Managers; mockup-server ad-hoc run had readiness issues. Evidence in `testing/emulator-results/2026-11-08/curl_smoke_20261108T054520Z.log` (untracked).
 - Restored missing untracked `testing/run_emulator_harness.sh` locally (FLUTTER_BIN fix); not committed.
 - Blocked: environment disk quota (errno 122) prevented flutter test verification; no commits/push. UI improvement skipped.
+
+## 2026-11-08 11:09 UTC — agent:redfish-automation — DOCS
+
+**Done:**
+- DOCS per alternation (last successful primary: EMULATOR 2026-11-08 04:54 UTC; 05:47Z EMULATOR env-blocked/unverified — recovered its tracking WIP as 37546da). Preflight green (analyze 0, 522 passed / 1 skipped with TMPDIR workaround, issues validate OK). Anchor freshness re-verify: hub/index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb `d5a6ea1cbada` HEAD/master unchanged (2026-11-06T17:28:06Z), Redfish-Mockup-Server `23d21f9a3610` main unchanged (2026-09-04T19:25:03Z) — verified via git ls-remote + curl. Mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) SHA-256s match manifest/local — no corpus refresh. Mirror queue EMPTY; 0 new downloads (inside DOCS-6 budget). Updated `documentations/external/README.md`, `documentations/external/redfish/REQUIREMENTS.md`, `FUTUREWORK.md`, `automation-tracking.md`, `progress/journal.md`.
+
+**Decisions:**
+- Followed alternation (EMULATOR 04:54 → DOCS). Recovered env-blocked 05:47Z tracking as WIP commit (baseline verified green with TMPDIR workaround). No corpus refresh (anchors/content unchanged). UI skipped — scanned lib; key loading states already have merged Semantics labels; no obvious safe low-risk/testable UI-2 gap identified.
+
+**Next:**
+- EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator` if `/tmp` EDQUOT recurs)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
+
+**Issues touched:** none
