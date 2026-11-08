@@ -5927,3 +5927,18 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-08 18:50 UTC — agent:redfish-automation — EMULATOR
+
+**Done:**
+- EMULATOR per alternation (last primary: DOCS 2026-11-08 11:09 UTC, e99257d). Preflight green (analyze 0, 522 passed / 1 skipped with TMPDIR workaround due to /tmp EDQUOT, issues validate OK, clean tree except untracked `testing/`). Full DMTF Redfish-Mockup-Server contract re-run (pin 23d21f9a3610f6b6fbb71ffc941296b159a524d2, HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, trap cleanup). Executed equivalent steps under `/home/tomi/.cache/redfish-emulator` to avoid `/tmp` EDQUOT (no repo/script changes). **85/85 emulator integration tests passed** (full contract suite incl. discovery/power/sensors/firmware/tasks/ActionInfo/VirtualMedia+SecureBoot/sessions+accounts/logs/subscriptions/corpus invariants/SystemSettingsService Boot/IndicatorLED + Controls PATCH/SetPoint flows). Server stopped cleanly via trap.
+
+**Decisions:**
+- Verification-only run; no production code changes. Worked around environmental `/tmp` EDQUOT using `/home/tomi/.cache/redfish-emulator` (same pinned steps). UI-2 skipped — scanned lib; key loading states already have merged Semantics labels; no obvious safe low-risk/testable gap identified; avoided untested UI churn. Left untracked `testing/` untouched.
+
+**Next:**
+- DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff)
+
+**Issues touched:** none
