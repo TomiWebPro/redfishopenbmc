@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-08 (EMULATOR — DMTF mockup contract re-run 85/85, 22:06 UTC, pin 23d21f9a3610, fixture dmtf_mockup -S HTTPS 127.0.0.1:8443; ran with TMPDIR=/home/tomi/.cache/flutter-tmp + cache-dir workaround due to /tmp EDQUOT; baseline green analyze 0, 522 passed/1 skipped; issues validate OK). Last primary DOCS 20:35 UTC (anchors unchanged, mirror queue EMPTY). UI skipped (scanned lib; no safe low-risk/testable UI-2 gap; tooltips/merged-semantics patterns in place).**
-- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-09 (DOCS — anchor freshness re-verify 00:03 UTC: hub/index/schema/DSP0266 1.25.0 200; bmcweb `d5a6ea1cbada` HEAD/master unchanged; Redfish-Mockup-Server `23d21f9a3610` main unchanged (git ls-remote+curl). Mirrored bmcweb docs re-fetched and byte-identical (SHA-256s match manifest). Mirror queue EMPTY, 0 new downloads, DOCS-6 budget OK. Baseline green: analyze 0, 522 passed/1 skipped (TMPDIR workaround), issues validate OK). Last primary EMULATOR 2026-11-08 22:06 UTC (85/85, pin 23d21f9a3610). UI skipped (scanned lib; key loading indicators already use merged Semantics — no obvious safe/testable UI-2 gap).**
+- **Current focus:** Next per alternation: **EMULATOR** — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator` if `/tmp` EDQUOT recurs). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked

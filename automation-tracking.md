@@ -5975,3 +5975,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); emulator 85/85; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean.
 - **Commit:** pending — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-08 22:06 UTC)`; pushed: pending.
 - **Next:** 1) DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
+
+## 2026-11-09 00:03 UTC — DOCS
+
+- **Baseline:** analyze 0; tests 522 passed / 1 skipped (TMPDIR=/home/tomi/.cache/flutter-tmp workaround); starting commit 3c4a71b (origin/main synced, clean tree except untracked `testing/`); issues validate OK.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 2026-11-08 22:06 UTC, 3c4a71b). Anchor freshness re-verify via `git ls-remote` + `curl -sSIL`: Redfish Developer Hub 200, DMTF schema index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb `d5a6ea1cbada50abe8655d8ef7a515d94ee6b558` (HEAD/master unchanged, 2026-11-06T17:28:06Z), Redfish-Mockup-Server `23d21f9a3610f6b6fbb71ffc941296b159a524d2` (main HEAD unchanged, 2026-09-04T19:25:03Z). Mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) re-fetched and verified byte-identical to repo copies (SHA-256s match manifest) — no corpus refresh. Mirror queue EMPTY; 0 new downloads (inside DOCS-6 budget).
+- **Docs:** Updated `documentations/external/README.md` "Current upstream anchors" (2026-11-09 00:03 UTC); updated `documentations/external/redfish/REQUIREMENTS.md` Last audited/Prior. Updated `FUTUREWORK.md` Last updated/Current focus (next: EMULATOR 85/85 re-run). No corpus refresh needed.
+- **Emulator:** none this run (anchor re-verify only).
+- **Code/tests:** no production code or unit tests changed.
+- **UI:** skipped — scanned lib; bare `CircularProgressIndicator()` instances in feature views are already wrapped with merged Semantics labels (verified: KVM/sensors/firmware/power discovery-pending and in-flight states); no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn.
+- **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); issues validate OK; `dart format` 0 changed; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
+- **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-09 00:03 UTC)`; pushed: pending.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator` if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
