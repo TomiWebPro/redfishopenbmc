@@ -6,15 +6,15 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-11-09 01:20 UTC (DOCS run — anchor freshness re-verify: all sources current — hub/index 200, DMTF schema index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb `d5a6ea1cbada` HEAD/master unchanged (2026-11-06T17:28:06Z), Redfish-Mockup-Server `23d21f9a3610` main HEAD unchanged (2026-09-04T19:25:03Z), verified via git ls-remote + curl; mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) SHA-256s verified byte-identical to repo copies/manifest. Mirror queue EMPTY, 0 new downloads, inside DOCS-6 budget; no production requirement/code changes. UI skipped (scanned lib; key loading states use merged Semantics — no obvious safe low-risk/testable UI-2 gap). Next per alternation: EMULATOR 85/85 re-run)
+Last audited: 2026-11-09 02:15 UTC (DOCS run — anchor freshness re-verify: all sources current — hub/index 200, DMTF schema index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb `d5a6ea1cbada` HEAD/master unchanged (2026-11-06T17:28:06Z), Redfish-Mockup-Server `23d21f9a3610` main HEAD unchanged (2026-09-04T19:25:03Z), verified via git ls-remote + curl; mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) verified byte-identical to repo copies and upstream master (SHA-256s match manifest). Mirror queue EMPTY, 0 new downloads, inside DOCS-6 budget; no production requirement/code changes. UI skipped (scanned lib; key loading states use merged Semantics — no obvious safe low-risk/testable UI-2 gap). Next per alternation: EMULATOR 85/85 re-run)
+
+Prior: 2026-11-09 01:20 UTC (DOCS run — anchor freshness re-verify, sources current, mirror queue EMPTY, 0 new downloads, byte-identical bmcweb docs; UI skipped)
 
 Prior: 2026-11-09 00:03 UTC (DOCS run — anchor freshness re-verify, sources current, mirror queue EMPTY, 0 new downloads, byte-identical bmcweb docs; UI skipped)
 
 Prior: 2026-11-08 20:35 UTC (DOCS run — anchor freshness re-verify, sources current, mirror queue EMPTY, 0 new downloads, byte-identical bmcweb docs; UI skipped)
 
 Prior: 2026-11-08 11:09 UTC (DOCS run — anchor freshness re-verify, sources current, mirror queue EMPTY, 0 new downloads, byte-identical bmcweb docs; UI skipped)
-
-Prior: 2026-11-08 00:48 UTC (DOCS run — anchor freshness re-verify: all sources current — hub/index 200, DMTF schema index 200, DSP0266 1.25.0 200, bmcweb `d5a6ea1cbada` HEAD/master unchanged (2026-11-06T17:28:06Z), Redfish-Mockup-Server `23d21f9a3610` main unchanged (2026-09-04T19:25:03Z), verified via GitHub API/ls-remote + curl; mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) re-fetched and byte-identical at HEAD (SHA-256s match manifest) — no corpus refresh. Mirror queue EMPTY, 0 new downloads, inside DOCS-6 budget; no production code changes; UI skipped (no obvious safe low-risk/testable UI-2 gap identified). Next per alternation: EMULATOR 85/85 re-run)
 
 Prior: 2026-11-07 19:20 UTC (DOCS run — anchor freshness re-verify: all sources current — hub/index 200, DMTF schema index 200, DSP0266 1.25.0 200, bmcweb `d5a6ea1cbada` HEAD/master unchanged (2026-11-06T17:28:06Z), Redfish-Mockup-Server `23d21f9a3610` main unchanged (2026-09-04T19:25:03Z), verified via GitHub API + curl; mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) byte-identical at HEAD — no corpus refresh. Mirror queue EMPTY, 0 new downloads, inside DOCS-6 budget; no production code changes; UI skipped (no obvious safe low-risk/testable UI-2 gap identified). Next per alternation: EMULATOR 85/85 re-run)
 

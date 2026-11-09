@@ -364,26 +364,27 @@ Kept the superseded versioned files (`v1_28_0`, `v1_13_0`, `v1_18_1`,
 self-contained (`$ref` `#/definitions/...` of its own version, no `anyOf`
 redirection), so no fixture referencing a specific version is affected.
 
-## Current upstream anchors (verified 2026-11-09 01:20 UTC — DOCS run, anchor freshness re-verify)
+## Current upstream anchors (verified 2026-11-09 02:15 UTC — DOCS run, anchor freshness re-verify)
 
 All sources current (0 new downloads, inside DOCS-6 budget; mirror queue EMPTY).
 Hub 200, DMTF schema index 200, DSP0266 1.25.0 200. Anchors re-verified (git
-ls-remote + curl): bmcweb `d5a6ea1cbada` (HEAD/master unchanged), Redfish-Mockup-Server
-`23d21f9a3610` (main unchanged). Mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md,
-OEM_SCHEMAS.md, CLIENTS.md) verified byte-identical to repo copies (SHA-256s match
-manifest/local) — no corpus refresh. Baseline green (analyze 0; 522 passed/1 skipped
-with TMPDIR workaround); no production code changes; UI skipped (scanned lib; key
-loading states use merged Semantics — no obvious safe low-risk/testable UI-2 gap).
-Next per alternation: EMULATOR 85/85 re-run.
+ls-remote + curl): bmcweb `d5a6ea1cbada` (HEAD/master unchanged, 2026-11-06T17:28:06Z),
+Redfish-Mockup-Server `23d21f9a3610` (main unchanged, 2026-09-04T19:25:03Z). Mirrored
+bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) verified
+byte-identical to repo copies and to upstream master (SHA-256s match manifest) — no
+corpus refresh. Baseline green (analyze 0; 522 passed/1 skipped with TMPDIR
+workaround); no production code changes; UI skipped (scanned lib; key loading states
+use merged Semantics — no obvious safe low-risk/testable UI-2 gap). Next per
+alternation: EMULATOR 85/85 re-run.
 
 - Redfish Developer Hub — <https://redfish.dmtf.org/> (200 OK)
 - DMTF schema index — <https://redfish.dmtf.org/schemas/v1/> (200 OK)
 - Redfish specification DSP0266 — <https://www.dmtf.org/sites/default/files/standards/documents/DSP0266_1.25.0.pdf>
   (DSP0266 1.25.0 still current; 200 OK)
 - Redfish Mockup Server — <https://github.com/DMTF/Redfish-Mockup-Server>
-  (default branch `main` @ `23d21f9a3610f3272144a5d708f1c26957f574f8` — unchanged, re-verified 2026-11-08 11:09 UTC via git ls-remote + curl; HEAD unchanged)
+  (default branch `main` @ `23d21f9a3610f6b6fbb71ffc941296b159a524d2` — unchanged, re-verified 2026-11-09 02:15 UTC via git ls-remote + curl)
 - OpenBMC bmcweb docs — <https://github.com/openbmc/bmcweb/tree/master/docs>
-  (master @ `d5a6ea1cbada50abe8655d8ef7a515d94ee6b558` — unchanged, re-verified 2026-11-08 11:09 UTC via git ls-remote + curl; HEAD unchanged 2026-11-06T17:28:06Z; mirrored bmcweb docs SHA-256s match manifest/local — no corpus refresh needed)
+  (master @ `d5a6ea1cbada50abe8655d8ef7a515d94ee6b558` — unchanged, re-verified 2026-11-09 02:15 UTC via git ls-remote + curl; mirrored bmcweb docs byte-identical at HEAD — no corpus refresh needed)
 
 File-level last-touch commits (for context): `Redfish.md` → `522e6b7e`
 (2026-10-19, "IndicatorLED: Remove deprecated property"); `REDFISH_CHECKLIST.md`,
