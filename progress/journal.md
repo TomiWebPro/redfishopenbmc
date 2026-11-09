@@ -6010,3 +6010,18 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-09 01:56 UTC — agent:redfish-automation — EMULATOR
+
+**Done:**
+- EMULATOR per alternation (last primary: DOCS 2026-11-09 01:20 UTC, db88c74). Preflight green (analyze 0, 522 passed / 1 skipped with TMPDIR workaround, issues validate OK, clean tree except untracked `testing/`). Clean DMTF Redfish-Mockup-Server contract re-run: pin `23d21f9a3610f6b6fbb71ffc941296b159a524d2` (confirmed), HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, trap cleanup. Reused existing /tmp venv/certs; log in `/home/tomi/.cache/redfish-emulator-run` (avoided /tmp EDQUOT git-fetch risk; server already at pin). **85/85 emulator integration tests passed** (single clean run; an initial parallel port-collision attempt was discarded).
+
+**Decisions:**
+- Verification-only run; no production code changes. Ensured a single clean server instance for a definitive result after a port-collision artifact. UI skipped — key loading states already use merged Semantics; no obvious safe low-risk/testable UI-2 gap. Left untracked `testing/` untouched.
+
+**Next:**
+- DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
+
+**Issues touched:** none
