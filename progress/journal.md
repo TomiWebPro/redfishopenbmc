@@ -6130,3 +6130,18 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-09 10:28 UTC — agent:redfish-automation — EMULATOR
+
+**Done:**
+- EMULATOR per alternation (last primary: DOCS 2026-11-09 08:02 UTC, 3da7902). Preflight/baseline green (analyze 0, 522 passed / 1 skipped with TMPDIR workaround, issues validate OK, clean tree except untracked `testing/`). Full DMTF Redfish-Mockup-Server contract re-run using pinned cache resources (pin `23d21f9a3610f6b6fbb71ffc941296b159a524d2` confirmed at `/home/tomi/.cache/redfish-emulator/redfish-mockup-server`; cache venv/cert/key). HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, health-checked, trap cleanup (cache paths + `TMPDIR=/home/tomi/.cache/flutter-tmp` for reliability). **85/85 emulator integration tests passed** (full contract suite). Server stopped cleanly via trap.
+
+**Decisions:**
+- Verification-only run; no production code changes. Used cache server/venv/cert (equivalent pin/fixture/flags). UI skipped — scanned lib; key loading states already use merged Semantics labels; no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn. Left untracked `testing/` untouched.
+
+**Next:**
+- DOCS per alternation — anchor freshness re-verify (hub/index/DSP0266, bmcweb master, mockup main; mirror queue likely EMPTY)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
+
+**Issues touched:** none
