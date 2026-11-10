@@ -6262,3 +6262,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); emulator 85/85; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean.
 - **Commit:** pending — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-10 04:29 UTC)`; pushed: pending.
 - **Next:** 1) DOCS per alternation — anchor freshness re-verify (hub/index/DSP0266, bmcweb master, mockup main; mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+
+## 2026-11-10 04:55 UTC — DOCS
+
+- **Baseline:** analyze 0; tests 522 passed / 1 skipped (TMPDIR=/home/tomi/.cache/flutter-tmp workaround); starting commit 743ffd9 (origin/main synced, clean tree except untracked `testing/`); issues validate OK.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 2026-11-10 04:29 UTC, 743ffd9). Anchor freshness re-verify via `git ls-remote` + `curl -sSIL`: Redfish Developer Hub 200, DMTF schema index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb master HEAD advanced `1490fa66ebc010335949525ed1d6882269b3f617` → `c6e2c2610e45c04ae965a209f03e450902d70359` (re-verified 2026-11-10 04:55 UTC), Redfish-Mockup-Server `23d21f9a3610f6b6fbb71ffc941296b159a524d2` (main HEAD unchanged, 2026-09-04T19:25:03Z). Mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) verified byte-identical to repo copies and to upstream master at new HEAD (SHA-256s match manifest/local) — no corpus refresh. Mirror queue EMPTY; 0 new downloads (inside DOCS-6 budget).
+- **Docs:** Updated `documentations/external/README.md` manifest rows/anchors to reflect bmcweb HEAD `c6e2c261` and 2026-11-10 04:55 UTC re-verify; updated `documentations/external/redfish/REQUIREMENTS.md` Last audited/Prior. Updated `FUTUREWORK.md` Last updated/Current focus (next: EMULATOR 85/85 re-run). No corpus refresh needed.
+- **Emulator:** none this run (anchor re-verify only).
+- **Code/tests:** no production code or unit tests changed.
+- **UI:** skipped — scanned lib; key loading states use merged Semantics labels; no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn. Left untracked `testing/` untouched.
+- **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround, baseline re-run); issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
+- **Commit:** pending — `auto: DOCS — anchor re-verify (bmcweb HEAD advanced, docs byte-identical) (run 2026-11-10 04:55 UTC)`; pushed: pending.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator*`/TMPDIR workaround if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).

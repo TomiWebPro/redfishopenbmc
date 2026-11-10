@@ -6,7 +6,9 @@ tests. Source citations point at the mirrored corpus in
 live DMTF URLs. Status legend: `OK` (implemented + tested), `GAP` (known gap,
 tracked in `FUTUREWORK.md`), `N/A` (not applicable to this client).
 
-Last audited: 2026-11-10 03:39 UTC (DOCS run — anchor freshness re-verify: all sources current — hub/index 200, DMTF schema index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb master HEAD unchanged at `1490fa66ebc010335949525ed1d6882269b3f617` (2026-11-09T02:54:56Z), Redfish-Mockup-Server `23d21f9a3610` main HEAD unchanged (2026-09-04T19:25:03Z). Mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) verified byte-identical to repo copies and to upstream master (SHA-256s match manifest/local) — no corpus refresh. Mirror queue EMPTY, 0 new downloads, inside DOCS-6 budget; no production requirement/code changes. UI skipped (no obvious safe low-risk/testable UI-2 gap identified in lib). Next per alternation: EMULATOR 85/85 re-run)
+Last audited: 2026-11-10 04:55 UTC (DOCS run — anchor freshness re-verify: all sources current — hub/index 200, DMTF schema index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb master HEAD advanced `1490fa66ebc010335949525ed1d6882269b3f617` → `c6e2c2610e45c04ae965a209f03e450902d70359` (re-verified 2026-11-10 04:55 UTC), Redfish-Mockup-Server `23d21f9a3610f6b6fbb71ffc941296b159a524d2` main HEAD unchanged (2026-09-04T19:25:03Z). Mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) verified byte-identical to repo copies and to upstream master at new HEAD (SHA-256s match manifest/local) — no corpus refresh. Mirror queue EMPTY, 0 new downloads, inside DOCS-6 budget; no production requirement/code changes. UI skipped (no obvious safe low-risk/testable UI-2 gap identified in lib). Next per alternation: EMULATOR 85/85 re-run)
+
+Prior: 2026-11-10 03:39 UTC (DOCS run — anchor freshness re-verify, sources current, mirror queue EMPTY, 0 new downloads, byte-identical bmcweb docs; UI skipped)
 
 Prior: 2026-11-10 02:46 UTC (DOCS run — anchor freshness re-verify, bmcweb HEAD advanced to `1490fa66` but mirrored docs byte-identical — no corpus refresh; UI skipped)
 
