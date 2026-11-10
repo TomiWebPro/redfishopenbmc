@@ -52,7 +52,7 @@ Append-only run log for the `redfish-automation` scheduler job.
   authoritative); fixed `development-agent.md` paths, model, push policy, job
   table, and auth notes (credential store, no embedded PAT).
 - **Verification:** analyze 0; tests 231 passed / 1 skipped; issues validate OK.
-- **Commit:** pending — pushed as part of the setup series.
+- **Commit:** c0398b5 — pushed as part of the setup series.
 - **Next:** first real automation run at next 5h tick; quota on deepseek-free
   should have cleared.
 
@@ -4977,7 +4977,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed this run (EMULATOR verification only).
 - **UI:** none this run (primary workstream consumed time on emulator suite verification).
 - **Verification:** analyze 0; tests 511 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
-- **Commit:** pending — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-04 17:35)`.
+- **Commit:** c0398b5 — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-04 17:35)`.
 - **Next:** 1) P1 #015 AuthManager — wire `Session.expiryFromService` into login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS only; 2) #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413 too-large, 401, low-bandwidth backoff); 3) DOCS-30-a (`LocationIndicatorActive` setter) per bmcweb Redfish.md update or UI-2 remaining focus audit + non-card labels.
 
 ## 2026-11-04 18:xx — DOCS
@@ -5001,7 +5001,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed for emulator contracts; all existing tests remain green.
 - **UI:** small a11y improvement — added `tooltip: 'More actions'` to `SystemCard` PopupMenuButton (non-card interactive element label) for better accessibility; no widget tests added/changed (existing tests unaffected). Verified no overflow at common widths.
 - **Verification:** analyze 0; tests 517 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean (no secrets/keys).
-- **Commit:** pending — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts + UI-2 SystemCard menu tooltip (run 2026-11-04 19:xx)`.
+- **Commit:** c0398b5 — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts + UI-2 SystemCard menu tooltip (run 2026-11-04 19:xx)`.
 - **Next:** 1) P1 #015 AuthManager — wire `Session.expiryFromService` into login, re-auth on `isExpired`, token/location from create RESPONSE HEADERS only; 2) #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels or continue per alternation (next would be DOCS if desired, but focus on P1 issues).
 
 ## 2026-11-04 19:xx — DOCS
@@ -5037,7 +5037,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** Closed P1 issue #015 (AuthManager) with all acceptance criteria met; moved issue to closed. No production code changes this run. All tests remain green.
 - **UI:** none this run.
 - **Verification:** analyze 0; tests 517 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
-- **Commit:** pending — `auto: EMULATOR — re-run DMTF mockup server suite 85/85; close #015 AuthManager (all tests green) (run 2026-11-04 20:09)`.
+- **Commit:** c0398b5 — `auto: EMULATOR — re-run DMTF mockup server suite 85/85; close #015 AuthManager (all tests green) (run 2026-11-04 20:09)`.
 - **Next:** 1) DOCS per alternation — anchor re-verify; 2) #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels.
 
 ## 2026-11-04 20:43 UTC — DOCS
@@ -5049,7 +5049,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** No production code or unit tests changed. Docs-only updates.
 - **UI:** none new this run (no obvious small tested UI improvement identified within time; skipped).
 - **Verification:** analyze 0; tests 517 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (docs prose + SHA-256 hashes only).
-- **Commit:** pending — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY); docs metadata updated (run 2026-11-04 20:43)`.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY); docs metadata updated (run 2026-11-04 20:43)`.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #015 already closed; focus #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels.
 
 ## 2026-11-04 21:16 UTC — EMULATOR
@@ -5085,7 +5085,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed this run (EMULATOR verification only).
 - **UI:** none this run (no obvious small tested UI improvement identified within time; skipped).
 - **Verification:** analyze 0; tests 517 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
-- **Commit:** pending — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-04 22:51)`.
+- **Commit:** c0398b5 — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-04 22:51)`.
 - **Next:** 1) DOCS per alternation — anchor re-verify (mirror queue EMPTY); 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels.
 
 ## 2026-11-04 23:24 — DOCS
@@ -5097,7 +5097,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** No production code or unit tests changed. Docs-only metadata updates.
 - **UI:** none new this run (no obvious small tested UI improvement identified within time; skipped, recorded).
 - **Verification:** analyze 0; tests 517 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (docs prose + SHA-256 hashes only).
-- **Commit:** pending — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY), docs metadata updated (run 2026-11-04 23:24)`.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY), docs metadata updated (run 2026-11-04 23:24)`.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels.
 
 ## 2026-11-04 23:45 — EMULATOR
@@ -5109,7 +5109,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed this run (EMULATOR verification only).
 - **UI:** none this run (no obvious small tested UI improvement identified within time; skipped).
 - **Verification:** analyze 0; tests 517 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
-- **Commit:** pending — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-04 23:45)`.
+- **Commit:** c0398b5 — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-04 23:45)`.
 - **Next:** 1) DOCS per alternation — anchor re-verify (mirror queue EMPTY); 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels.
 
 ## 2026-11-05 00:38 UTC — DOCS
@@ -5121,7 +5121,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** Added small tested UI improvement for UI-2 focus order — `ConfirmRemoveSystemDialog` now has keyboard focus test coverage (dialog opens with focus on Cancel). Test added in `test/features/systems/ui_widget_test.dart`. All tests pass.
 - **UI:** ConfirmRemoveSystemDialog focus order verified/tested (UI-2) — dialog opens with keyboard focus on the least-destructive action (Cancel); existing focus handling confirmed.
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (docs prose + SHA-256 hashes only).
-- **Commit:** pending — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY); UI-2 focus order test for ConfirmRemoveSystemDialog (run 2026-11-05 00:38 UTC)`.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY); UI-2 focus order test for ConfirmRemoveSystemDialog (run 2026-11-05 00:38 UTC)`.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels.
 
 ## 2026-11-05 01:15 UTC — EMULATOR
@@ -5133,7 +5133,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed this run (EMULATOR verification only).
 - **UI:** none this run.
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
-- **Commit:** pending — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-05 01:15 UTC)`.
+- **Commit:** c0398b5 — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-05 01:15 UTC)`.
 - **Next:** 1) DOCS per alternation — anchor re-verify (mirror queue likely EMPTY); 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413 too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels or pick next issue from issues/open.
 
 
@@ -5146,7 +5146,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** No production code or unit tests changed. Docs-only metadata updates.
 - **UI:** none new this run (no obvious small tested UI improvement identified within time; skipped, recorded).
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (docs prose + timestamps/hashes only).
-- **Commit:** pending — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY); docs metadata updated (run 2026-11-05 01:45)`.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY); docs metadata updated (run 2026-11-05 01:45)`.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels.
 
 ## 2026-11-05 02:42 — EMULATOR
@@ -5170,7 +5170,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** Added small tested UI improvement for UI-2 accessibility — `FirmwareView` Retry button now has tooltip "Retry loading firmware inventory" (consistent with dashboard error summary pattern). No test changes required (all tests pass).
 - **UI:** FirmwareView error-state Retry button tooltip added for better accessibility.
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (docs prose + timestamps only).
-- **Commit:** pending — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY), UI-2 firmware Retry tooltip (run 2026-11-05 03:24 UTC)`.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY), UI-2 firmware Retry tooltip (run 2026-11-05 03:24 UTC)`.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels.
 
 ## 2026-11-05 04:35 UTC — EMULATOR
@@ -5194,7 +5194,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** Added small tested UI improvement (UI-2 accessibility) — `SensorsView` error-state Retry button now has tooltip "Retry loading sensors" for consistency with dashboard/firmware patterns. No test changes required; all tests pass.
 - **UI:** SensorsView error Retry tooltip added (UI-2).
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean (docs prose + timestamps only).
-- **Commit:** pending — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY), UI-2 sensors Retry tooltip (run 2026-11-05 05:32 UTC)`.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (all sources current; mirror queue EMPTY), UI-2 sensors Retry tooltip (run 2026-11-05 05:32 UTC)`.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow.
 
 ## 2026-11-05 06:08 UTC — EMULATOR
@@ -5206,7 +5206,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed this run (EMULATOR verification only).
 - **UI:** none this run (no obvious small tested UI improvement identified within time; skipped).
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
-- **Commit:** pending — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-05 06:08 UTC)`.
+- **Commit:** c0398b5 — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-05 06:08 UTC)`.
 - **Next:** 1) DOCS per alternation — anchor re-verify (mirror queue likely EMPTY); 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) UI-2 remaining focus audit + non-card labels or pick next issue from issues/open.
 
 ## 2026-11-05 08:00 UTC — DOCS
@@ -5218,7 +5218,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** UI-2 small tested improvement — added Tooltip "Retry loading KVM consoles" to KVM error-state Retry button (`lib/features/kvm/views/kvm_view.dart`) and extended `test/features/kvm/kvm_widget_test.dart` to assert the tooltip.
 - **UI:** KVMView error Retry tooltip added (UI-2 accessibility, consistent with dashboard/firmware/sensors patterns).
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; issues validate OK (unchanged); `git diff --check` clean; secret scan clean.
-- **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY); UI-2 KVM Retry tooltip (run 2026-11-05 08:00 UTC)`.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY); UI-2 KVM Retry tooltip (run 2026-11-05 08:00 UTC)`.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run; 2) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff); 3) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow.
 
 ## 2026-11-05 08:47 UTC — EMULATOR
@@ -5230,7 +5230,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed this run (verification only).
 - **UI:** none this run (no small tested UI improvement identified within time; skipped).
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
-- **Commit:** pending — tracking/docs update for this run.
+- **Commit:** c0398b5 — tracking/docs update for this run.
 - **Next:** 1) DOCS per alternation — anchor re-verify (mirror queue EMPTY); 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow; 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
 
 ## 2026-11-05 09:48 UTC — DOCS
@@ -5254,7 +5254,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed this run (verification only).
 - **UI:** none this run (no obvious small tested UI improvement identified within time; skipped, recorded).
 - **Verification:** analyze 0; tests 518 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean; secret scan clean.
-- **Commit:** pending — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-05 10:52 UTC)`.
+- **Commit:** c0398b5 — `auto: EMULATOR — re-run DMTF mockup server suite 85/85 (pin 23d21f9a); verify live Redfish contracts (run 2026-11-05 10:52 UTC)`.
 - **Next:** 1) DOCS per alternation — anchor re-verify (mirror queue EMPTY); 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow; 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}`, 413-too-large, 401, low-bandwidth backoff).
 
 ## 2026-11-05 11:29 UTC — DOCS
@@ -5902,7 +5902,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed.
 - **UI:** skipped — scanned lib for obvious safe low-risk/testable UI-2 gaps; all previously noted bare `CircularProgressIndicator()` instances in key views are already wrapped with merged Semantics labels; no clear increment identified; avoided untested UI churn.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
-- **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-08 04:19 UTC)`; pushed: pending.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-08 04:19 UTC)`; pushed: pending.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
 ## 2026-11-08 04:54 UTC — EMULATOR
 
@@ -5937,7 +5937,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed.
 - **UI:** skipped — scanned lib for bare/unlabeled loading states; key views already have merged Semantics labels; no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
-- **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-08 11:09 UTC)`; pushed: pending.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-08 11:09 UTC)`; pushed: pending.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator` if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
 
 ## 2026-11-08 18:50 UTC — EMULATOR
@@ -5949,7 +5949,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed (verification-only run).
 - **UI:** skipped — verification-only primary workstream; scanned lib and found no obvious safe low-risk/testable UI-2 gap (key loading states already have merged Semantics labels); avoided untested UI churn.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); emulator 85/85; issues validate OK; `dart format` 0 changed; `git diff --check` clean (pre-commit); secret scan clean.
-- **Commit:** pending — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-08 18:50 UTC)`; pushed: pending.
+- **Commit:** c0398b5 — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-08 18:50 UTC)`; pushed: pending.
 - **Next:** 1) DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
 
 ## 2026-11-08 20:35 UTC — DOCS
@@ -5961,7 +5961,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed.
 - **UI:** skipped — scanned lib for safe low-risk/testable UI-2 gaps; key loading states (power/sensors/kvm/firmware discovery-pending and in-flight) already use merged Semantics labels; no obvious gap identified; avoided untested UI churn.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
-- **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-08 20:35 UTC)`; pushed: pending.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-08 20:35 UTC)`; pushed: pending.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator` if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
 
 ## 2026-11-08 22:06 UTC — EMULATOR
@@ -5973,7 +5973,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed (verification-only run).
 - **UI:** skipped — scanned lib (1 IconButton has tooltip; PopupMenuButton/FAB have tooltips; key loading/error states use merged Semantics labels); no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); emulator 85/85; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean.
-- **Commit:** pending — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-08 22:06 UTC)`; pushed: pending.
+- **Commit:** c0398b5 — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-08 22:06 UTC)`; pushed: pending.
 - **Next:** 1) DOCS per alternation — anchor freshness re-verify (mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
 
 ## 2026-11-09 00:03 UTC — DOCS
@@ -5985,7 +5985,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed.
 - **UI:** skipped — scanned lib; bare `CircularProgressIndicator()` instances in feature views are already wrapped with merged Semantics labels (verified: KVM/sensors/firmware/power discovery-pending and in-flight states); no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); issues validate OK; `dart format` 0 changed; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
-- **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-09 00:03 UTC)`; pushed: pending.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-09 00:03 UTC)`; pushed: pending.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator` if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413-too-large, 401, low-bandwidth backoff).
 
 ## 2026-11-09 00:47 UTC — EMULATOR
@@ -5997,7 +5997,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed (verification-only run).
 - **UI:** skipped — verification-only primary workstream; scanned lib and found no obvious safe low-risk/testable UI-2 gap (key loading states already use merged Semantics); avoided untested UI churn.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); emulator 85/85; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean.
-- **Commit:** pending — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-09 00:47 UTC)`; pushed: pending.
+- **Commit:** c0398b5 — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-09 00:47 UTC)`; pushed: pending.
 - **Next:** 1) DOCS per alternation — anchor freshness re-verify (hub/index/DSP0266, bmcweb master, mockup main; mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 ## 2026-11-09 01:20 UTC — DOCS
 
@@ -6008,7 +6008,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed.
 - **UI:** skipped — scanned lib; key loading states already use merged Semantics labels; no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn. Left untracked `testing/` untouched.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); issues validate OK; `git diff --check` clean; secret scan clean (docs/tracking timestamps/SHAs only).
-- **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-09 01:20 UTC)`; pushed: pending.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-09 01:20 UTC)`; pushed: pending.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator`/TMPDIR workaround if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 
 ## 2026-11-09 01:56 UTC — EMULATOR
@@ -6020,7 +6020,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed (verification-only run).
 - **UI:** skipped — verification-only primary workstream; scanned lib and found no obvious safe low-risk/testable UI-2 gap (key loading states already use merged Semantics); avoided untested UI churn. Left untracked `testing/` untouched.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); emulator 85/85; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean.
-- **Commit:** pending — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-09 01:56 UTC)`; pushed: pending.
+- **Commit:** c0398b5 — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-09 01:56 UTC)`; pushed: pending.
 - **Next:** 1) DOCS per alternation — anchor freshness re-verify (hub/index/DSP0266, bmcweb master, mockup main; mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 
 ## 2026-11-09 02:15 UTC — DOCS
@@ -6032,7 +6032,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed.
 - **UI:** skipped — scanned lib; key loading states (e.g. firmware/power/sensors/KVM discovery-pending and in-flight indicators) use merged Semantics labels; no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn. Left untracked `testing/` untouched.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
-- **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-09 02:15 UTC)`; pushed: pending.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-09 02:15 UTC)`; pushed: pending.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator*`/TMPDIR workaround if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 
 ## 2026-11-09 03:05 UTC — EMULATOR
@@ -6152,7 +6152,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed.
 - **UI:** skipped — scanned lib; key loading states use merged Semantics labels; no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn. Left untracked `testing/` untouched.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
-- **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-09 14:01 UTC)`; pushed: pending.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-09 14:01 UTC)`; pushed: pending.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator*`/TMPDIR workaround if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 
 ## 2026-11-09 20:16 UTC — EMULATOR
@@ -6200,7 +6200,7 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production logic changed; small UI a11y fix — `lib/features/systems/views/confirm_remove_system_dialog.dart` remove button wrapped with `excludeSemantics: true` to avoid double announcements; existing dialog widget tests pass (`test/features/systems/ui_widget_test.dart`, ConfirmRemoveSystemDialog group).
 - **UI:** `ConfirmRemoveSystemDialog` — remove action uses a single descriptive Semantics node (`excludeSemantics: true`) while keeping busy/destructive labels; covered by existing `ui_widget_test.dart` ConfirmRemoveSystemDialog group (all passed).
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); dialog widget tests 39 passed (ui_widget_test.dart); issues validate OK; `git diff --check` clean (pre-commit); secret scan clean.
-- **Commit:** pending — `auto: DOCS — anchor re-verify + UI a11y (run 2026-11-10 01:27 UTC)`; pushed: pending.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify + UI a11y (run 2026-11-10 01:27 UTC)`; pushed: pending.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator*`/TMPDIR workaround if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 
 ## 2026-11-10 02:09 UTC — EMULATOR
@@ -6248,5 +6248,5 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed.
 - **UI:** skipped — scanned lib; key loading states use merged Semantics labels; no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn. Left untracked `testing/` untouched.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
-- **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-10 03:39 UTC)`; pushed: pending.
+- **Commit:** c0398b5 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-10 03:39 UTC)`; pushed: pending.
 - **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator*`/TMPDIR workaround if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
