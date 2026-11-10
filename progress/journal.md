@@ -6250,3 +6250,17 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-10 — agent:redfish-automation — EMULATOR
+
+**Done:**
+- EMULATOR per alternation (last primary DOCS 2026-11-10 01:27 UTC, 1d66ff0): re-ran full DMTF Redfish-Mockup-Server contract suite from pinned cache (pin `23d21f9a3610`, fixture `test/fixtures/redfish/dmtf_mockup` `-S`, HTTPS 127.0.0.1:8443). **85/85 emulator tests passed** (discovery/power/sensors/firmware/tasks/ActionInfo/VirtualMedia+SecureBoot/sessions+accounts/logs/subscriptions/corpus invariants/SystemSettingsService Boot/IndicatorLED + Controls PATCH/SetPoint). Server health-checked and stopped cleanly via trap.
+
+**Decisions:**
+- Verification-only run: no production code/unit test changes, no corpus refresh (anchors unchanged: bmcweb `d5a6ea1cbada`, mockup `23d21f9a3610`, DSP0266 1.25.0). UI skipped — no obvious safe low-risk/testable UI-2 gap identified; avoided untested churn. Untracked `testing/` left untouched.
+
+**Next:**
+- 1) DOCS per alternation — anchor freshness re-verify (hub/index/DSP0266, bmcweb master, mockup main; mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+
+**Issues touched:**
+- none (verification-only; no issue status change).
