@@ -93,6 +93,9 @@ class _ConfirmRemoveSystemDialogState extends State<ConfirmRemoveSystemDialog> {
           child: const Text('Cancel'),
         ),
         Semantics(
+          // UI-2: avoid double announcements — the button's own semantics
+          // are replaced by this single descriptive node.
+          excludeSemantics: true,
           label: _busy
               ? 'Remove system, action in progress'
               : 'Remove system (destructive)',
