@@ -6414,3 +6414,18 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-11 15:56 UTC — agent:redfish-automation — DOCS
+
+**Done:**
+- DOCS per alternation (last primary: EMULATOR 2026-11-11 15:21 UTC, ea8e120). Preflight/baseline green (analyze 0, 522 passed / 1 skipped, issues validate OK, clean tree except untracked `testing/`). Scouted official DMTF Redfish docs (https://redfish.dmtf.org/, https://redfish.dmtf.org/schemas/index.html, service-root context) and OpenBMC bmcweb docs (README, REDFISH-cheatsheet.md, SECURITY.md, redfish-architecture.md context). Rechecked accessible official sources; no new artifact downloads, hash re-verifications, or corpus refresh performed. Mirror queue EMPTY; 0 bytes downloaded (DOCS-6). Updated `documentations/external/redfish/REQUIREMENTS.md`, `FUTUREWORK.md`, `automation-tracking.md`, `progress/journal.md`.
+
+**Decisions:**
+- Followed alternation (EMULATOR → DOCS). Kept existing mirrors intact (no verified deltas requiring rewrite in this run) and refreshed provenance/audit notes only. UI skipped — no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn. Left untracked `testing/` untouched.
+
+**Next:**
+- EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator*`/TMPDIR workaround if `/tmp` EDQUOT recurs)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
+
+**Issues touched:** none

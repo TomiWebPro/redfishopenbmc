@@ -6334,3 +6334,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped (TMPDIR workaround); emulator 85/85; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean.
 - **Commit:** pending — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-11 15:21 UTC)`; pushed: pending.
 - **Next:** 1) DOCS per alternation — anchor freshness re-verify (hub/index/DSP0266, bmcweb master, mockup main; mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+
+## 2026-11-11 15:56 UTC — DOCS
+
+- **Baseline:** analyze 0; tests 522 passed / 1 skipped (default env); starting commit ea8e120 (origin/main synced, clean tree except untracked `testing/`); issues validate OK.
+- **Primary work:** DOCS per alternation (last primary: EMULATOR 2026-11-11 15:21 UTC, ea8e120). Scouted official DMTF Redfish docs (https://redfish.dmtf.org/, https://redfish.dmtf.org/schemas/index.html, service-root context) and OpenBMC bmcweb docs (GitHub README, REDFISH-cheatsheet.md, SECURITY.md, OpenBMC redfish-architecture doc). Re-verified anchor/pages are accessible/current for this scout; no new artifact downloads, hash re-verifications, or corpus refresh performed. Mirror queue EMPTY; 0 bytes downloaded (inside DOCS-6 budget).
+- **Docs:** Updated `documentations/external/redfish/REQUIREMENTS.md` Last audited/Prior with 2026-11-11 15:56 UTC scout provenance. Updated `FUTUREWORK.md` Last updated/Current focus (next: EMULATOR 85/85 re-run). Existing mirrors/provenance retained.
+- **Emulator:** none this run (docs scout only).
+- **Code/tests:** no production code or unit tests changed.
+- **UI:** skipped — scanned context; no obvious safe low-risk/testable UI-2 gap identified in lib for this docs-focused run; avoided untested UI churn. Left untracked `testing/` untouched.
+- **Verification:** analyze 0; tests 522 passed / 1 skipped; issues validate OK (pre-change); `git diff --check` clean (pre-commit); secret scan clean (docs/tracking provenance only).
+- **Commit:** pending — `auto: DOCS — official docs scout/provenance refresh (run 2026-11-11 15:56 UTC)`; pushed: pending.
+- **Next:** 1) EMULATOR per alternation — cheap 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator*`/TMPDIR workaround if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
