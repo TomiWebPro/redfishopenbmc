@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-11 (DOCS — official DMTF Redfish hub/schema index + OpenBMC bmcweb README/REDFISH-cheatsheet/SECURITY/architecture scout 15:56 UTC; anchors/pages rechecked, no new artifact downloads/hash re-verifications, mirror queue EMPTY, 0 bytes, no corpus refresh. Baseline green: analyze 0, 522 passed/1 skipped, issues validate OK. No production/UI changes; UI skipped — no obvious safe low-risk/testable UI-2 gap identified.)**
-- **Current focus:** Next per alternation: **EMULATOR** — cheap 85/85 re-run (pin `23d21f9a3610`, fixture `dmtf_mockup` `-S`; use cache/TMPDIR workaround if `/tmp` EDQUOT recurs). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-11 16:29 UTC (run 2026-11-11 16:29 UTC, commit 74abaea — EMULATOR: DMTF Redfish-Mockup-Server contract re-run 85/85 passed, pin `23d21f9a3610`, fixture `dmtf_mockup` `-S`, cache venv/cert/key, TMPDIR workaround; baseline green: analyze 0, 522 passed/1 skipped, issues validate OK. No production/UI changes; UI skipped — verification-only, no obvious safe low-risk/testable UI-2 gap identified.)**
+- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (hub/index/DSP0266, bmcweb master, mockup main; mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
