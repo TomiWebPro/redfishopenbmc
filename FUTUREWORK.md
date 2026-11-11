@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-10 (DOCS — anchor freshness re-verify 13:16 UTC: hub/index/DSP0266 200, bmcweb HEAD unchanged `c6e2c2610e45`, mockup `23d21f9a3610` unchanged; mirrored bmcweb docs byte-identical to upstream, mirror queue EMPTY, 0 downloads/DOCS-6. Baseline green: analyze 0, 522 passed/1 skipped, issues validate OK. No corpus/code changes; UI skipped — no obvious safe low-risk/testable UI-2 gap identified.)**
-- **Current focus:** Next per alternation: **EMULATOR** — cheap 85/85 re-run (pin `23d21f9a3610`, fixture `dmtf_mockup` `-S`; use `/home/tomi/.cache/redfish-emulator*`/TMPDIR workaround if `/tmp` EDQUOT recurs). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-11 (EMULATOR — DMTF mockup 85/85 re-run 15:21 UTC, pin `23d21f9a3610`, fixture `dmtf_mockup` `-S`, cache server/venv/cert + TMPDIR workaround; anchors unchanged bmcweb `c6e2c2610e45`, mockup `23d21f9a3610`, DSP0266 1.25.0. Baseline green: analyze 0, 522 passed/1 skipped, issues validate OK. No production/UI changes; UI skipped — no obvious safe low-risk/testable UI-2 gap identified.)**
+- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (hub/index/DSP0266, bmcweb master, mockup main; mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
