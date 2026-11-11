@@ -7,7 +7,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-11 17:02 UTC (run 2026-11-11 17:02 UTC — DOCS: anchor freshness re-verify per alternation; hub/index/DSP0266 200, bmcweb master `c6e2c261` unchanged, mockup `23d21f9a` unchanged (git ls-remote + curl). Mirrored bmcweb docs byte-identical (SHA-256s verified) — no corpus refresh, mirror queue EMPTY, 0 new downloads (DOCS-6). Baseline green: analyze 0, 522 passed/1 skipped (TMPDIR workaround), issues validate OK. No production/UI changes; UI skipped — no obvious safe low-risk/testable UI-2 gap identified.)**
+- **Last updated: 2026-11-11 17:37 UTC (run 2026-11-11 17:37 UTC — EMULATOR: full DMTF Redfish-Mockup-Server contract re-run (pin `23d21f9a`, fixture `dmtf_mockup -S`, HTTPS 127.0.0.1:8443, cache venv/cert/key, TMPDIR workaround). **85/85 emulator integration tests passed**. Baseline green: analyze 0, 522 passed/1 skipped (TMPDIR workaround), issues validate OK. No production/UI changes; UI skipped — verification-only primary workstream, no obvious safe low-risk/testable UI-2 gap identified.)**
 - **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (hub/index/DSP0266, bmcweb master, mockup main; mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
