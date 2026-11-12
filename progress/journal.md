@@ -6821,3 +6821,18 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-12 18:42 UTC — agent:redfish-automation — EMULATOR
+
+**Done:**
+- EMULATOR per alternation (last primary: DOCS 2026-11-12 18:07 UTC, f9eebb6). Preflight/baseline green (analyze 0, 522 passed / 1 skipped with TMPDIR workaround, issues validate OK). Recovered prior-run tracking hash correction as `chore: recover previous automation WIP` (26cc7db). Full DMTF Redfish-Mockup-Server contract re-run using cached/pinned resources (pin `23d21f9a3610f6b6fbb71ffc941296b159a524d2` at `/home/tomi/.cache/redfish-emulator/redfish-mockup-server`; cached venv/cert/key). Server healthy on HTTPS 127.0.0.1:8443, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`; `flutter test test_integration/emulator --dart-define=REDFISH_EMULATOR_URL=https://127.0.0.1:8443` → **85/85 passed**. Updated `FUTUREWORK.md`, `automation-tracking.md`, `progress/journal.md`.
+
+**Decisions:**
+- Verification-only EMULATOR run per alternation; no production code changes. Reused pre-existing healthy server (left running). UI skipped — scanned lib, no obvious safe low-risk/testable UI-2 gap identified (key loading states already use merged Semantics labels); avoided untested UI churn. Left untracked `testing/` untouched.
+
+**Next:**
+- DOCS per alternation — anchor freshness re-verify (hub/index/DSP0266, bmcweb master, mockup main; mirror queue likely EMPTY)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
+
+**Issues touched:** none
