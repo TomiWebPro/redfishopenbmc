@@ -1635,3 +1635,6 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - `progress/journal.md` — project daily journal (append-only).
 - `progress/progress_summary.md` — weekly rollup.
 - `issues/issues.py list --all` — detailed issue queue.
+
+## Automation notes (updated 2026-11-13)
+- Last run `run-2026-11-13-2023-docs-scout` (DOCS): upstream bmcweb/mockup HEADs unchanged vs external manifest; baseline green (analyze 0, 522 passed/1 skipped). Next cadence: EMULATOR.

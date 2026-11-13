@@ -7163,3 +7163,14 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
 - **Commit:** pending — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-13 19:17 UTC)`; pushed: pending.
 - **Next:** 1) EMULATOR per alternation — 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator*`/TMPDIR workaround if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+
+## 2026-11-13 20:23Z - run-2026-11-13-2023-docs-scout
+
+- **Workstream:** DOCS (official-source scout/re-verification)
+- **Preflight:** clean `main` at `e628c0c`; `flutter analyze` 0 issues; `flutter test` 522 passed, 1 skipped.
+- **Scouted:** https://redfish.dmtf.org/ ecosystem refs and OpenBMC bmcweb upstream (`git ls-remote` HEAD/master). bmcweb remains `c6e2c2610e45c04ae965a209f03e450902d70359`; DMTF Redfish-Mockup-Server remains `23d21f9a3610f6b6fbb71ffc941296b159a524d2`, matching `documentations/external/README.md` manifest entries (last re-verified 2026-11-13 19:17Z there for key bmcweb/mockup artifacts).
+- **Result:** No upstream content drift requiring mirror updates this run; existing `documentations/external/` provenance remains current. No production/TLS changes.
+- **UI improvement:** skipped (DOCS re-verification run; gates consumed run time).
+- **Gates:** `flutter analyze` = 0 issues; `flutter test` = 522 passed, 1 skipped.
+- **Commit/Push:** recorded below (tracking-only commit attempted).
+
