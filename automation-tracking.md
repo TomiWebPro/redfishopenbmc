@@ -7174,3 +7174,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Gates:** `flutter analyze` = 0 issues; `flutter test` = 522 passed, 1 skipped.
 - **Commit/Push:** recorded below (tracking-only commit attempted).
 
+
+## 2026-11-13 20:57 UTC — EMULATOR
+
+- **Baseline:** analyze 0; tests 522 passed / 1 skipped; starting commit ac3cec7 (origin/main synced, clean tree except untracked `testing/`); issues validate OK.
+- **Primary work:** EMULATOR per alternation (last primary cadence indicated DOCS/EMULATOR alternation with emulator re-run pending after 19:45 incomplete). Full DMTF Redfish-Mockup-Server contract re-run via `tool/emulator/run_tests.sh` (pin `23d21f9a3610f6b6fbb71ffc941296b159a524d2`, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, HTTPS 127.0.0.1:8443, `TMPDIR=/home/tomi/.cache/flutter-tmp`). Server cloned/fetched, venv/cert prepared, health-checked, integration suite executed, server stopped by trap.
+- **Docs:** none this run (emulator contract verification). Anchors unchanged (bmcweb `c6e2c2610e45c04ae965a209f03e450902d70359`, mockup `23d21f9a3610f6b6fbb71ffc941296b159a524d2`, DSP0266 1.25.0, schema index current). Mirror queue EMPTY.
+- **Emulator:** **85/85 tests passed** (full contract suite: discovery/service-root traversal, systems/sensors/firmware inventory/KVM, sessions/accounts/tasks/events/logs, ActionInfo/SecureBoot/VirtualMedia/Controls, corpus invariants, SystemSettingsService Boot/IndicatorLED + Controls PATCH/SetPoint flows).
+- **Code/tests:** no production code or unit tests changed (verification-only run).
+- **UI:** skipped — verification-only primary EMULATOR workstream; no obvious safe low-risk/testable UI-2 gap identified (key loading states already use merged Semantics labels); avoided untested UI churn. Left untracked `testing/` untouched.
+- **Verification:** analyze 0; tests 522 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (tracking/FUTUREWORK updates only).
+- **Commit:** pending — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-13 20:57 UTC)`; pushed: pending.
+- **Next:** 1) DOCS per alternation — anchor freshness re-verify (hub/index/DSP0266 1.25.0, bmcweb master, Redfish-Mockup-Server main; mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).

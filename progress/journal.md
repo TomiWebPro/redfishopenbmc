@@ -7455,3 +7455,18 @@
 - Re-verified upstream OpenBMC bmcweb (`c6e2c261`) and DMTF Redfish-Mockup-Server (`23d21f9a`) against `documentations/external/README.md` manifest; no content drift found, no mirror edits needed.
 - Gates: `flutter analyze` 0 issues, `flutter test` 522 passed / 1 skipped.
 - Next: alternate to EMULATOR on next green run per cadence; consider small tested UI polish if time permits.
+
+## 2026-11-13 20:57 UTC — agent:redfish-automation — EMULATOR
+
+**Done:**
+- EMULATOR per alternation. Preflight/baseline green (analyze 0, 522 passed / 1 skipped, issues validate OK, clean tree except untracked `testing/`). Full DMTF Redfish-Mockup-Server contract re-run via `tool/emulator/run_tests.sh` (pin `23d21f9a3610f6b6fbb71ffc941296b159a524d2`, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, HTTPS 127.0.0.1:8443, `TMPDIR=/home/tomi/.cache/flutter-tmp`) → **85/85 passed**. Updated `FUTUREWORK.md`, `automation-tracking.md`, `progress/journal.md`.
+
+**Decisions:**
+- Verification-only EMULATOR run; no production code/docs corpus changes. Anchors unchanged. UI skipped — no obvious safe low-risk/testable UI-2 gap identified (key loading states already use merged Semantics labels); avoided untested UI churn. Left untracked `testing/` untouched.
+
+**Next:**
+- DOCS per alternation — anchor freshness re-verify (hub/index/DSP0266, bmcweb master, mockup main; mirror queue likely EMPTY)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
+
+**Issues touched:** none
