@@ -7089,5 +7089,17 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed.
 - **UI:** skipped — scanned context; key loading states use merged Semantics labels; no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn. Left untracked `testing/` untouched.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
-- **Commit:** e235230 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-13 15:23 UTC)`; pushed: pending.
+- **Commit:** 8c611e3 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-13 15:23 UTC)`; pushed: yes.
 - **Next:** 1) EMULATOR per alternation — 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator*`/TMPDIR workaround if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+
+## 2026-11-13 16:10 UTC — EMULATOR
+
+- **Baseline:** analyze 0; tests 522 passed / 1 skipped; starting commit 9b66caf (origin/main synced, working tree had prior DOCS tracking hash correction `automation-tracking.md` and untracked `testing/` — recovered/preserved); issues validate OK.
+- **Primary work:** EMULATOR per alternation (last primary: DOCS 2026-11-13 15:23 UTC, 9b66caf). Full DMTF Redfish-Mockup-Server contract re-run using cached emulator at `/home/tomi/.cache/redfish-emulator` (pin `23d21f9a3610f6b6fbb71ffc941296b159a524d2`, server/venv + self-signed cert, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, HTTPS 127.0.0.1:8443). Started server, waited for health, ran `TMPDIR=/home/tomi/.cache/flutter-tmp flutter test test_integration/emulator --dart-define=REDFISH_EMULATOR_URL=https://127.0.0.1:8443`, stopped server.
+- **Docs:** none this run (emulator contract re-run). Anchors unchanged (bmcweb `c6e2c2610e45c04ae965a209f03e450902d70359`, mockup `23d21f9a3610f6b6fbb71ffc941296b159a524d2`, DSP0266 1.25.0, schema index current).
+- **Emulator:** **85/85 tests passed** (full contract suite: discovery/service-root traversal, systems/sensors/firmware inventory/KVM, sessions/accounts/tasks/events/logs, ActionInfo/SecureBoot/VirtualMedia/Controls, corpus invariants, SystemSettingsService Boot/IndicatorLED + Controls PATCH/SetPoint flows).
+- **Code/tests:** no production code or unit tests changed (verification-only run). Recovered prior 15:23 DOCS tracking commit-hash correction in `automation-tracking.md`.
+- **UI:** skipped — verification-only primary EMULATOR workstream; no obvious safe low-risk/testable UI-2 gap identified (key loading states already use merged Semantics labels); avoided untested UI churn. Left untracked `testing/` untouched.
+- **Verification:** analyze 0; tests 522 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean.
+- **Commit:** pending — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-13 16:10 UTC)`; pushed: pending.
+- **Next:** 1) DOCS per alternation — anchor freshness re-verify (hub/index/DSP0266, bmcweb master, mockup main; mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
