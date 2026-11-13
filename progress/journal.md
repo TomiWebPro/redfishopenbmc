@@ -7530,3 +7530,19 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-13 — agent:redfish-automation — DOCS (anchor re-verify, bmcweb HEAD advanced)
+
+**Done:**
+- DOCS per alternation (last primary EMULATOR 23:11 UTC, a29c136). Anchor freshness re-verify: DMTF hub 200, schema index v1 200, DSP0266 1.25.0 200, mockup main `23d21f9a3610` unchanged. bmcweb master advanced `c6e2c261` → `c9ba80ef3d4e`; all 4 mirrored docs byte-identical to upstream/master (SHA-256s verified) — no corpus refresh, provenance/manifest anchors updated only. Mirror queue EMPTY, 0 new downloads (DOCS-6).
+- Updated `documentations/external/README.md` (manifest rows + Current upstream anchors), `documentations/external/redfish/REQUIREMENTS.md` (Last audited/Prior), `FUTUREWORK.md` (Last updated/Current focus), `automation-tracking.md`.
+- UI skipped: no obvious safe low-risk/testable UI-2 gap identified; avoided untested churn. Untracked `testing/` left untouched.
+
+**Decisions:**
+- Advanced bmcweb HEAD recorded with byte-identical doc evidence rather than re-downloading unchanged corpus; no client/code impact.
+
+**Next:**
+- 1) EMULATOR per alternation — 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S, TMPDIR workaround if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+
+**Issues touched:**
+- none opened/closed this run (DOCS anchor/provenance update; no issue status change).
