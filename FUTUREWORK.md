@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-13 06:45 UTC (run 2026-11-13 06:45 UTC — DOCS: anchor freshness re-verify (hub/index/DSP0266, bmcweb master c6e2c261, mockup main 23d21f9a all unchanged; mirrored bmcweb docs byte-identical to upstream). Baseline: analyze 0, tests 522 passed / 1 skipped, issues validate OK. Mirror queue EMPTY, 0 new downloads (DOCS-6). No production code changes. UI skipped — no obvious safe low-risk/testable UI-2 gap identified.)**
-- **Current focus:** Next per alternation: **EMULATOR** — 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S, 127.0.0.1:8443). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-13 07:33 UTC (run 2026-11-13 07:33 UTC — EMULATOR: DMTF mockup full contract re-run 85/85 passed (pin 23d21f9a3610, fixture dmtf_mockup -S, 127.0.0.1:8443, pre-existing healthy server). Baseline: analyze 0, tests 522 passed / 1 skipped, issues validate OK. No production code/docs changes. UI skipped — verification-only run, no obvious safe low-risk/testable UI-2 gap identified.)**
+- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (hub/index/DSP0266, bmcweb master, mockup main; mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
