@@ -7420,3 +7420,18 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-13 19:45 UTC — agent:redfish-automation — EMULATOR
+
+**Done:**
+- EMULATOR per alternation (last primary: DOCS 2026-11-13 17:30 UTC, 4111b34). Preflight/baseline green (analyze 0, 522 passed / 1 skipped, issues validate OK, clean tree except untracked `testing/`). Re-verified anchors unchanged (hub/index/DSP0266 200, bmcweb `c6e2c2610e45` HEAD, mockup `23d21f9a3610` main HEAD). Restored cached emulator (cache was missing): `/home/tomi/.cache/redfish-emulator` at pin 23d21f9a3610, venv with requirements, self-signed cert/key. Attempted full 85-test emulator integration suite (fixture `test/fixtures/redfish/dmtf_mockup`, `-S`, HTTPS 127.0.0.1:8443, TMPDIR workaround) but flutter test executions were terminated by shell/session limits; result not captured this run. No production code/docs changed.
+
+**Decisions:**
+- Chose EMULATOR per alternation. Prioritized restoring pinned emulator cache for future runs over guessing results. Recorded incomplete integration verification honestly (no 85/85 claim). UI skipped — verification-only run, no obvious safe low-risk/testable UI-2 gap identified. Left untracked `testing/` untouched.
+
+**Next:**
+- DOCS per alternation — anchor freshness re-verify (hub/index/DSP0266, bmcweb master, mockup main; mirror queue likely EMPTY)
+- EMULATOR 85/85 re-run using restored cached setup (pin 23d21f9a3610, `-S`) when environment allows
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow; #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
+
+**Issues touched:** none
