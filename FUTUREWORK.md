@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-14 (run 2026-11-14 19:48 UTC — EMULATOR per alternation: full DMTF Redfish-Mockup-Server integration contract re-run via `tool/emulator/run_tests.sh` (pin `23d21f9a3610`, fixture `dmtf_mockup` `-S`, HTTPS 127.0.0.1:8443, `TMPDIR=/home/tomi/.cache/flutter-tmp`) — 85/85 passed. Anchors unchanged (bmcweb `c9ba80ef`, mockup `23d21f9a`, DSP0266 1.25.0). Baseline/verify: analyze 0, tests 522 passed / 1 skipped, issues validate OK. UI skipped — verification-only run, no obvious safe low-risk/testable UI-2 gap.)**
-- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (hub/index/DSP0266 1.25.0, bmcweb master, Redfish-Mockup-Server main; mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-14 (run 2026-11-14 20:05 UTC — DOCS per alternation: anchor freshness re-verify (DMTF hub/index/DSP0266 1.25.0 200, bmcweb `c9ba80ef` HEAD unchanged, mockup `23d21f9a` HEAD unchanged, mirrored bmcweb docs byte-identical upstream/repo) — no corpus refresh. Anchors unchanged. Mirror queue EMPTY, 0 new downloads (DOCS-6). Baseline/verify: analyze 0, tests 522 passed / 1 skipped, issues validate OK. UI skipped — no obvious safe low-risk/testable UI-2 gap; avoided untested UI churn.)**
+- **Current focus:** Next per alternation: **EMULATOR** — 85/85 re-run (pin `23d21f9a3610`, fixture `dmtf_mockup` `-S`; use `TMPDIR=/home/tomi/.cache/flutter-tmp` if `/tmp` EDQUOT recurs). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
