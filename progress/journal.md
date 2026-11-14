@@ -8115,3 +8115,18 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-15 — agent:redfish-automation — EMULATOR
+
+**Done:**
+- EMULATOR per alternation (last primary: DOCS 2026-11-14 22:51 UTC). Preflight/baseline green after recovering prior tracking metadata (`chore: recover previous automation tracking metadata`, b812e16). Ran `tool/emulator/run_tests.sh` (pin `23d21f9a3610`, fixture `dmtf_mockup -S`, `TMPDIR=/home/tomi/.cache/flutter-tmp`) → **85/85 passed**. Updated `FUTUREWORK.md`, `automation-tracking.md`.
+
+**Decisions:**
+- Verification-only EMULATOR run; no production code/docs/UI changes. Left untracked `testing/` untouched.
+
+**Next:**
+- DOCS per alternation — anchor freshness re-verify (hub/index/DSP0266 1.25.0, bmcweb master, Redfish-Mockup-Server main; mirror queue likely EMPTY)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
+
+**Issues touched:** none

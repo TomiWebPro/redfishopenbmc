@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-14 (run 2026-11-14 22:51 UTC — DOCS per alternation: anchor freshness re-verify (hub/index 200, DSP0266 1.25.0 200, bmcweb `c9ba80ef` HEAD unchanged, Redfish-Mockup-Server `23d21f9a` HEAD unchanged). Mirrored bmcweb docs byte-identical to repo/upstream (SHA-256s verified); mirror queue EMPTY, 0 new downloads (DOCS-6). Baseline/verify: analyze 0, tests 522 passed / 1 skipped, issues validate OK. UI skipped — no obvious safe low-risk/testable UI-2 gap identified.)**
-- **Current focus:** Next per alternation: **EMULATOR** — 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `TMPDIR=/home/tomi/.cache/flutter-tmp` if `/tmp` EDQUOT recurs). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-15 (run 2026-11-15 UTC — EMULATOR per alternation: anchors re-verified via script pin (mockup `23d21f9a3610`, fixture dmtf_mockup -S); full `tool/emulator/run_tests.sh` (TMPDIR=/home/tomi/.cache/flutter-tmp) passed 85/85. Baseline: analyze 0, tests 522 passed / 1 skipped, issues validate OK. No code/docs/UI changes this run.)**
+- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (hub/index/DSP0266 1.25.0, bmcweb master `c9ba80ef`, Redfish-Mockup-Server main `23d21f9a`; mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
