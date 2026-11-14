@@ -7561,3 +7561,18 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-14 00:50 UTC — agent:redfish-automation — DOCS
+
+**Done:**
+- DOCS per alternation (last primary: EMULATOR 2026-11-14 00:17 UTC, 1f44f96). Preflight/baseline green (analyze 0, 522 passed / 1 skipped, issues validate OK, clean tree except untracked `testing/`). Anchor freshness re-verify: DMTF hub/index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb `c9ba80ef3d4ea680662af14856f333534a5ac56f` HEAD/master unchanged, Redfish-Mockup-Server `23d21f9a3610f6b6fbb71ffc941296b159a524d2` main HEAD unchanged — verified via git ls-remote + curl. Mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) byte-identical to repo copies and upstream master (SHA-256s verified) — no corpus refresh. Mirror queue EMPTY; 0 new downloads (DOCS-6). Updated `documentations/external/README.md`, `documentations/external/redfish/REQUIREMENTS.md`, `FUTUREWORK.md`, `automation-tracking.md`, `progress/journal.md`.
+
+**Decisions:**
+- Followed alternation (EMULATOR → DOCS). No corpus refresh (anchors/content unchanged). UI skipped — scanned context; key loading states use merged Semantics labels; no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn. Left untracked `testing/` untouched.
+
+**Next:**
+- EMULATOR per alternation — 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator*`/TMPDIR workaround if `/tmp` EDQUOT recurs)
+- P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow
+- P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
+
+**Issues touched:** none
