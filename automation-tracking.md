@@ -7316,5 +7316,5 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Code/tests:** no production code or unit tests changed.
 - **UI:** skipped — scanned context; key loading states use merged Semantics labels; no obvious safe low-risk/testable UI-2 gap identified; avoided untested UI churn. Left untracked `testing/` untouched.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (docs/tracking timestamps/SHAs only).
-- **Commit:** a788c12 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-14 03:35 UTC)`; pushed: pending.
+- **Commit:** 5a0a557 — `auto: DOCS — anchor re-verify (sources current, mirror queue EMPTY) (run 2026-11-14 03:35 UTC)`; pushed: yes.
 - **Next:** 1) EMULATOR per alternation — 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator*`/TMPDIR workaround if `/tmp` EDQUOT recurs). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
