@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-14 (run 2026-11-14 02:28 UTC — DOCS per alternation, anchor freshness re-verify: DMTF hub/index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb master HEAD unchanged `c9ba80ef3d4ea680662af14856f333534a5ac56f`, Redfish-Mockup-Server main HEAD unchanged `23d21f9a3610f6b6fbb71ffc941296b159a524d2`. Mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) byte-identical to upstream (SHA-256s verified); no corpus refresh, mirror queue EMPTY, 0 new downloads (DOCS-6). Baseline: analyze 0, tests 522 passed / 1 skipped, issues validate OK. UI skipped — no obvious safe low-risk/testable UI-2 gap identified.)**
-- **Current focus:** Next per alternation: **EMULATOR** — 85/85 re-run (pin `23d21f9a3610`, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`; use `/home/tomi/.cache/redfish-emulator*`/TMPDIR workaround if `/tmp` EDQUOT recurs). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-14 (run 2026-11-14 03:03 UTC — EMULATOR per alternation, DMTF Redfish-Mockup-Server integration contract re-run via `tool/emulator/run_tests.sh`: 85/85 tests passed (pin `23d21f9a3610f6b6fbb71ffc941296b159a524d2`, fixture `test/fixtures/redfish/dmtf_mockup` with `-S`, HTTPS 127.0.0.1:8443). Anchors unchanged (bmcweb `c9ba80ef3d4e`, mockup `23d21f9a3610`, DSP0266 1.25.0). Baseline: analyze 0, tests 522 passed / 1 skipped, issues validate OK. UI skipped — verification-only run, no obvious safe low-risk/testable UI-2 gap identified.)**
+- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (DMTF hub/index, DSP0266 1.25.0, bmcweb master, Redfish-Mockup-Server main; mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1637,4 +1637,4 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - `issues/issues.py list --all` — detailed issue queue.
 
 ## Automation notes (updated 2026-11-14)
-- Last run 2026-11-14 01:15 UTC (EMULATOR): DMTF mockup integration suite **85/85 passed** (pin 23d21f9a3610, fixture dmtf_mockup -S) via `tool/emulator/run_tests.sh`; baseline analyze 0, unit tests 522 passed/1 skipped. Next cadence: DOCS.
+- Last run 2026-11-14 03:03 UTC (EMULATOR): DMTF mockup integration suite **85/85 passed** (pin 23d21f9a3610, fixture dmtf_mockup -S) via `tool/emulator/run_tests.sh`; baseline analyze 0, unit tests 522 passed/1 skipped, issues validate OK. Next cadence: DOCS.
