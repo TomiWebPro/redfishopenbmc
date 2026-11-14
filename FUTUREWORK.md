@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-14 (run 2026-11-14 10:02 UTC — DOCS per alternation: anchor freshness re-verify. Last primary EMULATOR 2026-11-14 09:44 UTC a3c0a30/7e0ecca (85/85). Anchors unchanged (bmcweb `c9ba80ef3d4ea680662af14856f333534a5ac56f`, mockup `23d21f9a3610f6b6fbb71ffc941296b159a524d2`, DSP0266 1.25.0, schema index current); mirrored bmcweb docs byte-identical to upstream master — no corpus refresh. Mirror queue EMPTY, 0 new downloads (DOCS-6). Baseline/verify: analyze 0, tests 522 passed / 1 skipped, issues validate OK. UI skipped — no obvious safe low-risk/testable UI-2 gap identified.)**
-- **Current focus:** Next per alternation: **EMULATOR** — 85/85 re-run (pin 23d21f9a3610, fixture dmtf_mockup -S; use `/home/tomi/.cache/redfish-emulator*`/TMPDIR workaround if `/tmp` EDQUOT recurs). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-14 (run 2026-11-14 11:53 UTC — EMULATOR per alternation: DMTF mockup integration contract re-run 85/85 passed (pin 23d21f9a3610, fixture dmtf_mockup -S). Last primary DOCS 2026-11-14 10:02 UTC 46b17f8/d7984be. Anchors unchanged (bmcweb `c9ba80ef3d4ea680662af14856f333534a5ac56f`, mockup `23d21f9a3610f6b6fbb71ffc941296b159a524d2`, DSP0266 1.25.0, schema index current). Mirror queue EMPTY. Baseline/verify: analyze 0, tests 522 passed / 1 skipped, emulator 85/85, issues validate OK. UI skipped — verification-only primary; no obvious safe low-risk/testable UI-2 gap identified.)**
+- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (hub/index/DSP0266 1.25.0, bmcweb master, Redfish-Mockup-Server main; mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1637,4 +1637,4 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - `issues/issues.py list --all` — detailed issue queue.
 
 ## Automation notes (updated 2026-11-14)
-- Last run 2026-11-14 08:37 UTC (EMULATOR): DMTF mockup integration suite **85/85 passed** (pin 23d21f9a3610, fixture dmtf_mockup -S) via `tool/emulator/run_tests.sh`; baseline analyze 0, unit tests 522 passed/1 skipped, issues validate OK. Anchors unchanged; mirror queue EMPTY. Next cadence: DOCS.
+- Last run 2026-11-14 11:53 UTC (EMULATOR): DMTF mockup integration suite **85/85 passed** (pin 23d21f9a3610, fixture dmtf_mockup -S) via `tool/emulator/run_tests.sh` (`TMPDIR=/home/tomi/.cache/flutter-tmp`); baseline analyze 0, unit tests 522 passed/1 skipped, issues validate OK. Anchors unchanged (bmcweb c9ba80ef, mockup 23d21f9a, DSP0266 1.25.0). Mirror queue EMPTY. Next cadence: DOCS.
