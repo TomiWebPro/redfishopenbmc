@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-15 (run 2026-11-15 01:20 UTC — DOCS per alternation: anchor freshness re-verify via git ls-remote + curl; DMTF hub/index 200, DSP0266 1.25.0 200, bmcweb `c9ba80ef` and mockup `23d21f9a` HEADs unchanged; mirrored bmcweb docs byte-identical to upstream master (SHA-256s verified). Mirror queue EMPTY, 0 new downloads (inside DOCS-6). Baseline: analyze 0, tests 522 passed / 1 skipped, issues validate OK. No code/UI changes this run.)**
-- **Current focus:** Next per alternation: **EMULATOR** — 85/85 re-run (pin `23d21f9a3610`, fixture `dmtf_mockup -S`; use `TMPDIR=/home/tomi/.cache/flutter-tmp` if `/tmp` EDQUOT recurs). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-15 (run 2026-11-15 01:55 UTC — EMULATOR per alternation: full DMTF Redfish-Mockup-Server contract re-run via `tool/emulator/run_tests.sh` (pin `23d21f9a3610`, fixture `dmtf_mockup -S`, HTTPS 127.0.0.1:8443, `TMPDIR=/home/tomi/.cache/flutter-tmp`) → **85/85 passed**. Anchors unchanged (bmcweb `c9ba80ef`, mockup `23d21f9a`, DSP0266 1.25.0). Baseline/verify: analyze 0, tests 522 passed / 1 skipped, issues validate OK. No code/UI/doc-corpus changes this run.)**
+- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (DMTF hub/index/DSP0266 1.25.0, bmcweb master, Redfish-Mockup-Server main; mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1637,4 +1637,4 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 - `issues/issues.py list --all` — detailed issue queue.
 
 ## Automation notes (updated 2026-11-15)
-- Last run 2026-11-15 01:20 UTC (DOCS): anchor freshness re-verify per alternation (last primary EMULATOR 2026-11-15 00:48 UTC f6447bb). DMTF hub/index 200, DSP0266 1.25.0 200, bmcweb `c9ba80ef` and Redfish-Mockup-Server `23d21f9a` HEADs unchanged; mirrored bmcweb docs byte-identical to upstream master (SHA-256s verified). Mirror queue EMPTY, 0 new downloads (DOCS-6). Baseline/verify analyze 0, tests 522 passed/1 skipped, issues validate OK. Next cadence: EMULATOR.
+- Last run 2026-11-15 01:55 UTC (EMULATOR): full DMTF Redfish-Mockup-Server contract re-run per alternation (last primary DOCS 2026-11-15 01:20 UTC f6447bb) via `tool/emulator/run_tests.sh` (pin `23d21f9a3610`, fixture `dmtf_mockup -S`, `TMPDIR=/home/tomi/.cache/flutter-tmp`) → **85/85 passed**. Anchors unchanged. Baseline/verify analyze 0, tests 522 passed/1 skipped, issues validate OK. No code/UI/doc-corpus changes. Next cadence: DOCS.
