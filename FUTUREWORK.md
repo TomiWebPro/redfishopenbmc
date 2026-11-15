@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-15 (run 2026-11-15 00:15 UTC — DOCS per alternation: anchor freshness re-verify, all sources current — hub/index 200, DSP0266 1.25.0 (www.dmtf.org) 200, bmcweb master `c9ba80ef` HEAD unchanged, Redfish-Mockup-Server main `23d21f9a` unchanged; mirrored bmcweb docs byte-identical to upstream master (SHA-256s verified), no corpus refresh. Mirror queue EMPTY, 0 new downloads. Baseline: analyze 0, tests 522 passed / 1 skipped, issues validate OK. No code/UI changes this run.)**
-- **Current focus:** Next per alternation: **EMULATOR** — 85/85 re-run (pin `23d21f9a3610`, fixture `dmtf_mockup` `-S`; use `TMPDIR=/home/tomi/.cache/flutter-tmp` if `/tmp` EDQUOT recurs). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-15 (run 2026-11-15 00:48 UTC — EMULATOR per alternation: DMTF Redfish-Mockup-Server integration contract re-run via `tool/emulator/run_tests.sh` (pin `23d21f9a3610`, fixture `dmtf_mockup` `-S`, `TMPDIR=/home/tomi/.cache/flutter-tmp`) → **85/85 passed**; anchors unchanged (bmcweb `c9ba80ef`, mockup `23d21f9a`, DSP0266 1.25.0). Baseline: analyze 0, tests 522 passed / 1 skipped, issues validate OK. No code/UI changes this run.)**
+- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (hub/index/DSP0266 1.25.0, bmcweb master, Redfish-Mockup-Server main; mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
