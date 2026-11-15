@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-15 (run 2026-11-15 11:08 UTC — DOCS per alternation: anchor freshness re-verify (last primary EMULATOR 2026-11-15 10:51 UTC, 8cc5e38). Hub/index/DSP0266 1.25.0 200, bmcweb master HEAD unchanged `3cdd1fa5`, Redfish-Mockup-Server main HEAD unchanged `23d21f9a`; mirrored bmcweb docs byte-identical — no corpus refresh. Mirror queue EMPTY, 0 new downloads (DOCS-6). Baseline/verify: analyze 0, tests 522 passed / 1 skipped, issues validate OK. No production code/UI/corpus changes.)**
-- **Current focus:** Next per alternation: **EMULATOR** — 85/85 re-run (pin `23d21f9a`, fixture `dmtf_mockup`, `-S`; use `TMPDIR=/home/tomi/.cache/flutter-tmp` if `/tmp` EDQUOT recurs). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+- **Last updated: 2026-11-15 (run 2026-11-15 11:59 UTC — EMULATOR per alternation: DMTF Redfish-Mockup-Server integration contract re-run (last primary DOCS 2026-11-15 11:08 UTC, 488c708). tool/emulator/run_tests.sh, pin `23d21f9a3610f6b6fbb71ffc941296b159a524d2`, fixture `test/fixtures/redfish/dmtf_mockup` `-S`, HTTPS 127.0.0.1:8443, TMPDIR=/home/tomi/.cache/flutter-tmp → 85/85 passed. Anchors unchanged (bmcweb `3cdd1fa5`, mockup `23d21f9a`, DSP0266 1.25.0). Baseline/verify: analyze 0, tests 522 passed / 1 skipped, issues validate OK. No production code/UI/corpus changes.)**
+- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (hub/index/DSP0266 1.25.0, bmcweb master, Redfish-Mockup-Server main; mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
