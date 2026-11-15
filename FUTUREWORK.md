@@ -7,7 +7,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-15 (run 2026-11-15 07:10 UTC — EMULATOR per alternation: DMTF Redfish-Mockup-Server integration contract re-run via `tool/emulator/run_tests.sh` (pin `23d21f9a3610`, fixture `dmtf_mockup -S`, HTTPS 127.0.0.1:8443, `TMPDIR=/home/tomi/.cache/flutter-tmp`) → **85/85 passed**. Anchors unchanged (bmcweb `3cdd1fa5`, mockup `23d21f9a`, DSP0266 1.25.0). Baseline/verify: analyze 0, tests 522 passed / 1 skipped, issues validate OK. No production code/UI/doc-corpus changes.)**
+- **Last updated: 2026-11-15 (run 2026-11-15 07:46 UTC — DOCS per alternation: anchor freshness re-verify via `git ls-remote` + `curl -sSIL` (DMTF hub 200, schema index v1 200, DSP0266 1.25.0 www.dmtf.org 200, bmcweb master HEAD unchanged at `3cdd1fa5`, Redfish-Mockup-Server main HEAD unchanged at `23d21f9a`); mirrored bmcweb docs (Redfish.md, REDFISH_CHECKLIST.md, OEM_SCHEMAS.md, CLIENTS.md) byte-identical to upstream master — no corpus refresh, mirror queue EMPTY, 0 new downloads (DOCS-6). Baseline/verify: analyze 0, tests 522 passed / 1 skipped, issues validate OK. No production code/UI changes.)**
 - **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (hub/index/DSP0266 1.25.0, bmcweb master, Redfish-Mockup-Server main; mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
 - **Run cadence:** `0 */5 * * *`
 - **Model:** `opencode/deepseek-v4.1-flash-free`
