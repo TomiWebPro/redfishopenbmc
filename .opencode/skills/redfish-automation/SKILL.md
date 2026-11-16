@@ -1,6 +1,6 @@
 ---
 name: redfish-automation
-description: Unattended 5-hour maintenance loop for redfishopenbmc — official docs scout, DMTF emulator tests, safe code/UI iteration, and append-only tracking.
+description: Unattended maintenance loop for redfishopenbmc — official docs scout, DMTF emulator tests, safe code/UI iteration, and append-only tracking.
 ---
 
 # Redfish 5-Hour Automation Runbook
