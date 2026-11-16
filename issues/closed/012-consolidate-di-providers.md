@@ -1,17 +1,16 @@
 ---
 id: "012"
 title: "Consolidate app-wide DI providers into a core/di module"
-status: open
+status: closed
 priority: P3
 type: chore
 created: 2026-08-30
-updated: 2026-08-30
-closed: null
+updated: 2026-11-16
+closed: 2026-11-16
 assignee: unassigned
 labels: [architecture, riverpod, di]
 estimated_tokens: 10000
 ---
-
 # 012 — Consolidate app-wide DI providers into a core/di module
 
 > App-wide infrastructure providers are defined inside a feature file. Move them to a dedicated `core/di` module for clear layering.
@@ -27,15 +26,15 @@ estimated_tokens: 10000
 
 ## Goals / Acceptance Criteria
 
-- [ ] New `lib/core/di/providers.dart` holds `secureStorageProvider`, `profileRepositoryProvider`, `authManagerProvider`, `systemManagerProvider`.
-- [ ] `system_manager.dart` no longer declares app-wide providers (keeps only system-scoped ones).
-- [ ] `flutter analyze` clean; tests green.
+- [x] New `lib/core/di/providers.dart` holds `secureStorageProvider`, `profileRepositoryProvider`, `authManagerProvider`, `systemManagerProvider`.
+- [x] `system_manager.dart` no longer declares app-wide providers (keeps only system-scoped ones).
+- [x] `flutter analyze` clean; tests green.
 
 ## Tasks
 
-- [ ] Create `lib/core/di/providers.dart`.
-- [ ] Move provider defs and update imports across consumers.
-- [ ] Run `flutter test`.
+- [x] Create `lib/core/di/providers.dart`.
+- [x] Move provider defs and update imports across consumers (system_manager re-exports for compatibility; core/di is the canonical declaration).
+- [x] Run `flutter test`.
 
 ## Redfish Mapping
 
@@ -44,6 +43,7 @@ estimated_tokens: 10000
 ## Progress Log
 
 - 2026-08-30 — Created from triage analysis (arch finding #4).
+- 2026-11-16 10:53 UTC — agent:redfish-automation — moved four app-wide providers to `lib/core/di/providers.dart`, removed declarations from `system_manager.dart` (keeps system-scoped `systemHandleProvider`/`selectedSystemProvider`), added re-export/import wiring; no behavior changes.
 
 ## References
 
@@ -52,6 +52,6 @@ estimated_tokens: 10000
 
 ## Closed Criteria
 
-- Resolution:
-- Closed reason:
+- Resolution: Moved `secureStorageProvider`, `profileRepositoryProvider`, `authManagerProvider`, and `systemManagerProvider` into `lib/core/di/providers.dart`; `system_manager.dart` now imports/exports them and keeps only system-scoped providers.
+- Closed reason: `auto: FEATURE #012 consolidate DI providers (run 2026-11-16 10:53 UTC)`
 - Follow-ups: none

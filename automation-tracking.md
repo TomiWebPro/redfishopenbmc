@@ -8433,3 +8433,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** dart format (touched tests); analyze 0; tests 532 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #025 harden unsafe collection access (run 2026-11-16)`; pushed: pending.
 - **Next:** 1) FEATURE #012 — consolidate app-wide DI providers into a core/di module (smallest safe slice). 2) FEATURE #021/#019 — pick smallest viable slice (KVM console rendering or sensors realtime telemetry/retry). 3) FEATURE #028 — BIOS configuration editor (Bios/Settings surface) or triage epics #006–#010 acceptance.
+
+## 2026-11-16 10:53 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 532 passed / 1 skipped; starting commit 23ff290 (origin/main synced, clean tracked tree except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #012 (smallest open). Consolidated app-wide DI providers into `lib/core/di/providers.dart` (`secureStorageProvider`, `profileRepositoryProvider`, `authManagerProvider`, `systemManagerProvider`) and removed those declarations from `lib/features/systems/providers/system_manager.dart`, which now keeps only system-scoped providers (`systemHandleProvider`, `selectedSystemProvider`) and re-exports the app-wide providers for compatibility. No behavior changes.
+- **Docs:** cheap anchor gate only — anchors unchanged and mirror queue EMPTY; no corpus/manifest refresh.
+- **Emulator:** skipped — no emulator fixture/contract/tooling changes requiring full suite and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/core/di/providers.dart` (new), `lib/features/systems/providers/system_manager.dart`, `issues/closed/012-consolidate-di-providers.md` (closed). Targeted: `test/features/systems/system_manager_test.dart`, `test/features/systems/dashboard_view_test.dart`, `test/core/router_test.dart`, `test/widget_test.dart`; full suite green.
+- **UI:** none (architecture/DI refactor; no user-visible behavior change).
+- **Verification:** `flutter analyze` 0 issues; `flutter test` 532 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #012 consolidate DI providers (run 2026-11-16 10:53 UTC)`; pushed: pending.
+- **Next:** 1) FEATURE #021 or #019 — pick smallest viable slice (KVM console rendering or sensors realtime telemetry/retry). 2) FEATURE #028 — BIOS configuration editor. 3) Triage `#006`–`#010` epics (verify acceptance, close or split).

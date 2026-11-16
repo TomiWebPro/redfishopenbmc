@@ -9031,3 +9031,18 @@
 - FEATURE #028 — BIOS configuration editor or triage #006–#010
 
 **Issues touched:** #025 (closed)
+
+## 2026-11-16 10:53 UTC — agent:redfish-automation — #012
+
+**Done:**
+- FEATURE #012 (smallest open). Baseline green at 23ff290 (analyze 0, 532 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Created `lib/core/di/providers.dart` with `secureStorageProvider`, `profileRepositoryProvider`, `authManagerProvider`, and `systemManagerProvider`; removed those declarations from `lib/features/systems/providers/system_manager.dart` which now keeps only system-scoped providers and re-exports app-wide providers for compatibility. Closed `issues/closed/012-consolidate-di-providers.md`.
+
+**Decisions:**
+- Chose #012 as smallest open issue per runbook/FUTUREWORK order. Kept provider behavior and system-scoped providers unchanged; used re-export to minimize consumer breakage while satisfying layering goal. DOCS cheap gate only (anchors unchanged, mirror queue EMPTY); full EMULATOR re-run skipped (no emulator/fixture/tool changes, last green <7 days). No UI work needed.
+
+**Next:**
+- FEATURE #021 or #019 — pick smallest viable slice (KVM console rendering or sensors realtime telemetry/retry)
+- FEATURE #028 — BIOS configuration editor
+- Triage `#006`–`#010` (verify acceptance, close/split)
+
+**Issues touched:** #012 (closed)
