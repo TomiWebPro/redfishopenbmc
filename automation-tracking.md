@@ -8361,3 +8361,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 524 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #026 canonical authMethod (run 2026-11-16 06:27 UTC)`; pushed: pending.
 - **Next:** 1) FEATURE #013 — remove dead `app_breakpoints.dart` and reconcile breakpoint taxonomy. 2) FEATURE #011 — relocate `ConnectionProfile` model into core layer (fix core→feature dependency). 3) FEATURE #017 — discover `SessionService` URI instead of hardcoding it.
+
+## 2026-11-16 — FEATURE
+
+- **Baseline:** analyze 0; tests 524 passed / 1 skipped; starting commit b738abe (origin/main synced, untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #013 (smallest open). Removed dead `lib/core/theme/app_breakpoints.dart` and dead `AppBreakpoints`/`AdaptiveBuilder` usage/tests; `lib/core/theme/breakpoints.dart` remains the canonical breakpoint source (overview desktop ≥1024, tablet 600–1024).
+- **Docs:** anchors unchanged; mirror queue EMPTY (cheap gate, no corpus refresh).
+- **Emulator:** skipped — no `lib/` feature behavior requiring contract change beyond dead-code removal, no emulator fixture/tool changes, and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** deleted `lib/core/theme/app_breakpoints.dart`; updated `test/core/theme_test.dart` to keep `AppTheme` coverage and drop dead breakpoint/builder tests; `issues/closed/013-remove-dead-breakpoints.md` (closed).
+- **UI:** none (dead theme code removal; no user-visible behavior change).
+- **Verification:** analyze 0; tests 522 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #013 remove dead app_breakpoints (run 2026-11-16)`; pushed: pending.
+- **Next:** 1) FEATURE #011 — relocate `ConnectionProfile` model into core layer (fix core→feature dependency). 2) FEATURE #017 — discover `SessionService` URI instead of hardcoding it. 3) FEATURE #018 — fix discovery cache (forceRefresh stale replay & failed-fetch leak).

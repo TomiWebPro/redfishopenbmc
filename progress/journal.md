@@ -8941,3 +8941,18 @@
 - FEATURE #017 — discover `SessionService` URI instead of hardcoding it
 
 **Issues touched:** #026 (closed)
+
+## 2026-11-16 — agent:redfish-automation — #013
+
+**Done:**
+- FEATURE #013 (smallest open). Baseline green at b738abe (analyze 0, 524 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Removed dead `lib/core/theme/app_breakpoints.dart` and eliminated `AppBreakpoints`/`AdaptiveBuilder` references by deleting the unused breakpoint taxonomy and updating `test/core/theme_test.dart` to retain `AppTheme` coverage only. Confirmed `lib/core/theme/breakpoints.dart` remains the canonical breakpoint source. Closed `issues/closed/013-remove-dead-breakpoints.md`.
+
+**Decisions:**
+- Chose #013 as smallest surgical P3 chore per runbook order. Removed dead API tests instead of migrating them because the API was unused and conflicting with canonical breakpoints. DOCS anchors unchanged/mirror queue EMPTY; full EMULATOR re-run skipped (no emulator/fixture/tool changes, last green <7 days).
+
+**Next:**
+- FEATURE #011 — relocate `ConnectionProfile` model into core layer
+- FEATURE #017 — discover `SessionService` URI instead of hardcoding it
+- FEATURE #018 — fix discovery cache (forceRefresh stale replay & failed-fetch leak)
+
+**Issues touched:** #013 (closed)
