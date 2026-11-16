@@ -55,6 +55,44 @@ class _ResettingService extends BiosService {
   }
 }
 
+class _PatchingService extends BiosService {
+  _PatchingService({required super.client, required super.systemId});
+
+  bool patchCalled = false;
+  bool failPatch = false;
+  Map<String, dynamic>? lastAttributes;
+
+  @override
+  Future<Map<String, dynamic>> patchPendingAttributes(
+    BiosResource bios,
+    Map<String, dynamic> attributes,
+  ) async {
+    patchCalled = true;
+    lastAttributes = Map<String, dynamic>.from(attributes);
+    if (failPatch) {
+      throw const RedfishException(message: 'patch failed');
+    }
+    return <String, dynamic>{};
+  }
+
+  @override
+  Future<({BiosResource current, BiosPendingSettings? pending})>
+      fetchBiosWithPending() async {
+    return (
+      current: const BiosResource(
+        id: 'Bios',
+        name: 'BIOS',
+        attributes: BiosAttributes(<String, dynamic>{'QuietBoot': false}),
+        settings: BiosSettingsAnnotation(
+          etag: 'e1',
+          settingsObjectUri: '/redfish/v1/Systems/1/Bios/Settings',
+        ),
+      ),
+      pending: null,
+    );
+  }
+}
+
 void main() {
   group('BiosController (#028 read-only)', () {
     test('load populates current and pending on success', () async {
@@ -152,6 +190,62 @@ void main() {
       expect(service.resetCalled, isTrue);
       expect(controller.state.resetting, isFalse);
       expect(controller.state.error, contains('reset failed'));
+      controller.dispose();
+    });
+
+    test('applyPendingAttributes patches and reloads on success', () async {
+      final _PatchingService service = _PatchingService(
+        client: _FakeClient(<String, dynamic>{}),
+        systemId: 'bmc1',
+      );
+      final BiosController controller = BiosController(service: service);
+      const BiosResource bios = BiosResource(
+        id: 'Bios',
+        settings: BiosSettingsAnnotation(
+          etag: 'e1',
+          settingsObjectUri: '/redfish/v1/Systems/1/Bios/Settings',
+        ),
+      );
+
+      await controller.applyPendingAttributes(
+        bios,
+        <String, dynamic>{'QuietBoot': false},
+      );
+
+      expect(service.patchCalled, isTrue);
+      expect(
+        service.lastAttributes,
+        equals(<String, dynamic>{'QuietBoot': false}),
+      );
+      expect(controller.state.applying, isFalse);
+      expect(controller.state.error, isNull);
+      expect(controller.state.current, isNotNull);
+      controller.dispose();
+    });
+
+    test('applyPendingAttributes records normalized error and clears busy',
+        () async {
+      final _PatchingService service = _PatchingService(
+        client: _FakeClient(<String, dynamic>{}),
+        systemId: 'bmc1',
+      )..failPatch = true;
+      final BiosController controller = BiosController(service: service);
+      const BiosResource bios = BiosResource(
+        id: 'Bios',
+        settings: BiosSettingsAnnotation(
+          etag: 'e1',
+          settingsObjectUri: '/redfish/v1/Systems/1/Bios/Settings',
+        ),
+      );
+
+      await controller.applyPendingAttributes(
+        bios,
+        <String, dynamic>{'QuietBoot': false},
+      );
+
+      expect(service.patchCalled, isTrue);
+      expect(controller.state.applying, isFalse);
+      expect(controller.state.error, contains('patch failed'));
       controller.dispose();
     });
   });

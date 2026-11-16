@@ -59,6 +59,12 @@ class _FixedBiosController extends StateNotifier<BiosUiState>
 
   @override
   Future<void> resetBios(BiosResource bios) async {}
+
+  @override
+  Future<void> applyPendingAttributes(
+    BiosResource bios,
+    Map<String, dynamic> attributes,
+  ) async {}
 }
 
 void main() {
@@ -147,6 +153,36 @@ void main() {
       await tester.pump();
       expect(find.text('Failed to load BIOS settings'), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
+    });
+
+    testWidgets('shows apply-attribute form and disables it while applying',
+        (WidgetTester tester) async {
+      const BiosUiState ui = BiosUiState(
+        applying: true,
+        current: BiosResource(
+          id: 'Bios',
+          name: 'BIOS Configuration Current Settings',
+          attributes: BiosAttributes(<String, dynamic>{
+            'BootMode': 'Uefi',
+            'QuietBoot': true,
+          }),
+          settings: BiosSettingsAnnotation(
+            etag: 'abc',
+            settingsObjectUri: '/redfish/v1/Systems/1/Bios/Settings',
+          ),
+        ),
+      );
+      await tester.pumpWidget(_scope(ui: ui));
+      await tester.pump();
+
+      expect(find.text('Apply attribute change'), findsOneWidget);
+      expect(find.byKey(const Key('bios_attribute_dropdown')), findsOneWidget);
+      expect(find.byKey(const Key('bios_attribute_value')), findsOneWidget);
+      final Finder button = find.byKey(const Key('bios_apply_attribute'));
+      expect(button, findsOneWidget);
+      final FilledButton widget = tester.widget<FilledButton>(button);
+      expect(widget.onPressed, isNull);
+      expect(find.text('Applying…'), findsOneWidget);
     });
 
     for (final double width in <double>[320, 800, 1300]) {

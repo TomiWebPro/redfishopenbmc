@@ -9223,3 +9223,19 @@
 
 ### Issues touched
 - #028 (open, progress logged)
+
+## 2026-11-16 — agent:redfish-automation — #028
+
+### Done
+- FEATURE #028 apply-pending-attribute UI/controller slice (lib/test). Baseline green at 350d930 (analyze 0, 571 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Added `BiosController.applying` + `applyPendingAttributes()` to PATCH `Attributes` to the pending settings object via `BiosService.patchPendingAttributes` (service sends settings-object ETag as `If-Match`) with reset/apply mutual exclusion, reload on success, and normalized error handling. Added capability-gated "Apply attribute change" form in `BiosView` (attribute selector, value input, apply action with busy/disabled state) when a pending settings URI is advertised. Added controller tests for apply success/error and widget coverage for applying/busy UI state; 320/800/1300 px overflow checks retained.
+
+### Decisions
+- Chose PATCH/apply UI as the smallest safe lib/test increment for #028 (no `test_integration/`/fixture/schema changes), so full EMULATOR re-run was not required (DOCS cheap gate only, anchors/mirror queue unchanged; last green emulator run 2026-11-16 05:27 UTC). Kept #028 open: fixture/corpus-invariant client-mapping for Bios/Settings + emulator pin for current-vs-pending compare remains (requires fixture/test_integration changes and full EMULATOR re-run).
+
+### Next
+- Continue #028 — fixture/corpus-invariant client-mapping for Bios/Settings + emulator pin for current-vs-pending compare (full EMULATOR re-run required).
+- If #028 blocked/split, triage `#006`–`#010` with small tested fixes/closure or split.
+- #021 remains blocked on WebView/protocol-client platform/TLS validation.
+
+### Issues touched
+- #028 (open, progress logged)

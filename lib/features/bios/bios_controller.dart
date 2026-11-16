@@ -9,6 +9,7 @@ class BiosUiState {
   const BiosUiState({
     this.loading = false,
     this.resetting = false,
+    this.applying = false,
     this.current,
     this.pending,
     this.error,
@@ -19,6 +20,9 @@ class BiosUiState {
 
   /// Whether a Reset BIOS to defaults action is in flight.
   final bool resetting;
+
+  /// Whether a BIOS attribute PATCH/apply operation is in flight.
+  final bool applying;
 
   /// Current BIOS resource, or `null` before the first successful load.
   final BiosResource? current;
@@ -33,6 +37,7 @@ class BiosUiState {
   BiosUiState copyWith({
     bool? loading,
     bool? resetting,
+    bool? applying,
     BiosResource? current,
     BiosPendingSettings? pending,
     bool clearPending = false,
@@ -42,13 +47,15 @@ class BiosUiState {
       BiosUiState(
         loading: loading ?? this.loading,
         resetting: resetting ?? this.resetting,
+        applying: applying ?? this.applying,
         current: current ?? this.current,
         pending: clearPending ? null : (pending ?? this.pending),
         error: clearError ? null : (error ?? this.error),
       );
 
   @override
-  String toString() => 'BiosUiState(loading=$loading, resetting=$resetting, '
+  String toString() =>
+      'BiosUiState(loading=$loading, resetting=$resetting, applying=$applying, '
       'hasCurrent=${current != null}, '
       'hasPending=${pending != null}, error=$error)';
 }
@@ -97,7 +104,7 @@ class BiosController extends StateNotifier<BiosUiState> {
   /// resource to reflect pending/default state; on failure records the
   /// normalized service error.
   Future<void> resetBios(BiosResource bios) async {
-    if (state.resetting) return;
+    if (state.resetting || state.applying) return;
     state = state.copyWith(resetting: true, clearError: true);
     try {
       await service.resetBios(bios);
@@ -111,6 +118,33 @@ class BiosController extends StateNotifier<BiosUiState> {
     } catch (e) {
       if (mounted) {
         state = state.copyWith(resetting: false, error: e.toString());
+      }
+    }
+  }
+
+  /// Applies pending BIOS attribute changes via PATCH to the settings object.
+  ///
+  /// Sends [attributes] as a partial `Attributes` payload using the
+  /// settings-object ETag as `If-Match` when available (service-side). Sets
+  /// [BiosUiState.applying] while in flight and reloads on success.
+  Future<void> applyPendingAttributes(
+    BiosResource bios,
+    Map<String, dynamic> attributes,
+  ) async {
+    if (state.applying || state.resetting) return;
+    state = state.copyWith(applying: true, clearError: true);
+    try {
+      await service.patchPendingAttributes(bios, attributes);
+      if (!mounted) return;
+      state = state.copyWith(applying: false);
+      await load();
+    } on RedfishException catch (e) {
+      if (mounted) {
+        state = state.copyWith(applying: false, error: e.message);
+      }
+    } catch (e) {
+      if (mounted) {
+        state = state.copyWith(applying: false, error: e.toString());
       }
     }
   }

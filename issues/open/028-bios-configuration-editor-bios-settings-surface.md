@@ -110,6 +110,20 @@ corpus-invariant test so every published `@odata.type` is covered.
 
 <!-- Append timestamped notes as you work. Most recent first. -->
 
+- 2026-11-16 (run) — agent:redfish-automation (FEATURE): landed #028
+  edit/apply-pending-attribute UI slice (lib/test). `BiosController` now tracks
+  `applying` and exposes `applyPendingAttributes()` to PATCH `Attributes` to the
+  pending settings object via `BiosService.patchPendingAttributes` (service sends
+  settings-object ETag as `If-Match`) with busy/error state, reload on success,
+  and reset/apply mutual exclusion. `BiosView` adds a capability-gated "Apply
+  attribute change" form (attribute selector + value input + apply action,
+  disabled/busy while applying/resetting) when a pending settings URI is
+  advertised. Added controller tests for apply success/error and widget coverage
+  for applying/busy state + existing 320/800/1300 overflow checks remain.
+  Remaining: fixture/corpus-invariant client-mapping for Bios/Settings + emulator
+  pin for current-vs-pending compare (requires full EMULATOR re-run on
+  fixture/test_integration change), richer attribute editing/validation as
+  needed, then close issue when acceptance is complete.
 - 2026-11-16 17:30 UTC — agent:redfish-automation (FEATURE, run): landed #028
   ResetBios + PATCH-precondition slice (lib/test). `BiosController` now tracks
   `resetting` and exposes `resetBios()` (POSTs via `BiosService.resetBios`,

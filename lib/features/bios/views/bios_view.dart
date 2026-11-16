@@ -26,6 +26,15 @@ class BiosView extends ConsumerStatefulWidget {
 }
 
 class _BiosViewState extends ConsumerState<BiosView> {
+  String? _selectedAttribute;
+  final TextEditingController _valueController = TextEditingController();
+
+  @override
+  void dispose() {
+    _valueController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -132,6 +141,16 @@ class _BiosViewState extends ConsumerState<BiosView> {
         .toList()
       ..sort((a, b) => a.key.compareTo(b.key));
     final BiosPendingSettings? pending = ui.pending;
+    final bool canApply =
+        (bios.pendingSettingsUri ?? '').isNotEmpty && attrs.isNotEmpty;
+    if (attrs.isNotEmpty) {
+      final bool hasSelection = attrs
+          .any((MapEntry<String, dynamic> e) => e.key == _selectedAttribute);
+      _selectedAttribute ??= attrs.first.key;
+      if (!hasSelection) {
+        _selectedAttribute = attrs.first.key;
+      }
+    }
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -153,6 +172,10 @@ class _BiosViewState extends ConsumerState<BiosView> {
           ),
         ],
         const SizedBox(height: 12),
+        if (canApply) ...<Widget>[
+          _editCard(context, ui, bios, attrs, controller),
+          const SizedBox(height: 12),
+        ],
         if (pending != null) ...<Widget>[
           _pendingCard(context, bios, pending),
           const SizedBox(height: 12),
@@ -228,6 +251,103 @@ class _BiosViewState extends ConsumerState<BiosView> {
         ),
       ),
     );
+  }
+
+  Widget _editCard(
+    BuildContext context,
+    BiosUiState ui,
+    BiosResource bios,
+    List<MapEntry<String, dynamic>> attrs,
+    BiosController controller,
+  ) {
+    final bool busy = ui.applying || ui.resetting;
+    final String selected = _selectedAttribute ?? attrs.first.key;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'Apply attribute change',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              key: const Key('bios_attribute_dropdown'),
+              initialValue: selected,
+              decoration: const InputDecoration(
+                labelText: 'Attribute',
+                border: OutlineInputBorder(),
+              ),
+              items: attrs
+                  .map(
+                    (MapEntry<String, dynamic> e) => DropdownMenuItem<String>(
+                      value: e.key,
+                      child: Text(e.key),
+                    ),
+                  )
+                  .toList(),
+              onChanged: busy
+                  ? null
+                  : (String? value) {
+                      if (value == null) return;
+                      setState(() {
+                        _selectedAttribute = value;
+                        _valueController.text = '';
+                      });
+                    },
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              key: const Key('bios_attribute_value'),
+              controller: _valueController,
+              enabled: !busy,
+              decoration: const InputDecoration(
+                labelText: 'New value',
+                hintText: 'Enter value (true/false, number, or text)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              key: const Key('bios_apply_attribute'),
+              onPressed: busy
+                  ? null
+                  : () async {
+                      final String name = _selectedAttribute ?? selected;
+                      final dynamic parsed = _parseAttributeValue(
+                        _valueController.text,
+                      );
+                      await controller.applyPendingAttributes(
+                        bios,
+                        <String, dynamic>{name: parsed},
+                      );
+                    },
+              icon: ui.applying
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save),
+              label: Text(ui.applying ? 'Applying…' : 'Apply attribute'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  dynamic _parseAttributeValue(String raw) {
+    final String text = raw.trim();
+    if (text.toLowerCase() == 'true') return true;
+    if (text.toLowerCase() == 'false') return false;
+    final int? i = int.tryParse(text);
+    if (i != null && i.toString() == text) return i;
+    final double? d = double.tryParse(text);
+    if (d != null) return d;
+    return raw;
   }
 
   Widget _pendingCard(
