@@ -465,8 +465,6 @@ class SystemManager extends StateNotifier<SystemState> {
   }
 }
 
-
-
 /// Per-system [SystemHandle] accessor keyed by [systemId].
 final ProviderFamily<SystemHandle?, String> systemHandleProvider =
     Provider.family<SystemHandle?, String>((ref, String systemId) {

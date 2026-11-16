@@ -109,6 +109,27 @@ class _PendingSensorsService extends SensorsService {
       Completer<List<ChassisSensors>>().future;
 }
 
+/// A [SensorsService] double counting fetch calls for polling tests (#019).
+class _CountingSensorsService extends SensorsService {
+  _CountingSensorsService() : super(client: null, systemId: 'x');
+
+  int calls = 0;
+
+  @override
+  Future<List<ChassisSensors>> fetchAll() async {
+    calls++;
+    return const <ChassisSensors>[
+      ChassisSensors(
+        chassisId: '1U',
+        chassisName: 'Chassis 1U',
+        thermal: <ThermalReading>[],
+        fans: <FanReading>[],
+        sensors: <SensorReading>[],
+      ),
+    ];
+  }
+}
+
 SystemHandle buildHandle({required bool sensorMonitoring}) => SystemHandle(
       profile: ConnectionProfile(id: 'x', host: 'h'),
       status: ConnectionStatus.connected,
@@ -126,7 +147,8 @@ void main() {
             systemHandleProvider('x')
                 .overrideWithValue(buildHandle(sensorMonitoring: false)),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pumpAndSettle();
@@ -148,7 +170,8 @@ void main() {
             sensorsServiceProvider('x')
                 .overrideWithValue(_PendingSensorsService()),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pump();
@@ -173,7 +196,8 @@ void main() {
           overrides: <Override>[
             systemHandleProvider('x').overrideWithValue(null),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pumpAndSettle();
@@ -205,7 +229,8 @@ void main() {
               ),
             ),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pump();
@@ -227,7 +252,8 @@ void main() {
             sensorsServiceProvider('x')
                 .overrideWithValue(_FakeSensorsService()),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pumpAndSettle();
@@ -247,7 +273,8 @@ void main() {
             sensorsServiceProvider('x')
                 .overrideWithValue(_FakeSensorsService()),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pumpAndSettle();
@@ -277,7 +304,8 @@ void main() {
             sensorsServiceProvider('x')
                 .overrideWithValue(_DetailSensorsService()),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pumpAndSettle();
@@ -317,7 +345,8 @@ void main() {
             sensorsServiceProvider('x')
                 .overrideWithValue(_FakeSensorsService()),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pumpAndSettle();
@@ -341,7 +370,8 @@ void main() {
             sensorsServiceProvider('x')
                 .overrideWithValue(_FakeSensorsService()),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pumpAndSettle();
@@ -369,7 +399,8 @@ void main() {
             sensorsServiceProvider('x')
                 .overrideWithValue(_FailingSensorsService()),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pumpAndSettle();
@@ -393,7 +424,8 @@ void main() {
             sensorsServiceProvider('x')
                 .overrideWithValue(_FailingSensorsService()),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pumpAndSettle();
@@ -437,7 +469,8 @@ void main() {
               return _FakeSensorsService();
             }),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pumpAndSettle();
@@ -471,7 +504,8 @@ void main() {
             sensorsServiceProvider('x')
                 .overrideWithValue(_EmptySensorsService()),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pumpAndSettle();
@@ -492,7 +526,8 @@ void main() {
             sensorsServiceProvider('x')
                 .overrideWithValue(_EmptySensorsService()),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pumpAndSettle();
@@ -504,6 +539,41 @@ void main() {
       expect(merged, findsOneWidget);
       final SemanticsNode? node = tester.getSemantics(merged);
       expect(node?.label, contains('No sensor data available'));
+    });
+
+    testWidgets(
+        'auto-refresh polls sensors on interval and stops on dispose (#019)',
+        (WidgetTester tester) async {
+      final _CountingSensorsService service = _CountingSensorsService();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x').overrideWithValue(service),
+          ],
+          child: const MaterialApp(
+            home: SensorsView(
+              systemId: 'x',
+              autoRefreshInterval: Duration(seconds: 5),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(service.calls, 1);
+
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump();
+      expect(service.calls, 2);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      final int callsAfterDispose = service.calls;
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pump();
+      expect(service.calls, callsAfterDispose);
     });
   });
 
@@ -520,7 +590,8 @@ void main() {
             sensorsServiceProvider('x')
                 .overrideWithValue(_FakeSensorsService()),
           ],
-          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
         ),
       );
       await tester.pumpAndSettle();

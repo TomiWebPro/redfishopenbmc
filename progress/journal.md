@@ -9076,3 +9076,18 @@
 - #028 — BIOS configuration editor (Bios/Settings surface)
 
 **Issues touched:** #019 (open, progress logged)
+
+## 2026-11-16 12:42 UTC — agent:redfish-automation — #019
+
+**Done:**
+- FEATURE #019 partial (smallest viable slice). Baseline green at 08a5e83 (analyze 0, 534 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Implemented periodic sensor auto-refresh in `lib/features/sensors/views/sensors_view.dart` (default 10s, configurable `autoRefreshInterval`) with timer cancellation on dispose while preserving reconnect-retry behavior. Added widget coverage in `test/features/sensors/sensors_widget_test.dart` proving interval polling and no post-dispose fetches; updated existing sensors widget tests to disable auto-refresh for deterministic `pump`/`pumpAndSettle` behavior. Updated `issues/open/019-sensors-realtime.md` progress/acceptance (interval refresh and timer/listener dispose satisfied; EventService and broader end-to-end/integration coverage remain).
+
+**Decisions:**
+- Chose polling+dispose as the next smallest safe #019 slice (acceptance allows interval or EventService when available). Kept controller API unchanged and contained timer lifecycle in the view. DOCS cheap gate only (anchors unchanged, mirror queue EMPTY); full EMULATOR re-run skipped (no emulator/fixture/tool contract changes, last green <7 days).
+
+**Next:**
+- #021 — KVM console rendering smallest viable slice (use `fetchPrimaryConsole` / clear no-URI external-open UX with tests)
+- #019 — EventService or broader end-to-end/integration refresh coverage if a small safe slice is identified
+- #028 — BIOS configuration editor (Bios/Settings surface)
+
+**Issues touched:** #019 (open, progress logged)

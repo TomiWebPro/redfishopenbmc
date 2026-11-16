@@ -30,10 +30,10 @@ estimated_tokens: 16000
 
 ## Goals / Acceptance Criteria
 
-- [ ] Telemetry refreshes on an interval (configurable) or via EventService when available.
-- [ ] Retry when `SystemHandle` becomes connected; Retry button on error.
-- [ ] Sensor fetches bounded (pooled concurrency).
-- [ ] Timer/listener cancelled on dispose (no leak).
+- [x] Telemetry refreshes on an interval (configurable) or via EventService when available. (default 10s auto-refresh in `SensorsView`, configurable via `autoRefreshInterval`; EventService still future work)
+- [x] Retry when `SystemHandle` becomes connected; Retry button on error.
+- [x] Sensor fetches bounded (pooled concurrency).
+- [x] Timer/listener cancelled on dispose (no leak).
 
 ## Tasks
 
@@ -52,6 +52,7 @@ estimated_tokens: 16000
 
 ## Progress Log
 
+- 2026-11-16 — Partial progress (run 2026-11-16, agent:redfish-automation): added periodic sensor auto-refresh in `SensorsView` (default 10s, configurable `autoRefreshInterval`) with timer cancellation on dispose, plus widget coverage proving interval polling and no post-dispose fetches; updated existing sensors widget tests to disable auto-refresh to keep deterministic pumps. Telemetry interval + timer/listener dispose acceptance satisfied; EventService subscription and broader end-to-end refresh/integration coverage remain.
 - 2026-11-16 — Partial progress (run 2026-11-16, agent:redfish-automation): bounded sensor member fetch concurrency in `SensorsService._parseSensors` (max 4 in-flight, preserves results/order semantics, skips failed members) + unit test coverage in `test/features/sensors/sensors_service_test.dart`. Remaining: polling/EventService refresh interval, retry when `SystemHandle` becomes connected, timer/listener dispose guarantees, and end-to-end refresh/error-retry widget/integration coverage.
 - 2026-11-16 — Partial progress (run 2026-11-16, agent:redfish-automation): added reconnect retry in `SensorsView` (reloads when `SystemHandle` gains a connected client) and widget coverage in `test/features/sensors/sensors_widget_test.dart`; retry affordance already present. Remaining: polling/EventService refresh interval, timer/listener dispose guarantees for periodic refresh, and broader end-to-end refresh coverage.
 - 2026-08-30 — Created from triage analysis (feature #12). See also #007.

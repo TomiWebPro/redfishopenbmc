@@ -18,10 +18,20 @@ import 'package:redfishopenbmc/redfish/models/system_features.dart';
 /// temperature, fan, and generic sensor readings pulled by [SensorsController].
 class SensorsView extends ConsumerStatefulWidget {
   /// Creates a [SensorsView] for [systemId].
-  const SensorsView({required this.systemId, super.key});
+  const SensorsView({
+    required this.systemId,
+    this.autoRefreshInterval = const Duration(seconds: 10),
+    super.key,
+  });
 
   /// Logical id of the system this view is scoped to.
   final String systemId;
+
+  /// Periodic telemetry refresh interval, or `null` to disable auto-refresh.
+  ///
+  /// Defaults to 10 seconds to satisfy the real-time refresh acceptance in
+  /// issue #019 while keeping load bounded by controller in-flight guarding.
+  final Duration? autoRefreshInterval;
 
   @override
   ConsumerState<SensorsView> createState() => _SensorsViewState();
@@ -29,6 +39,7 @@ class SensorsView extends ConsumerStatefulWidget {
 
 class _SensorsViewState extends ConsumerState<SensorsView> {
   ProviderSubscription<SystemHandle?>? _handleSubscription;
+  Timer? _refreshTimer;
   bool _hadClient = false;
 
   @override
@@ -47,13 +58,26 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
         _hadClient = hasClient;
       },
     );
+    _startAutoRefresh();
     _load();
   }
 
   @override
   void didUpdateWidget(covariant SensorsView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.systemId != widget.systemId) _load();
+    if (oldWidget.systemId != widget.systemId ||
+        oldWidget.autoRefreshInterval != widget.autoRefreshInterval) {
+      _startAutoRefresh();
+      _load();
+    }
+  }
+
+  void _startAutoRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
+    final Duration? interval = widget.autoRefreshInterval;
+    if (interval == null) return;
+    _refreshTimer = Timer.periodic(interval, (_) => _load());
   }
 
   void _load() {
@@ -65,6 +89,7 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _handleSubscription?.close();
     super.dispose();
   }

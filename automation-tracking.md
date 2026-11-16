@@ -8469,3 +8469,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** `dart format` (touched files); `flutter analyze` 0 issues; `flutter test` 534 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #019 sensors reconnect retry (run 2026-11-16 12:07 UTC)`; pushed: pending.
 - **Next:** 1) Continue #019 — polling/EventService refresh interval with timer/listener dispose guarantees. 2) #021 — smallest viable KVM console rendering slice if smaller/clearer than remaining #019 work. 3) #028 — BIOS configuration editor (Bios/Settings surface) once #019/#021 slices land.
+
+## 2026-11-16 12:42 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 534 passed / 1 skipped; starting commit 08a5e83 (main in sync with origin/main, tracked tree clean except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #019 partial (smallest viable slice). Added periodic sensor telemetry auto-refresh in `SensorsView` (default 10s, configurable `autoRefreshInterval`) with reconnect retry preserved and timer cancellation on dispose. Updated sensors widget tests for deterministic behavior (auto-refresh disabled in existing cases) and added coverage proving interval polling and no post-dispose fetches. `SensorsService` bounded fetch concurrency and reconnect retry slices remain from prior runs; issue stays open (EventService subscription and broader end-to-end/integration refresh coverage remain).
+- **Docs:** cheap anchor gate only — anchors unchanged and mirror queue EMPTY; no corpus/manifest refresh.
+- **Emulator:** skipped — no emulator fixture/contract/tooling changes requiring full suite and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/features/sensors/views/sensors_view.dart`, `test/features/sensors/sensors_widget_test.dart` (+1 polling/dispose test; existing tests adjusted to disable auto-refresh), `issues/open/019-sensors-realtime.md` (progress/acceptance updated), `FUTUREWORK.md` updated.
+- **UI:** sensors telemetry now auto-refreshes periodically while view is mounted (capability-gated view behavior unchanged otherwise); existing retry/error/empty/loading semantics preserved.
+- **Verification:** `dart format` (touched files); `flutter analyze` 0 issues; `flutter test` 535 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #019 sensors auto-refresh polling (run 2026-11-16 12:42 UTC)`; pushed: pending.
+- **Next:** 1) #021 — KVM console rendering smallest viable slice (use `fetchPrimaryConsole` / clear no-URI external-open UX with tests). 2) #019 — EventService or broader end-to-end/integration refresh coverage if a small safe slice is clear. 3) #028 — BIOS configuration editor (Bios/Settings surface).
