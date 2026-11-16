@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:redfishopenbmc/features/sensors/models/sensor_models.dart';
@@ -26,9 +28,25 @@ class SensorsView extends ConsumerStatefulWidget {
 }
 
 class _SensorsViewState extends ConsumerState<SensorsView> {
+  ProviderSubscription<SystemHandle?>? _handleSubscription;
+  bool _hadClient = false;
+
   @override
   void initState() {
     super.initState();
+    final SystemHandle? initial =
+        ref.read(systemHandleProvider(widget.systemId));
+    _hadClient = initial?.client != null;
+    _handleSubscription = ref.listenManual<SystemHandle?>(
+      systemHandleProvider(widget.systemId),
+      (SystemHandle? prev, SystemHandle? next) {
+        final bool hasClient = next?.client != null;
+        if (hasClient && !_hadClient) {
+          _load();
+        }
+        _hadClient = hasClient;
+      },
+    );
     _load();
   }
 
@@ -43,6 +61,12 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
       () =>
           ref.read(sensorsControllerProvider(widget.systemId).notifier).load(),
     );
+  }
+
+  @override
+  void dispose() {
+    _handleSubscription?.close();
+    super.dispose();
   }
 
   @override

@@ -10,6 +10,7 @@ import 'package:redfishopenbmc/features/sensors/sensors_providers.dart';
 import 'package:redfishopenbmc/features/sensors/sensors_service.dart';
 import 'package:redfishopenbmc/features/sensors/views/sensors_view.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
+import 'package:redfishopenbmc/redfish/client/redfish_client.dart';
 import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
@@ -92,6 +93,11 @@ class _EmptySensorsService extends SensorsService {
 
   @override
   Future<List<ChassisSensors>> fetchAll() async => const <ChassisSensors>[];
+}
+
+/// A [SensorsService] double that behaves as not-yet-connected.
+class _NotConnectedSensorsService extends SensorsService {
+  _NotConnectedSensorsService() : super(client: null, systemId: 'x');
 }
 
 /// A [SensorsService] double that never completes (loading-state tests).
@@ -407,6 +413,53 @@ void main() {
         find.bySemanticsLabel(RegExp('^Retry')),
         findsWidgets,
       );
+    });
+
+    testWidgets('retries load when system handle becomes connected',
+        (tester) async {
+      final StateProvider<SystemHandle?> handleState =
+          StateProvider<SystemHandle?>(
+        (_) => SystemHandle(
+          profile: ConnectionProfile(id: 'x', host: 'h'),
+          status: ConnectionStatus.disconnected,
+          features: SystemFeatures(systemId: 'x', sensorMonitoring: true),
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWith((ref) => ref.watch(handleState)),
+            sensorsServiceProvider('x').overrideWith((ref) {
+              final SystemHandle? h = ref.watch(systemHandleProvider('x'));
+              if (h?.client == null) return _NotConnectedSensorsService();
+              return _FakeSensorsService();
+            }),
+          ],
+          child: const MaterialApp(home: SensorsView(systemId: 'x')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Unable to load sensors'), findsOneWidget);
+      expect(find.textContaining('Not connected'), findsOneWidget);
+
+      final ProviderContainer container =
+          ProviderScope.containerOf(tester.element(find.byType(SensorsView)));
+      container.read(handleState.notifier).state = SystemHandle(
+        profile: ConnectionProfile(id: 'x', host: 'h'),
+        status: ConnectionStatus.connected,
+        features: SystemFeatures(systemId: 'x', sensorMonitoring: true),
+        client: RedfishClient(
+          profile: const ConnectionProfile(id: 'x', host: 'h'),
+        ),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('CPU1 Temp'), findsWidgets);
+      expect(find.text('Unable to load sensors'), findsNothing);
     });
 
     testWidgets('empty state renders an icon + message (UI-2)', (tester) async {

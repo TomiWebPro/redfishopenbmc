@@ -9061,3 +9061,18 @@
 - #028 — BIOS configuration editor (Bios/Settings surface)
 
 **Issues touched:** #019 (open, progress logged)
+
+## 2026-11-16 12:07 UTC — agent:redfish-automation — #019
+
+**Done:**
+- FEATURE #019 partial (smallest viable slice). Baseline green at 5379a7d (analyze 0, 533 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Implemented reconnect retry in `lib/features/sensors/views/sensors_view.dart` by listening for `SystemHandle` client availability transitions and triggering a sensor reload when a connected client becomes available. Added widget coverage in `test/features/sensors/sensors_widget_test.dart` verifying recovery from a not-connected state after connection. Updated `issues/open/019-sensors-realtime.md` progress log; issue remains open.
+
+**Decisions:**
+- Chose reconnect-retry slice of #019 as small, safe, testable progress toward acceptance criteria ("Retry when `SystemHandle` becomes connected"); retry button was already present. Did not attempt polling/EventService refresh or periodic timer lifecycle in this run to keep scope bounded. DOCS cheap gate only (anchors unchanged, mirror queue EMPTY); full EMULATOR re-run skipped (no emulator/fixture/tool contract changes, last green <7 days).
+
+**Next:**
+- Continue #019 — polling/EventService refresh interval with timer/listener dispose guarantees
+- #021 — KVM console rendering smallest viable slice (if smaller/clearer than remaining #019 work)
+- #028 — BIOS configuration editor (Bios/Settings surface)
+
+**Issues touched:** #019 (open, progress logged)

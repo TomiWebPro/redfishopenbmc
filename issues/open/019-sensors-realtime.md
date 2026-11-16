@@ -53,6 +53,7 @@ estimated_tokens: 16000
 ## Progress Log
 
 - 2026-11-16 — Partial progress (run 2026-11-16, agent:redfish-automation): bounded sensor member fetch concurrency in `SensorsService._parseSensors` (max 4 in-flight, preserves results/order semantics, skips failed members) + unit test coverage in `test/features/sensors/sensors_service_test.dart`. Remaining: polling/EventService refresh interval, retry when `SystemHandle` becomes connected, timer/listener dispose guarantees, and end-to-end refresh/error-retry widget/integration coverage.
+- 2026-11-16 — Partial progress (run 2026-11-16, agent:redfish-automation): added reconnect retry in `SensorsView` (reloads when `SystemHandle` gains a connected client) and widget coverage in `test/features/sensors/sensors_widget_test.dart`; retry affordance already present. Remaining: polling/EventService refresh interval, timer/listener dispose guarantees for periodic refresh, and broader end-to-end refresh coverage.
 - 2026-08-30 — Created from triage analysis (feature #12). See also #007.
 
 ## References
