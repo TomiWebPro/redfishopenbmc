@@ -30,10 +30,10 @@ Every run must move the project forward without breaking it:
 - Never commit `.dart_tool/`, `build/`, `.env`, credentials, keys, or logs.
 - Never weaken production TLS to make a test pass.
 - No interactive prompts. Use non-interactive commands with timeouts.
-- **Time budget: 7200s.** Stop starting new work at ~75 minutes, then finalize:
-  tests, tracking, commit, push, summary.
+- Keep working until the primary workstream is finished, verified,
+  tracked, committed and pushed — then stop and print the summary.
 
-## 0. Preflight (10 minutes)
+## 0. Preflight
 
 ```bash
 export PATH="$HOME/flutter/bin:$PATH"
@@ -92,7 +92,7 @@ Use this decision tree (in order — stop at the first match):
    then `#028` BIOS editor, then epic triage (`#006`–`#010` — close or split
    what is already implemented; code for these features EXISTS, so verify
    acceptance boxes and close/split rather than rebuilding).
-   If you finish one small issue and budget remains, start the next
+   If you finish one small issue, start the next
    smallest — do not stop after one file.
 3. **DOCS (cheap gate only).** Run the anchor check
    (`git ls-remote` + `curl -sSIL` on hub/index/DSP0266/bmcweb/mockup pins).
@@ -100,8 +100,8 @@ Use this decision tree (in order — stop at the first match):
    except the `Last audited` timestamp lines, then go straight back to (2)
    FEATURE. Never do a full corpus re-download or manifest rewrite when
    anchors are unchanged. A DOCS run that only refreshes timestamps without
-   a code fix counts as verification-only — keep it under 15 minutes and
-   spend the rest of the budget on FEATURE.
+   a code fix counts as verification-only — keep the gate minimal and
+   spend the run on FEATURE.
 4. **EMULATOR (conditional only).** Run the full `tool/emulator/run_tests.sh`
    suite ONLY if `lib/` / `test_integration/` / `tool/` / fixtures changed
    since the last EMULATOR run, or if >7 days passed since the last green
@@ -290,7 +290,7 @@ commit.
   Never skip FEATURE to do UI, and never manufacture UI churn
   (timestamp-only or semantics-label-only diffs) to look busy.
 
-## 6. Verification gate (mandatory — targeted first to save budget)
+## 6. Verification gate (mandatory — targeted first, full suite at the end)
 
 Run targeted tests during work, full suite once at the end:
 
