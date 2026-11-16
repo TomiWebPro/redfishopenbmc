@@ -8637,3 +8637,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** `dart format test/security/no_plaintext_test.dart`; `flutter analyze` 0 issues; `flutter test` 578 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #010 no-plaintext storage regression tests (run 2026-11-16)`; pushed: pending.
 - **Next:** 1) Continue #010 with token-isolation regression test (`test/security/token_isolation_test.dart`) or TLS enforcement/self-signed rejection tests as next smallest slice. 2) Add secure storage matrix to `DEVELOPMENT.md` and audit remaining credential-leak call sites per #010. 3) Split/advance #007/#008/#009 with one tested increment if clearer than #010 next slice; #021 remains blocked on WebView/protocol-client platform/TLS validation.
+
+## 2026-11-16 21:17 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 578 passed / 1 skipped; starting commit 4480474 (main in sync with origin/main, tracked tree clean except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #010 token-isolation proof (smallest concrete tested slice). Added `test/security/token_isolation_test.dart` with two AuthManager/RedfishClient+per-host Dio systems proving X-Auth-Token for bmc1 is never attached to bmc2 requests (including concurrent `Future.wait`) and that a 401-triggered re-auth on bmc1 does not clear or replace bmc2 token/session. #010 remains open.
+- **Docs:** cheap anchor gate not re-run (no external corpus/manifest change; anchors/mirror queue unchanged from recent runs).
+- **Emulator:** skipped — no `lib/` contract, fixture, `test_integration/`, or `tool/` changes requiring full suite; last green emulator run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `test/security/token_isolation_test.dart` (new, 2 tests); `issues/open/010-security-storage-theming-a11y-testing.md` (progress logged); `FUTUREWORK.md` (updated). Issues: #010 (open).
+- **UI:** none.
+- **Verification:** targeted `flutter test test/security/token_isolation_test.dart` and `flutter test test/security` green; fixed initial analyze warnings in new test (unused imports) → `flutter analyze` 0 issues; `flutter test` 580 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (pending) — `auto: FEATURE #010 token isolation security tests (run 2026-11-16 21:17 UTC)`; pushed: pending.
+- **Next:** 1) Continue #010 with TLS enforcement/self-signed rejection or http-rejected-when-useTls tests as next concrete tested slice. 2) Document secure storage matrix in `DEVELOPMENT.md` and continue a11y/touch-target/focus/perf/coverage hardening. 3) Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.

@@ -9299,3 +9299,18 @@
 - Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.
 
 **Issues touched:** #010 (open)
+
+## 2026-11-16 21:17 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 token-isolation proof slice (baseline green at 4480474: analyze 0, 578 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Added `test/security/token_isolation_test.dart` (2 tests) proving per-system auth isolation: X-Auth-Token for bmc1 is never attached to bmc2 requests even under concurrent `Future.wait`, and a 401-triggered re-auth on bmc1 does not clear or replace bmc2 token/session. Fixed analyze warnings in the new test (unused imports). Updated #010 progress log and FUTUREWORK focus.
+
+**Decisions:**
+- Chose token isolation regression tests as the next explicit #010 acceptance item (test-only, no deps, no production behavior/TLS changes). DOCS anchor gate not re-run (no corpus/manifest change); full EMULATOR re-run skipped (no lib contract/fixture/test_integration/tool changes, <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Continue #010 with TLS enforcement/self-signed rejection or http-rejected-when-useTls tests.
+- Document secure storage matrix in `DEVELOPMENT.md` and continue a11y/touch-target/focus/perf/coverage hardening.
+- Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.
+
+**Issues touched:** #010 (open)
