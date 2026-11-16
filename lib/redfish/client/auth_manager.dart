@@ -30,6 +30,18 @@ class _SystemAuth {
   // Serializes 401-driven re-auth so concurrent failures don't each hit
   // the login endpoint (a "refresh storm").
   Future<void>? refreshLock;
+
+  /// Discovered Redfish SessionService resource URI (DSP0266 §13.3.4),
+  /// used to read service-level session TTL. Falls back to the canonical
+  /// default when discovery is unavailable.
+  String sessionServiceUri = '/redfish/v1/SessionService';
+
+  /// Discovered Sessions collection URI (ServiceRoot → SessionService →
+  /// Sessions `@odata.id`). Session creation POSTs here. Falls back to the
+  /// canonical default when discovery is unavailable (#017).
+  String sessionsCollectionUri = '/redfish/v1/SessionService/Sessions';
+
+  bool sessionUrisResolved = false;
 }
 
 /// Manages authentication + session lifecycle for one or many BMCs.
@@ -116,6 +128,72 @@ class AuthManager {
   /// The authenticated [RedfishClient] for [systemId], or `null` if not
   /// logged in. Feature code uses this to issue requests.
   RedfishClient? clientFor(String systemId) => _systems[systemId]?.client;
+
+  /// Discovers the SessionService and Sessions collection URIs from the
+  /// ServiceRoot (#017, DSP0266 ServiceRoot). Kept best-effort: any lookup
+  /// failure retains the canonical defaults so auth still works on BMCs that
+  /// follow the standard layout or block unauthenticated root reads.
+  Future<void> _ensureSessionUris(_SystemAuth auth) async {
+    if (auth.sessionUrisResolved) return;
+    try {
+      final Map<String, dynamic> root =
+          await auth.client.getJson('/redfish/v1/');
+      final String? discoveredServiceUri = _extractODataId(
+        root['SessionService'],
+      );
+      if (discoveredServiceUri != null && discoveredServiceUri.isNotEmpty) {
+        auth.sessionServiceUri = _normalizeRedfishPath(
+          auth.profile.baseUrl,
+          discoveredServiceUri,
+        );
+        try {
+          final Map<String, dynamic> service =
+              await auth.client.getJson(auth.sessionServiceUri);
+          final String? discoveredSessionsUri =
+              _extractODataId(service['Sessions']);
+          if (discoveredSessionsUri != null &&
+              discoveredSessionsUri.isNotEmpty) {
+            auth.sessionsCollectionUri = _normalizeRedfishPath(
+              auth.profile.baseUrl,
+              discoveredSessionsUri,
+            );
+          }
+        } on Object {
+          // SessionService resource unreadable — keep default Sessions URI.
+        }
+      }
+    } on Object {
+      // ServiceRoot unreadable — keep canonical defaults.
+    } finally {
+      auth.sessionUrisResolved = true;
+    }
+  }
+
+  static String? _extractODataId(dynamic link) {
+    if (link is Map) {
+      final dynamic id = link['@odata.id'];
+      if (id is String && id.isNotEmpty) return id;
+    }
+    return null;
+  }
+
+  /// Returns [uri] as a path relative to [baseUrl] when it points at the
+  /// same origin, otherwise returns it unchanged (Dio accepts absolute URLs).
+  static String _normalizeRedfishPath(String baseUrl, String uri) {
+    final Uri? parsed = Uri.tryParse(uri);
+    if (parsed == null) return uri;
+    if (!parsed.hasScheme) return uri;
+    final Uri? base = Uri.tryParse(baseUrl);
+    if (base != null &&
+        parsed.scheme == base.scheme &&
+        parsed.host == base.host &&
+        parsed.port == base.port) {
+      final String path = parsed.path.isEmpty ? '/' : parsed.path;
+      if (parsed.hasQuery) return '$path?${parsed.query}';
+      return path;
+    }
+    return uri;
+  }
 
   /// Runs [action] with the authenticated [RedfishClient] for [systemId].
   ///
@@ -243,9 +321,10 @@ class AuthManager {
 
   Future<Session> _createSession(String systemId, _SystemAuth auth) async {
     final ConnectionProfile profile = auth.profile;
+    await _ensureSessionUris(auth);
     try {
       final Response<dynamic> response = await auth.client.dio.post<dynamic>(
-        '/redfish/v1/SessionService/Sessions',
+        auth.sessionsCollectionUri,
         data: <String, String>{
           'UserName': profile.username ?? '',
           'Password': profile.password ?? '',
@@ -273,14 +352,14 @@ class AuthManager {
       DateTime? expiresAt;
       try {
         final Response<dynamic> sessionServiceResp =
-            await auth.client.dio.get<dynamic>('/redfish/v1/SessionService');
+            await auth.client.dio.get<dynamic>(auth.sessionServiceUri);
         if (sessionServiceResp.data is Map<String, dynamic>) {
           expiresAt = Session.expiryFromService(
             sessionServiceResp.data as Map<String, dynamic>,
             createdAt: createdAt,
           );
         }
-      } on DioException {
+      } on Object {
         // Best-effort: if SessionService cannot be read, proceed without
         // a known TTL (session remains valid until a 401).
       }
@@ -380,8 +459,11 @@ class AuthManager {
 
           final RequestOptions opts = err.requestOptions;
           // The login POST itself failed → do not loop.
-          if (opts.path.endsWith('/SessionService/Sessions') &&
-              opts.method.toUpperCase() == 'POST') {
+          final bool isLoginPost = opts.method.toUpperCase() == 'POST' &&
+              (opts.path == auth.sessionsCollectionUri ||
+                  opts.path.endsWith('/SessionService/Sessions') ||
+                  opts.path.endsWith('/Sessions'));
+          if (isLoginPost) {
             return handler.next(err);
           }
           // Already retried once for this request.

@@ -336,6 +336,106 @@ void main() {
       expect(manager.isAuthenticated('bmc1'), isFalse);
       expect(manager.isAuthenticated('bmc2'), isFalse);
     });
+
+    test('session auth uses discovered Sessions URI (#017)', () async {
+      final (AuthManager manager, Map<String, DioAdapter> adapters, _) =
+          buildManager();
+      const String customService = '/redfish/v1/AltSessionService';
+      const String customSessions = '/redfish/v1/AltSessionService/Sessions';
+      const String customSessionLoc =
+          '/redfish/v1/AltSessionService/Sessions/77';
+      bool customPosted = false;
+
+      adapters['bmc1']!.onGet(
+        _rootUrl('bmc1'),
+        (server) => server.reply(200, <String, dynamic>{
+          '@odata.id': _rootUrl('bmc1'),
+          'SessionService': <String, dynamic>{'@odata.id': customService},
+        }),
+      );
+      adapters['bmc1']!.onGet(
+        customService,
+        (server) => server.reply(200, <String, dynamic>{
+          '@odata.id': customService,
+          'Sessions': <String, dynamic>{'@odata.id': customSessions},
+          'SessionTimeout': 30,
+        }),
+      );
+      adapters['bmc1']!.onPost(
+        customSessions,
+        (server) {
+          customPosted = true;
+          return server.reply(
+            201,
+            <String, dynamic>{},
+            headers: <String, List<String>>{
+              ..._jsonContentType,
+              'X-Auth-Token': ['tok-alt'],
+              'Location': [customSessionLoc],
+            },
+          );
+        },
+      );
+
+      final Session session = await manager.login(
+        'bmc1',
+        const ConnectionProfile(
+          host: 'bmc1',
+          username: 'root',
+          password: 'calvin',
+        ),
+      );
+
+      expect(customPosted, isTrue);
+      expect(session.token, 'tok-alt');
+      expect(session.location, customSessionLoc);
+      expect(session.expiresAt, isNotNull);
+
+      adapters['bmc1']!.onDelete(
+        customSessionLoc,
+        (server) => server.reply(204, <String, dynamic>{}),
+      );
+      await manager.logout('bmc1');
+    });
+
+    test(
+        'session auth falls back to default Sessions URI when discovery fails (#017)',
+        () async {
+      final (AuthManager manager, Map<String, DioAdapter> adapters, _) =
+          buildManager();
+      bool defaultPosted = false;
+      adapters['bmc1']!.onGet(
+        _rootUrl('bmc1'),
+        (server) => server.reply(404, <String, dynamic>{'Message': 'nope'}),
+      );
+      adapters['bmc1']!.onPost(
+        _sessionsUrl('bmc1'),
+        (server) {
+          defaultPosted = true;
+          return server.reply(
+            201,
+            <String, dynamic>{},
+            headers: <String, List<String>>{
+              ..._jsonContentType,
+              'X-Auth-Token': ['tok-fallback'],
+              'Location': [_sessionLocUrl('bmc1', '5')],
+            },
+          );
+        },
+      );
+
+      final Session session = await manager.login(
+        'bmc1',
+        const ConnectionProfile(
+          host: 'bmc1',
+          username: 'root',
+          password: 'calvin',
+        ),
+      );
+
+      expect(defaultPosted, isTrue);
+      expect(session.token, 'tok-fallback');
+    });
   });
 
   group('AuthManager - Basic auth', () {

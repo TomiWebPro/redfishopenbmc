@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-16 (run 2026-11-16 — FEATURE #011: relocated canonical `ConnectionProfile`/`AuthMethod` to `lib/redfish/models/connection_profile.dart`, made `lib/features/systems/models/connection_profile.dart` a compatibility re-export, and repointed lib/test/test_integration consumers to the canonical core import. Closed `issues/closed/011-relocate-connection-profile-to-core.md`. Anchors unchanged; mirror queue EMPTY; full emulator re-run skipped (no emulator/fixture/tool changes, last green run 2026-11-16 05:27 UTC). Baseline/verify: analyze 0, tests 522 passed / 1 skipped, issues validate OK.)**
-- **Current focus:** **FEATURE — smallest open issue first.** Next: `#017` SessionService URI discovery → `#018` discovery cache → `#023` overview leak → `#025` unsafe collection access → `#012`/`#021`/`#019` → `#028` BIOS editor → triage `#006`–`#010` (code EXISTS for these epics — verify acceptance boxes, close or split, do not rebuild). DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code change or >7 days. Verification-only runs are failures while issues remain open.
+- **Last updated: 2026-11-16 (run 2026-11-16 — FEATURE #017: `AuthManager` now discovers `SessionService`/`Sessions` URIs from ServiceRoot with canonical fallback for session create, TTL lookup, and 401 retry guard. Added discovered-path and fallback unit tests. Closed `issues/closed/017-discover-sessionservice-uri.md`. Anchors unchanged; mirror queue EMPTY; full emulator re-run skipped (no emulator/fixture/tool changes, last green run 2026-11-16 05:27 UTC). Baseline/verify: analyze 0, tests 524 passed / 1 skipped, issues validate OK.)**
+- **Current focus:** **FEATURE — smallest open issue first.** Next: `#018` discovery cache (forceRefresh stale replay & failed-fetch leak) → `#023` overview leak → `#025` unsafe collection access → `#012`/`#021`/`#019` → `#028` BIOS editor → triage `#006`–`#010` (code EXISTS for these epics — verify acceptance boxes, close or split, do not rebuild). DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code change or >7 days. Verification-only runs are failures while issues remain open.
 - **Run cadence:** `@every 30m` in scheduler (runbook originally `0 */5 * * *`; restore 5h once the small-issue backlog is empty, or keep 30m ONLY for FEATURE runs — never schedule verification-only churn at 30m).
 - **Model:** `opencode-go/iceman-contributor-free` (scheduler actual; runbook header was `opencode/deepseek-v4.1-flash-free` — updated 2026-11-16)
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -18,11 +18,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 1. **P0 first.** If `flutter analyze` or `flutter test` is red, repair that before
    any new work. Never start a feature on a red baseline.
 2. **FEATURE second, always.** On a green baseline, pick the smallest open
-   issue from `issues/open/` (order: `#024` → `#026` → `#013` → `#011` →
-   `#017` → `#018` → `#023` → `#025` → `#012` → `#021` → `#019` → `#028`,
-   then triage `#006`–`#010`) and land it with tests. Every green run MUST
-   change `lib/` / `test/` / `test_integration/` / `tool/`. A run with zero
-   code changes is a failed run while any issue is open.
+   issue from `issues/open/` (order: `#018` → `#023` → `#025` → `#012` →
+   `#021` → `#019` → `#028`, then triage `#006`–`#010`; completed: `#024`,
+   `#026`, `#013`, `#011`, `#017`) and land it with tests. Every green run
+   MUST change `lib/` / `test/` / `test_integration/` / `tool/`. A run with
+   zero code changes is a failed run while any issue is open.
 3. **DOCS is a cheap gate, never the primary.** Check anchors
    (`git ls-remote` + `curl -sSIL`); if unchanged and mirror queue EMPTY,
    touch only timestamp lines and return to rule 2. No full re-downloads,

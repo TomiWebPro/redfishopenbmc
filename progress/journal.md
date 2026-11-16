@@ -8971,3 +8971,18 @@
 - FEATURE #023 — fix overview `listenManual` leak & swallowed async errors
 
 **Issues touched:** #011 (closed)
+
+## 2026-11-16 08:26 UTC — agent:redfish-automation — #017
+
+**Done:**
+- FEATURE #017 (smallest open). Baseline green at 221d510 (analyze 0, 522 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Updated `AuthManager` to discover `SessionService` and `Sessions` URIs from ServiceRoot (`SessionService` link → `Sessions.@odata.id`) before session creation, with canonical fallback when discovery is unavailable. Reused discovered URIs for session POST, TTL fetch, and 401 relogin loop detection. Added unit tests covering discovered alternate Sessions URI and fallback-to-default behavior. Closed `issues/closed/017-discover-sessionservice-uri.md`.
+
+**Decisions:**
+- Chose #017 as smallest open P2 bug per runbook order. Implemented discovery as best-effort inside session creation (with resolved-URI caching on auth state) to avoid API churn and keep fallback safe for BMCs that block unauthenticated root reads. DOCS anchors unchanged/mirror queue EMPTY; full EMULATOR re-run skipped (no emulator/fixture/tool changes, last green <7 days).
+
+**Next:**
+- FEATURE #018 — fix discovery cache (forceRefresh stale replay & failed-fetch leak)
+- FEATURE #023 — fix overview `listenManual` leak & swallowed async errors
+- FEATURE #025 — harden unsafe `.first` / `as` casts against empty or null collections
+
+**Issues touched:** #017 (closed)

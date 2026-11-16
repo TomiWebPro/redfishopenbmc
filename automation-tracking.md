@@ -8385,3 +8385,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** `dart format lib test test_integration tool`; analyze 0; tests 522 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #011 relocate ConnectionProfile to core (run 2026-11-16)`; pushed: pending.
 - **Next:** 1) FEATURE #017 — discover `SessionService` URI instead of hardcoding it. 2) FEATURE #018 — fix discovery cache (forceRefresh stale replay & failed-fetch leak). 3) FEATURE #023 — fix overview `listenManual` leak & swallowed async errors.
+
+## 2026-11-16 08:26 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 522 passed / 1 skipped; starting commit 221d510 (origin/main synced, clean tracked tree except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #017 (smallest open). Implemented ServiceRoot-driven discovery of `SessionService` and `Sessions` collection URIs in `AuthManager` (best-effort, canonical fallback retained) and reused discovered URIs for session creation, session-service TTL lookup, and 401 relogin retry-loop detection.
+- **Docs:** anchors unchanged; mirror queue EMPTY (cheap gate, no corpus refresh).
+- **Emulator:** skipped — no emulator fixture/contract/tooling changes requiring full suite and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/redfish/client/auth_manager.dart`, `test/redfish/client/auth_manager_test.dart` (+2 session-auth tests: discovered alternate Sessions URI path, fallback on discovery failure), `issues/closed/017-discover-sessionservice-uri.md` (closed), `FUTUREWORK.md` focus/order updated.
+- **UI:** none (auth/discovery correctness fix; no user-visible UI change).
+- **Verification:** dart format (touched files); analyze 0; tests 524 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #017 discover SessionService URI (run 2026-11-16 08:26 UTC)`; pushed: pending.
+- **Next:** 1) FEATURE #018 — fix discovery cache (forceRefresh stale replay & failed-fetch leak). 2) FEATURE #023 — fix overview `listenManual` leak & swallowed async errors. 3) FEATURE #025 — harden unsafe `.first` / `as` casts against empty or null collections.
