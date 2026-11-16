@@ -249,6 +249,50 @@ void main() {
         ),
       );
     });
+
+    test('maps 412 precondition failure as RedfishException', () async {
+      final DioAdapter a = adapter();
+      const String settingsUri =
+          '/redfish/v1/Systems/437XR1138R2/Bios/Settings';
+      a.onPatch(
+        settingsUri,
+        (server) => server.reply(412, <String, dynamic>{
+          'error': <String, dynamic>{
+            'code': 'Base.1.0.PreconditionFailed',
+            'message': 'The ETag supplied did not match.',
+            '@Message.ExtendedInfo': <dynamic>[
+              <String, dynamic>{
+                'MessageId': 'Base.1.0.PreconditionFailed',
+                'Message': 'The ETag supplied did not match.',
+              },
+            ],
+          },
+        }),
+        data: <String, dynamic>{
+          'Attributes': <String, dynamic>{'ProcTurboMode': 'Disabled'},
+        },
+        headers: <String, dynamic>{'If-Match': '"9234ac83b9700123cc32"'},
+      );
+      final BiosService service = BiosService(
+        client: clientWithAdapter(a),
+        systemId: 'bmc1',
+      );
+      final BiosResource bios = BiosResource.fromJson(biosBody());
+
+      await expectLater(
+        service.patchPendingAttributes(
+          bios,
+          <String, dynamic>{'ProcTurboMode': 'Disabled'},
+        ),
+        throwsA(
+          isA<RedfishException>().having(
+            (RedfishException e) => e.statusCode,
+            'statusCode',
+            412,
+          ),
+        ),
+      );
+    });
   });
 
   group('BiosService.resetBios', () {

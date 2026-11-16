@@ -56,6 +56,9 @@ class _FixedBiosController extends StateNotifier<BiosUiState>
 
   @override
   Future<void> load() async {}
+
+  @override
+  Future<void> resetBios(BiosResource bios) async {}
 }
 
 void main() {
@@ -112,7 +115,32 @@ void main() {
       expect(find.textContaining('AdminPhone'), findsWidgets);
     });
 
-    testWidgets('shows error with retry affordance', (WidgetTester tester) async {
+    testWidgets('shows Reset BIOS action and disables it while resetting',
+        (WidgetTester tester) async {
+      const BiosUiState ui = BiosUiState(
+        resetting: true,
+        current: BiosResource(
+          id: 'Bios',
+          name: 'BIOS Configuration Current Settings',
+          attributes: BiosAttributes(<String, dynamic>{'BootMode': 'Uefi'}),
+          actions: BiosActions(
+            resetBiosTarget:
+                '/redfish/v1/Systems/1/Bios/Actions/Bios.ResetBios',
+          ),
+        ),
+      );
+      await tester.pumpWidget(_scope(ui: ui));
+      await tester.pump();
+
+      final Finder button =
+          find.widgetWithText(FilledButton, 'Resetting BIOS…');
+      expect(button, findsOneWidget);
+      final FilledButton widget = tester.widget<FilledButton>(button);
+      expect(widget.onPressed, isNull);
+    });
+
+    testWidgets('shows error with retry affordance',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         _scope(ui: const BiosUiState(error: 'boom')),
       );

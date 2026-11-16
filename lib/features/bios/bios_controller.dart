@@ -3,12 +3,12 @@ import 'package:redfishopenbmc/features/bios/bios_service.dart';
 import 'package:redfishopenbmc/features/bios/models/bios_models.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 
-/// Immutable UI state for the BIOS / settings screen (issue #028, read-only
-/// slice).
+/// Immutable UI state for the BIOS / settings screen (issue #028).
 class BiosUiState {
   /// Creates a [BiosUiState].
   const BiosUiState({
     this.loading = false,
+    this.resetting = false,
     this.current,
     this.pending,
     this.error,
@@ -16,6 +16,9 @@ class BiosUiState {
 
   /// Whether BIOS data is currently being fetched.
   final bool loading;
+
+  /// Whether a Reset BIOS to defaults action is in flight.
+  final bool resetting;
 
   /// Current BIOS resource, or `null` before the first successful load.
   final BiosResource? current;
@@ -29,6 +32,7 @@ class BiosUiState {
   /// Returns a copy with the given fields overridden.
   BiosUiState copyWith({
     bool? loading,
+    bool? resetting,
     BiosResource? current,
     BiosPendingSettings? pending,
     bool clearPending = false,
@@ -37,14 +41,15 @@ class BiosUiState {
   }) =>
       BiosUiState(
         loading: loading ?? this.loading,
+        resetting: resetting ?? this.resetting,
         current: current ?? this.current,
         pending: clearPending ? null : (pending ?? this.pending),
         error: clearError ? null : (error ?? this.error),
       );
 
   @override
-  String toString() =>
-      'BiosUiState(loading=$loading, hasCurrent=${current != null}, '
+  String toString() => 'BiosUiState(loading=$loading, resetting=$resetting, '
+      'hasCurrent=${current != null}, '
       'hasPending=${pending != null}, error=$error)';
 }
 
@@ -82,6 +87,30 @@ class BiosController extends StateNotifier<BiosUiState> {
     } catch (e) {
       if (mounted) {
         state = state.copyWith(loading: false, error: e.toString());
+      }
+    }
+  }
+
+  /// Triggers `#Bios.ResetBios` when advertised on [bios].
+  ///
+  /// Sets [BiosUiState.resetting] while in flight. On success reloads the BIOS
+  /// resource to reflect pending/default state; on failure records the
+  /// normalized service error.
+  Future<void> resetBios(BiosResource bios) async {
+    if (state.resetting) return;
+    state = state.copyWith(resetting: true, clearError: true);
+    try {
+      await service.resetBios(bios);
+      if (!mounted) return;
+      state = state.copyWith(resetting: false);
+      await load();
+    } on RedfishException catch (e) {
+      if (mounted) {
+        state = state.copyWith(resetting: false, error: e.message);
+      }
+    } catch (e) {
+      if (mounted) {
+        state = state.copyWith(resetting: false, error: e.toString());
       }
     }
   }

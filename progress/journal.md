@@ -9207,3 +9207,19 @@
 
 ### Issues touched
 - #028 (open, progress logged)
+
+## 2026-11-16 — agent:redfish-automation — #028
+
+### Done
+- FEATURE #028 ResetBios + PATCH-precondition UI/controller slice (lib/test). Baseline green at 44f773e (analyze 0, 567 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Added `resetting` state and `resetBios()` to `BiosController` to POST `#Bios.ResetBios` via `BiosService`, reload on success, and record normalized errors. Updated `BiosView` to render a capability-gated "Reset BIOS to defaults" action with busy/disabled state and inline action error display while keeping current BIOS content visible. Added coverage: 412 precondition-failure mapping in `bios_service_test`, controller reset success/error tests, and view busy/reset-button test (320/800/1300 overflow coverage retained).
+
+### Decisions
+- Chose ResetBios UI/controller + 412 mapping coverage as the smallest safe lib/test increment (no `test_integration/`/fixture/schema changes), so full EMULATOR re-run was not required (DOCS cheap gate only, hub reachable; last green emulator run 2026-11-16 05:27 UTC). Kept #028 open: fixture/corpus-invariant client-mapping + emulator pin for current-vs-pending compare and UI for editing/applying pending attributes via PATCH remain.
+
+### Next
+- Continue #028 — fixture/corpus-invariant client-mapping for Bios/Settings + emulator pin for current-vs-pending compare (requires full EMULATOR re-run).
+- Continue #028 — UI for editing/applying pending BIOS attributes via PATCH with busy/error states and widget tests.
+- If blocked, triage `#006`–`#010` with small tested fixes/closure or split.
+
+### Issues touched
+- #028 (open, progress logged)

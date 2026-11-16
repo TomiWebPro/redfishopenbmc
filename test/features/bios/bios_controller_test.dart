@@ -26,6 +26,35 @@ class _FakeClient extends RedfishClient {
   }
 }
 
+class _ResettingService extends BiosService {
+  _ResettingService({required super.client, required super.systemId});
+
+  bool resetCalled = false;
+  bool failReset = false;
+
+  @override
+  Future<Map<String, dynamic>> resetBios(BiosResource bios) async {
+    resetCalled = true;
+    if (failReset) {
+      throw const RedfishException(message: 'reset failed');
+    }
+    return <String, dynamic>{};
+  }
+
+  @override
+  Future<({BiosResource current, BiosPendingSettings? pending})>
+      fetchBiosWithPending() async {
+    return (
+      current: const BiosResource(
+        id: 'Bios',
+        name: 'BIOS',
+        attributes: BiosAttributes(<String, dynamic>{'BootMode': 'Uefi'}),
+      ),
+      pending: null,
+    );
+  }
+}
+
 void main() {
   group('BiosController (#028 read-only)', () {
     test('load populates current and pending on success', () async {
@@ -80,6 +109,49 @@ void main() {
       expect(controller.state.loading, isFalse);
       expect(controller.state.current, isNull);
       expect(controller.state.error, isNotNull);
+      controller.dispose();
+    });
+
+    test('resetBios calls service and reloads on success', () async {
+      final _ResettingService service = _ResettingService(
+        client: _FakeClient(<String, dynamic>{}),
+        systemId: 'bmc1',
+      );
+      final BiosController controller = BiosController(service: service);
+      const BiosResource bios = BiosResource(
+        id: 'Bios',
+        actions: BiosActions(
+          resetBiosTarget: '/redfish/v1/Systems/1/Bios/Actions/Bios.ResetBios',
+        ),
+      );
+
+      await controller.resetBios(bios);
+
+      expect(service.resetCalled, isTrue);
+      expect(controller.state.resetting, isFalse);
+      expect(controller.state.error, isNull);
+      expect(controller.state.current, isNotNull);
+      controller.dispose();
+    });
+
+    test('resetBios records normalized error and clears busy state', () async {
+      final _ResettingService service = _ResettingService(
+        client: _FakeClient(<String, dynamic>{}),
+        systemId: 'bmc1',
+      )..failReset = true;
+      final BiosController controller = BiosController(service: service);
+      const BiosResource bios = BiosResource(
+        id: 'Bios',
+        actions: BiosActions(
+          resetBiosTarget: '/redfish/v1/Systems/1/Bios/Actions/Bios.ResetBios',
+        ),
+      );
+
+      await controller.resetBios(bios);
+
+      expect(service.resetCalled, isTrue);
+      expect(controller.state.resetting, isFalse);
+      expect(controller.state.error, contains('reset failed'));
       controller.dispose();
     });
   });

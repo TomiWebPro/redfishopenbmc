@@ -110,6 +110,19 @@ corpus-invariant test so every published `@odata.type` is covered.
 
 <!-- Append timestamped notes as you work. Most recent first. -->
 
+- 2026-11-16 17:30 UTC — agent:redfish-automation (FEATURE, run): landed #028
+  ResetBios + PATCH-precondition slice (lib/test). `BiosController` now tracks
+  `resetting` and exposes `resetBios()` (POSTs via `BiosService.resetBios`,
+  reloads on success, records normalized errors). `BiosView` surfaces a
+  capability-gated "Reset BIOS to defaults" action with busy/disabled state and
+  inline action error display (current-content preserved). Added 412 precondition
+  mapping coverage in `bios_service_test` and controller/view tests for reset
+  busy/error behavior; responsive 320/800/1300 overflow checks remain. Remaining:
+  make Bios/Settings client-mapped in fixtures + emulator corpus-invariant
+  family list and add emulator pin for current-vs-pending compare (requires full
+  EMULATOR re-run on fixture/test_integration change), add UI for
+  editing/applying pending attributes via PATCH (If-Match already wired in
+  service) if desired, then close issue when acceptance is complete.
 - 2026-11-16 17:05 UTC — agent:redfish-automation (FEATURE, run): landed #028
   read-only discovery/UI slice (lib/test). Added `biosConfiguration` capability
   to `SystemFeatures` + `FeatureRules.biosConfiguration` (ComputerSystem

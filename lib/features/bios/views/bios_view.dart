@@ -128,15 +128,30 @@ class _BiosViewState extends ConsumerState<BiosView> {
       );
     }
 
-    final List<MapEntry<String, dynamic>> attrs =
-        bios.attributes.values.entries.toList()
-          ..sort((a, b) => a.key.compareTo(b.key));
+    final List<MapEntry<String, dynamic>> attrs = bios.attributes.values.entries
+        .toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
     final BiosPendingSettings? pending = ui.pending;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
-        _summaryCard(context, bios, pending),
+        _summaryCard(context, ui, bios, pending, controller),
+        if (ui.error != null) ...<Widget>[
+          const SizedBox(height: 12),
+          Card(
+            color: Theme.of(context).colorScheme.errorContainer,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                ui.error!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         if (pending != null) ...<Widget>[
           _pendingCard(context, bios, pending),
@@ -149,12 +164,16 @@ class _BiosViewState extends ConsumerState<BiosView> {
 
   Widget _summaryCard(
     BuildContext context,
+    BiosUiState ui,
     BiosResource bios,
     BiosPendingSettings? pending,
+    BiosController controller,
   ) {
-    final bool hasPending =
-        (bios.pendingSettingsUri != null && bios.pendingSettingsUri!.isNotEmpty) ||
-            (bios.resetBiosToDefaultsPending ?? false);
+    final bool hasPending = (bios.pendingSettingsUri != null &&
+            bios.pendingSettingsUri!.isNotEmpty) ||
+        (bios.resetBiosToDefaultsPending ?? false);
+    final bool canReset = bios.actions.resetBiosTarget != null &&
+        bios.actions.resetBiosTarget!.isNotEmpty;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -187,6 +206,23 @@ class _BiosViewState extends ConsumerState<BiosView> {
                   'Pending attributes',
                   '${pending!.attributes.values.length}',
                 ),
+              if (canReset) ...<Widget>[
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed:
+                      ui.resetting ? null : () => controller.resetBios(bios),
+                  icon: ui.resetting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.restore),
+                  label: Text(
+                    ui.resetting ? 'Resetting BIOS…' : 'Reset BIOS to defaults',
+                  ),
+                ),
+              ],
             ],
           ),
         ),
