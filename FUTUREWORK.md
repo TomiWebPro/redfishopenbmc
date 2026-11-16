@@ -8,23 +8,32 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > official docs go here with a source URL.
 
 - **Last updated: 2026-11-16 (run 2026-11-16 03:47 UTC — EMULATOR per alternation: full DMTF Redfish-Mockup-Server integration re-run via `tool/emulator/run_tests.sh` (pin `23d21f9a3610`, fixture `dmtf_mockup` `-S`, HTTPS 127.0.0.1:8443, `TMPDIR=/home/tomi/.cache/flutter-tmp`) → 85/85 passed. Anchors unchanged (bmcweb `3cdd1fa531f7`, mockup `23d21f9a3610`, DSP0266 1.25.0). Baseline/verify: analyze 0, tests 522 passed / 1 skipped, issues validate OK. No production code/docs corpus changes; UI skipped — verification-only run, no obvious safe low-risk/testable UI-2 gap identified.)**
-- **Current focus:** Next per alternation: **DOCS** — anchor freshness re-verify (hub/index/DSP0266 1.25.0, bmcweb master, Redfish-Mockup-Server main; mirror queue likely EMPTY). P1 #015 AuthManager (wire `Session.expiryFromService` into login/re-auth flow) / #008 resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
-- **Run cadence:** `0 */5 * * *`
-- **Model:** `opencode/deepseek-v4.1-flash-free`
+- **Current focus:** **FEATURE — smallest open issue first.** Order: `#024` clear-orphaned-passwords → `#026` dup-auth-fields → `#013` dead breakpoints → `#011` profile relocation → `#017` SessionService URI → `#018` discovery cache → `#023` overview leak → `#025` unsafe collection access → `#012`/`#021`/`#019` → `#028` BIOS editor → triage `#006`–`#010` (code EXISTS for these epics — verify acceptance boxes, close or split, do not rebuild). DOCS anchor check is a 15-min gate only; full EMULATOR re-run only on code change or >7 days. Verification-only runs are failures while issues remain open.
+- **Run cadence:** `@every 30m` in scheduler (runbook originally `0 */5 * * *`; restore 5h once the small-issue backlog is empty, or keep 30m ONLY for FEATURE runs — never schedule verification-only churn at 30m).
+- **Model:** `opencode-go/iceman-contributor-free` (scheduler actual; runbook header was `opencode/deepseek-v4.1-flash-free` — updated 2026-11-16)
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
 
-## Selection rules
+## Selection rules — CODE FIRST (verification-only runs are failures)
 
 1. **P0 first.** If `flutter analyze` or `flutter test` is red, repair that before
    any new work. Never start a feature on a red baseline.
-2. **Then alternate DOCS and EMULATOR** when the baseline is green. Use the most
-   recent `automation-tracking.md` entries to pick whichever has gone longest
-   without a run.
-3. **Then confirmed P1 defects** (`#014`, `#015`, `#027`), then P2/P3 issues.
-4. **Every green run should land one small UI/test improvement** when the primary
-   workstream leaves time. If not, say why in the tracking entry.
+2. **FEATURE second, always.** On a green baseline, pick the smallest open
+   issue from `issues/open/` (order: `#024` → `#026` → `#013` → `#011` →
+   `#017` → `#018` → `#023` → `#025` → `#012` → `#021` → `#019` → `#028`,
+   then triage `#006`–`#010`) and land it with tests. Every green run MUST
+   change `lib/` / `test/` / `test_integration/` / `tool/`. A run with zero
+   code changes is a failed run while any issue is open.
+3. **DOCS is a 15-minute cheap gate, never the primary.** Check anchors
+   (`git ls-remote` + `curl -sSIL`); if unchanged and mirror queue EMPTY,
+   touch only timestamp lines and return to rule 2. No full re-downloads,
+   no manifest rewrites on unchanged anchors.
+4. **EMULATOR only on change.** Full `tool/emulator/run_tests.sh` re-run ONLY
+   if `lib/` / `test_integration/` / `tool/` / fixtures changed since the
+   last EMULATOR run, or >7 days since the last green run. Never re-run the
+   full 85-test suite just for alternation.
 5. One primary workstream per run. Prefer a finished, tested increment over a
-   broad half-finished refactor.
+   broad half-finished refactor — but a finished SMALL issue always beats a
+   verification-only re-run.
 
 ## P0 — keep `main` green
 
@@ -941,7 +950,12 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       (run 2026-10-22 — `fromJson` self-descends into the DSP0266 `error`
       envelope; `fromResponse` normalizes map bodies; compliant-envelope unit
       tests in `models_test.dart` + `auth_manager_test.dart`; closed)
-- [ ] **#015** AuthManager: auth method, safe logout URI, session reuse/expiry.
+- [x] **#015** AuthManager base (closed — see `issues/closed/015-auth-manager-fixes.md`).
+      **REMAINING FOLLOW-UP (do this as FEATURE work):** wire
+      `Session.expiryFromService` into the login/re-auth flow (model helper
+      landed DOCS-17; AuthManager wiring still open) + #008 resilience
+      (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth
+      backoff).
       (bmcweb `AccountService.Oem.OpenBMC.AuthMethods.*` vendor row recorded in
       REQUIREMENTS.md — DOCS-4; emulator asserts the service root advertises a
       discoverable SessionService URI — run 2026-10-22 #017 contract; emulator

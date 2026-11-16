@@ -47,13 +47,14 @@ flutter test
 python3 issues/issues.py validate
 ```
 
-Read, in this order:
+Read, in this order (keep context small — do NOT dump whole files):
 
 ```bash
-cat FUTUREWORK.md
-tail -n 120 automation-tracking.md
-tail -n 120 progress/journal.md
+head -n 60 FUTUREWORK.md
+tail -n 30 automation-tracking.md
+tail -n 30 progress/journal.md
 cat .opencode/skills/redfish-issues/SKILL.md   # tracker rules
+python3 issues/issues.py list --all 2>/dev/null | head -n 30
 ```
 
 Record the baseline: analyze result, test count, current commit.
@@ -73,22 +74,46 @@ git stash list
   `git stash push -u -m "automation-preflight-$(date +%s)"` and mention the
   stash in this run's tracking entry. Never run `git clean -fdx`.
 
-## 1. Choose one primary workstream
+## 1. Choose one primary workstream — CODE FIRST
 
-Use this decision tree:
+Use this decision tree (in order — stop at the first match):
 
 1. **REPAIR** if `flutter analyze` or `flutter test` is red, or a regression is
    confirmed. Fix that first; do not start docs/emulator/UI work.
-2. **DOCS** or **EMULATOR** if the baseline is green. Alternate them; check the
-   last few `automation-tracking.md` entries and pick whichever ran less
-   recently. Start with DOCS on a fresh queue.
-3. **FEATURE / REFACTOR** if a P1 correctness issue is confirmed, or if docs work
-   produced a small, safe code fix. Prefer one issue from `issues/open/`.
-4. **UI** must still get one small, tested increment on every green run when time
-   permits (see §5). If not, say why in tracking.
+2. **FEATURE / REFACTOR (default on green).** Pick the smallest open issue
+   from `issues/open/` (or the `Current focus` line in `FUTUREWORK.md`) and
+   land it with tests. A run that changes no `lib/` / `test/` /
+   `test_integration/` / `tool/` file is a FAILED run — verification-only
+   runs are not acceptable when any issue is open. Prefer in this order:
+   tiny surgical fixes first (`#024` clear-orphaned-passwords, `#026`
+   dup-auth-fields, `#013` dead breakpoints, `#011` profile relocation,
+   `#017` SessionService URI, `#018` discovery cache, `#023` overview leak,
+   `#025` unsafe collection access), then `#012` / `#021` / `#019`,
+   then `#028` BIOS editor, then epic triage (`#006`–`#010` — close or split
+   what is already implemented; code for these features EXISTS, so verify
+   acceptance boxes and close/split rather than rebuilding).
+   If you finish one small issue and budget remains, start the next
+   smallest — do not stop after one file.
+3. **DOCS (cheap gate only).** Run the anchor check
+   (`git ls-remote` + `curl -sSIL` on hub/index/DSP0266/bmcweb/mockup pins).
+   If every anchor is unchanged AND the mirror queue is EMPTY: touch nothing
+   except the `Last audited` timestamp lines, then go straight back to (2)
+   FEATURE. Never do a full corpus re-download or manifest rewrite when
+   anchors are unchanged. A DOCS run that only refreshes timestamps without
+   a code fix counts as verification-only — keep it under 15 minutes and
+   spend the rest of the budget on FEATURE.
+4. **EMULATOR (conditional only).** Run the full `tool/emulator/run_tests.sh`
+   suite ONLY if `lib/` / `test_integration/` / `tool/` / fixtures changed
+   since the last EMULATOR run, or if >7 days passed since the last green
+   emulator run. Otherwise skip the full 85-test re-run entirely and go back
+   to (2) FEATURE. Never re-run the whole suite just for alternation.
+5. **UI** is part of the FEATURE work (capability-gated, widget-tested,
+   320/800/1300 px overflow checks), not a separate mandatory increment.
+   Do not manufacture UI churn to look busy; do not skip FEATURE to do UI.
 
 Do not attempt multiple large workstreams. A finished, tested increment beats a
-broad half-finished refactor.
+broad half-finished refactor. But a finished SMALL issue beats a
+verification-only DOCS/EMULATOR re-run every time.
 
 ## 2. DOCS workstream — official sources only
 
@@ -250,9 +275,10 @@ commit.
 - Update the issue's `Progress Log`, `progress/journal.md`, and (for P1/P2)
   `progress/progress_summary.md`.
 
-## 5. UI workstream — one focused improvement per green run
+## 5. UI workstream — subordinate to FEATURE, never a substitute
 
-- Pick one item from the UI section of `FUTUREWORK.md`.
+- UI work happens INSIDE the FEATURE issue (capability-gated card/tab for
+  `#028`, retry button for `#019`, hardened empty states, etc.).
 - Keep the design capability-gated: no hardcoded feature tabs or controls.
 - Prioritise empty/loading/error states, accessibility, responsive layout, and
   visual consistency over new decoration.
@@ -260,20 +286,22 @@ commit.
 - Use existing `AppTheme`, breakpoints, badges, and card patterns.
 - Do not add a dependency for a one-off effect. If a dependency is justified,
   update `pubspec.yaml` + `pubspec.lock` and tests.
-- If the primary workstream consumed the budget, skip UI and state why in
-  tracking; do not rush an untested redesign.
+- Standalone UI-only runs are BANNED while any `issues/open/` item remains.
+  Never skip FEATURE to do UI, and never manufacture UI churn
+  (timestamp-only or semantics-label-only diffs) to look busy.
 
-## 6. Verification gate (mandatory)
+## 6. Verification gate (mandatory — targeted first to save budget)
 
-Run all of these before committing:
+Run targeted tests during work, full suite once at the end:
 
 ```bash
 export PATH="$HOME/flutter/bin:$PATH"
 cd /home/tomi/redfishopenbmc
 
+flutter test test/path/to/touched_test.dart   # fast loop while editing
 dart format lib test test_integration tool 2>/dev/null || true
 flutter analyze
-flutter test
+flutter test                                   # once, at the end
 python3 issues/issues.py validate
 git diff --check
 ```
@@ -318,7 +346,13 @@ Append exactly one section at the **end**:
 - Check off completed items with `(run YYYY-MM-DD, commit abc1234)`.
 - Add newly discovered items with source URLs.
 - Keep the list ordered P0 → P1 → P2; mark blockers `[!]`.
-- Update the `Last updated` line.
+- Update the `Last updated` AND `Current focus` lines: `Current focus`
+  must always name the next smallest open issue(s), never "anchor
+  re-verify" while issues remain open.
+- A run with zero `lib/` / `test/` / `test_integration/` / `tool/` changes
+  must say so in `Current focus` and explain which issue blocked it —
+  "no obvious gap" is not an accepted explanation while `issues/open/` is
+  non-empty.
 
 ### 7.3 Journal
 
@@ -343,22 +377,25 @@ git push origin main
 - If push fails, keep the commit and record the failure. Do not retry endlessly.
 - Never `git add -A`; never stage secrets, builds, or caches.
 - Never force-push.
+- ONE commit per run. Do not append a second `chore: record ... push status`
+  commit — the push result belongs in the single run section from §7.1.
 
 ## 8. Final output
 
 Print a concise report for the scheduler email (max ~40 lines):
 
 ```
-MODE: DOCS|EMULATOR|REPAIR|FEATURE|UI|REFACTOR
-BASELINE: analyze 0, tests 231
+MODE: REPAIR|FEATURE|REFACTOR (DOCS/EMULATOR alone are NOT valid modes while issues/open/ is non-empty)
+BASELINE: analyze 0, tests N
 DID: ...
-DOCS: ...
-EMULATOR: ...
-CODE: ...
-UI: ...
+CODE: <files changed + issue IDs + new tests, or BLOCKER: why zero code changed>
 VERIFY: analyze 0, tests N, issues OK
 COMMIT: abc1234 (pushed yes/no)
 NEXT: 1) ... 2) ... 3) ...
 ```
+
+Include `git diff --stat` of the `lib/ test/ test_integration/ tool/` changes.
+Verification-only runs (no code diff, only timestamp/manifest churn) must be
+reported as `MODE: VERIFICATION-ONLY (FAIL)` so the checker can catch loops.
 
 Do not include secrets, tokens, or long logs.
