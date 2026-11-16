@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-16 (run 2026-11-16 06:01 UTC — FEATURE #024: `SecureStorageProfileRepository.clear()` now deletes all per-profile remembered-password keys (`redfish.pw.<id>`) consistent with `removeProfile`; added regression test in `test/features/systems/profile_repository_test.dart` (523 passed / 1 skipped). Closed `issues/closed/024-clear-orphaned-passwords.md`. Anchors unchanged; mirror queue EMPTY; full emulator re-run skipped (no emulator/fixture/tool changes, last green run 2026-11-16 05:27 UTC). Baseline/verify: analyze 0, tests 523 passed / 1 skipped, issues validate OK.)**
-- **Current focus:** **FEATURE — smallest open issue first.** Order: `#026` dup-auth-fields → `#013` dead breakpoints → `#011` profile relocation → `#017` SessionService URI → `#018` discovery cache → `#023` overview leak → `#025` unsafe collection access → `#012`/`#021`/`#019` → `#028` BIOS editor → triage `#006`–`#010` (code EXISTS for these epics — verify acceptance boxes, close or split, do not rebuild). DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code change or >7 days. Verification-only runs are failures while issues remain open.
+- **Last updated: 2026-11-16 (run 2026-11-16 06:27 UTC — FEATURE #026: `ConnectionProfile.authMethod` is now the single authoritative auth-mode field; stored `preferSessionAuth` removed from constructor/copyWith/serialization and replaced by a derived getter for compatibility, `fromJson` infers legacy profiles, `AuthManager` and `SystemProfileForm` no longer dual-read/write. Updated connection-profile/auth/model/emulator tests (524 passed / 1 skipped). Closed `issues/closed/026-resolve-dup-auth-fields.md`. Anchors unchanged; mirror queue EMPTY; full emulator re-run skipped (no emulator/fixture/tool changes, last green run 2026-11-16 05:27 UTC). Baseline/verify: analyze 0, tests 524 passed / 1 skipped, issues validate OK.)**
+- **Current focus:** **FEATURE — smallest open issue first.** Order: `#013` dead breakpoints → `#011` profile relocation → `#017` SessionService URI → `#018` discovery cache → `#023` overview leak → `#025` unsafe collection access → `#012`/`#021`/`#019` → `#028` BIOS editor → triage `#006`–`#010` (code EXISTS for these epics — verify acceptance boxes, close or split, do not rebuild). DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code change or >7 days. Verification-only runs are failures while issues remain open.
 - **Run cadence:** `@every 30m` in scheduler (runbook originally `0 */5 * * *`; restore 5h once the small-issue backlog is empty, or keep 30m ONLY for FEATURE runs — never schedule verification-only churn at 30m).
 - **Model:** `opencode-go/iceman-contributor-free` (scheduler actual; runbook header was `opencode/deepseek-v4.1-flash-free` — updated 2026-11-16)
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1172,8 +1172,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       the per-resource nuance that `#SecureBootDatabase.ResetKeys` carries a
       *smaller* allow-list than the SecureBoot-level one (PK omits DeletePK)
       — allow-list sources are per-resource, never shared)
-- [ ] **#024** `profile_repository.clear()` orphaned passwords.
-- [ ] **#026** Resolve duplicate auth fields.
+- [x] **#024** `profile_repository.clear()` orphaned passwords. (run 2026-11-16 06:01 UTC, commit 1d3e0ef)
+- [x] **#026** Resolve duplicate auth fields. (run 2026-11-16 06:27 UTC, commit this run)
 
 ## P2 — feature completeness
 

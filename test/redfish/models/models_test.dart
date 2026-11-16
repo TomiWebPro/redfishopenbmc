@@ -164,6 +164,7 @@ void main() {
       expect(p.baseUrl, 'https://10.0.0.5:8443');
       expect(p.scheme, 'https');
       expect(p.allowSelfSigned, isFalse);
+      expect(p.authMethod, AuthMethod.session);
       expect(p.preferSessionAuth, isTrue);
     });
 

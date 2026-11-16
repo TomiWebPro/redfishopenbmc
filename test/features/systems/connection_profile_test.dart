@@ -16,15 +16,12 @@ void main() {
       expect(insecure.baseUrl, 'http://10.0.0.5:8443');
     });
 
-    test('authMethod defaults to session and mirrors preferSessionAuth', () {
+    test('authMethod defaults to session and preferSessionAuth is derived', () {
       const ConnectionProfile p = ConnectionProfile(host: 'h');
       expect(p.authMethod, AuthMethod.session);
       expect(p.preferSessionAuth, isTrue);
 
-      final ConnectionProfile basic = p.copyWith(
-        authMethod: AuthMethod.basic,
-        preferSessionAuth: false,
-      );
+      final ConnectionProfile basic = p.copyWith(authMethod: AuthMethod.basic);
       expect(basic.authMethod, AuthMethod.basic);
       expect(basic.preferSessionAuth, isFalse);
     });
@@ -56,6 +53,26 @@ void main() {
       expect(back.password, 's3cret');
       expect(back.rememberPassword, isTrue);
       expect(back.createdAt, DateTime.utc(2026, 1, 2, 3, 4, 5));
+      expect(json.containsKey('preferSessionAuth'), isFalse);
+    });
+
+    test('fromJson infers authMethod from legacy preferSessionAuth', () {
+      final ConnectionProfile basic = ConnectionProfile.fromJson(
+        const <String, dynamic>{
+          'host': 'bmc',
+          'preferSessionAuth': false,
+        },
+      );
+      expect(basic.authMethod, AuthMethod.basic);
+      expect(basic.preferSessionAuth, isFalse);
+
+      final ConnectionProfile session = ConnectionProfile.fromJson(
+        const <String, dynamic>{
+          'host': 'bmc',
+          'preferSessionAuth': true,
+        },
+      );
+      expect(session.authMethod, AuthMethod.session);
     });
 
     test('fromJson tolerates missing fields', () {

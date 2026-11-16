@@ -8926,3 +8926,18 @@
 - FEATURE #011 — relocate `ConnectionProfile` model into core layer
 
 **Issues touched:** #024 (closed)
+
+## 2026-11-16 06:27 UTC — agent:redfish-automation — #026
+
+**Done:**
+- FEATURE #026 (smallest open). Baseline green at 1d3e0ef (analyze 0, 523 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Made `ConnectionProfile.authMethod` the single authoritative auth-mode field: removed stored `preferSessionAuth` from constructor/copyWith/serialization and replaced it with a derived getter (`authMethod == session`) for compatibility. `fromJson` infers legacy profiles from `preferSessionAuth` when `authMethod` is absent. Updated `AuthManager` login/rehydrate to dispatch on `authMethod` only and `SystemProfileForm` to stop dual-writing auth fields. Updated model/auth/emulator tests, including legacy deserialization and no-dual-write serialization coverage. Closed `issues/closed/026-resolve-dup-auth-fields.md`.
+
+**Decisions:**
+- Chose #026 as smallest surgical P2 fix per runbook order. Kept `preferSessionAuth` as a derived getter (and legacy read support) to preserve compatibility while eliminating dual writes. DOCS anchors unchanged/mirror queue EMPTY; full EMULATOR re-run skipped (no fixture/tooling contract changes, last green <7 days).
+
+**Next:**
+- FEATURE #013 — remove dead `app_breakpoints.dart` and reconcile breakpoint taxonomy
+- FEATURE #011 — relocate `ConnectionProfile` model into core layer
+- FEATURE #017 — discover `SessionService` URI instead of hardcoding it
+
+**Issues touched:** #026 (closed)

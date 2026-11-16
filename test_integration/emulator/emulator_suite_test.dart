@@ -59,7 +59,7 @@ bool get _emulatorConfigured => emulatorUrl.isNotEmpty;
 ConnectionProfile emulatorProfile({
   String username = 'root',
   String password = 'calvin',
-  bool preferSessionAuth = true,
+  AuthMethod authMethod = AuthMethod.session,
 }) {
   final Uri uri = Uri.parse(emulatorUrl);
   return ConnectionProfile(
@@ -69,13 +69,13 @@ ConnectionProfile emulatorProfile({
     allowSelfSigned: true,
     username: username,
     password: password,
-    preferSessionAuth: preferSessionAuth,
+    authMethod: authMethod,
   );
 }
 
 /// Direct unauthenticated client to the emulator (service-root probes only).
 RedfishClient rawClient() =>
-    RedfishClient(profile: emulatorProfile(preferSessionAuth: false));
+    RedfishClient(profile: emulatorProfile(authMethod: AuthMethod.basic));
 
 void main() {
   if (!_emulatorConfigured) {
@@ -596,7 +596,7 @@ void main() {
       final AuthManager manager = AuthManager(storage: InMemoryStorage());
       await manager.login(
         'em-basic',
-        emulatorProfile(preferSessionAuth: false),
+        emulatorProfile(authMethod: AuthMethod.basic),
       );
       expect(manager.isAuthenticated('em-basic'), isTrue);
       final RedfishClient client = manager.clientFor('em-basic')!;

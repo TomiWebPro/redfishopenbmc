@@ -8349,3 +8349,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 523 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #024 clear orphaned profile passwords (run 2026-11-16 06:01 UTC)`; pushed: pending.
 - **Next:** 1) FEATURE #026 — resolve duplicate auth fields (`preferSessionAuth` vs `authMethod`) with canonical field + consistent form/client/tests. 2) FEATURE #013 — remove dead `app_breakpoints.dart` and reconcile breakpoint taxonomy. 3) FEATURE #011 — relocate `ConnectionProfile` model into core layer (fix core→feature dependency).
+
+## 2026-11-16 06:27 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 523 passed / 1 skipped; starting commit 1d3e0ef (origin/main synced, untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #026 (smallest open). Made `ConnectionProfile.authMethod` the single authoritative auth-mode field: removed stored `preferSessionAuth` from constructor/copyWith/serialization and replaced it with a derived getter for compatibility. `fromJson` now infers legacy profiles from `preferSessionAuth` when `authMethod` is absent. `AuthManager` login/rehydrate dispatch on `authMethod` only; `SystemProfileForm` no longer dual-writes the auth mode.
+- **Docs:** anchors unchanged; mirror queue EMPTY (cheap gate, no corpus refresh).
+- **Emulator:** skipped — no emulator fixture/contract/tooling changes requiring full suite and last green run 2026-11-16 05:27 UTC (<7 days). Updated emulator integration helper/test call sites to use `authMethod`.
+- **Code/tests:** `lib/features/systems/models/connection_profile.dart`, `lib/redfish/client/auth_manager.dart`, `lib/features/systems/views/system_profile_form.dart`, `test/features/systems/connection_profile_test.dart`, `test/redfish/client/auth_manager_test.dart`, `test/redfish/models/models_test.dart`, `test_integration/emulator/emulator_suite_test.dart`, `issues/closed/026-resolve-dup-auth-fields.md` (closed). Added/updated tests for derived `preferSessionAuth`, no dual serialization, and legacy `preferSessionAuth`-only deserialization.
+- **UI:** none (profile model/auth wiring fix; form behavior unchanged except single-source auth field).
+- **Verification:** analyze 0; tests 524 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #026 canonical authMethod (run 2026-11-16 06:27 UTC)`; pushed: pending.
+- **Next:** 1) FEATURE #013 — remove dead `app_breakpoints.dart` and reconcile breakpoint taxonomy. 2) FEATURE #011 — relocate `ConnectionProfile` model into core layer (fix core→feature dependency). 3) FEATURE #017 — discover `SessionService` URI instead of hardcoding it.

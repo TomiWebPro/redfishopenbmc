@@ -111,7 +111,6 @@ class _SystemProfileFormState extends State<SystemProfileForm> {
       port: int.parse(_port.text.trim()),
       scheme: _useTls ? 'https' : 'http',
       allowSelfSigned: _allowSelfSigned,
-      preferSessionAuth: _authMethod == AuthMethod.session,
       authMethod: _authMethod,
       username: user.isEmpty ? null : user,
       password: pass.isEmpty ? null : pass,

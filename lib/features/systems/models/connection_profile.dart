@@ -2,9 +2,9 @@ import 'package:uuid/uuid.dart';
 
 /// Authentication strategy used when connecting to a BMC.
 ///
-/// Mirrors [ConnectionProfile.preferSessionAuth] (kept for #002 compatibility)
-/// but is the app-level source of truth: `session` prefers the
-/// `SessionService` token flow, `basic` uses HTTP Basic auth.
+/// This is the single authoritative auth-mode field for a profile:
+/// `session` prefers the `SessionService` token flow, `basic` uses HTTP Basic
+/// auth.
 enum AuthMethod {
   /// HTTP Basic auth (`Authorization: Basic <b64>`), no server-side session.
   basic,
@@ -38,7 +38,6 @@ class ConnectionProfile {
     this.port = 443,
     this.scheme = 'https',
     this.allowSelfSigned = false,
-    this.preferSessionAuth = true,
     this.authMethod = AuthMethod.session,
     this.username,
     this.password,
@@ -70,13 +69,12 @@ class ConnectionProfile {
   /// user-acknowledged (see #010 hardening).
   final bool allowSelfSigned;
 
-  /// Prefer `SessionService` token auth over Basic auth. Kept for #002
-  /// compatibility; [authMethod] is the authoritative value and should be
-  /// kept in sync by the UI.
-  final bool preferSessionAuth;
-
   /// Authoritative authentication strategy for this profile.
   final AuthMethod authMethod;
+
+  /// Derived for backwards compatibility: true when [authMethod] is
+  /// [AuthMethod.session].
+  bool get preferSessionAuth => authMethod == AuthMethod.session;
 
   /// Username for Basic or Session login. Never persisted in the profile blob.
   final String? username;
@@ -109,7 +107,6 @@ class ConnectionProfile {
     int? port,
     String? scheme,
     bool? allowSelfSigned,
-    bool? preferSessionAuth,
     AuthMethod? authMethod,
     String? username,
     String? password,
@@ -123,7 +120,6 @@ class ConnectionProfile {
         port: port ?? this.port,
         scheme: scheme ?? this.scheme,
         allowSelfSigned: allowSelfSigned ?? this.allowSelfSigned,
-        preferSessionAuth: preferSessionAuth ?? this.preferSessionAuth,
         authMethod: authMethod ?? this.authMethod,
         username: username ?? this.username,
         password: password ?? this.password,
@@ -135,7 +131,8 @@ class ConnectionProfile {
   ///
   /// The [password] is intentionally **included** so that callers (the
   /// [ProfileRepository]) can decide whether to strip it before writing. The
-  /// in-memory model never logs this field.
+  /// in-memory model never logs this field. Only [authMethod] is written; the
+  /// legacy `preferSessionAuth` field is no longer serialized.
   Map<String, dynamic> toJson() => <String, dynamic>{
         'id': id,
         'name': name,
@@ -143,7 +140,6 @@ class ConnectionProfile {
         'port': port,
         'scheme': scheme,
         'allowSelfSigned': allowSelfSigned,
-        'preferSessionAuth': preferSessionAuth,
         'authMethod': authMethod.name,
         'username': username,
         'password': password,
@@ -152,12 +148,21 @@ class ConnectionProfile {
       };
 
   /// Parses a [ConnectionProfile] from [toJson].
+  ///
+  /// [authMethod] is the authoritative field. For legacy profiles that predate
+  /// it, the method is inferred from the stored `preferSessionAuth` boolean.
   factory ConnectionProfile.fromJson(Map<String, dynamic> json) {
-    final String rawAuth = json['authMethod'] as String? ?? 'session';
-    final AuthMethod method = AuthMethod.values.firstWhere(
-      (AuthMethod e) => e.name == rawAuth,
-      orElse: () => AuthMethod.session,
-    );
+    final String? rawAuth = json['authMethod'] as String?;
+    final AuthMethod method;
+    if (rawAuth != null) {
+      method = AuthMethod.values.firstWhere(
+        (AuthMethod e) => e.name == rawAuth,
+        orElse: () => AuthMethod.session,
+      );
+    } else {
+      final bool prefer = (json['preferSessionAuth'] as bool?) ?? true;
+      method = prefer ? AuthMethod.session : AuthMethod.basic;
+    }
     final String? created = json['createdAt'] as String?;
     return ConnectionProfile(
       id: (json['id'] as String?) ?? '',
@@ -166,7 +171,6 @@ class ConnectionProfile {
       port: (json['port'] as int?) ?? 443,
       scheme: (json['scheme'] as String?) ?? 'https',
       allowSelfSigned: (json['allowSelfSigned'] as bool?) ?? false,
-      preferSessionAuth: (json['preferSessionAuth'] as bool?) ?? true,
       authMethod: method,
       username: json['username'] as String?,
       password: json['password'] as String?,

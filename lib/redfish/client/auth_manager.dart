@@ -67,14 +67,12 @@ class AuthManager {
 
   /// Authenticate [systemId] using [profile].
   ///
-  /// Picks session auth when [ConnectionProfile.authMethod] indicates session
-  /// (or when [ConnectionProfile.preferSessionAuth] is true for backwards
-  /// compatibility) and credentials are present, otherwise Basic auth. Returns
-  /// the active [Session].
+  /// Picks session auth when [ConnectionProfile.authMethod] is
+  /// [AuthMethod.session] and credentials are present, otherwise Basic auth.
+  /// Returns the active [Session].
   Future<Session> login(String systemId, ConnectionProfile profile) async {
     final RedfishClient client = _createClient(profile);
-    final bool useSession = profile.authMethod == AuthMethod.session ||
-        (profile.preferSessionAuth && profile.authMethod != AuthMethod.basic);
+    final bool useSession = profile.authMethod == AuthMethod.session;
     final _AuthMode mode =
         (useSession && profile.username != null && profile.password != null)
             ? _AuthMode.session
@@ -157,9 +155,9 @@ class AuthManager {
     final String location = await storage.read(_locationKey(systemId)) ?? '';
 
     final RedfishClient client = _createClient(profile);
-    final bool useSession = profile.authMethod == AuthMethod.session ||
-        (profile.preferSessionAuth && profile.authMethod != AuthMethod.basic);
-    final _AuthMode mode = useSession ? _AuthMode.session : _AuthMode.basic;
+    final _AuthMode mode = profile.authMethod == AuthMethod.session
+        ? _AuthMode.session
+        : _AuthMode.basic;
 
     final _SystemAuth auth = _SystemAuth(
       systemId: systemId,

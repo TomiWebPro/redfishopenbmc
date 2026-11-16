@@ -355,7 +355,6 @@ void main() {
         'bmc1',
         const ConnectionProfile(
           host: 'bmc1',
-          preferSessionAuth: false,
           authMethod: AuthMethod.basic,
           username: 'root',
           password: 'calvin',
@@ -385,7 +384,7 @@ void main() {
       );
       final Session session = await manager.login(
         'bmc1',
-        const ConnectionProfile(host: 'bmc1', preferSessionAuth: true),
+        const ConnectionProfile(host: 'bmc1', authMethod: AuthMethod.session),
       );
       expect(session.token, startsWith('Basic '));
     });
