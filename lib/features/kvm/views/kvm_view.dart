@@ -229,7 +229,10 @@ class _KvmViewState extends ConsumerState<KvmView> {
           )
         else
           for (final KvmConsole console in ui.consoles)
-            _ConsoleCard(console: console),
+            _ConsoleCard(
+              console: console,
+              isPrimary: identical(console, ui.primaryConsole),
+            ),
       ],
     );
   }
@@ -239,10 +242,13 @@ class _KvmViewState extends ConsumerState<KvmView> {
 /// copy-to-clipboard action.
 class _ConsoleCard extends StatelessWidget {
   /// Creates a [_ConsoleCard].
-  const _ConsoleCard({required this.console});
+  const _ConsoleCard({required this.console, this.isPrimary = false});
 
   /// The console to render.
   final KvmConsole console;
+
+  /// Whether this console is the preferred/primary console.
+  final bool isPrimary;
 
   @override
   Widget build(BuildContext context) {
@@ -275,6 +281,14 @@ class _ConsoleCard extends StatelessWidget {
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                         ),
+                        if (isPrimary)
+                          const Padding(
+                            padding: EdgeInsets.only(right: 8),
+                            child: Chip(
+                              label: Text('Primary'),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
                         if (console.serviceEnabled)
                           const Chip(
                             label: Text('Enabled'),
@@ -380,6 +394,31 @@ class _ConsoleCard extends StatelessWidget {
                         console.connectUri!,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...<Widget>[
+              const SizedBox(height: 8),
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: 'No console connect URI available. Open externally: '
+                    '${console.sourceManagerUri}',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'No console connect URI available. Open externally:',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    SelectableText(
+                      console.sourceManagerUri,
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
                 ),

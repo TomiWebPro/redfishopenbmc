@@ -5,7 +5,7 @@ status: open
 priority: P2
 type: bug
 created: 2026-08-30
-updated: 2026-08-30
+updated: 2026-11-16
 closed: null
 assignee: unassigned
 labels: [kvm, console, unimplemented]
@@ -30,9 +30,9 @@ estimated_tokens: 18000
 ## Goals / Acceptance Criteria
 
 - [ ] A discovered HTML5/RFB console renders in-app.
-- [ ] `fetchPrimaryConsole` used to pick the primary console.
-- [ ] OEM/no-URI console shows a clear "open externally" notice with the URI.
-- [ ] Dependency added & documented; tests for service selection logic.
+- [x] `fetchPrimaryConsole` used to pick the primary console.
+- [x] OEM/no-URI console shows a clear "open externally" notice with the URI.
+- [ ] Dependency added & documented; tests for service selection logic. (service selection logic tested; rendering dependency/docs still pending)
 
 ## Tasks
 
@@ -51,6 +51,7 @@ estimated_tokens: 18000
 
 ## Progress Log
 
+- 2026-11-16 13:18 UTC — Partial progress (run 2026-11-16, agent:redfish-automation): `KvmService.pickPrimary` + `fetchPrimaryConsole` now select the preferred console (graphical first, else first) and `KvmController`/`KvmUiState` expose `primaryConsole`; `KvmView` marks the primary console and shows a clear "open externally" notice with the manager/source URI when no `ConnectUri` is available (OEM/no-URI). Added service selection and widget coverage in `test/features/kvm/kvm_service_test.dart` and `test/features/kvm/kvm_widget_test.dart`. Remaining: in-app HTML5/RFB console rendering, rendering dependency choice/addition/documentation, and wiring a launch/open flow beyond copy/external notice.
 - 2026-08-30 — Created from triage analysis (feature #14). See also #009.
 
 ## References

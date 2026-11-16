@@ -9091,3 +9091,22 @@
 - #028 — BIOS configuration editor (Bios/Settings surface)
 
 **Issues touched:** #019 (open, progress logged)
+
+## 2026-11-16 — agent:redfish-automation — #021
+
+### Done
+- FEATURE #021 partial: added `KvmService.pickPrimary` and wired `fetchPrimaryConsole`/controller state to expose `primaryConsole` (graphical preferred, fallback first).
+- Updated `KvmView` to mark the primary console and show a clear "open externally" notice with source/manager URI when a console has no `ConnectUri` (OEM/no-URI case).
+- Added/updated tests: `test/features/kvm/kvm_service_test.dart` (`pickPrimary`), `test/features/kvm/kvm_widget_test.dart` (OEM/no-URI external notice + primary marker).
+
+### Decisions
+- Kept issue #021 open: in-app HTML5/RFB rendering and rendering dependency/documentation remain incomplete; this run landed the smallest safe UX/selection slice with tests.
+- Preserved existing semantics labels where tests depended on them (e.g. header enabled/disabled label, copy button text) to avoid unnecessary churn.
+
+### Next
+1. Continue #021 with minimal in-app HTML5 console rendering approach (dependency/platform feasibility) or a clearly tested external-launch strategy.
+2. #019: EventService-based refresh or broader end-to-end/integration refresh coverage if small/safe.
+3. #028: BIOS configuration editor (Bios/Settings surface).
+
+### Issues touched
+- #021 (open, partial progress)

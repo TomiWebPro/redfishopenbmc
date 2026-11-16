@@ -53,6 +53,25 @@ void main() {
       expect(primary!.type, KvmConsoleType.graphical);
     });
 
+    test('pickPrimary prefers graphical, else first, else null', () {
+      const KvmConsole serial = KvmConsole(
+        type: KvmConsoleType.serial,
+        managerId: 'BMC',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      const KvmConsole graphical = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: 'BMC',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      expect(KvmService.pickPrimary(const <KvmConsole>[]), isNull);
+      expect(KvmService.pickPrimary(const <KvmConsole>[serial]), same(serial));
+      expect(
+        KvmService.pickPrimary(const <KvmConsole>[serial, graphical]),
+        same(graphical),
+      );
+    });
+
     test('throws a RedfishException when not connected', () async {
       final KvmService svc = KvmService(client: null, systemId: 'bmc1');
       expect(() => svc.fetchConsoles(), throwsA(isA<RedfishException>()));

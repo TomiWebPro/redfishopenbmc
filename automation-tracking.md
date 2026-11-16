@@ -8481,3 +8481,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** `dart format` (touched files); `flutter analyze` 0 issues; `flutter test` 535 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #019 sensors auto-refresh polling (run 2026-11-16 12:42 UTC)`; pushed: pending.
 - **Next:** 1) #021 — KVM console rendering smallest viable slice (use `fetchPrimaryConsole` / clear no-URI external-open UX with tests). 2) #019 — EventService or broader end-to-end/integration refresh coverage if a small safe slice is clear. 3) #028 — BIOS configuration editor (Bios/Settings surface).
+
+## 2026-11-16 13:18 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 535 passed / 1 skipped; starting commit 34acd48 (main in sync with origin/main at preflight, tracked tree clean except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #021 partial (smallest viable slice). Wired `fetchPrimaryConsole` selection through `KvmService.pickPrimary` and exposed `primaryConsole` in `KvmUiState`/`KvmController`; `KvmView` now marks the preferred console and shows a clear "open externally" notice with the manager/source URI when no `ConnectUri` is available (OEM/no-URI case). In-app HTML5/RFB rendering and rendering dependency/docs remain pending.
+- **Docs:** cheap anchor gate only — anchors unchanged and mirror queue EMPTY; no corpus/manifest refresh.
+- **Emulator:** skipped — no emulator fixture/contract/tooling changes requiring full suite and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/features/kvm/kvm_service.dart`, `lib/features/kvm/kvm_controller.dart`, `lib/features/kvm/views/kvm_view.dart`, `test/features/kvm/kvm_service_test.dart`, `test/features/kvm/kvm_widget_test.dart` (+2 tests: `pickPrimary` selection and OEM/no-URI external notice + primary marker), `issues/open/021-kvm-console-rendering.md` (progress/acceptance updated), `FUTUREWORK.md` updated.
+- **UI:** KVM console cards show a Primary marker and a clear external-open notice with URI when `ConnectUri` is absent (capability-gated view; no placeholder behavior changes).
+- **Verification:** `dart format lib test test_integration tool`; `flutter analyze` 0 issues; `flutter test` 537 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Commit:** pending — `auto: FEATURE #021 kvm primary console and external notice (run 2026-11-16 13:18 UTC)`; pushed: pending.
+- **Next:** 1) Continue #021 — smallest in-app rendering path for HTML5 connect URIs (evaluate `webview_flutter`/platform constraints) or document blocked strategy with tests. 2) #019 — EventService/end-to-end refresh coverage if a small safe slice is identified. 3) #028 — BIOS configuration editor (Bios/Settings surface).

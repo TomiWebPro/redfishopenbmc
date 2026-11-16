@@ -162,6 +162,43 @@ void main() {
     });
 
     testWidgets(
+        'OEM/no-URI console shows a clear open externally notice with URI '
+        'and primary marker (#021 slice)', (WidgetTester tester) async {
+      const KvmConsole console = KvmConsole(
+        type: KvmConsoleType.oem,
+        managerId: 'BMC',
+        serviceEnabled: true,
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(
+          consoles: <KvmConsole>[console],
+          primaryConsole: console,
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Primary'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'No console connect URI available. Open externally: '
+          '/redfish/v1/Managers/BMC',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('/redfish/v1/Managers/BMC'), findsWidgets);
+      expect(find.text('Copy connect info'), findsOneWidget);
+    });
+
+    testWidgets(
         'console card body rows announce as one merged semantics node each '
         '(Manager / Max concurrent sessions / HTML5, UI-2)', (tester) async {
       final KvmController controller = _StubController()

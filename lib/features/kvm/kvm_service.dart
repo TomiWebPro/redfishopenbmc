@@ -87,6 +87,14 @@ class KvmService {
   /// or `null` when the system exposes no consoles at all.
   Future<KvmConsole?> fetchPrimaryConsole() async {
     final List<KvmConsole> consoles = await fetchConsoles();
+    return pickPrimary(consoles);
+  }
+
+  /// Picks the preferred [KvmConsole] from [consoles] without fetching.
+  ///
+  /// Prefers the first graphical console, then the first console overall.
+  /// Returns `null` when [consoles] is empty.
+  static KvmConsole? pickPrimary(List<KvmConsole> consoles) {
     if (consoles.isEmpty) return null;
     for (final KvmConsole console in consoles) {
       if (console.type == KvmConsoleType.graphical) return console;
