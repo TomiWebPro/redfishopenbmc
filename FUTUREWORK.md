@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-16 (run, agent:redfish-automation — FEATURE #021 partial: refined KVM external-client handling with serial SSH/Telnet/IPMI URI classification and protocol-specific labels/guidance in `KvmConsole`/`KvmConsoleViewerPage` (HTML5 viewer adds browser-open hint); added model/widget coverage. WebView dependency intentionally deferred/blocked (platform + BMC TLS/self-signed validation, no production TLS weakening). #021 remains open. DOCS cheap gate: anchors unchanged (bmcweb `3cdd1fa531f7`, mockup `23d21f9a3610`, DSP0266 1.25.0), mirror queue EMPTY. Full emulator re-run skipped (no emulator/fixture/tool contract changes, last green run 2026-11-16 05:27 UTC <7 days). Baseline: analyze 0, tests 542 passed / 1 skipped (6e7df85). Verify: analyze 0, tests 544 passed / 1 skipped, issues validate OK.)**
-- **Current focus:** **FEATURE — smallest open issue first.** Continue `#021` KVM console rendering only if a small safe non-dependency slice remains; otherwise move to `#019` EventService/end-to-end refresh coverage (smallest viable slice) → `#028` BIOS editor → triage `#006`–`#010` (code EXISTS for these epics — verify acceptance boxes, close or split, do not rebuild). WebView/protocol-client rendering is blocked on platform/TLS validation — do not add dependencies or weaken production TLS. DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code change or >7 days. Verification-only runs are failures while issues remain open.
+- **Last updated: 2026-11-16 (run, agent:redfish-automation — FEATURE: closed #019 (sensors interval refresh + reconnect retry + bounded fetch + dispose + widget tests; EventService optional deferred). Baseline analyze 0, tests 544 passed / 1 skipped (origin/main 6e7df85). Next focus: #028 BIOS editor.)**
+- **Current focus:** **FEATURE — smallest open issue first.** Move to `#028` BIOS configuration editor (Bios/Settings surface) as the next smallest open issue. If `#028` is too large for a safe slice, triage `#006`–`#010` (verify acceptance boxes, close or split). WebView/protocol-client rendering (#021) is blocked on platform/TLS validation — do not add dependencies or weaken production TLS. DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code change or >7 days. Verification-only runs are failures while issues remain open.
 - **Run cadence:** `@every 30m` in scheduler (runbook originally `0 */5 * * *`; restore 5h once the small-issue backlog is empty, or keep 30m ONLY for FEATURE runs — never schedule verification-only churn at 30m).
 - **Model:** `opencode-go/iceman-contributor-free` (scheduler actual; runbook header was `opencode/deepseek-v4.1-flash-free` — updated 2026-11-16)
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -19,7 +19,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
    any new work. Never start a feature on a red baseline.
 2. **FEATURE second, always.** On a green baseline, pick the smallest open
    issue from `issues/open/` (order: `#012` →
-   `#021` → `#019` → `#028`, then triage `#006`–`#010`; completed: `#024`,
+   `#021` → `#028`, then triage `#006`–`#010`; completed: `#024`, `#019`,
    `#026`, `#013`, `#011`, `#017`, `#018`, `#023`, `#025`) and land it with tests. Every green run
    MUST change `lib/` / `test/` / `test_integration/` / `tool/`. A run with
    zero code changes is a failed run while any issue is open.

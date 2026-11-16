@@ -9160,3 +9160,18 @@
 - Triage `#006`–`#010` (verify acceptance, close or split)
 
 **Issues touched:** #021 (open, progress logged)
+
+## 2026-11-16 — agent:redfish-automation — #019 (closed)
+
+**Done:**
+- FEATURE: verified #019 acceptance satisfied by prior runs (interval refresh, reconnect retry, bounded sensor fetch, timer dispose, widget coverage). Closed issue via `python3 issues/issues.py close 019 ...` and moved to `issues/closed/019-sensors-realtime.md`. Updated `FUTUREWORK.md` (completed list + Current focus → #028). No lib/test/tool changes.
+
+**Decisions:**
+- Treated #019 as closable now (EventService optional follow-up deferred). Next focus set to #028 (BIOS editor). DOCS cheap gate only; full emulator run skipped.
+
+**Next:**
+- #028 smallest safe slice (Bios/Settings)
+- Triage #006–#010 if #028 not tractable
+- #021 blocked on WebView/TLS validation
+
+**Issues touched:** #019 (closed)

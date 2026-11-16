@@ -1,17 +1,16 @@
 ---
 id: "019"
 title: "Sensors: implement real-time telemetry (polling/EventService) + retry"
-status: open
+status: closed
 priority: P2
 type: bug
 created: 2026-08-30
-updated: 2026-08-30
-closed: null
+updated: 2026-11-16
+closed: 2026-11-16
 assignee: unassigned
 labels: [sensors, realtime, ux]
 estimated_tokens: 16000
 ---
-
 # 019 — Sensors: implement real-time telemetry
 
 > The feature is advertised as "real-time" but `SensorsController.load()` runs once in `initState` (`sensors_view.dart:32-33`) with no polling loop, no EventService/SSE/WebSocket. Values never refresh. If the `SystemHandle` wasn't connected on first build, `service.fetchAll()` throws `NotConnected` and is never retried (`:42-45`). Error screen has no retry. `_parseSensors` does one GET per sensor member sequentially with no concurrency limit (hundreds of requests on large chassis).
@@ -65,6 +64,10 @@ estimated_tokens: 16000
 - Related: #007, #023
 
 ## Closed Criteria
+
+- Resolution: Interval telemetry refresh + reconnect retry + bounded fetch concurrency + timer dispose + widget coverage landed; EventService subscription deferred as optional follow-up
+- Closed: 2026-11-16
+
 
 - Resolution:
 - Closed reason:

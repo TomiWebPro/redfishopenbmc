@@ -8529,3 +8529,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** `flutter analyze` 0 issues; `flutter test` 544 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #021 refine KVM external console guidance (run 2026-11-16 15:55 UTC)`; pushed: pending.
 - **Next:** 1) Continue #021 only if another small non-dependency slice exists; otherwise move to #019 — EventService/end-to-end sensor refresh coverage (smallest viable slice). 2) #028 — BIOS configuration editor (Bios/Settings surface). 3) Triage `#006`–`#010` (verify acceptance, close or split; do not rebuild).
+
+## 2026-11-16 16:30 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 544 passed / 1 skipped; starting commit 6e7df85 (origin/main); issues validate OK (pre-existing untracked `testing/` left untouched).
+- **Primary work:** FEATURE — closed `#019` (Sensors real-time telemetry). Verified existing implementation meets acceptance (interval refresh + reconnect retry + bounded fetch + timer dispose + widget tests); closed via `python3 issues/issues.py close 019 ...` and moved to `issues/closed/019-sensors-realtime.md`.
+- **Docs:** cheap anchor gate only — anchors unchanged (bmcweb `3cdd1fa531f7`, mockup `23d21f9a3610`, DSP0266 1.25.0), mirror queue EMPTY; no corpus/manifest refresh.
+- **Emulator:** skipped — no emulator fixture/contract/tooling changes and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** no `lib/`/`test/`/`test_integration/`/`tool/` code changes this run; issue closure + `FUTUREWORK.md`/tracking updates only (`issues/closed/019-sensors-realtime.md`, `issues/open/019-sensors-realtime.md` removed).
+- **UI:** none.
+- **Verification:** `flutter analyze` 0 issues; `flutter test` 544 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE close #019 sensors realtime (run 2026-11-16 16:30 UTC)`; pushed: pending.
+- **Next:** 1) `#028` — BIOS configuration editor (Bios/Settings surface), smallest safe slice. 2) If #028 too large, triage `#006`–`#010` (verify acceptance, close/split). 3) #021 remains blocked (WebView/protocol-client needs platform/TLS validation).
