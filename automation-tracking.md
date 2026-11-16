@@ -8625,3 +8625,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** `dart format` (touched files); `flutter analyze` 0 issues; `flutter test` 575 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (pending) — `auto: FEATURE #010 tls-off warning and a11y test (run 2026-11-16 20:07 UTC)`; pushed: pending.
 - **Next:** 1) Continue #010 with next concrete tested hardening slice (token isolation/no-plaintext regression, TLS/auth enforcement, a11y/touch-target/focus). 2) Split/advance #007/#008/#009 with one tested increment if clearer. 3) #021 remains blocked on WebView/protocol-client platform/TLS validation (no deps, no production TLS weakening).
+
+## 2026-11-16 — FEATURE
+
+- **Baseline:** analyze 0; tests 575 passed / 1 skipped; starting commit 1c41fe1 (main synced with origin/main, tracked tree clean except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #010 hardening slice (smallest open focus). Added `test/security/no_plaintext_test.dart` with security regressions asserting `lib/` has no `SharedPreferences` persistence usage and that remembered profile passwords are stored only in SecureStorage keystore keys while the persisted profile blob never contains plaintext passwords (rememberPassword true/false cases).
+- **Docs:** cheap anchor gate not re-run (no external corpus/manifest change; anchors/mirror queue unchanged from recent runs).
+- **Emulator:** skipped — no `lib/` contract, fixture, `test_integration/`, or `tool/` changes requiring full suite; last green emulator run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `test/security/no_plaintext_test.dart` (new, 3 tests); `issues/open/010-security-storage-theming-a11y-testing.md` (progress logged); `FUTUREWORK.md` (updated). Issues: #010 (open).
+- **UI:** none.
+- **Verification:** `dart format test/security/no_plaintext_test.dart`; `flutter analyze` 0 issues; `flutter test` 578 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #010 no-plaintext storage regression tests (run 2026-11-16)`; pushed: pending.
+- **Next:** 1) Continue #010 with token-isolation regression test (`test/security/token_isolation_test.dart`) or TLS enforcement/self-signed rejection tests as next smallest slice. 2) Add secure storage matrix to `DEVELOPMENT.md` and audit remaining credential-leak call sites per #010. 3) Split/advance #007/#008/#009 with one tested increment if clearer than #010 next slice; #021 remains blocked on WebView/protocol-client platform/TLS validation.

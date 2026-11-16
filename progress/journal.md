@@ -9284,3 +9284,18 @@
 - #021 remains blocked on WebView/protocol-client platform/TLS validation (no deps, no TLS weakening).
 
 **Issues touched:** #010 (open)
+
+## 2026-11-16 — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 hardening slice (baseline green at 1c41fe1: analyze 0, 575 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Added `test/security/no_plaintext_test.dart` with 3 regression tests: `lib/` does not use `SharedPreferences` for persistence, remembered profile passwords are stored only in SecureStorage keystore keys while the persisted profile blob never contains plaintext, and `rememberPassword=false` leaves no password key in secure storage. Updated `issues/open/010-security-storage-theming-a11y-testing.md` progress log and `FUTUREWORK.md` current focus.
+
+**Decisions:**
+- Chose no-plaintext storage regression tests as the smallest safe, directly-specified #010 increment (test-only, no deps, no production TLS/behavior changes). DOCS anchor gate not re-run (no corpus/manifest change); full EMULATOR re-run skipped (no lib contract/fixture/test_integration/tool changes, <7 days since last green run).
+
+**Next:**
+- Continue #010 with token-isolation regression test or TLS enforcement/self-signed rejection tests.
+- Document secure storage matrix in `DEVELOPMENT.md` and complete credential-leak audit.
+- Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.
+
+**Issues touched:** #010 (open)
