@@ -9314,3 +9314,18 @@
 - Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.
 
 **Issues touched:** #010 (open)
+
+## 2026-11-16 21:51 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 TLS enforcement slice (baseline green at b08c613: analyze 0, 580 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Added `test/security/tls_enforcement_test.dart` with a local self-signed HTTPS server proving RedfishClient rejects untrusted/self-signed certificates by default and connects only when `ConnectionProfile.allowSelfSigned` is explicitly set (per-profile opt-in). DOCS anchors not re-fetched (cheap gate, no manifest change); full EMULATOR re-run skipped (no lib contract/fixture/test_integration/tool changes, <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Decisions:**
+- Chose self-signed certificate rejection/opt-in as the next explicit #010 acceptance item (TLS-first enforcement). Implemented as a focused security regression test using a runtime-generated cert in /tmp; no production behavior or TLS defaults changed, no deps added.
+
+**Next:**
+- Continue #010 with secure storage matrix in `DEVELOPMENT.md` and/or broader a11y/touch-target/focus/perf/coverage hardening and credential-leak audit.
+- Split/advance #007/#008/#009 with one tested increment if clearer than remaining #010 slices.
+- #021 remains blocked on WebView/protocol-client platform/TLS validation (no deps, no production TLS weakening).
+
+**Issues touched:** #010 (open)

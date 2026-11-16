@@ -8649,3 +8649,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** targeted `flutter test test/security/token_isolation_test.dart` and `flutter test test/security` green; fixed initial analyze warnings in new test (unused imports) → `flutter analyze` 0 issues; `flutter test` 580 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (pending) — `auto: FEATURE #010 token isolation security tests (run 2026-11-16 21:17 UTC)`; pushed: pending.
 - **Next:** 1) Continue #010 with TLS enforcement/self-signed rejection or http-rejected-when-useTls tests as next concrete tested slice. 2) Document secure storage matrix in `DEVELOPMENT.md` and continue a11y/touch-target/focus/perf/coverage hardening. 3) Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.
+
+## 2026-11-16 21:51 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 580 passed / 1 skipped; starting commit b08c613 (origin/main, tracked tree clean except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #010 TLS enforcement slice — added `test/security/tls_enforcement_test.dart` proving self-signed BMC certificates are rejected by default and accepted only with explicit per-profile `allowSelfSigned` opt-in (local HTTPS server with runtime-generated self-signed cert). #010 remains open.
+- **Docs:** cheap anchor gate not re-run (no external corpus/manifest change; anchors/mirror queue unchanged from recent runs).
+- **Emulator:** skipped — no `lib/` contract, fixture, `test_integration/`, or `tool/` changes requiring full suite; last green emulator run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `test/security/tls_enforcement_test.dart` (new, 2 tests), `issues/open/010-security-storage-theming-a11y-testing.md` (progress log), `FUTUREWORK.md`, `progress/journal.md`. No `lib/`/`test_integration/`/`tool/` changes.
+- **UI:** none.
+- **Verification:** `flutter analyze` 0 issues; targeted `flutter test test/security/tls_enforcement_test.dart` 2 passed; `flutter test` 582 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #010 tls enforcement security tests (run 2026-11-16 21:51 UTC)`; pushed: pending.
+- **Next:** 1) Continue #010 with secure storage matrix in `DEVELOPMENT.md` and/or credential-leak audit/a11y-perf-coverage hardening. 2) Split/advance #007/#008/#009 with one tested increment if clearer. 3) #021 remains blocked on WebView/protocol-client platform/TLS validation (no deps, no production TLS weakening).
