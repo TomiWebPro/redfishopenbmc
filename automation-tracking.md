@@ -8517,3 +8517,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** `dart format` not separately required (edits formatted); `flutter analyze` 0 issues; `flutter test` 542 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #021 external client guidance for KVMIP/RFB (run 2026-11-16 15:25 UTC)`; pushed: pending.
 - **Next:** 1) Continue #021 — evaluate/add embedded HTML5 WebView dependency for `KvmConsoleViewerPage` with platform/TLS constraints, or document validated blocker and smallest safe alternative. 2) #019 — EventService/end-to-end refresh coverage if a small safe slice is identified. 3) #028 — BIOS configuration editor (Bios/Settings surface).
+
+## 2026-11-16 15:55 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 542 passed / 1 skipped; starting commit 6e7df85 (main in sync with origin/main at preflight, tracked tree clean except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #021 partial (smallest viable slice). Refined KVM console external-client handling: `KvmConsole.requiresExternalConsoleClient` now classifies serial SSH/Telnet/IPMI URI schemes in addition to VNC/RFB/KVMIP, added `externalClientProtocolLabel` for protocol-specific guidance, and updated `KvmConsoleViewerPage` to show protocol-specific external-client guidance plus an HTML5 browser-open hint (copy/open path preserved). WebView dependency intentionally deferred/blocked (platform + BMC TLS/self-signed validation required; no production TLS weakening).
+- **Docs:** cheap anchor gate only — anchors unchanged (bmcweb `3cdd1fa531f7`, mockup `23d21f9a3610`, DSP0266 1.25.0) and mirror queue EMPTY; no corpus/manifest refresh.
+- **Emulator:** skipped — no emulator fixture/contract/tooling changes requiring full suite and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/features/kvm/models/kvm_models.dart`, `lib/features/kvm/views/kvm_console_viewer_page.dart`, `test/features/kvm/kvm_model_test.dart` (+1 serial-scheme test, label assertions extended), `test/features/kvm/kvm_widget_test.dart` (+1 SSH viewer guidance test, VNC expectation refined), `issues/open/021-kvm-console-rendering.md`, `FUTUREWORK.md`.
+- **UI:** KVM viewer guidance now protocol-specific for VNC/RFB/KVMIP and serial SSH/Telnet/IPMI consoles and includes browser-open hint for HTML5 HTTP(S); no layout changes.
+- **Verification:** `flutter analyze` 0 issues; `flutter test` 544 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #021 refine KVM external console guidance (run 2026-11-16 15:55 UTC)`; pushed: pending.
+- **Next:** 1) Continue #021 only if another small non-dependency slice exists; otherwise move to #019 — EventService/end-to-end sensor refresh coverage (smallest viable slice). 2) #028 — BIOS configuration editor (Bios/Settings surface). 3) Triage `#006`–`#010` (verify acceptance, close or split; do not rebuild).

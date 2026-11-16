@@ -273,11 +273,55 @@ void main() {
       expect(find.text('Graphical Console viewer'), findsOneWidget);
       expect(
         find.textContaining(
-          'requires an external VNC/KVMIP/RFB client',
+          'requires an external VNC/RFB client',
         ),
         findsOneWidget,
       );
+      expect(
+        find.textContaining('Copy the URI and open it with a compatible client'),
+        findsOneWidget,
+      );
       expect(find.text('vnc://bmc.example.com:5900'), findsWidgets);
+      expect(find.text('Copy console URI'), findsOneWidget);
+    });
+
+    testWidgets(
+        'SSH serial console URI shows external-client guidance in viewer (#021)',
+        (WidgetTester tester) async {
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(
+          consoles: <KvmConsole>[
+            KvmConsole(
+              type: KvmConsoleType.serial,
+              managerId: 'BMC',
+              connectTypesSupported: <String>['SSH'],
+              serviceEnabled: true,
+              connectUri: 'ssh://bmc.example.com:22',
+              sourceManagerUri: '/redfish/v1/Managers/BMC',
+            ),
+          ],
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Open console'), findsOneWidget);
+      await tester.tap(find.text('Open console'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Serial Console viewer'), findsOneWidget);
+      expect(
+        find.textContaining('requires an external SSH client'),
+        findsOneWidget,
+      );
+      expect(find.text('ssh://bmc.example.com:22'), findsWidgets);
       expect(find.text('Copy console URI'), findsOneWidget);
     });
 

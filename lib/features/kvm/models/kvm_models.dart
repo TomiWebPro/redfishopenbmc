@@ -144,7 +144,8 @@ class KvmConsole {
       serviceEnabled && supportsHtml5 && hasHttpLaunchUri;
 
   /// Whether [launchUri] uses a protocol that requires an external client
-  /// (e.g. VNC/RFB/KVMIP) rather than browser/WebView rendering.
+  /// (e.g. VNC/RFB/KVMIP or serial SSH/Telnet/IPMI) rather than browser/
+  /// WebView rendering.
   bool get requiresExternalConsoleClient {
     final String? uri = launchUri;
     if (uri == null || uri.isEmpty) return false;
@@ -154,7 +155,33 @@ class KvmConsole {
     return scheme == 'vnc' ||
         scheme == 'rfb' ||
         scheme == 'kvmip' ||
-        scheme == 'kvm';
+        scheme == 'kvm' ||
+        scheme == 'ssh' ||
+        scheme == 'telnet' ||
+        scheme == 'ipmi';
+  }
+
+  /// Human-readable label for the external client protocol implied by
+  /// [launchUri], or `null` when no external client is required.
+  String? get externalClientProtocolLabel {
+    if (!requiresExternalConsoleClient) return null;
+    final String scheme = Uri.tryParse(launchUri!)?.scheme.toLowerCase() ?? '';
+    switch (scheme) {
+      case 'vnc':
+      case 'rfb':
+        return 'VNC/RFB';
+      case 'kvmip':
+      case 'kvm':
+        return 'KVMIP';
+      case 'ssh':
+        return 'SSH';
+      case 'telnet':
+        return 'Telnet';
+      case 'ipmi':
+        return 'IPMI serial-over-LAN';
+      default:
+        return 'external console';
+    }
   }
 
   /// Builds the list of [KvmConsole]s detected in a Redfish [managerBody].

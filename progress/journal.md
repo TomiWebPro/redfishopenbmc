@@ -9145,3 +9145,18 @@
 - #028 — BIOS configuration editor (Bios/Settings surface)
 
 **Issues touched:** #021 (open, progress logged)
+
+## 2026-11-16 15:55 UTC — agent:redfish-automation — #021
+
+**Done:**
+- FEATURE #021 partial (smallest viable slice). Baseline green at 6e7df85 (analyze 0, 542 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Refined KVM external-client handling: classified serial SSH/Telnet/IPMI URI schemes and added `KvmConsole.externalClientProtocolLabel` for protocol-specific guidance; updated `KvmConsoleViewerPage` with protocol-specific external-client messaging and an HTML5 browser-open hint while preserving copy/open behavior. Added/updated model and widget coverage in `test/features/kvm/kvm_model_test.dart` and `test/features/kvm/kvm_widget_test.dart`.
+
+**Decisions:**
+- Chose protocol-specific guidance and browser-open hint as a safe, testable non-dependency #021 slice. Kept WebView/protocol-client rendering deferred/blocked (platform + BMC TLS/self-signed validation required; no production TLS weakening). DOCS cheap gate only (anchors unchanged, mirror queue EMPTY); full EMULATOR re-run skipped (no emulator/fixture/tool contract changes, last green <7 days). Issue remains open.
+
+**Next:**
+- Continue #021 only if another small non-dependency slice exists; otherwise move to #019 — EventService/end-to-end sensor refresh coverage (smallest viable slice)
+- #028 — BIOS configuration editor (Bios/Settings surface)
+- Triage `#006`–`#010` (verify acceptance, close or split)
+
+**Issues touched:** #021 (open, progress logged)

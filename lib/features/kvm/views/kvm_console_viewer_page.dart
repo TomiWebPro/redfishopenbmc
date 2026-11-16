@@ -23,23 +23,26 @@ class KvmConsoleViewerPage extends StatelessWidget {
     final String? uri = console.launchUri;
     final bool html5 = console.canLaunchInAppHtml5;
     final bool externalClient = console.requiresExternalConsoleClient;
+    final String externalProtocol =
+        console.externalClientProtocolLabel ?? 'external console';
     final String statusLabel = html5
         ? 'In-app HTML5 console path available for this URI. '
             'Embedded rendering requires a WebView dependency.'
         : externalClient
             ? 'This console URI uses a protocol that requires an external '
-                'VNC/KVMIP/RFB client. Embedded rendering is not available '
+                '$externalProtocol client. Embedded rendering is not available '
                 'in-app.'
             : 'In-app embedded rendering is not available for this console. '
                 'Use the URI externally if provided.';
     final String statusText = html5
         ? 'In-app HTML5 console path available for this URI. '
             'Embedded rendering requires a WebView '
-            'dependency (see issue #021 strategy).'
+            'dependency (see issue #021 strategy). '
+            'You can open this URI in a web browser if your BMC allows it.'
         : externalClient
             ? 'This console URI uses a protocol that requires an external '
-                'VNC/KVMIP/RFB client. Embedded rendering is not available '
-                'in-app.'
+                '$externalProtocol client. Embedded rendering is not available '
+                'in-app. Copy the URI and open it with a compatible client.'
             : 'In-app embedded rendering is not available for this console. '
                 'Use the URI externally if provided.';
     return Scaffold(

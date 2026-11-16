@@ -14,7 +14,7 @@ estimated_tokens: 18000
 
 # 021 — KVM: implement remote console rendering
 
-> `kvm_view.dart` lists discovered consoles and offers copy/open actions. Embedded VNC/RFB/HTML5 rendering is not yet implemented (no WebView/remote-desktop dependency); HTML5 HTTP(S) consoles open an in-app viewer scaffold with explicit rendering/dependency status, while KVMIP/RFB/VNC URI consoles are identified as requiring an external client with tested guidance. `fetchPrimaryConsole`/primary selection is wired. OEM consoles with no `connectUri` show a clear external-open notice.
+> `kvm_view.dart` lists discovered consoles and offers copy/open actions. Embedded VNC/RFB/HTML5 rendering is not yet implemented (no WebView/remote-desktop dependency); HTML5 HTTP(S) consoles open an in-app viewer scaffold with explicit rendering/dependency status and browser-open guidance, while KVMIP/RFB/VNC and serial (SSH/Telnet/IPMI) URI consoles are identified as requiring an external client with protocol-specific tested guidance. `fetchPrimaryConsole`/primary selection is wired. OEM consoles with no `connectUri` show a clear external-open notice.
 
 ## Description
 
@@ -29,21 +29,21 @@ estimated_tokens: 18000
 
 ## Goals / Acceptance Criteria
 
-- [ ] A discovered HTML5/RFB console renders in-app. (in-app HTML5 viewer path/scaffold added for HTTP(S) connect URIs with explicit status; KVMIP/RFB/VNC URIs open in-app viewer with tested external-client guidance/copy — embedded WebView/protocol rendering still pending dependency)
+- [ ] A discovered HTML5/RFB console renders in-app. (in-app HTML5 viewer path/scaffold added for HTTP(S) connect URIs with explicit status/browser-open guidance; KVMIP/RFB/VNC and serial SSH/Telnet/IPMI URIs open in-app viewer with protocol-specific external-client guidance/copy — embedded WebView/protocol rendering still pending dependency/platform-TLS validation)
 - [x] `fetchPrimaryConsole` used to pick the primary console.
 - [x] OEM/no-URI console shows a clear "open externally" notice with the URI.
-- [ ] Dependency added & documented; tests for service selection logic. (selection + HTML5/external-protocol launchability logic and viewer UI tested; WebView/protocol dependency not added, strategy documented in-code/issue)
+- [ ] Dependency added & documented; tests for service selection logic. (selection + HTML5/external-protocol launchability/label logic and viewer UI tested; WebView/protocol dependency not added — blocked/deferred pending platform WebView support and BMC TLS/self-signed cert validation; strategy documented in-code/issue)
 
 ## Tasks
 
-- [~] Decide rendering approach (WebView vs RFB package). Strategy: prefer `webview_flutter` (or platform WebView) for HTML5 HTTP(S) `ConnectUri`; RFB/VNC/KVMIP requires an external/native client or protocol package — defer until dependency/platform constraints are validated.
-- [~] Wire `KvmView` + `kvm_controller.dart`. Added `KvmConsoleViewerPage` in-app launch path and "Open console" action for consoles with `ConnectUri`; external VNC/KVMIP/RFB URIs show explicit client guidance; embedded rendering still pending.
+- [~] Decide rendering approach (WebView vs RFB package). Strategy: prefer `webview_flutter` (or platform WebView) for HTML5 HTTP(S) `ConnectUri` once platform support and BMC TLS/self-signed cert handling are validated (deferred — no dependency added in unattended run); VNC/RFB/KVMIP and serial SSH/Telnet/IPMI require an external/native client or protocol package.
+- [~] Wire `KvmView` + `kvm_controller.dart`. Added `KvmConsoleViewerPage` in-app launch path and "Open console" action for consoles with `ConnectUri`; external VNC/KVMIP/RFB and serial URIs show protocol-specific client guidance and browser-open hint for HTML5; embedded rendering still pending.
 - [x] Add tests for `kvm_service.dart` console selection.
 
 ## Rendering strategy (2026-11-16)
 
-- **HTML5 (HTTP/HTTPS `ConnectUri`, `ConnectTypesSupported` includes `HTML5`)**: minimal in-app path is a `KvmConsoleViewerPage` reached from the KVM card. Full embedded rendering should use a platform WebView dependency (candidate: `webview_flutter`) once Linux/desktop/mobile support and self-signed/TLS/auth constraints for BMC endpoints are validated; do not weaken production TLS.
-- **KVMIP/VNC/RFB or non-HTTP URIs**: identified as requiring an external VNC/KVMIP/RFB client; viewer shows explicit guidance and copy/open path. No in-app renderer in Flutter without a protocol client.
+- **HTML5 (HTTP/HTTPS `ConnectUri`, `ConnectTypesSupported` includes `HTML5`)**: minimal in-app path is a `KvmConsoleViewerPage` reached from the KVM card. Full embedded rendering should use a platform WebView dependency (candidate: `webview_flutter`) once Linux/desktop/mobile support and self-signed/TLS/auth constraints for BMC endpoints are validated; do not weaken production TLS. Blocked/deferred this run (no platform validation available unattended); viewer provides browser-open guidance and copy path.
+- **VNC/RFB/KVMIP or serial SSH/Telnet/IPMI URIs**: identified as requiring an external client with protocol-specific guidance and copy/open path. No in-app renderer in Flutter without a protocol client.
 - **No `ConnectUri` (OEM)**: show manager/source URI and external-open guidance (implemented).
 
 ## Redfish Mapping
@@ -57,6 +57,7 @@ estimated_tokens: 18000
 
 ## Progress Log
 
+- 2026-11-16 (run, agent:redfish-automation) — Partial progress: refined #021 external-client handling by classifying serial SSH/Telnet/IPMI URI schemes and adding protocol-specific labels/guidance in `KvmConsole` and `KvmConsoleViewerPage` (HTML5 viewer now includes browser-open hint; VNC/RFB/SSH guidance clarified). Added model and widget coverage in `test/features/kvm/kvm_model_test.dart` and `test/features/kvm/kvm_widget_test.dart`. WebView dependency remains intentionally deferred/blocked (platform + BMC TLS/self-signed validation needed; no production TLS weakening); full "renders in-app" acceptance remains open.
 - 2026-11-16 (run, agent:redfish-automation) — Partial progress: added `KvmConsole.requiresExternalConsoleClient` for VNC/RFB/KVMIP URI schemes and updated `KvmConsoleViewerPage` to show explicit external-client guidance for those protocols (copy URI preserved). Added model and widget coverage for KVMIP/RFB external-client handling in `test/features/kvm/kvm_model_test.dart` and `test/features/kvm/kvm_widget_test.dart`. Remaining: add/validate embedded WebView dependency for HTML5 HTTP(S) rendering (platform/TLS constraints) and/or a protocol client strategy for in-app VNC/RFB/KVMIP rendering; full "renders in-app" acceptance remains open.
 - 2026-11-16 (run, agent:redfish-automation) — Partial progress: added `KvmConsole` HTML5 launch helpers (`launchUri`, `hasHttpLaunchUri`, `canLaunchInAppHtml5`), in-app `KvmConsoleViewerPage` scaffold, and `KvmView` "Open console" action navigating to the viewer for consoles with a direct `ConnectUri` (copy remains available). Documented WebView-vs-external rendering strategy in issue. Added model and widget coverage (`kvm_model_test.dart`, `kvm_widget_test.dart`). Remaining: add/validate WebView dependency for embedded HTML5 rendering (platform/TLS constraints), RFB/KVMIP in-app handling decision, and full acceptance for "renders in-app".
 - 2026-11-16 13:18 UTC — Partial progress (run 2026-11-16, agent:redfish-automation): `KvmService.pickPrimary` + `fetchPrimaryConsole` now select the preferred console (graphical first, else first) and `KvmController`/`KvmUiState` expose `primaryConsole`; `KvmView` marks the primary console and shows a clear "open externally" notice with the manager/source URI when no `ConnectUri` is available (OEM/no-URI). Added service selection and widget coverage in `test/features/kvm/kvm_service_test.dart` and `test/features/kvm/kvm_widget_test.dart`. Remaining: in-app HTML5/RFB console rendering, rendering dependency choice/addition/documentation, and wiring a launch/open flow beyond copy/external notice.

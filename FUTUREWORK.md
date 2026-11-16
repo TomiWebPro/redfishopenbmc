@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-16 (run 2026-11-16 15:25 UTC — FEATURE #021 partial: added `KvmConsole.requiresExternalConsoleClient` and protocol-specific external-client guidance in `KvmConsoleViewerPage` for VNC/RFB/KVMIP URIs (copy/open path preserved) with model/widget coverage in `test/features/kvm/kvm_model_test.dart` and `test/features/kvm/kvm_widget_test.dart`. #021 remains open (embedded HTML5 WebView dependency/platform-TLS validation and in-app VNC/RFB/KVMIP protocol rendering not implemented). DOCS cheap gate: anchors unchanged (bmcweb `3cdd1fa531f7`, mockup `23d21f9a3610`, DSP0266 1.25.0), mirror queue EMPTY. Full emulator re-run skipped (no emulator/fixture/tool contract changes, last green run 2026-11-16 05:27 UTC <7 days). Baseline: analyze 0, tests 540 passed / 1 skipped (ca6d427). Verify: analyze 0, tests 542 passed / 1 skipped, issues validate OK.)**
-- **Current focus:** **FEATURE — smallest open issue first.** Continue `#021` KVM console rendering (next smallest slice: evaluate/add embedded HTML5 WebView dependency for `KvmConsoleViewerPage` with platform/TLS constraints, or document/validate why blocked and land the smallest safe alternative) → `#019` EventService/end-to-end refresh coverage if a small safe slice is identified → `#028` BIOS editor → triage `#006`–`#010` (code EXISTS for these epics — verify acceptance boxes, close or split, do not rebuild). DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code change or >7 days. Verification-only runs are failures while issues remain open.
+- **Last updated: 2026-11-16 (run, agent:redfish-automation — FEATURE #021 partial: refined KVM external-client handling with serial SSH/Telnet/IPMI URI classification and protocol-specific labels/guidance in `KvmConsole`/`KvmConsoleViewerPage` (HTML5 viewer adds browser-open hint); added model/widget coverage. WebView dependency intentionally deferred/blocked (platform + BMC TLS/self-signed validation, no production TLS weakening). #021 remains open. DOCS cheap gate: anchors unchanged (bmcweb `3cdd1fa531f7`, mockup `23d21f9a3610`, DSP0266 1.25.0), mirror queue EMPTY. Full emulator re-run skipped (no emulator/fixture/tool contract changes, last green run 2026-11-16 05:27 UTC <7 days). Baseline: analyze 0, tests 542 passed / 1 skipped (6e7df85). Verify: analyze 0, tests 544 passed / 1 skipped, issues validate OK.)**
+- **Current focus:** **FEATURE — smallest open issue first.** Continue `#021` KVM console rendering only if a small safe non-dependency slice remains; otherwise move to `#019` EventService/end-to-end refresh coverage (smallest viable slice) → `#028` BIOS editor → triage `#006`–`#010` (code EXISTS for these epics — verify acceptance boxes, close or split, do not rebuild). WebView/protocol-client rendering is blocked on platform/TLS validation — do not add dependencies or weaken production TLS. DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code change or >7 days. Verification-only runs are failures while issues remain open.
 - **Run cadence:** `@every 30m` in scheduler (runbook originally `0 */5 * * *`; restore 5h once the small-issue backlog is empty, or keep 30m ONLY for FEATURE runs — never schedule verification-only churn at 30m).
 - **Model:** `opencode-go/iceman-contributor-free` (scheduler actual; runbook header was `opencode/deepseek-v4.1-flash-free` — updated 2026-11-16)
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1253,7 +1253,10 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       needs: `Manager.NetworkProtocol.KVMIP` ProtocolEnabled + port 5288, plus
       HTTPS/SSH endpoints, and EthernetInterfaces MAC/IP/VLAN — run
       2026-10-23 11:39; #009 must resolve the console endpoint from the
-      advertised KVMIP port, never hardcode ports)
+      advertised KVMIP port, never hardcode ports; #021 viewer path landed with
+      protocol-specific external-client guidance incl. SSH/Telnet/IPMI and
+      HTML5 browser-open hint — embedded WebView/protocol rendering remains
+      blocked on platform/TLS validation, 2026-11-16)
 - [ ] **#028** BIOS configuration editor — Bios/Settings surface (candidate
       feature, DOCS-23 2026-10-24). The EMU-2 Bios `@Redfish.Settings` pin +
       the DOCS-23 corpus mirror give the full served/newest pair; a BIOS-config

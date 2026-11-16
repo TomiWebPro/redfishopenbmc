@@ -130,9 +130,34 @@ void main() {
         sourceManagerUri: '/redfish/v1/Managers/BMC',
       );
       expect(kvmip.requiresExternalConsoleClient, isTrue);
+      expect(kvmip.externalClientProtocolLabel, 'KVMIP');
       expect(kvmip.canLaunchInAppHtml5, isFalse);
       expect(rfb.requiresExternalConsoleClient, isTrue);
+      expect(rfb.externalClientProtocolLabel, 'VNC/RFB');
       expect(rfb.canLaunchInAppHtml5, isFalse);
+    });
+
+    test('serial console URI schemes require external client (#021)', () {
+      const KvmConsole ssh = KvmConsole(
+        type: KvmConsoleType.serial,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['SSH'],
+        serviceEnabled: true,
+        connectUri: 'ssh://bmc.example.com:22',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      const KvmConsole telnet = KvmConsole(
+        type: KvmConsoleType.serial,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['Telnet'],
+        serviceEnabled: true,
+        connectUri: 'telnet://bmc.example.com:23',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      expect(ssh.requiresExternalConsoleClient, isTrue);
+      expect(ssh.externalClientProtocolLabel, 'SSH');
+      expect(telnet.requiresExternalConsoleClient, isTrue);
+      expect(telnet.externalClientProtocolLabel, 'Telnet');
     });
 
     test('KvmConsoleType.fromRedfish maps the standard block names', () {
