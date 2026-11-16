@@ -8445,3 +8445,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** `flutter analyze` 0 issues; `flutter test` 532 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #012 consolidate DI providers (run 2026-11-16 10:53 UTC)`; pushed: pending.
 - **Next:** 1) FEATURE #021 or #019 — pick smallest viable slice (KVM console rendering or sensors realtime telemetry/retry). 2) FEATURE #028 — BIOS configuration editor. 3) Triage `#006`–`#010` epics (verify acceptance, close or split).
+
+## 2026-11-16 12:20 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 532 passed / 1 skipped; starting commit 6b9dac9 (origin/main synced, clean tracked tree except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #019 partial (smallest viable slice). Bounded sensor member fetch concurrency in `SensorsService._parseSensors` to a max of 4 in-flight workers while preserving result order and skip-on-failure behavior, reducing unbounded sequential request storms on large chassis.
+- **Docs:** cheap anchor gate only — anchors unchanged and mirror queue EMPTY; no corpus/manifest refresh.
+- **Emulator:** skipped — no emulator fixture/contract/tooling changes requiring full suite and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/features/sensors/sensors_service.dart`, `test/features/sensors/sensors_service_test.dart` (+1 bounded-concurrency/preservation test), `issues/open/019-sensors-realtime.md` progress log updated (issue remains open: polling/EventService refresh, reconnect retry, timer/listener dispose still pending).
+- **UI:** none (service-layer telemetry fetch hardening; no user-visible UI change this slice).
+- **Verification:** `dart format lib test test_integration tool` (touched files formatted); `flutter analyze` 0 issues; `flutter test` 533 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #019 bounded sensor fetch concurrency (run 2026-11-16 12:20 UTC)`; pushed: pending.
+- **Next:** 1) Continue #019 — add reconnect retry when `SystemHandle`/client becomes available and/or polling refresh with timer dispose guarantees. 2) #021 — smallest viable KVM console rendering slice if more tractable than remaining #019 work. 3) #028 — BIOS configuration editor (Bios/Settings surface) once #019/#021 slices land.

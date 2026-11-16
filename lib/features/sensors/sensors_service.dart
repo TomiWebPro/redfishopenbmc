@@ -155,24 +155,48 @@ class SensorsService {
   /// Fetches and parses every member of a `Sensors` collection.
   ///
   /// Individual sensor fetch failures are tolerated (the sensor is skipped).
+  /// Fetches run with bounded concurrency to avoid unbounded sequential
+  /// request storms on large chassis (issue #019).
   Future<List<SensorReading>> _parseSensors(
     RedfishClient client,
     Map<String, dynamic> collection,
   ) async {
     final List<dynamic> members =
         (collection['Members'] as List<dynamic>?) ?? <dynamic>[];
-    final List<SensorReading> out = <SensorReading>[];
-    for (final dynamic member in members) {
-      final String? uri = _memberId(member);
-      if (uri == null || uri.isEmpty) continue;
-      try {
-        final Map<String, dynamic> body = await client.getJson(uri);
-        out.add(SensorReading.fromJson(body, sourceUri: uri));
-      } on RedfishException {
-        // Skip sensors that fail to load.
+    final List<String> uris = <String>[
+      for (final dynamic member in members)
+        if (_memberId(member) case final String uri when uri.isNotEmpty) uri,
+    ];
+    if (uris.isEmpty) return const <SensorReading>[];
+
+    const int concurrency = 4;
+    final List<SensorReading?> results =
+        List<SensorReading?>.filled(uris.length, null);
+    int next = 0;
+
+    Future<void> worker() async {
+      while (next < uris.length) {
+        final int i = next++;
+        final String uri = uris[i];
+        try {
+          final Map<String, dynamic> body = await client.getJson(uri);
+          results[i] = SensorReading.fromJson(body, sourceUri: uri);
+        } on RedfishException {
+          // Skip sensors that fail to load.
+        }
       }
     }
-    return out;
+
+    final int workerCount =
+        uris.length < concurrency ? uris.length : concurrency;
+    await Future.wait<void>(
+      List<Future<void>>.generate(workerCount, (_) => worker()),
+    );
+
+    return <SensorReading>[
+      for (final SensorReading? reading in results)
+        if (reading != null) reading,
+    ];
   }
 
   /// Normalizes a chassis id or `@odata.id` to the resource base path.

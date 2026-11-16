@@ -9046,3 +9046,18 @@
 - Triage `#006`–`#010` (verify acceptance, close/split)
 
 **Issues touched:** #012 (closed)
+
+## 2026-11-16 12:20 UTC — agent:redfish-automation — #019
+
+**Done:**
+- FEATURE #019 partial (smallest viable slice). Baseline green at 6b9dac9 (analyze 0, 532 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Implemented bounded sensor member fetch concurrency in `lib/features/sensors/sensors_service.dart` (`_parseSensors`) using a max-4 worker pool that preserves member-order results and existing skip-on-failure behavior. Added regression/behavior coverage in `test/features/sensors/sensors_service_test.dart` (limits in-flight sensor fetches, preserves returned sensors). Updated `issues/open/019-sensors-realtime.md` progress log; issue remains open.
+
+**Decisions:**
+- Chose #019 concurrency hardening as a small, safe, testable slice per runbook/FUTUREWORK focus (`#019/#021` smallest viable). Did not attempt polling/EventService, reconnect auto-retry, or timer lifecycle in this run to keep scope bounded and green. DOCS cheap gate only (anchors unchanged, mirror queue EMPTY); full EMULATOR re-run skipped (no emulator/fixture/tool contract changes, last green <7 days). No UI work needed for this slice.
+
+**Next:**
+- Continue #019 — reconnect retry when `SystemHandle`/client becomes available; polling/refresh interval with timer/listener dispose guarantees
+- #021 — KVM console rendering smallest viable slice (if smaller/clearer than remaining #019 work)
+- #028 — BIOS configuration editor (Bios/Settings surface)
+
+**Issues touched:** #019 (open, progress logged)
