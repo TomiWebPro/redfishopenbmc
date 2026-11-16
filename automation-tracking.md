@@ -8397,3 +8397,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** dart format (touched files); analyze 0; tests 524 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #017 discover SessionService URI (run 2026-11-16 08:26 UTC)`; pushed: pending.
 - **Next:** 1) FEATURE #018 — fix discovery cache (forceRefresh stale replay & failed-fetch leak). 2) FEATURE #023 — fix overview `listenManual` leak & swallowed async errors. 3) FEATURE #025 — harden unsafe `.first` / `as` casts against empty or null collections.
+
+## 2026-11-16 08:26+ — FEATURE
+
+- **Baseline:** analyze 0; tests 524 passed / 1 skipped; starting commit b4dc0ba (origin/main synced, clean tracked tree except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #018 (smallest open). Fixed discovery cache correctness: `forceRefresh` now skips prior ETag/body seeding so refresh re-fetches unconditionally, and `_error` placeholders are excluded from replay-body seeding to prevent stale/error bodies from being served.
+- **Docs:** anchors unchanged; mirror queue EMPTY (cheap gate, no corpus refresh).
+- **Emulator:** skipped — no emulator fixture/contract/tooling changes requiring full suite and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/redfish/discovery/discovery_engine.dart`, `test/redfish/discovery/discovery_cache_test.dart` (+2: forceRefresh without ETags refetches fresh data, error placeholders not replayed on recovery), `issues/closed/018-fix-discovery-cache.md` (closed).
+- **UI:** none (discovery/cache correctness fix; no user-visible UI change).
+- **Verification:** analyze 0; tests 526 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #018 fix discovery cache forceRefresh and error replay (run 2026-11-16)`; pushed: pending.
+- **Next:** 1) FEATURE #023 — fix overview `listenManual` leak & swallowed async errors. 2) FEATURE #025 — harden unsafe `.first` / `as` casts against empty or null collections. 3) FEATURE #012 — consolidate app-wide DI providers into a core/di module.

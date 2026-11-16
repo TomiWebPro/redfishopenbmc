@@ -76,7 +76,8 @@ class DiscoveryEngine {
       if (hit != null) return hit.features;
     }
 
-    final DiscoveryCacheEntry? previous = _cache.peek(systemId);
+    final DiscoveryCacheEntry? previous =
+        forceRefresh ? null : _cache.peek(systemId);
     final Map<String, String> etags = <String, String>{
       if (previous != null) ...previous.etags,
     };
@@ -84,8 +85,9 @@ class DiscoveryEngine {
         <String, Map<String, dynamic>>{};
     if (previous != null) {
       for (final MapEntry<String, dynamic> e in previous.rawTree.entries) {
-        if (e.value is Map<String, dynamic>) {
-          bodies[e.key] = e.value as Map<String, dynamic>;
+        final dynamic value = e.value;
+        if (value is Map<String, dynamic> && !value.containsKey('_error')) {
+          bodies[e.key] = value;
         }
       }
     }

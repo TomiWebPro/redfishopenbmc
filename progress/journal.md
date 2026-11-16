@@ -8986,3 +8986,18 @@
 - FEATURE #025 — harden unsafe `.first` / `as` casts against empty or null collections
 
 **Issues touched:** #017 (closed)
+
+## 2026-11-16 — agent:redfish-automation — #018
+
+**Done:**
+- FEATURE #018 (smallest open). Baseline green at b4dc0ba (analyze 0, 524 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Fixed `lib/redfish/discovery/discovery_engine.dart` so `forceRefresh` does not reuse prior ETags/bodies (unconditional re-fetch) and `_error` placeholders are excluded from replay-body seeding. Added `test/redfish/discovery/discovery_cache_test.dart` covering forceRefresh without ETags and recovery after an error placeholder. Closed `issues/closed/018-fix-discovery-cache.md`.
+
+**Decisions:**
+- Chose #018 as smallest open P2 bug per runbook order. Kept TTL policy unchanged (out of scope). DOCS anchors unchanged/mirror queue EMPTY; full EMULATOR re-run skipped (no emulator/fixture/tool changes, last green <7 days).
+
+**Next:**
+- FEATURE #023 — fix overview `listenManual` leak & swallowed async errors
+- FEATURE #025 — harden unsafe `.first` / `as` casts against empty or null collections
+- FEATURE #012 — consolidate app-wide DI providers into a core/di module
+
+**Issues touched:** #018 (closed)
