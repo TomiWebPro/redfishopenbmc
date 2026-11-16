@@ -278,7 +278,8 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.textContaining('Copy the URI and open it with a compatible client'),
+        find.textContaining(
+            'Copy the URI and open it with a compatible client'),
         findsOneWidget,
       );
       expect(find.text('vnc://bmc.example.com:5900'), findsWidgets);

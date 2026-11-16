@@ -9239,3 +9239,18 @@
 
 ### Issues touched
 - #028 (open, progress logged)
+
+## 2026-11-16 — agent:redfish-automation — #028 (closed)
+
+**Done:**
+- FEATURE #028 completed/closed. Baseline green at 7d16acc (analyze 0, 574 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Copied served schemas `Bios.v1_2_2.json` and `Settings.v1_3_5.json` into `test/fixtures/redfish/schemas/` (byte-identical to `documentations/external/redfish/schemas/v1/`) and added `Bios`/`Settings` to the emulator corpus-invariant `clientMappedFamilies` in `test_integration/emulator/emulator_suite_test.dart`. Existing emulator BIOS pins cover `@Redfish.Settings` ETag, pending-vs-current attribute compare, and PATCH round-trip persistence on `Bios/Settings`; full `tool/emulator/run_tests.sh` green (85 passed). Marked #028 acceptance/tasks complete and closed via `issues/issues.py close 028`.
+
+**Decisions:**
+- Treated remaining #028 slice (fixture/corpus-invariant client-mapping + emulator pin/coverage) as sufficient to satisfy acceptance; emulator coverage already existed and was extended by making Bios/Settings client-mapped in the invariant crawl. No new deps; production TLS unchanged. DOCS anchor gate not needed beyond normal run; full EMULATOR run required and executed due to fixture/test_integration changes.
+
+**Next:**
+- Triage `#006`–`#010`: verify acceptance boxes against implementation, close or split into smallest tested code slices.
+- `#021` KVM console rendering remains blocked on WebView/protocol-client platform/TLS validation (no deps, no TLS weakening).
+- `#012` consolidate app-wide DI providers (P3) if a small safe slice is clear.
+
+**Issues touched:** #028 (closed)

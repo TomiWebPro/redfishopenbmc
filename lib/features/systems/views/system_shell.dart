@@ -79,7 +79,8 @@ class _SystemShellState extends ConsumerState<SystemShell> {
     }
     if (features?.biosConfiguration ?? false) {
       tabs.add(
-        const _SystemTab('bios', 'BIOS', Icons.settings_input_component_outlined),
+        const _SystemTab(
+            'bios', 'BIOS', Icons.settings_input_component_outlined),
       );
     }
     if (features?.kvm ?? false) {

@@ -1,12 +1,12 @@
 ---
 id: "028"
 title: "BIOS configuration editor (Bios/Settings surface)"
-status: open
+status: closed
 priority: P2
 type: feature
 created: 2026-10-24
-updated: 2026-10-24
-closed: null
+updated: 2026-11-16
+closed: 2026-11-16
 assignee: unassigned
 labels: [docs,emulator]
 estimated_tokens: 30000
@@ -54,39 +54,39 @@ corpus-invariant test so every published `@odata.type` is covered.
 
 ## Goals / Acceptance Criteria
 
-- [ ] `Bios`/`Settings` become client-mapped families: served schema versions
+- [x] `Bios`/`Settings` become client-mapped families: served schema versions
       copied into `test/fixtures/redfish/schemas/` +
       `documentations/external/redfish/schemas/v1/` and added to the emulator
       corpus-invariant family list (suite stays green)
-- [ ] Bios model parses AttributeRegistry + Attributes + `@Redfish.Settings`
+- [x] Bios model parses AttributeRegistry + Attributes + `@Redfish.Settings`
       (SettingsObject ETag, Messages, RelatedProperties, pending-vs-current
       attribute diff)
-- [ ] PATCH/If-Match flow sends the settings-object ETag (fold #016); unit
+- [x] PATCH/If-Match flow sends the settings-object ETag (fold #016); unit
       tests for the header + 412/`Precondition Failed` mapping
-- [ ] `#Bios.ResetBios` POST surfaces as an action with busy/disabled states
+- [x] `#Bios.ResetBios` POST surfaces as an action with busy/disabled states
       (UI-5 pattern) and normalizes error envelopes (DSP0266 §8.6, #014)
-- [ ] Capability-gated UI: no Bios tab/controls when the resource/feature is
+- [x] Capability-gated UI: no Bios tab/controls when the resource/feature is
       absent
-- [ ] Widget tests: no overflow at 320 / 800 / 1300 px; merged semantics
+- [x] Widget tests: no overflow at 320 / 800 / 1300 px; merged semantics
       labels (UI-2 pattern)
-- [ ] Tests pass (`flutter analyze` 0, `flutter test` green)
-- [ ] Docs updated (`progress/journal.md`, `progress_summary.md`; REQUIREMENTS.md
+- [x] Tests pass (`flutter analyze` 0, `flutter test` green)
+- [x] Docs updated (`progress/journal.md`, `progress_summary.md`; REQUIREMENTS.md
       row goes OK/GAP→implemented)
 
 ## Tasks
 
-- [ ] Mirror fixture duty: `cp` served `Bios.v1_2_2.json` +
+- [x] Mirror fixture duty: `cp` served `Bios.v1_2_2.json` +
       `Settings.v1_3_5.json` into `test/fixtures/redfish/schemas/`, add the two
       families to the client-mapped list in
       `test_integration/emulator/emulator_suite_test.dart` (the DOCS-23 note
       records the exact files/hashes)
-- [ ] Model + service: `lib/features/bios/` (`BiosResource`, settings ETag,
+- [x] Model + service: `lib/features/bios/` (`BiosResource`, settings ETag,
       attributes), follow the `SensorsService`/`OverviewService` feature-folder
       pattern (Riverpod providers, Dio, `RedfishClient`)
-- [ ] PATCH/If-Match wiring with the settings ETag (requires #016
+- [x] PATCH/If-Match wiring with the settings ETag (requires #016
       transport); error mapping for 412
-- [ ] View: capability-gated card/tab in the system shell
-- [ ] Tests: model + service + widget (incl. 320/800/1300) + emulator pin for
+- [x] View: capability-gated card/tab in the system shell
+- [x] Tests: model + service + widget (incl. 320/800/1300) + emulator pin for
       the current-vs-pending compare
 
 ## Redfish Mapping
@@ -109,6 +109,8 @@ corpus-invariant test so every published `@odata.type` is covered.
 ## Progress Log
 
 <!-- Append timestamped notes as you work. Most recent first. -->
+
+- 2026-11-16 — agent:redfish-automation (FEATURE): completed fixture/corpus-invariant client-mapping slice for #028. Copied served `Bios.v1_2_2.json` and `Settings.v1_3_5.json` into `test/fixtures/redfish/schemas/` (byte-identical to external corpus) and added `Bios`/`Settings` to the emulator corpus-invariant `clientMappedFamilies` list in `test_integration/emulator/emulator_suite_test.dart`. Existing emulator BIOS pins already cover `@Redfish.Settings` ETag + pending-vs-current attribute compare and PATCH round-trip persistence on `Bios/Settings`; full `tool/emulator/run_tests.sh` suite green (85 passed) with corpus invariant covering Bios/Settings. All acceptance criteria satisfied; issue ready to close.
 
 - 2026-11-16 (run) — agent:redfish-automation (FEATURE): landed #028
   edit/apply-pending-attribute UI slice (lib/test). `BiosController` now tracks
@@ -190,6 +192,10 @@ corpus-invariant test so every published `@odata.type` is covered.
   `Bios v1_3_0` adds a `Passwords` resource superseding ChangePassword)
 
 ## Closed Criteria
+
+- Resolution: Bios/Settings client-mapped (served schemas in fixture, emulator corpus invariant), model/service/PATCH-IfMatch+412, ResetBios/apply-pending UI, capability-gated view with 320/800/1300 tests; analyze 0, flutter test 574/1, emulator 85 passed
+- Closed: 2026-11-16
+
 
 <!-- Filled on close -->
 
