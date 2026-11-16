@@ -529,6 +529,11 @@ void main() {
 
     testWidgets('TLS off flips scheme to http and basic auth is selectable',
         (tester) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       ConnectionProfile? submitted;
       await tester.pumpWidget(
         _formScreen(
@@ -550,12 +555,39 @@ void main() {
       await tester.ensureVisible(field('Host / IP'));
       await tester.pumpAndSettle();
       await tester.enterText(field('Host / IP'), 'h');
-      await tester.ensureVisible(find.text('Add system'));
+      await tester
+          .ensureVisible(find.widgetWithText(FilledButton, 'Add system'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Add system'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Add system'));
       await tester.pumpAndSettle();
       expect(submitted!.scheme, 'http');
       expect(submitted!.authMethod, AuthMethod.basic);
+    });
+
+    testWidgets(
+        'disabling TLS shows an unencrypted-HTTP warning with one merged '
+        'semantics node (UI-2)', (tester) async {
+      await tester.pumpWidget(
+        _formScreen(
+          SystemProfileForm(onSubmit: (_) {}),
+        ),
+      );
+      expect(find.textContaining('Unencrypted HTTP disables'), findsNothing);
+
+      await tester.ensureVisible(switchTile('Use TLS (HTTPS)'));
+      await tester.pumpAndSettle();
+      await tester.tap(switchTile('Use TLS (HTTPS)'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Unencrypted HTTP disables'), findsOneWidget);
+      final Finder banner = find.bySemanticsLabel(
+        'Warning: unencrypted HTTP disables transport security. '
+        'Use HTTPS unless this BMC requires HTTP on a trusted, '
+        'isolated network.',
+      );
+      expect(banner, findsOneWidget);
+      final SemanticsNode? node = tester.getSemantics(banner);
+      expect(node?.label, contains('unencrypted HTTP disables transport'));
     });
 
     testWidgets('edit mode prefills and submits an update', (tester) async {

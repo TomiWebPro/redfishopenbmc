@@ -9269,3 +9269,18 @@
 - Keep full EMULATOR re-run conditional (>7 days or contract changes).
 
 **Issues touched:** #006 (closed)
+
+## 2026-11-16 — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 hardening slice (baseline green at 95aa453: analyze 0, 574 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Added unencrypted-HTTP warning banner with merged semantics in `lib/features/systems/views/system_profile_form.dart` when TLS is disabled (TLS-first hardening/warning for non-HTTPS profiles). Added widget/a11y regression coverage in `test/features/systems/ui_widget_test.dart` asserting the warning appears and is announced as one merged semantics node; made existing TLS-off submit test robust for taller form layout. #010 remains open (many hardening items outstanding).
+
+**Decisions:**
+- Chose a small, tested UI/security-warning increment for #010 (no deps, no production TLS weakening, no shared-preferences/credential storage changes). DOCS anchor gate not re-run (no corpus/manifest change); full EMULATOR re-run skipped (no lib contract/fixture/test_integration/tool changes, <7 days since last green run).
+
+**Next:**
+- Continue #010 with next concrete tested slice (token isolation / no-plaintext persistence regression test, TLS enforcement/auth hardening, or a11y/touch-target/focus fix).
+- Split/advance #007/#008/#009 with one tested increment if clearer than #010 next slice.
+- #021 remains blocked on WebView/protocol-client platform/TLS validation (no deps, no TLS weakening).
+
+**Issues touched:** #010 (open)

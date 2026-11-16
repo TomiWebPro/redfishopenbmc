@@ -171,6 +171,36 @@ class _SystemProfileFormState extends State<SystemProfileForm> {
             onChanged: (bool v) => setState(() => _useTls = v),
             contentPadding: EdgeInsets.zero,
           ),
+          if (!_useTls)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                border: Border.all(color: Colors.orange),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: 'Warning: unencrypted HTTP disables transport security. '
+                    'Use HTTPS unless this BMC requires HTTP on a trusted, '
+                    'isolated network.',
+                child: const Row(
+                  children: <Widget>[
+                    Icon(Icons.warning_amber_outlined, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Unencrypted HTTP disables transport security. '
+                        'Use HTTPS unless this BMC requires HTTP on a '
+                        'trusted, isolated network.',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           InputDecorator(
             decoration: const InputDecoration(labelText: 'Auth method'),
             child: DropdownButton<AuthMethod>(

@@ -8613,3 +8613,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** `flutter analyze` 0 issues; `flutter test` 574 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (pending) — `auto: FEATURE #006 close overview and document rendering rules (run 2026-11-16)`; pushed: pending.
 - **Next:** 1) Land a smallest tested slice for `#010` hardening (concrete security/a11y/focus/touch-target regression or fix) or split/advance `#007`/`#008`/`#009`. 2) `#021` remains blocked on WebView/protocol-client platform/TLS validation (no deps, no production TLS weakening). 3) Re-run full emulator suite only on contract/fixture/test_integration/tool change or if >7 days since last green run.
+
+## 2026-11-16 20:07 — FEATURE
+
+- **Baseline:** analyze 0; tests 574 passed / 1 skipped; starting commit 95aa453 (main in sync with origin/main, tracked tree clean except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #010 hardening slice (smallest open focus). Added unencrypted-HTTP warning banner with merged semantics in `SystemProfileForm` when TLS is disabled to reinforce TLS-first posture (warning, no production TLS weakening). Added widget/a11y coverage for the banner and adjusted existing TLS-off submit test for taller layout. #010 remains open.
+- **Docs:** cheap gate not re-run (no external corpus/manifest change; anchors/mirror queue unchanged from recent runs).
+- **Emulator:** skipped — no `lib/` contract, fixture, `test_integration/`, or `tool/` changes requiring full suite; last green emulator run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/features/systems/views/system_profile_form.dart` (HTTP-off warning banner + semantics), `test/features/systems/ui_widget_test.dart` (new TLS-disabled warning/semantics test, TLS-off submit test robustness). Issues: #010 (open, progress logged).
+- **UI:** profile form now shows a capability/security warning when HTTPS is turned off (merged semantics, UI-2 pattern); covered by widget test.
+- **Verification:** `dart format` (touched files); `flutter analyze` 0 issues; `flutter test` 575 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (pending) — `auto: FEATURE #010 tls-off warning and a11y test (run 2026-11-16 20:07 UTC)`; pushed: pending.
+- **Next:** 1) Continue #010 with next concrete tested hardening slice (token isolation/no-plaintext regression, TLS/auth enforcement, a11y/touch-target/focus). 2) Split/advance #007/#008/#009 with one tested increment if clearer. 3) #021 remains blocked on WebView/protocol-client platform/TLS validation (no deps, no production TLS weakening).
