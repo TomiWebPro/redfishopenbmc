@@ -5,7 +5,7 @@ status: open
 priority: P2
 type: chore
 created: 2026-08-26
-updated: 2026-08-30
+updated: 2026-11-17
 closed: null
 assignee: unassigned
 labels: [security, storage, theme, a11y, testing, performance]
@@ -75,6 +75,7 @@ None — quality gate, not an endpoint. Validates behavior of #002–#009.
 
 ## Progress Log
 
+- 2026-11-17 (run, agent:redfish-automation) — FEATURE slice: added `test/a11y/power_view_text_scale_test.dart` covering 200% text scaling (400px) for `PowerView` without overflow while preserving action/guidance semantics visibility (test-only #010 a11y/text-scaling increment on a main view). Verify: analyze 0, flutter test 588 passed / 1 skipped, issues validate OK. Remaining #010 items (broader a11y/touch-target/focus/semantics on other main views, perf/coverage hardening, http-rejected-when-useTls enforcement/test if applicable, deeper credential-leak/runtime audit) still open.
 - 2026-11-17 (run, agent:redfish-automation) — FEATURE slice: added `test/a11y/text_scale_test.dart` covering 200% text scaling (400px) for `SystemProfileForm` without overflow and preserving merged TLS-off warning semantics at 200% scale (test-only #010 a11y/text-scaling increment). Verify: analyze 0, flutter test 587 passed / 1 skipped, issues validate OK. Remaining #010 items (broader a11y/touch-target/focus/semantics on main views, perf/coverage hardening, http-rejected-when-useTls enforcement/test if applicable, deeper credential-leak/runtime audit) still open.
 - 2026-11-16 (run, agent:redfish-automation) — FEATURE slice: documented the #010 secure storage matrix in `DEVELOPMENT.md` (platform backends, web memory-only/short-TTL note, keystore audit rule) and added `test/security/credential_leak_audit_test.dart` (ConnectionProfile `toString` does not expose username/password, no `SharedPreferences` persistence in `lib/`, no obvious password print/debug/log sinks). Remaining #010 items (http-rejected-when-useTls enforcement/test if applicable, broader a11y/touch-target/focus/perf/coverage gate, deeper credential-leak/runtime audit) still open.
 - 2026-11-16 21:51 UTC (run, agent:redfish-automation) — FEATURE slice: added `test/security/tls_enforcement_test.dart` proving TLS-first enforcement for self-signed certificates (local HTTPS server with self-signed cert): connection rejected by default (`allowSelfSigned: false`) and accepted only when explicitly allowed per-profile. Targeted test and analyze green. Remaining #010 items (http-rejected-when-useTls enforcement/test if applicable, secure storage matrix doc in `DEVELOPMENT.md`, broader a11y/touch-target/focus/perf/coverage gate, credential-leak audit) still open.
