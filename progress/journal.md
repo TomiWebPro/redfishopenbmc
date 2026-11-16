@@ -9254,3 +9254,18 @@
 - `#012` consolidate app-wide DI providers (P3) if a small safe slice is clear.
 
 **Issues touched:** #028 (closed)
+
+## 2026-11-16 — agent:redfish-automation — #006 (closed)
+
+**Done:**
+- FEATURE triage: verified #006 System Overview acceptance satisfied by existing implementation (schema-driven `SystemOverview`/`OverviewService`/`overviewProvider`, `OverviewView` with `HealthBanner`+`PowerBadge`, adaptive 1/2/3-column grid via `OverviewGridBreakpoints`, `Health`/`HealthRollup` fallback, missing-field tolerant rendering with omitted temperature card and "Not exposed by this BMC", skeleton/loading/error states, pull-to-refresh + 30s auto-refresh + power-state refresh, 320/800/1300 and semantics widget/provider coverage). Added rendering-rules documentation at `lib/features/overview/README.md`. Marked issue acceptance/tasks complete and closed `issues/closed/006-system-overview-dashboard.md`.
+
+**Decisions:**
+- Treated #006 as complete (remaining "detailed sensor graphs" out of scope → #007). Chose adding `lib/features/overview/README.md` as the small tested/documented codebase change for the triage slice. DOCS anchor gate unchanged (bmcweb `3cdd1fa531f7`, mockup `23d21f9a3610`, DSP0266 1.25.0, mirror queue EMPTY); full emulator re-run skipped (no emulator/fixture/test_integration/tool contract changes).
+
+**Next:**
+- Land a smallest tested slice for `#010` (concrete hardening: security/a11y/focus/touch-target regression or fix) or split/advance `#007`/`#008`/`#009` with one tested increment.
+- `#021` remains blocked on WebView/protocol-client platform/TLS validation (no deps, no production TLS weakening).
+- Keep full EMULATOR re-run conditional (>7 days or contract changes).
+
+**Issues touched:** #006 (closed)

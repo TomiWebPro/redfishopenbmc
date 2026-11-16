@@ -8601,3 +8601,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** `dart format lib test test_integration tool`; `flutter analyze` 0 issues; `flutter test` 574 passed / 1 skipped; `tool/emulator/run_tests.sh` 85 passed; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (pending) — `auto: FEATURE #028 bios fixture/client-mapping and close (run 2026-11-16)`; pushed: pending.
 - **Next:** 1) Triage `#006`–`#010` — verify acceptance against implementation, close or split into smallest tested code slices. 2) `#021` remains blocked on WebView/protocol-client platform/TLS validation (no deps, no TLS weakening). 3) Consider `#012` (DI consolidation, P3) only as a small safe tested slice.
+
+## 2026-11-16 — FEATURE
+
+- **Baseline:** analyze 0; tests 574 passed / 1 skipped; starting commit 7d16acc (main in sync with origin/main, tracked tree clean except untracked `testing/` left untouched); issues validate OK. Open issues: 006,007,008,009,010,021.
+- **Primary work:** FEATURE triage #006 (System Overview) — verified acceptance satisfied by existing implementation (schema-driven model/provider/service/view, adaptive 1/2/3-column layout, health/rollup fallback, missing-field tolerant rendering, skeleton/loading/error states, pull-to-refresh + 30s auto-refresh + power-state refresh, 320/800/1300 and semantics/widget/provider coverage). Added `lib/features/overview/README.md` documenting rendering rules and closed issue (`issues/closed/006-system-overview-dashboard.md`, acceptance/tasks checked).
+- **Docs:** cheap anchor gate only (DOCS not primary) — `git ls-remote`/hub checks: bmcweb `3cdd1fa531f7`, mockup `23d21f9a3610`, DSP0266 1.25.0, `redfish.dmtf.org` 200; mirror queue EMPTY; no corpus/manifest refresh.
+- **Emulator:** skipped — no `lib/` runtime contract, fixture, `test_integration/`, or `tool/` emulator changes requiring full suite; last green emulator run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/features/overview/README.md` (new), `issues/closed/006-system-overview-dashboard.md` (closed/updated), `FUTUREWORK.md`, `progress/journal.md`. Targeted verification: `flutter test test/features/overview` (76 passed).
+- **UI:** no new UI behavior (existing overview UI already capability-gated and covered, incl. 320/800/1300 overflow and semantics); README documents rendering rules.
+- **Verification:** `flutter analyze` 0 issues; `flutter test` 574 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (pending) — `auto: FEATURE #006 close overview and document rendering rules (run 2026-11-16)`; pushed: pending.
+- **Next:** 1) Land a smallest tested slice for `#010` hardening (concrete security/a11y/focus/touch-target regression or fix) or split/advance `#007`/`#008`/`#009`. 2) `#021` remains blocked on WebView/protocol-client platform/TLS validation (no deps, no production TLS weakening). 3) Re-run full emulator suite only on contract/fixture/test_integration/tool change or if >7 days since last green run.

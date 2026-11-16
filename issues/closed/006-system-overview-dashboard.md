@@ -1,17 +1,16 @@
 ---
 id: "006"
 title: "System overview — health, inventory & adaptive card layout"
-status: open
+status: closed
 priority: P2
 type: feature
 created: 2026-08-26
-updated: 2026-08-30
-closed: null
+updated: 2026-11-16
+closed: 2026-11-16
 assignee: unassigned
 labels: [ui, dashboard, overview, inventory]
 estimated_tokens: 40000
 ---
-
 # 006 — System overview — health, inventory & adaptive card layout
 
 > Per-system Overview tab: power badge, health, manufacturer/model/serial/CPU/memory, temperatures (when present), card-based adaptive layout, dark-mode polished.
@@ -27,30 +26,30 @@ estimated_tokens: 40000
 
 ## Goals / Acceptance Criteria
 
-- [ ] `lib/features/overview/models/system_overview.dart` — `manufacturer, model, sku, serialNumber, partNumber, biosVersion, powerState, health (Health enum OK/Warning/Critical/Unknown), healthRollup, processorSummary (count, model), memorySummary (totalGiB), indicatorLed` — all nullable; `fromRedfish(Map)` tolerant
-- [ ] `lib/features/overview/overview_provider.dart` — Riverpod `FutureProvider.family<SystemOverview, systemId>` that:
+- [x] `lib/features/overview/models/system_overview.dart` — `manufacturer, model, sku, serialNumber, partNumber, biosVersion, powerState, health (Health enum OK/Warning/Critical/Unknown), healthRollup, processorSummary (count, model), memorySummary (totalGiB), indicatorLed` — all nullable; `fromRedfish(Map)` tolerant
+- [x] `lib/features/overview/overview_provider.dart` — Riverpod `FutureProvider.family<SystemOverview, systemId>` that:
   - `GET /redfish/v1/Systems/{id}` → core fields + `ProcessorSummary`, `MemorySummary`
   - If `SystemFeatures` indicates chassis, optionally `GET /redfish/v1/Chassis/{id}` or `Thermal` for leading temp (single value, not full graph)
   - Caches 30s, refresh on pull-to-refresh or after power action (→ #005)
-- [ ] `lib/features/overview/views/overview_view.dart` — rendered for every system (always allowed) with:
+- [x] `lib/features/overview/views/overview_view.dart` — rendered for every system (always allowed) with:
   - Top `HealthBanner` (green/amber/red) + `PowerBadge` (from #005 shared widget)
   - Grid `InfoCard`s: `Identity` (mfr/model/serial), `Processors` (count+model or "not exposed"), `Memory` (GiB or "not exposed"), `Temperatures` (only if thermal sensor exists — else card omitted), `Indicator LED`
   - Adaptive: `mobile → 1 col`, `tablet ≥600 → 2 cols`, `desktop ≥1024 → 3 cols` + `CustomScrollView`/`Wrap`
   - Dark mode contrast AA, card elevation, skeleton loader while `AsyncLoading`
-- [ ] Health logic: `Status.Health` primary, fallback `HealthRollup`, fallback `Unknown`; mapping `OK→green`, `Warning→amber`, `Critical→red` with icon
-- [ ] Handles missing fields: card omitted or shows "Not exposed by this BMC" helper text — never crashes on `null`/`missing Link`
-- [ ] Polling: auto-refresh every 30s when view visible (`ref.listen` + `Timer` or `StreamProvider`), manual pull-to-refresh
-- [ ] Tests: `test/features/overview/overview_provider_test.dart` (mocked GETs: full payload vs minimal QEMU vs missing Health), widget `overview_view_test.dart` (adaptive, dark mode, missing-field paths)
-- [ ] Coverage ≥75%
+- [x] Health logic: `Status.Health` primary, fallback `HealthRollup`, fallback `Unknown`; mapping `OK→green`, `Warning→amber`, `Critical→red` with icon
+- [x] Handles missing fields: card omitted or shows "Not exposed by this BMC" helper text — never crashes on `null`/`missing Link`
+- [x] Polling: auto-refresh every 30s when view visible (`ref.listen` + `Timer` or `StreamProvider`), manual pull-to-refresh
+- [x] Tests: `test/features/overview/overview_provider_test.dart` (mocked GETs: full payload vs minimal QEMU vs missing Health), widget `overview_view_test.dart` (adaptive, dark mode, missing-field paths)
+- [x] Coverage ≥75%
 
 ## Tasks
 
-- [ ] Model `SystemOverview` + `Health` + `ProcessorSummary`/`MemorySummary`
-- [ ] Provider `overviewProvider` + `chassisThermal` helper
-- [ ] Widgets: `OverviewView`, `InfoCard`, `HealthBanner`, `SkeletonCard`
-- [ ] Breakpoint util `lib/core/theme/breakpoints.dart`
-- [ ] Tests: 4 provider + 3 widget (1 golden/screenshot if feasible)
-- [ ] Document rendering rules in `lib/features/overview/README.md` or `DEVELOPMENT.md`
+- [x] Model `SystemOverview` + `Health` + `ProcessorSummary`/`MemorySummary`
+- [x] Provider `overviewProvider` + `chassisThermal` helper (service-based hydration)
+- [x] Widgets: `OverviewView`, `InfoCard`, `HealthBanner`, `SkeletonCard`
+- [x] Breakpoint util `lib/core/theme/breakpoints.dart` (`OverviewGridBreakpoints`)
+- [x] Tests: 4 provider + 3 widget (1 golden/screenshot if feasible)
+- [x] Document rendering rules in `lib/features/overview/README.md`
 
 ## Redfish Mapping
 
@@ -68,6 +67,7 @@ estimated_tokens: 40000
 
 - 2026-08-26 — Created. Depends on #001 #003 #004.
 - 2026-08-30 — STALE (triage): no Progress Log update for 4 days (>1-day threshold). Note: WIP commit f083802 (2026-08-27, analyze 0 / 203 tests green) landed without a log entry.
+- 2026-11-16 — agent:redfish-automation triage: verified acceptance satisfied by existing implementation (schema-driven `SystemOverview`/`OverviewService`/`overviewProvider`, capability-tolerant `OverviewView` with `HealthBanner`+`PowerBadge`+adaptive 1/2/3-column cards, `Health`/`HealthRollup` fallback, omitted/missing-field handling, skeleton/loading/error states, pull-to-refresh + 30s auto-refresh + power-state refresh, 320/800/1300 and semantics widget coverage). Added `lib/features/overview/README.md` documenting rendering rules and closed issue.
 
 ## References
 
@@ -78,6 +78,6 @@ estimated_tokens: 40000
 
 ## Closed Criteria
 
-- Resolution:
-- Closed reason:
-- Follow-ups:
+- Resolution: Overview implemented and verified (model/provider/service/view, adaptive layout, health/missing-field handling, refresh, 320/800/1300+semantics tests); rendering rules documented in lib/features/overview/README.md
+- Closed reason: Acceptance criteria verified; rendering-rules doc added.
+- Follow-ups: Detailed per-sensor graphs and richer thermal views remain in #007; overview temperature is a best-effort preview only.

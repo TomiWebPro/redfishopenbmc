@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-16 (run, agent:redfish-automation — FEATURE #028 closed: copied served `Bios.v1_2_2.json`/`Settings.v1_3_5.json` into `test/fixtures/redfish/schemas/`, added `Bios`/`Settings` to emulator corpus-invariant `clientMappedFamilies`; existing BIOS `@Redfish.Settings`/current-vs-pending compare + PATCH pins and full emulator suite green (85 passed). Baseline analyze 0, tests 574 passed / 1 skipped; verify analyze 0, tests 574 passed / 1 skipped, issues validate OK.)**
-- **Current focus:** **FEATURE — smallest open issue first.** `#028` closed. Triage `#006`–`#010` (verify acceptance boxes against existing implementation, close or split into smallest testable slices with code changes; features largely exist). If triage yields no safe code slice, pick `#021` (KVM console rendering — blocked on WebView/protocol-client platform/TLS validation, do not add deps/weaken TLS) or `#009`/other open work only with a tested increment. `#012` remains open (P3). DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code/fixture/test_integration/tool change or >7 days. Verification-only runs are failures while issues remain open. **FEATURE — smallest open issue first.** Continue `#028` BIOS configuration editor (Bios/Settings surface): next required slice is fixture/corpus-invariant client-mapping for Bios/Settings + emulator pin for current-vs-pending compare (requires `test/fixtures`/`test_integration` changes and full EMULATOR re-run per runbook). Then close #028 if acceptance boxes pass or split remaining work (richer attribute validation/registry-driven editing) into a follow-up. If #028 blocked, triage `#006`–`#010` (verify acceptance boxes, close or split). WebView/protocol-client rendering (#021) blocked on platform/TLS validation — do not add dependencies or weaken production TLS. DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code/fixture/test_integration/tool change or >7 days. Verification-only runs are failures while issues remain open.
+- **Last updated: 2026-11-16 (run, agent:redfish-automation — FEATURE triage #006 closed: verified overview implementation meets acceptance (schema-driven model/provider/service/view, adaptive 1/2/3-column layout, health/missing-field handling, 30s auto-refresh + pull-to-refresh + power-state refresh, 320/800/1300 and semantics coverage). Added `lib/features/overview/README.md` rendering-rules doc; updated/closed `issues/closed/006-system-overview-dashboard.md`. Baseline analyze 0, tests 574 passed / 1 skipped; verify analyze 0, tests 574 passed / 1 skipped, issues validate OK.)**
+- **Current focus:** **FEATURE — smallest open issue first.** Open: `#007`, `#008`, `#009`, `#010`, `#021`. Triage/land a smallest tested code slice: prefer `#010` hardening (concrete security/a11y/touch-target/focus regression test or small fix) or split/advance `#007`/`#008`/`#009` with one tested increment. `#021` remains blocked on WebView/protocol-client platform/TLS validation — do not add dependencies or weaken production TLS (only non-dependency slices). DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code/fixture/test_integration/tool change or >7 days. Verification-only runs are failures while issues remain open.
 - **Run cadence:** `@every 30m` in scheduler (runbook originally `0 */5 * * *`; restore 5h once the small-issue backlog is empty, or keep 30m ONLY for FEATURE runs — never schedule verification-only churn at 30m).
 - **Model:** `opencode-go/iceman-contributor-free` (scheduler actual; runbook header was `opencode/deepseek-v4.1-flash-free` — updated 2026-11-16)
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -1177,11 +1177,16 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 
 ## P2 — feature completeness
 
-- [ ] **#006** System overview adaptive cards.
-      (emulator now pins the full `OverviewService.fetchOverview()` hydration
-      end-to-end — identity, health + rollup, power, processor/memory
-      summaries, IndicatorLED, leading chassis thermal 41.0 °C, resourceUri —
-      run 2026-10-23 06:10; the remaining work is UI polish: nothing blocks)
+- [x] **#006** System overview adaptive cards.
+      (run 2026-11-16 — triage verified acceptance satisfied: schema-driven
+      overview model/provider/service/view, adaptive 1/2/3-column layout with
+      breakpoints, `Health`/`HealthRollup` fallback, missing-field tolerant
+      rendering (omit/“Not exposed” — no disabled placeholders), skeleton/
+      loading/error states, 30s auto-refresh + pull-to-refresh + power-state
+      refresh, and 320/800/1300 + semantics widget/provider coverage. Added
+      rendering-rules doc `lib/features/overview/README.md`; closed
+      `issues/closed/006-system-overview-dashboard.md`. Detailed sensor graphs
+      remain #007.)
 - [ ] **#007 / #019** Sensor monitoring, real-time telemetry, retry.
       (emulator pins the 41-member Sensors collection end-to-end — typed
       readings (Cel/V …) + thresholds parse through `SensorsService.fetchAll()`
