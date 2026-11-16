@@ -415,6 +415,10 @@ class SystemManager extends StateNotifier<SystemState> {
   void select(String id) => state = state.copyWith(selectedId: id);
 
   /// Re-fetches the live snapshot for a connected system.
+  ///
+  /// On a transient failure the previous snapshot is preserved but the error is
+  /// rethrown so callers (e.g. auto-refresh timers or manual refresh actions)
+  /// can handle/report it instead of it being silently lost.
   Future<void> refreshSnapshot(String id) async {
     final SystemHandle? handle = state.systems[id];
     if (handle == null || handle.client == null) return;
@@ -427,7 +431,9 @@ class SystemManager extends StateNotifier<SystemState> {
         handle.copyWith(snapshot: snapshot, lastSeen: DateTime.now()),
       );
     } catch (_) {
-      // Keep the previous snapshot on a transient failure.
+      // Keep the previous snapshot on a transient failure, but surface the
+      // failure to the caller.
+      rethrow;
     }
   }
 

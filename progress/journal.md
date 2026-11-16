@@ -9001,3 +9001,18 @@
 - FEATURE #012 — consolidate app-wide DI providers into a core/di module
 
 **Issues touched:** #018 (closed)
+
+## 2026-11-16 09:39 UTC — agent:redfish-automation — #023
+
+**Done:**
+- FEATURE #023 (smallest open). Baseline green at c0351c3 (analyze 0, 526 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Fixed `OverviewView` to store and close its `listenManual` power-state subscription and to handle periodic/power-triggered refresh futures safely. Updated `SystemManager.refreshSnapshot` to keep the previous snapshot on transient failure but rethrow so callers can handle/report errors; updated `SystemOverviewPage` manual refresh to catch transient failures. Added overview lifecycle tests and a system-manager refresh error test. Closed `issues/closed/023-overview-leak-async.md`.
+
+**Decisions:**
+- Chose #023 as smallest open P3 bug per runbook order. Preserved snapshot-on-failure UX while making failures observable to callers instead of blanket-swallowing. DOCS anchors unchanged/mirror queue EMPTY; full EMULATOR re-run skipped (no emulator/fixture/tool changes, last green <7 days).
+
+**Next:**
+- FEATURE #025 — harden unsafe `.first` / `as` casts against empty or null collections
+- FEATURE #012 — consolidate app-wide DI providers into a core/di module
+- FEATURE #021/#019 — pick smallest viable slice
+
+**Issues touched:** #023 (closed)

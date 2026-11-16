@@ -38,13 +38,15 @@ class OverviewView extends ConsumerStatefulWidget {
 
 class _OverviewViewState extends ConsumerState<OverviewView> {
   Timer? _poll;
+  ProviderSubscription<SystemHandle?>? _powerStateSubscription;
 
   @override
   void initState() {
     super.initState();
     // Auto-refresh every 30s while the view is mounted and visible.
     _poll = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) _refresh();
+      if (!mounted) return;
+      unawaited(_refresh());
     });
 
     // Refresh the overview when the system's power state changes (e.g. after a
@@ -52,28 +54,36 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
     // manual pull. Tracked against the last known state to avoid refresh loops.
     PowerState? lastPower =
         ref.read(systemHandleProvider(widget.systemId))?.snapshot?.powerState;
-    ref.listenManual(systemHandleProvider(widget.systemId),
-        (_, SystemHandle? next) {
-      final PowerState? p = next?.snapshot?.powerState;
-      if (p != null && p != lastPower) {
-        lastPower = p;
-        _refresh();
-      }
-    });
+    _powerStateSubscription = ref.listenManual(
+      systemHandleProvider(widget.systemId),
+      (_, SystemHandle? next) {
+        final PowerState? p = next?.snapshot?.powerState;
+        if (p != null && p != lastPower) {
+          lastPower = p;
+          unawaited(_refresh());
+        }
+      },
+    );
   }
 
   Future<void> _refresh() async {
     // Drop the cached overview so the provider re-fetches on next read.
     ref.invalidate(overviewProvider(widget.systemId));
     // Keep the aggregate SystemHandle snapshot fresh (dashboard health, etc.).
-    await ref
-        .read(systemManagerProvider.notifier)
-        .refreshSnapshot(widget.systemId);
+    try {
+      await ref
+          .read(systemManagerProvider.notifier)
+          .refreshSnapshot(widget.systemId);
+    } catch (_) {
+      // Auto/triggered refresh failures are transient; keep the current view
+      // state and let explicit provider reloads surface load errors.
+    }
   }
 
   @override
   void dispose() {
     _poll?.cancel();
+    _powerStateSubscription?.close();
     super.dispose();
   }
 

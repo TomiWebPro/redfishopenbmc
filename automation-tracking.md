@@ -8409,3 +8409,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 526 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #018 fix discovery cache forceRefresh and error replay (run 2026-11-16)`; pushed: pending.
 - **Next:** 1) FEATURE #023 — fix overview `listenManual` leak & swallowed async errors. 2) FEATURE #025 — harden unsafe `.first` / `as` casts against empty or null collections. 3) FEATURE #012 — consolidate app-wide DI providers into a core/di module.
+
+## 2026-11-16 09:39 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 526 passed / 1 skipped; starting commit c0351c3 (origin/main synced, clean tracked tree except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #023 (smallest open). Fixed `OverviewView` lifecycle/refresh correctness: stored and closed the `listenManual` power-state subscription in `dispose()`, handled timer/power-change refresh futures so transient refresh errors do not become uncaught, and changed `SystemManager.refreshSnapshot` to preserve the previous snapshot while rethrowing transient failures to callers. Updated `SystemOverviewPage` manual refresh to catch transient failures without unhandled futures.
+- **Docs:** anchors unchanged; mirror queue EMPTY (cheap gate, no corpus refresh).
+- **Emulator:** skipped — no emulator fixture/contract/tooling changes requiring full suite and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/features/overview/views/overview_view.dart`, `lib/features/systems/providers/system_manager.dart`, `lib/features/systems/views/system_overview_page.dart`, `test/features/overview/overview_view_test.dart` (+2 lifecycle tests), `test/features/systems/system_manager_test.dart` (+1 refresh rethrow/preserve test), `issues/closed/023-overview-leak-async.md` (closed), `FUTUREWORK.md` updated.
+- **UI:** overview auto-refresh/manual refresh behavior hardened (no user-facing layout change).
+- **Verification:** dart format (touched files); analyze 0; tests 529 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this run) — `auto: FEATURE #023 fix overview refresh leak and async errors (run 2026-11-16 09:39 UTC)`; pushed: pending.
+- **Next:** 1) FEATURE #025 — harden unsafe `.first` / `as` casts against empty or null collections. 2) FEATURE #012 — consolidate app-wide DI providers into a core/di module. 3) FEATURE #021/#019 — KVM console rendering or sensors real-time telemetry/retry (smallest viable slice).

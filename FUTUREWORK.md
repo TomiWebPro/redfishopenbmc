@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-16 (run 2026-11-16 08:26+ — FEATURE #018: fixed discovery cache so `forceRefresh` no longer reuses prior ETags/bodies and `_error` placeholders are excluded from replay seeding in `lib/redfish/discovery/discovery_engine.dart`; added `test/redfish/discovery/discovery_cache_test.dart`. Closed `issues/closed/018-fix-discovery-cache.md`. Anchors unchanged; mirror queue EMPTY; full emulator re-run skipped (no emulator/fixture/tool changes, last green run 2026-11-16 05:27 UTC). Baseline/verify: analyze 0, tests 526 passed / 1 skipped, issues validate OK.)**
-- **Current focus:** **FEATURE — smallest open issue first.** Next: `#023` overview leak (`listenManual` leak & swallowed async errors) → `#025` unsafe collection access → `#012` consolidate DI providers → `#021`/`#019` → `#028` BIOS editor → triage `#006`–`#010` (code EXISTS for these epics — verify acceptance boxes, close or split, do not rebuild). DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code change or >7 days. Verification-only runs are failures while issues remain open.
+- **Last updated: 2026-11-16 (run 2026-11-16 09:39 UTC — FEATURE #023: fixed `OverviewView` `listenManual` leak by storing/closing the subscription, handled timer/power-change refresh failures, and made `SystemManager.refreshSnapshot` preserve the previous snapshot while rethrowing transient failures to callers; updated manual refresh handling in `SystemOverviewPage`. Closed `issues/closed/023-overview-leak-async.md`. Anchors unchanged; mirror queue EMPTY; full emulator re-run skipped (no emulator/fixture/tool changes, last green run 2026-11-16 05:27 UTC). Baseline: analyze 0, tests 526 passed / 1 skipped (c0351c3). Verify: analyze 0, tests 529 passed / 1 skipped, issues validate OK.)**
+- **Current focus:** **FEATURE — smallest open issue first.** Next: `#025` unsafe collection access (`.first` / `as` casts) → `#012` consolidate DI providers → `#021`/`#019` → `#028` BIOS editor → triage `#006`–`#010` (code EXISTS for these epics — verify acceptance boxes, close or split, do not rebuild). DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code change or >7 days. Verification-only runs are failures while issues remain open.
 - **Run cadence:** `@every 30m` in scheduler (runbook originally `0 */5 * * *`; restore 5h once the small-issue backlog is empty, or keep 30m ONLY for FEATURE runs — never schedule verification-only churn at 30m).
 - **Model:** `opencode-go/iceman-contributor-free` (scheduler actual; runbook header was `opencode/deepseek-v4.1-flash-free` — updated 2026-11-16)
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -18,9 +18,9 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 1. **P0 first.** If `flutter analyze` or `flutter test` is red, repair that before
    any new work. Never start a feature on a red baseline.
 2. **FEATURE second, always.** On a green baseline, pick the smallest open
-   issue from `issues/open/` (order: `#018` → `#023` → `#025` → `#012` →
+   issue from `issues/open/` (order: `#025` → `#012` →
    `#021` → `#019` → `#028`, then triage `#006`–`#010`; completed: `#024`,
-   `#026`, `#013`, `#011`, `#017`) and land it with tests. Every green run
+   `#026`, `#013`, `#011`, `#017`, `#018`, `#023`) and land it with tests. Every green run
    MUST change `lib/` / `test/` / `test_integration/` / `tool/`. A run with
    zero code changes is a failed run while any issue is open.
 3. **DOCS is a cheap gate, never the primary.** Check anchors

@@ -262,6 +262,47 @@ void main() {
       // c untouched — retryFailed only targets error-state systems.
       expect(m.state.systems[c]!.status, ConnectionStatus.disconnected);
     });
+
+    test('refreshSnapshot rethrows transient failures but preserves snapshot',
+        () async {
+      final SystemManager m = buildStubbedManager(
+        storage: InMemoryStorage(),
+        loginOverride: (id, p) async => Session(
+          systemId: id,
+          token: 'tok-$id',
+          location: '',
+          username: p.username ?? '',
+        ),
+        discoverOverride: (c, id) async => SystemFeatures(systemId: id),
+        snapshotOverride: (c, id) async =>
+            const SystemSnapshot(health: Health.ok, powerState: PowerState.on),
+      );
+      final String id = await m.addProfile(const ConnectionProfile(host: 'h'));
+      await m.connect(id);
+      final SystemSnapshot before = m.state.systems[id]!.snapshot!;
+
+      final SystemManager throwing = SystemManager(
+        repository: InMemoryProfileRepository(),
+        storage: InMemoryStorage(),
+        snapshotOverride: (c, sid) async => throw Exception('boom'),
+      );
+      final RedfishClient client = RedfishClient(
+        profile: ConnectionProfile(id: id, host: 'h'),
+        dio: Dio(),
+      );
+      throwing.state = SystemState(
+        systems: <String, SystemHandle>{
+          id: m.state.systems[id]!.copyWith(client: client, snapshot: before),
+        },
+        selectedId: id,
+      );
+
+      await expectLater(
+        throwing.refreshSnapshot(id),
+        throwsA(isA<Exception>()),
+      );
+      expect(throwing.state.systems[id]!.snapshot, same(before));
+    });
   });
 
   group('SystemManager — token isolation', () {

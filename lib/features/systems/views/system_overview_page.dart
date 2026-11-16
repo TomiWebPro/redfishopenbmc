@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -137,9 +139,17 @@ class SystemOverviewPage extends ConsumerWidget {
                 )
               else ...<Widget>[
                 OutlinedButton.icon(
-                  onPressed: () => ref
-                      .read(systemManagerProvider.notifier)
-                      .refreshSnapshot(systemId),
+                  onPressed: () {
+                    unawaited(() async {
+                      try {
+                        await ref
+                            .read(systemManagerProvider.notifier)
+                            .refreshSnapshot(systemId);
+                      } catch (_) {
+                        // Preserve current snapshot/UI on transient refresh failure.
+                      }
+                    }());
+                  },
                   icon: const Icon(Icons.refresh),
                   label: const Text('Refresh'),
                 ),

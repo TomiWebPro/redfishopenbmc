@@ -1,12 +1,12 @@
 ---
 id: "023"
 title: "Overview: fix listenManual leak & swallowed async errors"
-status: open
+status: closed
 priority: P3
 type: bug
 created: 2026-08-30
-updated: 2026-08-30
-closed: null
+updated: 2026-11-16
+closed: 2026-11-16
 assignee: unassigned
 labels: [overview, riverpod, memory-leak]
 estimated_tokens: 10000
@@ -28,16 +28,16 @@ estimated_tokens: 10000
 
 ## Goals / Acceptance Criteria
 
-- [ ] `listenManual` dispose invoked in `dispose()`.
-- [ ] Timer refresh errors handled (caught/logged, optionally surfaced).
-- [ ] `refreshSnapshot` does not blanket-swallow (rethrow or report).
-- [ ] Tests / static check for the leak.
+- [x] `listenManual` dispose invoked in `dispose()`.
+- [x] Timer refresh errors handled (caught/logged, optionally surfaced).
+- [x] `refreshSnapshot` does not blanket-swallow (rethrow or report).
+- [x] Tests / static check for the leak.
 
 ## Tasks
 
-- [ ] Fix `overview_view.dart` listener + timer.
-- [ ] Adjust `system_manager.dart:422` error handling.
-- [ ] Tests in `test/features/overview/`.
+- [x] Fix `overview_view.dart` listener + timer.
+- [x] Adjust `system_manager.dart:422` error handling.
+- [x] Tests in `test/features/overview/`.
 
 ## Redfish Mapping
 
@@ -45,6 +45,7 @@ estimated_tokens: 10000
 
 ## Progress Log
 
+- 2026-11-16 — Stored and closed the `listenManual` subscription in `OverviewView`, handled timer/power-change refresh futures so transient refresh failures do not escape, and changed `SystemManager.refreshSnapshot` to preserve the previous snapshot but rethrow failures to callers. Updated the manual refresh button in `SystemOverviewPage` to catch transient failures. Added overview lifecycle tests (listener disposed, periodic refresh failure handled) and a system-manager test asserting refresh failures rethrow while preserving the snapshot.
 - 2026-08-30 — Created from triage analysis (feature #16). See also #019, #006.
 
 ## References
@@ -55,6 +56,6 @@ estimated_tokens: 10000
 
 ## Closed Criteria
 
-- Resolution:
-- Closed reason:
+- Resolution: `OverviewView` now owns and closes its `ProviderSubscription`, timer/power-triggered refreshes are awaited/handled safely, and `refreshSnapshot` reports transient failures to callers without replacing the previous snapshot.
+- Closed reason: Implemented with targeted and full verification (analyze 0, flutter test green, issues validate OK).
 - Follow-ups: none

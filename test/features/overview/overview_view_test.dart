@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,7 @@ import 'package:redfishopenbmc/features/overview/widgets/skeleton_card.dart';
 import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
 import 'package:redfishopenbmc/features/systems/providers/profile_repository.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
+import 'package:redfishopenbmc/redfish/client/redfish_client.dart';
 import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/session.dart';
@@ -78,10 +80,11 @@ SystemManager seededManager() {
 ProviderScope scopeWith({
   required SystemOverview sample,
   bool error = false,
+  SystemManager? manager,
 }) {
   return ProviderScope(
     overrides: <Override>[
-      systemManagerProvider.overrideWith((ref) => seededManager()),
+      systemManagerProvider.overrideWith((ref) => manager ?? seededManager()),
       overviewProvider.overrideWith(
         (ref, id) => error
             ? Future<SystemOverview>.error(
@@ -385,6 +388,146 @@ void main() {
         find.bySemanticsLabel(RegExp('^Retry')),
         findsWidgets,
       );
+    });
+  });
+
+  group('OverviewView — refresh lifecycle (#023)', () {
+    testWidgets(
+        'disposes the power-state listener without post-dispose refresh',
+        (tester) async {
+      int refreshCalls = 0;
+      final SystemManager manager = SystemManager(
+        repository: InMemoryProfileRepository(),
+        storage: InMemoryStorage(),
+        snapshotOverride: (client, id) async {
+          refreshCalls++;
+          return SystemSnapshot(
+            powerState: PowerState.on,
+            resourceUri: '/redfish/v1/Systems/system',
+          );
+        },
+      );
+      final RedfishClient client = RedfishClient(
+        profile: const ConnectionProfile(id: 'bmc1', host: 'h'),
+        dio: Dio(),
+      );
+      manager.state = SystemState(
+        systems: <String, SystemHandle>{
+          'bmc1': SystemHandle(
+            profile: const ConnectionProfile(id: 'bmc1', host: 'h'),
+            status: ConnectionStatus.connected,
+            client: client,
+            session: Session(
+              systemId: 'bmc1',
+              token: 't',
+              location: '',
+              username: '',
+            ),
+            features: const SystemFeatures(systemId: 'bmc1'),
+            snapshot: SystemSnapshot(
+              powerState: PowerState.on,
+              resourceUri: '/redfish/v1/Systems/system',
+            ),
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+
+      final ValueNotifier<bool> showOverview = ValueNotifier<bool>(true);
+      addTearDown(showOverview.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemManagerProvider.overrideWith((ref) {
+              ref.onDispose(() {});
+              return manager;
+            }),
+            overviewProvider.overrideWith(
+              (ref, id) => Future<SystemOverview>.value(fullSample()),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: ValueListenableBuilder<bool>(
+                valueListenable: showOverview,
+                builder: (context, show, _) => show
+                    ? const OverviewView(systemId: 'bmc1')
+                    : const SizedBox.shrink(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      refreshCalls = 0;
+
+      // Dispose only the view so its listenManual subscription must close.
+      showOverview.value = false;
+      await tester.pump();
+
+      // A later power-state change must not trigger refresh via a leaked listener.
+      manager.state = SystemState(
+        systems: <String, SystemHandle>{
+          'bmc1': manager.state.systems['bmc1']!.copyWith(
+            snapshot: SystemSnapshot(
+              powerState: PowerState.off,
+              resourceUri: '/redfish/v1/Systems/system',
+            ),
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(refreshCalls, 0);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('periodic refresh failure is handled without uncaught errors',
+        (tester) async {
+      final SystemManager manager = SystemManager(
+        repository: InMemoryProfileRepository(),
+        storage: InMemoryStorage(),
+        snapshotOverride: (client, id) async => throw Exception('transient'),
+      );
+      final RedfishClient client = RedfishClient(
+        profile: const ConnectionProfile(id: 'bmc1', host: 'h'),
+        dio: Dio(),
+      );
+      manager.state = SystemState(
+        systems: <String, SystemHandle>{
+          'bmc1': SystemHandle(
+            profile: const ConnectionProfile(id: 'bmc1', host: 'h'),
+            status: ConnectionStatus.connected,
+            client: client,
+            session: Session(
+              systemId: 'bmc1',
+              token: 't',
+              location: '',
+              username: '',
+            ),
+            features: const SystemFeatures(systemId: 'bmc1'),
+            snapshot: SystemSnapshot(
+              powerState: PowerState.on,
+              resourceUri: '/redfish/v1/Systems/system',
+            ),
+          ),
+        },
+        selectedId: 'bmc1',
+      );
+
+      await tester
+          .pumpWidget(scopeWith(sample: fullSample(), manager: manager));
+      await tester.pumpAndSettle();
+
+      // Advance past the 30s auto-refresh timer; the thrown refresh error must
+      // be caught by the view's refresh handler.
+      await tester.pump(const Duration(seconds: 31));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(OverviewView), findsOneWidget);
     });
   });
 }
