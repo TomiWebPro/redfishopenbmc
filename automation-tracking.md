@@ -8661,3 +8661,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** `flutter analyze` 0 issues; targeted `flutter test test/security/tls_enforcement_test.dart` 2 passed; `flutter test` 582 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #010 tls enforcement security tests (run 2026-11-16 21:51 UTC)`; pushed: pending.
 - **Next:** 1) Continue #010 with secure storage matrix in `DEVELOPMENT.md` and/or credential-leak audit/a11y-perf-coverage hardening. 2) Split/advance #007/#008/#009 with one tested increment if clearer. 3) #021 remains blocked on WebView/protocol-client platform/TLS validation (no deps, no production TLS weakening).
+
+## 2026-11-16 22:27 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 582 passed / 1 skipped; starting commit 48fc137 (origin/main synced, tracked tree clean except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #010 secure storage matrix + credential-leak audit slice. Documented the `#010` secure storage backend matrix and keystore audit rule in `DEVELOPMENT.md` (Android/iOS/macOS/Linux/Windows/web notes, memory-only/short-TTL guidance for web, explicit rule that passwords never go to `SharedPreferences` or persisted profile blobs). Added `test/security/credential_leak_audit_test.dart` (3 tests) asserting `ConnectionProfile.toString` does not expose username/password and auditing `lib/` for `SharedPreferences` persistence and obvious password print/debug/log sinks.
+- **Docs:** cheap anchor gate not re-run (no external corpus/manifest change; anchors/mirror queue unchanged). DEVELOPMENT.md updated as part of #010.
+- **Emulator:** skipped — no `lib/` runtime contract, fixture, `test_integration/`, or `tool/` changes requiring full suite; last green emulator run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `DEVELOPMENT.md`, `test/security/credential_leak_audit_test.dart` (new), `issues/open/010-security-storage-theming-a11y-testing.md` (progress log), `FUTUREWORK.md` (Last updated/Current focus), `progress/journal.md`. Issues: #010 (open).
+- **UI:** none.
+- **Verification:** `dart format lib test test_integration tool`; `flutter analyze` 0 issues; targeted `flutter test test/security/credential_leak_audit_test.dart` 3 passed; `flutter test` 585 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (pending) — `auto: FEATURE #010 secure storage matrix and leak audit tests (run 2026-11-16 22:27 UTC)`; pushed: pending.
+- **Next:** 1) Continue #010 with broader a11y/touch-target/focus/semantics and text-scaling checks on main views. 2) Continue #010 perf/coverage hardening and deeper runtime credential-leak audit (or http-rejected-when-useTls enforcement if safely implementable). 3) Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.

@@ -9329,3 +9329,18 @@
 - #021 remains blocked on WebView/protocol-client platform/TLS validation (no deps, no production TLS weakening).
 
 **Issues touched:** #010 (open)
+
+## 2026-11-16 22:27 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 hardening slice (baseline green at 48fc137: analyze 0, 582 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Documented the `#010` secure storage matrix in `DEVELOPMENT.md` (platform backends, web memory-only/short-TTL guidance, explicit keystore audit rule that passwords never go to `SharedPreferences` or persisted profile blobs). Added `test/security/credential_leak_audit_test.dart` (3 tests) asserting `ConnectionProfile.toString` does not expose username/password and auditing `lib/` for `SharedPreferences` persistence and obvious password print/debug/log sinks.
+
+**Decisions:**
+- Chose DEVELOPMENT.md secure-storage-matrix documentation plus a static/runtime-surface credential-leak audit test as the next explicit #010 increment (doc + test, no production behavior/TLS changes, no deps). DOCS external anchors not re-fetched (no corpus/manifest change); full EMULATOR re-run skipped (no lib contract/fixture/test_integration/tool changes, <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Continue #010 with broader a11y/touch-target/focus/semantics and text-scaling checks on main views.
+- Continue #010 perf/coverage hardening and deeper runtime credential-leak audit (or http-rejected-when-useTls enforcement if safely implementable).
+- Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.
+
+**Issues touched:** #010 (open)

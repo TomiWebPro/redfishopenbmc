@@ -199,8 +199,9 @@ user-acknowledged reason.
 ### Secrets (at rest)
 - **No plaintext password at rest.** `ConnectionProfile.password` is held in
   memory only for the duration of a `login()` call. It is never written to
-  secure storage, logs, or crash reports.
-- **Session token is the only persisted secret.** After a successful
+  secure storage, logs, or crash reports. The profile blob never persists a
+  plaintext password.
+- **Session token is the only persisted secret by default.** After a successful
   `POST /redfish/v1/SessionService/Sessions`, `AuthManager` writes *only* the
   `X-Auth-Token` (key `redfish.token.<systemId>`) and the session `Location`
   (key `redfish.session_loc.<systemId>`) via `SecureStorage`. The old
@@ -210,20 +211,30 @@ user-acknowledged reason.
   `X-Auth-Token` for `bmc1` is attached only to `bmc1`'s `Dio` interceptor and
   can never leak to `bmc2`. `clientFor(systemId)`/`sessionFor(systemId)`
   return `null` until a login succeeds.
-- **Storage backend matrix** (from `flutter_secure_storage`):
-  | Platform | Backend | Notes |
-  |----------|---------|-------|
-  | Android | EncryptedSharedPreferences (`encryptedSharedPreferences: true`) | AES-backed, OS keystore |
-  | iOS / macOS | Keychain (`first_unlock`) | accessible after first unlock |
-  | Linux | `libsecret` (via secret-service) | requires desktop secret-service running |
-  | Windows | Credential Manager (DPAPI) | |
-  | Web | (not available) | tokens kept in-memory only; use Basic or re-auth each session |
+
+#### Secure storage matrix (#010)
+
+| Platform | Backend | Notes |
+|----------|---------|-------|
+| Android | `flutter_secure_storage` → `EncryptedSharedPreferences` + Android `KeyStore` | AES-backed, OS keystore |
+| iOS | `flutter_secure_storage` → iOS `Keychain` | `first_unlock` accessibility |
+| macOS | `flutter_secure_storage` → macOS `Keychain` | `first_unlock` accessibility |
+| Linux | `flutter_secure_storage` → `libsecret` (secret-service) | requires desktop secret-service; if unavailable the backend may fall back to less-secure storage — warn and treat as unsupported for remembered credentials |
+| Windows | `flutter_secure_storage` → Windows Credential Manager (DPAPI) | user-scoped protection |
+| Web | Web storage is **not secure** | keep tokens in memory only with short TTL; do not persist passwords/tokens to web storage; prefer re-auth / Basic per session as applicable |
+
+- **Audit rule:** all `SecureStorage.write` call sites persist only keystore keys
+  (`redfish.token.*`, `redfish.session_loc.*`, and `redfish.pw.<id>` only when
+  `rememberPassword == true`). Passwords are never written to
+  `SharedPreferences` or the persisted profile JSON blob.
+
 - **"Remember password" tradeoff**: storing the password (vs. just the token)
-  is intentionally **not** implemented. A persisted token can be invalidated
-  server-side (session timeout / logout) without exposing the user's BMC
-  password; a persisted password is a permanent credential leak surface.
-  If ever added it MUST be behind an explicit opt-in + OS biometric/keystore
-  encryption (tracked in #010 hardening).
+  is a security downgrade. A persisted token can be invalidated server-side
+  (session timeout / logout) without exposing the user's BMC password; a
+  persisted password is a permanent credential-leak surface. When implemented it
+  MUST remain behind explicit opt-in, stored only in platform secure storage (OS
+  keystore/biometric-backed where available), and never in plaintext preferences
+  or profile blobs (tracked/hardened in #010).
 
 ### Error taxonomy
 - All transport failures normalize to `RedfishException` (`redfish_exception.dart`)
