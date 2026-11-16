@@ -77,6 +77,11 @@ class _SystemShellState extends ConsumerState<SystemShell> {
         const _SystemTab('firmware', 'Firmware', Icons.system_update_outlined),
       );
     }
+    if (features?.biosConfiguration ?? false) {
+      tabs.add(
+        const _SystemTab('bios', 'BIOS', Icons.settings_input_component_outlined),
+      );
+    }
     if (features?.kvm ?? false) {
       tabs.add(const _SystemTab('kvm', 'KVM', Icons.computer_outlined));
     }

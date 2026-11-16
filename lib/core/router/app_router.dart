@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:redfishopenbmc/features/bios/bios_page.dart';
 import 'package:redfishopenbmc/features/discovery/discovery_page.dart';
 import 'package:redfishopenbmc/features/firmware/firmware_page.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_page.dart';
@@ -79,6 +80,13 @@ class AppRouter {
                   path: '/:systemId/firmware',
                   builder: (BuildContext context, GoRouterState state) =>
                       FirmwarePage(
+                    systemId: state.pathParameters['systemId'] ?? '',
+                  ),
+                ),
+                GoRoute(
+                  path: '/:systemId/bios',
+                  builder: (BuildContext context, GoRouterState state) =>
+                      BiosPage(
                     systemId: state.pathParameters['systemId'] ?? '',
                   ),
                 ),

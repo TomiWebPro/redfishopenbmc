@@ -9191,3 +9191,19 @@
 
 ### Issues touched
 - #028 (open, progress logged)
+
+## 2026-11-16 17:05 UTC — agent:redfish-automation — #028
+
+### Done
+- FEATURE #028 read-only discovery/UI slice (smallest safe increment). Baseline green at 855419d (analyze 0, 544 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Added `biosConfiguration` capability to `SystemFeatures` (field, JSON round-trip, copyWith, hasAnyFeature, toString) and `FeatureRules.biosConfiguration` detection from ComputerSystem `Bios.@odata.id`. Wired capability-gated BIOS tab in `SystemShell`, BIOS route in app router, and BIOS capability chip in system overview. Added Riverpod controller/providers and capability-gated read-only BIOS screen (`lib/features/bios/bios_controller.dart`, `bios_providers.dart`, `bios_page.dart`, `views/bios_view.dart`) that loads current Bios + pending settings and shows current attributes, pending/changed-attribute summary, and settings messages with loading/discovery-pending/error states (read-only; no PATCH/ResetBios UI actions yet). Added tests: `test/features/bios/bios_controller_test.dart`, `test/features/bios/views/bios_view_test.dart` (capability gate, loading/content/error, 320/800/1300 px overflow checks) and BIOS detection/build cases in `test/redfish/discovery/feature_rules_test.dart`.
+
+### Decisions
+- Chose discovery gating + read-only UI/controller/providers as a coherent lib/test slice without touching `test_integration/` or fixtures, so full EMULATOR re-run was not required (DOCS anchors unchanged, mirror queue EMPTY; last green emulator run 2026-11-16 05:27 UTC). Kept #028 open: fixture/corpus-invariant client-mapping + emulator pin and PATCH/ResetBios UI actions remain.
+
+### Next
+- Continue #028 — fixture/corpus-invariant client-mapping for Bios/Settings + emulator pin for current-vs-pending compare (requires full EMULATOR re-run).
+- Continue #028 — PATCH/If-Match + ResetBios UI actions with busy/error states and widget tests.
+- If blocked, triage `#006`–`#010` with small tested fixes/closure or split.
+
+### Issues touched
+- #028 (open, progress logged)

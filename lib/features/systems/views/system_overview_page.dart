@@ -185,6 +185,7 @@ class SystemOverviewPage extends ConsumerWidget {
       if (features.powerControl) 'Power control',
       if (features.sensorMonitoring) 'Sensors (${features.sensorCount})',
       if (features.firmwareUpdate) 'Firmware update',
+      if (features.biosConfiguration) 'BIOS configuration',
       if (features.kvm) 'KVM (${features.kvmType ?? 'console'})',
       if (features.managers > 0) 'Managers: ${features.managers}',
       if (features.chassis > 0) 'Chassis: ${features.chassis}',

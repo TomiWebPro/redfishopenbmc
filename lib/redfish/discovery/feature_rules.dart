@@ -298,6 +298,25 @@ class FeatureRules {
     return id is String ? id : null;
   }
 
+  // ---------------------------------------------------------------------------
+  // Rule: bios_configuration
+  //   bios_configuration = Systems[*].Bios.@odata.id != null
+  // ---------------------------------------------------------------------------
+
+  /// True when any computer system advertises a Bios resource link
+  /// (`Systems[*].Bios.@odata.id`), the capability gate for the read-only
+  /// Bios/Settings view (issue #028).
+  static bool biosConfiguration(List<Map<String, dynamic>> systems) =>
+      systems.any((Map<String, dynamic> s) {
+        final dynamic bios = s['Bios'];
+        if (bios is Map<dynamic, dynamic>) {
+          final dynamic id = bios['@odata.id'];
+          return id is String && id.isNotEmpty;
+        }
+        if (bios is String) return bios.isNotEmpty;
+        return false;
+      });
+
   /// Composes a [SystemFeatures] for [systemId] from the raw [ctx].
   ///
   /// This is the single composition point: every rule above is invoked here so
@@ -314,6 +333,7 @@ class FeatureRules {
       sensorCount: sensorCount(ctx.thermals, ctx.sensors),
       firmwareUpdate: firmwareUpdate(ctx.updateService),
       updateServiceVersion: updateServiceVersion(ctx.updateService),
+      biosConfiguration: biosConfiguration(ctx.systems),
       managers: ctx.managers.length,
       chassis: ctx.chassis.length,
       raw: ctx.rawTree,

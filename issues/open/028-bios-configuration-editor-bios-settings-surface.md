@@ -110,6 +110,23 @@ corpus-invariant test so every published `@odata.type` is covered.
 
 <!-- Append timestamped notes as you work. Most recent first. -->
 
+- 2026-11-16 17:05 UTC — agent:redfish-automation (FEATURE, run): landed #028
+  read-only discovery/UI slice (lib/test). Added `biosConfiguration` capability
+  to `SystemFeatures` + `FeatureRules.biosConfiguration` (ComputerSystem
+  `Bios.@odata.id` link) and wired capability-gated BIOS tab/route/chip in
+  `SystemShell`, router, and system overview. Added Riverpod wiring/controller
+  and capability-gated read-only BIOS view (`lib/features/bios/bios_controller.dart`,
+  `bios_providers.dart`, `bios_page.dart`, `views/bios_view.dart`) showing
+  current attributes plus pending-settings/changed-attribute summary and
+  settings messages when available; no PATCH/ResetBios UI actions yet. Added
+  tests: `test/features/bios/bios_controller_test.dart`,
+  `test/features/bios/views/bios_view_test.dart` (loading/error/empty-capability/
+  content + 320/800/1300 px overflow checks) and `feature_rules_test` BIOS
+  detection cases. Remaining: make Bios/Settings client-mapped in fixtures +
+  emulator corpus-invariant family list and add emulator pin for
+  current-vs-pending compare (requires full EMULATOR re-run on fixture/
+  test_integration change), add PATCH/If-Match + ResetBios UI actions with busy/
+  error states, then close issue when acceptance is complete.
 - 2026-11-16 — agent:redfish-automation: landed foundational #028 slice
   (lib/test, no UI/emulator corpus-invariant changes). Added
   `lib/features/bios/models/bios_models.dart` (tolerant parsing of Bios

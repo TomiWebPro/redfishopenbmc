@@ -540,6 +540,31 @@ void main() {
     });
   });
 
+  group('FeatureRules — BIOS configuration (#028)', () {
+    test('biosConfiguration true when a system exposes a Bios link', () {
+      final Map<String, dynamic> system = <String, dynamic>{
+        '@odata.type': '#ComputerSystem.v1_22_0.ComputerSystem',
+        'Bios': <String, dynamic>{
+          '@odata.id': '/redfish/v1/Systems/1/Bios',
+        },
+      };
+      expect(
+        FeatureRules.biosConfiguration(<Map<String, dynamic>>[system]),
+        isTrue,
+      );
+    });
+
+    test('biosConfiguration false when no Bios link is present', () {
+      final Map<String, dynamic> system = <String, dynamic>{
+        '@odata.type': '#ComputerSystem.v1_22_0.ComputerSystem',
+      };
+      expect(
+        FeatureRules.biosConfiguration(<Map<String, dynamic>>[system]),
+        isFalse,
+      );
+    });
+  });
+
   group('FeatureRules — build composes everything', () {
     test('build produces a SystemFeatures from a context', () {
       const DiscoveryContext ctx = DiscoveryContext(
@@ -581,6 +606,7 @@ void main() {
       expect(f.sensorCount, 1);
       expect(f.firmwareUpdate, isTrue);
       expect(f.updateServiceVersion, '9.9');
+      expect(f.biosConfiguration, isFalse);
       expect(f.managers, 1);
       expect(f.chassis, 1);
       expect(f.systemId, 'bmc1');

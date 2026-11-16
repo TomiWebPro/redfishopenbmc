@@ -19,6 +19,7 @@ class SystemFeatures {
     this.sensorCount = 0,
     this.firmwareUpdate = false,
     this.updateServiceVersion,
+    this.biosConfiguration = false,
     this.managers = 0,
     this.chassis = 0,
     this.raw = const <String, dynamic>{},
@@ -58,6 +59,11 @@ class SystemFeatures {
   /// Firmware / UpdateService version string when available.
   final String? updateServiceVersion;
 
+  /// Whether BIOS configuration is advertised by a ComputerSystem
+  /// (`Systems[*].Bios.@odata.id`), enabling the read-only Bios/Settings view
+  /// (issue #028).
+  final bool biosConfiguration;
+
   /// Number of manager resources discovered.
   final int managers;
 
@@ -70,7 +76,11 @@ class SystemFeatures {
 
   /// Whether the system exposes *any* of the optional management features.
   bool get hasAnyFeature =>
-      powerControl || kvm || firmwareUpdate || sensorMonitoring;
+      powerControl ||
+      kvm ||
+      firmwareUpdate ||
+      sensorMonitoring ||
+      biosConfiguration;
 
   /// Returns a copy of this map with the given fields overridden.
   SystemFeatures copyWith({
@@ -83,6 +93,7 @@ class SystemFeatures {
     int? sensorCount,
     bool? firmwareUpdate,
     String? updateServiceVersion,
+    bool? biosConfiguration,
     int? managers,
     int? chassis,
     Map<String, dynamic>? raw,
@@ -97,6 +108,7 @@ class SystemFeatures {
         sensorCount: sensorCount ?? this.sensorCount,
         firmwareUpdate: firmwareUpdate ?? this.firmwareUpdate,
         updateServiceVersion: updateServiceVersion ?? this.updateServiceVersion,
+        biosConfiguration: biosConfiguration ?? this.biosConfiguration,
         managers: managers ?? this.managers,
         chassis: chassis ?? this.chassis,
         raw: raw ?? this.raw,
@@ -123,6 +135,7 @@ class SystemFeatures {
           'kvm': kvm,
           'firmware_update': firmwareUpdate,
           'sensor_monitoring': sensorMonitoring,
+          'bios_configuration': biosConfiguration,
           'supported_reset_types': supportedResetTypes,
           'kvm_type': kvmType,
           'sensor_count': sensorCount,
@@ -149,6 +162,7 @@ class SystemFeatures {
       sensorCount: features['sensor_count'] as int? ?? 0,
       firmwareUpdate: features['firmware_update'] as bool? ?? false,
       updateServiceVersion: features['firmware_update_version'] as String?,
+      biosConfiguration: features['bios_configuration'] as bool? ?? false,
       managers: features['managers'] as int? ?? 0,
       chassis: features['chassis'] as int? ?? 0,
       raw: rawMap is Map<String, dynamic> ? rawMap : <String, dynamic>{},
@@ -158,7 +172,8 @@ class SystemFeatures {
   @override
   String toString() =>
       'SystemFeatures($systemId: power=$powerControl, kvm=$kvm($kvmType), '
-      'fw=$firmwareUpdate, sensors=$sensorMonitoring($sensorCount), '
+      'fw=$firmwareUpdate, bios=$biosConfiguration, '
+      'sensors=$sensorMonitoring($sensorCount), '
       'managers=$managers, chassis=$chassis)';
 }
 
