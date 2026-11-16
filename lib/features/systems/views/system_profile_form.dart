@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
+import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 
 /// Validates a Redfish host entry (hostname or IPv4/IPv6 literal).
 String? validateHost(String? value) {

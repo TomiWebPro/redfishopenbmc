@@ -6,14 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:redfishopenbmc/features/firmware/firmware_controller.dart';
 import 'package:redfishopenbmc/features/firmware/firmware_providers.dart';
 import 'package:redfishopenbmc/features/firmware/firmware_service.dart';
 import 'package:redfishopenbmc/features/firmware/models/firmware_models.dart';
 import 'package:redfishopenbmc/features/firmware/views/firmware_view.dart';
-import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
+import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_task.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';

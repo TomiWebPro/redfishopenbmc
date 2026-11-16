@@ -4,11 +4,9 @@ import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-
 import 'package:redfishopenbmc/core/storage/secure_storage.dart';
 import 'package:redfishopenbmc/features/overview/models/system_overview.dart';
 import 'package:redfishopenbmc/features/overview/overview_provider.dart';
-import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
 import 'package:redfishopenbmc/features/systems/providers/profile_repository.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
@@ -20,6 +18,7 @@ import 'package:redfishopenbmc/features/systems/views/system_profile_form.dart';
 import 'package:redfishopenbmc/features/systems/views/system_shell.dart';
 import 'package:redfishopenbmc/features/systems/widgets/status_badges.dart';
 import 'package:redfishopenbmc/features/systems/widgets/system_card.dart';
+import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 import 'package:redfishopenbmc/redfish/models/session.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 

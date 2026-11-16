@@ -8956,3 +8956,18 @@
 - FEATURE #018 — fix discovery cache (forceRefresh stale replay & failed-fetch leak)
 
 **Issues touched:** #013 (closed)
+
+## 2026-11-16 — agent:redfish-automation — #011
+
+**Done:**
+- FEATURE #011 (smallest open). Baseline green at 13594e0 (analyze 0, 522 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Moved canonical `ConnectionProfile`/`AuthMethod` to `lib/redfish/models/connection_profile.dart`, replaced `lib/features/systems/models/connection_profile.dart` with a compatibility re-export, and updated lib/test/test_integration imports to the core path so `redfish/` no longer depends on `features/`. Fixed resulting analyzer directive-ordering/doc-comment issues. Closed `issues/closed/011-relocate-connection-profile-to-core.md`.
+
+**Decisions:**
+- Chose #011 as smallest open P2 chore per runbook order. Kept feature-layer re-export for compatibility while making core model canonical and eliminating core→feature layering inversion. DOCS anchors unchanged/mirror queue EMPTY; full EMULATOR re-run skipped (no emulator/fixture/tool changes, last green <7 days).
+
+**Next:**
+- FEATURE #017 — discover `SessionService` URI instead of hardcoding it
+- FEATURE #018 — fix discovery cache (forceRefresh stale replay & failed-fetch leak)
+- FEATURE #023 — fix overview `listenManual` leak & swallowed async errors
+
+**Issues touched:** #011 (closed)

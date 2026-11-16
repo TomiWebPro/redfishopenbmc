@@ -8373,3 +8373,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #013 remove dead app_breakpoints (run 2026-11-16)`; pushed: pending.
 - **Next:** 1) FEATURE #011 — relocate `ConnectionProfile` model into core layer (fix core→feature dependency). 2) FEATURE #017 — discover `SessionService` URI instead of hardcoding it. 3) FEATURE #018 — fix discovery cache (forceRefresh stale replay & failed-fetch leak).
+
+## 2026-11-16 — FEATURE
+
+- **Baseline:** analyze 0; tests 522 passed / 1 skipped; starting commit 13594e0 (origin/main synced, untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #011 (smallest open). Relocated canonical `ConnectionProfile`/`AuthMethod` from the feature layer to `lib/redfish/models/connection_profile.dart`, converted `lib/features/systems/models/connection_profile.dart` into a compatibility re-export, and repointed lib/test/test_integration consumers to the canonical core import to remove the core→feature dependency.
+- **Docs:** anchors unchanged; mirror queue EMPTY (cheap gate, no corpus refresh).
+- **Emulator:** skipped — no emulator fixture/contract/tooling changes requiring full suite and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/redfish/models/connection_profile.dart`, `lib/features/systems/models/connection_profile.dart`, updated consumers in `lib/features/systems/{providers,views,widgets}` and multiple `test/**` files plus `test/helpers/mock_redfish_server.dart`; `issues/closed/011-relocate-connection-profile-to-core.md` (closed). Existing connection profile/profile repository/system manager tests exercised; no new behavior tests required.
+- **UI:** none (architecture/layering refactor; no user-visible behavior change).
+- **Verification:** `dart format lib test test_integration tool`; analyze 0; tests 522 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #011 relocate ConnectionProfile to core (run 2026-11-16)`; pushed: pending.
+- **Next:** 1) FEATURE #017 — discover `SessionService` URI instead of hardcoding it. 2) FEATURE #018 — fix discovery cache (forceRefresh stale replay & failed-fetch leak). 3) FEATURE #023 — fix overview `listenManual` leak & swallowed async errors.

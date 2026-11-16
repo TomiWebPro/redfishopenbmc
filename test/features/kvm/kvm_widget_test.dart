@@ -6,8 +6,8 @@ import 'package:redfishopenbmc/features/kvm/kvm_providers.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_service.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
 import 'package:redfishopenbmc/features/kvm/views/kvm_view.dart';
-import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
+import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 

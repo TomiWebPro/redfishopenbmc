@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/features/systems/views/system_profile_form.dart';
+import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 
 /// Modal dialog for creating a new BMC connection profile.
 class AddSystemDialog extends StatelessWidget {

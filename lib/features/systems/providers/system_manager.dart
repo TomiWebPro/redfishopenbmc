@@ -1,13 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:redfishopenbmc/core/storage/secure_storage.dart';
-import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
 import 'package:redfishopenbmc/features/systems/providers/profile_repository.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_snapshot_fetcher.dart';
 import 'package:redfishopenbmc/redfish/client/auth_manager.dart';
 import 'package:redfishopenbmc/redfish/client/redfish_client.dart';
 import 'package:redfishopenbmc/redfish/discovery/discovery.dart';
+import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/session.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';

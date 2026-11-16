@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-
-import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/features/systems/widgets/status_badges.dart';
+import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 
 /// A dashboard card summarizing one [SystemHandle].
 ///

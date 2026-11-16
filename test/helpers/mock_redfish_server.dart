@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/redfish/client/redfish_client.dart';
+import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 
 /// An in-process Redfish mock server that serves the real DMTF
 /// `public-rackmount1` mockup from [fixturesDir] over genuine HTTP.

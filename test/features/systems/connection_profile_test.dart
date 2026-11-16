@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
+import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 
 void main() {
   group('ConnectionProfile', () {

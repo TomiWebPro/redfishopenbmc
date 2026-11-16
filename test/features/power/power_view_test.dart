@@ -6,17 +6,16 @@ import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:redfishopenbmc/core/storage/secure_storage.dart';
 import 'package:redfishopenbmc/features/power/power_controller.dart';
 import 'package:redfishopenbmc/features/power/power_page.dart';
 import 'package:redfishopenbmc/features/power/power_providers.dart';
 import 'package:redfishopenbmc/features/power/power_service.dart';
 import 'package:redfishopenbmc/features/power/views/power_view.dart';
-import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
 import 'package:redfishopenbmc/features/systems/providers/profile_repository.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
+import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/session.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';

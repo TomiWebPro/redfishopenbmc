@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:redfishopenbmc/core/storage/secure_storage.dart';
-import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
+import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 
 /// Persistence contract for [ConnectionProfile] records.
 ///

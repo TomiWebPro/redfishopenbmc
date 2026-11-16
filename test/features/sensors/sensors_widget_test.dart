@@ -9,8 +9,8 @@ import 'package:redfishopenbmc/features/sensors/models/sensor_models.dart';
 import 'package:redfishopenbmc/features/sensors/sensors_providers.dart';
 import 'package:redfishopenbmc/features/sensors/sensors_service.dart';
 import 'package:redfishopenbmc/features/sensors/views/sensors_view.dart';
-import 'package:redfishopenbmc/features/systems/models/connection_profile.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
+import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
