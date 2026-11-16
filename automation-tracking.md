@@ -8421,3 +8421,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** dart format (touched files); analyze 0; tests 529 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this run) — `auto: FEATURE #023 fix overview refresh leak and async errors (run 2026-11-16 09:39 UTC)`; pushed: pending.
 - **Next:** 1) FEATURE #025 — harden unsafe `.first` / `as` casts against empty or null collections. 2) FEATURE #012 — consolidate app-wide DI providers into a core/di module. 3) FEATURE #021/#019 — KVM console rendering or sensors real-time telemetry/retry (smallest viable slice).
+
+## 2026-11-16 — FEATURE
+
+- **Baseline:** analyze 0; tests 529 passed / 1 skipped; starting commit 7e0967f (origin/main synced, clean tracked tree except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #025 (smallest open). Hardened listed unsafe collection access/casts: `KvmService.fetchPrimaryConsole`, `FirmwareService.fetchUpdateService` inventory URI resolution, `PowerService._liveSystemUri`, `OverviewService.fetchOverview` member/chassis access, `SystemOverview.fromSystemJson` Temperatures parsing, `fetchSystemSnapshot` non-map member handling, and `ChassisSensors.fromThermalJson` Temperatures/Fans list handling now use `firstOrNull`/null-safe guards instead of unsafe `.first`/casts.
+- **Docs:** anchors unchanged; mirror queue EMPTY (cheap gate, no corpus refresh).
+- **Emulator:** skipped — no emulator fixture/contract/tool changes requiring full suite and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/features/kvm/kvm_service.dart`, `lib/features/firmware/firmware_service.dart`, `lib/features/power/power_service.dart`, `lib/features/overview/overview_service.dart`, `lib/features/overview/models/system_overview.dart`, `lib/features/systems/providers/system_snapshot_fetcher.dart`, `lib/features/sensors/models/sensor_models.dart`, `test/features/systems/system_snapshot_fetcher_test.dart`, `test/features/sensors/sensors_model_test.dart`, `test/features/overview/overview_provider_test.dart`; `issues/closed/025-harden-unsafe-collection-access.md` closed.
+- **UI:** none (defensive parsing/service hardening; no user-visible UI change).
+- **Verification:** dart format (touched tests); analyze 0; tests 532 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #025 harden unsafe collection access (run 2026-11-16)`; pushed: pending.
+- **Next:** 1) FEATURE #012 — consolidate app-wide DI providers into a core/di module (smallest safe slice). 2) FEATURE #021/#019 — pick smallest viable slice (KVM console rendering or sensors realtime telemetry/retry). 3) FEATURE #028 — BIOS configuration editor (Bios/Settings surface) or triage epics #006–#010 acceptance.

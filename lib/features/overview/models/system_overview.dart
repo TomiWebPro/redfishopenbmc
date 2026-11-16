@@ -266,13 +266,13 @@ class SystemOverview {
     String? resourceUri,
   }) {
     double? temp;
-    final List<dynamic>? temps = thermalJson?['Temperatures'] as List<dynamic>?;
-    if (temps != null && temps.isNotEmpty) {
-      final dynamic first = temps.first;
-      if (first is Map<String, dynamic>) {
-        final dynamic reading = first['ReadingCelsius'];
-        if (reading is num) temp = reading.toDouble();
-      }
+    final dynamic tempsRaw = thermalJson?['Temperatures'];
+    final List<dynamic> temps =
+        tempsRaw is List<dynamic> ? tempsRaw : const <dynamic>[];
+    final dynamic first = temps.firstOrNull;
+    if (first is Map<String, dynamic>) {
+      final dynamic reading = first['ReadingCelsius'];
+      if (reading is num) temp = reading.toDouble();
     }
     return SystemOverview.fromRedfish(
       json,

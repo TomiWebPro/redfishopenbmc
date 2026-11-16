@@ -91,6 +91,30 @@ void main() {
       expect(snap.error, 'No ComputerSystems reported');
     });
 
+    test('tolerates empty or non-map member entries without throwing',
+        () async {
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://bmc1:443'));
+      final DioAdapter adapter =
+          DioAdapter(dio: dio, matcher: const _PathMatcher());
+      adapter.onGet(
+        '/redfish/v1/Systems',
+        (server) => server.reply(
+          200,
+          <String, dynamic>{
+            'Members': <dynamic>[null, 'unexpected']
+          },
+          headers: <String, List<String>>{
+            Headers.contentTypeHeader: <String>[Headers.jsonContentType],
+          },
+        ),
+      );
+
+      final SystemSnapshot snap = await fetchSystemSnapshot(RedfishClient(
+          profile: const ConnectionProfile(host: 'bmc1'), dio: dio));
+      expect(snap.health, Health.unknown);
+      expect(snap.error, 'No ComputerSystems reported');
+    });
+
     test('degrades to unknown health on a transport error', () async {
       final Dio dio = Dio(BaseOptions(baseUrl: 'https://bmc1:443'));
       final DioAdapter adapter =

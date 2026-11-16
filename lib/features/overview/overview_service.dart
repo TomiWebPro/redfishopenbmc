@@ -30,7 +30,8 @@ class OverviewService {
         await client.getJson('/redfish/v1/Systems');
     final List<dynamic> members =
         (root['Members'] as List<dynamic>?) ?? const <dynamic>[];
-    if (members.isEmpty) {
+    final dynamic first = members.firstOrNull;
+    if (first == null) {
       throw RedfishException(
         message: 'This BMC reported no ComputerSystems to summarize.',
         errorCode: 'Base.1.0.ResourceMissing',
@@ -39,7 +40,6 @@ class OverviewService {
       );
     }
 
-    final dynamic first = members.first;
     final String systemUri;
     if (first is Map<dynamic, dynamic>) {
       final dynamic id = first['@odata.id'];
@@ -57,7 +57,7 @@ class OverviewService {
     final dynamic chassisList = linksMap['Chassis'];
     final String? chassisUri;
     if (chassisList is List<dynamic> && chassisList.isNotEmpty) {
-      final dynamic firstChassis = chassisList.first;
+      final dynamic firstChassis = chassisList.firstOrNull;
       if (firstChassis is Map<dynamic, dynamic>) {
         final dynamic cid = firstChassis['@odata.id'];
         chassisUri = cid is String && cid.isNotEmpty ? cid : null;

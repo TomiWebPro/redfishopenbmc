@@ -91,7 +91,7 @@ class KvmService {
     for (final KvmConsole console in consoles) {
       if (console.type == KvmConsoleType.graphical) return console;
     }
-    return consoles.first;
+    return consoles.firstOrNull;
   }
 
   /// Resolves the `@odata.id` of a collection member (string or link map).

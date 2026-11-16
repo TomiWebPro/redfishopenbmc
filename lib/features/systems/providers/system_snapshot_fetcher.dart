@@ -14,10 +14,10 @@ Future<SystemSnapshot> fetchSystemSnapshot(RedfishClient client) async {
         await client.getJson('/redfish/v1/Systems');
     final List<dynamic> members =
         (root['Members'] as List<dynamic>?) ?? <dynamic>[];
-    if (members.isEmpty) {
+    final dynamic first = members.firstOrNull;
+    if (first is! Map<String, dynamic>) {
       return const SystemSnapshot(error: 'No ComputerSystems reported');
     }
-    final Map<String, dynamic> first = members.first as Map<String, dynamic>;
     final String odataId =
         (first['@odata.id'] as String?) ?? '/redfish/v1/Systems/1';
     final Map<String, dynamic> system = await client.getJson(odataId);

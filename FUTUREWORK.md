@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-16 (run 2026-11-16 09:39 UTC — FEATURE #023: fixed `OverviewView` `listenManual` leak by storing/closing the subscription, handled timer/power-change refresh failures, and made `SystemManager.refreshSnapshot` preserve the previous snapshot while rethrowing transient failures to callers; updated manual refresh handling in `SystemOverviewPage`. Closed `issues/closed/023-overview-leak-async.md`. Anchors unchanged; mirror queue EMPTY; full emulator re-run skipped (no emulator/fixture/tool changes, last green run 2026-11-16 05:27 UTC). Baseline: analyze 0, tests 526 passed / 1 skipped (c0351c3). Verify: analyze 0, tests 529 passed / 1 skipped, issues validate OK.)**
-- **Current focus:** **FEATURE — smallest open issue first.** Next: `#025` unsafe collection access (`.first` / `as` casts) → `#012` consolidate DI providers → `#021`/`#019` → `#028` BIOS editor → triage `#006`–`#010` (code EXISTS for these epics — verify acceptance boxes, close or split, do not rebuild). DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code change or >7 days. Verification-only runs are failures while issues remain open.
+- **Last updated: 2026-11-16 (run 2026-11-16 — FEATURE #025: hardened listed unsafe `.first`/collection casts in KVM/firmware/power/overview/snapshot/sensor paths with `firstOrNull` and null-safe list handling; added regression tests for empty/missing/malformed collections. Closed `issues/closed/025-harden-unsafe-collection-access.md`. Anchors unchanged; mirror queue EMPTY; full emulator re-run skipped (no emulator/fixture/tool contract changes, last green run 2026-11-16 05:27 UTC <7 days). Baseline: analyze 0, tests 529 passed / 1 skipped (7e0967f). Verify: analyze 0, tests 532 passed / 1 skipped, issues validate OK.)**
+- **Current focus:** **FEATURE — smallest open issue first.** Next: `#012` consolidate DI providers → `#021`/`#019` (smallest viable slice) → `#028` BIOS editor → triage `#006`–`#010` (code EXISTS for these epics — verify acceptance boxes, close or split, do not rebuild). DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code change or >7 days. Verification-only runs are failures while issues remain open.
 - **Run cadence:** `@every 30m` in scheduler (runbook originally `0 */5 * * *`; restore 5h once the small-issue backlog is empty, or keep 30m ONLY for FEATURE runs — never schedule verification-only churn at 30m).
 - **Model:** `opencode-go/iceman-contributor-free` (scheduler actual; runbook header was `opencode/deepseek-v4.1-flash-free` — updated 2026-11-16)
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -18,9 +18,9 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 1. **P0 first.** If `flutter analyze` or `flutter test` is red, repair that before
    any new work. Never start a feature on a red baseline.
 2. **FEATURE second, always.** On a green baseline, pick the smallest open
-   issue from `issues/open/` (order: `#025` → `#012` →
+   issue from `issues/open/` (order: `#012` →
    `#021` → `#019` → `#028`, then triage `#006`–`#010`; completed: `#024`,
-   `#026`, `#013`, `#011`, `#017`, `#018`, `#023`) and land it with tests. Every green run
+   `#026`, `#013`, `#011`, `#017`, `#018`, `#023`, `#025`) and land it with tests. Every green run
    MUST change `lib/` / `test/` / `test_integration/` / `tool/`. A run with
    zero code changes is a failed run while any issue is open.
 3. **DOCS is a cheap gate, never the primary.** Check anchors
@@ -1615,11 +1615,11 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 
 ## P2 — refactor and quality
 
-- [ ] **#011** Relocate `ConnectionProfile` to `core`.
+- [x] **#011** Relocate `ConnectionProfile` to `core`. (run 2026-11-16, commit 221d510 — canonical model moved to `lib/redfish/models/connection_profile.dart` with compatibility re-export; closed `issues/closed/011-relocate-connection-profile-to-core.md`)
 - [ ] **#012** Consolidate DI providers.
-- [x] **#013** Remove dead `app_breakpoints.dart`. (run 2026-11-16, commit pending — deleted dead `lib/core/theme/app_breakpoints.dart` and reconciled to canonical `lib/core/theme/breakpoints.dart`; closed `issues/closed/013-remove-dead-breakpoints.md`)
-- [ ] **#023** Overview: `listenManual` leak and async errors.
-- [ ] **#025** Harden unsafe `.first` / `as` casts.
+- [x] **#013** Remove dead `app_breakpoints.dart`. (run 2026-11-16, commit 13594e0 — deleted dead `lib/core/theme/app_breakpoints.dart` and reconciled to canonical `lib/core/theme/breakpoints.dart`; closed `issues/closed/013-remove-dead-breakpoints.md`)
+- [x] **#023** Overview: `listenManual` leak and async errors. (run 2026-11-16 09:39 UTC, commit 7e0967f — stored/closed overview power-state subscription, handled refresh failures safely, preserved snapshot on transient refresh errors; closed `issues/closed/023-overview-leak-async.md`)
+- [x] **#025** Harden unsafe `.first` / `as` casts. (run 2026-11-16 — guarded listed `.first` accesses and null-safe collection casts in KVM/firmware/power/overview/snapshot/sensor paths; added empty/missing collection regression tests; closed `issues/closed/025-harden-unsafe-collection-access.md`)
 - [ ] Keep coverage **≥ 80%** for every feature touched by a run.
 - [ ] Run `dart format` on Dart sources; keep `flutter analyze` at zero.
       (note 2026-10-25 DOCS run: the Flutter 3.47.6 `dart format` reflows 26

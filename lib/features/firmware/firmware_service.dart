@@ -98,8 +98,11 @@ class FirmwareService {
 
     final List<FirmwareInventoryItem> items = <FirmwareInventoryItem>[];
     try {
-      final Map<String, dynamic> collection =
-          await c.getJson(inventoryLinks.first);
+      final String? inventoryUri = inventoryLinks.firstOrNull;
+      if (inventoryUri == null || inventoryUri.isEmpty) {
+        return base;
+      }
+      final Map<String, dynamic> collection = await c.getJson(inventoryUri);
       for (final String memberId in ODataResource(collection).memberIds()) {
         try {
           final Map<String, dynamic> member = await c.getJson(memberId);

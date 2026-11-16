@@ -174,8 +174,7 @@ class PowerService {
     final Map<String, dynamic> root = await _safeGet('/redfish/v1/Systems');
     final List<dynamic> members =
         (root['Members'] as List<dynamic>?) ?? <dynamic>[];
-    if (members.isEmpty) return null;
-    final dynamic first = members.first;
+    final dynamic first = members.firstOrNull;
     if (first is Map<dynamic, dynamic>) {
       final dynamic id = first['@odata.id'];
       if (id is String && id.isNotEmpty) return id;

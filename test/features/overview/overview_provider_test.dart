@@ -179,6 +179,23 @@ void main() {
       expect(o.leadingTemperatureCelsius, 38.5);
       expect(o.resourceUri, '/redfish/v1/Systems/system');
     });
+
+    test('fromSystemJson tolerates missing or empty Temperatures collections',
+        () {
+      final SystemOverview empty = SystemOverview.fromSystemJson(
+        <String, dynamic>{},
+        thermalJson: <String, dynamic>{
+          'Temperatures': <dynamic>[],
+        },
+      );
+      expect(empty.leadingTemperatureCelsius, isNull);
+
+      final SystemOverview missing = SystemOverview.fromSystemJson(
+        <String, dynamic>{},
+        thermalJson: <String, dynamic>{'Temperatures': null},
+      );
+      expect(missing.leadingTemperatureCelsius, isNull);
+    });
   });
 
   group('SystemOverview — toJson / copyWith / helpers', () {

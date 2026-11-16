@@ -63,5 +63,18 @@ void main() {
       expect(const StatusInfo(health: 'Nonsense').healthEnum, Health.unknown);
       expect(const StatusInfo().healthEnum, Health.unknown);
     });
+
+    test('fromThermalJson tolerates missing or non-list Temperatures/Fans', () {
+      final ChassisSensors cs = ChassisSensors.fromThermalJson(
+        '1U',
+        <String, dynamic>{
+          '@odata.id': '/redfish/v1/Chassis/1U/Thermal',
+          'Temperatures': null,
+          'Fans': 'not-a-list',
+        },
+      );
+      expect(cs.thermal, isEmpty);
+      expect(cs.fans, isEmpty);
+    });
   });
 }

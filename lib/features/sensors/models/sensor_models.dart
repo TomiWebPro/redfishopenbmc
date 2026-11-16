@@ -259,12 +259,12 @@ class ChassisSensors {
   }) {
     final String base = _asString(json['@odata.id']) ??
         '/redfish/v1/Chassis/$chassisId/Thermal';
-    final List<dynamic> temps = json['Temperatures'] is List<dynamic>
-        ? json['Temperatures'] as List<dynamic>
-        : const <dynamic>[];
-    final List<dynamic> fans = json['Fans'] is List<dynamic>
-        ? json['Fans'] as List<dynamic>
-        : const <dynamic>[];
+    final dynamic tempsRaw = json['Temperatures'];
+    final List<dynamic> temps =
+        tempsRaw is List<dynamic> ? tempsRaw : const <dynamic>[];
+    final dynamic fansRaw = json['Fans'];
+    final List<dynamic> fans =
+        fansRaw is List<dynamic> ? fansRaw : const <dynamic>[];
     return ChassisSensors(
       chassisId: chassisId,
       chassisName: chassisName,

@@ -9016,3 +9016,18 @@
 - FEATURE #021/#019 — pick smallest viable slice
 
 **Issues touched:** #023 (closed)
+
+## 2026-11-16 — agent:redfish-automation — #025
+
+**Done:**
+- FEATURE #025 (smallest open). Baseline green at 7e0967f (analyze 0, 529 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Hardened listed unsafe `.first`/collection cast sites: `lib/features/kvm/kvm_service.dart`, `lib/features/firmware/firmware_service.dart`, `lib/features/power/power_service.dart`, `lib/features/overview/overview_service.dart`, `lib/features/overview/models/system_overview.dart`, `lib/features/systems/providers/system_snapshot_fetcher.dart`, `lib/features/sensors/models/sensor_models.dart`. Added regression coverage for empty/missing/malformed collections in `test/features/systems/system_snapshot_fetcher_test.dart`, `test/features/sensors/sensors_model_test.dart`, and `test/features/overview/overview_provider_test.dart`. Closed `issues/closed/025-harden-unsafe-collection-access.md`.
+
+**Decisions:**
+- Chose #025 as smallest open issue per runbook/FUTUREWORK order. Used `firstOrNull`/null-safe guards and safe list handling to degrade gracefully on untrusted BMC payloads. DOCS anchors unchanged/mirror queue EMPTY; full EMULATOR re-run skipped (no emulator/fixture/tool contract changes, last green <7 days). No UI work needed.
+
+**Next:**
+- FEATURE #012 — consolidate app-wide DI providers into a core/di module
+- FEATURE #021/#019 — pick smallest viable slice
+- FEATURE #028 — BIOS configuration editor or triage #006–#010
+
+**Issues touched:** #025 (closed)
