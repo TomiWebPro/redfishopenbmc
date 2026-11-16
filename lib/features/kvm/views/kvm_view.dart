@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_controller.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_providers.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
+import 'package:redfishopenbmc/features/kvm/views/kvm_console_viewer_page.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
@@ -425,17 +426,36 @@ class _ConsoleCard extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: targetUri));
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Copied: $targetUri')),
-                  );
-                }
-              },
-              icon: const Icon(Icons.copy),
-              label: const Text('Copy connect info'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: <Widget>[
+                if (console.connectUri != null)
+                  FilledButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (BuildContext context) =>
+                              KvmConsoleViewerPage(console: console),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.open_in_new),
+                    label: const Text('Open console'),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await Clipboard.setData(ClipboardData(text: targetUri));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Copied: $targetUri')),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.copy),
+                  label: const Text('Copy connect info'),
+                ),
+              ],
             ),
           ],
         ),

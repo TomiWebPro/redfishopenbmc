@@ -65,6 +65,50 @@ void main() {
       expect(graphical.supportsHtml5, isFalse);
     });
 
+    test('HTML5 HTTP(S) connect URI is marked as in-app launchable (#021)', () {
+      const KvmConsole console = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['KVMIP', 'HTML5'],
+        serviceEnabled: true,
+        connectUri: 'https://bmc.example.com/kvm',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      expect(console.launchUri, 'https://bmc.example.com/kvm');
+      expect(console.hasHttpLaunchUri, isTrue);
+      expect(console.canLaunchInAppHtml5, isTrue);
+    });
+
+    test('non-HTML5 or non-HTTP URI is not in-app HTML5 launchable (#021)', () {
+      const KvmConsole noHtml5 = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['KVMIP'],
+        serviceEnabled: true,
+        connectUri: 'https://bmc.example.com/kvm',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      const KvmConsole nonHttp = KvmConsole(
+        type: KvmConsoleType.remote,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['HTML5'],
+        serviceEnabled: true,
+        connectUri: 'vnc://bmc.example.com:5900',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      const KvmConsole noUri = KvmConsole(
+        type: KvmConsoleType.oem,
+        managerId: 'BMC',
+        serviceEnabled: true,
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      expect(noHtml5.canLaunchInAppHtml5, isFalse);
+      expect(nonHttp.hasHttpLaunchUri, isFalse);
+      expect(nonHttp.canLaunchInAppHtml5, isFalse);
+      expect(noUri.launchUri, isNull);
+      expect(noUri.canLaunchInAppHtml5, isFalse);
+    });
+
     test('KvmConsoleType.fromRedfish maps the standard block names', () {
       expect(
         KvmConsoleType.fromRedfish('GraphicalConsole'),

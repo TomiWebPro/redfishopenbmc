@@ -9110,3 +9110,23 @@
 
 ### Issues touched
 - #021 (open, partial progress)
+
+## 2026-11-16 — agent:redfish-automation — #021
+
+### Done
+- FEATURE #021 partial (smallest viable slice): added HTML5 in-app launchability helpers on `KvmConsole` (`launchUri`, `hasHttpLaunchUri`, `canLaunchInAppHtml5`) and scaffolded `KvmConsoleViewerPage` as the in-app destination for consoles with a direct `ConnectUri`.
+- Wired `KvmView` "Open console" action to navigate to the viewer (copy/connect-info behavior preserved; OEM/no-URI external notice unchanged).
+- Documented rendering strategy in `issues/open/021-kvm-console-rendering.md` (WebView candidate for HTML5 HTTP(S), external path for RFB/KVMIP/no-URI, no production TLS weakening).
+- Added tests: `test/features/kvm/kvm_model_test.dart` (+2) and `test/features/kvm/kvm_widget_test.dart` (+1 navigation/viewer; no-URI case asserts no Open action).
+
+### Decisions
+- Kept #021 open: embedded WebView rendering requires dependency/platform/TLS validation; this run delivered a tested in-app viewer path and strategy instead of adding a risky platform dependency blindly.
+- DOCS cheap gate only (anchors unchanged, mirror queue EMPTY); full emulator re-run skipped (no emulator/fixture/tool contract changes, last green 2026-11-16 05:27 UTC <7 days).
+
+### Next
+1. Continue #021 — add/validate embedded HTML5 WebView dependency for `KvmConsoleViewerPage` with platform/TLS constraints, or land tested external-launch handling for KVMIP/RFB URIs.
+2. #019 — EventService or broader end-to-end/integration refresh coverage if a small safe slice is identified.
+3. #028 — BIOS configuration editor (Bios/Settings surface).
+
+### Issues touched
+- #021 (open, partial progress)

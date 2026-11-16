@@ -119,6 +119,30 @@ class KvmConsole {
   /// web UI rather than a native client.
   bool get supportsHtml5 => connectTypesSupported.contains('HTML5');
 
+  /// The preferred URI for launching/opening this console.
+  ///
+  /// Uses [connectUri] when present; returns `null` when there is no direct
+  /// console endpoint to open.
+  String? get launchUri => connectUri;
+
+  /// Whether [launchUri] is an HTTP(S) URL suitable for browser/WebView launch.
+  bool get hasHttpLaunchUri {
+    final String? uri = launchUri;
+    if (uri == null || uri.isEmpty) return false;
+    final Uri? parsed = Uri.tryParse(uri);
+    return parsed != null &&
+        (parsed.scheme == 'http' || parsed.scheme == 'https') &&
+        parsed.host.isNotEmpty;
+  }
+
+  /// Whether this console can follow the in-app HTML5 rendering path.
+  ///
+  /// This is the minimal client-side criterion: an enabled HTML5 console with a
+  /// direct HTTP(S) [connectUri]. Actual embedded rendering depends on a
+  /// platform WebView dependency (tracked in issue #021).
+  bool get canLaunchInAppHtml5 =>
+      serviceEnabled && supportsHtml5 && hasHttpLaunchUri;
+
   /// Builds the list of [KvmConsole]s detected in a Redfish [managerBody].
   ///
   /// [managerId] is the manager's `Id` (used for display). Each standard
