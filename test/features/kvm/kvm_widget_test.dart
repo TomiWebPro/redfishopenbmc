@@ -240,6 +240,48 @@ void main() {
     });
 
     testWidgets(
+        'KVMIP/RFB console URI shows external-client guidance in viewer (#021)',
+        (WidgetTester tester) async {
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(
+          consoles: <KvmConsole>[
+            KvmConsole(
+              type: KvmConsoleType.graphical,
+              managerId: 'BMC',
+              connectTypesSupported: <String>['KVMIP'],
+              serviceEnabled: true,
+              connectUri: 'vnc://bmc.example.com:5900',
+              sourceManagerUri: '/redfish/v1/Managers/BMC',
+            ),
+          ],
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Open console'), findsOneWidget);
+      await tester.tap(find.text('Open console'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Graphical Console viewer'), findsOneWidget);
+      expect(
+        find.textContaining(
+          'requires an external VNC/KVMIP/RFB client',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('vnc://bmc.example.com:5900'), findsWidgets);
+      expect(find.text('Copy console URI'), findsOneWidget);
+    });
+
+    testWidgets(
         'console card body rows announce as one merged semantics node each '
         '(Manager / Max concurrent sessions / HTML5, UI-2)', (tester) async {
       final KvmController controller = _StubController()

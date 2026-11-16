@@ -22,6 +22,26 @@ class KvmConsoleViewerPage extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final String? uri = console.launchUri;
     final bool html5 = console.canLaunchInAppHtml5;
+    final bool externalClient = console.requiresExternalConsoleClient;
+    final String statusLabel = html5
+        ? 'In-app HTML5 console path available for this URI. '
+            'Embedded rendering requires a WebView dependency.'
+        : externalClient
+            ? 'This console URI uses a protocol that requires an external '
+                'VNC/KVMIP/RFB client. Embedded rendering is not available '
+                'in-app.'
+            : 'In-app embedded rendering is not available for this console. '
+                'Use the URI externally if provided.';
+    final String statusText = html5
+        ? 'In-app HTML5 console path available for this URI. '
+            'Embedded rendering requires a WebView '
+            'dependency (see issue #021 strategy).'
+        : externalClient
+            ? 'This console URI uses a protocol that requires an external '
+                'VNC/KVMIP/RFB client. Embedded rendering is not available '
+                'in-app.'
+            : 'In-app embedded rendering is not available for this console. '
+                'Use the URI externally if provided.';
     return Scaffold(
       appBar: AppBar(
         title: Text('${console.type.label} viewer'),
@@ -49,19 +69,9 @@ class KvmConsoleViewerPage extends StatelessWidget {
                   Semantics(
                     container: true,
                     excludeSemantics: true,
-                    label: html5
-                        ? 'In-app HTML5 console path available for this URI. '
-                            'Embedded rendering requires a WebView dependency.'
-                        : 'In-app embedded rendering is not available for this '
-                            'console. Use the URI externally if provided.',
+                    label: statusLabel,
                     child: Text(
-                      html5
-                          ? 'In-app HTML5 console path available for this URI. '
-                              'Embedded rendering requires a WebView '
-                              'dependency (see issue #021 strategy).'
-                          : 'In-app embedded rendering is not available for '
-                              'this console. Use the URI externally if '
-                              'provided.',
+                      statusText,
                       style: theme.textTheme.bodyMedium,
                     ),
                   ),

@@ -8505,3 +8505,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** `dart format lib test test_integration tool` (0 changed); `flutter analyze` 0 issues; `flutter test` 540 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE #021 kvm console viewer path and launchability (run 2026-11-16 14:05 UTC)`; pushed: pending.
 - **Next:** 1) Continue #021 — add/validate embedded HTML5 WebView dependency for `KvmConsoleViewerPage` with platform/TLS constraints, or land tested external-launch handling for KVMIP/RFB URIs. 2) #019 — EventService or broader end-to-end/integration refresh coverage if a small safe slice is identified. 3) #028 — BIOS configuration editor (Bios/Settings surface).
+
+## 2026-11-16 15:25 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 540 passed / 1 skipped; starting commit ca6d427 (main in sync with origin/main at preflight, tracked tree clean except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #021 partial (smallest viable slice). Added `KvmConsole.requiresExternalConsoleClient` for VNC/RFB/KVMIP URI schemes and updated `KvmConsoleViewerPage` to show explicit external VNC/KVMIP/RFB client guidance when such a URI is opened in-app (copy/open path preserved). Keeps HTML5 HTTP(S) path/scaffold behavior unchanged.
+- **Docs:** cheap anchor gate only — anchors unchanged (bmcweb `3cdd1fa531f7`, mockup `23d21f9a3610`, DSP0266 1.25.0) and mirror queue EMPTY; no corpus/manifest refresh.
+- **Emulator:** skipped — no emulator fixture/contract/tooling changes requiring full suite and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/features/kvm/models/kvm_models.dart`, `lib/features/kvm/views/kvm_console_viewer_page.dart`, `test/features/kvm/kvm_model_test.dart` (+1 test, assertions extended), `test/features/kvm/kvm_widget_test.dart` (+1 viewer guidance test), `issues/open/021-kvm-console-rendering.md`, `FUTUREWORK.md`.
+- **UI:** KVM viewer now distinguishes external-protocol console URIs (VNC/RFB/KVMIP) with clear guidance; OEM/no-URI and HTML5 scaffold flows unchanged.
+- **Verification:** `dart format` not separately required (edits formatted); `flutter analyze` 0 issues; `flutter test` 542 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #021 external client guidance for KVMIP/RFB (run 2026-11-16 15:25 UTC)`; pushed: pending.
+- **Next:** 1) Continue #021 — evaluate/add embedded HTML5 WebView dependency for `KvmConsoleViewerPage` with platform/TLS constraints, or document validated blocker and smallest safe alternative. 2) #019 — EventService/end-to-end refresh coverage if a small safe slice is identified. 3) #028 — BIOS configuration editor (Bios/Settings surface).

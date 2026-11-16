@@ -143,6 +143,20 @@ class KvmConsole {
   bool get canLaunchInAppHtml5 =>
       serviceEnabled && supportsHtml5 && hasHttpLaunchUri;
 
+  /// Whether [launchUri] uses a protocol that requires an external client
+  /// (e.g. VNC/RFB/KVMIP) rather than browser/WebView rendering.
+  bool get requiresExternalConsoleClient {
+    final String? uri = launchUri;
+    if (uri == null || uri.isEmpty) return false;
+    final Uri? parsed = Uri.tryParse(uri);
+    if (parsed == null) return false;
+    final String scheme = parsed.scheme.toLowerCase();
+    return scheme == 'vnc' ||
+        scheme == 'rfb' ||
+        scheme == 'kvmip' ||
+        scheme == 'kvm';
+  }
+
   /// Builds the list of [KvmConsole]s detected in a Redfish [managerBody].
   ///
   /// [managerId] is the manager's `Id` (used for display). Each standard

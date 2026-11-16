@@ -103,10 +103,36 @@ void main() {
         sourceManagerUri: '/redfish/v1/Managers/BMC',
       );
       expect(noHtml5.canLaunchInAppHtml5, isFalse);
+      expect(noHtml5.requiresExternalConsoleClient, isFalse);
       expect(nonHttp.hasHttpLaunchUri, isFalse);
       expect(nonHttp.canLaunchInAppHtml5, isFalse);
+      expect(nonHttp.requiresExternalConsoleClient, isTrue);
       expect(noUri.launchUri, isNull);
       expect(noUri.canLaunchInAppHtml5, isFalse);
+      expect(noUri.requiresExternalConsoleClient, isFalse);
+    });
+
+    test('KVMIP/RFB URI schemes require external console client (#021)', () {
+      const KvmConsole kvmip = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['KVMIP'],
+        serviceEnabled: true,
+        connectUri: 'kvmip://bmc.example.com:5900',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      const KvmConsole rfb = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['KVMIP'],
+        serviceEnabled: true,
+        connectUri: 'rfb://bmc.example.com:5901',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      expect(kvmip.requiresExternalConsoleClient, isTrue);
+      expect(kvmip.canLaunchInAppHtml5, isFalse);
+      expect(rfb.requiresExternalConsoleClient, isTrue);
+      expect(rfb.canLaunchInAppHtml5, isFalse);
     });
 
     test('KvmConsoleType.fromRedfish maps the standard block names', () {

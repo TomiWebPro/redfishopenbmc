@@ -9130,3 +9130,18 @@
 
 ### Issues touched
 - #021 (open, partial progress)
+
+## 2026-11-16 15:25 UTC — agent:redfish-automation — #021
+
+**Done:**
+- FEATURE #021 partial (smallest viable slice). Baseline green at ca6d427 (analyze 0, 540 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Added `KvmConsole.requiresExternalConsoleClient` for VNC/RFB/KVMIP schemes and updated `KvmConsoleViewerPage` to show explicit external VNC/KVMIP/RFB client guidance for those URIs while preserving copy/open behavior. Updated `issues/open/021-kvm-console-rendering.md` progress/strategy. Added model and widget coverage in `test/features/kvm/kvm_model_test.dart` and `test/features/kvm/kvm_widget_test.dart`.
+
+**Decisions:**
+- Chose external-protocol guidance as a small, safe, testable #021 slice without adding WebView/protocol dependencies or weakening TLS. DOCS cheap gate only (anchors unchanged, mirror queue EMPTY); full EMULATOR re-run skipped (no emulator/fixture/tool contract changes, last green <7 days). Issue remains open (embedded HTML5 rendering and in-app protocol client still pending).
+
+**Next:**
+- Continue #021 — evaluate/add embedded HTML5 WebView dependency for `KvmConsoleViewerPage` with platform/TLS constraints, or document validated blocker/smallest safe alternative
+- #019 — EventService/end-to-end refresh coverage if a small safe slice is identified
+- #028 — BIOS configuration editor (Bios/Settings surface)
+
+**Issues touched:** #021 (open, progress logged)
