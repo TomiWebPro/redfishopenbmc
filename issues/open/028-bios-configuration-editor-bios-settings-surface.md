@@ -110,6 +110,21 @@ corpus-invariant test so every published `@odata.type` is covered.
 
 <!-- Append timestamped notes as you work. Most recent first. -->
 
+- 2026-11-16 — agent:redfish-automation: landed foundational #028 slice
+  (lib/test, no UI/emulator corpus-invariant changes). Added
+  `lib/features/bios/models/bios_models.dart` (tolerant parsing of Bios
+  Attributes/AttributeRegistry, `@Redfish.Settings` annotation incl.
+  settings-object ETag/Messages/SettingsObject URI, pending settings model,
+  attribute diff helper, ResetBios/ChangePassword action targets) and
+  `lib/features/bios/bios_service.dart` (resolve Bios URI from
+  ComputerSystem link/discovery fallback, fetch current + pending settings,
+  PATCH pending attributes with If-Match settings ETag, ResetBios action).
+  Added `test/features/bios/bios_models_test.dart` and
+  `test/features/bios/bios_service_test.dart` (12 tests). Remaining: make
+  Bios/Settings client-mapped in fixtures + emulator corpus-invariant
+  family list, Riverpod wiring/controller, capability-gated UI (320/800/1300
+  + semantics), emulator pin for current-vs-pending compare, and close issue
+  when acceptance is complete.
 - 2026-10-24 — Created from the DOCS-23 client-mapped decision. The EMU-2
   Bios `@Redfish.Settings` pin (EMU 52→53) + DOCS-23 corpus mirror
   (`Bios.v1_2_2`/`v1_3_0`, `Settings.v1_3_5`/`v1_5_0`) provide the full

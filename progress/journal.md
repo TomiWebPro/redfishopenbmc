@@ -9175,3 +9175,19 @@
 - #021 blocked on WebView/TLS validation
 
 **Issues touched:** #019 (closed)
+
+## 2026-11-16 17:10 UTC — agent:redfish-automation — #028
+
+### Done
+- FEATURE #028 foundational slice (smallest safe increment). Baseline green at 4e1c3ee (analyze 0, 544 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Added `lib/features/bios/models/bios_models.dart` with tolerant parsing for current Bios resources and pending settings: attributes/attribute registry, `@Redfish.Settings` annotation (settings-object ETag, messages, SettingsObject URI, time), ResetBios/ChangePassword action targets, pending settings model, and `BiosAttributes.diffKeys` for current-vs-pending comparison. Added `lib/features/bios/bios_service.dart` to resolve Bios URI (ComputerSystem `Bios` link/discovery/live fallback), fetch current and pending settings, PATCH pending attributes to the settings object with `If-Match` set from the settings ETag, and POST `#Bios.ResetBios`. Added 12 unit tests in `test/features/bios/bios_models_test.dart` and `test/features/bios/bios_service_test.dart`.
+
+### Decisions
+- Chose a model/service foundation (lib/test only) as a small, testable #028 slice without touching `test_integration/`/fixtures, so full EMULATOR re-run was not required this run. Did not add Riverpod/UI/corpus-invariant client-mapping yet (follow-up slices). DOCS cheap gate only (anchors unchanged bmcweb `3cdd1fa531f7`, mockup `23d21f9a3610`, DSP0266 1.25.0, mirror queue EMPTY).
+
+### Next
+- Continue #028 — Riverpod provider/controller + capability-gated read-only Bios/Settings UI slice with widget tests (320/800/1300, semantics).
+- Continue #028 — fixture/corpus-invariant client-mapped mapping for Bios/Settings + emulator pin (requires full EMULATOR re-run).
+- If blocked, triage `#006`–`#010` with small tested fixes/closure or split.
+
+### Issues touched
+- #028 (open, progress logged)

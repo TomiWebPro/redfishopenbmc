@@ -8541,3 +8541,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** `flutter analyze` 0 issues; `flutter test` 544 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
 - **Commit:** (this commit) — `auto: FEATURE close #019 sensors realtime (run 2026-11-16 16:30 UTC)`; pushed: pending.
 - **Next:** 1) `#028` — BIOS configuration editor (Bios/Settings surface), smallest safe slice. 2) If #028 too large, triage `#006`–`#010` (verify acceptance, close/split). 3) #021 remains blocked (WebView/protocol-client needs platform/TLS validation).
+
+## 2026-11-16 17:10 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 544 passed / 1 skipped; starting commit 4e1c3ee (origin/main synced, tracked tree clean except untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #028 (smallest open/next focus, foundational slice). Added `lib/features/bios/models/bios_models.dart` and `lib/features/bios/bios_service.dart` to parse the Bios resource and `@Redfish.Settings` surface (Attributes/AttributeRegistry, settings-object ETag/Messages/SettingsObject URI, pending settings, attribute diff helper, ResetBios/ChangePassword action targets) and to resolve/fetch current+pending Bios settings, PATCH pending attributes with `If-Match` settings ETag, and POST ResetBios. No UI/controller/provider wiring or emulator corpus-invariant mapping yet.
+- **Docs:** cheap anchor gate only — anchors unchanged (bmcweb `3cdd1fa531f7`, mockup `23d21f9a3610`, DSP0266 1.25.0, schema index 200, hub 200) and mirror queue EMPTY; no corpus/manifest refresh.
+- **Emulator:** skipped — no emulator fixture/contract/test_integration/tool changes requiring full suite and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/features/bios/models/bios_models.dart` (new), `lib/features/bios/bios_service.dart` (new), `test/features/bios/bios_models_test.dart` (new, 4 tests), `test/features/bios/bios_service_test.dart` (new, 8 tests), `issues/open/028-bios-configuration-editor-bios-settings-surface.md` (progress logged). Issue remains open.
+- **UI:** none this slice (foundational model/service only).
+- **Verification:** `dart format lib/features/bios test/features/bios`; `flutter analyze` 0 issues; `flutter test` 556 passed / 1 skipped; `python3 issues/issues.py validate` OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #028 bios settings model/service slice (run 2026-11-16 17:10 UTC)`; pushed: pending.
+- **Next:** 1) Continue #028 — Riverpod provider/controller + capability-gated read-only Bios/Settings UI slice with widget tests (320/800/1300, semantics). 2) Continue #028 — make Bios/Settings client-mapped in fixtures + emulator corpus-invariant family list with emulator pin (requires full EMULATOR re-run). 3) If #028 slice blocked, triage `#006`–`#010` (verify acceptance, close/split with small tested changes).
