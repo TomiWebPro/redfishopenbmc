@@ -8337,3 +8337,15 @@ Append-only run log for the `redfish-automation` scheduler job.
 - **Verification:** analyze 0; tests 522 passed / 1 skipped; emulator 85/85; issues validate OK; `git diff --check` clean (pre-commit); secret scan clean (tracking/FUTUREWORK/journal updates only).
 - **Commit:** (this commit) — `auto: EMULATOR — DMTF mockup 85/85 re-run (pin 23d21f9a) (run 2026-11-16 05:27 UTC)`; pushed: pending.
 - **Next:** 1) DOCS per alternation — anchor freshness re-verify (hub/index/DSP0266 1.25.0, bmcweb master, Redfish-Mockup-Server main; mirror queue likely EMPTY). 2) P1 #015 AuthManager — wire `Session.expiryFromService` into login/re-auth flow. 3) P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff).
+
+## 2026-11-16 06:01 UTC — FEATURE
+
+- **Baseline:** analyze 0; tests 522 passed / 1 skipped; starting commit 506bc21 (origin/main synced, untracked `testing/` left untouched); issues validate OK.
+- **Primary work:** FEATURE #024 (smallest open). Fixed `SecureStorageProfileRepository.clear()` to delete per-profile remembered-password keys (`redfish.pw.<id>`) for all stored profiles, matching `removeProfile` behavior and preventing orphaned credentials after clear-all.
+- **Docs:** anchors unchanged; mirror queue EMPTY (cheap gate, no corpus refresh).
+- **Emulator:** skipped — no `lib/`/`test_integration/`/`tool/`/fixture changes requiring full suite and last green run 2026-11-16 05:27 UTC (<7 days).
+- **Code/tests:** `lib/features/systems/providers/profile_repository.dart`, `test/features/systems/profile_repository_test.dart`, `issues/closed/024-clear-orphaned-passwords.md` (closed). New test: `SecureStorageProfileRepository clear deletes profile blob and all remembered password keys`.
+- **UI:** none (storage-layer bug fix).
+- **Verification:** analyze 0; tests 523 passed / 1 skipped; issues validate OK; `git diff --check` clean; secret scan clean.
+- **Commit:** (this commit) — `auto: FEATURE #024 clear orphaned profile passwords (run 2026-11-16 06:01 UTC)`; pushed: pending.
+- **Next:** 1) FEATURE #026 — resolve duplicate auth fields (`preferSessionAuth` vs `authMethod`) with canonical field + consistent form/client/tests. 2) FEATURE #013 — remove dead `app_breakpoints.dart` and reconcile breakpoint taxonomy. 3) FEATURE #011 — relocate `ConnectionProfile` model into core layer (fix core→feature dependency).

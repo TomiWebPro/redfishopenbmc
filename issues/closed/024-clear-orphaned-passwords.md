@@ -1,17 +1,16 @@
 ---
 id: "024"
 title: "profile_repository.clear() must delete per-profile password keys"
-status: open
+status: closed
 priority: P2
 type: bug
-created: 2026-08-30
-updated: 2026-08-30
-closed: null
+created: "2026-08-30"
+updated: 2026-11-16
+closed: 2026-11-16
 assignee: unassigned
 labels: [security, storage, credentials]
 estimated_tokens: 8000
 ---
-
 # 024 — profile_repository.clear() orphans credentials
 
 > `profile_repository.dart:92-94` `clear()` deletes only the profile blob key (`redfish.profiles`) and does NOT delete per-profile password keys (`redfish.pw.<id>`). Remembered passwords remain in the secure keystore after a clear. `removeProfile` (`:88`) does delete them — inconsistent.
@@ -28,14 +27,14 @@ estimated_tokens: 8000
 
 ## Goals / Acceptance Criteria
 
-- [ ] `clear()` removes all `redfish.pw.<id>` keys.
-- [ ] Behavior consistent with `removeProfile`.
-- [ ] Test verifies keys gone after clear.
+- [x] `clear()` removes all `redfish.pw.<id>` keys.
+- [x] Behavior consistent with `removeProfile`.
+- [x] Test verifies keys gone after clear.
 
 ## Tasks
 
-- [ ] Edit `profile_repository.dart:clear()`.
-- [ ] Test in `test/features/systems/profile_repository_test.dart`.
+- [x] Edit `profile_repository.dart:clear()`.
+- [x] Test in `test/features/systems/profile_repository_test.dart`.
 
 ## Redfish Mapping
 
@@ -43,6 +42,7 @@ estimated_tokens: 8000
 
 ## Progress Log
 
+- 2026-11-16 — `SecureStorageProfileRepository.clear()` now deletes per-profile remembered-password keys for all stored profiles (consistent with `removeProfile`), and added regression test verifying blob + all `redfish.pw.<id>` keys removed.
 - 2026-08-30 — Created from triage analysis (feature #17). See also #010.
 
 ## References
@@ -53,6 +53,10 @@ estimated_tokens: 8000
 
 ## Closed Criteria
 
-- Resolution:
-- Closed reason:
+- Resolution: clear() now deletes all per-profile remembered-password keys (consistent with removeProfile) with regression test
+- Closed: 2026-11-16
+
+
+- Resolution: `clear()` loads existing profiles and deletes each remembered-password key before leaving storage cleared; behavior aligned with `removeProfile`.
+- Closed reason: Acceptance criteria met with regression test coverage.
 - Follow-ups: none

@@ -8911,3 +8911,18 @@
 - P1 #008 remaining resilience (cancel task DELETE /TaskService/Tasks/{id}, 413/401, low-bandwidth backoff)
 
 **Issues touched:** none
+
+## 2026-11-16 06:01 UTC — agent:redfish-automation — #024
+
+**Done:**
+- FEATURE #024 (smallest open). Baseline green at 506bc21 (analyze 0, 522 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Fixed `SecureStorageProfileRepository.clear()` to delete all per-profile remembered-password keys (`redfish.pw.<id>`) for stored profiles, consistent with `removeProfile`, preventing orphaned credentials in secure storage after clear-all. Added regression test `clear deletes profile blob and all remembered password keys` in `test/features/systems/profile_repository_test.dart`. Closed `issues/closed/024-clear-orphaned-passwords.md`.
+
+**Decisions:**
+- Chose #024 as smallest surgical P2 bug fix per runbook order. DOCS anchors unchanged/mirror queue EMPTY (no refresh); full EMULATOR re-run skipped (no emulator/fixture/tool changes, last green <7 days). No UI work needed.
+
+**Next:**
+- FEATURE #026 — resolve duplicate auth fields (`preferSessionAuth` vs `authMethod`)
+- FEATURE #013 — remove dead `app_breakpoints.dart` and reconcile breakpoint taxonomy
+- FEATURE #011 — relocate `ConnectionProfile` model into core layer
+
+**Issues touched:** #024 (closed)

@@ -67,6 +67,22 @@ void main() {
       expect(await storage.read('redfish.profiles'), '[]');
       expect(await storage.read('redfish.pw.$id'), isNull);
     });
+
+    test('clear deletes profile blob and all remembered password keys',
+        () async {
+      final InMemoryStorage storage = InMemoryStorage();
+      final SecureStorageProfileRepository repo =
+          SecureStorageProfileRepository(storage);
+      final String idA = await _add(repo, storage);
+      final String idB = await _add(repo, storage);
+
+      await repo.clear();
+
+      expect(await storage.read('redfish.profiles'), isNull);
+      expect(await storage.read('redfish.pw.$idA'), isNull);
+      expect(await storage.read('redfish.pw.$idB'), isNull);
+      expect(await repo.loadProfiles(), isEmpty);
+    });
   });
 }
 

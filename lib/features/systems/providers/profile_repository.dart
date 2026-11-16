@@ -89,7 +89,11 @@ class SecureStorageProfileRepository implements ProfileRepository {
 
   @override
   Future<void> clear() async {
+    final List<ConnectionProfile> existing = await loadProfiles();
     await storage.delete(profileKey);
+    for (final ConnectionProfile profile in existing) {
+      await storage.delete(_passwordKey(profile.id));
+    }
   }
 
   Future<void> _persist(List<ConnectionProfile> profiles) async {
