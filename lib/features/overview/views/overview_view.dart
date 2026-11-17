@@ -171,12 +171,15 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
             ),
           );
         }
-        return GridView.count(
-          crossAxisCount: cols,
+        return GridView(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            mainAxisExtent: 620,
+          ),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: List<Widget>.generate(5, (_) => const SkeletonCard()),
         );
@@ -207,12 +210,15 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
             ),
           );
         }
-        return GridView.count(
-          crossAxisCount: cols,
+        return GridView(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            mainAxisExtent: 620,
+          ),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: _cards(context, o),
         );

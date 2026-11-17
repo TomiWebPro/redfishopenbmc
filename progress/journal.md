@@ -9479,3 +9479,18 @@
 - Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.
 
 **Issues touched:** #010 (open)
+
+## 2026-11-17 08:08 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 tested layout/UI fix for populated `OverviewView` 200% text-scale overflow at 800/1400px (baseline green at 7f98f8f: analyze 0, 603 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Updated `lib/features/overview/views/overview_view.dart` multi-column loading/data grids to use `mainAxisExtent: 620` for adaptive-height cards at 200% scaling, and extended `test/a11y/overview_view_text_scale_test.dart` with 800px/1400px no-overflow coverage while preserving "Identity" semantics checks.
+
+**Decisions:**
+- Chose a small, safe grid-extent layout fix + tests as the next concrete #010 increment (resolving the previously noted Overview overflow) instead of more test-only coverage; kept production behavior and semantics intact. DOCS anchor gate not re-run (no corpus/manifest change, mirror queue EMPTY); full EMULATOR re-run skipped (no fixture/test_integration/tool contract changes, <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Continue #010 with broader a11y/touch-target/focus/semantics and adaptive-width/text-scale coverage for other main-view states/screens.
+- Continue #010 perf/coverage hardening and deeper runtime credential-leak audit (or http-rejected-when-useTls enforcement if safely implementable).
+- Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.
+
+**Issues touched:** #010 (open)
