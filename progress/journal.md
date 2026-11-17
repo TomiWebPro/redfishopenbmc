@@ -9419,3 +9419,18 @@
 - Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.
 
 **Issues touched:** #010 (open)
+
+## 2026-11-17 05:52 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 a11y/text-scaling slice on OverviewView and FirmwareView (baseline green at 08684a2: analyze 0, 591 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Added `test/a11y/overview_view_text_scale_test.dart` (1 test) verifying populated `OverviewView` renders without overflow at 200% text scaling on a 400px-wide layout with key merged semantics preserved, and `test/a11y/firmware_view_text_scale_test.dart` (1 test) verifying discovery-pending `FirmwareView` "Loading firmware" state renders without overflow at 200% text scaling with merged semantics label preserved.
+
+**Decisions:**
+- Chose 200% text-scaling coverage for `OverviewView` and `FirmwareView` as a small, safe test-only #010 increment extending a11y checks to remaining main views called out in current focus, with no production behavior changes and no deps. DOCS anchor gate not re-run (no corpus/manifest change, mirror queue EMPTY); full EMULATOR re-run skipped (no lib contract/fixture/test_integration/tool changes, <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Continue #010 with broader a11y/touch-target/focus/semantics checks on other main views/screens as applicable.
+- Continue #010 perf/coverage hardening and deeper runtime credential-leak audit (or http-rejected-when-useTls enforcement if safely implementable).
+- Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.
+
+**Issues touched:** #010 (open)
