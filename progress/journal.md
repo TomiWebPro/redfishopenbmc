@@ -9464,3 +9464,18 @@
 - Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.
 
 **Issues touched:** #010 (open)
+
+## 2026-11-17 08:10 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 adaptive-layout/text-scaling slice on Dashboard/KVM/Firmware views (baseline green at cddde92: analyze 0, 597 passed / 1 skipped, issues validate OK; untracked `testing/` left untouched). Extended `test/a11y/dashboard_view_text_scale_test.dart`, `test/a11y/kvm_view_text_scale_test.dart`, and `test/a11y/firmware_view_text_scale_test.dart` with 200% text-scaling no-overflow coverage at 800px and 1400px widths for covered states. Attempted 800/1400 for populated `OverviewView` but reverted due to RenderFlex overflow at 200% text scale (layout/UI fix needed).
+
+**Decisions:**
+- Chose adaptive-width coverage (800/1400) at 200% text scale for remaining main-view states with passing behavior as a small, safe test-only #010 increment; did not force Overview wide-width cases without a UI/layout fix to keep main green and avoid broad refactor. DOCS anchor gate not re-run (no corpus/manifest change, mirror queue EMPTY); full EMULATOR re-run skipped (no lib contract/fixture/test_integration/tool changes, <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Continue #010 with a tested layout fix for populated `OverviewView` 200% overflow at 800/1400px and/or other adaptive/a11y coverage.
+- Continue #010 perf/coverage hardening, deeper runtime credential-leak audit, or http-rejected-when-useTls enforcement if safely implementable.
+- Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.
+
+**Issues touched:** #010 (open)
