@@ -75,6 +75,11 @@ class RedfishException implements Exception {
     DioException error, {
     Uri? uri,
   }) {
+    // A transport-level guard (e.g. the TLS downgrade interceptor) may attach
+    // an already-normalized exception to the DioException. Preserve it as-is
+    // instead of reclassifying into a generic "Unknown transport error".
+    final Object? underlying = error.error;
+    if (underlying is RedfishException) return underlying;
     final response = error.response;
     final resolvedUri = uri ?? response?.realUri;
     switch (error.type) {

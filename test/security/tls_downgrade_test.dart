@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:redfishopenbmc/redfish/client/redfish_client.dart';
 import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
@@ -96,6 +99,20 @@ void main() {
       expect(caught.message, isNot(contains('super-secret-value')));
       expect(caught.message, isNot(contains('admin')));
     });
+
+    test('fromDioException preserves an embedded RedfishException', () {
+      // The raw-transport guard attaches an already-normalized exception to
+      // the DioException; error normalization must not reclassify it.
+      const RedfishException original = RedfishException(
+        errorCode: 'TlsDowngradeRejected',
+        message: 'downgraded',
+      );
+      final DioException wrapper = DioException(
+        requestOptions: RequestOptions(path: '/redfish/v1/'),
+        error: original,
+      );
+      expect(RedfishException.fromDioException(wrapper), same(original));
+    });
   });
 
   group('RedfishClient rejects an https -> http redirect (TLS profile)', () {
@@ -188,5 +205,114 @@ void main() {
         ),
       );
     });
+
+    test('raw transport from createDioForProfile rejects a downgraded GET',
+        () async {
+      // The auth manager issues raw `dio.get/post/delete/fetch` calls that
+      // bypass RedfishClient.getJson; the interceptor installed by
+      // createDioForProfile must enforce the same policy on those paths.
+      final Dio dio = RedfishClient.createDioForProfile(
+        ConnectionProfile(
+          id: 'tls-redirect-raw',
+          host: '127.0.0.1',
+          port: httpsPort,
+          scheme: 'https',
+          allowSelfSigned: true,
+        ),
+      );
+      Object? caught;
+      try {
+        await dio.get<dynamic>('/redfish/v1/');
+      } catch (e) {
+        caught = e;
+      }
+      expect(caught, isNotNull);
+      final RedfishException normalized = caught is DioException
+          ? RedfishException.fromDioException(caught)
+          : caught as RedfishException;
+      expect(normalized.errorCode, 'TlsDowngradeRejected');
+      expect(normalized.retryable, isFalse);
+    });
+
+    test('raw session-creation POST never consumes a downgraded body',
+        () async {
+      // dart:io does not follow POST redirects, so simulate a response that
+      // actually completed over plaintext `http` (realUri via redirects) to
+      // prove the raw-transport interceptor guards credential-bearing calls.
+      // The Dio (and its guard interceptor) comes from createDioForProfile;
+      // only the adapter is swapped for a deterministic downgrade.
+      final Dio dio = RedfishClient.createDioForProfile(
+        const ConnectionProfile(
+          id: 'tls-redirect-login',
+          host: 'bmc.example',
+          scheme: 'https',
+        ),
+      )..httpClientAdapter = _ForcedDowngradeAdapter();
+
+      Object? caught;
+      Response<dynamic>? delivered;
+      try {
+        delivered = await dio.post<dynamic>(
+          '/redfish/v1/SessionService/Sessions',
+          data: <String, String>{'UserName': 'admin', 'Password': 'pw'},
+        );
+      } catch (e) {
+        caught = e;
+      }
+      // The downgraded plaintext body must never reach the caller.
+      expect(delivered, isNull);
+      expect(caught, isNotNull);
+      final RedfishException normalized = caught is DioException
+          ? RedfishException.fromDioException(caught)
+          : caught as RedfishException;
+      expect(normalized.errorCode, 'TlsDowngradeRejected');
+    });
+
+    test('raw transport for a plaintext opt-in profile is unaffected',
+        () async {
+      final Dio dio = RedfishClient.createDioForProfile(
+        ConnectionProfile(
+          id: 'plain-raw',
+          host: '127.0.0.1',
+          port: httpPort,
+          scheme: 'http',
+        ),
+      );
+      final Response<dynamic> response = await dio.get<dynamic>('/redfish/v1/');
+      expect(response.statusCode, 200);
+      expect((response.data as Map<dynamic, dynamic>)['leaked'], isTrue);
+    });
   });
+}
+
+/// Simulates a response that completed over plaintext `http` after a redirect
+/// (Dio derives [Response.realUri] from the last redirect location). Lets the
+/// raw-transport guard be tested deterministically for methods dart:io will
+/// not auto-redirect (e.g. POST session creation).
+class _ForcedDowngradeAdapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    final ResponseBody body = ResponseBody.fromBytes(
+      utf8.encode('{"leaked":true}'),
+      200,
+      headers: <String, List<String>>{
+        Headers.contentTypeHeader: <String>[Headers.jsonContentType],
+      },
+    );
+    body.redirects = <RedirectRecord>[
+      RedirectRecord(
+        302,
+        'GET',
+        Uri.parse('http://bmc.example/redfish/v1/SessionService/Sessions'),
+      ),
+    ];
+    return body;
+  }
+
+  @override
+  void close({bool force = false}) {}
 }

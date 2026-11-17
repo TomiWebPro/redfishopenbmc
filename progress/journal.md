@@ -9524,3 +9524,18 @@
 - Split/advance #007/#008/#009 with one tested increment each; #021 remains blocked on WebView/protocol-client platform/TLS validation.
 
 **Issues touched:** #010 (open)
+
+## 2026-11-17 15:11 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 raw-transport TLS downgrade hardening (baseline green at 51b9c86: analyze 0, 615 passed / 1 skipped, issues validate OK; untracked `testing/` and pre-existing stash left untouched). Added `_TlsDowngradeInterceptor` to `RedfishClient._buildDio`, so `createDioForProfile` (and the default `RedfishClient` constructor) install a response interceptor that rejects a plaintext-`http` final `realUri` for a TLS-required profile. This closes the previously noted gap where `AuthManager`'s raw `dio.post/get/delete/fetch` calls (session creation, logout, 401 retry) bypassed the explicit guards in `getJson`/`postJson`/`patchJson`/`delete`. `RedfishException.fromDioException` now preserves an embedded already-normalized `RedfishException` instead of reclassifying it as a generic transport error. Extended `test/security/tls_downgrade_test.dart` with 4 tests.
+
+**Decisions:**
+- Chose a real production-code transport hardening (the explicit "Next" from the prior run) over another test-only increment. The guard is keyed on `profile.useTls`, so plaintext opt-in profiles are unaffected and no production TLS is weakened. Kept the four explicit `assertNoTlsDowngrade` calls in `RedfishClient` as defense in depth. dart:io does not follow POST/DELETE redirects, so the credential-bearing POST case is tested deterministically with a custom adapter that simulates a response whose `realUri` is plaintext `http` via a redirect record. DOCS anchor gate not re-run (no corpus/manifest change, mirror queue EMPTY); full EMULATOR re-run skipped (no fixture/test_integration/tool contract changes, <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Continue #010 perf/coverage hardening (discovery request-count budget, cache TTL/delta-polling test) and deeper runtime credential-leak audit.
+- Broader a11y/touch-target/focus/semantics and 320px adaptive-width checks on remaining views.
+- Split/advance #007/#008/#009 with one tested increment each; #021 remains blocked on WebView/protocol-client platform/TLS validation.
+
+**Issues touched:** #010 (open)

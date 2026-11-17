@@ -75,7 +75,12 @@ class RedfishClient {
         validateStatus: (int? status) =>
             status != null && status >= 200 && status < 300,
       ),
-    )..httpClientAdapter = createHttpClientAdapter(profile.allowSelfSigned);
+    )
+      ..httpClientAdapter = createHttpClientAdapter(profile.allowSelfSigned)
+      // Defense in depth (#010): guard raw transports too. The auth manager
+      // issues `dio.post/get/delete/fetch` calls directly (session creation,
+      // logout, 401 retry) which bypass the explicit checks in getJson et al.
+      ..interceptors.add(_TlsDowngradeInterceptor(profile));
     return dio;
   }
 
@@ -224,5 +229,30 @@ class RedfishClient {
       };
     }
     return <String, dynamic>{'value': data};
+  }
+}
+
+/// Installed on every Dio built by [RedfishClient.createDioForProfile] (#010).
+///
+/// [RedfishClient]'s convenience methods call
+/// [RedfishClient.assertNoTlsDowngrade] directly, but callers with raw access
+/// to [RedfishClient.dio] (notably `AuthManager`'s session creation, logout,
+/// and 401-retry `fetch`) bypass those methods. This interceptor applies the
+/// same TLS-first policy to *every* response on the shared transport, so a
+/// plaintext `http` response reached via an `https -> http` redirect is
+/// rejected before a session token / Basic header can be consumed from it.
+/// Profiles that deliberately opt out of TLS are unaffected.
+class _TlsDowngradeInterceptor extends Interceptor {
+  _TlsDowngradeInterceptor(this._profile);
+
+  final ConnectionProfile _profile;
+
+  @override
+  void onResponse(
+    Response<dynamic> response,
+    ResponseInterceptorHandler handler,
+  ) {
+    RedfishClient.assertNoTlsDowngrade(_profile, response.realUri);
+    handler.next(response);
   }
 }
