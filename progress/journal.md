@@ -9569,3 +9569,18 @@
 - Split/advance #009/#021 only via non-dependency slices — no WebView/protocol dep, no production TLS weakening; #021 remains blocked on platform/TLS validation.
 
 **Issues touched:** #007 (open)
+
+## 2026-11-17 17:10 UTC — agent:redfish-automation — #007
+
+**Done:**
+- FEATURE #007 (smallest open issue) polling-efficiency slice (baseline green at e5d76f5: analyze 0, 644 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Added pure-Dart `SensorsPollingPolicy` + `SensorsPollingScheduler` + `isSensorAppBackgrounded(AppLifecycleState)` in `lib/features/sensors/models/polling_policy.dart` (fast 10s visible, 30s hidden backoff, idempotent start/stop/setHidden). `SensorsView` now mixes in `WidgetsBindingObserver`, reschedules its poll timer on lifecycle changes, and cancels on dispose (replacing the fixed `Timer.periodic`). Added `telemetryFingerprint()` to `sensor_models.dart`; `SensorsController.load()` now reuses the last-published `chassis` list when a poll's fingerprint is unchanged, while the sparkline ring buffer still advances every poll. Added 11 policy/lifecycle/scheduler/fingerprint tests + 2 controller delta tests (657 passed / 1 skipped at verify).
+
+**Decisions:**
+- Took the explicit "Next" from the prior two #007 runs rather than adding a charting dependency or manufacturing UI churn. The backoff policy and scheduler are pure Dart (only `dart:async` + a `dart:ui` lifecycle-state helper) so timing is verified deterministically with `tester.pump`; the view wiring stays a thin observer. Delta rebuild is controller-level: an unchanged fingerprint reuses the existing `chassis` list instance so unchanged tiles are not handed new data — but the sparkline history intentionally advances every poll to keep flat-sensor trends growing. Per-tile `Selector`-level delta rebuild (unchanged tiles never repaint) is therefore an honest follow-up, and the fl_chart/perf box stays open. No production TLS weakened; no new dependency. DOCS anchor gate not re-run (no corpus/manifest change, mirror queue EMPTY); full EMULATOR re-run skipped (no fixture/test_integration/tool contract change, <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Continue #007 with per-tile `Selector`-level delta rebuild so unchanged tiles never repaint; add fl_chart/LineChart only if a dependency is justified.
+- Advance #008 firmware task-polling/progress and #010 perf/coverage hardening (discovery request-count budget, cache TTL/delta polling) with tests.
+- Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
+
+**Issues touched:** #007 (open)

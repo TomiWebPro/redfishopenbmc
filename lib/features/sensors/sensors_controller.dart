@@ -75,6 +75,9 @@ class SensorsController extends StateNotifier<SensorsUiState> {
   /// Accumulates per-sensor reading ring buffers across successful polls.
   final SensorHistoryStore _history = SensorHistoryStore();
 
+  /// Fingerprint of the last published telemetry, for delta rebuilds (#007).
+  String? _lastFingerprint;
+
   /// Pulls fresh sensor telemetry, updating [state] as loading → data / error.
   ///
   /// On a [RedfishException] the message is recorded; other exceptions are
@@ -82,16 +85,24 @@ class SensorsController extends StateNotifier<SensorsUiState> {
   /// fetch that outlives the widget does not touch a disposed notifier. Each
   /// successful poll also appends a sample to every sensor's history (issue
   /// #007 — sparkline ring buffer).
+  ///
+  /// Delta rebuild (issue #007): when a poll's [telemetryFingerprint] matches
+  /// the previous one, the already-published `chassis` list instance is reused
+  /// so unchanged tiles are not handed new data. The sparkline history still
+  /// advances every poll, so a flat sensor's trend keeps growing.
   Future<void> load() async {
     if (state.loading) return;
     state = state.copyWith(loading: true, clearError: true);
     try {
       final List<ChassisSensors> all = await service.fetchAll();
+      final String fingerprint = telemetryFingerprint(all);
+      final bool dataChanged = fingerprint != _lastFingerprint;
+      _lastFingerprint = fingerprint;
       _history.record(all);
       if (mounted) {
         state = state.copyWith(
           loading: false,
-          chassis: all,
+          chassis: dataChanged ? all : state.chassis,
           history: _history.snapshot(),
         );
       }

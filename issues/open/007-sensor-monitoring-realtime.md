@@ -99,6 +99,22 @@ estimated_tokens: 50000
   Checked the per-tile and alert-banner acceptance sub-boxes; issue stays open
   because fl_chart/LineChart perf, polling background-backoff and delta-rebuild
   boxes remain.
+- 2026-11-17 17:10 UTC (run, agent:redfish-automation) — FEATURE slice:
+  implemented polling background-backoff + delta rebuild (the "Next" from the
+  prior run). Added pure-Dart `SensorsPollingPolicy` + `SensorsPollingScheduler`
+  (`models/polling_policy.dart`): fast 10s cadence while visible, backed off to
+  30s when hidden, with a testable `isSensorAppBackgrounded` lifecycle mapping.
+  `SensorsView` is now a `WidgetsBindingObserver` that reschedules its poll timer
+  on lifecycle changes (and cancels it on dispose); the fixed `Timer.periodic`
+  is replaced by the reschedulable scheduler. Added `telemetryFingerprint()` in
+  `sensor_models.dart`; `SensorsController.load()` now reuses the last-published
+  `chassis` list instance when a poll's fingerprint is unchanged, while sparkline
+  history still advances every poll. Added 2 policy + 2 lifecycle + 3 scheduler
+  + 4 fingerprint unit/widget tests and 2 controller delta tests. Baseline
+  analyze 0 / 644 passed / 1 skipped; verify analyze 0 / 657 passed / 1 skipped
+  (+13). Issue stays open: fl_chart/LineChart perf and per-tile `Selector`-level
+  delta rebuild (so unchanged tiles never repaint) remain; the current delta is
+  controller-level (reusing unchanged chassis data).
 
 ## References
 

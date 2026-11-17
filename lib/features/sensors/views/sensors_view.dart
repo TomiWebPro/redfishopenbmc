@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:redfishopenbmc/features/sensors/models/polling_policy.dart';
 import 'package:redfishopenbmc/features/sensors/models/reading_history.dart';
 import 'package:redfishopenbmc/features/sensors/models/sensor_models.dart';
 import 'package:redfishopenbmc/features/sensors/sensors_controller.dart';
@@ -39,14 +40,17 @@ class SensorsView extends ConsumerStatefulWidget {
   ConsumerState<SensorsView> createState() => _SensorsViewState();
 }
 
-class _SensorsViewState extends ConsumerState<SensorsView> {
+class _SensorsViewState extends ConsumerState<SensorsView>
+    with WidgetsBindingObserver {
   ProviderSubscription<SystemHandle?>? _handleSubscription;
-  Timer? _refreshTimer;
+  late SensorsPollingScheduler _polling;
   bool _hadClient = false;
+  bool _hidden = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final SystemHandle? initial =
         ref.read(systemHandleProvider(widget.systemId));
     _hadClient = initial?.client != null;
@@ -60,8 +64,20 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
         _hadClient = hasClient;
       },
     );
-    _startAutoRefresh();
+    _polling = _makePollingScheduler();
+    if (widget.autoRefreshInterval != null) _polling.start();
     _load();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // #007: back off to the slower 30s cadence while the app is not visible,
+    // and resume the fast cadence when it becomes visible again.
+    final bool hidden = isSensorAppBackgrounded(state);
+    if (hidden != _hidden) {
+      _hidden = hidden;
+      _polling.setHidden(hidden);
+    }
   }
 
   @override
@@ -74,12 +90,22 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
     }
   }
 
+  SensorsPollingScheduler _makePollingScheduler() {
+    final SensorsPollingScheduler scheduler = SensorsPollingScheduler(
+      policy: SensorsPollingPolicy(
+        visibleInterval:
+            widget.autoRefreshInterval ?? const Duration(seconds: 10),
+      ),
+      onTick: _load,
+    );
+    if (_hidden) scheduler.setHidden(true);
+    return scheduler;
+  }
+
   void _startAutoRefresh() {
-    _refreshTimer?.cancel();
-    _refreshTimer = null;
-    final Duration? interval = widget.autoRefreshInterval;
-    if (interval == null) return;
-    _refreshTimer = Timer.periodic(interval, (_) => _load());
+    _polling.stop();
+    _polling = _makePollingScheduler();
+    if (widget.autoRefreshInterval != null) _polling.start();
   }
 
   void _load() {
@@ -91,7 +117,8 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
+    _polling.stop();
+    WidgetsBinding.instance.removeObserver(this);
     _handleSubscription?.close();
     super.dispose();
   }

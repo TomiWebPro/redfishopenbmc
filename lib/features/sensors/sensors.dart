@@ -1,3 +1,4 @@
+export 'models/polling_policy.dart';
 export 'models/reading_history.dart';
 export 'models/sensor_models.dart';
 export 'sensors_controller.dart';

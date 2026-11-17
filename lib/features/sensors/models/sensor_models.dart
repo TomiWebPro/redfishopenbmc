@@ -407,6 +407,37 @@ class ChassisSensors {
       '${fans.length} fans, ${sensors.length} sensors)';
 }
 
+/// Compact signature of the readings in [snapshots] (issue #007 delta polling).
+///
+/// The controller compares this between successive polls: when it is unchanged
+/// no tile data changed, so the already-published `chassis` list is reused and
+/// unchanged tiles are not rebuilt. Only identity-bearing fields (name, value,
+/// health and thresholds) are included; transient fields such as `sourceUri`
+/// do not affect what the user sees.
+String telemetryFingerprint(Iterable<ChassisSensors> snapshots) {
+  final StringBuffer out = StringBuffer();
+  for (final ChassisSensors chassis in snapshots) {
+    out.write('c|${chassis.chassisId}|${chassis.chassisName}|');
+    for (final ThermalReading t in chassis.thermal) {
+      out.write('t|${t.name}|${t.readingCelsius}|${t.status.health}|'
+          '${t.upperCritical}|${t.upperCaution}|${t.lowerCritical}|'
+          '${t.lowerCaution}|');
+    }
+    for (final FanReading f in chassis.fans) {
+      out.write('f|${f.name}|${f.reading}|${f.status.health}|'
+          '${f.upperCritical}|');
+    }
+    for (final SensorReading s in chassis.sensors) {
+      out.write('s|${s.name}|${s.reading}|${s.status.health}|');
+      for (final MapEntry<String, double> e in s.thresholds.entries) {
+        out.write('${e.key}=${e.value};');
+      }
+      out.write('|');
+    }
+  }
+  return out.toString();
+}
+
 /// Combines a health signal with a threshold-breach signal into the effective
 /// alert level (the more severe wins). Returns `null` when neither signals an
 /// alert.
