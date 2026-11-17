@@ -190,6 +190,57 @@ class _CountingSensorsService extends SensorsService {
   }
 }
 
+/// A [SensorsService] double with one OK-health temperature that reports no
+/// numeric reading — the tile chip must grey out (issue #007 coloring).
+class _NoReadingSensorsService extends SensorsService {
+  _NoReadingSensorsService() : super(client: null, systemId: 'x');
+
+  @override
+  Future<List<ChassisSensors>> fetchAll() async => <ChassisSensors>[
+        ChassisSensors(
+          chassisId: '1U',
+          thermal: <ThermalReading>[
+            ThermalReading(
+              name: 'CPU1 Temp',
+              status: const StatusInfo(health: 'OK'),
+            ),
+          ],
+        ),
+      ];
+}
+
+/// A [SensorsService] double whose OK-health reading breaches its critical
+/// threshold — the tile chip must turn red from the breach alone (#007).
+class _BreachOnlySensorsService extends SensorsService {
+  _BreachOnlySensorsService() : super(client: null, systemId: 'x');
+
+  @override
+  Future<List<ChassisSensors>> fetchAll() async => <ChassisSensors>[
+        ChassisSensors(
+          chassisId: '1U',
+          thermal: <ThermalReading>[
+            ThermalReading(
+              name: 'CPU1 Temp',
+              readingCelsius: 60,
+              upperCritical: 55,
+              status: const StatusInfo(health: 'OK'),
+            ),
+          ],
+        ),
+      ];
+}
+
+/// Border colour of the health chip whose label is [valueText].
+Color _chipBorderColor(WidgetTester tester, String valueText) {
+  final Chip chip = tester.widget<Chip>(
+    find.ancestor(
+      of: find.text(valueText),
+      matching: find.byType(Chip),
+    ),
+  );
+  return chip.side!.color;
+}
+
 SystemHandle buildHandle({required bool sensorMonitoring}) => SystemHandle(
       profile: ConnectionProfile(id: 'x', host: 'h'),
       status: ConnectionStatus.connected,
@@ -856,6 +907,56 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.textContaining('Last updated'), findsOneWidget);
+    });
+  });
+
+  group('threshold coloring on tiles (#007)', () {
+    test('sensorDisplayLevelColor maps all four levels', () {
+      expect(sensorDisplayLevelColor(SensorDisplayLevel.none), Colors.grey);
+      expect(sensorDisplayLevelColor(SensorDisplayLevel.ok), Colors.green);
+      expect(
+          sensorDisplayLevelColor(SensorDisplayLevel.warning), Colors.orange);
+      expect(sensorDisplayLevelColor(SensorDisplayLevel.critical), Colors.red);
+    });
+
+    testWidgets('a reading-less OK tile renders a grey chip',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_NoReadingSensorsService()),
+          ],
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(_chipBorderColor(tester, '—'), Colors.grey);
+    });
+
+    testWidgets('a threshold breach on an OK BMC renders a red chip',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_BreachOnlySensorsService()),
+          ],
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The banner already flags it; the tile chip must localise the severity
+      // too, even though Status.Health == OK.
+      expect(_chipBorderColor(tester, '60.0°C'), Colors.red);
     });
   });
 

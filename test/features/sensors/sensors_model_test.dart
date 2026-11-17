@@ -297,4 +297,99 @@ void main() {
       );
     });
   });
+
+  group('sensorDisplayLevel — threshold coloring (#007)', () {
+    test('OK health with an in-bounds reading is green', () {
+      expect(
+        sensorDisplayLevel(health: Health.ok, value: 41),
+        SensorDisplayLevel.ok,
+      );
+      expect(
+        sensorDisplayLevel(health: Health.unknown, value: 41),
+        SensorDisplayLevel.ok,
+      );
+    });
+
+    test('a missing reading is grey, but a critical health still wins', () {
+      expect(
+        sensorDisplayLevel(health: Health.ok, value: null),
+        SensorDisplayLevel.none,
+      );
+      // Health is an independent signal: a critical sensor never looks grey.
+      expect(
+        sensorDisplayLevel(health: Health.critical, value: null),
+        SensorDisplayLevel.critical,
+      );
+      expect(
+        sensorDisplayLevel(health: Health.warning, value: null),
+        SensorDisplayLevel.warning,
+      );
+    });
+
+    test('a caution/critical breach colors amber/red even with Health=OK', () {
+      expect(
+        sensorDisplayLevel(
+          health: Health.ok,
+          value: 50,
+          upperCaution: 45,
+          upperCritical: 55,
+        ),
+        SensorDisplayLevel.warning,
+      );
+      expect(
+        sensorDisplayLevel(
+          health: Health.ok,
+          value: 60,
+          upperCaution: 45,
+          upperCritical: 55,
+        ),
+        SensorDisplayLevel.critical,
+      );
+      // Critical dominates a warning health signal.
+      expect(
+        sensorDisplayLevel(
+          health: Health.warning,
+          value: 60,
+          upperCritical: 55,
+        ),
+        SensorDisplayLevel.critical,
+      );
+    });
+
+    test('each reading type exposes its own displayLevel', () {
+      // Temperature: caution breach on an OK BMC.
+      expect(
+        ThermalReading(
+          name: 'CPU1',
+          readingCelsius: 50,
+          upperCaution: 45,
+          upperCritical: 55,
+        ).displayLevel,
+        SensorDisplayLevel.warning,
+      );
+      // Fan: critical speed breach.
+      expect(
+        FanReading(
+          name: 'Fan0',
+          reading: 7000,
+          upperCritical: 6000,
+        ).displayLevel,
+        SensorDisplayLevel.critical,
+      );
+      // Voltage: no reading → grey.
+      expect(
+        VoltageReading(name: 'VCPU', readingVolts: null).displayLevel,
+        SensorDisplayLevel.none,
+      );
+      // Generic sensor: threshold-map breach (lower critical).
+      expect(
+        SensorReading(
+          name: 'PSU1',
+          reading: 9.0,
+          thresholds: const <String, double>{'LowerCritical': 11.0},
+        ).displayLevel,
+        SensorDisplayLevel.critical,
+      );
+    });
+  });
 }

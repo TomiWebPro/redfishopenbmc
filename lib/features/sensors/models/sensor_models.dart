@@ -55,6 +55,46 @@ String sensorAlertLevelLabel(SensorAlertLevel level) => switch (level) {
       SensorAlertLevel.critical => 'Critical',
     };
 
+/// Visual severity of a sensor tile (issue #007 "Threshold coloring").
+///
+/// Unlike [SensorAlertLevel] — which only drives the banner — this level is
+/// what the per-tile health chip renders: `ok` → green, `warning` → amber,
+/// `critical` → red, and `none` → grey (no usable reading and no health alert).
+enum SensorDisplayLevel { none, ok, warning, critical }
+
+/// Resolves a tile's display colour from the BMC health signal, the numeric
+/// reading and its thresholds (issue #007 acceptance "Threshold coloring").
+///
+/// A reading that breaches a threshold is coloured amber/red even when the BMC
+/// reports `Status.Health = OK` (the banner already surfaces the same breach).
+/// A missing reading is grey unless the BMC itself reports Warning/Critical —
+/// health is an independent signal, so a critical sensor never appears grey.
+SensorDisplayLevel sensorDisplayLevel({
+  required Health health,
+  required double? value,
+  double? upperCritical,
+  double? lowerCritical,
+  double? upperCaution,
+  double? lowerCaution,
+}) {
+  final SensorAlertLevel? breach = _thresholdBreach(
+    value,
+    upperCritical: upperCritical,
+    lowerCritical: lowerCritical,
+    upperCaution: upperCaution,
+    lowerCaution: lowerCaution,
+  );
+  if (health == Health.critical || breach == SensorAlertLevel.critical) {
+    return SensorDisplayLevel.critical;
+  }
+  if (health == Health.warning || breach == SensorAlertLevel.warning) {
+    return SensorDisplayLevel.warning;
+  }
+  // A numeric reading inside its bounds is nominal even when the BMC omits
+  // Status.Health; only an absent reading degrades to grey.
+  return value == null ? SensorDisplayLevel.none : SensorDisplayLevel.ok;
+}
+
 /// One actionable alert derived from a reading's health status or a threshold
 /// breach (issue #007).
 ///
@@ -145,6 +185,16 @@ class ThermalReading {
       sourceUri: sourceUri ?? _asString(json['@odata.id']),
     );
   }
+
+  /// Chip colour severity: health + threshold breach + reading presence.
+  SensorDisplayLevel get displayLevel => sensorDisplayLevel(
+        health: status.healthEnum,
+        value: readingCelsius,
+        upperCritical: upperCritical,
+        lowerCritical: lowerCritical,
+        upperCaution: upperCaution,
+        lowerCaution: lowerCaution,
+      );
 }
 
 /// A single fan / airflow reading from a Redfish `Thermal` resource (issue #007).
@@ -195,6 +245,13 @@ class FanReading {
       sourceUri: sourceUri ?? _asString(json['@odata.id']),
     );
   }
+
+  /// Chip colour severity: health + speed threshold breach + reading presence.
+  SensorDisplayLevel get displayLevel => sensorDisplayLevel(
+        health: status.healthEnum,
+        value: reading,
+        upperCritical: upperCritical,
+      );
 }
 
 /// A single voltage reading from a Redfish `Thermal` resource (issue #007).
@@ -264,6 +321,16 @@ class VoltageReading {
       sourceUri: sourceUri ?? _asString(json['@odata.id']),
     );
   }
+
+  /// Chip colour severity: health + threshold breach + reading presence.
+  SensorDisplayLevel get displayLevel => sensorDisplayLevel(
+        health: status.healthEnum,
+        value: readingVolts,
+        upperCritical: upperCritical,
+        lowerCritical: lowerCritical,
+        upperCaution: upperCaution,
+        lowerCaution: lowerCaution,
+      );
 }
 
 /// A single generic sensor from a Redfish `Sensor` resource (issue #007).
@@ -330,6 +397,16 @@ class SensorReading {
       sourceUri: sourceUri ?? _asString(json['@odata.id']),
     );
   }
+
+  /// Chip colour severity: health + threshold-map breach + reading presence.
+  SensorDisplayLevel get displayLevel => sensorDisplayLevel(
+        health: status.healthEnum,
+        value: reading,
+        upperCritical: thresholds['UpperCritical'],
+        lowerCritical: thresholds['LowerCritical'],
+        upperCaution: thresholds['UpperCaution'],
+        lowerCaution: thresholds['LowerCaution'],
+      );
 }
 
 /// Aggregated sensor telemetry for one chassis (issue #007).

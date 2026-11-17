@@ -510,7 +510,7 @@ class _TemperatureTile extends StatelessWidget {
             subtitle:
                 thresholds.isNotEmpty ? Text(thresholds.join(' / ')) : null,
             trailing:
-                _HealthChip(health: reading.status.healthEnum, label: value),
+                _HealthChip(displayLevel: reading.displayLevel, label: value),
           ),
           if (series.length >= 2 || hasThreshold)
             Padding(
@@ -573,7 +573,7 @@ class _FanTile extends StatelessWidget {
                 ? Text(reading.physicalContext!)
                 : null,
             trailing:
-                _HealthChip(health: reading.status.healthEnum, label: value),
+                _HealthChip(displayLevel: reading.displayLevel, label: value),
           ),
           if (series.length >= 2 || reading.upperCritical != null)
             Padding(
@@ -647,7 +647,7 @@ class _VoltageTile extends StatelessWidget {
               if (thresholds.isNotEmpty) thresholds.join(' / '),
             ].join(' · ')),
             trailing:
-                _HealthChip(health: reading.status.healthEnum, label: value),
+                _HealthChip(displayLevel: reading.displayLevel, label: value),
           ),
           if (series.length >= 2 || hasThreshold)
             Padding(
@@ -718,7 +718,7 @@ class _SensorTile extends StatelessWidget {
               if (thresholds.isNotEmpty) thresholds.join(' / '),
             ].join(' · ')),
             trailing:
-                _HealthChip(health: reading.status.healthEnum, label: value),
+                _HealthChip(displayLevel: reading.displayLevel, label: value),
           ),
           if (series.length >= 2 || reading.thresholds.isNotEmpty)
             Padding(
@@ -754,25 +754,32 @@ String _healthLabel(Health health) => switch (health) {
       Health.unknown => 'Unknown',
     };
 
+/// Chip colour for a sensor's [SensorDisplayLevel] (issue #007 "Threshold
+/// coloring"). Pure + dependency-free so the OK / Warning / Critical / no-reading
+/// mapping can be pinned in a unit test; the visible chip uses it for both its
+/// border and its tinted background.
+Color sensorDisplayLevelColor(SensorDisplayLevel level) => switch (level) {
+      SensorDisplayLevel.none => Colors.grey,
+      SensorDisplayLevel.ok => Colors.green,
+      SensorDisplayLevel.warning => Colors.orange,
+      SensorDisplayLevel.critical => Colors.red,
+    };
+
 /// A compact health-tinted chip showing a reading value.
 class _HealthChip extends StatelessWidget {
   /// Creates a [_HealthChip].
-  const _HealthChip({required this.health, required this.label});
+  const _HealthChip({required this.displayLevel, required this.label});
 
-  /// Health used to pick the chip color.
-  final Health health;
+  /// Display severity used to pick the chip color (health + threshold breach +
+  /// reading presence — issue #007).
+  final SensorDisplayLevel displayLevel;
 
   /// The reading value rendered inside the chip.
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    final Color color = switch (health) {
-      Health.ok => Colors.green,
-      Health.warning => Colors.orange,
-      Health.critical => Colors.red,
-      Health.unknown => Colors.grey,
-    };
+    final Color color = sensorDisplayLevelColor(displayLevel);
     return Chip(
       label: Text(label),
       backgroundColor: color.withValues(alpha: 0.15),
@@ -786,9 +793,10 @@ class _HealthChip extends StatelessWidget {
 /// (issue #007).
 ///
 /// Shown only when at least one reading reports Warning/Critical health or
-/// breaches a critical/caution threshold. The per-tile health chips tint on
-/// `Status.Health` alone, so this banner is what surfaces a breach the BMC did
-/// not flag (e.g. `Health = OK` but `Reading > UpperThresholdCritical`).
+/// breaches a critical/caution threshold. Per-tile chips now tint from the
+/// combined [SensorDisplayLevel] too (health + breach + reading presence), so
+/// the banner is the aggregated view of every breach across all chassis, while
+/// the chip localises the severity to its own reading.
 class _AlertBanner extends StatelessWidget {
   /// Creates an [_AlertBanner].
   const _AlertBanner({required this.alerts});

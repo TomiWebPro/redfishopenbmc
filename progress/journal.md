@@ -9644,3 +9644,18 @@
 - Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
 
 **Issues touched:** #007 (open)
+
+## 2026-11-17 20:16 UTC — agent:redfish-automation — #007
+
+**Done:**
+- FEATURE #007 (smallest open issue), the "Threshold coloring" acceptance box (checked in the issue). Baseline green at 9fb6090 (analyze 0, 689 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Added `SensorDisplayLevel` + `sensorDisplayLevel(...)` in `sensor_models.dart` combining BMC `Status.Health` with the numeric reading's threshold breach (caution→amber, critical→red even when `Health=OK`) and reading presence (missing→grey); health takes precedence so a Critical sensor never renders grey. All four reading models (Temperature/Fan/Voltage/Generic) gained a `displayLevel` getter wired to their own thresholds. `SensorsView._HealthChip` now tints from `displayLevel` via the pure, testable `sensorDisplayLevelColor` helper; the alert banner remains the aggregated cross-chassis view. Added 4 model unit tests, 1 color-map unit test and 2 widget tests (reading-less OK tile → grey chip; breach with `Health=OK` → red chip). Verify analyze 0 / 696 passed / 1 skipped (+7); issues validate OK.
+
+**Decisions:**
+- Took the remaining unchecked dependency-free acceptance box rather than pulling in `fl_chart` (a dependency addition that would need pubspec/lock churn and a frame-budget test bed) — `fl_chart` perf and ≥80% coverage stay honest follow-ups. Chose a single pure `sensorDisplayLevel(...)` resolver shared by all four reading kinds so the chip coloring and the alert banner agree on breach semantics; the chip adds the "no reading → grey" rule the old health-only tint lacked. Kept the merged a11y labels keyed on BMC health (unchanged) to avoid label churn; only the visual chip color changed. No production TLS weakened; no new dependency. DOCS anchor gate not re-run (no corpus/manifest change, mirror queue EMPTY); full EMULATOR re-run skipped (no wire-contract/fixture/`test_integration/`/`tool/` change; last green emulator run 2026-11-16 05:27 UTC, <7 days).
+
+**Next:**
+- Continue #007: measure touched-feature coverage and add tests toward ≥80%, and `fl_chart`/`LineChart` perf only if a dependency is justified — then verify remaining boxes and close/split #007.
+- Advance #008 firmware task-polling/progress and #010 perf/coverage hardening (discovery request-count budget, cache TTL/delta polling) with tests.
+- Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
+
+**Issues touched:** #007 (open)

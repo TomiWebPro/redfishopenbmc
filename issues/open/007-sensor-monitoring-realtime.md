@@ -39,7 +39,7 @@ estimated_tokens: 50000
   - [x] Alert banner if any sensor `Health==Critical/Warning` or `Reading` breaches `UpperThresholdCritical`
   - [x] Pull-to-refresh + last-updated timestamp
 - [ ] Charts: `fl_chart` `LineChart` per sensor (or single combined chart toggle); lazy-build, no jank on 20 sensors × 60 points
-- [ ] Threshold coloring: `OK→green`, `Warning→amber` (breaches `NonCritical`), `Critical→red` (breaches `Critical`), grey if `Reading==null`
+- [x] Threshold coloring: `OK→green`, `Warning→amber` (breaches `NonCritical`), `Critical→red` (breaches `Critical`), grey if `Reading==null`
 - [ ] Error resilience: sensor absent, 404 Sensors → fallback Thermal, both 404 → hide tab gracefully; 401 bubbles to auth manager
 - [ ] Tests: `test/features/sensors/sensors_service_test.dart` — Thermal fixture from OpenBMC, Sensors collection fixture, threshold evaluation, empty chassis, polling dedup; widget test verifies hidden when `sensorMonitoring false`
 - [ ] Coverage ≥80%
@@ -182,6 +182,21 @@ estimated_tokens: 50000
   passed / 1 skipped; verify analyze 0 / 689 passed / 1 skipped (+7); issues
   validate OK. Issue stays open: `fl_chart`/`LineChart` perf and ≥80% touched-
   feature coverage remain unchecked.
+- 2026-11-17 20:14 UTC (run, agent:redfish-automation) — FEATURE slice:
+  implemented the "Threshold coloring" acceptance box (checked above). Added
+  `SensorDisplayLevel` + `sensorDisplayLevel(...)` in `sensor_models.dart`: it
+  combines the BMC `Status.Health` with the numeric reading's threshold breach
+  (caution→amber, critical→red, even when `Health=OK`) and reading presence
+  (missing→grey), with health taking precedence so a Critical sensor never
+  appears grey. Every reading model (Temperature/Fan/Voltage/Generic) exposes a
+  `displayLevel` getter wired to its own thresholds. `SensorsView._HealthChip`
+  now tints from `displayLevel` via the pure, testable `sensorDisplayLevelColor`
+  helper; the alert banner remains the aggregated cross-chassis view. Added 4
+  model unit tests (incl. breach-with-OK-health + all four reading types), 1
+  color-map unit test and 2 widget tests (reading-less OK tile → grey chip,
+  breach with `Health=OK` → red chip). Baseline analyze 0 / 689 passed /
+  1 skipped; verify analyze 0 / 696 passed / 1 skipped (+7); issues validate OK.
+  Issue stays open: `fl_chart`/`LineChart` perf and ≥80% covered remain.
 
 ## References
 
