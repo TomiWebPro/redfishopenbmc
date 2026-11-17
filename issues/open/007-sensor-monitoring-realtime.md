@@ -5,7 +5,7 @@ status: open
 priority: P2
 type: feature
 created: 2026-08-26
-updated: 2026-08-30
+updated: 2026-11-17
 closed: null
 assignee: unassigned
 labels: [sensors, telemetry, realtime, charts]
@@ -70,6 +70,19 @@ estimated_tokens: 50000
 
 - 2026-08-26 — Created. Depends on #001 #003 #004.
 - 2026-08-30 — STALE (triage): no Progress Log update for 4 days (>1-day threshold).
+- 2026-11-17 15:49 UTC (run, agent:redfish-automation) — FEATURE slice: implemented the
+  acceptance criterion "Alert banner if any sensor Health==Critical/Warning or Reading
+  breaches UpperThresholdCritical". Added `SensorAlertLevel`/`SensorAlert` and a
+  `ChassisSensors.alerts` getter that combines health status with upper/lower
+  critical + caution threshold breaches (critical health wins; a BMC reporting
+  `Health=OK` on a breached reading still alerts). `SensorsView` now renders one
+  merged-semantics `_AlertBanner` at the top of the telemetry list when any alert
+  exists (critical → error tint + icon, warning → amber), with no banner when
+  nominal. Added 5 model unit tests, 2 widget tests (banner present/absent with
+  merged semantics), and 3 responsive no-overflow tests at 320/800/1300px.
+  Baseline analyze 0 / 619 passed / 1 skipped; verify analyze 0 / 629 passed /
+  1 skipped (10 new tests). Issue stays open: sparkline/ring-buffer, threshold
+  range bar, fl_chart and polling delta-rebuild acceptance boxes remain.
 
 ## References
 

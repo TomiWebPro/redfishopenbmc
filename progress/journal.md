@@ -9539,3 +9539,18 @@
 - Split/advance #007/#008/#009 with one tested increment each; #021 remains blocked on WebView/protocol-client platform/TLS validation.
 
 **Issues touched:** #010 (open)
+
+## 2026-11-17 15:49 UTC — agent:redfish-automation — #007
+
+**Done:**
+- FEATURE #007 (smallest open issue) alert-banner slice (baseline green at 1afb331: analyze 0, 619 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Implemented the acceptance criterion "Alert banner if any sensor Health==Critical/Warning or Reading breaches UpperThresholdCritical": added `SensorAlertLevel`/`SensorAlert`, `ChassisSensors.alerts` (combines `Status.Health` with upper/lower critical + caution threshold evaluation, critical wins, `Health=OK` on a breaching reading still alerts), and a merged-semantics `_AlertBanner` in `SensorsView` (error tint/icon for critical, amber for warning, absent when nominal). Added 5 model unit tests, 2 banner widget tests (present/absent + merged semantics), 3 responsive no-overflow tests at 320/800/1300px.
+
+**Decisions:**
+- Chose a concrete, small #007 acceptance gap over test-only churn or another #010 increment; threshold evaluation is intentionally independent of `Status.Health` so a BMC reporting `OK` on a breaching reading still surfaces an alert (per-tile chips tint on health alone). Kept discovery gating and existing tile semantics intact — the banner is additive. DOCS anchor gate not re-run (no corpus/manifest change, mirror queue EMPTY); full EMULATOR re-run skipped (no `test_integration/`/fixture/`tool/` contract change; emulator wire surface untouched; <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Continue #007 with the mini sparkline + ring buffer of last N polls and/or threshold range bar (no chart dependency unless justified), then fl_chart/perf and polling delta-rebuild.
+- Advance #008 firmware task-polling/progress and #010 perf/coverage hardening (discovery request-count budget, cache TTL/delta polling) with tests.
+- Split/advance #009/#021 only via non-dependency slices — no WebView/protocol dep, no production TLS weakening; #021 remains blocked on platform/TLS validation.
+
+**Issues touched:** #007 (open)

@@ -229,9 +229,16 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
       );
     }
 
+    // #007: combine all health/threshold breaches across visible chassis into
+    // one banner at the top of the list (no banner when everything is nominal).
+    final List<SensorAlert> alerts = <SensorAlert>[
+      for (final ChassisSensors chassis in ui.chassis) ...chassis.alerts,
+    ];
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
+        if (alerts.isNotEmpty) _AlertBanner(alerts: alerts),
         for (final ChassisSensors chassis in ui.chassis)
           _ChassisCard(chassis: chassis),
       ],
@@ -467,6 +474,75 @@ class _HealthChip extends StatelessWidget {
       backgroundColor: color.withValues(alpha: 0.15),
       side: BorderSide(color: color),
       visualDensity: VisualDensity.compact,
+    );
+  }
+}
+
+/// Banner summarising all health/threshold alerts across the visible chassis
+/// (issue #007).
+///
+/// Shown only when at least one reading reports Warning/Critical health or
+/// breaches a critical/caution threshold. The per-tile health chips tint on
+/// `Status.Health` alone, so this banner is what surfaces a breach the BMC did
+/// not flag (e.g. `Health = OK` but `Reading > UpperThresholdCritical`).
+class _AlertBanner extends StatelessWidget {
+  /// Creates an [_AlertBanner].
+  const _AlertBanner({required this.alerts});
+
+  /// The alerts to summarise (non-empty by convention).
+  final List<SensorAlert> alerts;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool anyCritical =
+        alerts.any((SensorAlert a) => a.level == SensorAlertLevel.critical);
+    final Color color =
+        anyCritical ? Theme.of(context).colorScheme.error : Colors.deepOrange;
+    final String label = 'Sensor alert${alerts.length == 1 ? '' : 's'}: '
+        '${alerts.map((SensorAlert a) => a.description).join('; ')}';
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: label,
+      child: Card(
+        color: color.withValues(alpha: 0.10),
+        margin: const EdgeInsets.only(bottom: 16),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Icon(
+                anyCritical
+                    ? Icons.error_outline
+                    : Icons.warning_amber_outlined,
+                color: color,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      anyCritical ? 'Critical sensor alert' : 'Sensor warning',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(color: color),
+                    ),
+                    const SizedBox(height: 4),
+                    for (final SensorAlert alert in alerts)
+                      Text(
+                        alert.description,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

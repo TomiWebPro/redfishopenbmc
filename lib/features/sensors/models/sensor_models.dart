@@ -44,6 +44,48 @@ class StatusInfo {
   String toString() => 'StatusInfo(state=$state, health=$health)';
 }
 
+/// Severity of an actionable sensor alert surfaced in the SensorsView banner
+/// (issue #007).
+enum SensorAlertLevel { warning, critical }
+
+/// Human-readable label for an alert level (matches the dashboard
+/// `HealthBanner` wording).
+String sensorAlertLevelLabel(SensorAlertLevel level) => switch (level) {
+      SensorAlertLevel.warning => 'Warning',
+      SensorAlertLevel.critical => 'Critical',
+    };
+
+/// One actionable alert derived from a reading's health status or a threshold
+/// breach (issue #007).
+///
+/// Threshold evaluation is deliberately independent of [StatusInfo.healthEnum]:
+/// a BMC may report `Status.Health = OK` even when a reading crosses its
+/// critical threshold, so the two signals are combined rather than assumed.
+class SensorAlert {
+  /// Creates a [SensorAlert].
+  const SensorAlert({
+    required this.name,
+    required this.valueLabel,
+    required this.level,
+  });
+
+  /// Display name of the sensor that raised the alert.
+  final String name;
+
+  /// Formatted current reading (e.g. `58.0 °C`), or `no reading` when absent.
+  final String valueLabel;
+
+  /// Severity of the alert.
+  final SensorAlertLevel level;
+
+  /// A self-describing summary used in the merged banner semantics label.
+  String get description =>
+      '$name $valueLabel — ${sensorAlertLevelLabel(level)}';
+
+  @override
+  String toString() => 'SensorAlert($description)';
+}
+
 /// A single temperature reading from a Redfish `Thermal` resource (issue #007).
 class ThermalReading {
   /// Creates a [ThermalReading].
@@ -297,9 +339,116 @@ class ChassisSensors {
         sensors: sensors,
       );
 
+  /// Actionable alerts derived from health status and threshold breaches
+  /// across this chassis's temperature, fan and generic sensor readings
+  /// (issue #007).
+  ///
+  /// A reading with `Health` Warning/Critical, or whose value breaches an
+  /// upper/lower critical (or caution) threshold, produces one alert; the more
+  /// severe signal wins. Readings with no value can still alert on health.
+  List<SensorAlert> get alerts {
+    final List<SensorAlert> result = <SensorAlert>[];
+    for (final ThermalReading t in thermal) {
+      final SensorAlertLevel? level = _resolveAlertLevel(
+        t.status.healthEnum,
+        _thresholdBreach(
+          t.readingCelsius,
+          upperCritical: t.upperCritical,
+          lowerCritical: t.lowerCritical,
+          upperCaution: t.upperCaution,
+          lowerCaution: t.lowerCaution,
+        ),
+      );
+      if (level != null) {
+        result.add(SensorAlert(
+          name: t.name,
+          valueLabel: _formatReading(t.readingCelsius, '°C'),
+          level: level,
+        ));
+      }
+    }
+    for (final FanReading f in fans) {
+      final SensorAlertLevel? level = _resolveAlertLevel(
+        f.status.healthEnum,
+        _thresholdBreach(f.reading, upperCritical: f.upperCritical),
+      );
+      if (level != null) {
+        result.add(SensorAlert(
+          name: f.name,
+          valueLabel: _formatReading(f.reading, 'RPM'),
+          level: level,
+        ));
+      }
+    }
+    for (final SensorReading s in sensors) {
+      final SensorAlertLevel? level = _resolveAlertLevel(
+        s.status.healthEnum,
+        _thresholdBreach(
+          s.reading,
+          upperCritical: s.thresholds['UpperCritical'],
+          lowerCritical: s.thresholds['LowerCritical'],
+          upperCaution: s.thresholds['UpperCaution'],
+          lowerCaution: s.thresholds['LowerCaution'],
+        ),
+      );
+      if (level != null) {
+        result.add(SensorAlert(
+          name: s.name,
+          valueLabel: _formatReading(s.reading, s.readingUnits ?? ''),
+          level: level,
+        ));
+      }
+    }
+    return result;
+  }
+
   @override
   String toString() => 'ChassisSensors($chassisId: ${thermal.length} temps, '
       '${fans.length} fans, ${sensors.length} sensors)';
+}
+
+/// Combines a health signal with a threshold-breach signal into the effective
+/// alert level (the more severe wins). Returns `null` when neither signals an
+/// alert.
+SensorAlertLevel? _resolveAlertLevel(
+  Health health,
+  SensorAlertLevel? breach,
+) {
+  if (health == Health.critical || breach == SensorAlertLevel.critical) {
+    return SensorAlertLevel.critical;
+  }
+  if (health == Health.warning || breach == SensorAlertLevel.warning) {
+    return SensorAlertLevel.warning;
+  }
+  return null;
+}
+
+/// Returns the breach severity for [value] against the supplied thresholds, or
+/// `null` when the value is absent or within bounds. Critical bounds are
+/// checked before caution bounds.
+SensorAlertLevel? _thresholdBreach(
+  double? value, {
+  double? upperCritical,
+  double? lowerCritical,
+  double? upperCaution,
+  double? lowerCaution,
+}) {
+  if (value == null) return null;
+  if ((upperCritical != null && value > upperCritical) ||
+      (lowerCritical != null && value < lowerCritical)) {
+    return SensorAlertLevel.critical;
+  }
+  if ((upperCaution != null && value > upperCaution) ||
+      (lowerCaution != null && value < lowerCaution)) {
+    return SensorAlertLevel.warning;
+  }
+  return null;
+}
+
+/// Formats a reading for the alert banner, tolerating a missing value.
+String _formatReading(double? value, String unit) {
+  if (value == null) return 'no reading';
+  return '${value.toStringAsFixed(1)} $unit'.trim();
 }
 
 /// Returns [value] as a [String] or `null` when it is not a string.

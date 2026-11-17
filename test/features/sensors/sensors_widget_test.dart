@@ -78,6 +78,38 @@ class _DetailSensorsService extends SensorsService {
       ];
 }
 
+/// A [SensorsService] double with breaching/unhealthy readings so the #007
+/// alert banner can be verified (no network).
+class _AlertSensorsService extends SensorsService {
+  _AlertSensorsService() : super(client: null, systemId: 'x');
+
+  @override
+  Future<List<ChassisSensors>> fetchAll() async => <ChassisSensors>[
+        ChassisSensors(
+          chassisId: '1U',
+          chassisName: 'Chassis 1U',
+          thermal: <ThermalReading>[
+            ThermalReading(
+              name: 'CPU1 Temp',
+              readingCelsius: 60,
+              upperCritical: 55,
+              // BMC reports OK even though the reading breaches the limit —
+              // the threshold evaluation (not just health) must surface it.
+              status: const StatusInfo(health: 'OK'),
+            ),
+          ],
+          sensors: <SensorReading>[
+            SensorReading(
+              name: 'PSU1',
+              reading: 12.5,
+              readingUnits: 'V',
+              status: const StatusInfo(health: 'Warning'),
+            ),
+          ],
+        ),
+      ];
+}
+
 /// A [SensorsService] double that always fails (error-state tests).
 class _FailingSensorsService extends SensorsService {
   _FailingSensorsService() : super(client: null, systemId: 'x');
@@ -261,6 +293,58 @@ void main() {
       expect(find.text('CPU1 Temp'), findsWidgets);
       expect(find.text('Fan0'), findsWidgets);
       expect(find.text('PSU1'), findsWidgets);
+    });
+
+    testWidgets(
+        'shows a single alert banner for breaching/unhealthy readings '
+        '(#007)', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_AlertSensorsService()),
+          ],
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Critical sensor alert'), findsOneWidget);
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(find.text('CPU1 Temp 60.0 °C — Critical'), findsOneWidget);
+      expect(find.text('PSU1 12.5 V — Warning'), findsOneWidget);
+
+      // One merged semantics node lists every alert in context.
+      final SemanticsNode? node = tester.getSemantics(
+        find.bySemanticsLabel(RegExp(r'^Sensor alerts:.*CPU1 Temp')),
+      );
+      expect(node?.label, contains('CPU1 Temp 60.0 °C — Critical'));
+      expect(node?.label, contains('PSU1 12.5 V — Warning'));
+    });
+
+    testWidgets('no alert banner when all readings are healthy (#007)',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_FakeSensorsService()),
+          ],
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('CPU1 Temp'), findsWidgets);
+      expect(find.text('Critical sensor alert'), findsNothing);
+      expect(find.text('Sensor warning'), findsNothing);
+      expect(find.byIcon(Icons.warning_amber_outlined), findsNothing);
     });
 
     testWidgets('sensor tiles expose merged accessibility labels (UI-2)',
@@ -607,6 +691,36 @@ void main() {
           reason: 'SensorsView must not overflow at $width px',
         );
         expect(find.text('CPU1 Temp'), findsWidgets);
+      });
+    }
+
+    for (final double width in <double>[320, 800, 1300]) {
+      testWidgets(
+          'alert banner renders without overflow at ${width.toInt()} '
+          'px (#007)', (tester) async {
+        tester.view.physicalSize = Size(width, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: <Override>[
+              systemHandleProvider('x')
+                  .overrideWithValue(buildHandle(sensorMonitoring: true)),
+              sensorsServiceProvider('x')
+                  .overrideWithValue(_AlertSensorsService()),
+            ],
+            child: const MaterialApp(
+                home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'Alert banner must not overflow at $width px',
+        );
+        expect(find.text('Critical sensor alert'), findsOneWidget);
       });
     }
   });

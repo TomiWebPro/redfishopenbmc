@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_const_constructors
 import 'dart:convert';
 import 'dart:io';
 
@@ -75,6 +76,139 @@ void main() {
       );
       expect(cs.thermal, isEmpty);
       expect(cs.fans, isEmpty);
+    });
+  });
+
+  group('ChassisSensors alerts (#007)', () {
+    test('no alerts when readings are healthy and within thresholds', () {
+      final ChassisSensors cs = ChassisSensors(
+        chassisId: '1U',
+        thermal: <ThermalReading>[
+          ThermalReading(
+            name: 'CPU1 Temp',
+            readingCelsius: 41,
+            upperCaution: 45,
+            upperCritical: 55,
+            status: const StatusInfo(health: 'OK'),
+          ),
+        ],
+        fans: <FanReading>[
+          FanReading(
+            name: 'Fan0',
+            reading: 5400,
+            upperCritical: 7000,
+            status: const StatusInfo(health: 'OK'),
+          ),
+        ],
+        sensors: <SensorReading>[
+          SensorReading(
+            name: 'PSU1',
+            reading: 12.5,
+            readingUnits: 'V',
+            thresholds: const <String, double>{
+              'UpperCritical': 13,
+              'LowerCritical': 11,
+            },
+            status: const StatusInfo(health: 'OK'),
+          ),
+        ],
+      );
+
+      expect(cs.alerts, isEmpty);
+    });
+
+    test('upper critical breach alerts even when health reports OK', () {
+      final ChassisSensors cs = ChassisSensors(
+        chassisId: '1U',
+        thermal: <ThermalReading>[
+          ThermalReading(
+            name: 'CPU1 Temp',
+            readingCelsius: 60,
+            upperCritical: 55,
+            status: const StatusInfo(health: 'OK'),
+          ),
+        ],
+      );
+
+      expect(cs.alerts, hasLength(1));
+      expect(cs.alerts.single.name, 'CPU1 Temp');
+      expect(cs.alerts.single.level, SensorAlertLevel.critical);
+      expect(cs.alerts.single.description, contains('60.0 °C'));
+      expect(cs.alerts.single.description, contains('Critical'));
+    });
+
+    test('health warning/critical alert without a reading', () {
+      final ChassisSensors cs = ChassisSensors(
+        chassisId: '1U',
+        fans: <FanReading>[
+          FanReading(
+            name: 'Fan0',
+            status: const StatusInfo(health: 'Warning'),
+          ),
+        ],
+        sensors: <SensorReading>[
+          SensorReading(
+            name: 'PSU1',
+            status: const StatusInfo(health: 'Critical'),
+          ),
+        ],
+      );
+
+      expect(
+        cs.alerts.map((SensorAlert a) => a.level).toList(),
+        <SensorAlertLevel>[
+          SensorAlertLevel.warning,
+          SensorAlertLevel.critical,
+        ],
+      );
+      expect(cs.alerts.first.description, contains('no reading'));
+    });
+
+    test('caution breach is warning; lower critical breach is critical', () {
+      final ChassisSensors cs = ChassisSensors(
+        chassisId: '1U',
+        thermal: <ThermalReading>[
+          ThermalReading(
+            name: 'CPU1 Temp',
+            readingCelsius: 48,
+            upperCaution: 45,
+            upperCritical: 55,
+          ),
+        ],
+        sensors: <SensorReading>[
+          SensorReading(
+            name: 'PSU1',
+            reading: 10,
+            readingUnits: 'V',
+            thresholds: const <String, double>{'LowerCritical': 11},
+          ),
+        ],
+      );
+
+      expect(
+        cs.alerts.map((SensorAlert a) => a.level).toList(),
+        <SensorAlertLevel>[
+          SensorAlertLevel.warning,
+          SensorAlertLevel.critical,
+        ],
+      );
+    });
+
+    test('critical health wins over a warning-only threshold breach', () {
+      final ChassisSensors cs = ChassisSensors(
+        chassisId: '1U',
+        thermal: <ThermalReading>[
+          ThermalReading(
+            name: 'CPU1 Temp',
+            readingCelsius: 48,
+            upperCaution: 45,
+            status: const StatusInfo(health: 'Critical'),
+          ),
+        ],
+      );
+
+      expect(cs.alerts, hasLength(1));
+      expect(cs.alerts.single.level, SensorAlertLevel.critical);
     });
   });
 }
