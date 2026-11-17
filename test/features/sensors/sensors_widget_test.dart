@@ -111,6 +111,33 @@ class _AlertSensorsService extends SensorsService {
       ];
 }
 
+/// A [SensorsService] double that reports only OpenBMC `Thermal.Voltages[]`
+/// readings (issue #007 voltage section tests). [breaching] raises VCPU past its
+/// critical bound so the alert banner path can be verified too.
+class _VoltageSensorsService extends SensorsService {
+  _VoltageSensorsService({this.breaching = false})
+      : super(client: null, systemId: 'x');
+
+  final bool breaching;
+
+  @override
+  Future<List<ChassisSensors>> fetchAll() async => <ChassisSensors>[
+        ChassisSensors(
+          chassisId: '1U',
+          chassisName: 'Chassis 1U',
+          voltages: <VoltageReading>[
+            VoltageReading(
+              name: 'VCPU',
+              readingVolts: breaching ? 2.5 : 1.8,
+              physicalContext: 'CPU',
+              upperCaution: 2.0,
+              upperCritical: 2.2,
+            ),
+          ],
+        ),
+      ];
+}
+
 /// A [SensorsService] double that always fails (error-state tests).
 class _FailingSensorsService extends SensorsService {
   _FailingSensorsService() : super(client: null, systemId: 'x');
@@ -461,7 +488,8 @@ void main() {
       // The chassis card header announces one concise summary instead of a
       // bare title (UI-2 pattern: container + excludeSemantics + label).
       expect(
-        find.bySemanticsLabel('Chassis 1U, 1 temperatures, 1 fans, 1 sensors'),
+        find.bySemanticsLabel(
+            'Chassis 1U, 1 temperatures, 1 fans, 0 voltages, 1 sensors'),
         findsOneWidget,
       );
     });
@@ -682,6 +710,80 @@ void main() {
       await tester.pump();
       expect(service.calls, callsAfterDispose);
     });
+
+    testWidgets('renders a capability-gated Voltages section (#007)',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_VoltageSensorsService()),
+          ],
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Voltages'), findsOneWidget);
+      expect(find.bySemanticsLabel('Voltages, 1'), findsOneWidget);
+      expect(find.text('VCPU'), findsWidgets);
+      // One merged node carries the value, health, context and thresholds.
+      expect(
+        find.bySemanticsLabel('Voltage VCPU, 1.80 V, Unknown, CPU, '
+            'caution 2.0 / crit 2.2'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+            'Chassis 1U, 0 temperatures, 0 fans, 1 voltages, 0 sensors'),
+        findsOneWidget,
+      );
+      // The voltage tile is gated like every other tile.
+      expect(find.byType(SensorDeltaTile), findsOneWidget);
+    });
+
+    testWidgets('omits the Voltages section when no voltage is reported (#007)',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_FakeSensorsService()),
+          ],
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Voltages'), findsNothing);
+      expect(find.bySemanticsLabel(RegExp(r'^Voltages,')), findsNothing);
+    });
+
+    testWidgets('surfaces a breaching voltage in the alert banner (#007)',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_VoltageSensorsService(breaching: true)),
+          ],
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Critical sensor alert'), findsOneWidget);
+      expect(find.text('VCPU 2.50 V — Critical'), findsOneWidget);
+    });
   });
 
   group('SensorsView — responsive layout (UI-3)', () {
@@ -744,6 +846,36 @@ void main() {
           reason: 'Alert banner must not overflow at $width px',
         );
         expect(find.text('Critical sensor alert'), findsOneWidget);
+      });
+    }
+
+    for (final double width in <double>[320, 800, 1300]) {
+      testWidgets(
+          'voltage tile renders without overflow at ${width.toInt()} '
+          'px (#007)', (tester) async {
+        tester.view.physicalSize = Size(width, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: <Override>[
+              systemHandleProvider('x')
+                  .overrideWithValue(buildHandle(sensorMonitoring: true)),
+              sensorsServiceProvider('x')
+                  .overrideWithValue(_VoltageSensorsService()),
+            ],
+            child: const MaterialApp(
+                home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'Voltage section must not overflow at $width px',
+        );
+        expect(find.text('VCPU'), findsWidgets);
       });
     }
   });

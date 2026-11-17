@@ -73,6 +73,10 @@ String thermalSeriesKey(String chassisId, String name) =>
 /// Stable key for a fan's history series.
 String fanSeriesKey(String chassisId, String name) => 'fan|$chassisId|$name';
 
+/// Stable key for a thermal voltage's history series.
+String voltageSeriesKey(String chassisId, String name) =>
+    'voltage|$chassisId|$name';
+
 /// Stable key for a generic sensor's history series.
 String sensorSeriesKey(String chassisId, String name) =>
     'sensor|$chassisId|$name';
@@ -107,6 +111,12 @@ class SensorHistoryStore {
         final double? value = reading.reading;
         if (value != null) {
           _record(fanSeriesKey(chassis.chassisId, reading.name), value);
+        }
+      }
+      for (final VoltageReading reading in chassis.voltages) {
+        final double? value = reading.readingVolts;
+        if (value != null) {
+          _record(voltageSeriesKey(chassis.chassisId, reading.name), value);
         }
       }
       for (final SensorReading reading in chassis.sensors) {

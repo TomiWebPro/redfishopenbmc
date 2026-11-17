@@ -9614,3 +9614,18 @@
 - Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
 
 **Issues touched:** #007 (open)
+
+## 2026-11-17 19:02 UTC — agent:redfish-automation — #007
+
+**Done:**
+- FEATURE #007 (smallest open issue), the OpenBMC `Thermal.Voltages[]` normalization slice (the explicit "Next" from the prior run). Baseline green at 9486543 (analyze 0, 669 passed / 1 skipped, issues validate OK; known untracked `testing/` harness+log and pre-existing stash left untouched). Added a `VoltageReading` model (name/readingVolts/status/physicalContext + all four thresholds; accepts legacy `Reading` in addition to `ReadingVolts`) and wired `voltages` through `ChassisSensors` (field, `fromThermalJson`, alerts with 2-decimal volt formatting, `telemetryFingerprint`) plus `SensorsService.fetchChassis`, which parses `Voltages[]` from the same Thermal fetch — no extra request. Added `voltageSeriesKey` + `SensorHistoryStore` recording and `voltageTileFingerprint` so voltage trends and delta gates match the other tile kinds. `SensorsView` now renders a capability-gated `Voltages` section (omitted when empty) with a merged-semantics `_VoltageTile` behind a `SensorDeltaTile`; the chassis summary announces the voltage count. Checked the "Sections Temperatures / Fans / Voltages (omit empty sections)" acceptance sub-box. Added 4 model tests (incl. legacy `Reading` + fingerprint), 1 voltage fingerprint test, 2 OpenBMC-fixture service tests (VCPU 1.8 V + threshold breach) and 6 widget tests (section present/absent, banner, 320/800/1300 px no-overflow). Verify analyze 0 / 682 passed / 1 skipped (+13); issues validate OK.
+
+**Decisions:**
+- Kept the voltage normalization inside the existing `Thermal` fetch rather than adding a new endpoint: OpenBMC serves `Voltages[]` on the same resource, so the fix is a pure parser/model/view addition with no wire-contract change and no new dependency. Accepted the legacy `Reading` spelling alongside `ReadingVolts` because the prior run's `ReadingRPM` fix proved OpenBMC payloads can use legacy field names; accepting both in the model keeps the captured fixture authoritative. Voltage alerts use 2 decimals (matching the tile) while temperature/fan alerts keep 1 decimal, so existing alert assertions still hold. DOCS anchor gate not re-run (no corpus/manifest change, mirror queue EMPTY); full EMULATOR re-run skipped (no wire-contract, fixture, `test_integration/` or `tool/` change; last green emulator run 2026-11-16 05:27 UTC, <7 days). No production TLS weakened.
+
+**Next:**
+- Continue #007: `fl_chart`/`LineChart` perf only if a dependency is justified, and ≥80% touched-feature coverage — then verify remaining acceptance boxes and close/split #007.
+- Advance #008 firmware task-polling/progress and #010 perf/coverage hardening (discovery request-count budget, cache TTL/delta polling) with tests.
+- Split/advance #009/#021 only via non-dependency slices — no WebView/protocol dep, no production TLS weakening.
+
+**Issues touched:** #007 (open)

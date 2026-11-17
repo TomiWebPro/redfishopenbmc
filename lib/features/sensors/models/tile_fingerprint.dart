@@ -55,6 +55,30 @@ String fanTileFingerprint(FanReading r) {
   return out.toString();
 }
 
+/// Fingerprint of everything a voltage tile renders.
+String voltageTileFingerprint(VoltageReading r) {
+  final StringBuffer out = StringBuffer()
+    ..write('v|')
+    ..write(r.name)
+    ..write('|')
+    ..write(r.readingVolts)
+    ..write('|')
+    ..write(r.status.health)
+    ..write('|')
+    ..write(r.status.state)
+    ..write('|')
+    ..write(r.physicalContext)
+    ..write('|')
+    ..write(r.lowerCritical)
+    ..write('|')
+    ..write(r.lowerCaution)
+    ..write('|')
+    ..write(r.upperCaution)
+    ..write('|')
+    ..write(r.upperCritical);
+  return out.toString();
+}
+
 /// Fingerprint of everything a generic sensor tile renders.
 ///
 /// Threshold entries are appended in map iteration order to match the order

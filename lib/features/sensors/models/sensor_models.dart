@@ -197,6 +197,75 @@ class FanReading {
   }
 }
 
+/// A single voltage reading from a Redfish `Thermal` resource (issue #007).
+///
+/// OpenBMC exposes voltages under `Thermal.Voltages` with a `ReadingVolts`
+/// field (a legacy `Reading` spelling is accepted too). Normalizing them here
+/// lets the same `Thermal` fetch feed a capability-gated `Voltages` section
+/// without an extra endpoint (issue #007: `Voltages[]` folded into one sensor
+/// picture alongside temperatures and fans).
+class VoltageReading {
+  /// Creates a [VoltageReading].
+  const VoltageReading({
+    required this.name,
+    this.readingVolts,
+    this.status = const StatusInfo(),
+    this.physicalContext,
+    this.upperCritical,
+    this.upperCaution,
+    this.lowerCritical,
+    this.lowerCaution,
+    this.sourceUri,
+  });
+
+  /// Voltage display name (Redfish `Name`).
+  final String name;
+
+  /// Current potential in volts (Redfish `ReadingVolts`), or `null` when absent.
+  final double? readingVolts;
+
+  /// Health/state of the voltage sensor.
+  final StatusInfo status;
+
+  /// What the reading measures (Redfish `PhysicalContext`).
+  final String? physicalContext;
+
+  /// Upper critical trip threshold (V).
+  final double? upperCritical;
+
+  /// Upper caution (warning) threshold (V).
+  final double? upperCaution;
+
+  /// Lower critical trip threshold (V).
+  final double? lowerCritical;
+
+  /// Lower caution (warning) threshold (V).
+  final double? lowerCaution;
+
+  /// Canonical `@odata.id` of the source thermal resource.
+  final String? sourceUri;
+
+  /// Parses one entry of a `Thermal.Voltages` array.
+  factory VoltageReading.fromJson(
+    Map<String, dynamic> json, {
+    String? sourceUri,
+  }) {
+    return VoltageReading(
+      name: _asString(json['Name']) ?? 'Voltage',
+      // Redfish Thermal voltages use `ReadingVolts`; accept the legacy
+      // `Reading` spelling too so no voltage is silently dropped.
+      readingVolts: _toDouble(json['ReadingVolts'] ?? json['Reading']),
+      status: StatusInfo.fromJson(json['Status'] as Map<String, dynamic>?),
+      physicalContext: _asString(json['PhysicalContext']),
+      upperCritical: _toDouble(json['UpperThresholdCritical']),
+      upperCaution: _toDouble(json['UpperThresholdNonCritical']),
+      lowerCritical: _toDouble(json['LowerThresholdCritical']),
+      lowerCaution: _toDouble(json['LowerThresholdNonCritical']),
+      sourceUri: sourceUri ?? _asString(json['@odata.id']),
+    );
+  }
+}
+
 /// A single generic sensor from a Redfish `Sensor` resource (issue #007).
 class SensorReading {
   /// Creates a [SensorReading].
@@ -275,6 +344,7 @@ class ChassisSensors {
     this.chassisName,
     this.thermal = const <ThermalReading>[],
     this.fans = const <FanReading>[],
+    this.voltages = const <VoltageReading>[],
     this.sensors = const <SensorReading>[],
   });
 
@@ -289,6 +359,9 @@ class ChassisSensors {
 
   /// Fan readings from the `Thermal` resource.
   final List<FanReading> fans;
+
+  /// Voltage readings from the `Thermal` resource (`Voltages[]`).
+  final List<VoltageReading> voltages;
 
   /// Generic sensor readings from the `Sensors` collection.
   final List<SensorReading> sensors;
@@ -311,6 +384,9 @@ class ChassisSensors {
     final dynamic fansRaw = json['Fans'];
     final List<dynamic> fans =
         fansRaw is List<dynamic> ? fansRaw : const <dynamic>[];
+    final dynamic voltagesRaw = json['Voltages'];
+    final List<dynamic> voltages =
+        voltagesRaw is List<dynamic> ? voltagesRaw : const <dynamic>[];
     return ChassisSensors(
       chassisId: chassisId,
       chassisName: chassisName,
@@ -323,6 +399,11 @@ class ChassisSensors {
           .whereType<Map<String, dynamic>>()
           .map((Map<String, dynamic> e) =>
               FanReading.fromJson(e, sourceUri: base))
+          .toList(),
+      voltages: voltages
+          .whereType<Map<String, dynamic>>()
+          .map((Map<String, dynamic> e) =>
+              VoltageReading.fromJson(e, sourceUri: base))
           .toList(),
       sensors: sensors ?? const <SensorReading>[],
     );
@@ -344,8 +425,8 @@ class ChassisSensors {
       );
 
   /// Actionable alerts derived from health status and threshold breaches
-  /// across this chassis's temperature, fan and generic sensor readings
-  /// (issue #007).
+  /// across this chassis's temperature, fan, voltage and generic sensor
+  /// readings (issue #007).
   ///
   /// A reading with `Health` Warning/Critical, or whose value breaches an
   /// upper/lower critical (or caution) threshold, produces one alert; the more
@@ -384,6 +465,26 @@ class ChassisSensors {
         ));
       }
     }
+    for (final VoltageReading v in voltages) {
+      final SensorAlertLevel? level = _resolveAlertLevel(
+        v.status.healthEnum,
+        _thresholdBreach(
+          v.readingVolts,
+          upperCritical: v.upperCritical,
+          lowerCritical: v.lowerCritical,
+          upperCaution: v.upperCaution,
+          lowerCaution: v.lowerCaution,
+        ),
+      );
+      if (level != null) {
+        result.add(SensorAlert(
+          name: v.name,
+          // Two decimals match the voltage tile (e.g. 1.80 V / 3.30 V).
+          valueLabel: _formatReading(v.readingVolts, 'V', decimals: 2),
+          level: level,
+        ));
+      }
+    }
     for (final SensorReading s in sensors) {
       final SensorAlertLevel? level = _resolveAlertLevel(
         s.status.healthEnum,
@@ -408,7 +509,8 @@ class ChassisSensors {
 
   @override
   String toString() => 'ChassisSensors($chassisId: ${thermal.length} temps, '
-      '${fans.length} fans, ${sensors.length} sensors)';
+      '${fans.length} fans, ${voltages.length} volts, '
+      '${sensors.length} sensors)';
 }
 
 /// Compact signature of the readings in [snapshots] (issue #007 delta polling).
@@ -430,6 +532,11 @@ String telemetryFingerprint(Iterable<ChassisSensors> snapshots) {
     for (final FanReading f in chassis.fans) {
       out.write('f|${f.name}|${f.reading}|${f.status.health}|'
           '${f.upperCritical}|');
+    }
+    for (final VoltageReading v in chassis.voltages) {
+      out.write('v|${v.name}|${v.readingVolts}|${v.status.health}|'
+          '${v.upperCritical}|${v.upperCaution}|${v.lowerCritical}|'
+          '${v.lowerCaution}|');
     }
     for (final SensorReading s in chassis.sensors) {
       out.write('s|${s.name}|${s.reading}|${s.status.health}|');
@@ -481,9 +588,9 @@ SensorAlertLevel? _thresholdBreach(
 }
 
 /// Formats a reading for the alert banner, tolerating a missing value.
-String _formatReading(double? value, String unit) {
+String _formatReading(double? value, String unit, {int decimals = 1}) {
   if (value == null) return 'no reading';
-  return '${value.toStringAsFixed(1)} $unit'.trim();
+  return '${value.toStringAsFixed(decimals)} $unit'.trim();
 }
 
 /// Returns [value] as a [String] or `null` when it is not a string.

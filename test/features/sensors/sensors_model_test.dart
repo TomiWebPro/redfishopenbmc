@@ -210,5 +210,91 @@ void main() {
       expect(cs.alerts, hasLength(1));
       expect(cs.alerts.single.level, SensorAlertLevel.critical);
     });
+
+    test('a breaching voltage surfaces a critical alert in volts (#007)', () {
+      final ChassisSensors cs = ChassisSensors(
+        chassisId: '1U',
+        voltages: <VoltageReading>[
+          VoltageReading(
+            name: 'VCPU',
+            readingVolts: 2.5,
+            upperCritical: 2.2,
+            status: const StatusInfo(health: 'OK'),
+          ),
+        ],
+      );
+
+      expect(cs.alerts, hasLength(1));
+      expect(cs.alerts.single.name, 'VCPU');
+      expect(cs.alerts.single.level, SensorAlertLevel.critical);
+      expect(cs.alerts.single.description, contains('2.50 V'));
+    });
+  });
+
+  group('VoltageReading model (#007 OpenBMC Voltages[])', () {
+    test('parses ReadingVolts, thresholds and legacy Reading fallback', () {
+      final VoltageReading modern = VoltageReading.fromJson(
+        <String, dynamic>{
+          'Name': 'VCPU',
+          'ReadingVolts': 1.8,
+          'PhysicalContext': 'CPU',
+          'UpperThresholdNonCritical': 2.0,
+          'UpperThresholdCritical': 2.2,
+          'Status': <String, dynamic>{'State': 'Enabled', 'Health': 'OK'},
+        },
+        sourceUri: '/redfish/v1/Chassis/1U/Thermal',
+      );
+      expect(modern.name, 'VCPU');
+      expect(modern.readingVolts, 1.8);
+      expect(modern.physicalContext, 'CPU');
+      expect(modern.upperCaution, 2.0);
+      expect(modern.upperCritical, 2.2);
+      expect(modern.status.healthEnum, Health.ok);
+      expect(modern.sourceUri, '/redfish/v1/Chassis/1U/Thermal');
+
+      // Some OpenBMC builds use the generic `Reading` field instead.
+      final VoltageReading legacy = VoltageReading.fromJson(
+        <String, dynamic>{'Name': 'VDIMM', 'Reading': 1.2},
+      );
+      expect(legacy.name, 'VDIMM');
+      expect(legacy.readingVolts, 1.2);
+    });
+
+    test('fromThermalJson normalizes Voltages[] and tolerates bad entries', () {
+      final ChassisSensors cs = ChassisSensors.fromThermalJson(
+        '1U',
+        <String, dynamic>{
+          '@odata.id': '/redfish/v1/Chassis/1U/Thermal',
+          'Voltages': <dynamic>[
+            <String, dynamic>{'Name': 'VCPU', 'ReadingVolts': 1.8},
+            'not-an-object',
+          ],
+        },
+      );
+
+      expect(cs.voltages, hasLength(1));
+      expect(cs.voltages.single.name, 'VCPU');
+      expect(cs.voltages.single.readingVolts, 1.8);
+      expect(cs.voltages.single.sourceUri, '/redfish/v1/Chassis/1U/Thermal');
+    });
+
+    test('telemetryFingerprint includes voltages so a changed volt rebuilds',
+        () {
+      ChassisSensors voltages(double value) => ChassisSensors(
+            chassisId: '1U',
+            voltages: <VoltageReading>[
+              VoltageReading(name: 'VCPU', readingVolts: value),
+            ],
+          );
+
+      expect(
+        telemetryFingerprint(<ChassisSensors>[voltages(1.8)]),
+        telemetryFingerprint(<ChassisSensors>[voltages(1.8)]),
+      );
+      expect(
+        telemetryFingerprint(<ChassisSensors>[voltages(1.8)]),
+        isNot(telemetryFingerprint(<ChassisSensors>[voltages(2.5)])),
+      );
+    });
   });
 }

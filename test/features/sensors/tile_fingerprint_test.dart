@@ -90,16 +90,62 @@ void main() {
           ))));
     });
 
+    test('voltage fingerprint covers reading, health, context and bounds', () {
+      VoltageReading base() => VoltageReading(
+            name: 'VCPU',
+            readingVolts: 1.8,
+            status: const StatusInfo(health: 'OK'),
+            physicalContext: 'CPU',
+            upperCaution: 2.0,
+            upperCritical: 2.2,
+          );
+
+      expect(voltageTileFingerprint(base()), voltageTileFingerprint(base()));
+      expect(voltageTileFingerprint(base()),
+          isNot(voltageTileFingerprint(base().copyWith(readingVolts: 2.5))));
+      expect(voltageTileFingerprint(base()),
+          isNot(voltageTileFingerprint(base().copyWith(health: 'Critical'))));
+      expect(
+          voltageTileFingerprint(base()),
+          isNot(voltageTileFingerprint(
+              base().copyWith(physicalContext: 'Chassis'))));
+      expect(voltageTileFingerprint(base()),
+          isNot(voltageTileFingerprint(base().copyWith(upperCritical: 2.5))));
+    });
+
     test('different reading kinds never collide on the same values', () {
-      // All three helpers produce a distinct namespace prefix so a temp, fan
-      // and generic sensor with coincidentally equal fields cannot gate each
-      // other out.
+      // Every helper produces a distinct namespace prefix so a temp, fan,
+      // voltage and generic sensor with coincidentally equal fields cannot
+      // gate each other out.
       expect(temperatureTileFingerprint(ThermalReading(name: 'x')),
           isNot(fanTileFingerprint(FanReading(name: 'x'))));
       expect(fanTileFingerprint(FanReading(name: 'x')),
+          isNot(voltageTileFingerprint(VoltageReading(name: 'x'))));
+      expect(voltageTileFingerprint(VoltageReading(name: 'x')),
           isNot(sensorTileFingerprint(SensorReading(name: 'x'))));
     });
   });
+}
+
+extension _VoltageCopy on VoltageReading {
+  VoltageReading copyWith({
+    double? readingVolts,
+    String? health,
+    String? physicalContext,
+    double? upperCritical,
+  }) =>
+      VoltageReading(
+        name: name,
+        readingVolts: readingVolts ?? this.readingVolts,
+        status:
+            StatusInfo(state: status.state, health: health ?? status.health),
+        physicalContext: physicalContext ?? this.physicalContext,
+        upperCritical: upperCritical ?? this.upperCritical,
+        upperCaution: upperCaution,
+        lowerCritical: lowerCritical,
+        lowerCaution: lowerCaution,
+        sourceUri: sourceUri,
+      );
 }
 
 // Small copy helpers keep the fingerprint tests readable without adding

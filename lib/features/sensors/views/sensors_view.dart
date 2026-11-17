@@ -20,7 +20,8 @@ import 'package:redfishopenbmc/redfish/models/system_features.dart';
 /// ([SystemFeatures.sensorMonitoring] is `true`); the [SystemShell] already
 /// hides the tab otherwise, and this view additionally renders nothing when the
 /// capability is absent so there is never a placeholder. Surfaces per-chassis
-/// temperature, fan, and generic sensor readings pulled by [SensorsController].
+/// temperature, fan, voltage, and generic sensor readings pulled by
+/// [SensorsController].
 class SensorsView extends ConsumerStatefulWidget {
   /// Creates a [SensorsView] for [systemId].
   const SensorsView({
@@ -277,7 +278,7 @@ class _SensorsViewState extends ConsumerState<SensorsView>
   }
 }
 
-/// A single chassis card grouping its temperatures, fans, and sensors.
+/// A single chassis card grouping its temperatures, fans, voltages, and sensors.
 class _ChassisCard extends StatelessWidget {
   /// Creates a [_ChassisCard].
   const _ChassisCard({required this.chassis, required this.history});
@@ -294,6 +295,7 @@ class _ChassisCard extends StatelessWidget {
     final String summaryLabel =
         'Chassis ${chassis.chassisId}, ${chassis.thermal.length} '
         'temperatures, ${chassis.fans.length} fans, '
+        '${chassis.voltages.length} voltages, '
         '${chassis.sensors.length} sensors';
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -352,6 +354,29 @@ class _ChassisCard extends StatelessWidget {
                     f,
                     series: history[fanSeriesKey(chassis.chassisId, f.name)] ??
                         const <double>[],
+                  ),
+                ),
+              const SizedBox(height: 12),
+            ],
+            if (chassis.voltages.isNotEmpty) ...<Widget>[
+              // #007: OpenBMC `Thermal.Voltages[]` normalized into the same
+              // telemetry picture — rendered only when the BMC reports any.
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: 'Voltages, ${chassis.voltages.length}',
+                child: Text('Voltages',
+                    style: Theme.of(context).textTheme.titleSmall),
+              ),
+              const SizedBox(height: 4),
+              for (final VoltageReading v in chassis.voltages)
+                SensorDeltaTile(
+                  fingerprint: voltageTileFingerprint(v),
+                  builder: (_) => _VoltageTile(
+                    v,
+                    series:
+                        history[voltageSeriesKey(chassis.chassisId, v.name)] ??
+                            const <double>[],
                   ),
                 ),
               const SizedBox(height: 12),
@@ -503,6 +528,83 @@ class _FanTile extends StatelessWidget {
                   Expanded(
                     child: ThresholdBar(
                       value: reading.reading,
+                      upperCritical: reading.upperCritical,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A voltage reading row with health tint, threshold hint and trend (issue #007).
+class _VoltageTile extends StatelessWidget {
+  /// Creates a [_VoltageTile].
+  const _VoltageTile(this.reading, {required this.series});
+
+  /// The voltage reading to render.
+  final VoltageReading reading;
+
+  /// Recent readings for this sensor (oldest first).
+  final List<double> series;
+
+  @override
+  Widget build(BuildContext context) {
+    final String value = reading.readingVolts == null
+        ? '—'
+        : '${reading.readingVolts!.toStringAsFixed(2)} V';
+    final List<String> thresholds = <String>[
+      if (reading.lowerCaution != null)
+        'low ${reading.lowerCaution!.toStringAsFixed(1)}',
+      if (reading.upperCaution != null)
+        'caution ${reading.upperCaution!.toStringAsFixed(1)}',
+      if (reading.upperCritical != null)
+        'crit ${reading.upperCritical!.toStringAsFixed(1)}',
+    ];
+    final bool hasThreshold = reading.lowerCritical != null ||
+        reading.lowerCaution != null ||
+        reading.upperCaution != null ||
+        reading.upperCritical != null;
+    // UI-2: one self-describing node carries the physical-context + threshold
+    // hints sighted users get from the subtitle (excludeSemantics drops the
+    // inner Text, so the merged label must keep them).
+    final String announced =
+        'Voltage ${reading.name}, $value, ${_healthLabel(reading.status.healthEnum)}'
+        '${reading.physicalContext == null ? '' : ', ${reading.physicalContext}'}'
+        '${thresholds.isEmpty ? '' : ', ${thresholds.join(' / ')}'}';
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: announced,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(reading.name),
+            subtitle: Text(<String>[
+              if (reading.physicalContext != null) reading.physicalContext!,
+              if (thresholds.isNotEmpty) thresholds.join(' / '),
+            ].join(' · ')),
+            trailing:
+                _HealthChip(health: reading.status.healthEnum, label: value),
+          ),
+          if (series.length >= 2 || hasThreshold)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: <Widget>[
+                  SensorSparkline(values: series),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ThresholdBar(
+                      value: reading.readingVolts,
+                      lowerCritical: reading.lowerCritical,
+                      lowerCaution: reading.lowerCaution,
+                      upperCaution: reading.upperCaution,
                       upperCritical: reading.upperCritical,
                     ),
                   ),

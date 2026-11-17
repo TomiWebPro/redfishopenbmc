@@ -7,7 +7,7 @@ import 'package:redfishopenbmc/redfish/models/system_features.dart';
 ///
 /// Pulls chassis thermal and sensor data from a connected BMC:
 ///   * `GET /redfish/v1/Chassis` enumerates chassis,
-///   * for each chassis `GET {id}/Thermal` yields temperatures + fans,
+///   * for each chassis `GET {id}/Thermal` yields temperatures + fans + voltages,
 ///   * for each chassis `GET {id}/Sensors` (a collection) yields the typed
 ///     sensor members, each fetched individually.
 ///
@@ -99,10 +99,12 @@ class SensorsService {
 
     List<ThermalReading> temps = const <ThermalReading>[];
     List<FanReading> fans = const <FanReading>[];
+    List<VoltageReading> voltages = const <VoltageReading>[];
     try {
       final Map<String, dynamic> thermalJson = await c.getJson('$base/Thermal');
       temps = _parseThermal(thermalJson, '$base/Thermal');
       fans = _parseFans(thermalJson, '$base/Thermal');
+      voltages = _parseVoltages(thermalJson, '$base/Thermal');
     } on RedfishException {
       // No thermal telemetry for this chassis.
     }
@@ -120,6 +122,7 @@ class SensorsService {
       chassisName: name,
       thermal: temps,
       fans: fans,
+      voltages: voltages,
       sensors: sensors,
     );
   }
@@ -148,6 +151,26 @@ class SensorsService {
         .map(
           (Map<String, dynamic> e) =>
               FanReading.fromJson(e, sourceUri: sourceUri),
+        )
+        .toList();
+  }
+
+  /// Parses a `Thermal` resource body into voltage readings.
+  ///
+  /// OpenBMC serves voltages under `Thermal.Voltages` (`ReadingVolts`); this is
+  /// normalized into [VoltageReading]s from the same thermal fetch as
+  /// temperatures/fans, so no extra request is needed (issue #007).
+  List<VoltageReading> _parseVoltages(
+    Map<String, dynamic> json,
+    String sourceUri,
+  ) {
+    final List<dynamic> voltages =
+        (json['Voltages'] as List<dynamic>?) ?? <dynamic>[];
+    return voltages
+        .whereType<Map<String, dynamic>>()
+        .map(
+          (Map<String, dynamic> e) =>
+              VoltageReading.fromJson(e, sourceUri: sourceUri),
         )
         .toList();
   }

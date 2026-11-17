@@ -191,6 +191,47 @@ void main() {
       );
     });
 
+    test('normalizes OpenBMC Thermal Voltages[] (VCPU / ReadingVolts)',
+        () async {
+      final SensorsService svc = SensorsService(
+        client: _FixtureClient(),
+        systemId: 'bmc1',
+      );
+
+      final ChassisSensors cs = await svc.fetchChassis(chassisBase);
+
+      expect(cs.voltages, hasLength(1));
+      expect(cs.voltages.single.name, 'VCPU');
+      expect(cs.voltages.single.readingVolts, 1.8);
+      expect(cs.voltages.single.sourceUri, '$chassisBase/Thermal');
+    });
+
+    test('evaluates a voltage threshold breach from the Thermal payload',
+        () async {
+      final Map<String, dynamic> thermal =
+          _FixtureClient.fixture('openbmc_thermal.json');
+      final List<dynamic> voltages = thermal['Voltages'] as List<dynamic>;
+      (voltages.first as Map<String, dynamic>)['UpperThresholdCritical'] = 1.5;
+      final SensorsService svc = SensorsService(
+        client: _FixtureClient(overrides: <String, Map<String, dynamic>>{
+          '$chassisBase/Thermal': thermal,
+        }),
+        systemId: 'bmc1',
+      );
+
+      final ChassisSensors cs = await svc.fetchChassis(chassisBase);
+
+      expect(
+        cs.alerts.any((SensorAlert a) =>
+            a.name == 'VCPU' && a.level == SensorAlertLevel.critical),
+        isTrue,
+      );
+      expect(
+        cs.alerts.firstWhere((SensorAlert a) => a.name == 'VCPU').valueLabel,
+        '1.80 V',
+      );
+    });
+
     test('a chassis with no Thermal or Sensors yields an empty snapshot',
         () async {
       final SensorsService svc = SensorsService(
@@ -207,6 +248,7 @@ void main() {
       expect(cs.chassisName, 'missing');
       expect(cs.thermal, isEmpty);
       expect(cs.fans, isEmpty);
+      expect(cs.voltages, isEmpty);
       expect(cs.sensors, isEmpty);
       expect(cs.alerts, isEmpty);
     });

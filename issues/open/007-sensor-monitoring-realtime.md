@@ -34,7 +34,7 @@ estimated_tokens: 50000
   - Returns `List<Sensor>`; empty if chassis absent → caller hides tab
   - Polling `FutureProvider` every 5–10s when tab visible, backoff to 30s when background; delta: only rebuild tiles whose `Reading` changed
 - [ ] Tab `lib/features/sensors/views/sensors_view.dart` — **only if** `features.sensorMonitoring==true` (else tab hidden, no placeholder):
-  - Sections `Temperatures` / `Fans` / `Voltages` (omit empty sections)
+  - [x] Sections `Temperatures` / `Fans` / `Voltages` (omit empty sections)
   - [x] Tile per sensor: name, reading + units, health dot, threshold range bar, mini sparkline (last 20 polls, ring buffer)
   - [x] Alert banner if any sensor `Health==Critical/Warning` or `Reading` breaches `UpperThresholdCritical`
   - Pull-to-refresh + last-updated timestamp
@@ -147,6 +147,26 @@ estimated_tokens: 50000
   Baseline analyze 0 / 665 passed / 1 skipped; verify analyze 0 / 669 passed /
   1 skipped (+4); issues validate OK. Issue stays open: OpenBMC `Voltages[]`
   normalization, fl_chart/LineChart perf and ≥80% coverage remain unchecked.
+- 2026-11-17 19:02 UTC (run, agent:redfish-automation) — FEATURE slice:
+  OpenBMC `Thermal.Voltages[]` normalization (the explicit "Next" from the
+  prior run). Added a `VoltageReading` model (`name`/`readingVolts`/`status`/
+  `physicalContext` + all four thresholds; accepts the legacy `Reading`
+  spelling as a fallback) and wired `Voltages[]` into `ChassisSensors`
+  (field, `fromThermalJson` parse, `alerts` with 2-decimal volt formatting,
+  `telemetryFingerprint`) and `SensorsService.fetchChassis` (parsed from the
+  same Thermal fetch — no extra request). Added `voltageSeriesKey` +
+  `SensorHistoryStore` recording and `voltageTileFingerprint` so voltage
+  trends/rebuild gating match the other tile kinds. `SensorsView` now renders a
+  capability-gated `Voltages` section (omitted when empty) with a merged-
+  semantics `_VoltageTile` (value, health, context, thresholds) behind a
+  `SensorDeltaTile`; the chassis summary announces the voltage count. Checked
+  the "Sections Temperatures / Fans / Voltages" acceptance sub-box. Added 4
+  model tests (incl. legacy `Reading` + fingerprint), 1 voltage fingerprint
+  test, 2 OpenBMC-fixture service tests (VCPU 1.8 V + threshold breach) and 6
+  widget tests (section present/absent, banner, 320/800/1300 px no-overflow).
+  Baseline analyze 0 / 669 passed / 1 skipped; verify analyze 0 / 682 passed /
+  1 skipped (+13); issues validate OK. Issue stays open: `fl_chart`/`LineChart`
+  perf and ≥80% touched-feature coverage remain unchecked.
 
 ## References
 
