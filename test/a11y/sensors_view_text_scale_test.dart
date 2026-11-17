@@ -25,38 +25,67 @@ SystemHandle _buildHandle() => SystemHandle(
     );
 
 void main() {
-  testWidgets(
-    'SensorsView supports 200% text scaling without overflow at 400px',
-    (WidgetTester tester) async {
-      tester.view.physicalSize = const Size(400, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+  Future<void> pumpAtWidth(WidgetTester tester, double width) async {
+    tester.view.physicalSize = Size(width, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: <Override>[
-            systemHandleProvider('x').overrideWithValue(_buildHandle()),
-            sensorsServiceProvider('x')
-                .overrideWithValue(_EmptySensorsService()),
-          ],
-          child: const MaterialApp(
-            home: MediaQuery(
-              data: MediaQueryData(textScaler: TextScaler.linear(2.0)),
-              child: Scaffold(
-                body: SensorsView(systemId: 'x', autoRefreshInterval: null),
-              ),
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          systemHandleProvider('x').overrideWithValue(_buildHandle()),
+          sensorsServiceProvider('x').overrideWithValue(_EmptySensorsService()),
+        ],
+        child: const MaterialApp(
+          home: MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(2.0)),
+            child: Scaffold(
+              body: SensorsView(systemId: 'x', autoRefreshInterval: null),
             ),
           ),
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets(
+    'SensorsView supports 200% text scaling without overflow at 400px',
+    (WidgetTester tester) async {
+      await pumpAtWidth(tester, 400);
 
       expect(
         find.bySemanticsLabel('No sensor data available'),
         findsOneWidget,
       );
       expect(find.text('No sensor data available'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'SensorsView supports 200% text scaling without overflow at 800px',
+    (WidgetTester tester) async {
+      await pumpAtWidth(tester, 800);
+
+      expect(
+        find.bySemanticsLabel('No sensor data available'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'SensorsView supports 200% text scaling without overflow at 1400px',
+    (WidgetTester tester) async {
+      await pumpAtWidth(tester, 1400);
+
+      expect(
+        find.bySemanticsLabel('No sensor data available'),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     },
   );
