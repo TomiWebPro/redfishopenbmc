@@ -40,9 +40,9 @@ estimated_tokens: 50000
   - [x] Pull-to-refresh + last-updated timestamp
 - [ ] Charts: `fl_chart` `LineChart` per sensor (or single combined chart toggle); lazy-build, no jank on 20 sensors × 60 points
 - [x] Threshold coloring: `OK→green`, `Warning→amber` (breaches `NonCritical`), `Critical→red` (breaches `Critical`), grey if `Reading==null`
-- [ ] Error resilience: sensor absent, 404 Sensors → fallback Thermal, both 404 → hide tab gracefully; 401 bubbles to auth manager
-- [ ] Tests: `test/features/sensors/sensors_service_test.dart` — Thermal fixture from OpenBMC, Sensors collection fixture, threshold evaluation, empty chassis, polling dedup; widget test verifies hidden when `sensorMonitoring false`
-- [ ] Coverage ≥80%
+- [x] Error resilience: sensor absent, 404 Sensors → fallback Thermal, both 404 → hide tab gracefully; 401 bubbles to auth manager
+- [x] Tests: `test/features/sensors/sensors_service_test.dart` — Thermal fixture from OpenBMC, Sensors collection fixture, threshold evaluation, empty chassis, polling dedup; widget test verifies hidden when `sensorMonitoring false`
+- [x] Coverage ≥80% — full-suite `flutter test --coverage`: 94.3% (917/972 lines) across `lib/features/sensors/`
 
 ## Tasks
 
@@ -197,6 +197,23 @@ estimated_tokens: 50000
   breach with `Health=OK` → red chip). Baseline analyze 0 / 689 passed /
   1 skipped; verify analyze 0 / 696 passed / 1 skipped (+7); issues validate OK.
   Issue stays open: `fl_chart`/`LineChart` perf and ≥80% covered remain.
+- 2026-11-17 (run, agent:redfish-automation) — FEATURE slice: error resilience
+  (checked above) — "401 bubbles to auth manager". Added a reusable
+  `RedfishException.isAuthError` predicate (401/403) alongside the existing
+  `isPreconditionFailed` classifier, and wired it into all five degradation
+  `catch` sites in `SensorsService` (per-chassis in `fetchAll`, chassis body,
+  Thermal, Sensors collection, and per-member in `_parseSensors`): a missing
+  sub-resource (404) or transient failure still degrades to available data, but
+  a surfaced 401/403 now rethrows so the auth manager / error UI sees it instead
+  of a silently empty telemetry screen. Added 2 direct `isAuthError` unit tests
+  and 5 service tests (401 Thermal, 403 Sensors collection, 401 member aborting
+  the whole chassis fetch, 401 chassis body bubbling through `fetchAll`, and 500
+  still degrading). Baseline analyze 0 / 696 passed / 1 skipped; verify analyze
+  0 / 703 passed / 1 skipped (+7); issues validate OK. Measured full-suite
+  sensor coverage at 94.3% (917/972), so the ≥80% box is checked; the already-
+  present fixture/polling-dedup/gate widget tests satisfy the Tests box.
+  Issue stays open ONLY for the `fl_chart`/`LineChart` perf box (a deliberate
+  dependency addition + frame-budget test bed, deferred as a larger workstream).
 
 ## References
 

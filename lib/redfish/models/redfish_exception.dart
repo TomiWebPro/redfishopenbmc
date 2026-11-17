@@ -57,6 +57,15 @@ class RedfishException implements Exception {
   /// the identical request (which cannot succeed against the same stale tag).
   bool get isPreconditionFailed => statusCode == 412;
 
+  /// Whether this is an authentication/authorization failure (401 or 403).
+  ///
+  /// DSP0266 §8.2: an expired/invalid session yields 401 and an insufficiently
+  /// privileged one yields 403. Both are fatal for the current request and must
+  /// bubble to the auth manager rather than being treated as a missing optional
+  /// sub-resource — feature services use this to keep graceful 404 degradation
+  /// without masking a surfaced auth failure (issue #007).
+  bool get isAuthError => statusCode == 401 || statusCode == 403;
+
   /// Network-level failure (timeout / connection error). Retryable.
   factory RedfishException.network(String message) => RedfishException(
         message: message,

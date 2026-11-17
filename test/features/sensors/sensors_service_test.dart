@@ -253,6 +253,149 @@ void main() {
       expect(cs.alerts, isEmpty);
     });
   });
+
+  // Issue #007 error resilience: a missing sub-resource (404) degrades to an
+  // empty snapshot, but an auth failure (401/403) must bubble to the auth
+  // manager instead of being silently rendered as "no sensors".
+  group('SensorsService — auth failures bubble (#007)', () {
+    const String base = '/redfish/v1/Chassis/chassis';
+
+    test('401 on Thermal is not swallowed into an empty snapshot', () async {
+      final SensorsService svc = SensorsService(
+        client: _AuthFailingClient(
+          failingPath: '$base/Thermal',
+          statusCode: 401,
+        ),
+        systemId: 'bmc1',
+      );
+
+      await expectLater(
+        svc.fetchChassis(base),
+        throwsA(
+          isA<RedfishException>().having(
+            (RedfishException e) => e.statusCode,
+            'statusCode',
+            401,
+          ),
+        ),
+      );
+    });
+
+    test('403 on the Sensors collection bubbles', () async {
+      final SensorsService svc = SensorsService(
+        client: _AuthFailingClient(
+          failingPath: '$base/Sensors',
+          statusCode: 403,
+        ),
+        systemId: 'bmc1',
+      );
+
+      await expectLater(
+        svc.fetchChassis(base),
+        throwsA(isA<RedfishException>()),
+      );
+    });
+
+    test('401 on a single Sensors member aborts the whole chassis fetch',
+        () async {
+      final SensorsService svc = SensorsService(
+        client: _AuthFailingClient(
+          failingPath: '$base/Sensors/temp0',
+          statusCode: 401,
+        ),
+        systemId: 'bmc1',
+      );
+
+      await expectLater(
+        svc.fetchChassis(base),
+        throwsA(
+          isA<RedfishException>().having(
+            (RedfishException e) => e.statusCode,
+            'statusCode',
+            401,
+          ),
+        ),
+      );
+    });
+
+    test('401 on the chassis body bubbles through fetchAll', () async {
+      final SensorsService svc = SensorsService(
+        client: _AuthFailingClient(
+          failingPath: base,
+          statusCode: 401,
+        ),
+        systemId: 'bmc1',
+      );
+
+      await expectLater(
+        svc.fetchAll(),
+        throwsA(
+          isA<RedfishException>().having(
+            (RedfishException e) => e.statusCode,
+            'statusCode',
+            401,
+          ),
+        ),
+      );
+    });
+
+    test('a non-auth Thermal failure still degrades gracefully', () async {
+      final SensorsService svc = SensorsService(
+        client: _AuthFailingClient(
+          failingPath: '$base/Thermal',
+          statusCode: 500,
+        ),
+        systemId: 'bmc1',
+      );
+
+      final ChassisSensors cs = await svc.fetchChassis(base);
+
+      expect(cs.thermal, isEmpty);
+      // The Sensors collection fetch is independent of the Thermal failure.
+      expect(cs.sensors, hasLength(2));
+    });
+  });
+}
+
+/// Delegates to the captured OpenBMC fixtures except for one path, which
+/// throws a [RedfishException] with a chosen HTTP status. Used to prove that
+/// #007 graceful degradation does not swallow auth failures.
+class _AuthFailingClient extends RedfishClient {
+  _AuthFailingClient({required this.failingPath, required this.statusCode})
+      : _fixture = _FixtureClient(),
+        super(
+          profile: const ConnectionProfile(
+            id: 't',
+            host: 'h',
+            allowSelfSigned: true,
+          ),
+        );
+
+  final String failingPath;
+  final int statusCode;
+  final _FixtureClient _fixture;
+
+  @override
+  Future<Map<String, dynamic>> getJson(
+    String path, {
+    Map<String, dynamic>? query,
+    Map<String, String>? headers,
+  }) async {
+    if (path == failingPath) {
+      throw RedfishException(
+        message: 'HTTP $statusCode',
+        statusCode: statusCode,
+      );
+    }
+    if (path == '/redfish/v1/Chassis') {
+      return <String, dynamic>{
+        'Members': <Map<String, String>>[
+          <String, String>{'@odata.id': '/redfish/v1/Chassis/chassis'},
+        ],
+      };
+    }
+    return _fixture.getJson(path, query: query, headers: headers);
+  }
 }
 
 /// Serves the captured OpenBMC fixtures by request path, so [SensorsService]

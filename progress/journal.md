@@ -9659,3 +9659,18 @@
 - Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
 
 **Issues touched:** #007 (open)
+
+## 2026-11-17 20:54 UTC — agent:redfish-automation — #007
+
+**Done:**
+- FEATURE #007 (smallest open issue), the "401 bubbles to auth manager" error-resilience slice (baseline green at 56a0fd8: analyze 0, 696 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Added `RedfishException.isAuthError` (401/403) and wired it into all five `SensorsService` degradation catches, so a 404/transient failure still degrades gracefully but a surfaced auth failure is rethrown to the caller/auth manager and the existing error+Retry UI instead of rendering an empty telemetry screen. Added 2 direct predicate unit tests and 5 service tests (401 Thermal, 403 Sensors collection, 401 member aborting the chassis fetch, 401 chassis body bubbling via `fetchAll`, 500 still degrading). Verify analyze 0 / 703 passed / 1 skipped (+7); issues validate OK. Measured full-suite sensor coverage 94.3% (917/972) and checked the Error resilience, Tests and Coverage acceptance boxes.
+
+**Decisions:**
+- Kept graceful degradation for genuinely missing resources while making auth failures fatal at the service layer — the client's transport-level auth interceptor already attempts 401 refresh, so any 401/403 that still surfaces is a real session/authorization failure that must not be masked as "no sensors". Chose a reusable `isAuthError` predicate on `RedfishException` (alongside `isPreconditionFailed`) over ad-hoc status checks so the classification is unit-testable and available to other services. Did NOT add `fl_chart`: the remaining chart box needs a new dependency + frame-budget test bed (broader workstream) — `#007` stays open for that one box only. No production TLS weakened; no new dependency. DOCS anchor gate not re-run (no corpus/manifest change, mirror queue EMPTY); full EMULATOR re-run skipped (no wire-contract/fixture/`test_integration/`/`tool/` change; <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Decide `#007`'s last box: add `fl_chart` with a frame-budget test and close `#007`, or split the chart box into a follow-up and close `#007` as delivered.
+- Advance `#008` firmware task-polling/progress and `#010` cache TTL/delta-polling hardening with tests.
+- Split/advance `#009`/`#021` via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
+
+**Issues touched:** #007 (open)

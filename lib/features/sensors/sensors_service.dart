@@ -64,8 +64,10 @@ class SensorsService {
       if (uri == null || uri.isEmpty) continue;
       try {
         out.add(await fetchChassis(uri));
-      } on RedfishException {
-        // Skip a chassis that fails entirely; keep the rest.
+      } on RedfishException catch (e) {
+        // Auth failures must bubble to the auth manager (#007), not masquerade
+        // as a missing chassis. Other failures skip just this chassis.
+        if (e.isAuthError) rethrow;
       }
     }
     return out;
@@ -93,8 +95,10 @@ class SensorsService {
     try {
       final Map<String, dynamic> chassisJson = await c.getJson(base);
       name = _asString(chassisJson['Name']) ?? id;
-    } on RedfishException {
-      // Keep the id-derived name when the chassis body is unavailable.
+    } on RedfishException catch (e) {
+      // Keep the id-derived name when the chassis body is unavailable, but
+      // never swallow a session/auth failure (#007).
+      if (e.isAuthError) rethrow;
     }
 
     List<ThermalReading> temps = const <ThermalReading>[];
@@ -105,16 +109,20 @@ class SensorsService {
       temps = _parseThermal(thermalJson, '$base/Thermal');
       fans = _parseFans(thermalJson, '$base/Thermal');
       voltages = _parseVoltages(thermalJson, '$base/Thermal');
-    } on RedfishException {
-      // No thermal telemetry for this chassis.
+    } on RedfishException catch (e) {
+      // No thermal telemetry for this chassis — unless the session failed,
+      // in which case the caller/auth manager must see the 401/403 (#007).
+      if (e.isAuthError) rethrow;
     }
 
     List<SensorReading> sensors = const <SensorReading>[];
     try {
       final Map<String, dynamic> sensorColl = await c.getJson('$base/Sensors');
       sensors = await _parseSensors(c, sensorColl);
-    } on RedfishException {
-      // No sensor collection for this chassis.
+    } on RedfishException catch (e) {
+      // No sensor collection for this chassis — but bubble auth failures so a
+      // degraded empty snapshot never hides an expired session (#007).
+      if (e.isAuthError) rethrow;
     }
 
     return ChassisSensors(
@@ -204,8 +212,11 @@ class SensorsService {
         try {
           final Map<String, dynamic> body = await client.getJson(uri);
           results[i] = SensorReading.fromJson(body, sourceUri: uri);
-        } on RedfishException {
-          // Skip sensors that fail to load.
+        } on RedfishException catch (e) {
+          // Skip individual sensors that fail to load, but a 401/403 means the
+          // whole session is bad — abort and bubble rather than return a
+          // partial snapshot that looks healthy (#007).
+          if (e.isAuthError) rethrow;
         }
       }
     }
