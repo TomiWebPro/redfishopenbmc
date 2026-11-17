@@ -18,6 +18,7 @@ class SensorsUiState {
     this.chassis = const <ChassisSensors>[],
     this.error,
     this.history = const <String, List<double>>{},
+    this.lastUpdated,
   });
 
   /// Whether a sensor fetch is currently in flight.
@@ -32,12 +33,18 @@ class SensorsUiState {
   /// Per-sensor recent-reading series (key → oldest-first samples).
   final Map<String, List<double>> history;
 
+  /// Wall-clock time of the last *successful* poll (issue #007 "last-updated
+  /// timestamp"). `null` until the first fetch succeeds, and left untouched by
+  /// a failed poll so the stamp never claims stale data is fresh.
+  final DateTime? lastUpdated;
+
   /// Returns a copy with the given fields overridden.
   SensorsUiState copyWith({
     bool? loading,
     List<ChassisSensors>? chassis,
     String? error,
     Map<String, List<double>>? history,
+    DateTime? lastUpdated,
     bool clearError = false,
   }) =>
       SensorsUiState(
@@ -45,12 +52,13 @@ class SensorsUiState {
         chassis: chassis ?? this.chassis,
         error: clearError ? null : (error ?? this.error),
         history: history ?? this.history,
+        lastUpdated: lastUpdated ?? this.lastUpdated,
       );
 
   @override
   String toString() =>
       'SensorsUiState(loading=$loading, chassis=${chassis.length}, '
-      'series=${history.length}, error=$error)';
+      'series=${history.length}, lastUpdated=$lastUpdated, error=$error)';
 }
 
 /// Riverpod controller driving the sensor monitoring screen (issue #007).
@@ -62,15 +70,23 @@ class SensorsUiState {
 ///    [PowerController]).
 class SensorsController extends StateNotifier<SensorsUiState> {
   /// Creates a [SensorsController].
-  SensorsController(
-      {required this.service, this.initialState = const SensorsUiState()})
-      : super(initialState);
+  ///
+  /// [clock] is injectable so the "last updated" stamp can be pinned in tests.
+  SensorsController({
+    required this.service,
+    this.initialState = const SensorsUiState(),
+    DateTime Function()? clock,
+  })  : now = clock ?? DateTime.now,
+        super(initialState);
 
   /// The sensor service used to read chassis telemetry.
   final SensorsService service;
 
   /// Initial UI state (typically empty until the first [load]).
   final SensorsUiState initialState;
+
+  /// Wall-clock source for the successful-poll timestamp (injectable in tests).
+  final DateTime Function() now;
 
   /// Accumulates per-sensor reading ring buffers across successful polls.
   final SensorHistoryStore _history = SensorHistoryStore();
@@ -104,6 +120,10 @@ class SensorsController extends StateNotifier<SensorsUiState> {
           loading: false,
           chassis: dataChanged ? all : state.chassis,
           history: _history.snapshot(),
+          // Stamp *every* successful poll, including a delta poll whose
+          // readings did not change — the timestamp means "last checked",
+          // not "last changed". Failed polls leave the previous stamp intact.
+          lastUpdated: now(),
         );
       }
     } on RedfishException catch (e) {

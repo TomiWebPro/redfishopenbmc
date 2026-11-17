@@ -9629,3 +9629,18 @@
 - Split/advance #009/#021 only via non-dependency slices — no WebView/protocol dep, no production TLS weakening.
 
 **Issues touched:** #007 (open)
+
+## 2026-11-17 19:38 UTC — agent:redfish-automation — #007
+
+**Done:**
+- FEATURE #007 (smallest open issue), the "Pull-to-refresh + last-updated timestamp" acceptance slice (checked in the issue). Baseline green at 3476351 (analyze 0, 682 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Added a nullable `lastUpdated` to `SensorsUiState` and an injectable `DateTime Function() clock` to `SensorsController`; `load()` stamps it on every successful poll (delta polls included) and leaves it untouched on error. `SensorsView`'s data list is now an always-scrollable `RefreshIndicator` (drag → `load()`) with a locale-free `HH:MM:SS` "Last updated" line in one merged semantics node above the tiles (hidden until first success). Added 3 controller tests (null-before-first, advances-on-delta, preserved-on-error), 3 widget tests (indicator + merged stamp, drag re-fetch, 320 px no-overflow) and 1 pure formatter test. Verify analyze 0 / 689 passed / 1 skipped (+7); issues validate OK.
+
+**Decisions:**
+- Took the explicit "Next" from the prior #007 runs. Chose a success-only wall-clock stamp with an injected clock over a real-time formatter (no new `intl` usage, locale-independent `HH:MM:SS`); a delta poll still refreshes the stamp because it means "last checked", not "last changed" — failed polls keep the prior stamp so stale data never looks fresh. Pull-to-refresh reuses the existing in-flight-guarded `load()`, so auto-poll + manual drag cannot double-fetch. No production TLS weakened; no new dependency. DOCS anchor gate not re-run (no corpus/manifest change, mirror queue EMPTY); full EMULATOR re-run skipped (no wire-contract/fixture/`test_integration/`/`tool/` change; last green emulator run 2026-11-16 05:27 UTC, <7 days).
+
+**Next:**
+- Continue #007: `fl_chart`/`LineChart` perf only if a dependency is justified, and ≥80% touched-feature coverage — then verify remaining boxes and close/split #007.
+- Advance #008 firmware task-polling/progress and #010 perf/coverage hardening (discovery request-count budget, cache TTL/delta polling) with tests.
+- Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
+
+**Issues touched:** #007 (open)

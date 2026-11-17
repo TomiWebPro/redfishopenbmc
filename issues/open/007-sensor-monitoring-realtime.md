@@ -37,7 +37,7 @@ estimated_tokens: 50000
   - [x] Sections `Temperatures` / `Fans` / `Voltages` (omit empty sections)
   - [x] Tile per sensor: name, reading + units, health dot, threshold range bar, mini sparkline (last 20 polls, ring buffer)
   - [x] Alert banner if any sensor `Health==Critical/Warning` or `Reading` breaches `UpperThresholdCritical`
-  - Pull-to-refresh + last-updated timestamp
+  - [x] Pull-to-refresh + last-updated timestamp
 - [ ] Charts: `fl_chart` `LineChart` per sensor (or single combined chart toggle); lazy-build, no jank on 20 sensors × 60 points
 - [ ] Threshold coloring: `OK→green`, `Warning→amber` (breaches `NonCritical`), `Critical→red` (breaches `Critical`), grey if `Reading==null`
 - [ ] Error resilience: sensor absent, 404 Sensors → fallback Thermal, both 404 → hide tab gracefully; 401 bubbles to auth manager
@@ -167,6 +167,21 @@ estimated_tokens: 50000
   Baseline analyze 0 / 669 passed / 1 skipped; verify analyze 0 / 682 passed /
   1 skipped (+13); issues validate OK. Issue stays open: `fl_chart`/`LineChart`
   perf and ≥80% touched-feature coverage remain unchecked.
+- 2026-11-17 19:38 UTC (run, agent:redfish-automation) — FEATURE slice:
+  the "Pull-to-refresh + last-updated timestamp" acceptance box (checked above).
+  Added a nullable `SensorsUiState.lastUpdated` stamped on every *successful*
+  poll (including an unchanged delta poll — "last checked", not "last changed")
+  and left intact on failure; the clock is injectable on `SensorsController` so
+  the stamp is testable. `SensorsView`'s data list is now an
+  `AlwaysScrollableScrollPhysics` `RefreshIndicator` (drag fires `load()`), with
+  a locale-free `HH:MM:SS` "Last updated" line in one merged semantics node
+  above the tiles (omitted until the first success). Checked the acceptance
+  sub-box. Added 3 controller tests (null-before-first, advances-on-delta,
+  preserved-on-error), 3 widget tests (indicator + merged stamp, drag re-fetch,
+  320 px no-overflow) and 1 pure formatter test. Baseline analyze 0 / 682
+  passed / 1 skipped; verify analyze 0 / 689 passed / 1 skipped (+7); issues
+  validate OK. Issue stays open: `fl_chart`/`LineChart` perf and ≥80% touched-
+  feature coverage remain unchecked.
 
 ## References
 

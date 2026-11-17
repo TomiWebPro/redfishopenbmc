@@ -784,6 +784,88 @@ void main() {
       expect(find.text('Critical sensor alert'), findsOneWidget);
       expect(find.text('VCPU 2.50 V — Critical'), findsOneWidget);
     });
+
+    testWidgets(
+        'data view offers pull-to-refresh and a merged last-updated '
+        'line (#007)', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_FakeSensorsService()),
+          ],
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RefreshIndicator), findsOneWidget);
+      // The stamp is shown after a successful poll, announces as ONE merged
+      // node (the inner Text is excluded from semantics), and is locale-free
+      // HH:MM:SS.
+      expect(find.textContaining('Last updated'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp(r'^Last updated \d{2}:\d{2}:\d{2}$')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('pull-to-refresh re-fetches telemetry (#007)', (tester) async {
+      final _CountingSensorsService service = _CountingSensorsService();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x').overrideWithValue(service),
+          ],
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(service.calls, 1);
+
+      // Drag down on the always-scrollable list to fire the indicator.
+      await tester.drag(find.byType(RefreshIndicator), const Offset(0, 300));
+      await tester.pumpAndSettle();
+      expect(service.calls, 2);
+    });
+
+    testWidgets('last-updated line does not overflow at 320 px (#007)',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_FakeSensorsService()),
+          ],
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('Last updated'), findsOneWidget);
+    });
+  });
+
+  group('formatSensorLastUpdated (#007)', () {
+    test('pads hour/minute/second to two digits', () {
+      expect(
+          formatSensorLastUpdated(DateTime(2026, 11, 17, 9, 2, 3)), '09:02:03');
+      expect(formatSensorLastUpdated(DateTime(2026, 11, 17, 23, 59, 58)),
+          '23:59:58');
+    });
   });
 
   group('SensorsView — responsive layout (UI-3)', () {

@@ -118,6 +118,12 @@ class _SensorsViewState extends ConsumerState<SensorsView>
     );
   }
 
+  /// Pull-to-refresh handler: await the fetch so the indicator stays visible
+  /// until it completes (the controller guards overlapping loads).
+  Future<void> _refresh() async {
+    await ref.read(sensorsControllerProvider(widget.systemId).notifier).load();
+  }
+
   @override
   void dispose() {
     _polling.stop();
@@ -267,13 +273,64 @@ class _SensorsViewState extends ConsumerState<SensorsView>
       for (final ChassisSensors chassis in ui.chassis) ...chassis.alerts,
     ];
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: <Widget>[
-        if (alerts.isNotEmpty) _AlertBanner(alerts: alerts),
-        for (final ChassisSensors chassis in ui.chassis)
-          _ChassisCard(chassis: chassis, history: ui.history),
-      ],
+    // #007 acceptance: pull-to-refresh + last-updated timestamp. The list is
+    // always scrollable so the RefreshIndicator can be dragged even when there
+    // are few tiles; the stamp is capability/data driven (omitted until the
+    // first successful poll) and announces as one merged semantics node.
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: <Widget>[
+          if (ui.lastUpdated != null) _LastUpdated(timestamp: ui.lastUpdated!),
+          if (alerts.isNotEmpty) _AlertBanner(alerts: alerts),
+          for (final ChassisSensors chassis in ui.chassis)
+            _ChassisCard(chassis: chassis, history: ui.history),
+        ],
+      ),
+    );
+  }
+}
+
+/// Formats the "last updated" wall-clock stamp as `HH:MM:SS` (local time).
+///
+/// Pure + locale-independent so it can be pinned in a unit test without an
+/// `intl` dependency or a real clock.
+String formatSensorLastUpdated(DateTime value) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(value.hour)}:${two(value.minute)}:${two(value.second)}';
+}
+
+/// A single merged "Last updated HH:MM:SS" line above the telemetry list
+/// (issue #007 acceptance). Shown only after the first successful poll.
+class _LastUpdated extends StatelessWidget {
+  /// Creates a [_LastUpdated] line.
+  const _LastUpdated({required this.timestamp});
+
+  /// The wall-clock time of the last successful telemetry poll.
+  final DateTime timestamp;
+
+  @override
+  Widget build(BuildContext context) {
+    final String label = 'Last updated ${formatSensorLastUpdated(timestamp)}';
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: label,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.schedule,
+                size: 16, color: Theme.of(context).colorScheme.outline),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(label, style: Theme.of(context).textTheme.bodySmall),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
