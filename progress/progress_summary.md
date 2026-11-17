@@ -4,6 +4,24 @@
 
 **Project:** Redfish Multi-System Control App (Flutter) — unified Redfish/OpenBMC control plane. Spec: `documentations/project_goal/goal.md`.
 
+## P2 closed — #007 (2026-11-17)
+
+**#007 P2 — Sensor monitoring (temps/fans/voltages + realtime graphs) — CLOSED** (by
+`redfish-automation`, FEATURE run). Delivered the full acceptance criteria across
+the prior incremental runs plus the final "Charts: `fl_chart` `LineChart`"
+box in this run: typed temperature/fan/voltage/generic sensor models, a
+modern-first `Sensors` collection service with `Thermal` fallback and 401/403
+propagation, a discovery-gated tab with capability-gated sections, per-tile
+sparkline + threshold bar + health/threshold coloring, a merged alert banner,
+pull-to-refresh with a last-updated stamp, polling with background backoff and
+per-tile delta rebuild, and an on-demand Tiles/Charts toggle whose chart mode is
+a viewport-lazy list of non-animated `fl_chart` `LineChart`s (20 sensors × 60
+points single-frame test bed; 320/800/1300 px no-overflow). Added `fl_chart`
+(cached) + `equatable`; no production TLS changed. Results: `flutter analyze` 0,
+`flutter test` **719 passed / 1 skipped** (+16 this run), sensor coverage 94.3%,
+`issues validate` OK. Open P2/P3 now: #008 (firmware), #009/#021 (KVM), #010
+(hardening).
+
 ## P2 closed — #016 (2026-10-25)
 
 **#016 P2 — PATCH flows: Boot (BootSourceOverrideTarget/Enabled) + IndicatorLED — CLOSED** (by

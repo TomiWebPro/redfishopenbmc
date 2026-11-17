@@ -8,6 +8,7 @@ import 'package:redfishopenbmc/features/sensors/models/sensor_models.dart';
 import 'package:redfishopenbmc/features/sensors/models/tile_fingerprint.dart';
 import 'package:redfishopenbmc/features/sensors/sensors_controller.dart';
 import 'package:redfishopenbmc/features/sensors/sensors_providers.dart';
+import 'package:redfishopenbmc/features/sensors/views/sensor_chart.dart';
 import 'package:redfishopenbmc/features/sensors/views/sensor_delta_tile.dart';
 import 'package:redfishopenbmc/features/sensors/views/sensor_telemetry_widgets.dart';
 import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
@@ -49,6 +50,10 @@ class _SensorsViewState extends ConsumerState<SensorsView>
   late SensorsPollingScheduler _polling;
   bool _hadClient = false;
   bool _hidden = false;
+  // #007 "Charts" box: charts are built on demand only — the default tile view
+  // never pays for a LineChart. Switching modes is a local UI concern, so no
+  // controller/provider change is needed.
+  bool _showCharts = false;
 
   @override
   void initState() {
@@ -122,6 +127,11 @@ class _SensorsViewState extends ConsumerState<SensorsView>
   /// until it completes (the controller guards overlapping loads).
   Future<void> _refresh() async {
     await ref.read(sensorsControllerProvider(widget.systemId).notifier).load();
+  }
+
+  /// Switches between the tile list and the on-demand `fl_chart` trend list.
+  void _setShowCharts(bool value) {
+    if (value != _showCharts) setState(() => _showCharts = value);
   }
 
   @override
@@ -277,17 +287,97 @@ class _SensorsViewState extends ConsumerState<SensorsView>
     // always scrollable so the RefreshIndicator can be dragged even when there
     // are few tiles; the stamp is capability/data driven (omitted until the
     // first successful poll) and announces as one merged semantics node.
+    // #007 "Charts" box: only series with at least two samples can draw a
+    // trend. Charts are laid out with ListView.builder so off-screen charts are
+    // not built (viewport-lazy) and each one is inside a RepaintBoundary.
+    final List<MapEntry<String, List<double>>> chartSeries =
+        <MapEntry<String, List<double>>>[
+      for (final MapEntry<String, List<double>> entry in ui.history.entries)
+        if (entry.value.length >= 2) entry,
+    ];
+    final Widget header = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (ui.lastUpdated != null) _LastUpdated(timestamp: ui.lastUpdated!),
+        if (alerts.isNotEmpty) _AlertBanner(alerts: alerts),
+        _ViewModeToggle(charts: _showCharts, onChanged: _setShowCharts),
+        if (_showCharts && chartSeries.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'Collecting history…',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+      ],
+    );
+
     return RefreshIndicator(
       onRefresh: _refresh,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        children: <Widget>[
-          if (ui.lastUpdated != null) _LastUpdated(timestamp: ui.lastUpdated!),
-          if (alerts.isNotEmpty) _AlertBanner(alerts: alerts),
-          for (final ChassisSensors chassis in ui.chassis)
-            _ChassisCard(chassis: chassis, history: ui.history),
+      child: _showCharts
+          ? ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              itemCount: 1 + chartSeries.length,
+              itemBuilder: (BuildContext context, int index) {
+                if (index == 0) return header;
+                final MapEntry<String, List<double>> entry =
+                    chartSeries[index - 1];
+                return SensorLineChart(
+                  title: chartTitleForKey(entry.key),
+                  unit: chartUnitForKey(entry.key),
+                  series: entry.value,
+                );
+              },
+            )
+          : ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: <Widget>[
+                header,
+                for (final ChassisSensors chassis in ui.chassis)
+                  _ChassisCard(chassis: chassis, history: ui.history),
+              ],
+            ),
+    );
+  }
+}
+
+/// Tiles/Charts mode switch placed at the top of the telemetry list (#007).
+///
+/// Uses the existing Material [SegmentedButton] so it inherits the app theme;
+/// "Charts" is always available — before two polls it simply shows a
+/// "Collecting history…" caption rather than an empty placeholder tab.
+class _ViewModeToggle extends StatelessWidget {
+  /// Creates the view-mode switch.
+  const _ViewModeToggle({required this.charts, required this.onChanged});
+
+  /// Whether the chart list (rather than the tile list) is showing.
+  final bool charts;
+
+  /// Called with the newly selected mode.
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: SegmentedButton<bool>(
+        showSelectedIcon: false,
+        segments: const <ButtonSegment<bool>>[
+          ButtonSegment<bool>(
+            value: false,
+            label: Text('Tiles'),
+            icon: Icon(Icons.grid_view_outlined),
+          ),
+          ButtonSegment<bool>(
+            value: true,
+            label: Text('Charts'),
+            icon: Icon(Icons.show_chart),
+          ),
         ],
+        selected: <bool>{charts},
+        onSelectionChanged: (Set<bool> selection) => onChanged(selection.first),
       ),
     );
   }

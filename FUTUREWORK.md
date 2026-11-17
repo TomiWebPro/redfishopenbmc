@@ -7,8 +7,8 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 > reference the issue ID instead of duplicating it. New gaps discovered from
 > official docs go here with a source URL.
 
-- **Last updated: 2026-11-17 20:54 UTC (run, agent:redfish-automation — FEATURE #007 (smallest open issue) landed the "Error resilience / 401 bubbles to auth manager" acceptance box: `RedfishException.isAuthError` (401/403) plus rethrow at all five `SensorsService` degradation catches, so a missing 404 still degrades to available data but a surfaced auth failure reaches the auth manager / error UI instead of a silently empty telemetry screen. Added 2 direct predicate tests + 5 service tests; measured full-suite sensor coverage at 94.3% (917/972) and checked the Coverage + Tests boxes. Baseline analyze 0, tests 696 passed / 1 skipped (56a0fd8); verify analyze 0, flutter test 703 passed / 1 skipped (+7), issues validate OK. #007 remains open only for the dependency-dependent `fl_chart`/`LineChart` perf box.)**
-- **Current focus:** **FEATURE — smallest open issue first.** Open: `#007` (smallest), `#008`, `#009`, `#010`, `#021`. For `#007`, every acceptance box except "Charts: `fl_chart` `LineChart` per sensor (or combined toggle), lazy-build, no jank on 20 sensors × 60 points" is now checked (model, modern-first/fallback service, gated tab + sections/tiles/alerts/pull-to-refresh/threshold coloring, error resilience incl. 401 bubble, tests, 94.3% coverage). Next for `#007`: either justify adding `fl_chart` with a frame-budget test and close `#007`, or — if the dependency is not justified — split the chart box into a dedicated follow-up issue and close `#007` as delivered (do not leave a fully-delivered issue open indefinitely). Then advance `#008` firmware task-polling/progress and `#010` perf/coverage hardening (discovery request-count budget, cache TTL/delta-polling) with tests, or split/advance `#009` with one non-dependency increment. `#021` remains blocked on WebView/protocol-client platform/TLS validation — do not add dependencies or weaken production TLS (only non-dependency slices). DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code/fixture/test_integration/tool change or >7 days. Verification-only runs are failures while issues remain open.
+- **Last updated: 2026-11-17 21:33 UTC (run, agent:redfish-automation — FEATURE closeout of #007 (smallest open issue): landed the final "Charts: `fl_chart` `LineChart`" box and CLOSED #007 via `issues.py`. Added `fl_chart: ^0.69.2` (already cached; +`equatable` transitively, lock diff +16 lines), new `lib/features/sensors/views/sensor_chart.dart` with pure `readingSeriesToSpots`/`chartTitleForKey`/`chartUnitForKey` helpers and a keyed, non-animated (`duration: Duration.zero`), RepaintBoundary-wrapped `SensorLineChart`; `SensorsView` gained a Tiles/Charts `SegmentedButton` whose chart mode is a viewport-lazy `ListView.builder` ("Collecting history…" caption before 2 samples). Added `test/features/sensors/sensor_chart_test.dart` (10 tests incl. a 20 sensors × 60 points single-frame bed and 320/800/1300 px no-overflow) + 6 `SensorsView` toggle/lazy/overflow widget tests. Re-verified every remaining acceptance/task box before closing. Baseline analyze 0, tests 703 passed / 1 skipped (5cd2035); verify analyze 0, flutter test 719 passed / 1 skipped (+16), issues validate OK.)**
+- **Current focus:** **FEATURE — smallest open issue first.** Open: `#008` (smallest), `#009`, `#010`, `#021` (#007 CLOSED 2026-11-17). Next: advance `#008` firmware task-polling/progress with tests — inventory, SimpleUpdate, push transport and task poller already exist; remaining: `TaskState` task-timeline UI + live `PercentComplete` progress bar, cancel task (`DELETE /TaskService/Tasks/{id}`), apply-time selection widget (`HttpPushUriApplyTime`), file-picker abstraction, 413-too-large + 401 handling, coverage ≥80%. Then `#010` hardening (discovery request-count budget, cache TTL/delta-polling) with tests, or split/advance `#009` with one non-dependency increment. `#021` remains blocked on WebView/protocol-client platform/TLS validation — do not add dependencies or weaken production TLS (only non-dependency slices). DOCS anchor check is a cheap gate only; full EMULATOR re-run only on code/fixture/test_integration/tool change or >7 days. Verification-only runs are failures while issues remain open.
 - **Run cadence:** `@every 30m` in scheduler (runbook originally `0 */5 * * *`; restore 5h once the small-issue backlog is empty, or keep 30m ONLY for FEATURE runs — never schedule verification-only churn at 30m).
 - **Model:** `opencode-go/iceman-contributor-free` (scheduler actual; runbook header was `opencode/deepseek-v4.1-flash-free` — updated 2026-11-16)
 - **Status keys:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
@@ -20,7 +20,7 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
 2. **FEATURE second, always.** On a green baseline, pick the smallest open
    issue from `issues/open/` (order: `#012` →
    `#021`, then triage `#006`–`#010`; completed: `#024`, `#019`, `#028`,
-   `#026`, `#013`, `#011`, `#017`, `#018`, `#023`, `#025`) and land it with tests. Every green run
+   `#026`, `#013`, `#011`, `#017`, `#018`, `#023`, `#025`, `#007`) and land it with tests. Every green run
    MUST change `lib/` / `test/` / `test_integration/` / `tool/`. A run with
    zero code changes is a failed run while any issue is open.
 3. **DOCS is a cheap gate, never the primary.** Check anchors
@@ -1187,11 +1187,14 @@ Living queue for the **`redfish-automation`** job (every 5 hours).
       rendering-rules doc `lib/features/overview/README.md`; closed
       `issues/closed/006-system-overview-dashboard.md`. Detailed sensor graphs
       remain #007.)
-- [ ] **#007 / #019** Sensor monitoring, real-time telemetry, retry.
-      (emulator pins the 41-member Sensors collection end-to-end — typed
-      readings (Cel/V …) + thresholds parse through `SensorsService.fetchAll()`
-      — run 2026-10-23 03:02; the real-time poll/EventService receiver still
-      needs building)
+- [x] **#007 / #019** Sensor monitoring, real-time telemetry, retry.
+      (both CLOSED: emulator pins the 41-member Sensors collection end-to-end —
+      typed readings (Cel/V …) + thresholds parse through
+      `SensorsService.fetchAll()` — and the real-time poll/backoff/delta layer,
+      alert banner, threshold coloring, pull-to-refresh, 401 resilience and
+      `fl_chart` LineChart with a 20x60 no-jank bed all landed; 94.3% sensor
+      coverage. #007 closed run 2026-11-17; EventService/SSE remains a separate
+      DOCS-7 "Events" item below.)
 - [ ] **Events** Event subscription + SSE client — DOCS-7 decided out-of-scope this
       milestone (see P1 docs section); revisit when telemetry (#007/#019) or task
       monitoring (#008/#020/#022) creates a receiver. Spec: DSP0266 §12.1,

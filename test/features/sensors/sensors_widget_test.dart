@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 import 'dart:async';
 
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1059,6 +1060,93 @@ void main() {
           reason: 'Voltage section must not overflow at $width px',
         );
         expect(find.text('VCPU'), findsWidgets);
+      });
+    }
+  });
+
+  group('Tiles/Charts view mode (#007)', () {
+    Future<void> pumpView(WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_FakeSensorsService()),
+          ],
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('charts are lazy — built only after tapping Charts',
+        (tester) async {
+      await pumpView(tester);
+      expect(find.text('Tiles'), findsOneWidget);
+      expect(find.text('Charts'), findsOneWidget);
+      // Default tile view never pays for a LineChart.
+      expect(find.byType(LineChart), findsNothing);
+
+      // Accumulate 3 samples per series (thermal + fan + sensor) so each has a
+      // drawable trend (one initial load + two manual reloads).
+      final ProviderContainer container =
+          ProviderScope.containerOf(tester.element(find.byType(SensorsView)));
+      await container.read(sensorsControllerProvider('x').notifier).load();
+      await tester.pumpAndSettle();
+      await container.read(sensorsControllerProvider('x').notifier).load();
+      await tester.pumpAndSettle();
+      expect(find.byType(LineChart), findsNothing);
+
+      await tester.tap(find.text('Charts'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LineChart), findsNWidgets(3));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Collecting history caption before two samples (#007)',
+        (tester) async {
+      await pumpView(tester);
+      await tester.tap(find.text('Charts'));
+      await tester.pumpAndSettle();
+
+      // Only one sample so far → no chart, just an honest caption.
+      expect(find.text('Collecting history…'), findsOneWidget);
+      expect(find.byType(LineChart), findsNothing);
+    });
+
+    testWidgets('can switch back from Charts to Tiles (#007)', (tester) async {
+      await pumpView(tester);
+      await tester.tap(find.text('Charts'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tiles'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('CPU1 Temp'), findsWidgets);
+      expect(find.byType(LineChart), findsNothing);
+    });
+
+    for (final double width in <double>[320, 800, 1300]) {
+      testWidgets(
+          'chart view renders without overflow at ${width.toInt()} px '
+          '(#007)', (tester) async {
+        tester.view.physicalSize = Size(width, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+        await pumpView(tester);
+        final ProviderContainer container =
+            ProviderScope.containerOf(tester.element(find.byType(SensorsView)));
+        await container.read(sensorsControllerProvider('x').notifier).load();
+        await tester.pumpAndSettle();
+        await container.read(sensorsControllerProvider('x').notifier).load();
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Charts'));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull,
+            reason: 'chart view must not overflow at $width px');
       });
     }
   });

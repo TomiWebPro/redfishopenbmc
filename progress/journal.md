@@ -9674,3 +9674,18 @@
 - Split/advance `#009`/`#021` via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
 
 **Issues touched:** #007 (open)
+
+## 2026-11-17 21:33 UTC — agent:redfish-automation — #007
+
+**Done:**
+- FEATURE closeout of #007 (smallest open issue), the final "Charts: `fl_chart` `LineChart`" acceptance box, then CLOSED the issue. Baseline green at 5cd2035 (analyze 0, 703 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Added `fl_chart: ^0.69.2` (cached; +`equatable` transitively). New `sensor_chart.dart` with pure `readingSeriesToSpots`/key helpers and a keyed, non-animated, RepaintBoundary-wrapped `SensorLineChart`; `SensorsView` gained a Tiles/Charts `SegmentedButton` whose chart mode is a viewport-lazy `ListView.builder` of one chart per ≥2-sample history series (honest "Collecting history…" caption before that). Added 10 chart tests (incl. a 20 sensors × 60 points single-frame bed and 320/800/1300 px no-overflow) + 6 `SensorsView` toggle/lazy/caption/overflow widget tests. Re-verified all remaining acceptance/task boxes before closing. Verify analyze 0 / 719 passed / 1 skipped (+16); issues validate OK.
+
+**Decisions:**
+- Chose to finish and CLOSE #007 rather than milk a 6th incremental run: the only open box was a deliberate dependency addition, and `fl_chart` was already cached + pub.dev reachable, so the dependency is cheap and justified. Kept it surgical — one new self-contained chart widget + a local view-mode toggle (no controller/provider change). "Lazy-build, no jank" is honoured three ways: charts are never built until the user opts into Charts, the chart list is a `ListView.builder` (viewport-lazy), and each chart is non-animated (`duration: Duration.zero`) behind a `RepaintBoundary`. Kept the existing dependency-free sparkline in the tile view (no churn) and the a11y/overflow patterns intact. No production TLS weakened; DOCS anchor gate not re-run (no corpus/manifest change); full EMULATOR re-run skipped (no wire-contract/fixture/`test_integration/`/`tool/` change; <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Advance #008 firmware: task-timeline UI with live `PercentComplete` progress bar + `TaskState` badge, cancel task and apply-time selection widget, with tests.
+- Advance #010 hardening (discovery request-count budget, cache TTL/delta polling) with tests.
+- Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
+
+**Issues touched:** #007 (CLOSED)
