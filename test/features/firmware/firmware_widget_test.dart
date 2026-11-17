@@ -172,6 +172,29 @@ class _ApplyTimeCapableFirmwareService extends _PushCapableFirmwareService {
         );
 }
 
+/// A [_PushCapableFirmwareService] advertising a specific `MaxImageSize` (bytes)
+/// — the size-gate shape of UpdateService (issue #008).
+class _MaxSizeFirmwareService extends _PushCapableFirmwareService {
+  _MaxSizeFirmwareService(int maxBytes)
+      : super(
+          info: UpdateServiceInfo(
+            serviceEnabled: true,
+            httpPushUri: '/FWUpdate',
+            maxImageSize: maxBytes,
+          ),
+        );
+}
+
+/// Taps a destructive-update control, asserts the confirmation dialog appears,
+/// then confirms it — the shared step for the Start / Upload flows (#008).
+Future<void> confirmDestructiveUpdate(WidgetTester tester) async {
+  await tester.pump();
+  expect(find.byType(AlertDialog), findsOneWidget,
+      reason: 'a destructive update must ask for confirmation');
+  await tester.tap(find.text('Confirm update'));
+  await tester.pump();
+}
+
 SystemHandle makeHandle({required bool firmwareUpdate}) {
   final ConnectionProfile profile = const ConnectionProfile(
     id: 'bmc1',
@@ -761,7 +784,7 @@ void main() {
         'https://example.com/firmware.bin',
       );
       await tester.tap(find.text('Start'));
-      await tester.pump();
+      await confirmDestructiveUpdate(tester);
 
       final FilledButton button =
           tester.widget<FilledButton>(find.byType(FilledButton));
@@ -816,7 +839,7 @@ void main() {
         'https://example.com/firmware.bin',
       );
       await tester.tap(find.text('Start'));
-      await tester.pump();
+      await confirmDestructiveUpdate(tester);
       expect(find.text('Starting…'), findsOneWidget);
 
       service.startGate.completeError(
@@ -1095,7 +1118,7 @@ void main() {
       await tester.ensureVisible(find.text('Upload'));
       await tester.pump();
       await tester.tap(find.text('Upload'));
-      await tester.pump();
+      await confirmDestructiveUpdate(tester);
       await tester.pump();
       expect(service.lastPush, isNotNull);
       expect(service.lastPush!.applyTime, isNull);
@@ -1131,7 +1154,7 @@ void main() {
       await tester.ensureVisible(find.text('Upload'));
       await tester.pump();
       await tester.tap(find.text('Upload'));
-      await tester.pump();
+      await confirmDestructiveUpdate(tester);
       await tester.pump();
       expect(service.lastPush!.applyTime, 'OnReset');
       expect(
@@ -1246,8 +1269,8 @@ void main() {
       await tester.ensureVisible(find.text('Upload'));
       await tester.pump();
       await tester.tap(find.text('Upload'));
+      await confirmDestructiveUpdate(tester);
       await tester.pump(); // push resolves → poll resolves (fake)
-      await tester.pump();
       expect(service.lastPush, isNotNull, reason: 'the upload must be pushed');
       expect(service.lastPush!.filename, 'fw.bin');
       expect(service.lastPush!.bytes, imageBytes);
@@ -1280,12 +1303,165 @@ void main() {
       await tester.ensureVisible(find.text('Upload'));
       await tester.pump();
       await tester.tap(find.text('Upload'));
-      await tester.pump();
+      await confirmDestructiveUpdate(tester);
       await tester.pump();
       expect(service.pollCalls, 0,
           reason: 'a failed upload must never reach the poller');
       expect(find.textContaining('HTTP 400'), findsOneWidget,
           reason: 'the normalized error must surface in the error card');
+    });
+  });
+
+  group('FirmwareView — image size gate + confirmation (#008)', () {
+    Future<void> pumpView(
+      WidgetTester tester, {
+      required FirmwareService service,
+      Future<XFile?> Function()? picker,
+    }) async {
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller =
+          FirmwareController(service: service);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+            firmwareImagePickerProvider.overrideWith(
+              (ref) => picker ?? () async => null,
+            ),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+
+    Future<void> pickImage(WidgetTester tester) async {
+      await tester.ensureVisible(find.text('Choose image…'));
+      await tester.pump();
+      await tester.tap(find.text('Choose image…'));
+      await tester.pump();
+    }
+
+    test('formatFirmwareImageSize is stable and unit-testable', () {
+      expect(formatFirmwareImageSize(512), '512 B');
+      expect(formatFirmwareImageSize(2 * 1024), '2 KB');
+      expect(formatFirmwareImageSize(100 * 1024 * 1024), '100.0 MB');
+    });
+
+    testWidgets('disables Upload and warns when the image exceeds MaxImageSize',
+        (tester) async {
+      final _MaxSizeFirmwareService service = _MaxSizeFirmwareService(4);
+      await pumpView(
+        tester,
+        service: service,
+        picker: () async => XFile.fromData(
+          Uint8List.fromList(<int>[1, 2, 3, 4, 5, 6, 7, 8]),
+          path: 'fw.bin',
+        ),
+      );
+      await pickImage(tester);
+      expect(find.textContaining('exceeds the maximum'), findsOneWidget,
+          reason: 'an oversized image must warn that it exceeds the maximum');
+      expect(
+          find.bySemanticsLabel(RegExp('Image too large')), findsOneWidget);
+      final FilledButton upload = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Upload'),
+      );
+      expect(upload.onPressed, isNull,
+          reason: 'Upload must be disabled above the service MaxImageSize');
+    });
+
+    testWidgets(
+        'soft-warns but keeps Upload enabled for a large image within '
+        'MaxImageSize', (tester) async {
+      final _MaxSizeFirmwareService service =
+          _MaxSizeFirmwareService(200 * 1024 * 1024);
+      await pumpView(
+        tester,
+        service: service,
+        // A tiny byte buffer whose reported length is the >100 MiB soft limit
+        // — no 100 MB allocation, and Upload is NOT tapped so bytes are never
+        // read.
+        picker: () async => XFile.fromData(
+          Uint8List(8),
+          path: 'large.bin',
+          length: kFirmwareSoftImageSizeBytes + 1,
+        ),
+      );
+      await pickImage(tester);
+      expect(find.textContaining('may be slow'), findsOneWidget,
+          reason: 'an image over the soft threshold must warn');
+      expect(find.bySemanticsLabel(RegExp('Large image warning')),
+          findsOneWidget);
+      final FilledButton upload = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Upload'),
+      );
+      expect(upload.onPressed, isNotNull,
+          reason: 'a soft warning must NOT disable a within-maximum upload');
+    });
+
+    testWidgets('cancelling the confirmation starts no update', (tester) async {
+      final _GateFirmwareService service = _GateFirmwareService();
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller =
+          FirmwareController(service: service);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byType(TextField),
+        'https://example.com/firmware.bin',
+      );
+      await tester.tap(find.text('Start'));
+      await tester.pump();
+      expect(find.byType(AlertDialog), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.textContaining('Update queued'), findsNothing,
+          reason: 'cancelling confirmation must not start the update');
+      // Button re-enabled — the user can start a new confirmed update.
+      final FilledButton start = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Start'),
+      );
+      expect(start.onPressed, isNotNull);
+    });
+
+    testWidgets(
+        'confirmation dialog names the target system and is '
+        'destructive-warning copy', (tester) async {
+      final _GateFirmwareService service = _GateFirmwareService();
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller =
+          FirmwareController(service: service);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+          find.byType(TextField), 'https://example.com/fw.bin');
+      await tester.tap(find.text('Start'));
+      await tester.pump();
+      expect(find.text('Confirm firmware update'), findsOneWidget);
+      expect(find.textContaining('bmc1'), findsOneWidget);
+      expect(find.textContaining('cannot be undone'), findsOneWidget);
+      expect(find.text('Confirm update'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
     });
   });
 

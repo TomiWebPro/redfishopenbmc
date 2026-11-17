@@ -11,6 +11,16 @@ import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_task.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
+/// Human-readable firmware image size for the upload size warnings (issue
+/// #008). Pure and locale-independent so it can be unit-tested and produce a
+/// stable merged-semantics label: bytes below 1 KiB, whole KiB below 1 MiB,
+/// otherwise one-decimal MiB (the 100 MiB soft threshold reads as "100.0 MB").
+String formatFirmwareImageSize(int bytes) {
+  if (bytes < 1024) return '$bytes B';
+  if (bytes < 1024 * 1024) return '${bytes ~/ 1024} KB';
+  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+}
+
 /// Firmware & update management screen for a single system (issue #008).
 ///
 /// Rendered only when the system advertises `UpdateService`
@@ -42,6 +52,12 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
   // integration). `null` = nothing selected (or the user cancelled the
   // dialog) — the Upload control stays disabled.
   XFile? _pickedImage;
+
+  // Byte length of [_pickedImage], read at pick time so the build method can
+  // apply the `MaxImageSize` hard gate / 100 MiB soft warning synchronously
+  // (issue #008). `null` = no selection or the platform could not report a
+  // size — no size-based gating in that case.
+  int? _pickedSize;
 
   // The selected push-apply-time mode (`@Redfish.OperationApplyTime`,
   // #008/#020 apply-time selection). `null` = "Service default" — the
@@ -98,13 +114,62 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
       ui.info?.httpPushApplyTimes ?? const <String>[];
 
   /// Opens the system file dialog (via [firmwareImagePickerProvider]) and
-  /// stores the picked image; a cancel (null) keeps the current selection —
-  /// the Upload control then stays disabled.
+  /// stores the picked image plus its byte length; a cancel (null) keeps the
+  /// current selection — the Upload control then stays disabled.
   Future<void> _chooseImage(FirmwareUiState ui) async {
     if (_isBusy(ui)) return;
     final XFile? picked = await ref.read(firmwareImagePickerProvider)();
     if (picked == null || !mounted) return;
-    setState(() => _pickedImage = picked);
+    // The size drives the MaxImageSize hard gate / 100 MiB soft warning. Some
+    // platforms cannot report it, so treat a failure as "unknown" (no gating)
+    // rather than rejecting an otherwise valid image.
+    int? size;
+    try {
+      size = await picked.length();
+    } catch (_) {
+      size = null;
+    }
+    if (!mounted) return;
+    setState(() {
+      _pickedImage = picked;
+      _pickedSize = size;
+    });
+  }
+
+  /// Size class of the picked image against the service's advertised maximum
+  /// (issue #008). `null` when nothing is picked or the size is unknown.
+  FirmwareImageSizeStatus? _imageSizeStatus(FirmwareUiState ui) {
+    final int? size = _pickedSize;
+    if (size == null) return null;
+    return classifyFirmwareImageSize(size, ui.info?.maxImageSize);
+  }
+
+  /// Asks the user to confirm a destructive firmware update (issue #008
+  /// "Confirmation for destructive update"). Returns `true` only when the user
+  /// explicitly taps "Confirm update"; cancel / dismiss / route pop = `false`.
+  Future<bool> _confirmDestructiveUpdate(String action) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Confirm firmware update'),
+        content: Text(
+          '$action will reflash firmware on ${widget.systemId}. The system '
+          'may be unavailable until the update completes, and this cannot be '
+          'undone.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirm update'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
   }
 
   /// Reads the picked image bytes and pushes them via
@@ -115,6 +180,11 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
   Future<void> _pushUpload(FirmwareUiState ui) async {
     final XFile? file = _pickedImage;
     if (file == null || _isBusy(ui)) return;
+    // Defense in depth: the Upload button is disabled above MaxImageSize, but
+    // a stale UI snapshot must never push an oversized image either (#008).
+    if (_imageSizeStatus(ui) == FirmwareImageSizeStatus.exceedsMaximum) return;
+    if (!await _confirmDestructiveUpdate('Push upload')) return;
+    if (!mounted) return;
     final FirmwareController controller =
         ref.read(firmwareControllerProvider(widget.systemId).notifier);
     final Uint8List bytes = await file.readAsBytes();
@@ -174,6 +244,13 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
         ref.read(firmwareControllerProvider(widget.systemId).notifier);
     final List<String> protocols = ui.info?.transferProtocols ??
         const UpdateServiceInfo().transferProtocols;
+    // Upload size gate (issue #008): classify the picked image against the
+    // service's MaxImageSize (hard) and the 100 MiB soft threshold.
+    final FirmwareImageSizeStatus? sizeStatus = _imageSizeStatus(ui);
+    final bool sizeExceeds =
+        sizeStatus == FirmwareImageSizeStatus.exceedsMaximum;
+    final int? maxBytes = ui.info?.maxImageSize;
+    final int? pickedSize = _pickedSize;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -492,9 +569,14 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                 FilledButton.icon(
                   onPressed: ui.loading
                       ? null
-                      : () {
+                      : () async {
                           final String uri = _imageUriController.text.trim();
                           if (uri.isEmpty) return;
+                          if (!await _confirmDestructiveUpdate(
+                              'Simple update')) {
+                            return;
+                          }
+                          if (!mounted) return;
                           controller.startUpdate(
                             SimpleUpdateRequest(
                               imageUri: uri,
@@ -562,6 +644,46 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                       ],
                     ),
                   ),
+                  // Size warnings (issue #008): above the service's
+                  // MaxImageSize the Upload control is disabled and the image
+                  // cannot be pushed; above the 100 MiB soft threshold it is
+                  // still allowed but flagged as potentially slow. Each is a
+                  // single merged semantics node so 320 px never overflows.
+                  if (sizeStatus ==
+                      FirmwareImageSizeStatus.exceedsMaximum) ...<Widget>[
+                    const SizedBox(height: 6),
+                    Semantics(
+                      container: true,
+                      excludeSemantics: true,
+                      label: 'Image too large: '
+                          '${formatFirmwareImageSize(pickedSize ?? 0)} exceeds '
+                          'the maximum ${formatFirmwareImageSize(maxBytes ?? 0)}',
+                      child: Text(
+                        'Image (${formatFirmwareImageSize(pickedSize ?? 0)}) '
+                        'exceeds the maximum '
+                        '(${formatFirmwareImageSize(maxBytes ?? 0)}). '
+                        'Choose a smaller image.',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                  ] else if (sizeStatus ==
+                      FirmwareImageSizeStatus.softWarning) ...<Widget>[
+                    const SizedBox(height: 6),
+                    Semantics(
+                      container: true,
+                      excludeSemantics: true,
+                      label: 'Large image warning: '
+                          '${formatFirmwareImageSize(pickedSize ?? 0)} may be '
+                          'slow to upload',
+                      child: Text(
+                        'Large image (${formatFirmwareImageSize(pickedSize ?? 0)}) '
+                        '— the upload may be slow over the BMC link.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   // Apply-time selection (#008/#020): only when the service
                   // advertises `HttpPushUriApplyTime.ApplyTime@
@@ -615,9 +737,10 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                         label: const Text('Choose image…'),
                       ),
                       FilledButton.icon(
-                        onPressed: (_pickedImage == null || _isBusy(ui))
-                            ? null
-                            : () => _pushUpload(ui),
+                        onPressed:
+                            (_pickedImage == null || _isBusy(ui) || sizeExceeds)
+                                ? null
+                                : () => _pushUpload(ui),
                         icon: ui.uploading
                             ? const SizedBox(
                                 width: 16,

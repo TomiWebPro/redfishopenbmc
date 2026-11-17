@@ -144,6 +144,132 @@ void main() {
       expect(info.serviceEnabled, isFalse);
       expect(info.httpPushUri, isNull);
     });
+
+    test('parses MaxImageSize as bytes (#008)', () {
+      final UpdateServiceInfo info = UpdateServiceInfo.fromJson(
+        <String, dynamic>{
+          'Id': 'UpdateService',
+          'ServiceEnabled': true,
+          'MaxImageSize': 134217728, // 128 MiB
+        },
+      );
+      expect(info.maxImageSize, 134217728);
+    });
+
+    test('MaxImageSize is null when absent or not usable (#008)', () {
+      expect(
+        UpdateServiceInfo.fromJson(<String, dynamic>{'Id': 'UpdateService'})
+            .maxImageSize,
+        isNull,
+      );
+      expect(
+        UpdateServiceInfo.fromJson(<String, dynamic>{
+          'MaxImageSize': 0,
+        }).maxImageSize,
+        isNull,
+      );
+      expect(
+        UpdateServiceInfo.fromJson(<String, dynamic>{
+          'MaxImageSize': 'not-a-number',
+        }).maxImageSize,
+        isNull,
+      );
+    });
+
+    test('tolerates a numeric / string MaxImageSize encoding (#008)', () {
+      expect(
+        UpdateServiceInfo.fromJson(<String, dynamic>{
+          'MaxImageSize': 104857600.0,
+        }).maxImageSize,
+        104857600,
+      );
+      expect(
+        UpdateServiceInfo.fromJson(<String, dynamic>{
+          'MaxImageSize': '52428800',
+        }).maxImageSize,
+        52428800,
+      );
+    });
+
+    test('copyWithInventory preserves maxImageSize (#008)', () {
+      final UpdateServiceInfo info = UpdateServiceInfo.fromJson(
+        <String, dynamic>{
+          'Id': 'UpdateService',
+          'MaxImageSize': 67108864,
+        },
+        inventory: const <FirmwareInventoryItem>[
+          FirmwareInventoryItem(id: 'BMC'),
+        ],
+      );
+      final UpdateServiceInfo copied = info.copyWithInventory(
+        const <FirmwareInventoryItem>[FirmwareInventoryItem(id: 'SS')],
+      );
+      expect(copied.maxImageSize, 67108864);
+      expect(copied.inventory.length, 1);
+      expect(copied.inventory.single.id, 'SS');
+    });
+  });
+
+  group('classifyFirmwareImageSize (#008)', () {
+    test('small image within limits is ok', () {
+      expect(
+        classifyFirmwareImageSize(1024, 100 * 1024 * 1024),
+        FirmwareImageSizeStatus.ok,
+      );
+    });
+
+    test('above the 100 MiB soft threshold but within maximum is a soft warn',
+        () {
+      final int bytes = kFirmwareSoftImageSizeBytes + 1;
+      expect(
+        classifyFirmwareImageSize(bytes, 200 * 1024 * 1024),
+        FirmwareImageSizeStatus.softWarning,
+      );
+      // No advertised maximum → the soft threshold still applies.
+      expect(
+        classifyFirmwareImageSize(bytes, null),
+        FirmwareImageSizeStatus.softWarning,
+      );
+    });
+
+    test('above the service maximum is an unconditional hard block', () {
+      expect(
+        classifyFirmwareImageSize(80 * 1024 * 1024, 64 * 1024 * 1024),
+        FirmwareImageSizeStatus.exceedsMaximum,
+      );
+      // The hard limit wins even when the soft threshold is also crossed.
+      expect(
+        classifyFirmwareImageSize(150 * 1024 * 1024, 100 * 1024 * 1024),
+        FirmwareImageSizeStatus.exceedsMaximum,
+      );
+    });
+
+    test('an image exactly at the maximum is still ok', () {
+      expect(
+        classifyFirmwareImageSize(64 * 1024 * 1024, 64 * 1024 * 1024),
+        FirmwareImageSizeStatus.ok,
+      );
+    });
+
+    test('a missing or non-positive maximum falls back to the soft threshold',
+        () {
+      final int bytes = kFirmwareSoftImageSizeBytes + 1;
+      expect(
+        classifyFirmwareImageSize(bytes, 0),
+        FirmwareImageSizeStatus.softWarning,
+      );
+      expect(
+        classifyFirmwareImageSize(1024, 0),
+        FirmwareImageSizeStatus.ok,
+      );
+    });
+
+    test('a negative size is treated as unknown, never throws', () {
+      expect(
+        classifyFirmwareImageSize(-1, 64 * 1024 * 1024),
+        FirmwareImageSizeStatus.ok,
+      );
+    });
   });
 
   group('SimpleUpdateRequest', () {

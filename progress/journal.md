@@ -9704,3 +9704,18 @@
 - Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
 
 **Issues touched:** #008 (open)
+
+## 2026-11-17 23:00 UTC — agent:redfish-automation — #008
+
+**Done:**
+- FEATURE #008 (smallest open issue), the upload size gate + destructive confirmation slice. Baseline green at 0a0dee2 (analyze 0, 739 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). `UpdateServiceInfo.maxImageSize` parses Redfish `MaxImageSize` (bytes, numeric/string tolerant, non-positive ignored), preserved across `copyWithInventory`. Added pure `kFirmwareSoftImageSizeBytes` (100 MiB) + `classifyFirmwareImageSize()` (ok/softWarning/exceedsMaximum; hard max wins). `FirmwareView` reads the picked image length, disables Upload + error-warns above `MaxImageSize`, soft-warns above 100 MiB within the max; a `showDialog` "Confirm update"/"Cancel" gates both SimpleUpdate Start and push Upload (cancel/dismiss starts nothing). Added 15 tests (10 model/classifier, 5 gate/confirmation/formatter) and updated 6 existing Start/Upload tests to confirm the dialog. Verify analyze 0 / 754 passed / 1 skipped (+15); firmware coverage 88.4% (717/811); issues validate OK. Checked the model-capability, upload-area/maxImageSize and confirmation boxes in #008 (issue stays open for backoff retry + the doc comment).
+
+**Decisions:**
+- Took the explicit "Next" from the prior #008 run. Kept the size logic in two pure, unit-testable functions in the model (no view-coupled classification), so the hard-vs-soft precedence and boundary semantics are pinned without pumping widgets. Chose `XFile.length()` at pick time (failure = unknown = no gating) rather than reading all bytes early — the size gate is synchronous at build time while the bytes are still read only on an actual upload, and a platform that cannot report a size is never wrongly blocked. Used `length:` override on `XFile.fromData` for the >100 MiB soft-warning test to avoid allocating 100 MB. Confirmation was added to BOTH destructive paths (SimpleUpdate Start and push Upload) to satisfy the single acceptance box honestly; the injected `showDialog` keeps it dependency-free and production-TLS untouched. Kept the confirm label distinct ("Confirm update") so existing finders stay unambiguous; updated the 6 pre-existing Start/Upload tests to drive the dialog rather than weakening it to an opt-out provider. No new dependency; DOCS anchor gate not re-run (no corpus/manifest change); full EMULATOR re-run skipped (no wire-contract/fixture/`test_integration/`/`tool/` change; <7 days since last green 2026-11-16 05:27 UTC).
+
+**Next:**
+- Advance #008: generic exponential-backoff retry for the task poller + the multipart-vs-SimpleUpdate doc comment, with tests, then close/split.
+- Advance #010 hardening (discovery request-count budget, cache TTL/delta polling) with tests, or split/advance #009 via one non-dependency increment.
+- Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
+
+**Issues touched:** #008 (open)

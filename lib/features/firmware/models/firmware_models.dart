@@ -94,12 +94,55 @@ class FirmwareInventoryItem {
       );
 }
 
+/// Client-side soft-warning threshold for a firmware image, 100 MiB (issue
+/// #008: "100MB soft limit warn"). An image above this but within the
+/// service's advertised [UpdateServiceInfo.maxImageSize] is still uploadable —
+/// the UI just warns that a low-bandwidth BMC link may be slow.
+const int kFirmwareSoftImageSizeBytes = 100 * 1024 * 1024;
+
+/// How a firmware image's size relates to the service's advertised
+/// `MaxImageSize` and the client's [kFirmwareSoftImageSizeBytes] soft threshold
+/// (issue #008).
+enum FirmwareImageSizeStatus {
+  /// Within both limits — upload normally, no warning.
+  ok,
+
+  /// Above the 100 MiB soft threshold but within `MaxImageSize` — warn, allow.
+  softWarning,
+
+  /// Above the service's `MaxImageSize` — block the upload.
+  exceedsMaximum,
+}
+
+/// Pure classifier for the firmware upload size gate (issue #008).
+///
+/// [byteCount] is the picked image's size in bytes; [maxImageSize] is the
+/// service's advertised `MaxImageSize` in bytes (`null` when not published).
+/// The hard service limit always takes precedence over the soft client
+/// warning. A missing/non-positive [maxImageSize] means "no advertised
+/// maximum" — only the soft threshold applies. Negative sizes are treated as
+/// unknown ([FirmwareImageSizeStatus.ok]) rather than throwing.
+FirmwareImageSizeStatus classifyFirmwareImageSize(
+  int byteCount,
+  int? maxImageSize,
+) {
+  if (byteCount < 0) return FirmwareImageSizeStatus.ok;
+  if (maxImageSize != null && maxImageSize > 0 && byteCount > maxImageSize) {
+    return FirmwareImageSizeStatus.exceedsMaximum;
+  }
+  if (byteCount > kFirmwareSoftImageSizeBytes) {
+    return FirmwareImageSizeStatus.softWarning;
+  }
+  return FirmwareImageSizeStatus.ok;
+}
+
 /// Aggregate firmware/update-service state for a single system (issue #008).
 ///
 /// Combines the `UpdateService` properties (`ServiceEnabled`, `HttpPushUri`,
-/// `Version`) with the fully-resolved [inventory] collection. Redfish does not
-/// enumerate supported transfer protocols, so [transferProtocols] is the fixed
-/// standard set ([CIFS], [NFS], [HTTP], [HTTPS], [SFTP], [TFTP]).
+/// `Version`, `MaxImageSize`) with the fully-resolved [inventory] collection.
+/// Redfish does not enumerate supported transfer protocols, so
+/// [transferProtocols] is the fixed standard set ([CIFS], [NFS], [HTTP],
+/// [HTTPS], [SFTP], [TFTP]).
 class UpdateServiceInfo {
   /// Creates an [UpdateServiceInfo].
   const UpdateServiceInfo({
@@ -109,6 +152,7 @@ class UpdateServiceInfo {
     this.multipartHttpPushUri,
     this.httpPushApplyTime,
     this.httpPushApplyTimes = const <String>[],
+    this.maxImageSize,
     this.inventory = const <FirmwareInventoryItem>[],
     this.transferProtocols = _kDefaultProtocols,
   });
@@ -147,6 +191,12 @@ class UpdateServiceInfo {
   /// e.g. `Immediate` / `OnReset` / `AtMaintenanceWindowStart`.
   final List<String> httpPushApplyTimes;
 
+  /// The service's advertised maximum firmware image size in bytes
+  /// (`MaxImageSize`, a Redfish UpdateService property), or `null` when the
+  /// service does not publish a limit. Drives the upload-disable hard gate and
+  /// the "too large" warning (issue #008).
+  final int? maxImageSize;
+
   /// Fully-resolved firmware inventory (one entry per collection member).
   final List<FirmwareInventoryItem> inventory;
 
@@ -171,6 +221,7 @@ class UpdateServiceInfo {
       multipartHttpPushUri: _asString(body['MultipartHttpPushUri']),
       httpPushApplyTime: _applyTime(body),
       httpPushApplyTimes: _applyTimes(body),
+      maxImageSize: _maxImageSize(body),
       inventory: inventory ?? const <FirmwareInventoryItem>[],
       transferProtocols: transferProtocols ?? _kDefaultProtocols,
     );
@@ -186,6 +237,7 @@ class UpdateServiceInfo {
         multipartHttpPushUri: multipartHttpPushUri,
         httpPushApplyTime: httpPushApplyTime,
         httpPushApplyTimes: httpPushApplyTimes,
+        maxImageSize: maxImageSize,
         inventory: inventory,
         transferProtocols: transferProtocols,
       );
@@ -317,6 +369,25 @@ class UpdateTask {
 
 /// Returns [value] as a [String] or `null` when it is not a string.
 String? _asString(Object? value) => value is String ? value : null;
+
+/// Reads the UpdateService `MaxImageSize` property (bytes) from [body].
+///
+/// Redfish defines it as an integer, but tolerate a numeric or string encoding
+/// from a vendor BMC rather than dropping the advertised limit. A non-positive
+/// or unparseable value is reported as `null` (no usable limit).
+int? _maxImageSize(Map<String, dynamic> body) {
+  final Object? raw = body['MaxImageSize'];
+  if (raw is int) return raw > 0 ? raw : null;
+  if (raw is num) {
+    final int value = raw.toInt();
+    return value > 0 ? value : null;
+  }
+  if (raw is String) {
+    final int? value = int.tryParse(raw);
+    return value != null && value > 0 ? value : null;
+  }
+  return null;
+}
 
 /// Reads `HttpPushUriOptions.HttpPushUriApplyTime.ApplyTime` (the current
 /// push-apply-time mode) from an `UpdateService` [body].

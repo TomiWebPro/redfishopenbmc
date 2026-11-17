@@ -27,7 +27,7 @@ estimated_tokens: 45000
 
 ## Goals / Acceptance Criteria
 
-- [ ] `lib/features/firmware/models/firmware_inventory.dart` — `id, version, name, updateable, status, lowLevel, relatedItem` + `UpdateService` capability `httpPushUri, multipartSupported, simpleUpdateSupported, maxImageSize`
+- [x] `lib/features/firmware/models/firmware_inventory.dart` — `id, version, name, updateable, status, lowLevel, relatedItem` + `UpdateService` capability `httpPushUri, multipartSupported, simpleUpdateSupported, maxImageSize` (capabilities represented in `UpdateServiceInfo`: `httpPushUri`, `multipartHttpPushUri`, `maxImageSize`, SimpleUpdate via the `firmwareUpdate` discovery gate — 2026-11-17)
 - [ ] `lib/features/firmware/firmware_service.dart` —
   - `getInventory(systemId) → List<FirmwareInventory>` via `GET /redfish/v1/UpdateService/FirmwareInventory` (fallback `GET /redfish/v1/UpdateService/SoftwareInventory` for OpenBMC)
   - `simpleUpdate(systemId, imageUri) → TaskRef` via `POST /UpdateService/Actions/UpdateService.SimpleUpdate {"ImageURI": uri, "TransferProtocol":"HTTPS"}` (and `HttpPushUri` variant)
@@ -36,10 +36,10 @@ estimated_tokens: 45000
   - Handles `202 Accepted` + `Location: /TaskService/Tasks/{id}` for async
 - [ ] Tab `lib/features/firmware/views/firmware_view.dart` — **only if** `features.firmwareUpdate==true`:
   - Inventory list: name, version, status badge
-  - Upload area: file picker (desktop/web) + `http` upload with progress bar; disabled if `maxImageSize` exceeded
+  - [x] Upload area: file picker (desktop/web) + `http` upload with progress bar; disabled if `maxImageSize` exceeded (hard gate + 100 MiB soft warn — 2026-11-17)
   - Actions: `Simple Update` (URI input) + `Upload & Update` (file)
   - Task monitor: `LinearProgressIndicator` + `%` + `TaskState` badge + `Messages` log (auto-poll every 3s while `Running`)
-  - Confirmation for destructive update
+  - [x] Confirmation for destructive update (`showDialog` confirm/cancel before both SimpleUpdate Start and push Upload — 2026-11-17)
 - [x] Gating: discovery rule `firmwareUpdate = UpdateService != null` (`feature_rules.dart` → #003) — no placeholder when absent
 - [ ] Resilience: cancel task (`DELETE /TaskService/Tasks/{id}` or `POST Cancel`), 413 too large, 401 auth, low-bandwidth retry with exponential backoff
 - [ ] Tests: `test/features/firmware/firmware_service_test.dart` — mocked `Dio` for inventory, SimpleUpdate 202+task, multipart upload progress, task polling `Running→Completed`, `Exception` with `Messages`; widget test gated hidden
@@ -71,6 +71,29 @@ estimated_tokens: 45000
 
 ## Progress Log
 
+- 2026-11-17 — FEATURE run: **the upload size gate + destructive confirmation
+  slice of #008 landed.** `UpdateServiceInfo` now parses the Redfish
+  `MaxImageSize` property (bytes; tolerates numeric/string encodings, ignores
+  non-positive) into a new `int? maxImageSize` field, preserved across
+  `copyWithInventory`. Two pure, unit-tested helpers in `firmware_models.dart`:
+  `kFirmwareSoftImageSizeBytes` (100 MiB) and
+  `classifyFirmwareImageSize(bytes, maxImageSize)` →
+  `ok` / `softWarning` / `exceedsMaximum` (hard service limit always wins).
+  `FirmwareView` reads the picked image's byte length at pick time (`XFile.length()`,
+  failure = unknown = no gating) and renders an error-coloured "exceeds the
+  maximum" warning with Upload **disabled** above `MaxImageSize`, and a soft
+  "may be slow over the BMC link" warning (Upload still enabled) above 100 MiB
+  but within the maximum — both single merged semantics nodes, 320 px-safe.
+  Added a `showDialog` confirmation ("Confirm update" / "Cancel", names the
+  target system, warns it cannot be undone) before **both** destructive update
+  paths (SimpleUpdate Start and push Upload); cancel/dismiss starts nothing.
+  Added 15 tests (10 model/classifier, 5 gate/confirmation/formatter widget
+  tests), and updated 6 existing Start/Upload tests to confirm the dialog. Firmware
+  suite 118 passed; full suite 754 passed / 1 skipped (baseline 739 +15);
+  firmware coverage 88.4% (717/811, clears ≥80%). No production TLS touched;
+  no new dependency. Remaining genuine gaps: generic exponential-backoff retry
+  (poller honours `Retry-After` + fixed 2 s interval) and the documenting-code
+  comment for multipart vs SimpleUpdate. #008 stays open.
 - 2026-11-17 — FEATURE run: **the task-monitor completion + resilience slice
   of #008 landed.** `FirmwareService.cancelTask(taskUri)` sends `DELETE
   <taskUri>` (Redfish TaskService cancel): a `404` (task already gone) is an
