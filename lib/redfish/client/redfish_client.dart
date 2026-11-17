@@ -34,6 +34,32 @@ class RedfishClient {
   static Dio createDioForProfile(ConnectionProfile profile) =>
       _buildDio(profile);
 
+  /// TLS-first downgrade guard (#010): when a profile requires TLS, a
+  /// request that completed over plaintext `http` must be rejected instead of
+  /// consuming its body, so a session token / Basic header can never be
+  /// accepted from a downgraded channel (e.g. an `https -> http` redirect).
+  ///
+  /// [effectiveUri] should be the *final* URI of the exchange
+  /// ([Response.realUri]) — the one after any redirect was followed. A `null`
+  /// URI (no response, e.g. a pure network failure) is left to the normal
+  /// error normalization path. Profiles that deliberately opt out of TLS
+  /// (`useTls == false`, warned in the profile form) are unaffected.
+  static void assertNoTlsDowngrade(
+    ConnectionProfile profile,
+    Uri? effectiveUri,
+  ) {
+    if (!profile.useTls) return;
+    if (effectiveUri == null) return;
+    if (effectiveUri.scheme != 'https') {
+      throw RedfishException(
+        errorCode: 'TlsDowngradeRejected',
+        message: 'Refusing to accept a $effectiveUri response while TLS is '
+            'required for ${profile.id.isEmpty ? profile.host : profile.id}',
+        uri: effectiveUri,
+      );
+    }
+  }
+
   static Dio _buildDio(ConnectionProfile profile) {
     final dio = Dio(
       BaseOptions(
@@ -65,6 +91,7 @@ class RedfishClient {
         queryParameters: query,
         options: headers == null ? null : Options(headers: headers),
       );
+      assertNoTlsDowngrade(profile, response.realUri);
       return _asMap(response.data);
     } on DioException catch (e) {
       throw RedfishException.fromDioException(
@@ -87,6 +114,7 @@ class RedfishClient {
         data: body,
         options: Options(headers: headers),
       );
+      assertNoTlsDowngrade(profile, response.realUri);
       return _asMap(response.data);
     } on DioException catch (e) {
       throw RedfishException.fromDioException(
@@ -131,6 +159,7 @@ class RedfishClient {
         data: body,
         options: Options(headers: mergedHeaders),
       );
+      assertNoTlsDowngrade(profile, response.realUri);
       return _asMap(response.data);
     } on DioException catch (e) {
       throw RedfishException.fromDioException(
@@ -171,10 +200,11 @@ class RedfishClient {
     Map<String, String>? headers,
   }) async {
     try {
-      await _dio.delete<dynamic>(
+      final response = await _dio.delete<dynamic>(
         path,
         options: Options(headers: headers),
       );
+      assertNoTlsDowngrade(profile, response.realUri);
       return true;
     } on DioException catch (e) {
       throw RedfishException.fromDioException(

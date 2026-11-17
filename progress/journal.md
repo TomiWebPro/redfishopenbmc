@@ -9509,3 +9509,18 @@
 - Split/advance #007/#008/#009 with one tested increment if clearer; #021 remains blocked on WebView/protocol-client platform/TLS validation.
 
 **Issues touched:** #010 (open)
+
+## 2026-11-17 — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 TLS-first downgrade guard (baseline green at 74b8d78: analyze 0, 608 passed / 1 skipped, issues validate OK; known untracked `testing/` left untouched). Added `RedfishClient.assertNoTlsDowngrade(profile, effectiveUri)` and wired it into `getJson`/`postJson`/`patchJson`/`delete` via `Response.realUri`, so a TLS-required profile rejects any plaintext `http` response (including an `https -> http` redirect) with a fatal `TlsDowngradeRejected` `RedfishException`. Added `test/security/tls_downgrade_test.dart` with 7 tests, including an end-to-end redirect test (local self-signed HTTPS server redirects to a plain HTTP server; the downgraded body is never consumed).
+
+**Decisions:**
+- Chose a real, small production-code hardening that closes a still-open #010 acceptance box ("http:// rejected when useTls true") rather than another test-only 200% text-scale increment; the downgrade check is keyed on `profile.useTls` so user-opt-in plaintext profiles (already warned in the form) are unaffected and no production TLS is weakened. Dio 5.11 follows redirects at the dart:io adapter layer and populates `Response.redirects`/`realUri`, so checking `response.realUri` reliably detects the final downgraded hop. DOCS anchor gate not re-run (no corpus/manifest change, mirror queue EMPTY); full EMULATOR re-run skipped (no fixture/test_integration/tool contract change, <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Extend the downgrade guard to `createDioForProfile` / auth-manager per-host client factory with tests.
+- Continue #010 perf/coverage hardening (discovery request-count budget, cache-TTL/delta-polling tests) and deeper runtime credential-leak audit.
+- Split/advance #007/#008/#009 with one tested increment each; #021 remains blocked on WebView/protocol-client platform/TLS validation.
+
+**Issues touched:** #010 (open)
