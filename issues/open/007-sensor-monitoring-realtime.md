@@ -115,6 +115,24 @@ estimated_tokens: 50000
   (+13). Issue stays open: fl_chart/LineChart perf and per-tile `Selector`-level
   delta rebuild (so unchanged tiles never repaint) remain; the current delta is
   controller-level (reusing unchanged chassis data).
+- 2026-11-17 17:47 UTC (run, agent:redfish-automation) — FEATURE slice:
+  implemented the per-tile `Selector`-level delta rebuild (the explicit "Next"
+  from the prior run). Added pure-Dart `temperatureTileFingerprint` /
+  `fanTileFingerprint` / `sensorTileFingerprint` (`models/tile_fingerprint.dart`)
+  encoding exactly the fields a tile shows (identity, reading, health/state,
+  physical context, reading type/units, thresholds) — the growing sparkline
+  history is deliberately excluded since a flat trend looks identical after one
+  more sample. Added `SensorDeltaTile` (`views/sensor_delta_tile.dart`), a
+  selector-style gate that caches the exact child widget instance and returns it
+  unchanged while the fingerprint matches, so an unchanged tile neither rebuilds
+  nor repaints when a poll only advances history; each tile sits behind a
+  `RepaintBoundary`. `_ChassisCard` now wraps all three tile kinds in the gate.
+  Added 4 fingerprint unit tests, 3 gate widget tests (build-once / skip-same /
+  rebuild-on-change + RepaintBoundary) and 1 view wiring smoke test. Baseline
+  analyze 0 / 657 passed / 1 skipped; verify analyze 0 / 665 passed / 1 skipped
+  (+8). Merged tile semantics and 320/800/1300px no-overflow tests still pass.
+  Issue stays open: fl_chart/LineChart perf remains; the remaining acceptance
+  boxes (service fixture coverage, ≥80% coverage) are still unchecked.
 
 ## References
 

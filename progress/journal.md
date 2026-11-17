@@ -9584,3 +9584,18 @@
 - Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
 
 **Issues touched:** #007 (open)
+
+## 2026-11-17 17:47 UTC — agent:redfish-automation — #007
+
+**Done:**
+- FEATURE #007 (smallest open issue), the per-tile `Selector`-level delta rebuild slice (the explicit "Next" from the prior run). Baseline green at dd44ae4 (analyze 0, 657 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Added pure-Dart `temperatureTileFingerprint`/`fanTileFingerprint`/`sensorTileFingerprint` (`models/tile_fingerprint.dart`) covering exactly what a tile renders — name, reading, health/state, physical context, reading type/units and thresholds — with a `t|`/`f|`/`s|` namespace prefix and deliberate exclusion of sparkline history (a flat trend looks the same after one more sample). Added `SensorDeltaTile` (`views/sensor_delta_tile.dart`), a selector-style gate that builds its child once, caches the exact widget instance, and returns it unchanged while the fingerprint matches — so an unchanged tile neither rebuilds nor repaints on a poll that only advances history; the child sits behind a `RepaintBoundary`. `_ChassisCard` now wraps all three tile kinds. Added 4 fingerprint unit tests, 3 gate widget tests (build-once / skip-same-fingerprint / rebuild-on-change + RepaintBoundary) and 1 view wiring smoke test (verify 665 passed / 1 skipped, +8). Merged per-tile semantics and 320/800/1300px no-overflow tests still pass.
+
+**Decisions:**
+- Chose a selector-style rebuild keyed by a reading fingerprint rather than adding a charting dependency or manufacturing UI churn. Gating by the whole tile (including sparkline) is safe because history is excluded from the fingerprint: a flat sensor's added sample never changes its visual, and a real reading change rebuilds the tile with the freshest history slice. The exact-widget-instance cache relies on Flutter's `Element.updateChild` short-circuit to skip the subtree entirely, with `RepaintBoundary` confining any genuine repaint. No production TLS touched; no new dependency. DOCS anchor gate not re-run (no corpus/manifest change, mirror queue EMPTY); full EMULATOR re-run skipped (no fixture/test_integration/tool contract change, <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Continue #007: fl_chart/LineChart perf only if a dependency is justified, plus OpenBMC Thermal+Sensors fixture service tests and ≥80% touched-feature coverage — then verify remaining acceptance boxes and close/split #007.
+- Advance #008 firmware task-polling/progress and #010 perf/coverage hardening (discovery request-count budget, cache TTL/delta polling) with tests.
+- Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
+
+**Issues touched:** #007 (open)

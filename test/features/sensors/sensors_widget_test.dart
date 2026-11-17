@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:redfishopenbmc/features/sensors/models/sensor_models.dart';
 import 'package:redfishopenbmc/features/sensors/sensors_providers.dart';
 import 'package:redfishopenbmc/features/sensors/sensors_service.dart';
+import 'package:redfishopenbmc/features/sensors/views/sensor_delta_tile.dart';
 import 'package:redfishopenbmc/features/sensors/views/sensors_view.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/redfish/client/redfish_client.dart';
@@ -293,6 +294,28 @@ void main() {
       expect(find.text('CPU1 Temp'), findsWidgets);
       expect(find.text('Fan0'), findsWidgets);
       expect(find.text('PSU1'), findsWidgets);
+    });
+
+    testWidgets(
+        'wraps each telemetry tile in a selector-style delta gate '
+        '(#007)', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('x')
+                .overrideWithValue(buildHandle(sensorMonitoring: true)),
+            sensorsServiceProvider('x')
+                .overrideWithValue(_FakeSensorsService()),
+          ],
+          child: const MaterialApp(
+              home: SensorsView(systemId: 'x', autoRefreshInterval: null)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // One temperature + one fan + one generic sensor = three gates. Each
+      // gate rebuilds its tile only when that reading's fingerprint changes.
+      expect(find.byType(SensorDeltaTile), findsNWidgets(3));
     });
 
     testWidgets(

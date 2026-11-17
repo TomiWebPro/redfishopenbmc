@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:redfishopenbmc/features/sensors/models/polling_policy.dart';
 import 'package:redfishopenbmc/features/sensors/models/reading_history.dart';
 import 'package:redfishopenbmc/features/sensors/models/sensor_models.dart';
+import 'package:redfishopenbmc/features/sensors/models/tile_fingerprint.dart';
 import 'package:redfishopenbmc/features/sensors/sensors_controller.dart';
 import 'package:redfishopenbmc/features/sensors/sensors_providers.dart';
+import 'package:redfishopenbmc/features/sensors/views/sensor_delta_tile.dart';
 import 'package:redfishopenbmc/features/sensors/views/sensor_telemetry_widgets.dart';
 import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
@@ -323,11 +325,14 @@ class _ChassisCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               for (final ThermalReading t in chassis.thermal)
-                _TemperatureTile(
-                  t,
-                  series:
-                      history[thermalSeriesKey(chassis.chassisId, t.name)] ??
-                          const <double>[],
+                SensorDeltaTile(
+                  fingerprint: temperatureTileFingerprint(t),
+                  builder: (_) => _TemperatureTile(
+                    t,
+                    series:
+                        history[thermalSeriesKey(chassis.chassisId, t.name)] ??
+                            const <double>[],
+                  ),
                 ),
               const SizedBox(height: 12),
             ],
@@ -341,10 +346,13 @@ class _ChassisCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               for (final FanReading f in chassis.fans)
-                _FanTile(
-                  f,
-                  series: history[fanSeriesKey(chassis.chassisId, f.name)] ??
-                      const <double>[],
+                SensorDeltaTile(
+                  fingerprint: fanTileFingerprint(f),
+                  builder: (_) => _FanTile(
+                    f,
+                    series: history[fanSeriesKey(chassis.chassisId, f.name)] ??
+                        const <double>[],
+                  ),
                 ),
               const SizedBox(height: 12),
             ],
@@ -358,10 +366,14 @@ class _ChassisCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               for (final SensorReading s in chassis.sensors)
-                _SensorTile(
-                  s,
-                  series: history[sensorSeriesKey(chassis.chassisId, s.name)] ??
-                      const <double>[],
+                SensorDeltaTile(
+                  fingerprint: sensorTileFingerprint(s),
+                  builder: (_) => _SensorTile(
+                    s,
+                    series:
+                        history[sensorSeriesKey(chassis.chassisId, s.name)] ??
+                            const <double>[],
+                  ),
                 ),
             ],
           ],
