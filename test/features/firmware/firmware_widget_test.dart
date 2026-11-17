@@ -132,6 +132,10 @@ class _PushCapableFirmwareService extends FakeFirmwareService {
     Duration interval = const Duration(seconds: 2),
     int maxPolls = 30,
     void Function(RedfishTask interim)? onInterim,
+    Duration initialBackoff = const Duration(seconds: 1),
+    Duration maxBackoff = const Duration(seconds: 30),
+    int maxRetries = 3,
+    void Function(int attempt, Duration delay)? onRetry,
   }) async {
     pollCalls++;
     return const RedfishTask(id: '9', state: 'Completed');
@@ -1364,8 +1368,7 @@ void main() {
       await pickImage(tester);
       expect(find.textContaining('exceeds the maximum'), findsOneWidget,
           reason: 'an oversized image must warn that it exceeds the maximum');
-      expect(
-          find.bySemanticsLabel(RegExp('Image too large')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Image too large')), findsOneWidget);
       final FilledButton upload = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, 'Upload'),
       );
@@ -1393,8 +1396,8 @@ void main() {
       await pickImage(tester);
       expect(find.textContaining('may be slow'), findsOneWidget,
           reason: 'an image over the soft threshold must warn');
-      expect(find.bySemanticsLabel(RegExp('Large image warning')),
-          findsOneWidget);
+      expect(
+          find.bySemanticsLabel(RegExp('Large image warning')), findsOneWidget);
       final FilledButton upload = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, 'Upload'),
       );

@@ -9719,3 +9719,18 @@
 - Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
 
 **Issues touched:** #008 (open)
+
+## 2026-11-17 23:40 UTC — agent:redfish-automation — #008
+
+**Done:**
+- FEATURE #008 (smallest open issue), the generic exponential-backoff task-poller retry slice — the explicit "Next" from the prior run. Baseline green at 781fa79 (analyze 0, 754 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). `FirmwareService.pollTask` now retries transient monitor-read failures (`RedfishException.retryable`: network timeout / 429 / 5xx) with bounded exponential backoff: new pure overflow-safe `backoffDelay(attempt, initial, cap)` = `min(initial × 2^attempt, cap)`, ≤`maxRetries` (3) retries per poll, fatal auth/non-retryable errors bubble immediately, 202 `Retry-After` still the first wait; added `onRetry` observer and backwards-compatible params so all existing callers/test doubles are unchanged. Added the class-level "Choosing an update path" comment (SimpleUpdate vs multipart/raw push). Added 5 tests (2 pure schedule, 503→retry→success, exhausted retries, 401 never retried) with a deterministic scripted `HttpClientAdapter`. Verify analyze 0 / 759 passed / 1 skipped (+5); firmware coverage 88.6% (731/825); issues validate OK. Checked the resilience + doc-comment boxes in #008.
+
+**Decisions:**
+- Kept the retry budget per poll (not global) so total work stays bounded at `maxPolls × (1 + maxRetries)` and the existing `maxPolls` timeout semantics are unchanged. Auth failures are excluded explicitly (as well as by `retryable == false`) because they must bubble to the auth manager rather than be silently retried against an expired session. Extracted the delay math into a pure static helper so the exponential schedule and cap are pinned by exact-value unit tests with no sleeping; used microsecond delays in the loop test to observe doubling deterministically. Wrote a tiny scripted `HttpClientAdapter` for the 503→200 case because `http_mock_adapter` binds one status per registered route (its `onGet` callback configures the handler once, not per request, and the last matching handler wins) and therefore cannot vary status across calls. Did NOT close #008: the SimpleUpdate Start path still does not hand its 202 `Location` to `pollLastTask()`, so the task-monitor acceptance box is not fully met; fixing that needs its own widget-test change (touching shared fakes and the Start tests), which is a larger, distinct increment. No production TLS weakened; no new dependency; DOCS anchor gate not re-run (no corpus/manifest change); full EMULATOR re-run skipped (no wire-contract/fixture/`test_integration/`/`tool/` change; <7 days since last green 2026-11-16 05:27 UTC).
+
+**Next:**
+- Hand the SimpleUpdate Start path's 202 `Location` to `pollLastTask()` (with a widget test), then verify remaining boxes and close/split #008.
+- Advance #010 hardening (discovery request-count budget, cache TTL/delta polling) with tests.
+- Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
+
+**Issues touched:** #008 (open)

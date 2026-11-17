@@ -1,3 +1,6 @@
+import 'dart:convert' show jsonEncode;
+import 'dart:typed_data' show Uint8List;
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
@@ -374,6 +377,177 @@ void main() {
               .having((RedfishException e) => e.statusCode, 'statusCode', 404),
         ),
       );
+    });
+
+    group('pollTask transient retry / exponential backoff (#008)', () {
+      test('backoffDelay doubles from the initial delay and clamps to the cap',
+          () {
+        const Duration initial = Duration(seconds: 1);
+        const Duration cap = Duration(seconds: 10);
+        expect(FirmwareService.backoffDelay(0, initial: initial, cap: cap),
+            const Duration(seconds: 1));
+        expect(FirmwareService.backoffDelay(1, initial: initial, cap: cap),
+            const Duration(seconds: 2));
+        expect(FirmwareService.backoffDelay(2, initial: initial, cap: cap),
+            const Duration(seconds: 4));
+        expect(FirmwareService.backoffDelay(3, initial: initial, cap: cap),
+            const Duration(seconds: 8));
+        expect(FirmwareService.backoffDelay(4, initial: initial, cap: cap),
+            const Duration(seconds: 10)); // clamped
+        expect(FirmwareService.backoffDelay(1000, initial: initial, cap: cap),
+            const Duration(seconds: 10)); // large attempt, no overflow
+      });
+
+      test('backoffDelay handles zero, negative attempts and over-cap initial',
+          () {
+        expect(
+            FirmwareService.backoffDelay(5,
+                initial: Duration.zero, cap: const Duration(seconds: 30)),
+            Duration.zero);
+        expect(
+            FirmwareService.backoffDelay(-1,
+                initial: const Duration(seconds: 2),
+                cap: const Duration(seconds: 5)),
+            const Duration(seconds: 2));
+        expect(
+            FirmwareService.backoffDelay(0,
+                initial: const Duration(seconds: 50),
+                cap: const Duration(seconds: 5)),
+            const Duration(seconds: 5));
+      });
+
+      test(
+          'retries a transient 503 with exponentially growing delays, then '
+          'succeeds', () async {
+        final _ScriptedAdapter adapter = _ScriptedAdapter(<_ScriptedReply>[
+          const _ScriptedReply(503, <String, dynamic>{
+            'error': <String, dynamic>{
+              'code': 'Base.1.0.ServiceUnavailable',
+              'message': 'Service temporarily unavailable',
+            },
+          }),
+          const _ScriptedReply(503, <String, dynamic>{
+            'error': <String, dynamic>{
+              'code': 'Base.1.0.ServiceUnavailable',
+              'message': 'Service temporarily unavailable',
+            },
+          }),
+          const _ScriptedReply(200, <String, dynamic>{
+            '@odata.id': '/redfish/v1/TaskService/TaskMonitors/55',
+            'Id': '55',
+            'TaskState': 'Completed',
+            'TaskStatus': 'OK',
+          }),
+        ]);
+        final RedfishClient flakyClient = RedfishClient(
+          profile: const ConnectionProfile(
+              host: 'bmc-flaky.local', name: 'bmc-flaky'),
+          dio: Dio(BaseOptions(baseUrl: 'https://bmc-flaky.local:443'))
+            ..httpClientAdapter = adapter,
+        );
+        final FirmwareService svc =
+            FirmwareService(client: flakyClient, systemId: 'bmc-flaky');
+        final List<({int attempt, int delayMicros})> retries =
+            <({int attempt, int delayMicros})>[];
+
+        final RedfishTask result = await svc.pollTask(
+          const UpdateTask(taskUri: '/redfish/v1/TaskService/TaskMonitors/55'),
+          interval: Duration.zero,
+          initialBackoff: const Duration(microseconds: 10),
+          maxBackoff: const Duration(microseconds: 100),
+          maxRetries: 3,
+          onRetry: (int attempt, Duration delay) => retries
+              .add((attempt: attempt, delayMicros: delay.inMicroseconds)),
+        );
+
+        expect(result.isSuccess, isTrue);
+        expect(result.id, '55');
+        expect(adapter.calls, 3); // two transient failures + one success
+        expect(retries.length, 2);
+        expect(retries[0].attempt, 1);
+        expect(retries[0].delayMicros, 10);
+        expect(retries[1].attempt, 2);
+        expect(retries[1].delayMicros, 20); // doubled
+      });
+
+      test(
+          'gives up after maxRetries transient failures, preserving the '
+          'retryable classification', () async {
+        final _ScriptedAdapter adapter = _ScriptedAdapter(<_ScriptedReply>[
+          const _ScriptedReply(503, <String, dynamic>{
+            'error': <String, dynamic>{
+              'code': 'Base.1.0.ServiceUnavailable',
+              'message': 'Service temporarily unavailable',
+            },
+          }),
+        ]); // last reply repeats → every poll GET fails transiently
+        final RedfishClient downClient = RedfishClient(
+          profile:
+              const ConnectionProfile(host: 'bmc-down.local', name: 'bmc-down'),
+          dio: Dio(BaseOptions(baseUrl: 'https://bmc-down.local:443'))
+            ..httpClientAdapter = adapter,
+        );
+        final FirmwareService svc =
+            FirmwareService(client: downClient, systemId: 'bmc-down');
+        final List<int> attempts = <int>[];
+
+        await expectLater(
+          svc.pollTask(
+            const UpdateTask(
+                taskUri: '/redfish/v1/TaskService/TaskMonitors/66'),
+            interval: Duration.zero,
+            initialBackoff: Duration.zero,
+            maxRetries: 2,
+            onRetry: (int attempt, Duration delay) => attempts.add(attempt),
+          ),
+          throwsA(
+            isA<RedfishException>()
+                .having((RedfishException e) => e.message, 'message',
+                    contains('Failed to read the task monitor'))
+                .having((RedfishException e) => e.statusCode, 'statusCode', 503)
+                .having(
+                    (RedfishException e) => e.retryable, 'retryable', isTrue),
+          ),
+        );
+        expect(adapter.calls, 3); // initial + 2 retries
+        expect(attempts, <int>[1, 2]);
+      });
+
+      test('never retries a fatal auth failure (401)', () async {
+        final _ScriptedAdapter adapter = _ScriptedAdapter(<_ScriptedReply>[
+          const _ScriptedReply(401, <String, dynamic>{
+            'error': <String, dynamic>{
+              'code': 'Base.1.0.NoValidSession',
+              'message': 'Session expired',
+            },
+          }),
+        ]);
+        final RedfishClient authClient = RedfishClient(
+          profile:
+              const ConnectionProfile(host: 'bmc-auth.local', name: 'bmc-auth'),
+          dio: Dio(BaseOptions(baseUrl: 'https://bmc-auth.local:443'))
+            ..httpClientAdapter = adapter,
+        );
+        final FirmwareService svc =
+            FirmwareService(client: authClient, systemId: 'bmc-auth');
+        final List<int> attempts = <int>[];
+
+        await expectLater(
+          svc.pollTask(
+            const UpdateTask(
+                taskUri: '/redfish/v1/TaskService/TaskMonitors/77'),
+            interval: Duration.zero,
+            maxRetries: 3,
+            onRetry: (int attempt, Duration delay) => attempts.add(attempt),
+          ),
+          throwsA(
+            isA<RedfishException>().having(
+                (RedfishException e) => e.statusCode, 'statusCode', 401),
+          ),
+        );
+        expect(adapter.calls, 1); // auth is fatal — no retry
+        expect(attempts, isEmpty);
+      });
     });
 
     group('FirmwareService.pushImage (#008/#020 binary upload)', () {
@@ -802,6 +976,47 @@ void main() {
       });
     });
   });
+}
+
+/// A single scripted HTTP response for [_ScriptedAdapter].
+class _ScriptedReply {
+  const _ScriptedReply(this.statusCode, this.body);
+
+  final int statusCode;
+  final Map<String, dynamic> body;
+}
+
+/// Minimal [HttpClientAdapter] that replays a scripted sequence of responses
+/// for one path (the last reply repeats). Unlike [DioAdapter], it varies the
+/// status code per call, which the transient-retry tests need (503 → 200).
+/// Non-2xx statuses are left to Dio's default `validateStatus` to turn into a
+/// `DioException`, exactly as a real transport would.
+class _ScriptedAdapter implements HttpClientAdapter {
+  _ScriptedAdapter(this._replies);
+
+  final List<_ScriptedReply> _replies;
+  int calls = 0;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<dynamic>? cancelFuture,
+  ) async {
+    final int index = calls < _replies.length ? calls : _replies.length - 1;
+    calls++;
+    final _ScriptedReply reply = _replies[index];
+    return ResponseBody.fromString(
+      jsonEncode(reply.body),
+      reply.statusCode,
+      headers: <String, List<String>>{
+        Headers.contentTypeHeader: <String>[Headers.jsonContentType],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
 }
 
 /// Matches mock routes by path, ignoring host (mirrors the #002 test helper).

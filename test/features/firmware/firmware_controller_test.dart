@@ -490,6 +490,10 @@ class _InterimPollService extends FirmwareService {
     Duration interval = const Duration(seconds: 2),
     int maxPolls = 30,
     void Function(RedfishTask interim)? onInterim,
+    Duration initialBackoff = const Duration(seconds: 1),
+    Duration maxBackoff = const Duration(seconds: 30),
+    int maxRetries = 3,
+    void Function(int attempt, Duration delay)? onRetry,
   }) async {
     for (final RedfishTask interim in interims) {
       interimCalls++;
@@ -524,6 +528,10 @@ class _PollService extends FirmwareService {
     Duration interval = const Duration(seconds: 2),
     int maxPolls = 30,
     void Function(RedfishTask interim)? onInterim,
+    Duration initialBackoff = const Duration(seconds: 1),
+    Duration maxBackoff = const Duration(seconds: 30),
+    int maxRetries = 3,
+    void Function(int attempt, Duration delay)? onRetry,
   }) async {
     pollCalls++;
     if (results.isEmpty) {

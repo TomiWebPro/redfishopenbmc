@@ -27,6 +27,25 @@ import 'package:redfishopenbmc/redfish/models/system_features.dart';
 /// using the issue #005/#008 error taxonomy (403 privilege, 409 busy, 400
 /// extended info, 413 image-too-large). Long-running tasks can be cancelled
 /// with [cancelTask] (`DELETE <taskUri>`).
+///
+/// ## Choosing an update path (issue #008 decision)
+///
+/// The two update paths are deliberately separate because they describe
+/// different transports, not two ways to do the same thing:
+///   * [startSimpleUpdate] is for an image the BMC can already fetch itself.
+///     The client sends only an `ImageURI` + `TransferProtocol` to the
+///     `#UpdateService.SimpleUpdate` action; no firmware bytes cross this
+///     client (DSP0266 §12.7). It needs a URI the BMC can reach.
+///   * [pushImage] is for a *local* image: this client streams the bytes to the
+///     service's push URI. It prefers the Redfish-defined `MultipartHttpPushUri`
+///     (multipart/form-data `UpdateFile` + `UpdateParameters`) and falls back
+///     to the vendor-specific `HttpPushUri` (raw octet stream — the only push
+///     URI the pinned DMTF mockup advertises). See pushImage's doc comment and
+///     the DOCS-4/9/12 bmcweb audit for the endpoint details.
+///
+/// The UI therefore exposes them as distinct actions (Simple Update by URI vs
+/// Upload & Update by file), and both converge on the same [pollTask] monitor
+/// handling once the service answers 202 + `Location`.
 class FirmwareService {
   /// Creates a [FirmwareService] bound to an authenticated [RedfishClient].
   ///
@@ -281,11 +300,28 @@ class FirmwareService {
   /// (204-no-Location services — the pinned DMTF mockup never returns one);
   /// an explicit [RedfishException] documents that the caller must not treat
   /// a missing monitor as pollable.
+  ///
+  /// Low-bandwidth retry (issue #008 resilience): a *transient* monitor-read
+  /// failure ([RedfishException.retryable] — network timeout, HTTP 429 or a
+  /// 5xx) is retried with generic exponential backoff instead of failing the
+  /// whole poll. The delay starts at [initialBackoff], doubles each attempt
+  /// and is clamped to [maxBackoff] (see [backoffDelay]); at most [maxRetries]
+  /// retries are made per poll. Fatal failures (401/403 auth, 404, bad
+  /// certificate — anything non-retryable) are never retried and bubble
+  /// immediately with context. [onRetry], when supplied, receives the 1-based
+  /// attempt number and the delay before each retry so callers/tests can
+  /// observe the schedule without sleeping. The defaults enable bounded
+  /// backoff on transient failures; passing [maxRetries] = 0 restores strict
+  /// fast-fail semantics (useful for tests and strict callers).
   Future<RedfishTask> pollTask(
     UpdateTask task, {
     Duration interval = const Duration(seconds: 2),
     int maxPolls = 30,
     void Function(RedfishTask interim)? onInterim,
+    Duration initialBackoff = const Duration(seconds: 1),
+    Duration maxBackoff = const Duration(seconds: 30),
+    int maxRetries = 3,
+    void Function(int attempt, Duration delay)? onRetry,
   }) async {
     final RedfishClient? c = client;
     if (c == null) {
@@ -316,19 +352,33 @@ class FirmwareService {
         await Future<void>.delayed(interval);
       }
 
-      final Map<String, dynamic> body;
-      try {
-        body = await c.getJson(monitorUri);
-      } on RedfishException catch (e) {
-        throw RedfishException(
-          message: 'Failed to read the task monitor $monitorUri: '
-              '${e.message}',
-          statusCode: e.statusCode,
-          errorCode: e.errorCode,
-          retryable: e.retryable,
-          uri: e.uri,
-          details: e.details,
-        );
+      Map<String, dynamic> body;
+      int retry = 0;
+      while (true) {
+        try {
+          body = await c.getJson(monitorUri);
+          break;
+        } on RedfishException catch (e) {
+          // Auth failures must bubble to the auth manager, and anything
+          // non-retryable is permanent — re-issuing it cannot help. Only
+          // transient failures (network timeout / 429 / 5xx) back off.
+          if (!e.retryable || e.isAuthError || retry >= maxRetries) {
+            throw RedfishException(
+              message: 'Failed to read the task monitor $monitorUri: '
+                  '${e.message}',
+              statusCode: e.statusCode,
+              errorCode: e.errorCode,
+              retryable: e.retryable,
+              uri: e.uri,
+              details: e.details,
+            );
+          }
+          final Duration delay =
+              backoffDelay(retry, initial: initialBackoff, cap: maxBackoff);
+          onRetry?.call(retry + 1, delay);
+          retry++;
+          await Future<void>.delayed(delay);
+        }
       }
 
       final RedfishTask taskState = RedfishTask.fromJson(body);
@@ -353,6 +403,29 @@ class FirmwareService {
       errorCode: 'Update.1.0.TaskMonitorTimeout',
       retryable: true,
     );
+  }
+
+  /// Exponential backoff delay for a 0-based transient-failure [attempt]:
+  /// `min(initial * 2^attempt, cap)` (issue #008 low-bandwidth retry).
+  ///
+  /// Pure and overflow-safe — the multiplication is clamped to [cap] before it
+  /// can overflow, so even a large [attempt] is cheap and deterministic. A
+  /// negative [attempt] and attempt 0 both yield [initial]; a zero [initial]
+  /// yields a zero delay, letting tests drive the retry loop without sleeping.
+  static Duration backoffDelay(
+    int attempt, {
+    Duration initial = const Duration(seconds: 1),
+    Duration cap = const Duration(seconds: 30),
+  }) {
+    final int capMicros = cap.inMicroseconds;
+    int micros = initial.inMicroseconds;
+    if (micros > capMicros) return cap;
+    for (int i = 0; i < attempt; i++) {
+      if (micros >= capMicros) return cap;
+      final int doubled = micros * 2;
+      micros = doubled > capMicros ? capMicros : doubled;
+    }
+    return Duration(microseconds: micros);
   }
 
   /// Cancels a queued/running task with `DELETE <taskUri>` (issue #008

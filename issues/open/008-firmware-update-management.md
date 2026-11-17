@@ -41,7 +41,7 @@ estimated_tokens: 45000
   - Task monitor: `LinearProgressIndicator` + `%` + `TaskState` badge + `Messages` log (auto-poll every 3s while `Running`)
   - [x] Confirmation for destructive update (`showDialog` confirm/cancel before both SimpleUpdate Start and push Upload — 2026-11-17)
 - [x] Gating: discovery rule `firmwareUpdate = UpdateService != null` (`feature_rules.dart` → #003) — no placeholder when absent
-- [ ] Resilience: cancel task (`DELETE /TaskService/Tasks/{id}` or `POST Cancel`), 413 too large, 401 auth, low-bandwidth retry with exponential backoff
+- [x] Resilience: cancel task (`DELETE /TaskService/Tasks/{id}` or `POST Cancel`), 413 too large, 401 auth, low-bandwidth retry with exponential backoff (cancel/413/401 landed 2026-11-17; generic exponential-backoff retry on transient monitor reads landed 2026-11-17 23:40 UTC — `pollTask` backs off `initialBackoff × 2^attempt` capped at `maxBackoff`, ≤`maxRetries` per poll, fatal 401/403/non-retryable never retried, `Retry-After` still honoured for the first wait)
 - [ ] Tests: `test/features/firmware/firmware_service_test.dart` — mocked `Dio` for inventory, SimpleUpdate 202+task, multipart upload progress, task polling `Running→Completed`, `Exception` with `Messages`; widget test gated hidden
 - [x] Coverage ≥80% (firmware feature 87.4%, 651/745 lines, 2026-11-17 run)
 
@@ -53,7 +53,7 @@ estimated_tokens: 45000
 - [x] File picker abstraction (injectable `firmwareImagePickerProvider` over `file_selector`)
 - [x] Fixtures: OpenBMC `UpdateService` + `FirmwareInventory` + `Task` payloads under `test/fixtures/redfish/`
 - [x] Tests: 6 service + 2 widget (far exceeded: firmware service/controller/widget suites plus this run's 20 new tests)
-- [ ] Document multipart vs SimpleUpdate decision in code comment
+- [x] Document multipart vs SimpleUpdate decision in code comment (class-level "Choosing an update path" comment in `firmware_service.dart`, 2026-11-17 23:40 UTC)
 
 ## Redfish Mapping
 
@@ -71,6 +71,29 @@ estimated_tokens: 45000
 
 ## Progress Log
 
+- 2026-11-17 23:40 UTC — FEATURE run: **generic exponential-backoff retry for
+  the task poller landed**, closing the last resilience gap. `pollTask` now
+  retries *transient* monitor-read failures (`RedfishException.retryable` —
+  network timeout, HTTP 429/5xx) with bounded exponential backoff instead of
+  failing the poll: delay = `min(initialBackoff × 2^attempt, maxBackoff)` via a
+  new pure, overflow-safe `FirmwareService.backoffDelay` helper; at most
+  `maxRetries` (default 3) retries per poll; fatal failures (401/403 auth, 404,
+  bad certificate — anything non-retryable) are never retried and bubble with
+  context; the 202 `Retry-After` hint still governs the first wait. Backwards-
+  compatible optional params (`initialBackoff` 1 s, `maxBackoff` 30 s,
+  `maxRetries` 3, `onRetry`) preserve every existing caller and test double.
+  Added 5 tests (2 pure backoff-schedule, transient 503 → retry → success,
+  exhausted retries keep `retryable=true`, auth 401 never retried) using a small
+  deterministic scripted `HttpClientAdapter` (the shared `http_mock_adapter`
+  replays one status per route and cannot script 503 → 200). Firmware suite
+  118 → 123 passed; full suite 754 → 759 passed / 1 skipped; firmware coverage
+  88.6% (731/825, clears ≥80%); analyze 0; issues validate OK. Also added the
+  class-level "Choosing an update path" doc comment (SimpleUpdate for a
+  BMC-reachable URI vs multipart/raw push for a local file), ticking the last
+  documentation task. #008 stays OPEN: the task-monitor acceptance box is not
+  fully met because the SimpleUpdate **Start** path (unlike the upload path)
+  does not hand the 202 `Location` to `pollLastTask()`, so progress/logs never
+  advance after a Start; that handoff needs its own focused widget-test change.
 - 2026-11-17 — FEATURE run: **the upload size gate + destructive confirmation
   slice of #008 landed.** `UpdateServiceInfo` now parses the Redfish
   `MaxImageSize` property (bytes; tolerates numeric/string encodings, ignores
