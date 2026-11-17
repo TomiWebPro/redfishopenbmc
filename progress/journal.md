@@ -9599,3 +9599,18 @@
 - Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
 
 **Issues touched:** #007 (open)
+
+## 2026-11-17 18:24 UTC — agent:redfish-automation — #007
+
+**Done:**
+- FEATURE #007 (smallest open issue), the OpenBMC fixture service-coverage slice (the explicit "Next" from the prior run). Baseline green at 5fd1c6f (analyze 0, 665 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Added 4 `SensorsService` tests driven by the repo's captured OpenBMC payloads (chassis member, Thermal, Sensors collection, temp0/fan0 members): Thermal temps/fans parse, Sensors members resolve to typed readings, injected critical/caution threshold bounds raise the right alerts, and a both-404 chassis degrades to an empty snapshot. Fixed a real gap the fixture exposed: `FanReading.fromJson` only read modern `Reading`, silently dropping the speed on OpenBMC builds that report legacy `ReadingRPM`; it now accepts both, and the fan tile's RPM formatting keeps units correct. Verify analyze 0 / 669 passed / 1 skipped (+4), issues validate OK.
+
+**Decisions:**
+- Drove the service against authentic captured OpenBMC payload shapes rather than inventing synthetic JSON, so the tests guard the real fallback path. Chose to fix the `ReadingRPM` gap in the model (not in the fixture) because the fixture is a faithful OpenBMC capture and the fan tile already displays RPM — accepting the legacy field in `FanReading.fromJson` is the minimal correct change with no unit ambiguity. Deliberately did NOT normalize Thermal `Voltages[]` or add fl_chart this run: voltage needs a new model + capability-gated view section (a broader workstream) and charting needs a dependency — both are honest follow-ups. No production TLS weakened; no new dependency. DOCS anchor gate not re-run (no corpus/manifest change, mirror queue EMPTY); full EMULATOR re-run skipped (no wire-contract change, <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Continue #007: normalize OpenBMC Thermal `Voltages[]` into the sensor list with a voltage model + view section + tests; add fl_chart/LineChart only if a dependency is justified; reach ≥80% touched-feature coverage, then verify boxes and close/split #007.
+- Advance #008 firmware task-polling/progress and #010 perf/coverage hardening (discovery request-count budget, cache TTL/delta polling) with tests.
+- Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
+
+**Issues touched:** #007 (open)

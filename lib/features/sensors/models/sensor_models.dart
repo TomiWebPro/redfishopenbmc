@@ -184,7 +184,11 @@ class FanReading {
   }) {
     return FanReading(
       name: _asString(json['Name']) ?? 'Fan',
-      reading: _toDouble(json['Reading']),
+      // Modern Thermal fans report `Reading` (+ `ReadingUnits`). Some OpenBMC
+      // builds expose the legacy `ReadingRPM` field instead — accept both so a
+      // fan's speed is not silently dropped into a "no reading" tile (issue
+      // #007, OpenBMC Thermal fallback).
+      reading: _toDouble(json['Reading'] ?? json['ReadingRPM']),
       status: StatusInfo.fromJson(json['Status'] as Map<String, dynamic>?),
       physicalContext: _asString(json['PhysicalContext']),
       upperCritical: _toDouble(json['UpperThresholdCritical']),

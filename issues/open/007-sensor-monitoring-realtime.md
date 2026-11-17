@@ -133,6 +133,20 @@ estimated_tokens: 50000
   (+8). Merged tile semantics and 320/800/1300px no-overflow tests still pass.
   Issue stays open: fl_chart/LineChart perf remains; the remaining acceptance
   boxes (service fixture coverage, ≥80% coverage) are still unchecked.
+- 2026-11-17 18:24 UTC (run, agent:redfish-automation) — FEATURE slice:
+  OpenBMC fixture service coverage (the explicit "Next" from the prior run).
+  Added 4 `SensorsService` tests in `test/features/sensors/sensors_service_test.dart`
+  driven by the repo's captured OpenBMC payloads (`openbmc_chassis_member`,
+  `openbmc_thermal`, `openbmc_sensors`, `openbmc_sensor_{temp0,fan0}.json`):
+  Thermal temperatures + fans parse, the Sensors collection resolves its member
+  readings, threshold breaches raise critical/warning alerts, and a chassis whose
+  Thermal/Sensors both 404 degrades to an empty snapshot. Fixed a real gap found
+  by the fixture: `FanReading.fromJson` only read modern `Reading`, silently
+  dropping the speed on OpenBMC builds that report the legacy `ReadingRPM`
+  field — it now accepts both (the fan tile formats RPM, so units stay correct).
+  Baseline analyze 0 / 665 passed / 1 skipped; verify analyze 0 / 669 passed /
+  1 skipped (+4); issues validate OK. Issue stays open: OpenBMC `Voltages[]`
+  normalization, fl_chart/LineChart perf and ≥80% coverage remain unchecked.
 
 ## References
 
