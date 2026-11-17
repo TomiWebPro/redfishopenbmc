@@ -1499,4 +1499,162 @@ void main() {
       semantics.dispose();
     });
   });
+
+  group('FirmwareView — task state badge, messages log + cancel (#008)', () {
+    const UpdateTask queued =
+        UpdateTask(taskUri: '/redfish/v1/TaskService/Tasks/42');
+
+    Future<void> pumpState(WidgetTester tester, FirmwareUiState state,
+        {FirmwareService? service, double width = 800}) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final FirmwareController controller = FirmwareController(
+        service: service ?? FakeFirmwareService(),
+        initialState: state,
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1')
+                .overrideWithValue(makeHandle(firmwareUpdate: true)),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('renders a TaskState badge for a terminal task',
+        (tester) async {
+      await pumpState(
+        tester,
+        const FirmwareUiState(
+          lastTask: queued,
+          lastResult: RedfishTask(id: '42', state: 'Completed', status: 'OK'),
+        ),
+      );
+      expect(find.bySemanticsLabel('Task state Completed'), findsOneWidget);
+      expect(find.byType(Chip), findsOneWidget);
+    });
+
+    testWidgets('renders a live TaskState badge while polling', (tester) async {
+      await pumpState(
+        tester,
+        const FirmwareUiState(
+          lastTask: queued,
+          polling: true,
+          pollProgress: 60,
+          pollState: 'Running',
+        ),
+      );
+      expect(find.bySemanticsLabel('Task state Running'), findsOneWidget);
+    });
+
+    testWidgets('renders the task Messages log, falling back to MessageId',
+        (tester) async {
+      await pumpState(
+        tester,
+        const FirmwareUiState(
+          lastTask: queued,
+          lastResult: RedfishTask(
+            id: '42',
+            state: 'Exception',
+            messages: <TaskMessage>[
+              TaskMessage(
+                messageId: 'Update.1.0.ImageVerificationFailed',
+                message: 'Image verification failed',
+                severity: 'Critical',
+              ),
+              TaskMessage(messageId: 'Update.1.0.UpdateFailed'),
+            ],
+          ),
+        ),
+      );
+      expect(find.text('Task messages'), findsOneWidget);
+      expect(find.textContaining('Image verification failed'), findsOneWidget);
+      expect(find.textContaining('Update.1.0.UpdateFailed'), findsOneWidget,
+          reason: 'a message with no human text falls back to its MessageId');
+    });
+
+    testWidgets('shows Cancel only in flight and calls cancelTask on tap',
+        (tester) async {
+      final _CancelFirmwareService service = _CancelFirmwareService();
+      await pumpState(
+        tester,
+        const FirmwareUiState(lastTask: queued),
+        service: service,
+      );
+      expect(find.text('Cancel update task'), findsOneWidget);
+
+      await tester.tap(find.text('Cancel update task'));
+      await tester.pump();
+
+      expect(service.cancelledUris, <String>[queued.taskUri!]);
+      expect(find.text('Cancel update task'), findsNothing,
+          reason: 'a cancelled task drops the handle and its banner');
+    });
+
+    testWidgets('hides Cancel once the task reached a terminal state',
+        (tester) async {
+      await pumpState(
+        tester,
+        const FirmwareUiState(
+          lastTask: queued,
+          lastResult: RedfishTask(id: '42', state: 'Completed', status: 'OK'),
+        ),
+      );
+      expect(find.text('Cancel update task'), findsNothing);
+    });
+
+    testWidgets('shows a Cancelling hint while the DELETE is in flight',
+        (tester) async {
+      await pumpState(
+        tester,
+        const FirmwareUiState(lastTask: queued, cancelling: true),
+      );
+      expect(find.text('Cancelling update task…'), findsOneWidget);
+      expect(find.text('Cancel update task'), findsNothing);
+    });
+
+    for (final double width in <double>[320, 800, 1300]) {
+      testWidgets(
+          'task badge + messages log render without overflow at '
+          '${width.toInt()} px', (tester) async {
+        await pumpState(
+          tester,
+          const FirmwareUiState(
+            lastTask: queued,
+            lastResult: RedfishTask(
+              id: '42',
+              state: 'Exception',
+              messages: <TaskMessage>[
+                TaskMessage(
+                  messageId: 'Update.1.0.ImageVerificationFailed',
+                  message: 'Image verification failed: the supplied firmware '
+                      'image did not match the target hardware platform',
+                  severity: 'Critical',
+                ),
+              ],
+            ),
+          ),
+          width: width,
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
+  });
+}
+
+/// A [FakeFirmwareService] recording cancel calls for the task-banner tests.
+class _CancelFirmwareService extends FakeFirmwareService {
+  /// URIs passed to [FirmwareService.cancelTask], in call order.
+  final List<String> cancelledUris = <String>[];
+
+  @override
+  Future<bool> cancelTask(String taskUri) async {
+    cancelledUris.add(taskUri);
+    return true;
+  }
 }

@@ -22,8 +22,10 @@ class FirmwareUiState {
     this.loading = false,
     this.starting = false,
     this.polling = false,
+    this.cancelling = false,
     this.uploading = false,
     this.pollProgress,
+    this.pollState,
     this.uploadProgress,
     this.info,
     this.lastTask,
@@ -66,6 +68,17 @@ class FirmwareUiState {
   /// instead.
   final ({int sent, int total})? uploadProgress;
 
+  /// The latest in-flight `TaskState` string (e.g. `Running`) reported by the
+  /// task monitor's non-terminal snapshots while [pollLastTask] polls, or
+  /// `null` when no interim state is available yet. Drives the live TaskState
+  /// badge in the firmware task monitor (issue #008).
+  final String? pollState;
+
+  /// Whether a task cancellation ([FirmwareController.cancelTask]) is in
+  /// flight — disables the Cancel control and shows its busy state without
+  /// implying a whole-screen load.
+  final bool cancelling;
+
   /// Whether the task monitor returned by the last `SimpleUpdate` is being
   /// polled (issue #022 criterion 1 — 202 task-monitor polling).
   ///
@@ -92,9 +105,12 @@ class FirmwareUiState {
     bool? loading,
     bool? starting,
     bool? polling,
+    bool? cancelling,
     bool? uploading,
     int? pollProgress,
     bool clearPollProgress = false,
+    String? pollState,
+    bool clearPollState = false,
     ({int sent, int total})? uploadProgress,
     bool clearUploadProgress = false,
     UpdateServiceInfo? info,
@@ -109,9 +125,11 @@ class FirmwareUiState {
         loading: loading ?? this.loading,
         starting: starting ?? this.starting,
         polling: polling ?? this.polling,
+        cancelling: cancelling ?? this.cancelling,
         uploading: uploading ?? this.uploading,
         pollProgress:
             clearPollProgress ? null : (pollProgress ?? this.pollProgress),
+        pollState: clearPollState ? null : (pollState ?? this.pollState),
         uploadProgress: clearUploadProgress
             ? null
             : (uploadProgress ?? this.uploadProgress),
@@ -123,8 +141,9 @@ class FirmwareUiState {
 
   @override
   String toString() => 'FirmwareUiState(loading=$loading, starting=$starting, '
-      'polling=$polling, uploading=$uploading, '
-      'pollProgress=$pollProgress, uploadProgress=$uploadProgress, info=${info != null}, '
+      'polling=$polling, cancelling=$cancelling, uploading=$uploading, '
+      'pollProgress=$pollProgress, pollState=$pollState, '
+      'uploadProgress=$uploadProgress, info=${info != null}, '
       'lastTask=$lastTask, lastResult=$lastResult, error=$error)';
 }
 
@@ -133,7 +152,9 @@ class FirmwareUiState {
 /// Responsibilities:
 ///  * [load] the [UpdateServiceInfo] + inventory through [FirmwareService],
 ///  * [startUpdate] issue a `SimpleUpdate` and surface the returned task URI
-///    (or the error) via [FirmwareUiState].
+///    (or the error) via [FirmwareUiState],
+///  * [pollLastTask] follow the 202 `Location` monitor (live percent + state),
+///  * [cancelTask] `DELETE` the monitor to cancel an in-flight update.
 class FirmwareController extends StateNotifier<FirmwareUiState> {
   /// Creates a [FirmwareController].
   FirmwareController({
@@ -280,20 +301,26 @@ class FirmwareController extends StateNotifier<FirmwareUiState> {
       // update was ever queued). The queued label already covers this state.
       return;
     }
-    state = state.copyWith(polling: true, clearPollProgress: true);
+    state = state.copyWith(
+      polling: true,
+      clearPollProgress: true,
+      clearPollState: true,
+    );
     try {
       final RedfishTask result = await service.pollTask(
         task,
         interval: interval,
         maxPolls: maxPolls,
-        // Surface the monitor's in-flight PercentComplete so the view can
-        // draw a live task-timeline bar (#008/#020). Absent on this fixture —
-        // the state simply stays null and the banner stays text-only.
+        // Surface the monitor's in-flight PercentComplete and TaskState so the
+        // view can draw a live task-timeline bar + state badge (#008). A
+        // missing percent keeps the last known value (never invents a bar);
+        // the state string is always present on a parsed task.
         onInterim: (RedfishTask interim) {
           if (!mounted) return;
-          if (interim.percentComplete != null) {
-            state = state.copyWith(pollProgress: interim.percentComplete);
-          }
+          state = state.copyWith(
+            pollState: interim.state,
+            pollProgress: interim.percentComplete,
+          );
         },
       );
       if (!mounted) return;
@@ -301,6 +328,7 @@ class FirmwareController extends StateNotifier<FirmwareUiState> {
         polling: false,
         lastResult: result,
         clearPollProgress: true,
+        clearPollState: true,
       );
     } on RedfishException catch (e) {
       if (!mounted) return;
@@ -308,6 +336,38 @@ class FirmwareController extends StateNotifier<FirmwareUiState> {
     } catch (e) {
       if (!mounted) return;
       state = state.copyWith(polling: false, error: e.toString());
+    }
+  }
+
+  /// Cancels the currently queued/running task via
+  /// [FirmwareService.cancelTask] (issue #008 resilience).
+  ///
+  /// Raises [FirmwareUiState.cancelling] for the duration of the `DELETE`. On
+  /// success the queued handle, any terminal result, and in-flight polling /
+  /// progress are cleared (the task no longer exists); on failure the error is
+  /// recorded while the handle stays so the user can retry. A state with no
+  /// task URI is a no-op.
+  Future<void> cancelTask() async {
+    final String? uri = state.lastTask?.taskUri;
+    if (uri == null || uri.isEmpty) return;
+    state = state.copyWith(cancelling: true, clearError: true);
+    try {
+      await service.cancelTask(uri);
+      if (!mounted) return;
+      state = state.copyWith(
+        cancelling: false,
+        polling: false,
+        clearPollProgress: true,
+        clearPollState: true,
+        clearLastTask: true,
+        clearLastResult: true,
+      );
+    } on RedfishException catch (e) {
+      if (!mounted) return;
+      state = state.copyWith(cancelling: false, error: e.message);
+    } catch (e) {
+      if (!mounted) return;
+      state = state.copyWith(cancelling: false, error: e.toString());
     }
   }
 }

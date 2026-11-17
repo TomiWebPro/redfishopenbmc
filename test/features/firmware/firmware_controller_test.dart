@@ -368,6 +368,102 @@ void main() {
       );
       await done;
     });
+
+    group('FirmwareController task state + cancel (#008)', () {
+      const UpdateTask queued =
+          UpdateTask(taskUri: '/redfish/v1/TaskService/Tasks/42');
+
+      FirmwareUiState busyState() => const FirmwareUiState(
+            lastTask: queued,
+            polling: true,
+            pollProgress: 60,
+            pollState: 'Running',
+          );
+
+      test('captures the live TaskState from interim monitor snapshots',
+          () async {
+        final _InterimPollService service = _InterimPollService(
+          interims: <RedfishTask>[
+            const RedfishTask(id: '42', state: 'Running', percentComplete: 60),
+          ],
+          finalResult: const RedfishTask(id: '42', state: 'Completed'),
+        );
+        final FirmwareController controller = FirmwareController(
+          service: service,
+          initialState: const FirmwareUiState(lastTask: queued),
+        );
+        final List<String?> states = <String?>[];
+        controller.addListener((FirmwareUiState s) => states.add(s.pollState));
+
+        await controller.pollLastTask(interval: Duration.zero, maxPolls: 2);
+
+        expect(states, contains('Running'),
+            reason: 'the live TaskState must reach state for the badge');
+        expect(controller.state.pollState, isNull,
+            reason: 'the live state is cleared once a terminal result arrives');
+      });
+
+      test('raises cancelling then clears task + polling state on success',
+          () async {
+        final _CancelService service = _CancelService();
+        final FirmwareController controller = FirmwareController(
+          service: service,
+          initialState: busyState(),
+        );
+
+        final Future<void> done = controller.cancelTask();
+        expect(controller.state.cancelling, isTrue);
+        expect(controller.state.lastTask, queued,
+            reason: 'the handle stays until the DELETE completes');
+
+        service.cancelGate.complete(true);
+        await done;
+
+        expect(service.cancelledUris, <String>[queued.taskUri!]);
+        expect(controller.state.cancelling, isFalse);
+        expect(controller.state.lastTask, isNull);
+        expect(controller.state.polling, isFalse);
+        expect(controller.state.pollProgress, isNull);
+        expect(controller.state.pollState, isNull);
+        expect(controller.state.error, isNull);
+      });
+
+      test('records the error and keeps the handle on failure', () async {
+        final _CancelService service = _CancelService();
+        final FirmwareController controller = FirmwareController(
+          service: service,
+          initialState: busyState(),
+        );
+
+        final Future<void> done = controller.cancelTask();
+        expect(controller.state.cancelling, isTrue);
+        service.cancelGate.completeError(
+          const RedfishException(
+            message: 'Failed to cancel update task: HTTP 500',
+            statusCode: 500,
+          ),
+        );
+        await done;
+
+        expect(controller.state.cancelling, isFalse);
+        expect(controller.state.lastTask, queued,
+            reason: 'a failed cancel keeps the handle so the user can retry');
+        expect(
+            controller.state.error, 'Failed to cancel update task: HTTP 500');
+      });
+
+      test('is a no-op when there is no task to cancel', () async {
+        final _CancelService service = _CancelService();
+        final FirmwareController controller =
+            FirmwareController(service: service);
+
+        await controller.cancelTask();
+
+        expect(service.cancelledUris, isEmpty);
+        expect(controller.state.cancelling, isFalse);
+        expect(controller.state.error, isNull);
+      });
+    });
   });
 }
 
@@ -445,5 +541,23 @@ class _PollService extends FirmwareService {
       );
     }
     return result;
+  }
+}
+
+/// A [FirmwareService] double whose [FirmwareService.cancelTask] blocks until
+/// the test completes [cancelGate] — the in-flight cancellation shape.
+class _CancelService extends FirmwareService {
+  _CancelService() : super(client: null, systemId: 'bmc1');
+
+  /// Completes the pending `cancelTask` when the test is ready.
+  final Completer<bool> cancelGate = Completer<bool>();
+
+  /// URIs passed to [FirmwareService.cancelTask], in call order.
+  final List<String> cancelledUris = <String>[];
+
+  @override
+  Future<bool> cancelTask(String taskUri) {
+    cancelledUris.add(taskUri);
+    return cancelGate.future;
   }
 }

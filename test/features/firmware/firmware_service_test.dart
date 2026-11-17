@@ -631,6 +631,176 @@ void main() {
         );
       });
     });
+
+    group('FirmwareService.cancelTask + error resilience (#008)', () {
+      const String taskUri = '/redfish/v1/TaskService/Tasks/545';
+
+      RedfishClient clientFor(String host, DioAdapter adapter) => RedfishClient(
+            profile: ConnectionProfile(host: host, name: host),
+            dio: adapter.dio,
+          );
+
+      DioAdapter adapterFor(String host) => DioAdapter(
+            dio: Dio(BaseOptions(baseUrl: 'https://$host:443')),
+            matcher: const _PathMatcher(),
+          );
+
+      test('DELETEs the task monitor and reports success', () async {
+        final DioAdapter adapter = adapterFor('bmc-cancel.local');
+        adapter.onDelete(
+          taskUri,
+          (server) => server.reply(204, <String, dynamic>{}),
+        );
+        final FirmwareService svc = FirmwareService(
+          client: clientFor('bmc-cancel.local', adapter),
+          systemId: 'bmc-cancel',
+        );
+        expect(await svc.cancelTask(taskUri), isTrue);
+      });
+
+      test('treats a 404 (task already gone) as an idempotent success',
+          () async {
+        final DioAdapter adapter = adapterFor('bmc-cancel404.local');
+        adapter.onDelete(
+          taskUri,
+          (server) => server.reply(404, <String, dynamic>{}),
+        );
+        final FirmwareService svc = FirmwareService(
+          client: clientFor('bmc-cancel404.local', adapter),
+          systemId: 'bmc-cancel404',
+        );
+        expect(await svc.cancelTask(taskUri), isTrue);
+      });
+
+      test('bubbles a 401 as an auth error (never masked as a cancel failure)',
+          () async {
+        final DioAdapter adapter = adapterFor('bmc-cancel401.local');
+        adapter.onDelete(
+          taskUri,
+          (server) => server.reply(401, <String, dynamic>{}),
+        );
+        final FirmwareService svc = FirmwareService(
+          client: clientFor('bmc-cancel401.local', adapter),
+          systemId: 'bmc-cancel401',
+        );
+        await expectLater(
+          svc.cancelTask(taskUri),
+          throwsA(
+            isA<RedfishException>()
+                .having((RedfishException e) => e.statusCode, 'statusCode', 401)
+                .having((RedfishException e) => e.isAuthError, 'isAuthError',
+                    isTrue),
+          ),
+        );
+      });
+
+      test('normalizes a server error into a friendly cancel failure',
+          () async {
+        final DioAdapter adapter = adapterFor('bmc-cancel500.local');
+        adapter.onDelete(
+          taskUri,
+          (server) => server.reply(500, <String, dynamic>{}),
+        );
+        final FirmwareService svc = FirmwareService(
+          client: clientFor('bmc-cancel500.local', adapter),
+          systemId: 'bmc-cancel500',
+        );
+        await expectLater(
+          svc.cancelTask(taskUri),
+          throwsA(
+            isA<RedfishException>().having((RedfishException e) => e.message,
+                'message', contains('Failed to cancel')),
+          ),
+        );
+      });
+
+      test('throws NotConnected when there is no client', () async {
+        final FirmwareService svc =
+            FirmwareService(client: null, systemId: 'bmc1');
+        await expectLater(
+          svc.cancelTask(taskUri),
+          throwsA(
+            isA<RedfishException>().having((RedfishException e) => e.errorCode,
+                'errorCode', 'Base.1.0.NotConnected'),
+          ),
+        );
+      });
+
+      test('normalizes a 413 push upload into a friendly image-too-large error',
+          () async {
+        final DioAdapter adapter = adapterFor('bmc-413.local');
+        adapter.onGet(
+          '/redfish/v1/UpdateService',
+          (server) => server.reply(
+            200,
+            <String, dynamic>{
+              '@odata.id': '/redfish/v1/UpdateService',
+              '@odata.type': '#UpdateService.v1_13_0.UpdateService',
+              'Id': 'UpdateService',
+              'ServiceEnabled': true,
+              'HttpPushUri': '/FWUpdate',
+            },
+          ),
+        );
+        adapter.onPost(
+          '/FWUpdate',
+          (server) => server.reply(413, <String, dynamic>{}),
+        );
+        final FirmwareService svc = FirmwareService(
+          client: clientFor('bmc-413.local', adapter),
+          systemId: 'bmc-413',
+        );
+        await expectLater(
+          svc.pushImage(
+            const PushImageRequest(bytes: <int>[1], filename: 'fw.bin'),
+          ),
+          throwsA(
+            isA<RedfishException>()
+                .having((RedfishException e) => e.statusCode, 'statusCode', 413)
+                .having((RedfishException e) => e.errorCode, 'errorCode',
+                    'Base.1.0.PayloadTooLarge')
+                .having((RedfishException e) => e.message, 'message',
+                    contains('too large')),
+          ),
+        );
+      });
+
+      test('rethrows a 401 hit while walking the firmware inventory', () async {
+        final DioAdapter adapter = adapterFor('bmc-inv401.local');
+        adapter.onGet(
+          '/redfish/v1/UpdateService',
+          (server) => server.reply(
+            200,
+            <String, dynamic>{
+              '@odata.id': '/redfish/v1/UpdateService',
+              '@odata.type': '#UpdateService.v1_13_0.UpdateService',
+              'Id': 'UpdateService',
+              'ServiceEnabled': true,
+              'FirmwareInventory': <String, dynamic>{
+                '@odata.id': '/redfish/v1/UpdateService/FirmwareInventory',
+              },
+            },
+          ),
+        );
+        adapter.onGet(
+          '/redfish/v1/UpdateService/FirmwareInventory',
+          (server) => server.reply(401, <String, dynamic>{}),
+        );
+        final FirmwareService svc = FirmwareService(
+          client: clientFor('bmc-inv401.local', adapter),
+          systemId: 'bmc-inv401',
+        );
+        await expectLater(
+          svc.fetchUpdateService(),
+          throwsA(
+            isA<RedfishException>()
+                .having((RedfishException e) => e.statusCode, 'statusCode', 401)
+                .having((RedfishException e) => e.isAuthError, 'isAuthError',
+                    isTrue),
+          ),
+        );
+      });
+    });
   });
 }
 

@@ -9689,3 +9689,18 @@
 - Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
 
 **Issues touched:** #007 (CLOSED)
+
+## 2026-11-17 22:17 UTC — agent:redfish-automation — #008
+
+**Done:**
+- FEATURE #008 (smallest open issue), the task-monitor completion + resilience slice. Baseline green at 726e7bd (analyze 0, 719 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). `FirmwareService.cancelTask(taskUri)` sends `DELETE <taskUri>`: 404 = idempotent success, 401/403 bubble to the auth manager, other failures normalized to a friendly `RedfishException`, no client → NotConnected. `_toFriendly` now maps HTTP 413 to `Base.1.0.PayloadTooLarge`; the two swallowed firmware-inventory catches rethrow `isAuthError`. `FirmwareUiState` gained `pollState` (live `TaskState`) + `cancelling`; controller surfaces both and gained `cancelTask()` (clears handle/result/polling on success, keeps handle + error on failure, no-op without URI). `FirmwareView` task banner now shows a colour-coded `TaskState` badge (live while polling, terminal result after), a `Messages[]` log with `MessageId` fallback, and a capability-gated Cancel control + "Cancelling…" hint, all 320 px-safe. Added 20 tests (7 service, 4 controller, 9 widget incl. 320/800/1300 px). Verify analyze 0 / 739 passed / 1 skipped (+20); firmware `--coverage` 87.4% (651/745); issues validate OK. Checked the gating, coverage, models, widgets, file-picker, fixtures and tests boxes in #008 (issue stays open for maxImageSize/100 MB warn, confirmation dialog and exponential-backoff retry).
+
+**Decisions:**
+- Took the explicit "Next" from the prior #007 closeout run (#008 task timeline + cancel). Kept the increment to the task-monitor lifecycle and resilience rather than starting a second theme (maxImageSize/confirmation/backoff are honest follow-ups). Cancel is a direct `TextButton.icon` (not a modal): it is non-destructive relative to starting an update, keeps the widget test simple, and the handle stays on failure so the user can retry. The `TaskState` badge prefers the terminal result and falls back to the last live `pollState`, so a badge appears both mid-poll and after completion without inventing state the BMC never sent. 404-on-DELETE is treated as success (idempotent cancel — the task is already gone), while 401/403 deliberately bubble (same auth-resilience rule as #007). 413 uses `Base.1.0.PayloadTooLarge` from the mirrored Base 1.24 registry with a friendly message. No production TLS weakened; no new dependency; DOCS anchor gate not re-run (no corpus/manifest change); full EMULATOR re-run skipped (no wire-contract/fixture/`test_integration/`/`tool/` change; <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Advance #008: `maxImageSize` in `UpdateServiceInfo` (parse `MaxImageSize`) + upload-disable/100 MB soft-warn, and a destructive-update confirmation dialog, with tests.
+- Advance #010 hardening (discovery request-count budget, cache TTL/delta polling) with tests, or split/advance #009 via one non-dependency increment.
+- Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
+
+**Issues touched:** #008 (open)

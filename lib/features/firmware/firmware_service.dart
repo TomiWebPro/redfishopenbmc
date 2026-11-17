@@ -24,8 +24,9 @@ import 'package:redfishopenbmc/redfish/models/system_features.dart';
 /// Action-target resolution prefers the discovered [SystemFeatures.raw] tree,
 /// then the live `UpdateService` body, then a known URI built from
 /// [updateServiceUri]. Network failures are normalized into [RedfishException]
-/// using the issue #005 error taxonomy (403 privilege, 409 busy, 400 extended
-/// info).
+/// using the issue #005/#008 error taxonomy (403 privilege, 409 busy, 400
+/// extended info, 413 image-too-large). Long-running tasks can be cancelled
+/// with [cancelTask] (`DELETE <taskUri>`).
 class FirmwareService {
   /// Creates a [FirmwareService] bound to an authenticated [RedfishClient].
   ///
@@ -108,11 +109,15 @@ class FirmwareService {
           final Map<String, dynamic> member = await c.getJson(memberId);
           items.add(FirmwareInventoryItem.fromJson(member,
               id: _lastSegment(memberId)));
-        } on RedfishException {
+        } on RedfishException catch (e) {
+          // Auth failures are never a "missing optional sub-resource" — bubble
+          // them so the auth manager can react (issue #008/#007 resilience).
+          if (e.isAuthError) rethrow;
           // Skip members that cannot be read rather than failing the whole list.
         }
       }
-    } on RedfishException {
+    } on RedfishException catch (e) {
+      if (e.isAuthError) rethrow;
       // Inventory is optional; return the service info without it.
     }
 
@@ -350,6 +355,49 @@ class FirmwareService {
     );
   }
 
+  /// Cancels a queued/running task with `DELETE <taskUri>` (issue #008
+  /// resilience — Redfish `TaskService`/task-monitor cancellation).
+  ///
+  /// A `404` means the task is already gone and is treated as an idempotent
+  /// success (returns `true`); auth failures (401/403) bubble unchanged to the
+  /// auth manager; every other failure is normalized into a friendly
+  /// [RedfishException] preserving the original status/classification.
+  Future<bool> cancelTask(String taskUri) async {
+    final RedfishClient? c = client;
+    if (c == null) {
+      throw RedfishException(
+        message: 'Not connected to "$systemId"; cannot cancel the update '
+            'task.',
+        errorCode: 'Base.1.0.NotConnected',
+      );
+    }
+    if (taskUri.isEmpty) {
+      throw const RedfishException(
+        message: 'No task monitor URI was returned; nothing to cancel.',
+        errorCode: 'Base.1.0.NoTaskMonitor',
+      );
+    }
+
+    try {
+      await c.delete(taskUri);
+      return true;
+    } on RedfishException catch (e) {
+      // The task vanished between the queue response and the cancel — already
+      // cancelled, a harmless idempotent outcome.
+      if (e.statusCode == 404) return true;
+      if (e.isAuthError) rethrow;
+      throw RedfishException(
+        message: 'Failed to cancel update task $taskUri: ${e.message}',
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        retryable: e.retryable,
+        uri: e.uri,
+        details: e.details,
+        raw: e.raw,
+      );
+    }
+  }
+
   ///
   /// Accepts either a decimal number of seconds or an HTTP-date (converted to
   /// a whole number of seconds from now, clamped to `>= 0`). Returns `null`
@@ -560,6 +608,18 @@ class FirmwareService {
         statusCode: 400,
         errorCode: details?.code,
         details: details,
+        raw: response.data?.toString(),
+      );
+    }
+    if (status == 413) {
+      // DSP0266 Base registry `PayloadTooLarge` (HTTP 413): the image exceeds
+      // the service's maximum. Give a friendly, actionable message (issue
+      // #008 resilience) instead of a bare "HTTP 413".
+      return RedfishException(
+        message: 'The firmware image is too large for the service to accept.',
+        statusCode: 413,
+        errorCode: 'Base.1.0.PayloadTooLarge',
+        details: RedfishError.tryParse(response.data),
         raw: response.data?.toString(),
       );
     }

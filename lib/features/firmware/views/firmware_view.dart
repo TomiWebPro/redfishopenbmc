@@ -79,6 +79,17 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
   /// disable condition for both push-upload controls.
   bool _isBusy(FirmwareUiState ui) => ui.loading || ui.uploading;
 
+  /// A queued/running task with a known monitor URI can be cancelled (issue
+  /// #008). A terminal [FirmwareUiState.lastResult], a missing URI, or an
+  /// in-flight cancellation hide the Cancel control.
+  bool _taskCancellable(FirmwareUiState ui) {
+    final String? uri = ui.lastTask?.taskUri;
+    return uri != null &&
+        uri.isNotEmpty &&
+        ui.lastResult == null &&
+        !ui.cancelling;
+  }
+
   /// The renderable apply-time options for the push-upload card: only the
   /// modes the service itself advertises (`HttpPushUriOptions.
   /// HttpPushUriApplyTime.ApplyTime@Redfish.AllowableValues`), never an
@@ -319,41 +330,81 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                 if (ui.lastTask != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 12),
-                    child: Semantics(
-                      container: true,
-                      excludeSemantics: true,
-                      label: _taskLabel(ui),
-                      child: Row(
-                        children: <Widget>[
-                          if (ui.polling) ...<Widget>[
-                            const SizedBox.square(
-                              dimension: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          Expanded(
-                            child: Text(
-                              _taskText(ui),
-                              style: TextStyle(
-                                color: ui.lastResult != null
-                                    ? Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant
-                                    : Theme.of(context).colorScheme.primary,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Semantics(
+                          container: true,
+                          excludeSemantics: true,
+                          label: _taskLabel(ui),
+                          child: Row(
+                            children: <Widget>[
+                              if (ui.polling) ...<Widget>[
+                                const SizedBox.square(
+                                  dimension: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  _taskText(ui),
+                                  style: TextStyle(
+                                    color: ui.lastResult != null
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant
+                                        : Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
                               ),
-                            ),
+                              if (ui.lastResult != null &&
+                                  ui.lastResult!.isSuccess)
+                                const SizedBox(width: 8),
+                              if (ui.lastResult != null &&
+                                  ui.lastResult!.isSuccess)
+                                Icon(
+                                  Icons.check_circle_outline,
+                                  size: 18,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                            ],
                           ),
-                          if (ui.lastResult != null && ui.lastResult!.isSuccess)
-                            const SizedBox(width: 8),
-                          if (ui.lastResult != null && ui.lastResult!.isSuccess)
-                            Icon(
-                              Icons.check_circle_outline,
-                              size: 18,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
+                        ),
+                        // Live/terminal TaskState badge (issue #008). The
+                        // terminal result wins; while polling we show the
+                        // monitor's last non-terminal state string.
+                        if (_taskBadgeState(ui) != null) ...<Widget>[
+                          const SizedBox(height: 6),
+                          _TaskStateBadge(
+                            state: _taskBadgeState(ui)!,
+                            isSuccess: ui.lastResult?.isSuccess ?? false,
+                            isFailed: ui.lastResult?.isFailed ?? false,
+                          ),
                         ],
-                      ),
+                        if (_taskCancellable(ui)) ...<Widget>[
+                          const SizedBox(height: 2),
+                          TextButton.icon(
+                            onPressed: () => controller.cancelTask(),
+                            icon: const Icon(Icons.cancel_outlined, size: 18),
+                            label: const Text('Cancel update task'),
+                          ),
+                        ],
+                        if (ui.cancelling && ui.lastResult == null)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 4),
+                            child: Text('Cancelling update task…'),
+                          ),
+                        // Normalized task Messages[] log (issue #008) — shown
+                        // once the monitor reaches a terminal state with
+                        // messages; wrapped so 320 px never overflows.
+                        if (ui.lastResult != null &&
+                            ui.lastResult!.messages.isNotEmpty) ...<Widget>[
+                          const SizedBox(height: 6),
+                          _TaskMessagesLog(messages: ui.lastResult!.messages),
+                        ],
+                      ],
                     ),
                   ),
                 // Task-timeline progress (#008/#020): while the monitor is
@@ -672,6 +723,105 @@ String _taskLabel(FirmwareUiState ui) {
     return 'Update in progress, polling $uri$retry';
   }
   return 'Update queued, $uri$retry';
+}
+
+/// The TaskState string to show in the badge: the terminal result when the
+/// task finished, otherwise the last in-flight monitor state (issue #008).
+String? _taskBadgeState(FirmwareUiState ui) =>
+    ui.lastResult?.state ?? ui.pollState;
+
+/// A compact, colour-coded `TaskState` badge for the firmware task monitor
+/// (issue #008). Success states use the primary container, failures the error
+/// container, in-flight states the secondary container. The whole chip is one
+/// merged semantics node so screen readers announce "Task state Running" in
+/// context instead of a detached status word.
+class _TaskStateBadge extends StatelessWidget {
+  /// Creates a badge for [state].
+  const _TaskStateBadge({
+    required this.state,
+    this.isSuccess = false,
+    this.isFailed = false,
+  });
+
+  /// The `TaskState` value to display (`Completed`, `Running`, …).
+  final String state;
+
+  /// Whether a terminal task succeeded.
+  final bool isSuccess;
+
+  /// Whether a terminal task failed.
+  final bool isFailed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final Color background = isSuccess
+        ? colors.primaryContainer
+        : isFailed
+            ? colors.errorContainer
+            : colors.secondaryContainer;
+    final Color foreground = isSuccess
+        ? colors.onPrimaryContainer
+        : isFailed
+            ? colors.onErrorContainer
+            : colors.onSecondaryContainer;
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: 'Task state $state',
+      child: Chip(
+        label: Text(state, style: TextStyle(color: foreground)),
+        backgroundColor: background,
+        visualDensity: VisualDensity.compact,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
+  }
+}
+
+/// The normalized `Messages[]` log of a terminal firmware task (issue #008).
+///
+/// Each entry prefers the human-readable `Message` and falls back to the
+/// machine-readable `MessageId` when a service sends only the id. Long text
+/// wraps rather than overflowing at 320 px.
+class _TaskMessagesLog extends StatelessWidget {
+  /// Creates a log for [messages].
+  const _TaskMessagesLog({required this.messages});
+
+  /// Terminal task messages, in the order the BMC published them.
+  final List<TaskMessage> messages;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Semantics(
+          container: true,
+          excludeSemantics: true,
+          label: 'Task messages: '
+              '${messages.map((TaskMessage m) => m.message ?? m.messageId).join('; ')}',
+          child: ExcludeSemantics(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text('Task messages', style: theme.textTheme.titleSmall),
+                for (final TaskMessage m in messages)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '• ${m.message ?? m.messageId}',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 /// Renders the firmware inventory cards for a [FirmwareUiState.info].

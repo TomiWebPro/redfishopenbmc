@@ -5,7 +5,7 @@ status: open
 priority: P2
 type: feature
 created: 2026-08-26
-updated: 2026-10-26
+updated: 2026-11-17
 closed: null
 assignee: unassigned
 labels: [firmware, update, redfish, jobs]
@@ -40,19 +40,19 @@ estimated_tokens: 45000
   - Actions: `Simple Update` (URI input) + `Upload & Update` (file)
   - Task monitor: `LinearProgressIndicator` + `%` + `TaskState` badge + `Messages` log (auto-poll every 3s while `Running`)
   - Confirmation for destructive update
-- [ ] Gating: discovery rule `firmwareUpdate = UpdateService != null` (`feature_rules.dart` → #003) — no placeholder when absent
+- [x] Gating: discovery rule `firmwareUpdate = UpdateService != null` (`feature_rules.dart` → #003) — no placeholder when absent
 - [ ] Resilience: cancel task (`DELETE /TaskService/Tasks/{id}` or `POST Cancel`), 413 too large, 401 auth, low-bandwidth retry with exponential backoff
 - [ ] Tests: `test/features/firmware/firmware_service_test.dart` — mocked `Dio` for inventory, SimpleUpdate 202+task, multipart upload progress, task polling `Running→Completed`, `Exception` with `Messages`; widget test gated hidden
-- [ ] Coverage ≥80%
+- [x] Coverage ≥80% (firmware feature 87.4%, 651/745 lines, 2026-11-17 run)
 
 ## Tasks
 
-- [ ] Models `FirmwareInventory`, `Task`, `UpdateServiceCaps`
+- [x] Models `FirmwareInventory`, `Task`, `UpdateServiceCaps` (as `FirmwareInventoryItem`, `RedfishTask`/`TaskMessage`, `UpdateServiceInfo`)
 - [ ] Service `FirmwareService` + `TaskPoller` + `UploadProgress` (Riverpod)
-- [ ] Widgets: `FirmwareView`, `InventoryCard`, `UploadArea`, `TaskMonitor`
-- [ ] File picker abstraction (`file_picker` package) with web stub
-- [ ] Fixtures: OpenBMC `UpdateService` + `FirmwareInventory` + `Task` payloads under `test/fixtures/redfish/`
-- [ ] Tests: 6 service + 2 widget
+- [x] Widgets: `FirmwareView`, `InventoryCard`, `UploadArea`, `TaskMonitor` (task banner with state badge + messages log + Cancel)
+- [x] File picker abstraction (injectable `firmwareImagePickerProvider` over `file_selector`)
+- [x] Fixtures: OpenBMC `UpdateService` + `FirmwareInventory` + `Task` payloads under `test/fixtures/redfish/`
+- [x] Tests: 6 service + 2 widget (far exceeded: firmware service/controller/widget suites plus this run's 20 new tests)
 - [ ] Document multipart vs SimpleUpdate decision in code comment
 
 ## Redfish Mapping
@@ -71,6 +71,29 @@ estimated_tokens: 45000
 
 ## Progress Log
 
+- 2026-11-17 — FEATURE run: **the task-monitor completion + resilience slice
+  of #008 landed.** `FirmwareService.cancelTask(taskUri)` sends `DELETE
+  <taskUri>` (Redfish TaskService cancel): a `404` (task already gone) is an
+  idempotent success, 401/403 bubble unchanged to the auth manager, other
+  failures normalize to a friendly `RedfishException`, no client → NotConnected.
+  `_toFriendly` now maps HTTP 413 to `Base.1.0.PayloadTooLarge`
+  ("image is too large to accept"), and the two swallowed firmware-inventory
+  catches rethrow `isAuthError` (401/403) instead of masking an expired session
+  as an empty inventory. `FirmwareUiState` gained `pollState` (live `TaskState`
+  from the monitor's non-terminal snapshots) and `cancelling`; the controller
+  surfaces both and gained `cancelTask()` (clears handle/result/polling on
+  success, keeps the handle + records the error on failure, no-op without a
+  URI). `FirmwareView` task banner now shows a colour-coded `TaskState` badge
+  (live while polling, terminal result on completion), a `Messages[]` log
+  (human `Message` with `MessageId` fallback), a capability-gated "Cancel
+  update task" control with a "Cancelling…" hint, all wrapped so 320 px never
+  overflows. Added 20 tests (7 service cancel/413/401, 4 controller, 9 widget
+  incl. 320/800/1300 px). Full suite 739 passed / 1 skipped (baseline 719 +20);
+  firmware-feature `--coverage` 87.4% (651/745, clears ≥80%). No production TLS
+  touched; no new dependency. Remaining genuine gaps: `maxImageSize` capability
+  + upload-disable/100 MB soft-warn, destructive-update confirmation dialog,
+  generic exponential-backoff retry (the poller honours `Retry-After` + a fixed
+  2 s interval). #008 stays open.
 - 2026-10-26 — EMU run: **the binary/multipart push upload *transport* of #008
   landed (the file-picker + apply-time selection + task-timeline UI remain)**.
   `PushImageRequest` (bytes, filename, contentType, applyTime, targets) +
