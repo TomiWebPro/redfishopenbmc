@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:redfishopenbmc/features/sensors/models/reading_history.dart';
 import 'package:redfishopenbmc/features/sensors/models/sensor_models.dart';
 import 'package:redfishopenbmc/features/sensors/sensors_controller.dart';
 import 'package:redfishopenbmc/features/sensors/sensors_providers.dart';
+import 'package:redfishopenbmc/features/sensors/views/sensor_telemetry_widgets.dart';
 import 'package:redfishopenbmc/features/systems/models/system_snapshot.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
@@ -240,7 +242,7 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
       children: <Widget>[
         if (alerts.isNotEmpty) _AlertBanner(alerts: alerts),
         for (final ChassisSensors chassis in ui.chassis)
-          _ChassisCard(chassis: chassis),
+          _ChassisCard(chassis: chassis, history: ui.history),
       ],
     );
   }
@@ -249,10 +251,13 @@ class _SensorsViewState extends ConsumerState<SensorsView> {
 /// A single chassis card grouping its temperatures, fans, and sensors.
 class _ChassisCard extends StatelessWidget {
   /// Creates a [_ChassisCard].
-  const _ChassisCard({required this.chassis});
+  const _ChassisCard({required this.chassis, required this.history});
 
   /// The telemetry for one chassis.
   final ChassisSensors chassis;
+
+  /// Per-sensor recent-reading series (key → oldest-first samples).
+  final Map<String, List<double>> history;
 
   @override
   Widget build(BuildContext context) {
@@ -291,7 +296,12 @@ class _ChassisCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               for (final ThermalReading t in chassis.thermal)
-                _TemperatureTile(t),
+                _TemperatureTile(
+                  t,
+                  series:
+                      history[thermalSeriesKey(chassis.chassisId, t.name)] ??
+                          const <double>[],
+                ),
               const SizedBox(height: 12),
             ],
             if (chassis.fans.isNotEmpty) ...<Widget>[
@@ -303,7 +313,12 @@ class _ChassisCard extends StatelessWidget {
                     Text('Fans', style: Theme.of(context).textTheme.titleSmall),
               ),
               const SizedBox(height: 4),
-              for (final FanReading f in chassis.fans) _FanTile(f),
+              for (final FanReading f in chassis.fans)
+                _FanTile(
+                  f,
+                  series: history[fanSeriesKey(chassis.chassisId, f.name)] ??
+                      const <double>[],
+                ),
               const SizedBox(height: 12),
             ],
             if (chassis.sensors.isNotEmpty) ...<Widget>[
@@ -315,7 +330,12 @@ class _ChassisCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleSmall),
               ),
               const SizedBox(height: 4),
-              for (final SensorReading s in chassis.sensors) _SensorTile(s),
+              for (final SensorReading s in chassis.sensors)
+                _SensorTile(
+                  s,
+                  series: history[sensorSeriesKey(chassis.chassisId, s.name)] ??
+                      const <double>[],
+                ),
             ],
           ],
         ),
@@ -324,13 +344,16 @@ class _ChassisCard extends StatelessWidget {
   }
 }
 
-/// A temperature reading row with health tint and threshold hint.
+/// A temperature reading row with health tint, threshold hint and trend.
 class _TemperatureTile extends StatelessWidget {
   /// Creates a [_TemperatureTile].
-  const _TemperatureTile(this.reading);
+  const _TemperatureTile(this.reading, {required this.series});
 
   /// The temperature reading to render.
   final ThermalReading reading;
+
+  /// Recent readings for this sensor (oldest first).
+  final List<double> series;
 
   @override
   Widget build(BuildContext context) {
@@ -343,6 +366,10 @@ class _TemperatureTile extends StatelessWidget {
       if (reading.upperCritical != null)
         'crit ${reading.upperCritical!.toStringAsFixed(0)}',
     ];
+    final bool hasThreshold = reading.lowerCritical != null ||
+        reading.lowerCaution != null ||
+        reading.upperCaution != null ||
+        reading.upperCritical != null;
     // UI-2: the merged label carries the same threshold context sighted users
     // get from the subtitle (the tile is one self-describing announcement —
     // `excludeSemantics` drops the inner Text, so the label must include it).
@@ -353,23 +380,52 @@ class _TemperatureTile extends StatelessWidget {
       container: true,
       excludeSemantics: true,
       label: announced,
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(reading.name),
-        subtitle: thresholds.isNotEmpty ? Text(thresholds.join(' / ')) : null,
-        trailing: _HealthChip(health: reading.status.healthEnum, label: value),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(reading.name),
+            subtitle:
+                thresholds.isNotEmpty ? Text(thresholds.join(' / ')) : null,
+            trailing:
+                _HealthChip(health: reading.status.healthEnum, label: value),
+          ),
+          if (series.length >= 2 || hasThreshold)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: <Widget>[
+                  SensorSparkline(values: series),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ThresholdBar(
+                      value: reading.readingCelsius,
+                      lowerCritical: reading.lowerCritical,
+                      lowerCaution: reading.lowerCaution,
+                      upperCaution: reading.upperCaution,
+                      upperCritical: reading.upperCritical,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
 }
 
-/// A fan reading row.
+/// A fan reading row with physical context and trend.
 class _FanTile extends StatelessWidget {
   /// Creates a [_FanTile].
-  const _FanTile(this.reading);
+  const _FanTile(this.reading, {required this.series});
 
   /// The fan reading to render.
   final FanReading reading;
+
+  /// Recent readings for this sensor (oldest first).
+  final List<double> series;
 
   @override
   Widget build(BuildContext context) {
@@ -386,25 +442,50 @@ class _FanTile extends StatelessWidget {
       container: true,
       excludeSemantics: true,
       label: announced,
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(reading.name),
-        subtitle: reading.physicalContext != null
-            ? Text(reading.physicalContext!)
-            : null,
-        trailing: _HealthChip(health: reading.status.healthEnum, label: value),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(reading.name),
+            subtitle: reading.physicalContext != null
+                ? Text(reading.physicalContext!)
+                : null,
+            trailing:
+                _HealthChip(health: reading.status.healthEnum, label: value),
+          ),
+          if (series.length >= 2 || reading.upperCritical != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: <Widget>[
+                  SensorSparkline(values: series),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ThresholdBar(
+                      value: reading.reading,
+                      upperCritical: reading.upperCritical,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
 }
 
-/// A generic sensor reading row.
+/// A generic sensor reading row with type, thresholds and trend.
 class _SensorTile extends StatelessWidget {
   /// Creates a [_SensorTile].
-  const _SensorTile(this.reading);
+  const _SensorTile(this.reading, {required this.series});
 
   /// The sensor reading to render.
   final SensorReading reading;
+
+  /// Recent readings for this sensor (oldest first).
+  final List<double> series;
 
   @override
   Widget build(BuildContext context) {
@@ -428,14 +509,39 @@ class _SensorTile extends StatelessWidget {
       container: true,
       excludeSemantics: true,
       label: announced,
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(reading.name),
-        subtitle: Text(<String>[
-          if (reading.readingType != null) reading.readingType!,
-          if (thresholds.isNotEmpty) thresholds.join(' / '),
-        ].join(' · ')),
-        trailing: _HealthChip(health: reading.status.healthEnum, label: value),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(reading.name),
+            subtitle: Text(<String>[
+              if (reading.readingType != null) reading.readingType!,
+              if (thresholds.isNotEmpty) thresholds.join(' / '),
+            ].join(' · ')),
+            trailing:
+                _HealthChip(health: reading.status.healthEnum, label: value),
+          ),
+          if (series.length >= 2 || reading.thresholds.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: <Widget>[
+                  SensorSparkline(values: series),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ThresholdBar(
+                      value: reading.reading,
+                      lowerCritical: reading.thresholds['LowerCritical'],
+                      lowerCaution: reading.thresholds['LowerCaution'],
+                      upperCaution: reading.thresholds['UpperCaution'],
+                      upperCritical: reading.thresholds['UpperCritical'],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

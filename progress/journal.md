@@ -9554,3 +9554,18 @@
 - Split/advance #009/#021 only via non-dependency slices — no WebView/protocol dep, no production TLS weakening; #021 remains blocked on platform/TLS validation.
 
 **Issues touched:** #007 (open)
+
+## 2026-11-17 16:29 UTC — agent:redfish-automation — #007
+
+**Done:**
+- FEATURE #007 (smallest open issue) telemetry-visualization slice (baseline green at 10adcfe: analyze 0, 629 passed / 1 skipped, issues validate OK; known untracked `testing/` and pre-existing stash left untouched). Added pure-Dart `ReadingHistory` (fixed-capacity oldest-first FIFO with min/max/latest) + `SensorHistoryStore` (per-sensor ring buffers keyed by kind+chassis+name, one sample per poll, history retained when a reading is absent) in `lib/features/sensors/models/reading_history.dart`. `SensorsController` records each successful `fetchAll()` into the store and publishes an immutable `SensorsUiState.history` snapshot; `SensorsView` temp/fan/generic tiles now draw a dependency-free `SensorSparkline` (CustomPainter) and a `ThresholdBar` (green/amber/red bands + reading marker) from `lib/features/sensors/views/sensor_telemetry_widgets.dart`. Added 7 model unit tests, 7 widget tests (sparkline/bar states + 320/800/1300px no-overflow) and 1 controller→sparkline integration test (series grows across two polls).
+
+**Decisions:**
+- Chose the concrete "mini sparkline (last 20 polls, ring buffer)" + "threshold range bar" per-tile acceptance parts rather than adding a charting dependency: both visuals are bounded CustomPainters, kept inside each tile's existing merged-semantics node (`excludeSemantics: true`) so all prior a11y label assertions still hold, and only render when there is ≥2 samples or a real threshold (so existing single-poll tests are unaffected). History is accumulated in the controller (mutable store) and published as an immutable snapshot to keep Riverpod state semantics clean. Checked the per-tile and alert-banner acceptance sub-boxes; issue stays open for fl_chart/LineChart perf, polling background-backoff and delta-rebuild. DOCS anchor gate not re-run (no corpus/manifest change, mirror queue EMPTY); full EMULATOR re-run skipped (no fixture/test_integration/tool contract change; emulator wire surface untouched; <7 days since last green run 2026-11-16 05:27 UTC).
+
+**Next:**
+- Continue #007: background-polling backoff (30s when hidden) and delta-rebuild only when a reading changed, using the new history snapshot; add fl_chart/LineChart only if a dependency is justified.
+- Advance #008 firmware task-polling/progress and #010 perf/coverage hardening (discovery request-count budget, cache TTL/delta polling) with tests.
+- Split/advance #009/#021 only via non-dependency slices — no WebView/protocol dep, no production TLS weakening; #021 remains blocked on platform/TLS validation.
+
+**Issues touched:** #007 (open)

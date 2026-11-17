@@ -35,8 +35,8 @@ estimated_tokens: 50000
   - Polling `FutureProvider` every 5–10s when tab visible, backoff to 30s when background; delta: only rebuild tiles whose `Reading` changed
 - [ ] Tab `lib/features/sensors/views/sensors_view.dart` — **only if** `features.sensorMonitoring==true` (else tab hidden, no placeholder):
   - Sections `Temperatures` / `Fans` / `Voltages` (omit empty sections)
-  - Tile per sensor: name, reading + units, health dot, threshold range bar, mini sparkline (last 20 polls, ring buffer)
-  - Alert banner if any sensor `Health==Critical/Warning` or `Reading` breaches `UpperThresholdCritical`
+  - [x] Tile per sensor: name, reading + units, health dot, threshold range bar, mini sparkline (last 20 polls, ring buffer)
+  - [x] Alert banner if any sensor `Health==Critical/Warning` or `Reading` breaches `UpperThresholdCritical`
   - Pull-to-refresh + last-updated timestamp
 - [ ] Charts: `fl_chart` `LineChart` per sensor (or single combined chart toggle); lazy-build, no jank on 20 sensors × 60 points
 - [ ] Threshold coloring: `OK→green`, `Warning→amber` (breaches `NonCritical`), `Critical→red` (breaches `Critical`), grey if `Reading==null`
@@ -83,6 +83,22 @@ estimated_tokens: 50000
   Baseline analyze 0 / 619 passed / 1 skipped; verify analyze 0 / 629 passed /
   1 skipped (10 new tests). Issue stays open: sparkline/ring-buffer, threshold
   range bar, fl_chart and polling delta-rebuild acceptance boxes remain.
+- 2026-11-17 16:29 UTC (run, agent:redfish-automation) — FEATURE slice:
+  implemented the "mini sparkline (last 20 polls, ring buffer)" and "threshold
+  range bar" parts of the per-sensor tile acceptance box. Added pure-Dart
+  `ReadingHistory` (fixed-capacity FIFO, oldest-first, min/max/latest) and
+  `SensorHistoryStore` (per-sensor series keyed by kind+chassis+name, records one
+  sample per poll, retains history when a reading is absent) in
+  `models/reading_history.dart`. `SensorsController` now feeds every successful
+  poll into the store and publishes an immutable `SensorsUiState.history`
+  snapshot; `SensorsView` tiles draw a dependency-free `SensorSparkline`
+  (CustomPainter) and a `ThresholdBar` (green/amber/red bands + reading marker)
+  from `views/sensor_telemetry_widgets.dart`. Added 7 ring-buffer/store unit
+  tests, 7 widget tests (sparkline/bar states + 320/800/1300px no-overflow) and
+  1 controller→sparkline integration test (series grows across two polls).
+  Checked the per-tile and alert-banner acceptance sub-boxes; issue stays open
+  because fl_chart/LineChart perf, polling background-backoff and delta-rebuild
+  boxes remain.
 
 ## References
 
