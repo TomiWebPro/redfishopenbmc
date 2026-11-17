@@ -71,39 +71,76 @@ PowerController _fakeController() => PowerController(
     );
 
 void main() {
+  Future<void> pumpPowerView(
+    WidgetTester tester, {
+    required Size size,
+    double textScale = 2.0,
+  }) async {
+    final SystemManager manager = _buildManager();
+    await manager.addProfile(
+      const ConnectionProfile(id: 'bmc1', host: 'h', name: 'Rack BMC 1'),
+    );
+    await manager.connect('bmc1');
+
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          systemManagerProvider.overrideWith((ref) => manager),
+          powerControllerProvider(
+            'bmc1',
+          ).overrideWith((ref) => _fakeController()),
+        ],
+        child: MaterialApp(
+          home: MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+            child: const Scaffold(body: PowerView(systemId: 'bmc1')),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
   testWidgets(
     'PowerView supports 200% text scaling without overflow at 400px',
     (WidgetTester tester) async {
-      final SystemManager manager = _buildManager();
-      await manager.addProfile(
-        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'Rack BMC 1'),
-      );
-      await manager.connect('bmc1');
-
-      tester.view.physicalSize = const Size(400, 1000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: <Override>[
-            systemManagerProvider.overrideWith((ref) => manager),
-            powerControllerProvider('bmc1')
-                .overrideWith((ref) => _fakeController()),
-          ],
-          child: const MaterialApp(
-            home: MediaQuery(
-              data: MediaQueryData(textScaler: TextScaler.linear(2.0)),
-              child: Scaffold(body: PowerView(systemId: 'bmc1')),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await pumpPowerView(tester, size: const Size(400, 1000));
 
       expect(find.text('Power On'), findsOneWidget);
       expect(find.text('Force Off'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'Destructive actions (force off, restart) require confirmation. '
+          'State refreshes automatically after a reset.',
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'PowerView supports 200% text scaling without overflow at 800px',
+    (WidgetTester tester) async {
+      await pumpPowerView(tester, size: const Size(800, 1000));
+
+      expect(find.text('Power On'), findsOneWidget);
+      expect(find.text('Graceful Restart'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'PowerView supports 200% text scaling without overflow at 1400px',
+    (WidgetTester tester) async {
+      await pumpPowerView(tester, size: const Size(1400, 1000));
+
+      expect(find.text('Force Restart'), findsOneWidget);
       expect(
         find.bySemanticsLabel(
           'Destructive actions (force off, restart) require confirmation. '
