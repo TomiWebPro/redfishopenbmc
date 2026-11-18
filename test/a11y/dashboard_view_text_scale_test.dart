@@ -198,6 +198,35 @@ void main() {
   );
 
   testWidgets(
+    'DashboardView populated state supports 200% text scaling without overflow at 320px',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(320, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemManagerProvider.overrideWith((ref) => _populatedManager()),
+          ],
+          child: const MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(textScaler: TextScaler.linear(2.0)),
+              child: DashboardView(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Rack Server 1'), findsWidgets);
+      expect(find.text('Rack Server 2'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'DashboardView populated state supports 200% text scaling without overflow at 800px',
     (WidgetTester tester) async {
       tester.view.physicalSize = const Size(800, 1200);

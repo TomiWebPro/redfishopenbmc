@@ -125,6 +125,17 @@ void main() {
   );
 
   testWidgets(
+    'PowerView supports 200% text scaling without overflow at 320px',
+    (WidgetTester tester) async {
+      await pumpPowerView(tester, size: const Size(320, 1000));
+
+      expect(find.text('Power On'), findsOneWidget);
+      expect(find.text('Force Off'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'PowerView supports 200% text scaling without overflow at 800px',
     (WidgetTester tester) async {
       await pumpPowerView(tester, size: const Size(800, 1000));

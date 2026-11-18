@@ -59,6 +59,38 @@ void main() {
   );
 
   testWidgets(
+    'KvmView supports 200% text scaling without overflow at 320px',
+    (WidgetTester tester) async {
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState();
+
+      tester.view.physicalSize = const Size(320, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle()),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(textScaler: TextScaler.linear(2.0)),
+              child: KvmView(systemId: 'bmc1'),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.bySemanticsLabel('No consoles found.'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'KvmView supports 200% text scaling without overflow at 800px',
     (WidgetTester tester) async {
       final KvmController controller = _StubController()

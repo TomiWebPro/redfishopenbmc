@@ -65,6 +65,19 @@ void main() {
   );
 
   testWidgets(
+    'SensorsView supports 200% text scaling without overflow at 320px',
+    (WidgetTester tester) async {
+      await pumpAtWidth(tester, 320);
+
+      expect(
+        find.bySemanticsLabel('No sensor data available'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'SensorsView supports 200% text scaling without overflow at 800px',
     (WidgetTester tester) async {
       await pumpAtWidth(tester, 800);

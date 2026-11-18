@@ -9839,3 +9839,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration change or >7 days.
 
 **Issues touched:** #010 (open)
+
+## 2026-11-18 04:31 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 (smallest open issue, P2) — closed the 320px adaptive-layout coverage gap. Baseline green at d6f835a (analyze 0, 801 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Runbook §5 requires no-overflow checks at 320/800/1300px, but all a11y text-scale tests only covered 400/800/1400. Added 200%-text-scaling no-overflow widget tests at 320px for all main views: Dashboard (populated grid), Overview (populated grid), Sensors (empty), Firmware (discovery-pending), KVM (empty), Power, and SystemProfileForm — 7 new tests, all pass with no overflow. Checked #010's "Adaptive layout verification" box (widget tests now span 320/400/800/1400 for every main view). Verify: analyze 0; flutter test 808 passed / 1 skipped (801 +7); issues validate OK.
+
+**Decisions:**
+- Kept this a pure verification increment: every 320px case passed, so no production layout change was warranted — the existing Dashboard fixed-extent grid, Overview single-column natural-height path, and scrollable columns already handle 320px; manufacturing a layout change would have been churn. Skipped the "redact KVM Copied-URI SnackBar" idea after seeing the full connect URI is already displayed adjacently via `SelectableText`, so SnackBar-only redaction would be cosmetic, not a real credential hardening. No production TLS weakened; no new dependency; DOCS anchor gate not re-run (no corpus/manifest change); full EMULATOR re-run skipped (only `test/a11y/` widget tests changed — no wire/fixture/`test_integration/`/`tool/` change, <7 days since last green 2026-11-18 03:54 UTC). Issue stays OPEN (golden/screenshot + focus-semantics slices remain).
+
+**Next:**
+- Continue #010 remaining golden/screenshot light-dark checks (Overview/Dashboard at mobile/tablet/desktop) and focus-semantics/touch-target coverage with widget tests.
+- Advance #021 / #009 via non-dependency KVM slices only — no WebView/protocol dep, no production TLS weakening.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on wire/fixture/test_integration change or >7 days.
+
+**Issues touched:** #010 (open — adaptive-layout verification box closed)
