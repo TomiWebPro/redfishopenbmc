@@ -284,4 +284,177 @@ void main() {
       expect(noUri.usesInsecureHttpLaunchUri, isFalse);
     });
   });
+
+  group('KvmConsole HTML5 connect-type matching (#021)', () {
+    KvmConsole consoleWithTypes(
+      List<String> types, {
+      String uri = 'https://bmc.example.com/kvm',
+    }) =>
+        KvmConsole(
+          type: KvmConsoleType.remote,
+          managerId: 'BMC',
+          connectTypesSupported: types,
+          serviceEnabled: true,
+          connectUri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+
+    // RED proof: before the case-insensitive/trimmed fix, a BMC emitting
+    // 'html5' (lowercase) or ' HTML5 ' never matched `supportsHtml5`, so its
+    // HTTPS console silently skipped the in-app HTML5 launch path.
+    test('HTML5 connect type is matched case-insensitively and trimmed (#021)',
+        () {
+      expect(consoleWithTypes(<String>['HTML5']).supportsHtml5, isTrue);
+      expect(consoleWithTypes(<String>['html5']).supportsHtml5, isTrue);
+      expect(consoleWithTypes(<String>[' HTML5 ']).supportsHtml5, isTrue);
+      expect(consoleWithTypes(<String>['html5']).canLaunchInAppHtml5, isTrue);
+      // Case-insensitive matching must NOT bypass the HTTPS-only gate.
+      expect(
+        consoleWithTypes(
+          <String>['html5'],
+          uri: 'http://bmc.example.com/kvm',
+        ).canLaunchInAppHtml5,
+        isFalse,
+        reason: 'looser HTML5 matching must still reject plaintext HTTP',
+      );
+    });
+  });
+
+  group('KvmConsole.launchStrategy (#021)', () {
+    KvmConsole build({
+      List<String> types = const <String>['HTML5'],
+      bool enabled = true,
+      String? uri = 'https://bmc.example.com/kvm',
+    }) =>
+        KvmConsole(
+          type: KvmConsoleType.remote,
+          managerId: 'BMC',
+          connectTypesSupported: types,
+          serviceEnabled: enabled,
+          connectUri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+
+    test('no connect URI resolves to noUri', () {
+      expect(build(uri: null).launchStrategy, KvmLaunchStrategy.noUri);
+    });
+
+    test('disabled service resolves to disabled ahead of transport', () {
+      expect(build(enabled: false).launchStrategy, KvmLaunchStrategy.disabled);
+      expect(
+        build(
+          enabled: false,
+          uri: 'http://bmc.example.com/kvm',
+        ).launchStrategy,
+        KvmLaunchStrategy.disabled,
+        reason: 'a disabled service is decided before transport classification',
+      );
+    });
+
+    test('plaintext HTTP HTML5 resolves to insecureHtml5', () {
+      expect(
+        build(uri: 'http://bmc.example.com/kvm').launchStrategy,
+        KvmLaunchStrategy.insecureHtml5,
+      );
+    });
+
+    test('HTTPS HTML5 resolves to inAppHtml5', () {
+      expect(build().launchStrategy, KvmLaunchStrategy.inAppHtml5);
+    });
+
+    test('external protocol resolves to externalClient', () {
+      expect(
+        build(
+          types: const <String>['KVMIP'],
+          uri: 'vnc://bmc.example.com:5900',
+        ).launchStrategy,
+        KvmLaunchStrategy.externalClient,
+      );
+    });
+
+    test('HTTPS non-HTML5 resolves to secureBrowser (#021)', () {
+      expect(
+        build(types: const <String>['KVMIP']).launchStrategy,
+        KvmLaunchStrategy.secureBrowser,
+      );
+      // A secure-browser suggestion is never offered for plaintext HTTP.
+      expect(
+        build(
+          types: const <String>['KVMIP'],
+          uri: 'http://bmc.example.com/kvm',
+        ).launchStrategy,
+        KvmLaunchStrategy.noUri,
+        reason: 'the app must never suggest an unencrypted browser console',
+      );
+    });
+  });
+
+  group('kvmLaunchStatusText (#021)', () {
+    test('every strategy has distinct, actionable, jargon-free guidance', () {
+      final Set<String> texts = KvmLaunchStrategy.values
+          .map(
+            (KvmLaunchStrategy s) => kvmLaunchStatusText(
+              s,
+              externalProtocol: 'VNC/RFB',
+            ),
+          )
+          .toSet();
+      expect(texts.length, KvmLaunchStrategy.values.length,
+          reason: 'no two strategies should read the same');
+      for (final String text in texts) {
+        expect(text, isNotEmpty);
+        expect(text, isNot(contains('#')));
+        expect(text, isNot(contains('issue')));
+      }
+      expect(
+        kvmLaunchStatusText(
+          KvmLaunchStrategy.externalClient,
+          externalProtocol: 'VNC/RFB',
+        ),
+        contains('VNC/RFB client'),
+      );
+    });
+
+    test('new guidance names the real blocker for disabled/secure consoles',
+        () {
+      final String disabled = kvmLaunchStatusText(KvmLaunchStrategy.disabled);
+      expect(disabled, contains('disabled on the BMC'));
+      expect(disabled, contains('Enable it'));
+      final String secure =
+          kvmLaunchStatusText(KvmLaunchStrategy.secureBrowser);
+      expect(secure, contains('HTTPS'));
+      expect(secure, contains('secure web browser'));
+    });
+
+    test('existing guidance is preserved verbatim for the original branches',
+        () {
+      expect(
+        kvmLaunchStatusText(KvmLaunchStrategy.inAppHtml5),
+        'In-app HTML5 console path available for this URI. '
+        'Embedded rendering requires a WebView dependency. '
+        'You can open this URI in a web browser if your BMC allows it.',
+      );
+      expect(
+        kvmLaunchStatusText(KvmLaunchStrategy.insecureHtml5),
+        'This HTML5 console uses an unencrypted HTTP connection. '
+        'In-app rendering is disabled to keep console video and input '
+        'encrypted. Configure the BMC console to use HTTPS before '
+        'opening it in a browser.',
+      );
+      expect(
+        kvmLaunchStatusText(
+          KvmLaunchStrategy.externalClient,
+          externalProtocol: 'VNC/RFB',
+        ),
+        'This console URI uses a protocol that requires an external '
+        'VNC/RFB client. Embedded rendering is not available in-app. '
+        'Copy the URI and open it with a compatible client.',
+      );
+      expect(
+        kvmLaunchStatusText(KvmLaunchStrategy.noUri),
+        'In-app embedded rendering is not available for this console. '
+        'Use the URI externally if provided.',
+      );
+    });
+  });
 }

@@ -21,40 +21,25 @@ class KvmConsoleViewerPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final String? uri = console.launchUri;
-    final bool insecureHtml5 =
-        console.supportsHtml5 && console.usesInsecureHttpLaunchUri;
-    final bool html5 = console.canLaunchInAppHtml5;
-    final bool externalClient = console.requiresExternalConsoleClient;
-    final String externalProtocol =
-        console.externalClientProtocolLabel ?? 'external console';
     // UI-2 / a11y: the status card uses `excludeSemantics`, so this ONE message
     // is both the visible text and the announced Semantics label. Keeping a
     // single source of truth guarantees screen-reader users hear exactly the
     // same actionable guidance as sighted users (previously the announced label
     // was shorter and silently dropped the "open in a browser" / "copy the URI"
     // steps). No internal issue references in user-facing copy.
+    // #021: the strategy is resolved once in the model (deterministic priority:
+    // no URI → disabled → insecure HTML5 → in-app HTML5 → external client →
+    // secure browser) and the guidance is produced by one pure resolver, so the
+    // viewer cannot disagree with the model's launch decision.
+    final KvmLaunchStrategy strategy = console.launchStrategy;
+    final String statusText = kvmLaunchStatusText(
+      strategy,
+      externalProtocol: console.externalClientProtocolLabel,
+    );
     // Security (#021): a plaintext-HTTP HTML5 console is never an in-app render
-    // candidate. Surface that explicitly (rather than the generic fallback) so
-    // operators are told to enable HTTPS instead of assuming the app supports
-    // an unencrypted console. The message is also styled as an error for a
-    // visual cue; it never weakens the app's TLS posture.
-    final String statusText = insecureHtml5
-        ? 'This HTML5 console uses an unencrypted HTTP connection. '
-            'In-app rendering is disabled to keep console video and input '
-            'encrypted. Configure the BMC console to use HTTPS before '
-            'opening it in a browser.'
-        : html5
-            ? 'In-app HTML5 console path available for this URI. '
-                'Embedded rendering requires a WebView dependency. '
-                'You can open this URI in a web browser if your BMC allows it.'
-            : externalClient
-                ? 'This console URI uses a protocol that requires an external '
-                    '$externalProtocol client. Embedded rendering is not '
-                    'available in-app. Copy the URI and open it with a '
-                    'compatible client.'
-                : 'In-app embedded rendering is not available for this console. '
-                    'Use the URI externally if provided.';
-    final TextStyle? statusStyle = insecureHtml5
+    // candidate — colour its warning as an error for a visual cue, without ever
+    // weakening the app's TLS posture.
+    final TextStyle? statusStyle = strategy == KvmLaunchStrategy.insecureHtml5
         ? theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.error, fontWeight: FontWeight.w600)
         : theme.textTheme.bodyMedium;

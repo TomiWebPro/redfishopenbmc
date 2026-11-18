@@ -9959,3 +9959,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #021 (open — HTTPS-only in-app rendering gating slice)
+
+## 2026-11-18 09:31 UTC — agent:redfish-automation — #021
+
+**Done:**
+- FEATURE #021 (highest-priority open issue, P2) — non-dependency, TLS-safe slice: centralised KVM launch decisions into `KvmLaunchStrategy` + `KvmConsole.launchStrategy` and one pure `kvmLaunchStatusText()` resolver used as the viewer's single visible/announced status string. Priority: no URI → disabled → plaintext-HTTP HTML5 (blocked) → in-app HTML5 (HTTPS) → external protocol client → secure HTTPS non-HTML5 browser → fallback. Added the two missing guidance branches (disabled console; secure-browser for HTTPS non-HTML5), and fixed a real bug: `supportsHtml5` now matches case-insensitively/trimmed so BMCs emitting `html5` / ` HTML5 ` are not silently skipped. Baseline green at fd3ef10 (analyze 0, 861 passed / 1 skipped, issues validate OK; known untracked `testing/` harness + pre-existing stash `stash@{0}: automation-preflight-1793045959` left untouched). Verify: analyze 0; flutter test 873 passed / 1 skipped (+12); DMTF emulator 85/85 (lib/ changed — §1.4 gate); issues validate OK; git diff --check clean.
+
+**Decisions:**
+- Confirmed the case-insensitive HTML5 fix is a genuine RED→GREEN: with the pre-fix `contains('HTML5')` getter restored under a trap, the new test failed (`Expected: true, Actual: <false>`); restored and GREEN. Kept the resolver pure in the model so every branch is unit-testable and the viewer cannot diverge from the launch decision — the established "single source of truth" a11y pattern. The secure-browser branch is offered ONLY for HTTPS URIs; plaintext HTTP is always blocked, so TLS is never weakened. No WebView/protocol dependency added (deferred pending platform + BMC TLS validation). Existing status strings preserved verbatim (10 tests pin them) so the four original branches are behaviour-preserving. No visual layout churn; 320/800/1300 px no-overflow tests pass. Full emulator re-run performed (85/85) because `lib/` changed this run. Issue stays OPEN — "renders in-app" and "dependency added" acceptance boxes remain unmet.
+
+**Next:**
+- Continue #021: platform WebView dependency + BMC TLS/self-signed validation for embedded HTML5 rendering (only when a platform target is available unattended; never weaken TLS).
+- Advance #009 (remote KVM detection/HTML5 console/session handling) via non-dependency slices only.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #021 (open — launch-strategy model + HTML5 matching fix slice)

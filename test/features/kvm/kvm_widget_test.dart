@@ -858,5 +858,56 @@ void main() {
       expect(find.bySemanticsLabel(expected), findsOneWidget);
       expect(find.text(expected), findsOneWidget);
     });
+
+    testWidgets(
+        'disabled console shows an actionable enable-on-BMC status '
+        '(#021)', (tester) async {
+      await pumpViewer(
+        tester,
+        const KvmConsole(
+          type: KvmConsoleType.remote,
+          managerId: 'BMC',
+          connectTypesSupported: <String>['HTML5'],
+          serviceEnabled: false,
+          connectUri: 'https://bmc.example.com/kvm',
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        ),
+      );
+
+      const String expected =
+          'This console service is disabled on the BMC. Enable it in the '
+          'BMC settings before launching a console session.';
+      expect(find.bySemanticsLabel(expected), findsOneWidget,
+          reason: 'a11y: the disabled blocker must be announced');
+      expect(find.text(expected), findsOneWidget);
+      expect(find.textContaining('In-app HTML5 console path available'),
+          findsNothing);
+    });
+
+    testWidgets(
+        'HTTPS non-HTML5 console suggests a secure browser, never '
+        'an in-app or unencrypted path (#021)', (tester) async {
+      await pumpViewer(
+        tester,
+        const KvmConsole(
+          type: KvmConsoleType.graphical,
+          managerId: 'BMC',
+          connectTypesSupported: <String>['KVMIP'],
+          serviceEnabled: true,
+          connectUri: 'https://bmc.example.com/kvm',
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        ),
+      );
+
+      const String expected =
+          'This console uses a secure HTTPS connection. Embedded rendering '
+          'is not available for this console type. Open the URI in a secure '
+          'web browser, or copy it for an external client.';
+      expect(find.bySemanticsLabel(expected), findsOneWidget);
+      expect(find.text(expected), findsOneWidget);
+      expect(find.textContaining('In-app HTML5 console path available'),
+          findsNothing);
+      expect(find.textContaining('unencrypted HTTP connection'), findsNothing);
+    });
   });
 }

@@ -67,6 +67,36 @@ enum KvmConsoleType {
   }
 }
 
+/// The deterministic launch strategy for a [KvmConsole].
+///
+/// A single source of truth for "what can the app do with this console", so the
+/// viewer and any future launch flow cannot disagree. Priority order matters:
+/// an unopenable console (no URI / disabled) is decided before transport
+/// classification, and a plaintext HTTP console is always blocked before any
+/// in-app or browser rendering is offered (issue #021 — never weaken TLS).
+enum KvmLaunchStrategy {
+  /// Enabled HTML5 console with a TLS-encrypted (HTTPS) connect URI — the
+  /// in-app rendering path (still pending a platform WebView dependency).
+  inAppHtml5,
+
+  /// HTML5 console whose connect URI is plaintext HTTP — in-app rendering is
+  /// deliberately blocked with an explicit enable-HTTPS warning.
+  insecureHtml5,
+
+  /// A protocol (VNC/RFB/KVMIP/serial) that needs an external client.
+  externalClient,
+
+  /// A TLS-encrypted HTTPS URI that is not an HTML5 client — safe to suggest
+  /// opening in an external secure browser (never offered for plaintext HTTP).
+  secureBrowser,
+
+  /// The console service is disabled on the BMC (`ServiceEnabled == false`).
+  disabled,
+
+  /// No direct connect URI and no strategy applies.
+  noUri;
+}
+
 /// An immutable view of a single Redfish console service found on a [Manager].
 ///
 /// A manager body may carry a `GraphicalConsole`, `SerialConsole` and/or
@@ -117,7 +147,14 @@ class KvmConsole {
   /// Whether this console advertises an HTML5 web client (`ConnectTypesSupported`
   /// contains `'HTML5'`). HTML5 consoles are typically launched from the BMC
   /// web UI rather than a native client.
-  bool get supportsHtml5 => connectTypesSupported.contains('HTML5');
+  ///
+  /// Redfish canonically spells the value `HTML5`, but some BMCs emit a
+  /// different case or surrounding whitespace; matching case-insensitively
+  /// after trimming keeps the in-app HTML5 launch path from silently skipping
+  /// such consoles (issue #021).
+  bool get supportsHtml5 => connectTypesSupported.any(
+        (String type) => type.trim().toUpperCase() == 'HTML5',
+      );
 
   /// The preferred URI for launching/opening this console.
   ///
@@ -208,6 +245,25 @@ class KvmConsole {
     }
   }
 
+  /// The single, deterministic launch strategy for this console (issue #021).
+  ///
+  /// Decision order: no URI → disabled service → insecure (plaintext HTTP)
+  /// HTML5 → in-app HTML5 (HTTPS) → external-protocol client → secure browser
+  /// (HTTPS, non-HTML5) → no URI fallback. Plaintext HTTP is never offered as a
+  /// browser or in-app render target, so the app cannot weaken BMC TLS.
+  KvmLaunchStrategy get launchStrategy {
+    final String? uri = launchUri;
+    if (uri == null || uri.isEmpty) return KvmLaunchStrategy.noUri;
+    if (!serviceEnabled) return KvmLaunchStrategy.disabled;
+    if (supportsHtml5 && usesInsecureHttpLaunchUri) {
+      return KvmLaunchStrategy.insecureHtml5;
+    }
+    if (canLaunchInAppHtml5) return KvmLaunchStrategy.inAppHtml5;
+    if (requiresExternalConsoleClient) return KvmLaunchStrategy.externalClient;
+    if (hasSecureLaunchUri) return KvmLaunchStrategy.secureBrowser;
+    return KvmLaunchStrategy.noUri;
+  }
+
   /// Builds the list of [KvmConsole]s detected in a Redfish [managerBody].
   ///
   /// [managerId] is the manager's `Id` (used for display). Each standard
@@ -291,6 +347,45 @@ class KvmConsole {
   @override
   String toString() => 'KvmConsole(type=$type, manager=$managerId, '
       'types=$connectTypesSupported, enabled=$serviceEnabled)';
+}
+
+/// Single source of truth for the user-facing guidance shown for a launch
+/// [strategy] (issue #021).
+///
+/// Pure and widget-free so every branch is unit-testable. The caller uses this
+/// exact string as both visible text and Semantics label, keeping the
+/// accessibility tree in lockstep with what sighted users read. Messages are
+/// actionable and free of internal issue references / developer jargon.
+String kvmLaunchStatusText(
+  KvmLaunchStrategy strategy, {
+  String? externalProtocol,
+}) {
+  switch (strategy) {
+    case KvmLaunchStrategy.insecureHtml5:
+      return 'This HTML5 console uses an unencrypted HTTP connection. '
+          'In-app rendering is disabled to keep console video and input '
+          'encrypted. Configure the BMC console to use HTTPS before '
+          'opening it in a browser.';
+    case KvmLaunchStrategy.inAppHtml5:
+      return 'In-app HTML5 console path available for this URI. '
+          'Embedded rendering requires a WebView dependency. '
+          'You can open this URI in a web browser if your BMC allows it.';
+    case KvmLaunchStrategy.externalClient:
+      final String protocol = externalProtocol ?? 'external console';
+      return 'This console URI uses a protocol that requires an external '
+          '$protocol client. Embedded rendering is not available in-app. '
+          'Copy the URI and open it with a compatible client.';
+    case KvmLaunchStrategy.secureBrowser:
+      return 'This console uses a secure HTTPS connection. Embedded rendering '
+          'is not available for this console type. Open the URI in a secure '
+          'web browser, or copy it for an external client.';
+    case KvmLaunchStrategy.disabled:
+      return 'This console service is disabled on the BMC. Enable it in the '
+          'BMC settings before launching a console session.';
+    case KvmLaunchStrategy.noUri:
+      return 'In-app embedded rendering is not available for this console. '
+          'Use the URI externally if provided.';
+  }
 }
 
 /// Returns [value] as a [String] or `null` when it is not a string.
