@@ -10034,3 +10034,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — capability-card/session-note/disabled-helper sub-items done)
+
+## 2026-11-18 12:38 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — closed the remaining **"Coverage ≥75%"** acceptance item by enforcing a dedicated remote-KVM coverage gate. `tool/coverage_gate.dart`: new `kKvmScopePrefixes` (`lib/features/kvm/`), `kKvmThreshold` (0.75), pure `evaluateKvmGate()` (single `GateResult` named `'kvm'`, reuses `CoverageSummary.scope()` normalization) and `evaluateAllGates()` (#010 overall + scoped gates + #009 KVM gate); CLI `main` now enforces all three. `.github/workflows/verify.yml` + `DEVELOPMENT.md` updated. +7 pure-Dart tests in `test/tool/coverage_gate_test.dart` (+16 → +23). Checked #009 coverage box. Baseline green at 335702f (analyze 0, 939 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; flutter test 946 passed / 1 skipped (+7); real-lcov gate PASS overall 89.1% / scoped 90.3% / kvm 92.2%, exit 0; issues validate OK. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Advanced #009's coverage-gate box — the last genuinely-unblocked acceptance item — rather than manufacture #021 getter/guidance churn (its two boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation). Kept the new gate pure Dart and additive: `evaluateGates()` keeps its two-result contract so all existing tests/CI consumers are unchanged; `evaluateKvmGate`/`evaluateAllGates` add the ≥75% KVM threshold independently of the stricter ≥80% #010 scoped gate, matching #009's acceptance value. The KVM scope was already at 92.2% (600/651) from existing tests, so wiring it into the CLI/CI turns an aspirational number into an enforced one rather than padding coverage with artificial tests. Emulator re-run skipped: only a standalone lcov parser changed (no Redfish wire impact), <7 days since last green 85/85. No WebView/protocol dependency; no production TLS weakening; no visual churn (existing 320/800/1300 px no-overflow tests pass).
+
+**Next:**
+- #009/#021 remaining boxes are all externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find a genuine, testable, dependency-free increment or epic triage/split of the blocked rendering work, never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration change or >7 days.
+
+**Issues touched:** #009 (open — coverage box done)

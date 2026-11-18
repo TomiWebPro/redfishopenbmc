@@ -164,6 +164,106 @@ void main() {
     });
   });
 
+  group('remote-KVM coverage gate (#009)', () {
+    test('evaluateKvmGate scopes only features/kvm at the 75% threshold', () {
+      final CoverageSummary summary = parseLcov([
+        record('lib/features/kvm/kvm_service.dart', 100, 76),
+        record('lib/features/kvm/models/kvm_capability.dart', 100, 74),
+        record('lib/features/firmware/firmware_service.dart', 100, 10),
+      ].join('\n'));
+
+      final GateResult gate = evaluateKvmGate(summary);
+
+      expect(gate.name, 'kvm');
+      expect(gate.threshold, kKvmThreshold);
+      expect(kKvmThreshold, 0.75);
+      // KVM union = (76 + 74) / 200 = 75% — exactly at threshold => pass.
+      expect(gate.linesFound, 200);
+      expect(gate.linesHit, 150);
+      expect(gate.passed, isTrue);
+    });
+
+    test('evaluateKvmGate fails below 75% and ignores non-KVM files', () {
+      final CoverageSummary summary = parseLcov([
+        record('lib/features/kvm/kvm_service.dart', 100, 74),
+        record('lib/features/firmware/firmware_service.dart', 100, 100),
+      ].join('\n'));
+
+      final GateResult gate = evaluateKvmGate(summary);
+
+      expect(gate.linesFound, 100); // firmware file not counted
+      expect(gate.passed, isFalse); // 74% < 75%
+    });
+
+    test('evaluateKvmGate honours a custom threshold and prefix set', () {
+      final CoverageSummary summary = parseLcov([
+        record('pkg/a.dart', 10, 9),
+        record('other/b.dart', 10, 0),
+      ].join('\n'));
+
+      final GateResult gate = evaluateKvmGate(
+        summary,
+        threshold: 0.9,
+        prefixes: const <String>['pkg/'],
+      );
+
+      expect(gate.linesFound, 10);
+      expect(gate.threshold, 0.9);
+      expect(gate.passed, isTrue); // 90% meets the custom 90% threshold
+    });
+
+    test('evaluateKvmGate matches absolute and Windows-separated paths', () {
+      final CoverageSummary summary = parseLcov([
+        record('/home/me/app/lib/features/kvm/kvm_service.dart', 10, 8),
+        record(r'lib\features\kvm\views\kvm_view.dart', 10, 8),
+      ].join('\n'));
+
+      final GateResult gate = evaluateKvmGate(summary);
+
+      expect(gate.linesFound, 20);
+      expect(gate.linesHit, 16);
+      expect(gate.passed, isTrue);
+    });
+
+    test('evaluateAllGates enforces the #010 gates plus the #009 KVM gate', () {
+      final CoverageSummary summary = parseLcov([
+        record('lib/redfish/a.dart', 100, 90),
+        record('lib/features/power/b.dart', 100, 90),
+        record('lib/features/sensors/c.dart', 100, 90),
+        record('lib/features/kvm/kvm_service.dart', 100, 90),
+        record('lib/other/d.dart', 100, 90),
+      ].join('\n'));
+
+      final CoverageGateReport report = evaluateAllGates(summary);
+
+      expect(report.results, hasLength(3));
+      expect(
+        report.results.map((GateResult g) => g.name),
+        <String>['overall', 'redfish + power + sensors', 'kvm'],
+      );
+      expect(report.failures, isEmpty);
+      expect(report.passed, isTrue);
+    });
+
+    test('evaluateAllGates fails when only the KVM gate is below threshold',
+        () {
+      final CoverageSummary summary = parseLcov([
+        record('lib/redfish/a.dart', 100, 90),
+        record('lib/features/power/b.dart', 100, 90),
+        record('lib/features/sensors/c.dart', 100, 90),
+        record('lib/features/kvm/kvm_service.dart', 100, 50),
+        record('lib/other/d.dart', 100, 90),
+      ].join('\n'));
+
+      final CoverageGateReport report = evaluateAllGates(summary);
+
+      expect(report.results, hasLength(3));
+      expect(report.failures, hasLength(1));
+      expect(report.failures.single.name, 'kvm');
+      expect(report.passed, isFalse);
+    });
+  });
+
   group('machine-readable report (CI --json mode)', () {
     test('GateResult.toJson exposes pass state, ratios and raw counts', () {
       final Map<String, dynamic> json =
@@ -197,6 +297,29 @@ void main() {
         <String>['overall', 'redfish + power + sensors'],
       );
       expect(results.every((dynamic r) => r['passed'] as bool), isTrue);
+    });
+
+    test('the CLI report (evaluateAllGates) serializes the KVM gate for CI',
+        () {
+      final CoverageGateReport report = evaluateAllGates(parseLcov([
+        record('lib/redfish/a.dart', 100, 90),
+        record('lib/features/power/b.dart', 100, 90),
+        record('lib/features/sensors/c.dart', 100, 90),
+        record('lib/features/kvm/kvm_service.dart', 100, 90),
+      ].join('\n')));
+
+      final Map<String, dynamic> decoded =
+          jsonDecode(jsonEncode(report.toJson())) as Map<String, dynamic>;
+
+      expect(decoded['passed'], isTrue);
+      final List<dynamic> results = decoded['results'] as List<dynamic>;
+      expect(results, hasLength(3));
+      expect(
+        results.map((dynamic r) => r['name'] as String),
+        contains('kvm'),
+      );
+      expect(results.last['name'], 'kvm');
+      expect(results.last['threshold'], 0.75);
     });
 
     test('a failing gate serializes passed:false for CI to read', () {

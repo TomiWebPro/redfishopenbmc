@@ -1,8 +1,10 @@
-/// Line-coverage gate for issue #010's "Testing gate" acceptance criterion.
+/// Line-coverage gate for issue #010's "Testing gate" acceptance criterion
+/// and issue #009's "Coverage ≥75%" remote-KVM acceptance criterion.
 ///
 /// Parses an lcov `lcov.info` file, aggregates line coverage overall and for a
 /// configurable set of high-value source scopes (`lib/redfish/`,
-/// `lib/features/power/`, `lib/features/sensors/`), and enforces thresholds.
+/// `lib/features/power/`, `lib/features/sensors/`), plus the remote-KVM feature
+/// scope (`lib/features/kvm/`), and enforces thresholds.
 ///
 /// The parsing/gating logic is pure Dart with no I/O so it can be unit-tested;
 /// [main] is a thin CLI wrapper that reads a file and sets the process exit
@@ -127,6 +129,17 @@ const List<String> kDefaultScopedPrefixes = <String>[
   'lib/features/sensors/',
 ];
 
+/// Source prefixes identifying the remote-KVM feature (#009) implementation.
+///
+/// Kept separate from [kDefaultScopedPrefixes] because #009's acceptance value
+/// is ≥75%, whereas the #010 high-value scopes are held to a stricter ≥80%.
+const List<String> kKvmScopePrefixes = <String>[
+  'lib/features/kvm/',
+];
+
+/// Minimum line coverage required for the remote-KVM feature (#009).
+const double kKvmThreshold = 0.75;
+
 /// Parses lcov text into a [CoverageSummary].
 ///
 /// Only `SF:`, `LF:` and `LH:` records are used; a record is flushed on
@@ -187,6 +200,39 @@ CoverageGateReport evaluateGates(
   ]);
 }
 
+/// Evaluates the remote-KVM (#009) feature coverage gate.
+///
+/// Returns a single [GateResult] named `'kvm'` so CI artifacts can identify it.
+/// It uses #009's dedicated 75% threshold, independent of the stricter #010
+/// scoped gate, and shares [CoverageSummary.scope]'s path normalization so
+/// relative, absolute and Windows-separated lcov paths all match.
+GateResult evaluateKvmGate(
+  CoverageSummary summary, {
+  double threshold = kKvmThreshold,
+  Iterable<String> prefixes = kKvmScopePrefixes,
+}) {
+  final CoverageSummary scoped = summary.scope(prefixes);
+  return GateResult(
+    'kvm',
+    scoped.totalLinesHit,
+    scoped.totalLinesFound,
+    threshold,
+  );
+}
+
+/// Evaluates every enforced gate: the #010 overall + scoped gates followed by
+/// the #009 remote-KVM gate.
+///
+/// The CLI/CI use this so all three thresholds are enforced in one report; the
+/// narrower [evaluateGates] remains available for callers that only need the
+/// #010 gates (and preserves its two-result contract).
+CoverageGateReport evaluateAllGates(CoverageSummary summary) {
+  return CoverageGateReport(<GateResult>[
+    ...evaluateGates(summary).results,
+    evaluateKvmGate(summary),
+  ]);
+}
+
 /// Default lcov path used when the CLI is called with no positional argument.
 const String kDefaultLcovPath = 'coverage/lcov.info';
 
@@ -243,7 +289,7 @@ Future<void> main(List<String> args) async {
   }
 
   final CoverageSummary summary = parseLcov(input.readAsStringSync());
-  final CoverageGateReport report = evaluateGates(summary);
+  final CoverageGateReport report = evaluateAllGates(summary);
   if (options.json) {
     stdout.writeln(jsonEncode(report.toJson()));
   } else {
