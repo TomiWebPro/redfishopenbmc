@@ -72,17 +72,24 @@ flutter test --coverage
 dart run tool/coverage_gate.dart coverage/lcov.info
 ```
 
+For CI consumers that need machine-readable results, add `--json` to emit a
+single JSON line on stdout (`{"passed":...,"results":[...]}`) — diagnostics and
+the Dart tool's own messages go to stderr, so stdout is safe to pipe into `jq`
+or an artifact archiver. The lcov path defaults to `coverage/lcov.info` when
+omitted; `--json` may appear before or after the path.
+
 Thresholds: **≥75% overall** line coverage and **≥80%** on the high-value
 scopes `lib/redfish/`, `lib/features/power/`, `lib/features/sensors/` (overridable
 in code via `evaluateGates`). Exit code `0` = all gates pass, `1` = a gate
-failed, `2` = lcov file missing (run `--coverage` first). `coverage/lcov.info` is
-`.gitignore`'d and never committed.
+failed, `2` = input error (missing lcov file or unknown flag).
+`coverage/lcov.info` is `.gitignore`'d and never committed.
 
 Last measured (2026-11-18): **overall 88.5%** (5022/5674), **redfish+power+sensors
 90.2%** (2105/2334) — both gates PASS.
 
-> Note: a CI workflow/badge (`README.md`) is still pending; there is no `.github/`
-> workflow in this repo yet, so no badge is shown until one exists.
+These three checks are mirrored in `.github/workflows/verify.yml`, which runs on
+every push to `main` and every pull request; the `README.md` status badge tracks
+its result.
 
 ## Progress tracking contract
 

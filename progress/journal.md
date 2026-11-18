@@ -9809,3 +9809,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on wire/fixture/test_integration change or >7 days.
 
 **Issues touched:** #010 (open)
+
+## 2026-11-18 03:16 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 (smallest open issue, P2) — closed the Testing-gate acceptance box, the explicit "Next" from the prior run. Baseline green at 8a2f77b (analyze 0, 787 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Added `.github/workflows/verify.yml` (push/PR → `flutter pub get`, `flutter analyze`, `flutter test --coverage`, `dart run tool/coverage_gate.dart coverage/lcov.info`; pinned major-version actions, `contents: read`, no secrets) and replaced the stale "Planning phase" README status with the workflow badge + a description of the three checks. Made the coverage gate CI-ready: `GateResult.toJson()` / `CoverageGateReport.toJson()`, a pure `parseGateCliArgs()` (`--json`, one positional path, loud `ArgumentError` → exit 2) and a `--json` CLI mode whose stdout is one parseable JSON line (Dart diagnostics on stderr). Added 6 tests (+10 → +16 tool tests). End-to-end real lcov: text PASS 88.5%/90.2% (exit 0), JSON valid (exit 0), bad flag exit 2. DEVELOPMENT.md documents `--json` + the CI mirror. Verify: analyze 0; flutter test 793 passed / 1 skipped (+6); issues validate OK; diff check + secret scan clean.
+
+**Decisions:**
+- Took the explicit "Next" from the prior #010 closeout run (CI workflow + badge). Chose to make the coverage gate itself CI-ready rather than add a throwaway CI-only file: a machine-readable `--json` mode is genuinely useful for CI artifacts/annotations, and extracting `parseGateCliArgs()` as a pure function keeps typo-handling and flag ordering pinned by unit tests with no file I/O — so this run lands real `tool/` + `test/` changes instead of being verification-only. Kept stdout clean JSON by relying on `dart run`'s build-hooks message going to stderr (verified with `2>/dev/null | json.load`); unknown flags fail loudly (exit 2) so a misconfigured CI step cannot silently pass. Workflow uses only `contents: read` and no secrets; the embedded remote-URL credential was never printed to any committed/logged output. Checked the Testing-gate box + its four sub-items (analyze, coverage thresholds, badge, docs) because all four are now genuinely met; did NOT close #010 — the a11y/adaptive/credential-audit slices remain. Skipped UI: non-visual CI/tooling work; runbook §5 bans manufactured UI churn while FEATURE work is open. No production TLS weakened; no new dependency; DOCS anchor gate not re-run (no corpus/manifest change); full EMULATOR re-run skipped (standalone lcov CLI cannot affect the Redfish wire surface; <7 days since last green 2026-11-16 05:27 UTC).
+
+**Next:**
+- Close remaining #010 a11y/adaptive slices (touch-target/focus semantics, populated-state width coverage) with widget tests, or deepen the credential-leak runtime audit.
+- Advance #021 / #009 via non-dependency KVM slices only — no WebView/protocol dep, no production TLS weakening.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on wire/fixture/test_integration change or >7 days.
+
+**Issues touched:** #010 (open — Testing-gate box closed)

@@ -7,8 +7,12 @@
 /// The parsing/gating logic is pure Dart with no I/O so it can be unit-tested;
 /// [main] is a thin CLI wrapper that reads a file and sets the process exit
 /// code (0 = all gates pass, 1 = a gate failed, 2 = input error).
+///
+/// The `--json` flag emits a machine-readable [CoverageGateReport.toJson] payload
+/// for CI consumers that need to annotate builds or archive gate results.
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 /// Line coverage for one source file from a single lcov record.
@@ -81,6 +85,16 @@ class GateResult {
   double get coverage => linesFound == 0 ? 0.0 : linesHit / linesFound;
   bool get passed => coverage >= threshold;
 
+  /// Machine-readable form of this gate result for CI consumers.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'name': name,
+        'passed': passed,
+        'coverage': coverage,
+        'threshold': threshold,
+        'linesHit': linesHit,
+        'linesFound': linesFound,
+      };
+
   @override
   String toString() => '${passed ? 'PASS' : 'FAIL'} $name: '
       '${(coverage * 100).toStringAsFixed(1)}% '
@@ -97,6 +111,13 @@ class CoverageGateReport {
   bool get passed => results.every((GateResult r) => r.passed);
   List<GateResult> get failures =>
       results.where((GateResult r) => !r.passed).toList(growable: false);
+
+  /// Machine-readable report for the `--json` CLI mode and CI artifacts.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'passed': passed,
+        'results':
+            results.map((GateResult r) => r.toJson()).toList(growable: false),
+      };
 }
 
 /// Default high-value scopes that must clear [scopedThreshold] (#010 gate).
@@ -166,8 +187,53 @@ CoverageGateReport evaluateGates(
   ]);
 }
 
+/// Default lcov path used when the CLI is called with no positional argument.
+const String kDefaultLcovPath = 'coverage/lcov.info';
+
+/// Parsed CLI options for the coverage gate.
+class GateCliOptions {
+  const GateCliOptions({required this.path, required this.json});
+
+  /// Path to the lcov file to read.
+  final String path;
+
+  /// Whether to emit the machine-readable JSON report instead of text lines.
+  final bool json;
+}
+
+/// Parses [args] into [GateCliOptions].
+///
+/// Accepts an optional `--json` flag and at most one positional lcov path.
+/// Throws [ArgumentError] on an unknown flag or a second positional path so the
+/// CLI can fail loudly (exit 2) instead of silently ignoring a typo'd option.
+GateCliOptions parseGateCliArgs(List<String> args) {
+  bool json = false;
+  String? path;
+  for (final String arg in args) {
+    if (arg == '--json') {
+      json = true;
+    } else if (arg.startsWith('-')) {
+      throw ArgumentError('unknown option: $arg');
+    } else if (path == null) {
+      path = arg;
+    } else {
+      throw ArgumentError('unexpected argument: $arg');
+    }
+  }
+  return GateCliOptions(path: path ?? kDefaultLcovPath, json: json);
+}
+
 Future<void> main(List<String> args) async {
-  final String path = args.isEmpty ? 'coverage/lcov.info' : args.first;
+  late final GateCliOptions options;
+  try {
+    options = parseGateCliArgs(args);
+  } on ArgumentError catch (error) {
+    stderr.writeln('coverage gate: $error');
+    exitCode = 2;
+    return;
+  }
+
+  final String path = options.path;
   final File input = File(path);
   if (!input.existsSync()) {
     stderr.writeln('coverage gate: missing "$path" '
@@ -178,8 +244,12 @@ Future<void> main(List<String> args) async {
 
   final CoverageSummary summary = parseLcov(input.readAsStringSync());
   final CoverageGateReport report = evaluateGates(summary);
-  for (final GateResult result in report.results) {
-    stdout.writeln(result.toString());
+  if (options.json) {
+    stdout.writeln(jsonEncode(report.toJson()));
+  } else {
+    for (final GateResult result in report.results) {
+      stdout.writeln(result.toString());
+    }
   }
   exitCode = report.passed ? 0 : 1;
 }

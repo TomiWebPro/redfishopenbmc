@@ -2,6 +2,8 @@
 //
 // These are pure-Dart tests over inline lcov strings — no real coverage run or
 // file I/O is needed, so `flutter test` never depends on `coverage/lcov.info`.
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../tool/coverage_gate.dart';
@@ -159,6 +161,86 @@ void main() {
         scopedPrefixes: const <String>['pkg/'],
       );
       expect(loose.passed, isTrue); // exactly at both thresholds
+    });
+  });
+
+  group('machine-readable report (CI --json mode)', () {
+    test('GateResult.toJson exposes pass state, ratios and raw counts', () {
+      final Map<String, dynamic> json =
+          const GateResult('overall', 8, 10, 0.75).toJson();
+
+      expect(json['name'], 'overall');
+      expect(json['passed'], isTrue);
+      expect(json['linesHit'], 8);
+      expect(json['linesFound'], 10);
+      expect(json['coverage'], closeTo(0.8, 1e-9));
+      expect(json['threshold'], 0.75);
+    });
+
+    test('CoverageGateReport.toJson encodes every gate result and passed', () {
+      final CoverageGateReport report = evaluateGates(parseLcov([
+        record('lib/redfish/a.dart', 100, 82),
+        record('lib/features/power/b.dart', 100, 80),
+        record('lib/features/sensors/c.dart', 100, 81),
+        record('lib/other/d.dart', 100, 60),
+      ].join('\n')));
+
+      final String encoded = jsonEncode(report.toJson());
+      final Map<String, dynamic> decoded =
+          jsonDecode(encoded) as Map<String, dynamic>;
+
+      expect(decoded['passed'], isTrue);
+      final List<dynamic> results = decoded['results'] as List<dynamic>;
+      expect(results, hasLength(2));
+      expect(
+        results.map((dynamic r) => r['name'] as String),
+        <String>['overall', 'redfish + power + sensors'],
+      );
+      expect(results.every((dynamic r) => r['passed'] as bool), isTrue);
+    });
+
+    test('a failing gate serializes passed:false for CI to read', () {
+      final CoverageGateReport report = evaluateGates(parseLcov([
+        record('lib/redfish/a.dart', 100, 40),
+      ].join('\n')));
+
+      final Map<String, dynamic> decoded =
+          jsonDecode(jsonEncode(report.toJson())) as Map<String, dynamic>;
+
+      expect(decoded['passed'], isFalse);
+      final List<dynamic> results = decoded['results'] as List<dynamic>;
+      expect(results.first['passed'], isFalse);
+    });
+  });
+
+  group('parseGateCliArgs', () {
+    test('defaults to the standard lcov path with text output', () {
+      final GateCliOptions options = parseGateCliArgs(const <String>[]);
+      expect(options.path, kDefaultLcovPath);
+      expect(options.json, isFalse);
+    });
+
+    test('accepts a positional path and the --json flag in either order', () {
+      final GateCliOptions first =
+          parseGateCliArgs(const <String>['out/lcov.info', '--json']);
+      expect(first.path, 'out/lcov.info');
+      expect(first.json, isTrue);
+
+      final GateCliOptions second =
+          parseGateCliArgs(const <String>['--json', 'out/lcov.info']);
+      expect(second.path, 'out/lcov.info');
+      expect(second.json, isTrue);
+    });
+
+    test('rejects unknown flags and a second positional path', () {
+      expect(
+        () => parseGateCliArgs(const <String>['--nope']),
+        throwsArgumentError,
+      );
+      expect(
+        () => parseGateCliArgs(const <String>['a.info', 'b.info']),
+        throwsArgumentError,
+      );
     });
   });
 }

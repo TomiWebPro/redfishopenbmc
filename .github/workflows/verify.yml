@@ -1,0 +1,42 @@
+name: verify
+
+# Issue #010 Testing gate: keep main shippable on every push/PR.
+# Runs the same three checks the runbook requires before a push: a clean
+# analyzer, a fully green test suite with lcov, and the coverage thresholds
+# enforced by tool/coverage_gate.dart (text output here; --json is available
+# for machine-readable CI artifacts).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze (0 issues required)
+        run: flutter analyze
+
+      - name: Test with coverage
+        run: flutter test --coverage
+
+      - name: Enforce coverage gate (>=75% overall, >=80% scoped)
+        run: dart run tool/coverage_gate.dart coverage/lcov.info

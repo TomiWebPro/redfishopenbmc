@@ -20,7 +20,13 @@ A schema-driven, cross-platform Flutter application providing a unified control 
 
 ## Status
 
-Planning phase — complete architecture/end-goal specification defined, no implementation yet.
+[![verify](https://github.com/TomiWebPro/redfishopenbmc/actions/workflows/verify.yml/badge.svg)](https://github.com/TomiWebPro/redfishopenbmc/actions/workflows/verify.yml)
+
+Implementation in progress. Every push to `main` and every pull request runs
+the `verify` workflow: `flutter analyze` (0 issues), the full `flutter test`
+suite with coverage, and the ≥75% overall / ≥80% scoped line-coverage gate.
+See [DEVELOPMENT.md](DEVELOPMENT.md#testing--coverage-gate-issue-010) for the
+local commands and current coverage numbers.
 
 ## License
 
