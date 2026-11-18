@@ -9869,3 +9869,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration change or >7 days.
 
 **Issues touched:** #010 (open — KVM-launch/viewer a11y announcement slice)
+
+## 2026-11-18 05:44 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 (smallest open issue, P2) — theming hardening. Baseline green at 07001b9 (analyze 0, 811 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash untouched). Consolidated the copy-pasted component overrides in `AppTheme.lightTheme`/`darkTheme` into one private `_themeFor(ColorScheme)` factory both brightnesses call (kills the light/dark-drift bug class). Made `themeMode: ThemeMode.system` explicit in `RedfishApp` + `AdaptiveShellPreview`. Added WCAG 2.1 contrast-ratio tests over every semantic on/container pair in both themes (all ≥4.5:1) — closes the previously-unproven "contrast AA on cards/badges" item — plus light/dark component-parity tests and a `themeMode == ThemeMode.system` widget assertion. Verify: analyze 0; flutter test 833 passed / 1 skipped (811 +22); DMTF emulator 85/85 green; issues validate OK.
+
+**Decisions:**
+- Extracted a single `_themeFor(ColorScheme)` builder rather than patching the two themes separately — both modes now cannot drift (a real regression class with duplicated component overrides); all values are byte-for-byte preserved, so the refactor is behavior-preserving and the new parity tests lock that in. Kept the WCAG contrast helper in the test file (pure, no production dependency). Switched from deprecated `Color.red/green/blue` to normalized `Color.r/g/b` to keep `flutter analyze` at 0 issues after the analyzer flagged the deprecated members. `ThemeMode.system` was already Flutter's default; making it explicit matches the existing doc comment and the #010 acceptance criterion and is test-guarded — not churn. Skipped UI churn (no visual change). No production TLS touched; no new dependency. DOCS anchor gate not re-run (no corpus/manifest change). Full EMULATOR re-run WAS performed (85/85 green) because `lib/` changed this run (§1.4 gate). Issue stays OPEN (golden/screenshot light-dark checks remain).
+
+**Next:**
+- Continue #010 remaining golden/screenshot light-dark checks (Overview/Dashboard at mobile/tablet/desktop) and broader focus-semantics/touch-target coverage with widget tests.
+- Advance #021 / #009 via non-dependency KVM slices only — no WebView/protocol dep, no production TLS weakening.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration change or >7 days.
+
+**Issues touched:** #010 (open — theming/a11y hardening slice)

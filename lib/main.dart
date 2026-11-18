@@ -23,6 +23,8 @@ class RedfishApp extends ConsumerWidget {
       title: 'Redfish OpenBMC',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
+      // Follow the platform brightness (accepted #010 theming behaviour).
+      themeMode: ThemeMode.system,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );
@@ -41,6 +43,7 @@ class AdaptiveShellPreview extends StatelessWidget {
     return MaterialApp(
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       home: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final w = constraints.maxWidth;

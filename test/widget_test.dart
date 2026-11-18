@@ -22,6 +22,11 @@ void main() {
     await tester.pumpAndSettle();
     // Root MaterialApp.router is present exactly once.
     expect(find.byType(MaterialApp), findsOneWidget);
+    // #010 theming: follow the platform brightness (ThemeMode.system).
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.themeMode, ThemeMode.system);
+    expect(app.theme, isNotNull);
+    expect(app.darkTheme, isNotNull);
     // The Systems destination is exposed in navigation.
     expect(find.text('Systems'), findsAtLeastNWidgets(1));
   });
