@@ -868,4 +868,41 @@ void main() {
       );
     });
   });
+
+  group('KvmConsole malformed @odata.id tolerance (#009)', () {
+    KvmConsole consoleFrom(Object? odataId) => KvmConsole.fromManager(
+          <String, dynamic>{
+            '@odata.id': odataId,
+            'GraphicalConsole': <String, dynamic>{
+              'ServiceEnabled': true,
+              'ConnectTypesSupported': <dynamic>['KVMIP'],
+            },
+          },
+          managerId: 'BMC',
+        ).single;
+
+    // RED proof: `as String?` on a non-string @odata.id throws a TypeError,
+    // aborting KvmConsole.fromManager and blanking every console on the card.
+    test(
+        'a non-string @odata.id does not throw and uses the derived manager URI',
+        () {
+      expect(consoleFrom(42).sourceManagerUri, '/redfish/v1/Managers/BMC');
+      expect(
+        consoleFrom(<String, dynamic>{'@odata.id': '/nested'}).sourceManagerUri,
+        '/redfish/v1/Managers/BMC',
+      );
+    });
+
+    test('a blank @odata.id falls back to the derived manager URI', () {
+      expect(consoleFrom('   ').sourceManagerUri, '/redfish/v1/Managers/BMC');
+    });
+
+    test('a padded valid @odata.id is trimmed like other URI sources (#009)',
+        () {
+      expect(
+        consoleFrom('  /redfish/v1/Managers/Custom  ').sourceManagerUri,
+        '/redfish/v1/Managers/Custom',
+      );
+    });
+  });
 }

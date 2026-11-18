@@ -74,7 +74,9 @@ class KvmService {
         KvmCapability.fromManager(
           manager.body,
           managerId: manager.managerId,
-          sourceManagerUri: manager.body['@odata.id'] as String?,
+          // ODataResource.id safely ignores a non-string `@odata.id` instead of
+          // throwing a TypeError that would blank the capability card (#009).
+          sourceManagerUri: ODataResource(manager.body).id,
         ),
       );
     }

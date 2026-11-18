@@ -189,4 +189,50 @@ void main() {
       expect(bmc!.uri, graphical.connectUri);
     });
   });
+
+  group('KvmService malformed @odata.id tolerance (#009)', () {
+    late MockRedfishServer server;
+
+    setUpAll(() async {
+      server = await MockRedfishServer(
+        fixturesDir: 'test/fixtures/redfish/kvm_malformed_odata_mockup',
+      ).start();
+    });
+
+    tearDownAll(() async {
+      await server.close();
+    });
+
+    // RED proof: a manager body with a numeric @odata.id made both the
+    // per-console path (KvmConsole.fromManager) and the per-manager path
+    // (sourceManagerUri cast in fetchCapabilities) throw a TypeError, blanking
+    // the whole KVM screen on a single malformed payload.
+    test('fetchConsoles tolerates a non-string manager @odata.id', () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+      expect(consoles, isNotEmpty);
+      expect(
+        consoles.every(
+          (KvmConsole c) => c.sourceManagerUri == '/redfish/v1/Managers/BMC',
+        ),
+        isTrue,
+      );
+    });
+
+    test('fetchCapabilities tolerates a non-string manager @odata.id',
+        () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+      final KvmCapability? bmc = await svc.fetchCapability('BMC');
+      expect(bmc, isNotNull);
+      expect(bmc!.supported, isTrue);
+      expect(bmc.uri, 'https://bmc.example/kvm');
+      expect(bmc.sourceManagerUri, '/redfish/v1/Managers/BMC');
+    });
+  });
 }

@@ -163,8 +163,12 @@ class KvmCapability {
           graphicalEnabled || serialEnabled || remoteEnabled || oemConsole,
       maxSessions: maxSessions,
       uri: resolveLaunchUri(body),
-      sourceManagerUri: sourceManagerUri ??
-          (body['@odata.id'] as String?) ??
+      // Normalize both the explicit override and the body `@odata.id`: a
+      // non-string / blank value from a malformed BMC payload would otherwise
+      // throw a TypeError (bare cast) or render a blank source notice. Mirrors
+      // KvmConsole.fromManager so both KVM views agree (issue #009).
+      sourceManagerUri: _nonEmptyString(sourceManagerUri) ??
+          _nonEmptyString(body['@odata.id']) ??
           '/redfish/v1/Managers/$managerId',
       graphicalKvmIp: kvmIp,
     );

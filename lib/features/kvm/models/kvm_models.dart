@@ -306,7 +306,11 @@ class KvmConsole {
     required String managerId,
     KvmOemRegistry? oemRegistry,
   }) {
-    final String sourceManagerUri = (managerBody['@odata.id'] as String?) ??
+    // A malformed BMC payload can carry a non-string or blank `@odata.id`.
+    // A bare cast would throw a TypeError here and blank every console on the
+    // KVM screen, so normalize it like every other URI source and fall back to
+    // the URI derived from the manager id (issue #009).
+    final String sourceManagerUri = _uriString(managerBody['@odata.id']) ??
         '/redfish/v1/Managers/$managerId';
 
     final List<KvmConsole> consoles = <KvmConsole>[];

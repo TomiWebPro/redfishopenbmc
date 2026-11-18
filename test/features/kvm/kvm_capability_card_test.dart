@@ -269,6 +269,37 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+        'a malformed manager @odata.id still renders a usable source '
+        'notice (#009)', (WidgetTester tester) async {
+      // A non-string @odata.id used to throw a TypeError in fromManager,
+      // blanking the whole capability card. The card must render the derived
+      // manager URI instead of crashing or showing an empty source row.
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          '@odata.id': 42,
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+          },
+        },
+        managerId: 'BMC7',
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: KvmCapabilityCard(capability: capability)),
+      );
+
+      expect(capability.sourceManagerUri, '/redfish/v1/Managers/BMC7');
+      expect(find.text('No console URI resolved. Source:'), findsOneWidget);
+      expect(find.text('/redfish/v1/Managers/BMC7'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'No console URI resolved. Source: /redfish/v1/Managers/BMC7',
+        ),
+        findsOneWidget,
+      );
+    });
   });
 
   group('KvmView capability section', () {

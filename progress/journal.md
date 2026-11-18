@@ -10214,3 +10214,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — RemoteConsole discovery-gate detection fix)
+
+## 2026-11-18 20:24 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free, TLS-safe malformed-`@odata.id` crash fix across all three KVM manager read paths. A non-string/blank manager `@odata.id` hit bare `as String?` casts in `KvmConsole.fromManager`, `KvmCapability.fromManager` and `KvmService.fetchCapabilities`, throwing a `TypeError` that aborted discovery and blanked the gated KVM screen. All three now normalize via existing safe helpers (`_uriString` / `_nonEmptyString` / `ODataResource.id`), falling back to `/redfish/v1/Managers/{managerId}`; padded values trimmed, blank/non-string treated as absent, both KVM views agree. Added 10 RED→GREEN tests (9 confirmed RED pre-fix: `TypeError` / blank / padded-literal), incl. a new malformed-@odata.id mockup fixture and a capability-card widget test (card still renders a usable source notice). Baseline analyze 0 / 1016 passed / 1 skipped → verify analyze 0 / 1026 passed / 1 skipped (+10); DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.2% / scoped 90.4% / kvm 92.5%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose an undeniable crash defect — a single malformed BMC payload blanking the entire KVM screen — over manufactured churn: #009's/#021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation. The same invalid cast existed in all three manager read paths, so fixing only one would leave the other two crashing; all three were changed with each file's existing safe string helper and pinned with model + end-to-end + widget tests, including cross-view agreement. Pure Dart, read-only, no WebView/protocol dependency and no production TLS change. Full emulator re-run (85/85) because `lib/` changed.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. an aggregate `maxSessions` sourced from a disabled console block, or `pickPrimary` selecting a disabled/unlaunchable console), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — malformed-@odata.id crash fix)

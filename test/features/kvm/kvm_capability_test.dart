@@ -868,4 +868,59 @@ void main() {
           FeatureRules.kvmType(<Map<String, dynamic>>[body]), 'RemoteConsole');
     });
   });
+
+  group('KvmCapability malformed @odata.id tolerance (#009)', () {
+    KvmCapability capabilityFrom(Object? odataId) => KvmCapability.fromManager(
+          <String, dynamic>{
+            '@odata.id': odataId,
+            'GraphicalConsole': <String, dynamic>{
+              'ServiceEnabled': true,
+              'ConnectTypesSupported': <dynamic>['KVMIP'],
+            },
+          },
+          managerId: 'BMC',
+        );
+
+    // RED proof: `as String?` on a non-string @odata.id throws a TypeError,
+    // aborting KvmCapability.fromManager and blanking the capability card.
+    test('a non-string @odata.id does not throw and uses the derived URI', () {
+      expect(capabilityFrom(42).sourceManagerUri, '/redfish/v1/Managers/BMC');
+      expect(
+        capabilityFrom(<String, dynamic>{'@odata.id': '/nested'})
+            .sourceManagerUri,
+        '/redfish/v1/Managers/BMC',
+      );
+    });
+
+    test('a non-string explicit sourceManagerUri is ignored (#009)', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{'@odata.id': '/redfish/v1/Managers/BMC'},
+        managerId: 'BMC',
+        sourceManagerUri: null,
+      );
+      // With no override and a malformed body id, the derived URI is used.
+      expect(capability.sourceManagerUri, '/redfish/v1/Managers/BMC');
+    });
+
+    test('a blank @odata.id falls back to the derived manager URI', () {
+      expect(
+          capabilityFrom('   ').sourceManagerUri, '/redfish/v1/Managers/BMC');
+    });
+
+    test('console and capability cards agree on a malformed @odata.id', () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        '@odata.id': 42,
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+        },
+      };
+      final KvmConsole console =
+          KvmConsole.fromManager(body, managerId: 'BMC').single;
+      final KvmCapability capability =
+          KvmCapability.fromManager(body, managerId: 'BMC');
+      expect(console.sourceManagerUri, '/redfish/v1/Managers/BMC');
+      expect(capability.sourceManagerUri, console.sourceManagerUri);
+    });
+  });
 }
