@@ -5,6 +5,7 @@ import 'package:redfishopenbmc/features/kvm/kvm_controller.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_providers.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_service.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
+import 'package:redfishopenbmc/features/kvm/views/kvm_console_viewer_page.dart';
 import 'package:redfishopenbmc/features/kvm/views/kvm_view.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
@@ -737,5 +738,89 @@ void main() {
         expect(find.text('Serial Console'), findsOneWidget);
       });
     }
+  });
+
+  group('KvmConsoleViewerPage — status announcement (a11y)', () {
+    Future<void> pumpViewer(WidgetTester tester, KvmConsole console) async {
+      await tester.pumpWidget(
+        MaterialApp(home: KvmConsoleViewerPage(console: console)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+        'HTML5 status announces the same actionable guidance it shows '
+        '(#010)', (tester) async {
+      await pumpViewer(
+        tester,
+        const KvmConsole(
+          type: KvmConsoleType.remote,
+          managerId: 'BMC',
+          connectTypesSupported: <String>['HTML5'],
+          serviceEnabled: true,
+          connectUri: 'https://bmc.example.com/kvm',
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        ),
+      );
+
+      const String expected =
+          'In-app HTML5 console path available for this URI. '
+          'Embedded rendering requires a WebView dependency. '
+          'You can open this URI in a web browser if your BMC allows it.';
+      // Exact-match on both trees proves the announced label IS the visible
+      // text — screen-reader users get the browser-open step and no internal
+      // issue-referencing jargon that sighted users never see.
+      expect(find.bySemanticsLabel(expected), findsOneWidget,
+          reason:
+              'a11y: announcement must include the actionable browser step');
+      expect(find.text(expected), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp(r'#021')), findsNothing,
+          reason: 'internal issue references must not appear in UI copy');
+    });
+
+    testWidgets(
+        'external-client status announces the copy-and-open step '
+        '(#010)', (tester) async {
+      await pumpViewer(
+        tester,
+        const KvmConsole(
+          type: KvmConsoleType.graphical,
+          managerId: 'BMC',
+          connectTypesSupported: <String>['KVMIP'],
+          serviceEnabled: true,
+          connectUri: 'vnc://bmc.example.com:5900',
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        ),
+      );
+
+      const String expected =
+          'This console URI uses a protocol that requires an external '
+          'VNC/RFB client. Embedded rendering is not available in-app. '
+          'Copy the URI and open it with a compatible client.';
+      expect(find.bySemanticsLabel(expected), findsOneWidget,
+          reason: 'a11y: announcement must include the copy-and-open step');
+      expect(find.text(expected), findsOneWidget);
+    });
+
+    testWidgets('fallback status announces exactly its visible text (#010)',
+        (tester) async {
+      // No connect URI and no HTML5/external protocol → the fallback message.
+      await pumpViewer(
+        tester,
+        const KvmConsole(
+          type: KvmConsoleType.graphical,
+          managerId: 'BMC',
+          connectTypesSupported: <String>['KVMIP'],
+          serviceEnabled: true,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        ),
+      );
+
+      const String expected =
+          'In-app embedded rendering is not available for this console. '
+          'Use the URI externally if provided.';
+      expect(find.bySemanticsLabel(expected), findsOneWidget);
+      expect(find.text(expected), findsOneWidget);
+    });
   });
 }

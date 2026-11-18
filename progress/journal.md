@@ -9854,3 +9854,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on wire/fixture/test_integration change or >7 days.
 
 **Issues touched:** #010 (open — adaptive-layout verification box closed)
+
+## 2026-11-18 05:07 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 (smallest open issue, P2) — faithful a11y status announcements on the KVM launch/viewer surface. Baseline green at 907a704 (analyze 0, 808 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Found a real defect: `KvmConsoleViewerPage`'s `excludeSemantics` status card announced a short `statusLabel` that dropped the actionable steps sighted users see in `statusText` (HTML5 "open this URI in a web browser"; external-client "Copy the URI and open it with a compatible client"), while the visible text leaked internal "(see issue #021 strategy)" jargon screen-reader users never heard. Unified both into ONE jargon-free `statusText` used for both the Semantics label and the visible Text (single source of truth). Added 3 widget tests in `test/features/kvm/kvm_widget_test.dart` (exact-match `bySemanticsLabel` == `find.text` for HTML5 / VNC external-client / fallback branches; no `#021` in UI copy). Verify: analyze 0; flutter test 811 passed / 1 skipped (808 +3); DMTF emulator 85/85 green; issues validate OK.
+
+**Decisions:**
+- Used a single `statusText` variable for both the Semantics label and the visible Text rather than two hand-maintained strings — this removes the divergence bug class entirely (a future edit cannot update one and forget the other). Dropped the internal "#021 strategy" issue reference from user-facing copy; it was developer-facing jargon that sighted users saw but screen-reader users did not. Kept this a presentation/a11y fix in the existing viewer page — no wire/request change, no WebView/protocol dependency, no production TLS touched. Full emulator suite WAS re-run (85/85 green) because `lib/` changed this run (§1.4 gate), confirming the Redfish wire surface is unaffected. Skipped UI churn: no visual layout change; the existing capability-gated views and their no-overflow tests are unchanged. DOCS anchor gate not re-run (no corpus/manifest change). Issue stays OPEN (golden/screenshot + focus-semantics slices remain).
+
+**Next:**
+- Continue #010 remaining golden/screenshot light-dark checks (Overview/Dashboard at mobile/tablet/desktop) and focus-semantics/touch-target coverage with widget tests.
+- Advance #021 / #009 via non-dependency KVM slices only — no WebView/protocol dep, no production TLS weakening.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration change or >7 days.
+
+**Issues touched:** #010 (open — KVM-launch/viewer a11y announcement slice)

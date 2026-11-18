@@ -25,19 +25,15 @@ class KvmConsoleViewerPage extends StatelessWidget {
     final bool externalClient = console.requiresExternalConsoleClient;
     final String externalProtocol =
         console.externalClientProtocolLabel ?? 'external console';
-    final String statusLabel = html5
-        ? 'In-app HTML5 console path available for this URI. '
-            'Embedded rendering requires a WebView dependency.'
-        : externalClient
-            ? 'This console URI uses a protocol that requires an external '
-                '$externalProtocol client. Embedded rendering is not available '
-                'in-app.'
-            : 'In-app embedded rendering is not available for this console. '
-                'Use the URI externally if provided.';
+    // UI-2 / a11y: the status card uses `excludeSemantics`, so this ONE message
+    // is both the visible text and the announced Semantics label. Keeping a
+    // single source of truth guarantees screen-reader users hear exactly the
+    // same actionable guidance as sighted users (previously the announced label
+    // was shorter and silently dropped the "open in a browser" / "copy the URI"
+    // steps). No internal issue references in user-facing copy.
     final String statusText = html5
         ? 'In-app HTML5 console path available for this URI. '
-            'Embedded rendering requires a WebView '
-            'dependency (see issue #021 strategy). '
+            'Embedded rendering requires a WebView dependency. '
             'You can open this URI in a web browser if your BMC allows it.'
         : externalClient
             ? 'This console URI uses a protocol that requires an external '
@@ -72,7 +68,7 @@ class KvmConsoleViewerPage extends StatelessWidget {
                   Semantics(
                     container: true,
                     excludeSemantics: true,
-                    label: statusLabel,
+                    label: statusText,
                     child: Text(
                       statusText,
                       style: theme.textTheme.bodyMedium,
