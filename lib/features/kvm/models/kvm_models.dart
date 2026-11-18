@@ -141,7 +141,8 @@ class KvmConsole {
   final bool serviceEnabled;
 
   /// The maximum number of concurrent sessions (`MaxConcurrentSessions`),
-  /// or `null` when the BMC does not report it.
+  /// or `null` when the BMC does not report it or reports an out-of-spec
+  /// (negative) value — DMTF `Manager` defines a minimum of 0 (issue #009).
   final int? maxConcurrentSessions;
 
   /// The connection URI to reach the console (`ConnectUri`), or `null` when the
@@ -363,7 +364,7 @@ class KvmConsole {
   }) {
     final List<String> types =
         _normalizedConnectTypes(block['ConnectTypesSupported']);
-    final int? maxSessions = _asInt(block['MaxConcurrentSessions']);
+    final int? maxSessions = _sessionLimit(block['MaxConcurrentSessions']);
     final String? connectUri = _asString(block['ConnectUri']);
     final bool enabled =
         block['ServiceEnabled'] == true || block['Enabled'] == true;
@@ -427,11 +428,24 @@ String kvmLaunchStatusText(
 /// Returns [value] as a [String] or `null` when it is not a string.
 String? _asString(Object? value) => value is String ? value : null;
 
-/// Returns [value] as an [int] or `null` when it cannot be parsed.
-int? _asInt(Object? value) {
-  if (value is int) return value;
-  if (value is String) return int.tryParse(value);
-  return null;
+/// Returns [value] as a spec-valid `MaxConcurrentSessions` limit, or `null`.
+///
+/// The DMTF `Manager` schema defines `MaxConcurrentSessions` with a minimum of
+/// 0 (`Manager.v1_19_0.json`). A negative value is out of spec (and is used by
+/// some BMCs as a sentinel for "unlimited"), so it is surfaced as unreported
+/// rather than rendering "Max concurrent sessions: -1" on the console card.
+/// This mirrors `KvmCapability._maxSessions` so the per-console and per-manager
+/// KVM views treat the same malformed value identically (issue #009).
+int? _sessionLimit(Object? value) {
+  final int? parsed;
+  if (value is int) {
+    parsed = value;
+  } else if (value is String) {
+    parsed = int.tryParse(value.trim());
+  } else {
+    parsed = null;
+  }
+  return (parsed == null || parsed < 0) ? null : parsed;
 }
 
 /// Builds a normalized [List<String>] of `ConnectTypesSupported` values from a

@@ -565,4 +565,75 @@ void main() {
       expect(console.connectTypesSupported, <String>['KVMIP', 'HTML5']);
     });
   });
+
+  group('KvmConsole session-limit tolerance (#009)', () {
+    test('out-of-spec negative MaxConcurrentSessions is treated as unreported',
+        () {
+      final KvmConsole console = KvmConsole.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'MaxConcurrentSessions': -1,
+          },
+        },
+        managerId: 'BMC',
+      ).single;
+      // DMTF Manager schema: MaxConcurrentSessions has minimum 0. A negative
+      // value is out of spec (or a sentinel for "unlimited") — surface it as
+      // unreported rather than rendering "Max concurrent sessions: -1".
+      expect(console.maxConcurrentSessions, isNull);
+    });
+
+    test(
+        'negative numeric-string MaxConcurrentSessions is treated as unreported',
+        () {
+      final KvmConsole console = KvmConsole.fromManager(
+        <String, dynamic>{
+          'SerialConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'MaxConcurrentSessions': '-5',
+          },
+        },
+        managerId: 'BMC',
+      ).single;
+      expect(console.maxConcurrentSessions, isNull);
+    });
+
+    test('spec-valid zero and positive session limits are preserved', () {
+      final List<KvmConsole> consoles = KvmConsole.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'MaxConcurrentSessions': 0,
+          },
+          'SerialConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'MaxConcurrentSessions': '4',
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(consoles[0].maxConcurrentSessions, 0);
+      expect(consoles[1].maxConcurrentSessions, 4);
+    });
+
+    test(
+        'console card and capability card agree on rejecting a negative limit '
+        '(#009)', () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+          'MaxConcurrentSessions': -1,
+        },
+      };
+      final KvmConsole console =
+          KvmConsole.fromManager(body, managerId: 'BMC').single;
+      final KvmCapability capability =
+          KvmCapability.fromManager(body, managerId: 'BMC');
+      expect(console.maxConcurrentSessions, capability.maxSessions);
+      expect(capability.maxSessions, isNull);
+    });
+  });
 }

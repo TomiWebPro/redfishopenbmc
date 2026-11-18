@@ -473,4 +473,72 @@ void main() {
       expect(capability.uri, 'https://bmc.example/kvm');
     });
   });
+
+  group('KvmCapability session-limit tolerance (#009)', () {
+    test('out-of-spec negative graphical MaxConcurrentSessions is unreported',
+        () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'MaxConcurrentSessions': -1,
+          },
+        },
+        managerId: 'BMC',
+      );
+      // DMTF Manager schema: MaxConcurrentSessions minimum is 0. The
+      // capability card must not render "Max sessions: -1".
+      expect(capability.maxSessions, isNull);
+    });
+
+    test('negative graphical limit falls back to a spec-valid serial limit',
+        () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'MaxConcurrentSessions': -1,
+          },
+          'SerialConsole': <String, dynamic>{
+            'MaxConcurrentSessions': 3,
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(capability.maxSessions, 3);
+    });
+
+    test('negative numeric-string limit is treated as unreported', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'MaxConcurrentSessions': '-9',
+          },
+          'SerialConsole': <String, dynamic>{
+            'MaxConcurrentSessions': '-2',
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(capability.maxSessions, isNull);
+    });
+
+    test('spec-valid zero session limit is preserved', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'MaxConcurrentSessions': 0,
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(capability.maxSessions, 0);
+    });
+  });
 }

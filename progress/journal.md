@@ -10109,3 +10109,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration change or >7 days.
 
 **Issues touched:** #009 (open — cross-view connect-type consistency fix)
+
+## 2026-11-18 15:49 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free, spec-anchored session-limit tolerance fix across both KVM models. The mirrored DMTF `Manager.v1_19_0.json` defines `GraphicalConsole`/`SerialConsole` `MaxConcurrentSessions` with `minimum: 0`, but `KvmConsole._fromBlock` (`_asInt`) and `KvmCapability._maxSessions` stored negative values verbatim — a BMC emitting `-1` (a common "unlimited" sentinel) or `-5` rendered "Max concurrent sessions: -1" / "Max sessions: -1" on the console and capability cards, and a negative graphical value blocked the capability model's fallback to a spec-valid serial limit. Both parsers now treat negative int/string values as unreported (`null`), keeping both views consistent with the mirrored spec. Added 8 RED→GREEN pure-Dart tests (4 in `kvm_model_test.dart`, 4 in `kvm_capability_test.dart`), all confirmed failing pre-fix. Baseline green at 6d51c5d (analyze 0, 963 passed / 1 skipped; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; KVM suite 147; flutter test --coverage 971 passed / 1 skipped (+8); DMTF emulator 85/85 (lib changed — §1.4 gate); coverage gates PASS overall 89.1% / scoped 90.3% / kvm 92.3%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a genuine, spec-anchored robustness defect over manufactured churn: the fix is anchored to an already-mirrored DMTF schema constraint (`MaxConcurrentSessions minimum: 0`) and removes a real user-visible nonsense value ("-1 sessions") on both KVM cards, rather than adding decoration. A negative session count is either out of spec or an "unlimited" sentinel — both are correctly surfaced as unreported, and letting the capability model fall back to a valid serial limit is a correctness improvement. Applied the identical rule in both models so the per-console and per-manager views keep agreeing (the recurring consistency theme of this feature); kept spec-valid `0` and positive values byte-for-byte unchanged, trimmed numeric strings, and added a regression test for console ↔ capability agreement. Pure Dart, read-only, no WebView/protocol dependency, no production TLS change. Full emulator re-run (85/85) because `lib/` changed; no wire/request/header/payload handling touched. Issue stays OPEN — embedded HTML5 rendering, fullscreen, input forwarding and the WebView dependency remain blocked.
+
+**Next:**
+- #009/#021 remaining acceptance boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. whitespace-only `ConnectUri` treated as no URI in both `KvmConsole.launchUri` and `KvmCapability.resolveLaunchUri`, or `KvmConsole`/`KvmCapability` URI agreement for a non-string `Oem.Uri`) or epic-triage/split the blocked rendering work, never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration change or >7 days.
+
+**Issues touched:** #009 (open — spec-anchored session-limit tolerance fix)

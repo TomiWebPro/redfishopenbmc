@@ -53,7 +53,8 @@ class KvmCapability {
   /// console is present.
   final bool serviceEnabled;
 
-  /// The maximum number of concurrent sessions, or `null` when unreported.
+  /// The maximum number of concurrent sessions, or `null` when unreported or
+  /// out of spec (negative — DMTF `Manager` defines a minimum of 0).
   final int? maxSessions;
 
   /// The resolved console URI: the first standard console block's `ConnectUri`
@@ -224,13 +225,25 @@ class KvmCapability {
     }
   }
 
-  /// Reads a block's `MaxConcurrentSessions` as an int, or `null`.
+  /// Reads a block's `MaxConcurrentSessions` as a spec-valid limit, or `null`.
+  ///
+  /// DMTF `Manager` defines `MaxConcurrentSessions` with a minimum of 0
+  /// (`Manager.v1_19_0.json`). A negative value is out of spec (and is used by
+  /// some BMCs as a sentinel for "unlimited"), so it is treated as unreported —
+  /// the capability card must not render "Max sessions: -1". This mirrors
+  /// `KvmConsole._sessionLimit` so both KVM views agree (issue #009).
   static int? _maxSessions(Map<String, dynamic>? block) {
     if (block == null) return null;
     final dynamic value = block['MaxConcurrentSessions'];
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value);
-    return null;
+    final int? parsed;
+    if (value is int) {
+      parsed = value;
+    } else if (value is String) {
+      parsed = int.tryParse(value.trim());
+    } else {
+      parsed = null;
+    }
+    return (parsed == null || parsed < 0) ? null : parsed;
   }
 
   /// Finds an OEM console URI in [node], recursing to a bounded depth.
