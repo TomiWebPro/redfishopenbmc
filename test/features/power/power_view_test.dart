@@ -932,6 +932,114 @@ void main() {
       expect(find.text('Retry'), findsNothing);
     });
   });
+
+  group('PowerView — action touch targets & single announcement (UI-2 a11y)',
+      () {
+    /// Pumps PowerView under a desktop-style [MaterialTapTargetSize.shrinkWrap]
+    /// theme so a default 40dp button stays 40dp unless the widget declares its
+    /// own 48x48 hit area — reproduces the desktop touch-target gap
+    /// deterministically (the test host defaults to Android/padded).
+    Widget desktopHarness(SystemManager manager, PowerController controller) =>
+        ProviderScope(
+          overrides: <Override>[
+            systemManagerProvider.overrideWith((ref) => manager),
+            powerControllerProvider('bmc1').overrideWith((ref) => controller),
+          ],
+          child: MaterialApp(
+            theme: ThemeData(
+              useMaterial3: true,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            home: const Scaffold(body: PowerView(systemId: 'bmc1')),
+          ),
+        );
+
+    testWidgets('every reset action keeps a 48x48 hit area on desktop',
+        (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      await tester.pumpWidget(desktopHarness(manager, _fakeController()));
+      await tester.pumpAndSettle();
+
+      for (final String label in <String>[
+        'Power On',
+        'Force Off',
+        'Graceful Restart',
+        'Force Restart',
+      ]) {
+        final Finder button = find.widgetWithText(FilledButton, label);
+        expect(button, findsOneWidget, reason: '$label button must render');
+        final Size size = tester.getSize(button);
+        expect(size.width, greaterThanOrEqualTo(48),
+            reason: '$label touch target width must be >= 48');
+        expect(size.height, greaterThanOrEqualTo(48),
+            reason: '$label touch target height must be >= 48');
+      }
+    });
+
+    testWidgets('reset buttons announce one stably-named, enabled node',
+        (tester) async {
+      final SystemManager manager = buildManager(powerControl: true);
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      await tester.pumpWidget(desktopHarness(manager, _fakeController()));
+      await tester.pumpAndSettle();
+
+      // Each supported action exposes exactly one node named by its visible
+      // label (no duplicate wrapper + button node), flagged as a button and
+      // enabled while the action is available.
+      for (final String label in <String>[
+        'Power On',
+        'Force Off',
+        'Graceful Restart',
+        'Force Restart',
+      ]) {
+        final Finder byLabel = find.bySemanticsLabel(label);
+        expect(byLabel, findsOneWidget,
+            reason: '$label must be announced exactly once');
+        final SemanticsNode node = tester.getSemantics(byLabel);
+        expect(node.getSemanticsData().flagsCollection.isButton, isTrue,
+            reason: '$label node must be a button');
+        expect(
+          node.getSemanticsData().flagsCollection.isEnabled.toBoolOrNull(),
+          isTrue,
+          reason: '$label must be enabled while not busy',
+        );
+      }
+    });
+
+    testWidgets('unsupported destructive action is announced disabled',
+        (tester) async {
+      final SystemManager manager = buildManager(
+        powerControl: true,
+        supportedResetTypes: const <String>['On'],
+      );
+      await manager.addProfile(
+        const ConnectionProfile(id: 'bmc1', host: 'h', name: 'A'),
+      );
+      await manager.connect('bmc1');
+
+      await tester.pumpWidget(desktopHarness(manager, _fakeController()));
+      await tester.pumpAndSettle();
+
+      final Finder forceOff = find.bySemanticsLabel('Force Off');
+      expect(forceOff, findsOneWidget);
+      final SemanticsNode node = tester.getSemantics(forceOff);
+      expect(node.getSemanticsData().flagsCollection.isButton, isTrue);
+      expect(
+        node.getSemanticsData().flagsCollection.isEnabled.toBoolOrNull(),
+        isFalse,
+        reason: 'unsupported destructive action must be announced disabled',
+      );
+    });
+  });
 }
 
 PowerController _fakeController() => PowerController(

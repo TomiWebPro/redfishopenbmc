@@ -9884,3 +9884,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration change or >7 days.
 
 **Issues touched:** #010 (open — theming/a11y hardening slice)
+
+## 2026-11-18 06:26 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 (smallest open issue, P2) — PowerView action touch targets + single-announcement button semantics. Baseline green at 99bf877 (analyze 0, 833 passed / 1 skipped, issues validate OK; known untracked `testing/` harness + pre-existing stash left untouched). Fixed two real a11y defects on the destructive-capable reset controls in `power_view.dart`: (1) `ResetButton` relied on the platform default `materialTapTargetSize`, shrinking M3 `FilledButton` to a 40dp hit area on desktop — below the WCAG 2.5.5 / Material 48x48dp minimum; gave every variant (destructive + non-destructive) an explicit `minimumSize: Size(48,48)` + `tapTargetSize: padded`. (2) Its `Semantics(button: true, …)` wrapper stacked a second button node on the FilledButton's own semantics (double announcement) with a null idle label; replaced with `excludeSemantics: true` + stable visible-label name + `enabled: !disabled` so exactly one correct node is exposed. Gave the inline-error Retry `TextButton` the same 48x48 treatment. Added 3 widget tests in `test/features/power/power_view_test.dart` pumping under a desktop `shrinkWrap` theme (all four actions >=48x48 — confirmed RED against pre-fix code; one stably-named enabled node per action; unsupported destructive action announced disabled). Verify: analyze 0; flutter test 836 passed / 1 skipped (833 +3); DMTF emulator 85/85 green (lib/ changed — §1.4 gate); issues validate OK.
+
+**Decisions:**
+- Kept this bounded to PowerView's action buttons rather than a repo-wide button-theme sweep: the theme-level `materialTapTargetSize` route is platform-resolution-timing fragile to test and has a wide blast radius on existing 320px/200% no-overflow tests, whereas explicit per-widget `minimumSize` is deterministic and mirrors the already-fixed dialog action buttons in the same file. No production TLS touched; no new dependency; DOCS anchor gate not re-run (no corpus/manifest change). Full EMULATOR re-run WAS performed (85/85 green) because `lib/` changed this run. Issue stays OPEN (golden/screenshot light-dark checks remain; touch-target treatment for other views' Retry/firmware/KVM/chip/segmented buttons is a documented follow-up).
+
+**Next:**
+- Continue #010: golden/screenshot light-dark checks (Overview/Dashboard at mobile/tablet/desktop) with deterministic widgets; or extend the 48x48 + single-announcement treatment to the other views' Retry / firmware / KVM / Overview-Chip / Sensors-Segmented buttons.
+- Advance #021 / #009 via non-dependency KVM slices only — no WebView/protocol dep, no production TLS weakening.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on wire/fixture/test_integration change or >7 days.
+
+**Issues touched:** #010 (open — a11y touch-target/semantics slice)

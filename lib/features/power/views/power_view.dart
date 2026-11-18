@@ -148,6 +148,13 @@ class PowerView extends ConsumerWidget {
                           onPressed: () => controller.refresh(),
                           icon: const Icon(Icons.refresh),
                           label: const Text('Retry'),
+                          // A11y: explicit 48x48 hit area (WCAG 2.5.5 /
+                          // Material touch-target minimum), not the 40dp
+                          // desktop default.
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(48, 48),
+                            tapTargetSize: MaterialTapTargetSize.padded,
+                          ),
                         ),
                       ),
                     ),
@@ -268,19 +275,32 @@ class ResetButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool disabled = !enabled || busy;
+    // Power actions are destructive-capable controls: give every one an
+    // explicit 48x48dp hit area (WCAG 2.5.5 / Material touch-target minimum)
+    // instead of relying on the platform default, which shrinks to 40dp on
+    // desktop targets. Mirrors the confirm-dialog action buttons below.
     final ButtonStyle style = action.isDestructive
         ? FilledButton.styleFrom(
+            minimumSize: const Size(48, 48),
+            tapTargetSize: MaterialTapTargetSize.padded,
             backgroundColor: Theme.of(context).colorScheme.error,
             foregroundColor: Theme.of(context).colorScheme.onError,
           )
-        : const ButtonStyle();
+        : FilledButton.styleFrom(
+            minimumSize: const Size(48, 48),
+            tapTargetSize: MaterialTapTargetSize.padded,
+          );
 
     return Semantics(
-      // Announce the in-flight state to assistive tech; the visible label
-      // already communicates the action, so append the state rather than
-      // replacing it (keeps the button's name stable for re-discovery).
-      label: busy ? '${action.label}, action in progress' : null,
+      // One stable button node for assistive tech: replace (rather than stack
+      // on top of) the FilledButton's own button semantics so the action is
+      // never announced twice. The name stays the visible label while idle,
+      // with the in-flight state appended while busy — the same
+      // single-announcement pattern as ConfirmRemoveSystemDialog.
+      excludeSemantics: true,
       button: true,
+      enabled: !disabled,
+      label: busy ? '${action.label}, action in progress' : action.label,
       child: FilledButton.icon(
         onPressed: disabled ? null : onPressed,
         icon: busy
