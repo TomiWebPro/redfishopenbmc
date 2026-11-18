@@ -9899,3 +9899,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on wire/fixture/test_integration change or >7 days.
 
 **Issues touched:** #010 (open — a11y touch-target/semantics slice)
+
+## 2026-11-18 07:03 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 (smallest open P2 issue) — extended the 48x48dp touch-target treatment (WCAG 2.5.5 / Material minimum, landed on PowerView last run) to the remaining five main-view error-state Retry controls: Dashboard + Firmware (TextButton), Sensors / Overview / KVM (FilledButton.icon). Baseline green at 42d7aaf (analyze 0, 836 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). On desktop targets these Retry buttons were 40dp tall — below the 48dp minimum. Added a single shared helper `accessibleTouchTargetStyle()` + `kMinimumTouchTarget` (48x48) in the new `lib/core/theme/accessible_buttons.dart`, applied to all five controls. Added `test/core/theme/accessible_buttons_test.dart` (4 tests: constant value, TextButton ≥48x48 + one enabled button node under shrinkWrap, FilledButton.icon ≥48x48 + one node, and a RED proof that a plain desktop button is <48dp). Verify: analyze 0; flutter test 840 passed / 1 skipped (836 +4); DMTF emulator 85/85 green (lib/ changed — §1.4 gate); issues validate OK.
+
+**Decisions:**
+- Used one shared `ButtonStyle` helper rather than duplicating the 4-line style literal in five views — guarantees the touch target centrally and makes the behavior unit-testable without five complex per-view error-state harnesses; `ButtonStyle` works for both TextButton and FilledButton.icon. Kept the RED proof in the test suite so a future theme change that reintroduces the 40dp gap is documented/detectable. No visual churn: same visible labels/icons/tooltips; the existing capability-gated views and their 320/800/1300/1400 px no-overflow tests are unchanged and pass. No production TLS touched; no new dependency; DOCS anchor gate not re-run (no corpus/manifest change). Full EMULATOR re-run WAS performed (85/85 green) because `lib/` changed this run (§1.4 gate); the change is widget presentation only — no wire/request/header/payload change. Issue stays OPEN (golden/screenshot light-dark checks remain).
+
+**Next:**
+- Continue #010 golden/screenshot light-dark checks (Overview/Dashboard at mobile/tablet/desktop) with deterministic widgets; or extend 48x48 + single-announcement to the remaining small controls (Overview-Chip / Sensors-Segmented / system-card menu).
+- Advance #021 / #009 via non-dependency KVM slices only — no WebView/protocol dep, no production TLS weakening.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on further lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #010 (open)

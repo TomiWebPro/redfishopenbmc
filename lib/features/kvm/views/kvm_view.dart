@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:redfishopenbmc/core/theme/accessible_buttons.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_controller.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_providers.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
@@ -124,6 +125,9 @@ class _KvmViewState extends ConsumerState<KvmView> {
               Tooltip(
                 message: 'Retry loading KVM consoles',
                 child: FilledButton.icon(
+                  // WCAG 2.5.5 / Material 48x48dp minimum hit area on desktop,
+                  // independent of the resolved materialTapTargetSize (#010).
+                  style: accessibleTouchTargetStyle(),
                   onPressed: () => controller.load(),
                   icon: const Icon(Icons.refresh),
                   label: const Text('Retry'),

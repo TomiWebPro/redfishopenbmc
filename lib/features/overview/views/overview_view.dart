@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:redfishopenbmc/core/theme/accessible_buttons.dart';
 import 'package:redfishopenbmc/core/theme/breakpoints.dart';
 import 'package:redfishopenbmc/features/overview/models/system_overview.dart';
 import 'package:redfishopenbmc/features/overview/overview_provider.dart';
@@ -476,6 +477,9 @@ class _OverviewViewState extends ConsumerState<OverviewView> {
             Tooltip(
               message: 'Retry loading overview',
               child: FilledButton.icon(
+                // WCAG 2.5.5 / Material 48x48dp minimum hit area on desktop,
+                // independent of the resolved materialTapTargetSize (#010).
+                style: accessibleTouchTargetStyle(),
                 onPressed: _refresh,
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retry'),

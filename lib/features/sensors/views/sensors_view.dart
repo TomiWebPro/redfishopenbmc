@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:redfishopenbmc/core/theme/accessible_buttons.dart';
 import 'package:redfishopenbmc/features/sensors/models/polling_policy.dart';
 import 'package:redfishopenbmc/features/sensors/models/reading_history.dart';
 import 'package:redfishopenbmc/features/sensors/models/sensor_models.dart';
@@ -241,6 +242,9 @@ class _SensorsViewState extends ConsumerState<SensorsView>
               Tooltip(
                 message: 'Retry loading sensors',
                 child: FilledButton.icon(
+                  // WCAG 2.5.5 / Material 48x48dp minimum hit area on desktop,
+                  // independent of the resolved materialTapTargetSize (#010).
+                  style: accessibleTouchTargetStyle(),
                   onPressed: _load,
                   icon: const Icon(Icons.refresh),
                   label: const Text('Retry'),

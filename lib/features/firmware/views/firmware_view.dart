@@ -4,6 +4,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:redfishopenbmc/core/theme/accessible_buttons.dart';
 import 'package:redfishopenbmc/features/firmware/firmware_controller.dart';
 import 'package:redfishopenbmc/features/firmware/firmware_providers.dart';
 import 'package:redfishopenbmc/features/firmware/models/firmware_models.dart';
@@ -376,6 +377,10 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                             Tooltip(
                               message: 'Retry loading firmware inventory',
                               child: TextButton(
+                                // WCAG 2.5.5 / Material 48x48dp minimum hit
+                                // area on desktop, independent of the resolved
+                                // materialTapTargetSize (#010).
+                                style: accessibleTouchTargetStyle(),
                                 onPressed:
                                     ui.loading ? null : () => controller.load(),
                                 child: const Text('Retry'),

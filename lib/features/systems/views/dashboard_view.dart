@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:redfishopenbmc/core/theme/accessible_buttons.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/features/systems/views/add_system_dialog.dart';
 import 'package:redfishopenbmc/features/systems/views/confirm_remove_system_dialog.dart';
@@ -291,6 +292,9 @@ class _ErrorSummary extends StatelessWidget {
               Tooltip(
                 message: 'Retry connection to failed systems',
                 child: TextButton(
+                  // WCAG 2.5.5 / Material 48x48dp minimum hit area on desktop,
+                  // independent of the resolved materialTapTargetSize (#010).
+                  style: accessibleTouchTargetStyle(),
                   onPressed: onRetry,
                   child: const Text('Retry'),
                 ),
