@@ -564,4 +564,69 @@ void main() {
       expect(seen.single.requestCount, 1);
     });
   });
+
+  group('DiscoveryEngine — concurrency measurement (#010 performance)', () {
+    test('peak concurrency is measured and never exceeds the 4-worker default',
+        () async {
+      final FakeBmc bmc = openBmc();
+      final DiscoveryEngine engine = DiscoveryEngine();
+      await engine.discover(bmc.buildClient(), 'bmc1');
+
+      final DiscoveryCrawlMetrics m = engine.lastCrawlMetrics!;
+      expect(m.maxConcurrency, 4);
+      expect(m.peakConcurrentRequests, greaterThanOrEqualTo(1));
+      expect(m.peakConcurrentRequests, lessThanOrEqualTo(4));
+      expect(m.withinConcurrencyLimit, isTrue);
+      // The rich OpenBMC fixture exposes several sibling seeds at once, so the
+      // worker pool genuinely overlaps fetches rather than running serially.
+      expect(m.peakConcurrentRequests, greaterThan(1));
+    });
+
+    test('a single worker serializes every crawl request', () async {
+      final FakeBmc bmc = openBmc();
+      final List<DiscoveryCrawlMetrics> seen = <DiscoveryCrawlMetrics>[];
+      final DiscoveryEngine engine = DiscoveryEngine(
+        maxConcurrency: 1,
+        onCrawlMetrics: seen.add,
+      );
+
+      final SystemFeatures f = await engine.discover(bmc.buildClient(), 'bmc1');
+
+      expect(f.powerControl, isTrue);
+      expect(seen.single.maxConcurrency, 1);
+      expect(seen.single.peakConcurrentRequests, 1);
+      expect(seen.single.withinConcurrencyLimit, isTrue);
+    });
+
+    test('maxConcurrency clamped to >=1 is reflected in the metrics', () async {
+      final FakeBmc bmc = openBmc();
+      final List<DiscoveryCrawlMetrics> seen = <DiscoveryCrawlMetrics>[];
+      final DiscoveryEngine engine = DiscoveryEngine(
+        maxConcurrency: 0,
+        onCrawlMetrics: seen.add,
+      );
+
+      await engine.discover(bmc.buildClient(), 'bmc1');
+      expect(seen.single.maxConcurrency, 1);
+      expect(seen.single.peakConcurrentRequests, 1);
+      expect(seen.single.withinConcurrencyLimit, isTrue);
+    });
+
+    test('concurrency metrics round-trip through toJson/toString', () async {
+      final FakeBmc bmc = openBmc();
+      final DiscoveryEngine engine = DiscoveryEngine(maxConcurrency: 2);
+      await engine.discover(bmc.buildClient(), 'bmc1');
+
+      final DiscoveryCrawlMetrics m = engine.lastCrawlMetrics!;
+      final Map<String, dynamic> json = m.toJson();
+      expect(json['peakConcurrentRequests'], m.peakConcurrentRequests);
+      expect(json['maxConcurrency'], 2);
+      expect(json['withinConcurrencyLimit'], isTrue);
+      expect(m.toString(), contains('peakConcurrentRequests:'));
+      expect(
+        m.peakConcurrentRequests,
+        lessThanOrEqualTo(2),
+      );
+    });
+  });
 }

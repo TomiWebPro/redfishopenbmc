@@ -163,19 +163,32 @@ class DiscoveryEngine {
     Map<String, Map<String, dynamic>> bodies,
   ) async {
     final int requestBudget = maxRequestsPerCrawl < 1 ? 1 : maxRequestsPerCrawl;
+    final int workerCount = maxConcurrency < 1 ? 1 : maxConcurrency;
     int requestsIssued = 0;
     int budgetSkips = 0;
+    int activeRequests = 0;
+    int peakConcurrentRequests = 0;
 
-    // Single entry point for every GET in this crawl: counts requests and
-    // enforces the per-crawl budget. Returns null when the budget stopped the
-    // crawl so callers can skip that node without fetching it.
+    // Single entry point for every GET in this crawl: counts requests, tracks
+    // in-flight concurrency, and enforces the per-crawl budget. Returns null
+    // when the budget stopped the crawl so callers skip that node without
+    // fetching it. The worker pool bounds activeRequests by [workerCount];
+    // recording the peak here proves the #010 "no Future.wait storm >4" rule.
     Future<Map<String, dynamic>?> fetch(String uri) async {
       if (requestsIssued >= requestBudget) {
         budgetSkips++;
         return null;
       }
       requestsIssued++;
-      return _fetchUri(client, uri, etags, bodies);
+      activeRequests++;
+      if (activeRequests > peakConcurrentRequests) {
+        peakConcurrentRequests = activeRequests;
+      }
+      try {
+        return await _fetchUri(client, uri, etags, bodies);
+      } finally {
+        activeRequests--;
+      }
     }
 
     final Map<String, dynamic> rawTree = <String, dynamic>{};
@@ -268,7 +281,6 @@ class DiscoveryEngine {
       }
     }
 
-    final int workerCount = maxConcurrency < 1 ? 1 : maxConcurrency;
     await Future.wait<void>(
       List<Future<void>>.generate(workerCount, (_) => worker()),
     );
@@ -280,6 +292,8 @@ class DiscoveryEngine {
       requestCount: requestsIssued,
       maxRequests: requestBudget,
       budgetSkips: budgetSkips,
+      peakConcurrentRequests: peakConcurrentRequests,
+      maxConcurrency: workerCount,
     );
     _lastCrawlMetrics = metrics;
     final void Function(DiscoveryCrawlMetrics)? observer = onCrawlMetrics;
@@ -289,7 +303,7 @@ class DiscoveryEngine {
       developer.log(
         '[discovery] $systemId crawl: $requestsIssued HTTP requests '
         '(soft target ≤$typicalRequestBudget, hard cap $requestBudget, '
-        'skipped $budgetSkips)',
+        'skipped $budgetSkips, peak concurrency $peakConcurrentRequests/$workerCount)',
         name: 'redfish.discovery',
       );
     }
@@ -449,7 +463,9 @@ class DiscoveryEngine {
 /// ≤8 requests for typical OpenBMC — measured, logged debug"): [requestCount]
 /// is the exact number of HTTP GETs a crawl issued, [maxRequests] the hard
 /// ceiling it ran under, and [budgetSkips] how many discovered URIs were left
-/// unfetched because that ceiling was reached.
+/// unfetched because that ceiling was reached. [peakConcurrentRequests] is the
+/// most GETs that were ever in flight at once, bounded by [maxConcurrency]
+/// (the "no Future.wait storm >4 concurrency" rule).
 class DiscoveryCrawlMetrics {
   /// Creates crawl metrics.
   const DiscoveryCrawlMetrics({
@@ -457,6 +473,8 @@ class DiscoveryCrawlMetrics {
     required this.requestCount,
     required this.maxRequests,
     required this.budgetSkips,
+    this.peakConcurrentRequests = 0,
+    this.maxConcurrency = 0,
   });
 
   /// The system this crawl was for.
@@ -471,6 +489,13 @@ class DiscoveryCrawlMetrics {
   /// Discovered URIs skipped because the hard ceiling was reached.
   final int budgetSkips;
 
+  /// Most HTTP GETs that were in flight simultaneously during the crawl.
+  /// Never exceeds [maxConcurrency] — the bounded worker-pool guarantee.
+  final int peakConcurrentRequests;
+
+  /// Effective worker/connection limit the crawl ran under (clamped to ≥1).
+  final int maxConcurrency;
+
   /// Whether the crawl stayed within its hard request budget.
   bool get withinBudget => budgetSkips == 0;
 
@@ -478,20 +503,27 @@ class DiscoveryCrawlMetrics {
   bool get withinTypicalBudget =>
       requestCount <= DiscoveryEngine.typicalRequestBudget;
 
+  /// Whether the crawl respected its configured concurrency limit.
+  bool get withinConcurrencyLimit => peakConcurrentRequests <= maxConcurrency;
+
   /// JSON form, handy for debug logging / diagnostics.
   Map<String, dynamic> toJson() => <String, dynamic>{
         'systemId': systemId,
         'requestCount': requestCount,
         'maxRequests': maxRequests,
         'budgetSkips': budgetSkips,
+        'peakConcurrentRequests': peakConcurrentRequests,
+        'maxConcurrency': maxConcurrency,
         'withinBudget': withinBudget,
         'withinTypicalBudget': withinTypicalBudget,
+        'withinConcurrencyLimit': withinConcurrencyLimit,
       };
 
   @override
   String toString() => 'DiscoveryCrawlMetrics('
       'systemId: $systemId, requestCount: $requestCount, '
-      'maxRequests: $maxRequests, budgetSkips: $budgetSkips)';
+      'maxRequests: $maxRequests, budgetSkips: $budgetSkips, '
+      'peakConcurrentRequests: $peakConcurrentRequests/$maxConcurrency)';
 }
 
 /// A unit of work in the discovery BFS: a URI and its current depth.

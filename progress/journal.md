@@ -9764,3 +9764,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on code/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #010 (open)
+
+## 2026-11-18 01:29 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 (smallest open issue, P2, oldest), the discovery concurrency-measurement slice. Baseline green (analyze 0, 766 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Continued the Performance budget by making the "no `Future.wait` storm >4 concurrency" rule measurable and tested: `DiscoveryEngine._crawl` now tracks in-flight GETs around the single `fetch()` helper and records `peakConcurrentRequests` plus the effective `maxConcurrency` (clamped ≥1) into `DiscoveryCrawlMetrics`. New `peakConcurrentRequests`/`maxConcurrency`/`withinConcurrencyLimit` fields surface in `toJson()`/`toString()` and the existing `dart:developer` debug log; no observer or wire-surface change. Added 4 unit tests (peak ≤4 with genuine overlap >1 on the rich OpenBMC fixture, single-worker `peak==1`, `maxConcurrency:0` clamp reflected, JSON/string round-trip). Verify: analyze 0; flutter test 770 passed / 1 skipped (+4); issues validate OK. #010 stays OPEN (remaining perf/coverage slices).
+
+**Decisions:**
+- Measured concurrency at the engine's single `fetch()` entry point (active/peak counters with a `try/finally` decrement) rather than at the Dio transport: the worker pool is what the acceptance rule constrains, and this keeps the proof independent of any fake adapter. Reused the existing `DiscoveryCrawlMetrics` + `onCrawlMetrics`/`lastCrawlMetrics`/debug-log plumbing from the prior request-budget slice so concurrency is observable with no new API surface for callers. Moved the existing `workerCount` clamp to the top of `_crawl` so the same effective limit feeds both `Future.wait` and the metrics. Gave the two new metric fields defaults of 0 so any external direct construction stays source-compatible. Skipped UI: this is a non-visual diagnostics slice and the runbook bans manufactured UI churn while FEATURE work is open. No production TLS weakened; no new dependency; DOCS anchor gate not re-run (no corpus/manifest change); full EMULATOR re-run skipped (no wire-contract/fixture/test_integration/tool change; <7 days since last green 2026-11-16 05:27 UTC).
+
+**Next:**
+- Continue #010 Performance budget: cache TTL 5min / delta-ETag proof, lazy-load FirmwareInventory/Sensors on tab visit, sensor poll cadence configurability, or the ≥75%/≥80% coverage gate, with tests.
+- Split/advance #009 or #021 via non-dependency KVM slices only (no WebView/protocol dep, no production TLS weakening).
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on code/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #010 (open)
