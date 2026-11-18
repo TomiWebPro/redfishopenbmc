@@ -125,6 +125,11 @@ class KvmConsole {
 
   /// The connection types advertised by `ConnectTypesSupported`, e.g.
   /// `['KVMIP']`, `['VNC','HTML5']`, or `['SSH','Telnet']`.
+  ///
+  /// Parsed from the Redfish block with trimming, empty-entry removal and
+  /// case-insensitive dedup (first-seen spelling kept), matching
+  /// `KvmCapability.connectTypes` so the console card and the capability card
+  /// never disagree about the same manager's types (issue #009).
   final List<String> connectTypesSupported;
 
   /// Whether the console service is enabled.
@@ -356,7 +361,8 @@ class KvmConsole {
     required String managerId,
     required String sourceManagerUri,
   }) {
-    final List<String> types = _asStringList(block['ConnectTypesSupported']);
+    final List<String> types =
+        _normalizedConnectTypes(block['ConnectTypesSupported']);
     final int? maxSessions = _asInt(block['MaxConcurrentSessions']);
     final String? connectUri = _asString(block['ConnectUri']);
     final bool enabled =
@@ -428,10 +434,25 @@ int? _asInt(Object? value) {
   return null;
 }
 
-/// Builds a [List<String>] from a JSON list value, stringifying each element.
-List<String> _asStringList(dynamic value) {
-  if (value is List<dynamic>) {
-    return value.map((dynamic e) => e.toString()).toList();
+/// Builds a normalized [List<String>] of `ConnectTypesSupported` values from a
+/// Redfish JSON list: each entry is trimmed, empty entries are dropped and
+/// duplicates are removed case-insensitively while keeping the first (BMC-
+/// provided) spelling for deterministic display.
+///
+/// This mirrors `KvmCapability._appendTypes` so the per-console card and the
+/// per-manager capability card — which read the same console blocks — surface
+/// the same clean set of connection types instead of duplicate/garbled chips
+/// when a BMC mixes casing or whitespace (issue #009).
+List<String> _normalizedConnectTypes(dynamic value) {
+  if (value is! List<dynamic>) return const <String>[];
+  final List<String> result = <String>[];
+  for (final dynamic entry in value) {
+    final String type = entry.toString().trim();
+    if (type.isEmpty) continue;
+    final bool duplicate = result.any(
+      (String existing) => existing.toUpperCase() == type.toUpperCase(),
+    );
+    if (!duplicate) result.add(type);
   }
-  return const <String>[];
+  return List<String>.unmodifiable(result);
 }

@@ -10094,3 +10094,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — detection-field consistency fix)
+
+## 2026-11-18 15:12 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free cross-view connect-type consistency fix. `KvmConsole._fromBlock` used a generic `_asStringList` that stored Redfish `ConnectTypesSupported` verbatim (untrimmed entries, empty strings kept, case variants duplicated), while `KvmCapability.fromManager` already trimmed + case-insensitively deduped the same console blocks — so a BMC emitting `['KVMIP', ' kvmip ', ' HTML5 ', 'html5']` rendered four garbled/duplicate chips on the per-console card but two clean ones on the capability card. Replaced with `_normalizedConnectTypes` (trim + drop-empty + case-insensitive dedup, first-seen casing), mirroring the capability model so both views surface the same clean list. Added 3 RED→GREEN pure-Dart tests in `test/features/kvm/kvm_model_test.dart` (mixed-case/whitespace collapse, empty-entry removal, console-card ↔ capability-card agreement), all failing pre-fix. Baseline green at 843be2c (analyze 0, 960 passed / 1 skipped; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; targeted 29 passed; KVM suite 139; flutter test --coverage 963 passed / 1 skipped (+3); DMTF emulator 85/85 (lib changed — §1.4 gate); coverage gates PASS overall 89.1% / scoped 90.3% / kvm 92.2%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a genuine model-consistency defect over manufactured churn: #009's and #021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation, so the honest unblocked work was aligning the console card's `ConnectTypesSupported` parsing with the capability card's already-normalized contract. Both views read the same `Manager.GraphicalConsole`/`SerialConsole` blocks, so they must present the same clean, deduped set; this removes real user-visible duplicate/garbled chips rather than adding decoration. Kept backward-compatible semantics for well-formed payloads (a canonical `['KVMIP','HTML5']` is byte-identical before/after), made the returned list unmodifiable like the capability model, and kept the first BMC-provided spelling for deterministic display. Pure Dart, read-only, no WebView/protocol dependency and no production TLS change. Full emulator re-run (85/85) because `lib/` changed; no wire/request/header/payload handling touched.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. `KvmCapability.maxSessions` non-positive tolerance, or non-string `ConnectTypesSupported` entry tolerance consistent across both models) or epic-triage/split the blocked rendering work, never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration change or >7 days.
+
+**Issues touched:** #009 (open — cross-view connect-type consistency fix)

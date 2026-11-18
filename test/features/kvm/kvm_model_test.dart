@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
 
 /// Reads and decodes the real DMTF `public-rackmount1` BMC manager fixture.
@@ -489,6 +490,79 @@ void main() {
         'In-app embedded rendering is not available for this console. '
         'Use the URI externally if provided.',
       );
+    });
+  });
+
+  group('KvmConsole connect-type normalization consistency (#009)', () {
+    // RED proof: before normalization, KvmConsole stored the raw
+    // ConnectTypesSupported list while KvmCapability trimmed + deduped the very
+    // same console blocks. A BMC mixing casing / whitespace therefore rendered
+    // duplicate, garbled chips on the console card while the capability card
+    // showed one clean chip per type — two views disagreeing on the same data.
+    test(
+        'mixed-case and whitespace duplicates are collapsed, first casing kept',
+        () {
+      final List<KvmConsole> consoles = KvmConsole.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>[
+              'KVMIP',
+              ' kvmip ',
+              'HTML5',
+              'HTML5',
+              ' KVMIP ',
+            ],
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(consoles, hasLength(1));
+      expect(consoles.single.connectTypesSupported, <String>['KVMIP', 'HTML5']);
+    });
+
+    test('empty and whitespace-only entries are dropped (#009)', () {
+      final List<KvmConsole> consoles = KvmConsole.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>[
+              'KVMIP',
+              '',
+              '   ',
+              'HTML5',
+            ],
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(consoles, hasLength(1));
+      expect(consoles.single.connectTypesSupported, <String>['KVMIP', 'HTML5']);
+    });
+
+    test(
+        'console card and capability card agree on the same console types (#009)',
+        () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>[
+            'KVMIP',
+            ' kvmip ',
+            ' HTML5 ',
+            'html5',
+          ],
+          'ConnectUri': 'https://bmc.example.com/kvm',
+        },
+      };
+      final KvmConsole console =
+          KvmConsole.fromManager(body, managerId: 'BMC').single;
+      final KvmCapability capability =
+          KvmCapability.fromManager(body, managerId: 'BMC');
+      // Both views read the same GraphicalConsole block; they must surface the
+      // same clean, deduped, first-seen-casing list of connection types.
+      expect(console.connectTypesSupported, capability.connectTypes);
+      expect(console.connectTypesSupported, <String>['KVMIP', 'HTML5']);
     });
   });
 }
