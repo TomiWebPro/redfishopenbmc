@@ -10244,3 +10244,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — pickPrimary launchability fix)
+
+## 2026-11-18 21:40 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free, TLS-safe resolved-URI fix: `KvmCapability.resolveLaunchUri`/`_standardConnectUri` now skip an explicitly disabled console block's `ConnectUri` while a non-disabled (or unknown-enablement) block still exposes one, falling back to any block when every source is disabled. Previously a manager with a disabled graphical console carrying a ConnectUri first had its unlaunchable endpoint shown as the capability card's "Resolved URI" while an enabled RemoteConsole's launchable URI was ignored — contradicting `KvmConsole.canOpenConsole`/`launchStrategy` and the tiered `pickPrimary` just landed. `fromManager` now surfaces the URI of the console the operator can actually open. Added 6 RED→GREEN tests (5 model incl. a cross-view agreement vs `KvmConsole.canOpenConsole`, 1 capability-card widget; 4 confirmed failing pre-fix, 2 fallback/unknown guards green pre-fix). Baseline analyze 0 / 1039 passed / 1 skipped → verify analyze 0 / 1045 passed / 1 skipped (+6); DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.2% / scoped 90.4% / kvm 92.6%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a genuine cross-view data defect over manufactured churn: #009's/#021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation, so the honest unblocked work was making the capability card's resolved URI agree with the actual openable console (the same enabled-state contract `pickPrimary`/`canOpenConsole` just established). Fixed it in the single URI-resolution helper with a two-pass rule that only *skips explicitly disabled* blocks: blocks with no enablement flag (common in mockups) keep their URI and a sole disabled block is still surfaced as the best available choice, so all existing resolveLaunchUri behaviour is byte-for-byte preserved — only the choice among competing URIs changes. A block truthy on either enablement member stays enabled, matching the shared `_blockEnabled`/`KvmConsole.serviceEnabled` rule. Pure Dart + doc comments, read-only, no WebView/protocol dependency and no production TLS change. Full emulator re-run (85/85) because `lib/` changed.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. an aggregate `maxSessions` still sourced from an explicitly disabled console block, or epic-triage/split the WebView-blocked rendering work), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — resolved-URI skip-disabled-block fix)

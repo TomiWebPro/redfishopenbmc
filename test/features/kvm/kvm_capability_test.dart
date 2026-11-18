@@ -923,4 +923,93 @@ void main() {
       expect(capability.sourceManagerUri, console.sourceManagerUri);
     });
   });
+
+  group('KvmCapability resolved URI — skip disabled blocks (#009)', () {
+    // A disabled console's ConnectUri cannot be launched (KvmConsole's
+    // launchStrategy == disabled and canOpenConsole == false). The capability
+    // card is the per-manager summary of the console a user would actually
+    // open, so it must not recommend a disabled console's URI while an enabled
+    // one is available — the same cross-view contract pickPrimary now honours.
+    test('a disabled graphical ConnectUri does not shadow an enabled remote',
+        () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          'ConnectUri': 'https://bmc.example/disabled-kvm',
+        },
+        'RemoteConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectUri': 'https://bmc.example/html5',
+        },
+      });
+
+      expect(uri, 'https://bmc.example/html5');
+    });
+
+    test('a legacy Enabled:false block is also skipped', () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'Enabled': false,
+          'ConnectUri': 'https://bmc.example/disabled-kvm',
+        },
+        'SerialConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectUri': 'ssh://bmc.example:22',
+        },
+      });
+
+      expect(uri, 'ssh://bmc.example:22');
+    });
+
+    test('fromManager surfaces the openable console URI (cross-view agreement)',
+        () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+          'ConnectUri': 'https://bmc.example/disabled-kvm',
+        },
+        'RemoteConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['HTML5'],
+          'ConnectUri': 'https://bmc.example/html5',
+        },
+      };
+      final KvmCapability capability =
+          KvmCapability.fromManager(body, managerId: 'BMC');
+      expect(capability.uri, 'https://bmc.example/html5');
+
+      final List<KvmConsole> consoles =
+          KvmConsole.fromManager(body, managerId: 'BMC');
+      final KvmConsole openable =
+          consoles.firstWhere((KvmConsole c) => c.canOpenConsole);
+      expect(openable.launchUri, capability.uri);
+      expect(consoles.where((KvmConsole c) => c.canOpenConsole).length, 1);
+    });
+
+    test('a sole disabled console URI is still surfaced (no over-skipping)',
+        () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          'ConnectUri': 'https://bmc.example/only-kvm',
+        },
+      });
+
+      expect(uri, 'https://bmc.example/only-kvm');
+    });
+
+    test('an unknown-enablement ConnectUri is still preferred', () {
+      // Most mockups omit the enablement flag; a URI from such a block keeps
+      // its priority so this fix never regresses the established behaviour.
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ConnectUri': 'https://bmc.example/unknown-kvm',
+        },
+      });
+
+      expect(uri, 'https://bmc.example/unknown-kvm');
+    });
+  });
 }

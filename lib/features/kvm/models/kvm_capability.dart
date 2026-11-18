@@ -61,10 +61,11 @@ class KvmCapability {
   /// out of spec (negative — DMTF `Manager` defines a minimum of 0).
   final int? maxSessions;
 
-  /// The resolved console URI: the first standard console block's `ConnectUri`
-  /// (the actual, launchable console endpoint), then `GraphicalConsole.
-  /// @odata.id`, then an OEM `KVM`/`WebConsole` `Uri`; `null` when none is
-  /// exposed. See [KvmCapability.resolveLaunchUri].
+  /// The resolved console URI: a standard console block's `ConnectUri`
+  /// (preferring a block that is not explicitly disabled — the actual,
+  /// launchable console endpoint), then `GraphicalConsole.@odata.id`, then an
+  /// OEM `KVM`/`WebConsole` `Uri`; `null` when none is exposed. See
+  /// [KvmCapability.resolveLaunchUri].
   final String? uri;
 
   /// The `@odata.id` of the manager resource this capability was read from.
@@ -177,10 +178,11 @@ class KvmCapability {
   /// Resolves the console URI for a Redfish manager [body].
   ///
   /// Preference order:
-  ///  1. a standard console block's `ConnectUri` (graphical → serial → remote)
-  ///     — the actual, launchable console endpoint already read by
-  ///     `KvmConsole.fromManager`; kept in sync so the per-manager capability
-  ///     card and the per-console card never disagree about the endpoint;
+  ///  1. a standard console block's `ConnectUri` (graphical → serial → remote),
+  ///     preferring a block that is not explicitly disabled — the actual,
+  ///     launchable console endpoint already read by `KvmConsole.fromManager`;
+  ///     kept in sync so the capability card never recommends a disabled
+  ///     console's URI over an enabled one (issue #009);
   ///  2. `GraphicalConsole.@odata.id` (the standard graphical console link,
   ///     retained for managers that expose only a Redfish resource link);
   ///  3. an OEM `KVM` / `WebConsole` block's `Uri` member (bounded recursive
@@ -207,20 +209,55 @@ class KvmCapability {
     return kvmOemConsoleUri(body['Oem']);
   }
 
-  /// Returns the first non-empty `ConnectUri` across the standard console
-  /// blocks (graphical → serial → remote), or `null`.
+  /// Returns the launchable `ConnectUri` across the standard console blocks
+  /// (graphical → serial → remote), or `null`.
+  ///
+  /// A `ConnectUri` on a console that explicitly reports itself disabled
+  /// (`ServiceEnabled: false` / `Enabled: false`) cannot be opened — that
+  /// console's `KvmConsole.launchStrategy` is `disabled` and `canOpenConsole`
+  /// is false, and `KvmService.pickPrimary` now prefers an openable console.
+  /// Recommending such a URI as the capability card's "Resolved URI" would
+  /// point the operator at a console they cannot launch (issue #009). So an
+  /// explicitly disabled block is skipped while any non-disabled block with a
+  /// usable URI remains. A block that omits the enablement flag is "unknown"
+  /// and keeps its URI (most BMC mockups omit it), and when every URI-bearing
+  /// block is disabled the URI is still surfaced as the best available choice
+  /// — this only changes which URI wins when a launchable one exists.
   static String? _standardConnectUri(Map<String, dynamic> body) {
-    for (final String name in <String>[
+    const List<String> names = <String>[
       'GraphicalConsole',
       'SerialConsole',
       'RemoteConsole',
-    ]) {
+    ];
+
+    // First pass: prefer a block that is not explicitly disabled.
+    for (final String name in names) {
+      final Map<String, dynamic>? block = _consoleBlock(body, name);
+      if (block == null || _explicitlyDisabled(block)) continue;
+      final String? uri = _nonEmptyString(block['ConnectUri']);
+      if (uri != null) return uri;
+    }
+    // Fallback: when the only URI source is an explicitly disabled block,
+    // still surface it rather than showing no URI at all (preserves the prior
+    // behaviour for all-disabled/URI-less fixtures).
+    for (final String name in names) {
       final Map<String, dynamic>? block = _consoleBlock(body, name);
       if (block == null) continue;
       final String? uri = _nonEmptyString(block['ConnectUri']);
       if (uri != null) return uri;
     }
     return null;
+  }
+
+  /// True when a console block explicitly reports itself disabled.
+  ///
+  /// A block that omits both enablement members is "unknown" (not disabled)
+  /// so a mockup without the flag keeps its URI. A block carrying a truthy
+  /// enablement member is enabled even if the other member is false, matching
+  /// the shared `_blockEnabled` / `KvmConsole.serviceEnabled` rule.
+  static bool _explicitlyDisabled(Map<String, dynamic> block) {
+    if (_blockEnabled(block)) return false;
+    return block.containsKey('ServiceEnabled') || block.containsKey('Enabled');
   }
 
   /// Returns a console block from [body] only when it is a JSON object.

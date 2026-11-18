@@ -177,6 +177,39 @@ void main() {
       );
     });
 
+    testWidgets('card shows the enabled console URI, not a disabled one',
+        (WidgetTester tester) async {
+      // A manager with a disabled graphical console (first) and an enabled
+      // remote console: the resolved URI driving the card must be the
+      // launchable one, matching the console the user can actually open.
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC9',
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': false,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'ConnectUri': 'https://bmc.example/disabled-kvm',
+          },
+          'RemoteConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['HTML5'],
+            'ConnectUri': 'https://bmc.example/html5',
+          },
+        },
+        managerId: 'BMC9',
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: KvmCapabilityCard(capability: capability)),
+      );
+
+      expect(find.text('https://bmc.example/html5'), findsOneWidget);
+      expect(find.text('https://bmc.example/disabled-kvm'), findsNothing);
+      expect(
+        find.bySemanticsLabel('Resolved URI: https://bmc.example/html5'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('a whitespace-padded resolved URI is displayed trimmed',
         (WidgetTester tester) async {
       // A BMC can pad an otherwise valid ConnectUri. The card must display the
