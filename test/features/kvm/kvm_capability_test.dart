@@ -238,6 +238,70 @@ void main() {
     });
   });
 
+  group('KvmCapability detection-field consistency (#009)', () {
+    test('supportsKvmIp reflects the graphical console, not aggregate types',
+        () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['HTML5'],
+          },
+          'SerialConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP', 'SSH'],
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      // KVMIP is advertised only on the serial block, so detection (which
+      // keys off the graphical console) must not claim KVMIP support. The
+      // value is still listed in connectTypes — it just is not the flag
+      // `supported` / `supportsKvmIp` are defined against.
+      expect(capability.supported, isFalse);
+      expect(capability.supportsKvmIp, isFalse);
+      expect(capability.connectTypes, contains('KVMIP'));
+    });
+
+    test('supportsKvmIp is true when the graphical console advertises KVMIP',
+        () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+          },
+          'SerialConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['SSH'],
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.supported, isTrue);
+      expect(capability.supportsKvmIp, isTrue);
+    });
+
+    test('connectTypes dedups case-insensitively, keeping first-seen casing',
+        () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ConnectTypesSupported': <dynamic>['KVMIP', 'HTML5'],
+          },
+          'SerialConsole': <String, dynamic>{
+            'ConnectTypesSupported': <dynamic>['kvmip', ' SSH ', ' html5 '],
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.connectTypes, <String>['KVMIP', 'HTML5', 'SSH']);
+    });
+  });
+
   group('KvmCapability.resolveLaunchUri', () {
     test('prefers GraphicalConsole.@odata.id over an OEM KVM Uri', () {
       final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{

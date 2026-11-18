@@ -10079,3 +10079,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — cross-view enablement consistency fix)
+
+## 2026-11-18 14:34 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free detection-field consistency fix on the per-manager capability model. `supportsKvmIp` was documented as "the graphical console advertises KVMIP" but read the aggregate `connectTypes` (graphical + serial + Oem), so a manager advertising KVMIP only on a serial/OEM block reported `supportsKvmIp == true` while `supported == false` (which correctly uses graphical-only detection). It now reads a new authoritative `graphicalKvmIp` bit computed by `KvmCapability.fromManager` from that same graphical-only check, so the two detection fields can never contradict; directly constructed capabilities (widget-test fixtures) fall back to the aggregate scan. Separately, `connectTypes` dedup is now case-insensitive (first graphical-first spelling kept), removing duplicate/garbled connection-type chips when a BMC mixes casing across console blocks. Added 3 RED→GREEN pure-Dart tests in `test/features/kvm/kvm_capability_test.dart` (all confirmed failing pre-fix, GREEN after). Baseline green at 733e779 (analyze 0, 957 passed / 1 skipped; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; targeted 29 passed; KVM suite 136; flutter test 960 passed / 1 skipped (+3); DMTF emulator 85/85 (lib changed — §1.4 gate); coverage gates PASS overall 89.1% / scoped 90.3% / kvm 92.1%; issues validate OK; git diff --check clean. Issue stays OPEN — WebView/TLS-blocked rendering items remain.
+
+**Decisions:**
+- Chose a genuine model-consistency defect over manufactured churn: the previously-flagged `supportsKvmIp` aggregate-vs-graphical contradiction is now closed with an authoritative stored detection bit, keeping the getter in lockstep with `supported` (both key off the graphical console — `KVMIP` is canonically a GraphicalConsole connect type). Kept backward compatibility for directly constructed capabilities via an aggregate-scan fallback so widget-test fixtures and any external callers are unaffected. The case-insensitive `connectTypes` dedup addresses a real user-visible data issue (duplicate chips on the capability card) with a deterministic first-seen (graphical-first) rule so display order stays stable. Fix is pure Dart, read-only, adds no WebView/protocol dependency and no production TLS change. Full emulator re-run (85/85) because `lib/` changed; no wire/request/header/payload handling touched. Issue stays OPEN — embedded HTML5 rendering, fullscreen, input forwarding and the WebView dependency remain blocked.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. `KvmCapability.maxSessions` non-positive tolerance, or per-console `connectTypesSupported` case-variant dedup in `KvmConsole._fromBlock`) or epic-triage/split the blocked rendering work, never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — detection-field consistency fix)

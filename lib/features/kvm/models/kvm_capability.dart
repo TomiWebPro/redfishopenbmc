@@ -28,6 +28,7 @@ class KvmCapability {
     this.maxSessions,
     this.uri,
     this.sourceManagerUri,
+    this.graphicalKvmIp,
   });
 
   /// The `Id` of the manager that exposes this capability (e.g. `'BMC'`).
@@ -43,7 +44,9 @@ class KvmCapability {
   ///
   /// Canonical Redfish values (`KVMIP`, `HTML5`, `SSH`, …) plus the marker
   /// `'Oem'` when an OEM console is detected. Order is deterministic (graphical
-  /// first, then serial, then the OEM marker) and duplicates are removed.
+  /// first, then serial, then the OEM marker) and duplicates are removed
+  /// case-insensitively (a BMC that mixes casing across console blocks must
+  /// not render the same type twice on the capability card).
   final List<String> connectTypes;
 
   /// Whether any standard console block reports itself enabled, or an OEM
@@ -62,14 +65,27 @@ class KvmCapability {
   /// The `@odata.id` of the manager resource this capability was read from.
   final String? sourceManagerUri;
 
+  /// Authoritative `KVMIP` detection from the graphical console — the same
+  /// source [supported] keys off — when built via [fromManager].
+  ///
+  /// `null` for directly constructed capabilities (e.g. widget-test fixtures),
+  /// in which case [supportsKvmIp] falls back to scanning [connectTypes].
+  final bool? graphicalKvmIp;
+
   /// Whether a non-empty console [uri] was resolved.
   bool get hasUri => uri != null && uri!.isNotEmpty;
 
   /// True when the graphical console advertises a `KVMIP` connection type.
   ///
-  /// Matching is case-insensitive and trimmed because some BMCs emit a
-  /// different case or surrounding whitespace.
-  bool get supportsKvmIp => connectTypes.any(
+  /// Uses the graphical-only detection bit computed by [fromManager], keeping
+  /// this getter in lockstep with [supported] (which also keys off the
+  /// graphical console). Reading the aggregate [connectTypes] here would
+  /// wrongly report KVMIP support for a manager that only lists `KVMIP` on a
+  /// serial/OEM block. Matching is case-insensitive and trimmed because some
+  /// BMCs emit a different case or surrounding whitespace.
+  bool get supportsKvmIp =>
+      graphicalKvmIp ??
+      connectTypes.any(
         (String type) => type.trim().toUpperCase() == 'KVMIP',
       );
 
@@ -111,6 +127,7 @@ class KvmCapability {
       sourceManagerUri: sourceManagerUri ??
           (body['@odata.id'] as String?) ??
           '/redfish/v1/Managers/$managerId',
+      graphicalKvmIp: kvmIp,
     );
   }
 
@@ -188,14 +205,22 @@ class KvmCapability {
     );
   }
 
-  /// Appends a block's `ConnectTypesSupported` entries to [target] (deduped).
+  /// Appends a block's `ConnectTypesSupported` entries to [target].
+  ///
+  /// Dedup is case-insensitive so a BMC that emits the same canonical type in
+  /// different casing across console blocks is rendered only once; the first
+  /// (graphical-first) spelling is kept for deterministic display.
   static void _appendTypes(List<String> target, Map<String, dynamic>? block) {
     if (block == null) return;
     final dynamic value = block['ConnectTypesSupported'];
     if (value is! List<dynamic>) return;
     for (final dynamic entry in value) {
       final String type = entry.toString().trim();
-      if (type.isNotEmpty && !target.contains(type)) target.add(type);
+      if (type.isEmpty) continue;
+      final bool duplicate = target.any(
+        (String existing) => existing.toUpperCase() == type.toUpperCase(),
+      );
+      if (!duplicate) target.add(type);
     }
   }
 
