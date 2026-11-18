@@ -231,6 +231,44 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+        'a RemoteConsole-only manager renders as supported and '
+        'enabled, not "KVM disabled on BMC" (#009)',
+        (WidgetTester tester) async {
+      // A manager exposing only a RemoteConsole produced an enabled per-console
+      // card but a "disabled / not supported" capability card before fromManager
+      // learned to aggregate RemoteConsole. Pin the corrected card output.
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'RemoteConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['HTML5'],
+            'MaxConcurrentSessions': 2,
+            'ConnectUri': 'https://bmc.example/html5',
+          },
+        },
+        managerId: 'BMC6',
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: KvmCapabilityCard(capability: capability)),
+      );
+
+      expect(find.text('Supported'), findsOneWidget);
+      expect(find.text('Service enabled: Yes'), findsOneWidget);
+      expect(find.text('HTML5'), findsOneWidget);
+      expect(find.textContaining('KVM disabled on BMC'), findsNothing);
+      expect(
+        find.bySemanticsLabel(
+          'Manager capability BMC6, enabled, KVM supported',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Connection types: HTML5'),
+        findsOneWidget,
+      );
+    });
   });
 
   group('KvmView capability section', () {

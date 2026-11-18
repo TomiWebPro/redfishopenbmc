@@ -37,21 +37,24 @@ class KvmCapability {
 
   /// Whether this manager can serve a usable console.
   ///
-  /// True when a graphical console is enabled and advertises `KVMIP`, or when
-  /// an `Oem.*` block advertises a console (`kvm` / `WebConsole`).
+  /// True when a graphical console is enabled and advertises `KVMIP`, when a
+  /// `RemoteConsole` is enabled, or when an `Oem.*` block advertises a console
+  /// (`kvm` / `WebConsole`). An enabled `RemoteConsole` is a remote console by
+  /// definition, so it counts as supported regardless of its `ConnectType`
+  /// spelling (issue #009).
   final bool supported;
 
   /// Advertised connection types across the manager's console blocks.
   ///
   /// Canonical Redfish values (`KVMIP`, `HTML5`, `SSH`, …) plus the marker
   /// `'Oem'` when an OEM console is detected. Order is deterministic (graphical
-  /// first, then serial, then the OEM marker) and duplicates are removed
+  /// first, then serial, then remote, then the OEM marker) and duplicates are removed
   /// case-insensitively (a BMC that mixes casing across console blocks must
   /// not render the same type twice on the capability card).
   final List<String> connectTypes;
 
-  /// Whether any standard console block reports itself enabled, or an OEM
-  /// console is present.
+  /// Whether any standard console block (graphical, serial or remote) reports
+  /// itself enabled, or an OEM console is present.
   final bool serviceEnabled;
 
   /// The maximum number of concurrent sessions, or `null` when unreported or
@@ -111,10 +114,11 @@ class KvmCapability {
 
   /// Builds a capability summary from a Redfish manager [body].
   ///
-  /// Reads `GraphicalConsole` and `SerialConsole`, scans `Oem.*` for console
-  /// keys (via the shared strict `FeatureRules.oemHasConsole` contract), and
-  /// resolves the launch URI through [resolveLaunchUri]. Detection rule:
-  /// `supported = (graphical enabled && KVMIP advertised) || OEM console`.
+  /// Reads `GraphicalConsole`, `SerialConsole` and `RemoteConsole`, scans
+  /// `Oem.*` for console keys (via the shared strict
+  /// `FeatureRules.oemHasConsole` contract), and resolves the launch URI through
+  /// [resolveLaunchUri]. Detection rule: `supported = (graphical enabled &&
+  /// KVMIP advertised) || remote enabled || OEM console`.
   factory KvmCapability.fromManager(
     Map<String, dynamic> body, {
     required String managerId,
@@ -123,25 +127,40 @@ class KvmCapability {
     final Map<String, dynamic>? graphical =
         _consoleBlock(body, 'GraphicalConsole');
     final Map<String, dynamic>? serial = _consoleBlock(body, 'SerialConsole');
+    // `RemoteConsole` is a standard console block everywhere else in the KVM
+    // feature: KvmConsole.fromManager parses it and resolveLaunchUri reads its
+    // ConnectUri. Aggregate it here too, so a manager exposing only a
+    // RemoteConsole is not reported as disabled/unsupported on the capability
+    // card while its per-console card is enabled and launchable (issue #009).
+    final Map<String, dynamic>? remote = _consoleBlock(body, 'RemoteConsole');
 
     final bool oemConsole = FeatureRules.oemHasConsole(body['Oem']);
     final bool graphicalEnabled = _blockEnabled(graphical);
     final bool serialEnabled = _blockEnabled(serial);
+    final bool remoteEnabled = _blockEnabled(remote);
 
     final List<String> types = <String>[];
     _appendTypes(types, graphical);
     _appendTypes(types, serial);
+    _appendTypes(types, remote);
     if (oemConsole && !types.contains('Oem')) types.add('Oem');
 
     final bool kvmIp = _advertises(graphical, 'KVMIP');
-    final bool supported = (graphicalEnabled && kvmIp) || oemConsole;
-    final int? maxSessions = _maxSessions(graphical) ?? _maxSessions(serial);
+    // A graphical console needs the KVMIP connection type to count as KVM
+    // (a purely HTML5 graphical console is a web console, not KVM-over-IP). A
+    // `RemoteConsole` is a remote console by definition, so an enabled one is
+    // supported regardless of the exact `ConnectType` spelling a BMC uses.
+    final bool supported =
+        (graphicalEnabled && kvmIp) || remoteEnabled || oemConsole;
+    final int? maxSessions =
+        _maxSessions(graphical) ?? _maxSessions(serial) ?? _maxSessions(remote);
 
     return KvmCapability(
       managerId: managerId,
       supported: supported,
       connectTypes: List<String>.unmodifiable(types),
-      serviceEnabled: graphicalEnabled || serialEnabled || oemConsole,
+      serviceEnabled:
+          graphicalEnabled || serialEnabled || remoteEnabled || oemConsole,
       maxSessions: maxSessions,
       uri: resolveLaunchUri(body),
       sourceManagerUri: sourceManagerUri ??

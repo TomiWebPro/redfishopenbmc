@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
+import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
 
 void main() {
   group('KvmCapability.fromManager — detection', () {
@@ -722,6 +723,118 @@ void main() {
       // per-console card's launchUri.
       expect(capability.launchUri, 'https://bmc.example/kvm');
       expect(capability.hasUri, isTrue);
+    });
+  });
+
+  group('KvmCapability.fromManager — RemoteConsole consistency (#009)', () {
+    // `RemoteConsole` is treated as a standard console block everywhere else in
+    // the KVM feature (KvmConsole.fromManager parses it; resolveLaunchUri reads
+    // its ConnectUri), but fromManager's aggregate detection used to ignore it —
+    // so a manager exposing only a RemoteConsole yielded an *enabled* console
+    // card next to a "KVM not supported / disabled" capability card. These tests
+    // pin the two views to the same detection.
+    test('enabled RemoteConsole is supported, enabled, typed and limited', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'RemoteConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['HTML5'],
+            'MaxConcurrentSessions': 3,
+            'ConnectUri': 'https://bmc.example/html5',
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.supported, isTrue);
+      expect(capability.serviceEnabled, isTrue);
+      expect(capability.connectTypes, <String>['HTML5']);
+      expect(capability.maxSessions, 3);
+      expect(capability.uri, 'https://bmc.example/html5');
+      // HTML5 is not KVMIP: supportsKvmIp stays false, detection is honest.
+      expect(capability.supportsKvmIp, isFalse);
+    });
+
+    test(
+        'console card and capability card agree on a RemoteConsole-only '
+        'manager', () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        'RemoteConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['HTML5'],
+          'MaxConcurrentSessions': 2,
+          'ConnectUri': 'https://bmc.example/html5',
+        },
+      };
+      final KvmConsole console = KvmConsole.fromManager(
+        body,
+        managerId: 'BMC',
+      ).single;
+      final KvmCapability capability = KvmCapability.fromManager(
+        body,
+        managerId: 'BMC',
+      );
+
+      expect(capability.serviceEnabled, console.serviceEnabled);
+      expect(capability.connectTypes, console.connectTypesSupported);
+      expect(capability.maxSessions, console.maxConcurrentSessions);
+      expect(capability.launchUri, console.launchUri);
+    });
+
+    test(
+        'RemoteConsole maxSessions is the fallback when graphical and '
+        'serial report none', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+          },
+          'RemoteConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['HTML5'],
+            'MaxConcurrentSessions': 4,
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.maxSessions, 4);
+    });
+
+    test(
+        'RemoteConsole connect types dedup case-insensitively with '
+        'graphical types', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+          },
+          'RemoteConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>[' kvmip ', 'HTML5'],
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.connectTypes, <String>['KVMIP', 'HTML5']);
+    });
+
+    test('disabled RemoteConsole does not report KVM support', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'RemoteConsole': <String, dynamic>{
+            'ServiceEnabled': false,
+            'ConnectTypesSupported': <dynamic>['HTML5'],
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.supported, isFalse);
+      expect(capability.serviceEnabled, isFalse);
     });
   });
 }

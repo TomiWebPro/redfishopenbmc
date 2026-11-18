@@ -10184,3 +10184,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — malformed connect-type tolerance fix)
+
+## 2026-11-18 19:01 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free, TLS-safe `RemoteConsole` detection fix. `RemoteConsole` is a standard console block everywhere else in the KVM feature (`KvmConsole.fromManager` parses it, `KvmCapability.resolveLaunchUri` reads its `ConnectUri`), but `KvmCapability.fromManager` ignored it for `supported` / `serviceEnabled` / `connectTypes` / `maxSessions`. A manager exposing only a `RemoteConsole` rendered an enabled, launchable per-console card next to a "KVM not supported / disabled" capability card. `fromManager` now aggregates the `RemoteConsole` block into all four fields (enabled remote → supported by definition; types deduped case-insensitively; maxSessions as last fallback), while `supportsKvmIp` stays false for an HTML5-only remote console. Added 6 RED→GREEN tests (5 pure-Dart in `kvm_capability_test.dart`, 1 widget in `kvm_capability_card_test.dart`; 5 confirmed failing pre-fix). Baseline green at f491126 (analyze 0, 1004 passed / 1 skipped; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; targeted 63 passed; KVM suite 186; full `flutter test --coverage` 1010 passed / 1 skipped (+6); DMTF emulator 85/85 (lib changed — §1.4 gate); coverage gates PASS overall 89.2% / scoped 90.3% / kvm 92.5%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a genuine cross-view detection defect over manufactured churn: #009's and #021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation, so the honest unblocked work was making the aggregate capability summary agree with the per-console model about `RemoteConsole`, the one standard console block it ignored. Extended a single factory in one model file with an identical "standard console block" rule already used for graphical/serial (rather than adding new behavior or a dependency), and pinned both the model and the rendered card with RED→GREEN tests. Kept `supportsKvmIp` honest (HTML5-only remote console is not KVMIP). Pure Dart + doc/comments, read-only, no WebView/protocol dependency and no production TLS change. Full emulator re-run (85/85) because `lib/` changed. Left `FeatureRules.kvm`/`kvmType` RemoteConsole detection as an explicitly recorded follow-up to keep this increment small.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. `FeatureRules.kvm`/`kvmType`/`_managerConsoleType` still ignore `RemoteConsole`, so a RemoteConsole-only manager's KVM tab is hard-gated off — the last read path out of sync), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — RemoteConsole detection consistency fix)
