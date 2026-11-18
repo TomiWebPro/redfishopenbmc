@@ -201,6 +201,44 @@ void main() {
     });
 
     testWidgets(
+        'OEM console card shows the resolved OEM KVM URI instead of the '
+        '"no URI" notice (#009)', (WidgetTester tester) async {
+      final KvmConsole console = KvmConsole.fromManager(
+        <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC',
+          'Oem': <String, dynamic>{
+            'KVM': <String, dynamic>{'Uri': 'https://oem.example/kvm'},
+          },
+        },
+        managerId: 'BMC',
+      ).firstWhere((KvmConsole c) => c.type == KvmConsoleType.oem);
+      final KvmController controller = _StubController()
+        ..state = KvmUiState(consoles: <KvmConsole>[console]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The OEM KVM endpoint reaches the console card, matching the
+      // capability card, instead of the misleading "no URI" fallback.
+      expect(
+        find.bySemanticsLabel('Connect URI: https://oem.example/kvm'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('No console connect URI available. Open externally:'),
+        findsNothing,
+      );
+      expect(find.text('Open console'), findsOneWidget);
+    });
+
+    testWidgets(
         'HTML5 console with connect URI shows Open console and navigates to '
         'viewer (#021)', (WidgetTester tester) async {
       final KvmController controller = _StubController()

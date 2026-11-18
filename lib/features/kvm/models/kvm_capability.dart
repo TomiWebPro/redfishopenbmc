@@ -11,6 +11,7 @@
 /// #009 / #021).
 library;
 
+import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart';
 import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
 
 /// Immutable summary of the remote-console capability of one manager.
@@ -178,7 +179,9 @@ class KvmCapability {
       final String? odata = _nonEmptyString(graphical['@odata.id']);
       if (odata != null) return odata;
     }
-    return _findOemConsoleUri(body['Oem'], 0);
+    // Shared with KvmConsole.fromManager so the per-console and per-manager
+    // cards resolve the same OEM endpoint for the same manager (issue #009).
+    return kvmOemConsoleUri(body['Oem']);
   }
 
   /// Returns the first non-empty `ConnectUri` across the standard console
@@ -262,40 +265,6 @@ class KvmCapability {
       parsed = null;
     }
     return (parsed == null || parsed < 0) ? null : parsed;
-  }
-
-  /// Finds an OEM console URI in [node], recursing to a bounded depth.
-  static String? _findOemConsoleUri(dynamic node, int depth) {
-    if (depth > 3 || node is! Map<dynamic, dynamic>) return null;
-
-    // Prefer a direct console-like key whose map carries a `Uri` member.
-    for (final dynamic entry in node.entries) {
-      final String key = entry.key.toString().toLowerCase();
-      if ((key.contains('kvm') ||
-              key.contains('console') ||
-              key.contains('webconsole')) &&
-          entry.value is Map<dynamic, dynamic>) {
-        final String? uri = _uriFromMap(entry.value as Map<dynamic, dynamic>);
-        if (uri != null) return uri;
-      }
-    }
-    // Otherwise search nested vendor blocks.
-    for (final dynamic value in node.values) {
-      final String? uri = _findOemConsoleUri(value, depth + 1);
-      if (uri != null) return uri;
-    }
-    return null;
-  }
-
-  /// Returns the `Uri` member of an OEM console map, if present and non-empty.
-  static String? _uriFromMap(Map<dynamic, dynamic> map) {
-    for (final dynamic entry in map.entries) {
-      if (entry.key.toString().toLowerCase() == 'uri') {
-        final String? uri = _nonEmptyString(entry.value);
-        if (uri != null) return uri;
-      }
-    }
-    return null;
   }
 
   /// Returns [value] as a trimmed, non-blank string, or `null`.

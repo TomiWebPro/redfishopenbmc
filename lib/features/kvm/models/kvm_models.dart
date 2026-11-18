@@ -7,6 +7,7 @@
 library;
 
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_registry.dart';
+import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart';
 import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
 
 /// The kind of Redfish console a [KvmConsole] represents.
@@ -350,12 +351,19 @@ class KvmConsole {
           ),
         );
       } else if (FeatureRules.oemHasConsole(oem)) {
+        // Surface the OEM console's own KVM `Uri` (e.g.
+        // `Oem.OpenBMC.KVM.Uri`) so the per-console card shows the real
+        // browser-launchable endpoint instead of "No console connect URI
+        // available" — the same URI the capability card resolves via
+        // `KvmCapability.resolveLaunchUri` (issue #009). A registered vendor
+        // parser above stays authoritative; this is the generic default path.
         consoles.add(
           KvmConsole(
             type: KvmConsoleType.oem,
             managerId: managerId,
             connectTypesSupported: const <String>[],
             serviceEnabled: true,
+            connectUri: kvmOemConsoleUri(oem),
             sourceManagerUri: sourceManagerUri,
             oem: oem,
           ),

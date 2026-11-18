@@ -761,4 +761,70 @@ void main() {
       expect(console.hasSecureLaunchUri, isTrue);
     });
   });
+
+  group('KvmConsole OEM console URI agreement (#009)', () {
+    KvmConsole oemConsoleFrom(Object? oem) => KvmConsole.fromManager(
+          <String, dynamic>{
+            '@odata.id': '/redfish/v1/Managers/BMC',
+            'Oem': oem,
+          },
+          managerId: 'BMC',
+        ).firstWhere((KvmConsole c) => c.type == KvmConsoleType.oem);
+
+    // RED proof: the per-manager capability card resolves an OEM KVM `Uri`
+    // (KvmCapability.resolveLaunchUri), but KvmConsole.fromManager built the
+    // matching OEM console with connectUri == null — so the console card said
+    // "No console connect URI available" while the capability card showed the
+    // real endpoint. Both views must surface the same OEM URI.
+    test(
+        'OEM KVM Uri is surfaced on the OEM console and agrees with the '
+        'capability card (#009)', () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'Oem': <String, dynamic>{
+          'KVM': <String, dynamic>{'Uri': 'https://oem.example/kvm'},
+        },
+      };
+      final KvmConsole console = KvmConsole.fromManager(body, managerId: 'BMC')
+          .firstWhere((KvmConsole c) => c.type == KvmConsoleType.oem);
+      final KvmCapability capability =
+          KvmCapability.fromManager(body, managerId: 'BMC');
+      expect(console.launchUri, 'https://oem.example/kvm');
+      expect(console.hasSecureLaunchUri, isTrue);
+      expect(console.launchStrategy, KvmLaunchStrategy.secureBrowser);
+      expect(capability.uri, 'https://oem.example/kvm');
+      expect(console.launchUri, capability.launchUri);
+    });
+
+    test('case-insensitive, nested OEM WebConsole Uri is resolved (#009)', () {
+      final KvmConsole console = oemConsoleFrom(<String, dynamic>{
+        'Vendor': <String, dynamic>{
+          'webconsole': <String, dynamic>{'uri': 'https://oem.example/web'},
+        },
+      });
+      expect(console.launchUri, 'https://oem.example/web');
+    });
+
+    test('a padded OEM Uri is trimmed like every other URI source (#009)', () {
+      final KvmConsole console = oemConsoleFrom(<String, dynamic>{
+        'KVM': <String, dynamic>{'Uri': '  https://oem.example/kvm  '},
+      });
+      expect(console.launchUri, 'https://oem.example/kvm');
+    });
+
+    test('blank or non-string OEM Uri is not surfaced (#009)', () {
+      expect(
+        oemConsoleFrom(<String, dynamic>{
+          'KVM': <String, dynamic>{'Uri': '   '},
+        }).launchUri,
+        isNull,
+      );
+      expect(
+        oemConsoleFrom(<String, dynamic>{
+          'KVM': <String, dynamic>{'Uri': 42},
+        }).launchUri,
+        isNull,
+      );
+    });
+  });
 }
