@@ -724,6 +724,62 @@ void main() {
       await tester.pump();
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+        'the Primary badge follows the launchable console, not a disabled '
+        'graphical one (#009)', (WidgetTester tester) async {
+      const KvmConsole disabledGraphical = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: 'disabled',
+        connectTypesSupported: <String>['KVMIP'],
+        serviceEnabled: false,
+        sourceManagerUri: '/redfish/v1/Managers/disabled',
+      );
+      const KvmConsole enabledGraphical = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: 'enabled',
+        connectTypesSupported: <String>['KVMIP'],
+        serviceEnabled: true,
+        connectUri: 'https://bmc.example/kvm',
+        sourceManagerUri: '/redfish/v1/Managers/enabled',
+      );
+      final List<KvmConsole> consoles = <KvmConsole>[
+        disabledGraphical,
+        enabledGraphical,
+      ];
+      final KvmController controller = _StubController()
+        ..state = KvmUiState(
+          consoles: consoles,
+          primaryConsole: KvmService.pickPrimary(consoles),
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Primary'), findsOneWidget);
+      // Only the launchable console card has an "Open console" action, so the
+      // Primary badge must sit on that same card, not the disabled one.
+      final Finder primaryCard = find.ancestor(
+        of: find.text('Primary'),
+        matching: find.byType(Card),
+      );
+      expect(
+        find.descendant(
+          of: primaryCard,
+          matching: find.text('Open console'),
+        ),
+        findsOneWidget,
+        reason: 'the Primary badge must sit on the openable console card',
+      );
+      expect(find.text('Open console'), findsOneWidget);
+    });
   });
 
   group('KvmView — responsive layout (UI-3)', () {

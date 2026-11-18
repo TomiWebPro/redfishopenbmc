@@ -10229,3 +10229,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — malformed-@odata.id crash fix)
+
+## 2026-11-18 — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free, TLS-safe `pickPrimary` launchability fix. `KvmService.pickPrimary` sets `KvmUiState.primaryConsole` (badged "Primary" on the console card, recommended launch target) but returned the first graphical console regardless of enabled/URI state, so a disabled or URI-less graphical console was badged "Primary" while a launchable console was not. Added `KvmConsole.canOpenConsole` (derived from the single-source-of-truth `launchStrategy`: openable = usable URI + enabled; `insecureHtml5` still counts because its URI is copyable/openable externally — no TLS weakening) and made `pickPrimary` tiered: first openable graphical → first openable any-type → first graphical → first overall (preserving a sensible badge and prior behavior when nothing is openable). Added 13 RED→GREEN tests (6 service — 3 confirmed RED pre-fix; 6 model `canOpenConsole`; 1 KvmView widget pinning the "Primary" badge on the card with "Open console"). Baseline green at 555eff4 (analyze 0, 1026 passed / 1 skipped; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; targeted `pickPrimary` 7 / `canOpenConsole` 6 / widget 1 passed; KVM suite 210 passed; full `flutter test --coverage` 1039 passed / 1 skipped (+13); DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.2% / scoped 90.4% / kvm 92.6%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a genuine user-visible correctness defect — the "Primary" badge recommending a console the user cannot open — over manufactured churn: #009's/#021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation. Derived `canOpenConsole` from the existing `launchStrategy` rather than duplicating launch rules, so the badge and the viewer cannot disagree about what is openable; counted `insecureHtml5` as openable (copyable/externally-openable URI) so the fix never gates on or weakens TLS. Tiered fallback keeps prior behavior for all-disabled/URI-less fixtures (the existing `pickPrimary` tests stayed green). Full emulator re-run (85/85) because `lib/` changed. Issue stays OPEN — embedded HTML5 rendering, fullscreen, input forwarding and the WebView dependency remain blocked.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. an aggregate `maxSessions` sourced from a disabled console block, or another cross-view consistency/malformed-payload gap across the KVM read path) or epic-triage/split the WebView-blocked rendering work, never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — pickPrimary launchability fix)

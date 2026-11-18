@@ -905,4 +905,53 @@ void main() {
       );
     });
   });
+
+  group('KvmConsole.canOpenConsole (#009)', () {
+    KvmConsole make({
+      bool enabled = true,
+      String? uri,
+      List<String> types = const <String>[],
+    }) =>
+        KvmConsole(
+          type: KvmConsoleType.graphical,
+          managerId: 'BMC',
+          connectTypesSupported: types,
+          serviceEnabled: enabled,
+          connectUri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+
+    test('true for an enabled console with a usable HTTPS URI', () {
+      expect(make(uri: 'https://bmc.example/kvm').canOpenConsole, isTrue);
+    });
+
+    test('true for an enabled external-protocol console', () {
+      expect(make(uri: 'vnc://bmc.example:5900').canOpenConsole, isTrue);
+    });
+
+    test('true for an enabled insecure-HTML5 console (copyable URI)', () {
+      expect(
+        make(
+          uri: 'http://bmc.example/kvm',
+          types: const <String>['HTML5'],
+        ).canOpenConsole,
+        isTrue,
+      );
+    });
+
+    test('false for a disabled console even with a URI', () {
+      expect(
+        make(enabled: false, uri: 'https://bmc.example/kvm').canOpenConsole,
+        isFalse,
+      );
+    });
+
+    test('false for an enabled console without a URI', () {
+      expect(make().canOpenConsole, isFalse);
+    });
+
+    test('false for a blank URI', () {
+      expect(make(uri: '   ').canOpenConsole, isFalse);
+    });
+  });
 }

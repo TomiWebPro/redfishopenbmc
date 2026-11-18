@@ -235,4 +235,120 @@ void main() {
       expect(bmc.sourceManagerUri, '/redfish/v1/Managers/BMC');
     });
   });
+
+  group('KvmService.pickPrimary launchability (#009)', () {
+    KvmConsole console(
+      KvmConsoleType type, {
+      required bool enabled,
+      String? uri,
+      String id = 'A',
+    }) =>
+        KvmConsole(
+          type: type,
+          managerId: id,
+          serviceEnabled: enabled,
+          connectUri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/$id',
+        );
+
+    test('prefers an enabled graphical console over a disabled one', () {
+      final KvmConsole disabled = console(
+        KvmConsoleType.graphical,
+        enabled: false,
+        uri: 'https://bmc.example/kvm-disabled',
+        id: 'disabled',
+      );
+      final KvmConsole enabled = console(
+        KvmConsoleType.graphical,
+        enabled: true,
+        uri: 'https://bmc.example/kvm',
+        id: 'enabled',
+      );
+      expect(
+        KvmService.pickPrimary(<KvmConsole>[disabled, enabled]),
+        same(enabled),
+      );
+    });
+
+    test('prefers an enabled URI-bearing serial over a URI-less graphical', () {
+      final KvmConsole uriLessGraphical = console(
+        KvmConsoleType.graphical,
+        enabled: true,
+        id: 'uri-less',
+      );
+      final KvmConsole launchableSerial = console(
+        KvmConsoleType.serial,
+        enabled: true,
+        uri: 'ssh://bmc.example',
+        id: 'serial',
+      );
+      expect(
+        KvmService.pickPrimary(
+          <KvmConsole>[uriLessGraphical, launchableSerial],
+        ),
+        same(launchableSerial),
+      );
+    });
+
+    test('prefers a launchable serial over a non-launchable graphical', () {
+      final KvmConsole disabledGraphical = console(
+        KvmConsoleType.graphical,
+        enabled: false,
+        uri: 'https://bmc.example/kvm-disabled',
+        id: 'graphical',
+      );
+      final KvmConsole launchableSerial = console(
+        KvmConsoleType.serial,
+        enabled: true,
+        uri: 'ssh://bmc.example',
+        id: 'serial',
+      );
+      expect(
+        KvmService.pickPrimary(
+          <KvmConsole>[disabledGraphical, launchableSerial],
+        ),
+        same(launchableSerial),
+      );
+    });
+
+    test('prefers the first enabled URI-bearing graphical console', () {
+      final KvmConsole serial = console(
+        KvmConsoleType.serial,
+        enabled: true,
+        uri: 'ssh://bmc.example',
+        id: 'serial',
+      );
+      final KvmConsole graphical = console(
+        KvmConsoleType.graphical,
+        enabled: true,
+        uri: 'https://bmc.example/kvm',
+        id: 'graphical',
+      );
+      expect(
+        KvmService.pickPrimary(<KvmConsole>[serial, graphical]),
+        same(graphical),
+      );
+    });
+
+    test('falls back to the first graphical when none is launchable', () {
+      final KvmConsole serial = console(
+        KvmConsoleType.serial,
+        enabled: false,
+        id: 'serial',
+      );
+      final KvmConsole graphical = console(
+        KvmConsoleType.graphical,
+        enabled: false,
+        id: 'graphical',
+      );
+      expect(
+        KvmService.pickPrimary(<KvmConsole>[serial, graphical]),
+        same(graphical),
+      );
+    });
+
+    test('returns null for an empty list', () {
+      expect(KvmService.pickPrimary(const <KvmConsole>[]), isNull);
+    });
+  });
 }

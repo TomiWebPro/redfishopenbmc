@@ -148,14 +148,33 @@ class KvmService {
 
   /// Picks the preferred [KvmConsole] from [consoles] without fetching.
   ///
-  /// Prefers the first graphical console, then the first console overall.
-  /// Returns `null` when [consoles] is empty.
+  /// The primary console is badged "Primary" and is the recommended launch
+  /// target, so it must be one the user can actually open. Selection order:
+  /// first openable graphical console, then first openable console of any type,
+  /// then first graphical, then first overall. The last two tiers keep a
+  /// sensible badge when a BMC exposes only disabled or URI-less consoles
+  /// (which cannot be opened but are still the best available choice).
+  /// Returns `null` when [consoles] is empty (issue #009).
   static KvmConsole? pickPrimary(List<KvmConsole> consoles) {
     if (consoles.isEmpty) return null;
+
+    KvmConsole? firstOpenable;
+    KvmConsole? firstOpenableGraphical;
+    KvmConsole? firstGraphical;
     for (final KvmConsole console in consoles) {
-      if (console.type == KvmConsoleType.graphical) return console;
+      final bool graphical = console.type == KvmConsoleType.graphical;
+      if (graphical) firstGraphical ??= console;
+      if (!console.canOpenConsole) continue;
+      firstOpenable ??= console;
+      if (graphical) {
+        firstOpenableGraphical ??= console;
+        break;
+      }
     }
-    return consoles.firstOrNull;
+    return firstOpenableGraphical ??
+        firstOpenable ??
+        firstGraphical ??
+        consoles.first;
   }
 
   /// Resolves the `@odata.id` of a collection member (string or link map).

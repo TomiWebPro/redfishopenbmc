@@ -288,6 +288,24 @@ class KvmConsole {
     return KvmLaunchStrategy.noUri;
   }
 
+  /// Whether this console can actually be opened by the user.
+  ///
+  /// Derived from the single source of truth [launchStrategy]: a console is
+  /// openable when it has a usable connect URI and is enabled on the BMC. A
+  /// disabled console (`disabled`) or one without a URI (`noUri`) cannot be
+  /// opened — the "Open console" action is only shown when [launchUri] is
+  /// present, and the viewer refuses a disabled service. `insecureHtml5` still
+  /// counts: its URI can be copied/opened externally (in-app rendering alone is
+  /// blocked so BMC TLS is never weakened, issue #021).
+  ///
+  /// `KvmService.pickPrimary` uses this so the "Primary" badge never lands on a
+  /// console the user cannot launch (issue #009).
+  bool get canOpenConsole {
+    final KvmLaunchStrategy strategy = launchStrategy;
+    return strategy != KvmLaunchStrategy.noUri &&
+        strategy != KvmLaunchStrategy.disabled;
+  }
+
   /// Builds the list of [KvmConsole]s detected in a Redfish [managerBody].
   ///
   /// [managerId] is the manager's `Id` (used for display). Each standard
