@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_service.dart';
+import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
@@ -75,6 +76,70 @@ void main() {
     test('throws a RedfishException when not connected', () async {
       final KvmService svc = KvmService(client: null, systemId: 'bmc1');
       expect(() => svc.fetchConsoles(), throwsA(isA<RedfishException>()));
+    });
+  });
+
+  group('KvmService capability detection (#009)', () {
+    late MockRedfishServer server;
+
+    setUpAll(() async {
+      server = await MockRedfishServer(
+        fixturesDir: 'test/fixtures/redfish/dmtf_mockup',
+      ).start();
+    });
+
+    tearDownAll(() async {
+      await server.close();
+    });
+
+    test('fetchCapabilities returns one capability per manager', () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+
+      expect(capabilities, isNotEmpty);
+      final KvmCapability bmc = capabilities.firstWhere(
+        (KvmCapability c) => c.managerId == 'BMC',
+      );
+      expect(bmc.supported, isTrue);
+      expect(bmc.serviceEnabled, isTrue);
+      expect(bmc.supportsKvmIp, isTrue);
+      expect(bmc.connectTypes, contains('KVMIP'));
+      expect(bmc.connectTypes, contains('SSH'));
+      expect(bmc.maxSessions, 2);
+      expect(
+        bmc.sourceManagerUri,
+        '/redfish/v1/Managers/BMC',
+      );
+    });
+
+    test('fetchCapability resolves a manager by id', () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final KvmCapability? bmc = await svc.fetchCapability('BMC');
+      expect(bmc, isNotNull);
+      expect(bmc!.managerId, 'BMC');
+      expect(bmc.supported, isTrue);
+
+      expect(await svc.fetchCapability('does-not-exist'), isNull);
+    });
+
+    test('capability methods throw when not connected', () async {
+      final KvmService svc = KvmService(client: null, systemId: 'bmc1');
+      expect(
+        () => svc.fetchCapabilities(),
+        throwsA(isA<RedfishException>()),
+      );
+      expect(
+        () => svc.fetchCapability('BMC'),
+        throwsA(isA<RedfishException>()),
+      );
     });
   });
 }

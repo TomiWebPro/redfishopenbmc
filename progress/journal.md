@@ -10004,3 +10004,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — vendor-extensibility box done)
+
+## 2026-11-18 11:30 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — landed the **capability-card model + detection/URI-resolution**: new `lib/features/kvm/models/kvm_capability.dart` (`KvmCapability` immutable model with `fromManager` detection factory + `resolveLaunchUri`), exported from `kvm.dart`. `KvmService` gained `fetchCapabilities()` / `fetchCapability(managerId)` over a shared `_fetchManagerBodies()` walk (fetchConsoles refactored onto it, behaviour unchanged). Added `test/features/kvm/kvm_capability_test.dart` (19 tests) + 3 service detection tests. Checked #009 capability-model/detection/URI-resolution acceptance boxes. Baseline green at 436698c (analyze 0, 909 passed / 1 skipped; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; flutter test 931 passed / 1 skipped (+22); DMTF emulator 85/85 (lib/ changed — §1.4 gate); issues validate OK.
+
+**Decisions:**
+- Advanced #009 rather than #021: #021's two remaining boxes (embedded WebView rendering + dependency documented) are externally blocked on platform WebView support + BMC self-signed/TLS validation, and prior runs' progressively smaller getter/guidance slices had become manufactured churn the runbook bans. The capability model + detection/URI-resolution box is genuinely unimplemented, self-contained, dependency-free and testable. Kept `KvmCapability` pure Dart (no RedfishClient, no WebView) and `resolveLaunchUri` read-only (no IPC) — it merely exposes a URI for the caller; existing HTTPS/in-app gating is untouched, so TLS is never weakened. Reused the strict shared `FeatureRules.oemHasConsole` contract so OEM detection stays consistent with `KvmConsole.fromManager`. Refactored the manager walk into one private helper so `fetchConsoles()` and `fetchCapabilities()` cannot drift. Full emulator re-run (85/85) because lib/ changed; change is pure Dart with no wire/payload impact. No visual churn (existing 320/800/1300 px no-overflow tests pass).
+
+**Next:**
+- #009 remaining slice: render `KvmCapability` in the gated `KvmView` capability card (manager / ServiceEnabled / ConnectTypes / MaxSessions / resolved URI) with widget tests + coverage gate.
+- #021 embedded HTML5 rendering + BMC TLS/self-signed validation — only when a platform WebView target is available unattended; never weaken TLS.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — capability-model/detection/URI boxes done)

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
 import 'package:redfishopenbmc/redfish/client/redfish_client.dart';
 import 'package:redfishopenbmc/redfish/models/odata.dart';
@@ -46,6 +47,60 @@ class KvmService {
   /// console blocks are skipped. Throws [RedfishException] when not connected or
   /// on a transport error.
   Future<List<KvmConsole>> fetchConsoles() async {
+    final List<({String managerId, Map<String, dynamic> body})> managers =
+        await _fetchManagerBodies();
+    final List<KvmConsole> consoles = <KvmConsole>[];
+    for (final ({String managerId, Map<String, dynamic> body}) manager
+        in managers) {
+      consoles.addAll(
+        KvmConsole.fromManager(manager.body, managerId: manager.managerId),
+      );
+    }
+    return consoles;
+  }
+
+  /// Fetches a per-manager [KvmCapability] summary for every manager.
+  ///
+  /// Walks the same `/redfish/v1/Managers` tree as [fetchConsoles], but returns
+  /// one aggregated capability card per manager (detection + resolved URI)
+  /// instead of one entry per console block (issue #009).
+  Future<List<KvmCapability>> fetchCapabilities() async {
+    final List<({String managerId, Map<String, dynamic> body})> managers =
+        await _fetchManagerBodies();
+    final List<KvmCapability> capabilities = <KvmCapability>[];
+    for (final ({String managerId, Map<String, dynamic> body}) manager
+        in managers) {
+      capabilities.add(
+        KvmCapability.fromManager(
+          manager.body,
+          managerId: manager.managerId,
+          sourceManagerUri: manager.body['@odata.id'] as String?,
+        ),
+      );
+    }
+    return capabilities;
+  }
+
+  /// Fetches the [KvmCapability] for a single manager by its `Id`.
+  ///
+  /// Returns `null` when no manager with that id is exposed. This is the
+  /// read-only URI-resolution entry point (no IPC): callers receive a
+  /// capability with a resolved [KvmCapability.uri] to open externally.
+  Future<KvmCapability?> fetchCapability(String managerId) async {
+    final List<KvmCapability> capabilities = await fetchCapabilities();
+    for (final KvmCapability capability in capabilities) {
+      if (capability.managerId == managerId) return capability;
+    }
+    return null;
+  }
+
+  /// Walks `/redfish/v1/Managers`, GETting each member body.
+  ///
+  /// Shared by [fetchConsoles] and [fetchCapabilities] so both views stay in
+  /// sync. Surfaces a friendly [RedfishException] when not connected and
+  /// normalises transport errors.
+  Future<List<({String managerId, Map<String, dynamic> body})>>
+      _fetchManagerBodies() async {
     final RedfishClient? c = client;
     if (c == null) {
       throw RedfishException(
@@ -60,23 +115,22 @@ class KvmService {
       final List<dynamic> members =
           (root['Members'] as List<dynamic>?) ?? <dynamic>[];
 
-      final List<KvmConsole> consoles = <KvmConsole>[];
+      final List<({String managerId, Map<String, dynamic> body})> managers =
+          <({String managerId, Map<String, dynamic> body})>[];
       for (final dynamic entry in members) {
         final String? managerUri = _memberUri(entry);
         if (managerUri == null || managerUri.isEmpty) continue;
         final Map<String, dynamic> body = await c.getJson(managerUri);
         final String managerId = _managerId(body, managerUri);
-        final List<KvmConsole> found =
-            KvmConsole.fromManager(body, managerId: managerId);
-        consoles.addAll(found);
+        managers.add((managerId: managerId, body: body));
       }
-      return consoles;
+      return managers;
     } on RedfishException {
       rethrow;
     } on DioException catch (e) {
       throw RedfishException.fromDioException(e);
     } catch (e) {
-      throw RedfishException(message: 'Failed to read KVM consoles: $e');
+      throw RedfishException(message: 'Failed to read KVM managers: $e');
     }
   }
 

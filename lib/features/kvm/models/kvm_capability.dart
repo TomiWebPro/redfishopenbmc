@@ -1,0 +1,223 @@
+/// Per-manager remote-KVM capability summary (issue #009).
+///
+/// [KvmConsole] models one Redfish console *block*; a single manager can expose
+/// several. [KvmCapability] is the aggregated, immutable view the capability
+/// card in `KvmView` renders: whether a manager can actually serve a console,
+/// the advertised connection types, the session limit and the URI to open.
+///
+/// Detection and URI resolution are pure and widget-free so every rule is
+/// unit-testable. No WebView/protocol dependency is involved and no transport
+/// is ever weakened — a resolved URI is simply exposed to the caller (issue
+/// #009 / #021).
+library;
+
+import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
+
+/// Immutable summary of the remote-console capability of one manager.
+class KvmCapability {
+  /// Creates a [KvmCapability].
+  ///
+  /// Prefer [KvmCapability.fromManager] when starting from a Redfish manager
+  /// body — it computes [supported], [serviceEnabled] and the resolved [uri]
+  /// per the detection rules.
+  const KvmCapability({
+    required this.managerId,
+    required this.supported,
+    required this.connectTypes,
+    required this.serviceEnabled,
+    this.maxSessions,
+    this.uri,
+    this.sourceManagerUri,
+  });
+
+  /// The `Id` of the manager that exposes this capability (e.g. `'BMC'`).
+  final String managerId;
+
+  /// Whether this manager can serve a usable console.
+  ///
+  /// True when a graphical console is enabled and advertises `KVMIP`, or when
+  /// an `Oem.*` block advertises a console (`kvm` / `WebConsole`).
+  final bool supported;
+
+  /// Advertised connection types across the manager's console blocks.
+  ///
+  /// Canonical Redfish values (`KVMIP`, `HTML5`, `SSH`, …) plus the marker
+  /// `'Oem'` when an OEM console is detected. Order is deterministic (graphical
+  /// first, then serial, then the OEM marker) and duplicates are removed.
+  final List<String> connectTypes;
+
+  /// Whether any standard console block reports itself enabled, or an OEM
+  /// console is present.
+  final bool serviceEnabled;
+
+  /// The maximum number of concurrent sessions, or `null` when unreported.
+  final int? maxSessions;
+
+  /// The resolved console URI (prefer `GraphicalConsole.@odata.id`, fall back
+  /// to an OEM `KVM`/`WebConsole` `Uri`), or `null` when none is exposed.
+  final String? uri;
+
+  /// The `@odata.id` of the manager resource this capability was read from.
+  final String? sourceManagerUri;
+
+  /// Whether a non-empty console [uri] was resolved.
+  bool get hasUri => uri != null && uri!.isNotEmpty;
+
+  /// True when the graphical console advertises a `KVMIP` connection type.
+  ///
+  /// Matching is case-insensitive and trimmed because some BMCs emit a
+  /// different case or surrounding whitespace.
+  bool get supportsKvmIp => connectTypes.any(
+        (String type) => type.trim().toUpperCase() == 'KVMIP',
+      );
+
+  /// Builds a capability summary from a Redfish manager [body].
+  ///
+  /// Reads `GraphicalConsole` and `SerialConsole`, scans `Oem.*` for console
+  /// keys (via the shared strict `FeatureRules.oemHasConsole` contract), and
+  /// resolves the launch URI through [resolveLaunchUri]. Detection rule:
+  /// `supported = (graphical enabled && KVMIP advertised) || OEM console`.
+  factory KvmCapability.fromManager(
+    Map<String, dynamic> body, {
+    required String managerId,
+    String? sourceManagerUri,
+  }) {
+    final Map<String, dynamic>? graphical =
+        _consoleBlock(body, 'GraphicalConsole');
+    final Map<String, dynamic>? serial = _consoleBlock(body, 'SerialConsole');
+
+    final bool oemConsole = FeatureRules.oemHasConsole(body['Oem']);
+    final bool graphicalEnabled = _blockEnabled(graphical);
+    final bool serialEnabled = _blockEnabled(serial);
+
+    final List<String> types = <String>[];
+    _appendTypes(types, graphical);
+    _appendTypes(types, serial);
+    if (oemConsole && !types.contains('Oem')) types.add('Oem');
+
+    final bool kvmIp = _advertises(graphical, 'KVMIP');
+    final bool supported = (graphicalEnabled && kvmIp) || oemConsole;
+    final int? maxSessions = _maxSessions(graphical) ?? _maxSessions(serial);
+
+    return KvmCapability(
+      managerId: managerId,
+      supported: supported,
+      connectTypes: List<String>.unmodifiable(types),
+      serviceEnabled: graphicalEnabled || serialEnabled || oemConsole,
+      maxSessions: maxSessions,
+      uri: resolveLaunchUri(body),
+      sourceManagerUri: sourceManagerUri ??
+          (body['@odata.id'] as String?) ??
+          '/redfish/v1/Managers/$managerId',
+    );
+  }
+
+  /// Resolves the console URI for a Redfish manager [body].
+  ///
+  /// Preference order:
+  ///  1. `GraphicalConsole.@odata.id` (the standard graphical console link);
+  ///  2. an OEM `KVM` / `WebConsole` block's `Uri` member (bounded recursive
+  ///     search, case-insensitive key matching);
+  ///  3. `null` when neither is exposed.
+  static String? resolveLaunchUri(Map<String, dynamic> body) {
+    final Map<String, dynamic>? graphical =
+        _consoleBlock(body, 'GraphicalConsole');
+    if (graphical != null) {
+      final String? odata = _nonEmptyString(graphical['@odata.id']);
+      if (odata != null) return odata;
+    }
+    return _findOemConsoleUri(body['Oem'], 0);
+  }
+
+  /// Returns a console block from [body] only when it is a JSON object.
+  static Map<String, dynamic>? _consoleBlock(
+    Map<String, dynamic> body,
+    String name,
+  ) {
+    final dynamic value = body[name];
+    return value is Map<String, dynamic> ? value : null;
+  }
+
+  /// True when a console block reports itself enabled (`ServiceEnabled` or the
+  /// legacy `Enabled` field).
+  static bool _blockEnabled(Map<String, dynamic>? block) {
+    if (block == null) return false;
+    return block['ServiceEnabled'] == true || block['Enabled'] == true;
+  }
+
+  /// Whether [block] advertises [type] in `ConnectTypesSupported` (case- and
+  /// whitespace-insensitive).
+  static bool _advertises(Map<String, dynamic>? block, String type) {
+    if (block == null) return false;
+    final dynamic value = block['ConnectTypesSupported'];
+    if (value is! List<dynamic>) return false;
+    return value.any(
+      (dynamic e) => e.toString().trim().toUpperCase() == type,
+    );
+  }
+
+  /// Appends a block's `ConnectTypesSupported` entries to [target] (deduped).
+  static void _appendTypes(List<String> target, Map<String, dynamic>? block) {
+    if (block == null) return;
+    final dynamic value = block['ConnectTypesSupported'];
+    if (value is! List<dynamic>) return;
+    for (final dynamic entry in value) {
+      final String type = entry.toString().trim();
+      if (type.isNotEmpty && !target.contains(type)) target.add(type);
+    }
+  }
+
+  /// Reads a block's `MaxConcurrentSessions` as an int, or `null`.
+  static int? _maxSessions(Map<String, dynamic>? block) {
+    if (block == null) return null;
+    final dynamic value = block['MaxConcurrentSessions'];
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  /// Finds an OEM console URI in [node], recursing to a bounded depth.
+  static String? _findOemConsoleUri(dynamic node, int depth) {
+    if (depth > 3 || node is! Map<dynamic, dynamic>) return null;
+
+    // Prefer a direct console-like key whose map carries a `Uri` member.
+    for (final dynamic entry in node.entries) {
+      final String key = entry.key.toString().toLowerCase();
+      if ((key.contains('kvm') ||
+              key.contains('console') ||
+              key.contains('webconsole')) &&
+          entry.value is Map<dynamic, dynamic>) {
+        final String? uri = _uriFromMap(entry.value as Map<dynamic, dynamic>);
+        if (uri != null) return uri;
+      }
+    }
+    // Otherwise search nested vendor blocks.
+    for (final dynamic value in node.values) {
+      final String? uri = _findOemConsoleUri(value, depth + 1);
+      if (uri != null) return uri;
+    }
+    return null;
+  }
+
+  /// Returns the `Uri` member of an OEM console map, if present and non-empty.
+  static String? _uriFromMap(Map<dynamic, dynamic> map) {
+    for (final dynamic entry in map.entries) {
+      if (entry.key.toString().toLowerCase() == 'uri') {
+        final String? uri = _nonEmptyString(entry.value);
+        if (uri != null) return uri;
+      }
+    }
+    return null;
+  }
+
+  /// Returns [value] as a non-empty string, or `null`.
+  static String? _nonEmptyString(dynamic value) {
+    if (value is String && value.isNotEmpty) return value;
+    return null;
+  }
+
+  @override
+  String toString() =>
+      'KvmCapability(manager=$managerId, supported=$supported, '
+      'types=$connectTypes, enabled=$serviceEnabled, uri=$uri)';
+}
