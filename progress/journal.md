@@ -9914,3 +9914,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on further lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #010 (open)
+
+## 2026-11-18 07:40 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 (smallest open P2 issue) — 48x48dp touch target on the Sensors Tiles/Charts view-mode `SegmentedButton`. Probed the real gap: under a desktop `shrinkWrap` theme the Material segment measures 40dp (< WCAG 2.5.5's 48dp). Applied the shared `accessibleTouchTargetStyle()` via `style:` in `_ViewModeToggle` (`lib/features/sensors/views/sensors_view.dart`), taking segments to 48dp; extended the helper's doc comment to note SegmentedButton support. Added `test/features/sensors/sensors_touch_target_test.dart` (2 tests: populated `SensorsView` under desktop theme shows a ≥48dp switch — confirmed RED against pre-fix code, GREEN after; both segments expose one stably-named enabled button node). Baseline green at 6e20f84 (analyze 0, 840 passed / 1 skipped; known untracked `testing/` harness/log + pre-existing stash `stash@{0}: automation-preflight-1793045959` left untouched). Verify: analyze 0; flutter test 842 passed / 1 skipped (840 +2); DMTF emulator 85/85 green (lib/ changed — §1.4 gate); issues validate OK.
+
+**Decisions:**
+- Reused the centrally-tested `accessibleTouchTargetStyle()` helper (already applied to Retry controls) rather than a new style literal — one source of truth for the 48dp guarantee, and confirmed via a direct probe that `SegmentedButton.style` honours `minimumSize`. Kept the change to a single bounded control; the `_HealthChip` is non-interactive (informational) so WCAG touch-target minimum does not apply, and IconButtons default to 48x48 — no manufactured sweep. No visual churn (same labels/icons/layout; only the hit area grows; 320/800/1300/1400 px no-overflow tests pass). No production TLS touched; no new dependency. DOCS anchor gate not re-run (no corpus/manifest change). Full EMULATOR re-run performed (85/85) because `lib/` changed this run; the change is widget presentation only — no wire/request/header/payload change. Issue stays OPEN (golden/screenshot light-dark checks remain; Overview-Chip / system-card menu touch targets remain as follow-ups).
+
+**Next:**
+- Continue #010 golden/screenshot light-dark checks (Overview/Dashboard at mobile/tablet/desktop) with deterministic widgets; or extend 48x48 + single-announcement to the Overview-Chip / system-card menu.
+- Advance #021 / #009 via non-dependency KVM slices only — no WebView/protocol dep, no production TLS weakening.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on further lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #010 (open — a11y touch-target slice)

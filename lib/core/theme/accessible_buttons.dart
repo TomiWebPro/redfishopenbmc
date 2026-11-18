@@ -11,8 +11,9 @@ import 'package:flutter/material.dart';
 const Size kMinimumTouchTarget = Size(48, 48);
 
 /// A [ButtonStyle] that guarantees [kMinimumTouchTarget] for any Material
-/// button (TextButton, FilledButton, FilledButton.icon, ...), regardless of
-/// the ambient [ThemeData.materialTapTargetSize].
+/// button (TextButton, FilledButton, FilledButton.icon, and the segments of a
+/// [SegmentedButton]), regardless of the ambient
+/// [ThemeData.materialTapTargetSize].
 ///
 /// Used by the error-state Retry controls on every main view so a screen-reader
 /// / motor-impaired operator still has a full-size hit area on desktop builds

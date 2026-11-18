@@ -367,6 +367,9 @@ class _ViewModeToggle extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: SegmentedButton<bool>(
+        // #010 a11y: guarantee a >=48dp hit area on desktop targets, where the
+        // default Material segment collapses to 40dp (below WCAG 2.5.5).
+        style: accessibleTouchTargetStyle(),
         showSelectedIcon: false,
         segments: const <ButtonSegment<bool>>[
           ButtonSegment<bool>(
