@@ -709,4 +709,56 @@ void main() {
       expect(capability.hasUri, isFalse);
     });
   });
+
+  group('KvmConsole padded ConnectUri normalization (#009)', () {
+    KvmConsole consoleWithUri(Object? value) => KvmConsole.fromManager(
+          <String, dynamic>{
+            'GraphicalConsole': <String, dynamic>{
+              'ServiceEnabled': true,
+              'ConnectTypesSupported': <dynamic>['KVMIP', 'HTML5'],
+              'ConnectUri': value,
+            },
+          },
+          managerId: 'BMC',
+        ).single;
+
+    test('a whitespace-padded ConnectUri is stored trimmed and launchable', () {
+      final KvmConsole console = consoleWithUri('  https://bmc.example/kvm  ');
+      // Uri.tryParse rejects leading/trailing whitespace, so a padded endpoint
+      // stored verbatim makes every launch decision fall back to "no URI".
+      expect(console.connectUri, 'https://bmc.example/kvm');
+      expect(console.launchUri, 'https://bmc.example/kvm');
+      expect(console.hasSecureLaunchUri, isTrue);
+      expect(console.launchStrategy, KvmLaunchStrategy.inAppHtml5);
+    });
+
+    test('a padded tab/newline ConnectUri is trimmed to a valid endpoint', () {
+      final KvmConsole console = consoleWithUri('\thttps://bmc.example/kvm\n');
+      expect(console.launchUri, 'https://bmc.example/kvm');
+      expect(console.hasHttpLaunchUri, isTrue);
+    });
+
+    test('a padded external-protocol URI is classified correctly', () {
+      final KvmConsole console = consoleWithUri('  ssh://bmc.example:22  ');
+      expect(console.launchUri, 'ssh://bmc.example:22');
+      expect(console.requiresExternalConsoleClient, isTrue);
+      expect(console.externalClientProtocolLabel, 'SSH');
+    });
+
+    test('launchUri trims a directly constructed padded connectUri', () {
+      const KvmConsole console = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['KVMIP', 'HTML5'],
+        serviceEnabled: true,
+        connectUri: '  https://bmc.example/kvm  ',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      // The normalized accessor must trim for any construction path (widget
+      // fixtures, OEM registry parsers, future call sites), not just the
+      // fromManager parser.
+      expect(console.launchUri, 'https://bmc.example/kvm');
+      expect(console.hasSecureLaunchUri, isTrue);
+    });
+  });
 }

@@ -623,4 +623,63 @@ void main() {
       expect(capability.hasUri, isFalse);
     });
   });
+
+  group('KvmCapability padded URI normalization (#009)', () {
+    test('resolveLaunchUri trims a whitespace-padded ConnectUri', () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ConnectUri': '  https://bmc.example/kvm  ',
+        },
+      });
+      expect(uri, 'https://bmc.example/kvm');
+    });
+
+    test('fromManager surfaces a trimmed resolved URI', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'ConnectUri': '\thttps://bmc.example/kvm\n',
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(capability.hasUri, isTrue);
+      expect(capability.uri, 'https://bmc.example/kvm');
+    });
+
+    test('a padded @odata.id graphical link is trimmed', () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          '@odata.id': '  /redfish/v1/Managers/BMC/GraphicalConsole  ',
+        },
+      });
+      expect(uri, '/redfish/v1/Managers/BMC/GraphicalConsole');
+    });
+
+    test('a padded OEM KVM Uri is trimmed', () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'Oem': <String, dynamic>{
+          'KVM': <String, dynamic>{'Uri': '  https://oem.example/kvm  '},
+        },
+      });
+      expect(uri, 'https://oem.example/kvm');
+    });
+
+    test('launchUri trims a directly constructed padded uri', () {
+      const KvmCapability capability = KvmCapability(
+        managerId: 'BMC',
+        supported: true,
+        connectTypes: <String>['KVMIP'],
+        serviceEnabled: true,
+        uri: '  https://bmc.example/kvm  ',
+      );
+      // The normalized accessor must trim for any construction path (widget
+      // fixtures, future call sites), keeping the card consistent with the
+      // per-console card's launchUri.
+      expect(capability.launchUri, 'https://bmc.example/kvm');
+      expect(capability.hasUri, isTrue);
+    });
+  });
 }

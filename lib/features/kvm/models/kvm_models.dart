@@ -170,13 +170,20 @@ class KvmConsole {
 
   /// The preferred URI for launching/opening this console.
   ///
-  /// Uses [connectUri] when it is a non-blank string; a blank (empty or
-  /// whitespace-only) value is not a usable endpoint and is surfaced as `null`
-  /// so the console card hides its URI row and the viewer falls back to the
-  /// manager URI instead of opening an empty target. Mirrors
-  /// `KvmCapability.hasUri` so both KVM views agree (issue #009).
-  String? get launchUri =>
-      (connectUri != null && connectUri!.trim().isNotEmpty) ? connectUri : null;
+  /// Returns a trimmed [connectUri] when it is a non-blank string; a blank
+  /// (empty or whitespace-only) value is not a usable endpoint and is surfaced
+  /// as `null` so the console card hides its URI row and the viewer falls back
+  /// to the manager URI instead of opening an empty target. Trimming is
+  /// essential because `Uri.tryParse` rejects leading/trailing whitespace — a
+  /// padded-but-valid endpoint stored verbatim would make every launch decision
+  /// fall back to "no URI". Mirrors `KvmCapability.launchUri` so both KVM views
+  /// agree (issue #009).
+  String? get launchUri {
+    final String? value = connectUri;
+    if (value == null) return null;
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
 
   /// Whether [launchUri] is an HTTP(S) URL suitable for browser/WebView launch.
   bool get hasHttpLaunchUri {
@@ -429,16 +436,21 @@ String kvmLaunchStatusText(
   }
 }
 
-/// Returns [value] as a usable URI [String], or `null` when it is not a string
-/// or is blank (empty / whitespace-only).
+/// Returns [value] as a trimmed, usable URI [String], or `null` when it is not
+/// a string or is blank (empty / whitespace-only).
 ///
-/// A Redfish `ConnectUri` must be a real endpoint; a blank value would make the
-/// console card render "Connect URI:   " and the viewer target an empty string
-/// instead of falling back to the manager URI. This mirrors
-/// `KvmCapability._nonEmptyString` so the per-console and per-manager KVM views
-/// treat the same malformed value identically (issue #009).
-String? _uriString(Object? value) =>
-    (value is String && value.trim().isNotEmpty) ? value : null;
+/// A Redfish `ConnectUri` must be a real endpoint: a blank value would make the
+/// console card render "Connect URI:   " and the viewer target an empty string,
+/// while a padded-but-valid value stored verbatim would fail `Uri.tryParse` and
+/// make every launch decision fall back to "no URI". Trimming here keeps the
+/// stored value launchable. This mirrors `KvmCapability._nonEmptyString` so the
+/// per-console and per-manager KVM views treat the same value identically
+/// (issue #009).
+String? _uriString(Object? value) {
+  if (value is! String) return null;
+  final String trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
 
 /// Returns [value] as a spec-valid `MaxConcurrentSessions` limit, or `null`.
 ///

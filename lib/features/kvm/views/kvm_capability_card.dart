@@ -124,7 +124,7 @@ class KvmCapabilityCard extends StatelessWidget {
               Semantics(
                 container: true,
                 excludeSemantics: true,
-                label: 'Resolved URI: ${capability.uri}',
+                label: 'Resolved URI: ${capability.launchUri}',
                 // Two lines (label above, value below) rather than a Row: a
                 // long BMC URL has no break points and would overflow beside
                 // the label at the 320 px breakpoint (UI-3).
@@ -139,7 +139,7 @@ class KvmCapabilityCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     SelectableText(
-                      capability.uri!,
+                      capability.launchUri!,
                       style: theme.textTheme.bodyMedium,
                     ),
                   ],

@@ -73,12 +73,26 @@ class KvmCapability {
   /// in which case [supportsKvmIp] falls back to scanning [connectTypes].
   final bool? graphicalKvmIp;
 
+  /// The normalized, launchable console [uri].
+  ///
+  /// Returns [uri] trimmed when it is non-blank, or `null` otherwise. Trimming
+  /// is essential because `Uri.tryParse` rejects leading/trailing whitespace —
+  /// a padded-but-valid endpoint stored verbatim would be displayed with stray
+  /// whitespace and could not be opened. Mirrors `KvmConsole.launchUri` so both
+  /// KVM views agree for any construction path (issue #009).
+  String? get launchUri {
+    final String? value = uri;
+    if (value == null) return null;
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
   /// Whether a usable (non-blank) console [uri] was resolved.
   ///
   /// A whitespace-only [uri] is not an endpoint: treating it as one makes the
   /// capability card render an empty "Resolved URI:" row instead of the source
   /// notice. Mirrors `KvmConsole.launchUri` so both KVM views agree (issue #009).
-  bool get hasUri => uri != null && uri!.trim().isNotEmpty;
+  bool get hasUri => launchUri != null;
 
   /// True when the graphical console advertises a `KVMIP` connection type.
   ///
@@ -284,15 +298,18 @@ class KvmCapability {
     return null;
   }
 
-  /// Returns [value] as a non-blank string, or `null`.
+  /// Returns [value] as a trimmed, non-blank string, or `null`.
   ///
   /// A whitespace-only value is not a usable `ConnectUri`, `@odata.id` or OEM
   /// console `Uri` — treating it as one would shadow a valid fallback (the
-  /// graphical link / OEM URI) and render a blank "Resolved URI:" row. Mirrors
-  /// `KvmConsole._uriString` so both KVM views agree (issue #009).
+  /// graphical link / OEM URI) and render a blank "Resolved URI:" row. A
+  /// padded-but-valid value is trimmed so the resolved URI is launchable and
+  /// displays cleanly. Mirrors `KvmConsole._uriString` so both KVM views agree
+  /// (issue #009).
   static String? _nonEmptyString(dynamic value) {
-    if (value is String && value.trim().isNotEmpty) return value;
-    return null;
+    if (value is! String) return null;
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   @override

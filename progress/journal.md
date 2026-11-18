@@ -10139,3 +10139,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration change or >7 days.
 
 **Issues touched:** #009 (open — blank-ConnectUri tolerance fix)
+
+## 2026-11-18 17:09 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free, TLS-safe padded-`ConnectUri` normalization fix across #009's two KVM models + the capability card. A BMC emitting a whitespace-padded-but-valid `ConnectUri` (`'  https://bmc/kvm  '`) had it stored verbatim by both `KvmConsole._uriString` and `KvmCapability._nonEmptyString`; since `Uri.tryParse` rejects leading/trailing whitespace, every `KvmConsole` launch decision fell back to "no URI" despite a valid HTTPS endpoint, and the cards rendered a padded URI row. Both parsers now return the trimmed value, both normalized accessors (`KvmConsole.launchUri`, new `KvmCapability.launchUri`) trim for any construction path, and the capability card renders `launchUri`. Blank values still normalize to null. Added 10 RED→GREEN tests (4 model + 5 capability + 1 capability-card widget), all confirmed failing pre-fix. Baseline green at 66aa1ec (analyze 0, 984 passed / 1 skipped; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; targeted 43 + 44 + 10; KVM suite 170; full `flutter test` 994 passed / 1 skipped (+10); DMTF emulator 85/85 (lib changed — §1.4 gate); coverage gates PASS overall 89.2% / scoped 90.3% / kvm 92.4%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a genuine parser/accessor correctness defect over manufactured churn: #009's and #021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation, so the honest unblocked work was making a padded-but-valid `ConnectUri` uniformly mean the trimmed, launchable endpoint across both read paths and the card — the recurring cross-view consistency theme. Verified the root cause (`Uri.tryParse` returns null on padded URLs) with a standalone Dart probe before fixing. Applied the identical trim rule in both parsers and both normalized accessors (so direct-construction widget fixtures / OEM registry paths are covered too), switched the capability card to the accessor, and kept blank-value handling and clean values byte-for-byte unchanged. Pure Dart + an accessor/card change, read-only, no WebView/protocol dependency and no production TLS change. Full emulator re-run (85/85) because `lib/` changed; no wire/request/header/payload handling touched.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. `KvmConsole`/`KvmCapability` URI agreement for a non-string `Oem.Uri`, or epic-triage/split the WebView-blocked rendering work), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — padded-ConnectUri normalization fix)

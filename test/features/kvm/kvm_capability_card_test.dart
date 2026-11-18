@@ -176,6 +176,31 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('a whitespace-padded resolved URI is displayed trimmed',
+        (WidgetTester tester) async {
+      // A BMC can pad an otherwise valid ConnectUri. The card must display the
+      // normalized endpoint (matching the per-console card), not the padded
+      // literal with stray leading/trailing whitespace.
+      const KvmCapability capability = KvmCapability(
+        managerId: 'BMC4',
+        supported: true,
+        connectTypes: <String>['KVMIP'],
+        serviceEnabled: true,
+        uri: '  https://padded.example/kvm\t',
+        sourceManagerUri: '/redfish/v1/Managers/BMC4',
+      );
+      await tester.pumpWidget(
+        const MaterialApp(home: KvmCapabilityCard(capability: capability)),
+      );
+
+      expect(find.text('https://padded.example/kvm'), findsOneWidget);
+      expect(find.text('  https://padded.example/kvm\t'), findsNothing);
+      expect(
+        find.bySemanticsLabel('Resolved URI: https://padded.example/kvm'),
+        findsOneWidget,
+      );
+    });
   });
 
   group('KvmView capability section', () {
