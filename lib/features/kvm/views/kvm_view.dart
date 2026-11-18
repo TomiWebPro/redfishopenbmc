@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:redfishopenbmc/core/theme/accessible_buttons.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_controller.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_providers.dart';
+import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
+import 'package:redfishopenbmc/features/kvm/views/kvm_capability_card.dart';
 import 'package:redfishopenbmc/features/kvm/views/kvm_console_viewer_page.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
@@ -86,6 +88,12 @@ class _KvmViewState extends ConsumerState<KvmView> {
     final KvmUiState ui = ref.watch(kvmControllerProvider(widget.systemId));
     final KvmController controller =
         ref.read(kvmControllerProvider(widget.systemId).notifier);
+    // Per-manager capability summaries (read-only detection). While loading or
+    // on a discovery failure this is null → no capability section is rendered;
+    // the console list still owns the surfaced load error / empty state.
+    final List<KvmCapability> capabilities =
+        ref.watch(kvmCapabilitiesProvider(widget.systemId)).value ??
+            <KvmCapability>[];
 
     // UI-2: a hard load failure (no consoles at all) renders as ONE merged
     // semantics node in context ('Unable to load KVM consoles. <message>') —
@@ -214,6 +222,37 @@ class _KvmViewState extends ConsumerState<KvmView> {
           ),
         ),
         const SizedBox(height: 16),
+        // Acceptance #009: the session-persistence note is visible AND
+        // announced as one merged node (never a bare detached sentence). It
+        // sits at the top so it is read before the launch controls.
+        Semantics(
+          container: true,
+          excludeSemantics: true,
+          label: 'Console persists until manager timeout — close tab to '
+              'disconnect',
+          child: Text(
+            'Console persists until manager timeout — close tab to disconnect',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (capabilities.isNotEmpty) ...<Widget>[
+          Semantics(
+            container: true,
+            excludeSemantics: true,
+            label: 'Manager capabilities',
+            child: Text(
+              'Manager capabilities',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final KvmCapability capability in capabilities)
+            KvmCapabilityCard(capability: capability),
+          const SizedBox(height: 8),
+        ],
         if (ui.loading)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),

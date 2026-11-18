@@ -10019,3 +10019,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — capability-model/detection/URI boxes done)
+
+## 2026-11-18 12:15 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — landed the **gated per-manager capability card + session note**: new `lib/features/kvm/views/kvm_capability_card.dart` (`KvmCapabilityCard`) renders one aggregated `KvmCapability` (manager / ServiceEnabled / ConnectTypes / MaxSessions / resolved URI or source notice) with a "KVM disabled on BMC" helper, every row a merged Semantics node; new `kvmCapabilitiesProvider(systemId)` FutureProvider walks managers once (degrades to empty on failure); wired into the gated `KvmView` above the console cards with a persistent top-of-list session note (visible text == announced label). Fixed a real 320 px header overflow (Row+Expanded → Column + Wrap). Added `test/features/kvm/kvm_capability_card_test.dart` (8 tests, RED by absence → GREEN). Baseline green at 0922da2 (analyze 0, 931 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; flutter test 939 passed / 1 skipped (+8); DMTF emulator 85/85 (lib/ changed — §1.4 gate); issues validate OK.
+
+**Decisions:**
+- Advanced #009 rather than #021: #021's two remaining boxes (embedded WebView rendering + dependency documented) are externally blocked on platform WebView support + BMC self-signed/TLS validation; prior runs' progressively smaller getter/guidance slices had become manufactured churn the runbook bans. The capability-card/session-note sub-items are genuinely unimplemented, self-contained, dependency-free, testable UI. The capability provider degrades to an empty list on discovery failure so the console list remains the single source of the surfaced load error — no duplicate error states. `KvmCapabilityCard` is pure presentation (no URL opening, no IPC, no transport change) so TLS is never weakened; the resolved URI is only displayed. Gated strictly on `features.kvm` and on capabilities being present. All rows follow the established single-merged-Semantics-node a11y pattern. Full emulator re-run (85/85) because lib/ changed; change is pure Dart widget/provider with no wire/payload impact. Issue stays OPEN — embed/fullscreen/input/Launch-Console strategy + WebView dependency + coverage gate remain.
+
+**Next:**
+- #009 remaining unblocked slice: the coverage gate (≥75%) with real coverage tooling/tests — the only non-dependency acceptance item left after this run.
+- #021 embedded HTML5 rendering + BMC TLS/self-signed validation — only when a platform WebView target is available unattended; never weaken TLS.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — capability-card/session-note/disabled-helper sub-items done)
