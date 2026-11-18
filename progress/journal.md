@@ -9794,3 +9794,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on code/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #010 (open)
+
+## 2026-11-18 02:39 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 (smallest open issue, P2, oldest), the Testing-gate coverage-threshold slice. Baseline green (analyze 0, 777 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Added `tool/coverage_gate.dart` — a pure-Dart lcov parser + threshold checker for the "≥75% overall / ≥80% on redfish+power+sensors" acceptance criterion — with `parseLcov`, `CoverageSummary.scope`, `evaluateGates` (default 75%/80%), `GateResult`/`CoverageGateReport` and a thin CLI (`main`) that exits 0/1/2 (pass/gate-fail/missing-file). Added `test/tool/coverage_gate_test.dart` (10 tests: parsing edge cases, aggregation math, relative/absolute/Windows path scoping, pass/fail/custom-threshold gates) and a `DEVELOPMENT.md` "Testing & coverage gate" section. End-to-end: `flutter test --coverage` green (787 passed / 1 skipped) and the gate reports overall 88.5% (5022/5674) + redfish+power+sensors 90.2% (2105/2334), both PASS (exit 0); missing-file path exits 2. Verify: analyze 0; flutter test 787 passed / 1 skipped (+10); issues validate OK. #010 stays OPEN (CI badge/workflow + broader a11y slices remain).
+
+**Decisions:**
+- Put the gate in `tool/` (not `lib/`) so no production code ships a CLI; kept parsing/gating pure and I/O-free so it unit-tests with inline lcov strings and `flutter test` never depends on a generated `coverage/lcov.info`. Default thresholds encode the issue's stated targets verbatim (75% / 80%) and are overridable via `evaluateGates` rather than hard-coded in the CLI. Scope matching uses normalized path substrings so absolute lcov `SF:` paths and Windows separators match the relative `lib/...` prefixes. Did not check the Testing-gate acceptance box because the CI-workflow/badge sub-item is still outstanding (no `.github/` workflow exists) — no fake badge added. Skipped UI: non-visual tooling with no user-facing surface; the runbook bans manufactured UI churn while FEATURE work is open. No production TLS weakened; no new dependency; `coverage/` stays `.gitignore`'d. DOCS anchor gate not re-run (no corpus/manifest change). Full EMULATOR re-run skipped: this run's only `tool/` change is a standalone `dart:io` coverage CLI that cannot affect the Redfish wire surface / fixtures / `test_integration/`, and it is <7 days since the last green emulator run (2026-11-16 05:27 UTC).
+
+**Next:**
+- Add a `.github/workflows` CI job (analyze + test + coverage gate) and a README status badge to close the #010 Testing-gate box.
+- Continue #010 broader a11y semantics/touch-target/focus coverage with widget tests.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on wire/fixture/test_integration change or >7 days.
+
+**Issues touched:** #010 (open)

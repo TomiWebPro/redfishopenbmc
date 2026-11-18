@@ -55,6 +55,35 @@ Rules:
 - Never force-push `main` without explicit human approval.
 - Commit messages reference issue IDs: `feat: #003 discovery engine` / `fix: #005 power poll` / `progress: #002 401 retry`.
 
+## Testing & coverage gate (issue #010)
+
+The full suite must be green and `flutter analyze` clean before every push:
+
+```bash
+flutter analyze                 # 0 issues
+flutter test                    # all pass
+```
+
+Coverage is enforced by `tool/coverage_gate.dart` (pure Dart, unit-tested in
+`test/tool/coverage_gate_test.dart`). Generate lcov and run the gate:
+
+```bash
+flutter test --coverage
+dart run tool/coverage_gate.dart coverage/lcov.info
+```
+
+Thresholds: **≥75% overall** line coverage and **≥80%** on the high-value
+scopes `lib/redfish/`, `lib/features/power/`, `lib/features/sensors/` (overridable
+in code via `evaluateGates`). Exit code `0` = all gates pass, `1` = a gate
+failed, `2` = lcov file missing (run `--coverage` first). `coverage/lcov.info` is
+`.gitignore`'d and never committed.
+
+Last measured (2026-11-18): **overall 88.5%** (5022/5674), **redfish+power+sensors
+90.2%** (2105/2334) — both gates PASS.
+
+> Note: a CI workflow/badge (`README.md`) is still pending; there is no `.github/`
+> workflow in this repo yet, so no badge is shown until one exists.
+
 ## Progress tracking contract
 
 ### `progress/journal.md` — daily (append, never overwrite)
