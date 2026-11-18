@@ -56,6 +56,40 @@ void main() {
       expect(serial.connectTypesSupported, contains('Telnet'));
     });
 
+    test('legacy Enabled field counts as enabled for a console (#009)', () {
+      final List<KvmConsole> consoles = KvmConsole.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'Enabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP', 'HTML5'],
+            'ConnectUri': 'https://bmc.example.com/kvm',
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(consoles, hasLength(1));
+      expect(consoles.single.serviceEnabled, isTrue);
+      // With the legacy `Enabled` honored consistently with FeatureRules and
+      // KvmCapability, the HTTPS HTML5 console is in-app launchable instead of
+      // being mislabelled "disabled" on the console card / viewer.
+      expect(consoles.single.launchStrategy, KvmLaunchStrategy.inAppHtml5);
+    });
+
+    test('non-bool ServiceEnabled does not throw and reads as disabled (#009)',
+        () {
+      final List<KvmConsole> consoles = KvmConsole.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': 'true',
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(consoles, hasLength(1));
+      expect(consoles.single.serviceEnabled, isFalse);
+    });
+
     test('supportsHtml5 is false for the KVMIP-only mockup console', () {
       final List<KvmConsole> consoles =
           KvmConsole.fromManager(body, managerId: 'BMC');

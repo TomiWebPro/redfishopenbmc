@@ -10064,3 +10064,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — URI-resolution consistency fix)
+
+## 2026-11-18 13:56 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — genuine cross-view detection-consistency fix. `KvmConsole._fromBlock` (`lib/features/kvm/models/kvm_models.dart`) read enablement with `block['ServiceEnabled'] as bool? ?? false`, which ignored the legacy `Enabled` member honored by `FeatureRules._consoleEnabled` and `KvmCapability._blockEnabled` AND threw a `TypeError` on a non-bool value. The checked-in OpenBMC fixture uses `"Enabled": true`, so discovery + capability card reported KVM enabled while the console card showed "Disabled" and the #021 viewer falsely said "disabled on BMC"; a non-bool `ServiceEnabled` aborted all of `fetchConsoles()`. Now uses `block['ServiceEnabled'] == true || block['Enabled'] == true` (identical to the other two parsers) — consistent enablement across all three read paths, non-bool degrades to disabled. Added 2 RED→GREEN pure-Dart tests in `test/features/kvm/kvm_model_test.dart` (legacy `Enabled` → enabled + `inAppHtml5`; non-bool → no throw + disabled). Baseline green at fe4d630 (analyze 0, 955 passed / 1 skipped; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; targeted 26 passed (2 new tests RED pre-fix, GREEN after); KVM suite 133 passed; flutter test 957 passed / 1 skipped (+2); DMTF emulator 85/85 (lib changed — §1.4 gate); issues validate OK. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a real model-consistency defect over manufactured getter/guidance churn: #009's and #021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation, so the honest unblocked work was aligning console-block enablement parsing across `KvmConsole`, `KvmCapability` and `FeatureRules`. A manager that one view reports as enabled must not be reported as disabled by another — the legacy `Enabled` field is present in a real checked-in OpenBMC fixture, making this a demonstrable user-facing contradiction rather than a hypothetical. Removed the unsafe `as bool?` cast so a malformed non-bool value degrades gracefully instead of aborting console discovery (matching the tolerant `_asInt`/`_asString` helpers in the same file). Fix is pure Dart, read-only, and adds no dependency or production TLS change. Full emulator re-run (85/85) because `lib/` changed. Issue stays OPEN — embedded HTML5 rendering, fullscreen, input forwarding and the WebView dependency remain blocked.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. `KvmCapability.supportsKvmIp` aggregate-vs-graphical inconsistency, needs a stored field + tests) or epic-triage/split the blocked rendering work, never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — cross-view enablement consistency fix)

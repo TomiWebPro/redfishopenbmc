@@ -127,7 +127,12 @@ class KvmConsole {
   /// `['KVMIP']`, `['VNC','HTML5']`, or `['SSH','Telnet']`.
   final List<String> connectTypesSupported;
 
-  /// Whether the console service is enabled (`ServiceEnabled`).
+  /// Whether the console service is enabled.
+  ///
+  /// Reads the canonical `ServiceEnabled` member, or the legacy `Enabled`
+  /// member honored by discovery (`FeatureRules`) and `KvmCapability`. A
+  /// non-bool value is treated as disabled rather than throwing, keeping the
+  /// console card / viewer consistent with the capability card (issue #009).
   final bool serviceEnabled;
 
   /// The maximum number of concurrent sessions (`MaxConcurrentSessions`),
@@ -354,7 +359,8 @@ class KvmConsole {
     final List<String> types = _asStringList(block['ConnectTypesSupported']);
     final int? maxSessions = _asInt(block['MaxConcurrentSessions']);
     final String? connectUri = _asString(block['ConnectUri']);
-    final bool enabled = block['ServiceEnabled'] as bool? ?? false;
+    final bool enabled =
+        block['ServiceEnabled'] == true || block['Enabled'] == true;
     final dynamic oem = block['Oem'];
     return KvmConsole(
       type: type,
