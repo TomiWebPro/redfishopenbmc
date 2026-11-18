@@ -401,6 +401,37 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+        'connection types show the enabled console types, not a disabled '
+        'graphical console\'s (#009)', (WidgetTester tester) async {
+      // A disabled graphical console advertising KVMIP must not put a KVMIP
+      // chip on the capability card when the only openable console is an
+      // HTML5 remote console — mirroring the enabled-preference already
+      // applied to the resolved URI and maxSessions rows.
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': false,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'ConnectUri': 'https://bmc.example/disabled-kvm',
+          },
+          'RemoteConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['HTML5'],
+            'ConnectUri': 'https://bmc.example/html5',
+          },
+        },
+        managerId: 'BMC6',
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: KvmCapabilityCard(capability: capability)),
+      );
+
+      expect(find.text('HTML5'), findsOneWidget);
+      expect(find.text('KVMIP'), findsNothing);
+      expect(find.bySemanticsLabel('Connection types: HTML5'), findsOneWidget);
+    });
   });
 
   group('KvmView capability section', () {

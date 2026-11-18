@@ -695,6 +695,137 @@ void main() {
     });
   });
 
+  group('KvmCapability connectTypes skips disabled blocks (#009)', () {
+    // The capability card's "Connection types" chips must describe a console
+    // the operator can actually open, mirroring the enabled-preference already
+    // applied to the resolved URI and the aggregate maxSessions. Before this
+    // fix _appendTypes aggregated every console block unconditionally, so an
+    // explicitly disabled graphical console's KVMIP chip sat beside (and won
+    // ahead of) the launchable remote console's HTML5 chip.
+
+    test('disabled graphical types are skipped for an enabled remote console',
+        () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': false,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'ConnectUri': 'https://bmc.example/disabled-kvm',
+          },
+          'RemoteConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['HTML5'],
+            'ConnectUri': 'https://bmc.example/html5',
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.connectTypes, <String>['HTML5']);
+      // The other capability fields already point at the launchable console.
+      expect(capability.uri, 'https://bmc.example/html5');
+    });
+
+    test(
+        'legacy Enabled: false graphical types are skipped for a serial '
+        'console', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'Enabled': false,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+          },
+          'SerialConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['SSH'],
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.connectTypes, <String>['SSH']);
+    });
+
+    test('capability connectTypes agree with the openable console card', () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+          'ConnectUri': 'https://bmc.example/disabled-kvm',
+        },
+        'RemoteConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['HTML5'],
+          'ConnectUri': 'https://bmc.example/html5',
+        },
+      };
+      final KvmConsole console = KvmConsole.fromManager(
+        body,
+        managerId: 'BMC',
+      ).firstWhere((KvmConsole c) => c.canOpenConsole);
+      final KvmCapability capability = KvmCapability.fromManager(
+        body,
+        managerId: 'BMC',
+      );
+
+      expect(console.connectTypesSupported, <String>['HTML5']);
+      expect(capability.connectTypes, console.connectTypesSupported);
+    });
+
+    test('the Oem marker stays when a disabled graphical block is skipped', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': false,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+          },
+          'RemoteConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['HTML5'],
+          },
+          'Oem': <String, dynamic>{
+            'OpenBMC': <String, dynamic>{
+              'KVM': <String, dynamic>{'Uri': 'https://bmc.example/kvm'},
+            },
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.connectTypes, <String>['HTML5', 'Oem']);
+    });
+
+    test('a sole disabled console still surfaces its types (fallback)', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': false,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.connectTypes, <String>['KVMIP']);
+    });
+
+    test('unknown-enablement blocks keep their types', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+          },
+          'RemoteConsole': <String, dynamic>{
+            'ConnectTypesSupported': <dynamic>['HTML5'],
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.connectTypes, <String>['KVMIP', 'HTML5']);
+    });
+  });
+
   group('KvmCapability blank ConnectUri tolerance (#009)', () {
     test('blank graphical ConnectUri falls back to its @odata.id link', () {
       final KvmCapability capability = KvmCapability.fromManager(

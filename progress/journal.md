@@ -10289,3 +10289,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — resolved-URI `@odata.id` disabled-graphical fix)
+
+## 2026-11-18 23:29 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free, TLS-safe enabled-state consistency fix for the last aggregate capability-card field. `KvmCapability.fromManager` aggregated `connectTypes` from GraphicalConsole/SerialConsole/RemoteConsole unconditionally, so a manager with an explicitly disabled graphical console (`ServiceEnabled: false` / legacy `Enabled: false`) advertising `KVMIP` rendered a "KVMIP" chip beside the launchable RemoteConsole's "HTML5" chip — advertising a connection path the operator cannot open — while the resolved URI and aggregate `maxSessions` already preferred the enabled console. New `_aggregateConnectTypes(body, oemConsole:)` applies the same two-pass rule as `_standardConnectUri` / `_aggregateMaxSessions`: append types only from not-explicitly-disabled blocks, fall back to any block so all-disabled fixtures keep their types, then add the `'Oem'` marker; unknown-enablement blocks keep their types byte-for-byte. Added 7 RED→GREEN tests (6 pure-Dart `kvm_capability_test.dart` incl. console↔capability agreement vs the openable `KvmConsole` and an Oem-marker interaction, 2 green guards; 1 `kvm_capability_card_test.dart` widget — 4 confirmed failing pre-fix). Baseline analyze 0 / 1057 passed / 1 skipped → verify analyze 0 / 1064 passed / 1 skipped (+7); KVM suite 235; DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.2% / scoped 90.4% / kvm 92.8%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a genuine cross-view data defect — the capability card advertising connection types from a console the operator cannot open — over manufactured churn: #009's/#021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation, so the honest unblocked work was completing the enabled-state contract across the capability card's last aggregate field (resolved URI 21:40, maxSessions 22:16, @odata.id 22:53, now connectTypes). Reused the established two-pass "skip explicitly disabled, keep a fallback" rule so all-disabled fixtures and mockups omitting the enablement flag keep their prior output byte-for-byte — only which types win among competing blocks changes. The `'Oem'` marker is appended after aggregation so an OEM-only console is still typed. Pure Dart + doc comments, read-only, no WebView/protocol dependency and no production TLS change. Full emulator re-run (85/85) because `lib/` changed. Issue stays OPEN — embedded HTML5 rendering, fullscreen, input forwarding and the WebView dependency remain blocked.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. the per-console `maxConcurrentSessions` / connection-type chips for the same enabled-state contract now applied to all four aggregate capability fields, or epic-triage/split the WebView-blocked rendering work), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — connectTypes skip-disabled-block fix)

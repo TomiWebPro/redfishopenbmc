@@ -50,7 +50,10 @@ class KvmCapability {
   /// `'Oem'` when an OEM console is detected. Order is deterministic (graphical
   /// first, then serial, then remote, then the OEM marker) and duplicates are removed
   /// case-insensitively (a BMC that mixes casing across console blocks must
-  /// not render the same type twice on the capability card).
+  /// not render the same type twice on the capability card). When built via
+  /// [fromManager], types from an explicitly disabled console block are skipped
+  /// while any non-disabled block advertises a type — matching the
+  /// enabled-preference of [uri] and [maxSessions] (issue #009).
   final List<String> connectTypes;
 
   /// Whether any standard console block (graphical, serial or remote) reports
@@ -140,11 +143,13 @@ class KvmCapability {
     final bool serialEnabled = _blockEnabled(serial);
     final bool remoteEnabled = _blockEnabled(remote);
 
-    final List<String> types = <String>[];
-    _appendTypes(types, graphical);
-    _appendTypes(types, serial);
-    _appendTypes(types, remote);
-    if (oemConsole && !types.contains('Oem')) types.add('Oem');
+    // Aggregate the advertised connection types across the manager's standard
+    // console blocks, preferring one the operator can actually open (issue
+    // #009). Mirrors the enabled-preference already applied to the resolved
+    // URI and the aggregate session limit, so the capability card never shows
+    // a KVMIP chip sourced from a console that is explicitly disabled.
+    final List<String> types =
+        _aggregateConnectTypes(body, oemConsole: oemConsole);
 
     final bool kvmIp = _advertises(graphical, 'KVMIP');
     // A graphical console needs the KVMIP connection type to count as KVM
@@ -303,6 +308,53 @@ class KvmCapability {
     return value.any(
       (dynamic e) => e is String && e.trim().toUpperCase() == type,
     );
+  }
+
+  /// Aggregates `ConnectTypesSupported` across the standard console blocks
+  /// (graphical → serial → remote), preferring a block that is not explicitly
+  /// disabled, then appends the `'Oem'` marker when an OEM console is present.
+  ///
+  /// A type advertised only by an explicitly disabled console
+  /// (`ServiceEnabled: false` / `Enabled: false`) is not one the operator can
+  /// use — that console's `KvmConsole.launchStrategy` is `disabled` and
+  /// `KvmService.pickPrimary` will not choose it. Rendering its chips on the
+  /// capability card would suggest a connection path the operator cannot open
+  /// (issue #009), so an explicitly disabled block is skipped while any
+  /// non-disabled block advertises a type. A block that omits the enablement
+  /// flag is "unknown" (not disabled) and keeps its types, and when every
+  /// type-bearing block is disabled the types are still surfaced as the best
+  /// available choice — this only changes which types win when an enabled
+  /// console exists. Mirrors `_standardConnectUri` / `_aggregateMaxSessions`.
+  static List<String> _aggregateConnectTypes(
+    Map<String, dynamic> body, {
+    required bool oemConsole,
+  }) {
+    const List<String> names = <String>[
+      'GraphicalConsole',
+      'SerialConsole',
+      'RemoteConsole',
+    ];
+
+    final List<String> types = <String>[];
+
+    // First pass: prefer types from a block that is not explicitly disabled.
+    for (final String name in names) {
+      final Map<String, dynamic>? block = _consoleBlock(body, name);
+      if (block == null || _explicitlyDisabled(block)) continue;
+      _appendTypes(types, block);
+    }
+    // Fallback: when the only advertised types come from explicitly disabled
+    // blocks, still surface them rather than showing no types at all
+    // (preserves prior behaviour for all-disabled fixtures).
+    if (types.isEmpty) {
+      for (final String name in names) {
+        final Map<String, dynamic>? block = _consoleBlock(body, name);
+        if (block == null) continue;
+        _appendTypes(types, block);
+      }
+    }
+    if (oemConsole && !types.contains('Oem')) types.add('Oem');
+    return types;
   }
 
   /// Appends a block's `ConnectTypesSupported` entries to [target].
