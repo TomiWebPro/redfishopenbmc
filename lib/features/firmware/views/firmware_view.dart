@@ -214,6 +214,45 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
     await controller.pollLastTask();
   }
 
+  /// Submits a `SimpleUpdate` via [FirmwareController.startUpdate]; on success
+  /// with a 202 task-monitor URI, hands the handle off to
+  /// [FirmwareController.pollLastTask] so the task banner's live progress,
+  /// `TaskState` badge and messages log advance after a Start (issue #008).
+  ///
+  /// Mirrors [_pushUpload]'s handoff: both destructive update paths converge
+  /// on the same controller contract ("call [pollLastTask] after a successful
+  /// update when a task monitor URI was returned"). A failed Start (error card
+  /// covers it) or a 204-no-Location service (queued label covers it) has
+  /// nothing to poll and is a no-op.
+  Future<void> _startSimpleUpdate(FirmwareUiState ui) async {
+    if (_isBusy(ui)) return;
+    final String uri = _imageUriController.text.trim();
+    if (uri.isEmpty) return;
+    if (!await _confirmDestructiveUpdate('Simple update')) return;
+    if (!mounted) return;
+    final FirmwareController controller =
+        ref.read(firmwareControllerProvider(widget.systemId).notifier);
+    await controller.startUpdate(
+      SimpleUpdateRequest(
+        imageUri: uri,
+        transferProtocol: _transferProtocol,
+        targets: const <String>[],
+      ),
+    );
+    if (!mounted) return;
+    final FirmwareUiState after =
+        ref.read(firmwareControllerProvider(widget.systemId));
+    final UpdateTask? task = after.lastTask;
+    if (after.error != null ||
+        task == null ||
+        task.taskUri == null ||
+        task.taskUri!.isEmpty) {
+      // Failed Start or 204-no-Location service: nothing to poll.
+      return;
+    }
+    await controller.pollLastTask();
+  }
+
   @override
   Widget build(BuildContext context) {
     final SystemHandle? handle =
@@ -567,24 +606,7 @@ class _FirmwareViewState extends ConsumerState<FirmwareView> {
                 ),
                 const SizedBox(height: 12),
                 FilledButton.icon(
-                  onPressed: ui.loading
-                      ? null
-                      : () async {
-                          final String uri = _imageUriController.text.trim();
-                          if (uri.isEmpty) return;
-                          if (!await _confirmDestructiveUpdate(
-                              'Simple update')) {
-                            return;
-                          }
-                          if (!mounted) return;
-                          controller.startUpdate(
-                            SimpleUpdateRequest(
-                              imageUri: uri,
-                              transferProtocol: _transferProtocol,
-                              targets: const <String>[],
-                            ),
-                          );
-                        },
+                  onPressed: ui.loading ? null : () => _startSimpleUpdate(ui),
                   icon: ui.starting
                       ? const SizedBox(
                           width: 16,

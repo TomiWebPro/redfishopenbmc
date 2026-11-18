@@ -4,6 +4,21 @@
 
 **Project:** Redfish Multi-System Control App (Flutter) — unified Redfish/OpenBMC control plane. Spec: `documentations/project_goal/goal.md`.
 
+## P2 closed — #008 (2026-11-18)
+
+**#008 P2 — Firmware & update management (UpdateService, upload & jobs) — CLOSED** (by
+`redfish-automation`, FEATURE run). Delivered incrementally across prior runs:
+discovery-gated Firmware tab, typed inventory/task models, `FirmwareService`
+(inventory, `startSimpleUpdate`, binary/multipart `pushImage`, `pollTask` with
+exponential-backoff retry + cancel), a size gate + destructive confirmation,
+and a task banner with live progress/`TaskState` badge/`Messages` log. This run
+closed the last gap: `FirmwareView._startSimpleUpdate` now hands the SimpleUpdate
+202 `Location` to `pollLastTask()` (the push-upload path already did), so both
+destructive paths advance the task banner. Results: `flutter analyze` 0,
+`flutter test` **761 passed / 1 skipped** (+2 this run), firmware coverage 88.4%
+(740/837, ≥80%), `issues validate` OK. Open P2/P3 now: #009/#021 (KVM), #010
+(hardening).
+
 ## P2 closed — #007 (2026-11-17)
 
 **#007 P2 — Sensor monitoring (temps/fans/voltages + realtime graphs) — CLOSED** (by

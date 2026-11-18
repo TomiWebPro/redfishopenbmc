@@ -9734,3 +9734,18 @@
 - Split/advance #009/#021 via non-dependency slices only — no WebView/protocol dep, no production TLS weakening.
 
 **Issues touched:** #008 (open)
+
+## 2026-11-18 — agent:redfish-automation — #008
+
+**Done:**
+- FEATURE #008 (smallest open issue, P2) — CLOSED. Baseline green at 29338ae (analyze 0, 759 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Landed the explicit "Next" from the prior run: `FirmwareView._startSimpleUpdate` now awaits `FirmwareController.startUpdate`, reads the returned 202 `UpdateTask` handle and hands its `Location` to `FirmwareController.pollLastTask()` so the task banner's live progress/`TaskState` badge/`Messages` log advance after a SimpleUpdate **Start** (previously only push-upload did). Failed Start / 204-no-Location is a no-op. Verified all remaining acceptance boxes are implemented, checked them, and closed #008 via `issues.py close`. Added 2 widget tests (202 → poll handoff + terminal banner; 204 → no poll + queued label). Verify analyze 0 / 761 passed / 1 skipped (+2); firmware coverage 88.4% (740/837); issues validate OK.
+
+**Decisions:**
+- Extracted `_startSimpleUpdate` as a method mirroring `_pushUpload` rather than expanding the inline button closure, so both destructive paths share one testable handoff shape and the Start button stays a one-liner. Kept the `after.error != null || task?.taskUri empty` no-op guard identical to the upload path so a failed Start or a 204-no-Location service never reaches the poller (the error card / queued label already cover those states). Did NOT manufacture new UI decoration: the change reuses the existing capability-gated task banner, so the user-visible win is that progress/state/messages now actually advance after a Start — no new churn, and the existing 320/800/1300 px no-overflow tests still pass. No production TLS weakened; no new dependency; DOCS anchor gate not re-run (no corpus/manifest change); full EMULATOR re-run skipped (no wire-contract/fixture/`test_integration/`/`tool/` change; <7 days since last green 2026-11-16 05:27 UTC). Closed #008 because every acceptance box is genuinely implemented and all gates pass (per epic-triage guidance).
+
+**Next:**
+- Advance #010 hardening (discovery request-count budget, cache TTL/delta polling, secure-storage/token-isolation/a11y slices) with tests.
+- Split/advance #009 or #021 via non-dependency KVM slices only (no WebView/protocol dep, no production TLS weakening).
+- Cheap DOCS anchor re-verify only; no full corpus re-download unless anchors changed.
+
+**Issues touched:** #008 (closed)

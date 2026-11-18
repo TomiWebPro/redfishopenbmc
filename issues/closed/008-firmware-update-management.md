@@ -1,17 +1,16 @@
 ---
 id: "008"
 title: "Firmware & update management — UpdateService, upload & jobs"
-status: open
+status: closed
 priority: P2
 type: feature
 created: 2026-08-26
-updated: 2026-11-17
-closed: null
+updated: 2026-11-18
+closed: 2026-11-18
 assignee: unassigned
 labels: [firmware, update, redfish, jobs]
 estimated_tokens: 45000
 ---
-
 # 008 — Firmware & update management — UpdateService, upload & jobs
 
 > Integrate `UpdateService`: detect availability, upload firmware images, trigger `SimpleUpdate`, monitor `Task`/`Job` progress, and surface logs.
@@ -28,27 +27,27 @@ estimated_tokens: 45000
 ## Goals / Acceptance Criteria
 
 - [x] `lib/features/firmware/models/firmware_inventory.dart` — `id, version, name, updateable, status, lowLevel, relatedItem` + `UpdateService` capability `httpPushUri, multipartSupported, simpleUpdateSupported, maxImageSize` (capabilities represented in `UpdateServiceInfo`: `httpPushUri`, `multipartHttpPushUri`, `maxImageSize`, SimpleUpdate via the `firmwareUpdate` discovery gate — 2026-11-17)
-- [ ] `lib/features/firmware/firmware_service.dart` —
+- [x] `lib/features/firmware/firmware_service.dart` — (as `fetchUpdateService` / `fetchInventory` / `startSimpleUpdate` / `pushImage` / `pollTask`; all sub-items below delivered — 2026-11-17)
   - `getInventory(systemId) → List<FirmwareInventory>` via `GET /redfish/v1/UpdateService/FirmwareInventory` (fallback `GET /redfish/v1/UpdateService/SoftwareInventory` for OpenBMC)
   - `simpleUpdate(systemId, imageUri) → TaskRef` via `POST /UpdateService/Actions/UpdateService.SimpleUpdate {"ImageURI": uri, "TransferProtocol":"HTTPS"}` (and `HttpPushUri` variant)
   - `uploadImage(systemId, bytes, filename) → TaskRef` via `POST <HttpPushUri>` multipart/form-data (or `UpdateService.update` multipost), streamed upload with progress callback, 100MB soft limit warn
   - `getTask(taskId) → Task {Id, TaskState (New/Running/Completed/Exception/Cancelled), PercentComplete, Messages[]}`
   - Handles `202 Accepted` + `Location: /TaskService/Tasks/{id}` for async
-- [ ] Tab `lib/features/firmware/views/firmware_view.dart` — **only if** `features.firmwareUpdate==true`:
-  - Inventory list: name, version, status badge
+- [x] Tab `lib/features/firmware/views/firmware_view.dart` — **only if** `features.firmwareUpdate==true`: (all sub-items delivered — 2026-11-17)
+  - [x] Inventory list: name, version, status badge (`_InventoryList` — 2026-11-17)
   - [x] Upload area: file picker (desktop/web) + `http` upload with progress bar; disabled if `maxImageSize` exceeded (hard gate + 100 MiB soft warn — 2026-11-17)
-  - Actions: `Simple Update` (URI input) + `Upload & Update` (file)
-  - Task monitor: `LinearProgressIndicator` + `%` + `TaskState` badge + `Messages` log (auto-poll every 3s while `Running`)
+  - [x] Actions: `Simple Update` (URI input) + `Upload & Update` (file) (2026-11-17)
+  - [x] Task monitor: `LinearProgressIndicator` + `%` + `TaskState` badge + `Messages` log (auto-polls the 202 monitor to terminal via `pollLastTask`, 2 s default interval; **both** the Start and push-upload paths now hand the 202 `Location` off — 2026-11-18 00:17 UTC)
   - [x] Confirmation for destructive update (`showDialog` confirm/cancel before both SimpleUpdate Start and push Upload — 2026-11-17)
 - [x] Gating: discovery rule `firmwareUpdate = UpdateService != null` (`feature_rules.dart` → #003) — no placeholder when absent
 - [x] Resilience: cancel task (`DELETE /TaskService/Tasks/{id}` or `POST Cancel`), 413 too large, 401 auth, low-bandwidth retry with exponential backoff (cancel/413/401 landed 2026-11-17; generic exponential-backoff retry on transient monitor reads landed 2026-11-17 23:40 UTC — `pollTask` backs off `initialBackoff × 2^attempt` capped at `maxBackoff`, ≤`maxRetries` per poll, fatal 401/403/non-retryable never retried, `Retry-After` still honoured for the first wait)
-- [ ] Tests: `test/features/firmware/firmware_service_test.dart` — mocked `Dio` for inventory, SimpleUpdate 202+task, multipart upload progress, task polling `Running→Completed`, `Exception` with `Messages`; widget test gated hidden
+- [x] Tests: `test/features/firmware/firmware_service_test.dart` — mocked `Dio` for inventory, SimpleUpdate 202+task, multipart upload progress, task polling `Running→Completed`, `Exception` with `Messages`; widget test gated hidden (far exceeded across service/controller/widget/model suites — 2026-11-17)
 - [x] Coverage ≥80% (firmware feature 87.4%, 651/745 lines, 2026-11-17 run)
 
 ## Tasks
 
 - [x] Models `FirmwareInventory`, `Task`, `UpdateServiceCaps` (as `FirmwareInventoryItem`, `RedfishTask`/`TaskMessage`, `UpdateServiceInfo`)
-- [ ] Service `FirmwareService` + `TaskPoller` + `UploadProgress` (Riverpod)
+- [x] Service `FirmwareService` + `TaskPoller` (controller `pollLastTask`) + `UploadProgress` (Riverpod `FirmwareUiState.uploadProgress`) (2026-11-17)
 - [x] Widgets: `FirmwareView`, `InventoryCard`, `UploadArea`, `TaskMonitor` (task banner with state badge + messages log + Cancel)
 - [x] File picker abstraction (injectable `firmwareImagePickerProvider` over `file_selector`)
 - [x] Fixtures: OpenBMC `UpdateService` + `FirmwareInventory` + `Task` payloads under `test/fixtures/redfish/`
@@ -71,6 +70,22 @@ estimated_tokens: 45000
 
 ## Progress Log
 
+- 2026-11-18 00:17 UTC — FEATURE run: **SimpleUpdate Start 202 `Location`
+  handoff landed; #008 closed.** The explicit "Next" from the prior run is
+  done: `FirmwareView._startSimpleUpdate` now awaits
+  `FirmwareController.startUpdate`, reads the returned `UpdateTask` handle and
+  — when the 202 carried a task-monitor URI — calls
+  `FirmwareController.pollLastTask()` so the task banner's live progress,
+  `TaskState` badge and `Messages` log advance after a Start (previously only
+  the push-upload path did this). A failed Start or a 204-no-Location service
+  is a no-op (error card / queued label cover those). This converges BOTH
+  destructive update paths on the documented `pollLastTask` contract and
+  fully meets the task-monitor acceptance box. Added 2 widget tests
+  (`_StartCapableFirmwareService`: 202 → `pollCalls==1` + terminal banner;
+  `_StartNoMonitorFirmwareService`: 204 → `pollCalls==0` + queued label).
+  Widget suite 54 → 56 passed; full suite 759 → 761 passed / 1 skipped;
+  analyze 0; issues validate OK. All acceptance boxes verified and checked,
+  so #008 is CLOSED. Firmware coverage 88.4% (740/837, clears ≥80%).
 - 2026-11-17 23:40 UTC — FEATURE run: **generic exponential-backoff retry for
   the task poller landed**, closing the last resilience gap. `pollTask` now
   retries *transient* monitor-read failures (`RedfishException.retryable` —
@@ -175,6 +190,10 @@ estimated_tokens: 45000
 - Related: #003, #004
 
 ## Closed Criteria
+
+- Resolution: SimpleUpdate Start 202 Location now handed to pollLastTask() — both destructive paths converge on task-monitor polling; all acceptance boxes checked, analyze 0 / 761 tests pass
+- Closed: 2026-11-18
+
 
 - Resolution:
 - Closed reason:

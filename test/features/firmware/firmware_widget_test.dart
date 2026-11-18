@@ -142,6 +142,62 @@ class _PushCapableFirmwareService extends FakeFirmwareService {
   }
 }
 
+/// A [FakeFirmwareService] whose `startSimpleUpdate` returns a 202 task
+/// monitor URI and whose `pollTask` resolves immediately — the successful
+/// SimpleUpdate **Start** → auto-poll seam (#008). The upload path has its own
+/// [_PushCapableFirmwareService] equivalent; this covers the other destructive
+/// update path so both converge on `pollLastTask`.
+class _StartCapableFirmwareService extends FakeFirmwareService {
+  /// How many times `pollTask` was called after the 202.
+  int pollCalls = 0;
+
+  @override
+  Future<UpdateTask> startSimpleUpdate(SimpleUpdateRequest req) async =>
+      const UpdateTask(taskUri: 'https://bmc/task/start-7');
+
+  @override
+  Future<RedfishTask> pollTask(
+    UpdateTask task, {
+    Duration interval = const Duration(seconds: 2),
+    int maxPolls = 30,
+    void Function(RedfishTask interim)? onInterim,
+    Duration initialBackoff = const Duration(seconds: 1),
+    Duration maxBackoff = const Duration(seconds: 30),
+    int maxRetries = 3,
+    void Function(int attempt, Duration delay)? onRetry,
+  }) async {
+    pollCalls++;
+    return const RedfishTask(id: 'start-7', state: 'Completed');
+  }
+}
+
+/// A [_StartCapableFirmwareService] whose `startSimpleUpdate` completes
+/// synchronously (204, no `Location`) — the view must treat a missing task
+/// monitor as a no-op, never poll nothing (#008).
+class _StartNoMonitorFirmwareService extends FakeFirmwareService {
+  /// Must stay 0 — a 204-no-Location Start has nothing to poll.
+  int pollCalls = 0;
+
+  @override
+  Future<UpdateTask> startSimpleUpdate(SimpleUpdateRequest req) async =>
+      const UpdateTask(taskUri: null);
+
+  @override
+  Future<RedfishTask> pollTask(
+    UpdateTask task, {
+    Duration interval = const Duration(seconds: 2),
+    int maxPolls = 30,
+    void Function(RedfishTask interim)? onInterim,
+    Duration initialBackoff = const Duration(seconds: 1),
+    Duration maxBackoff = const Duration(seconds: 30),
+    int maxRetries = 3,
+    void Function(int attempt, Duration delay)? onRetry,
+  }) async {
+    pollCalls++;
+    return const RedfishTask(id: 'none', state: 'Completed');
+  }
+}
+
 /// A [_PushCapableFirmwareService] whose `pushImage` fails — the mocked
 /// `HttpPushUri` seam answers 400 on this fixture; the view must surface the
 /// normalized error, not push the request blindly.
@@ -863,6 +919,70 @@ void main() {
         find.textContaining('Update service is busy'),
         findsOneWidget,
       );
+    });
+
+    testWidgets(
+        'SimpleUpdate Start hands its 202 task monitor to pollLastTask '
+        '(#008)', (tester) async {
+      final _StartCapableFirmwareService service =
+          _StartCapableFirmwareService();
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller =
+          FirmwareController(service: service);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byType(TextField),
+        'https://example.com/firmware.bin',
+      );
+      await tester.tap(find.text('Start'));
+      await confirmDestructiveUpdate(tester);
+      await tester.pumpAndSettle();
+      expect(
+        service.pollCalls,
+        1,
+        reason: 'the SimpleUpdate Start 202 Location must hand off to '
+            'pollLastTask so progress/logs advance',
+      );
+      expect(find.text('Update task start-7: Completed'), findsOneWidget);
+    });
+
+    testWidgets('SimpleUpdate Start with no monitor URI polls nothing (#008)',
+        (tester) async {
+      final _StartNoMonitorFirmwareService service =
+          _StartNoMonitorFirmwareService();
+      final SystemHandle handle = makeHandle(firmwareUpdate: true);
+      final FirmwareController controller =
+          FirmwareController(service: service);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(handle),
+            firmwareControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: FirmwareView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byType(TextField),
+        'https://example.com/firmware.bin',
+      );
+      await tester.tap(find.text('Start'));
+      await confirmDestructiveUpdate(tester);
+      await tester.pumpAndSettle();
+      expect(service.pollCalls, 0,
+          reason: 'a 204-no-Location Start must not poll a missing monitor');
+      expect(find.textContaining('Update queued'), findsOneWidget,
+          reason: 'the queued label still covers a no-monitor task');
     });
   });
 
