@@ -9974,3 +9974,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #021 (open — launch-strategy model + HTML5 matching fix slice)
+
+## 2026-11-18 10:07 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (next unblocked open item) — landed the pure-UI **console session lifecycle**: new `lib/features/kvm/kvm_session.dart` (`KvmSessionState`, `KvmSessionController`, `kvmSessionProvider`, injectable `kvmSessionClockProvider`), exported from `kvm.dart`. Tracks `activeManagerId`/`connectedSince` (injected clock); app `paused`/`hidden`/`detached` sets a `backgrounded` flag but keeps the session alive (BMC console persists until its own timeout); ends only on explicit `disconnect()` (no RedfishClient → no wire call, logs) or single-session (`MaxConcurrentSessions == 1`) eviction; bounded audit log. Added `test/features/kvm/kvm_session_test.dart` (17 tests, written RED by absence then GREEN). Checked the #009 lifecycle acceptance box. Baseline green at 123e927 (analyze 0, 873 passed / 1 skipped; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; flutter test 890 passed / 1 skipped (+17); DMTF emulator 85/85 (lib/ changed — §1.4 gate); issues validate OK.
+
+**Decisions:**
+- Advanced #009 rather than another #021 slice: #021's two remaining acceptance boxes (embedded WebView rendering + dependency documented) are externally blocked on platform WebView support + BMC self-signed/TLS validation that cannot be validated unattended, so three prior runs had produced progressively smaller getter/guidance slices — manufactured churn the runbook bans. The #009 session-lifecycle box is genuinely unimplemented, self-contained, dependency-free, and testable. Kept `disconnect()` pure UI state (no RedfishClient field at all) so "no Redfish call" holds by construction. Backgrounding deliberately does NOT end a session — it only flips a flag — matching the BMC console persistence rule. Single-session eviction keys off `MaxConcurrentSessions == 1`. No WebView/protocol dependency; no production TLS touched; no visual churn (existing 320/800/1300 px no-overflow tests pass). Full emulator re-run (85/85) because lib/ changed; change is pure Dart, no wire/payload impact.
+
+**Next:**
+- #021 embedded HTML5 rendering + BMC TLS/self-signed validation — only when a platform WebView target is available unattended; never weaken TLS.
+- #009 remaining non-dependency slices (OEM registry interface, capability-card model) with real tests.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — session lifecycle box done)

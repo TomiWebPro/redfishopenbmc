@@ -5,7 +5,7 @@ status: open
 priority: P3
 type: feature
 created: 2026-08-26
-updated: 2026-08-30
+updated: 2026-11-18
 closed: null
 assignee: unassigned
 labels: [kvm, console, managers, webview]
@@ -40,7 +40,7 @@ estimated_tokens: 45000
     - On **mobile**: `webview_flutter` in-app with `JavascriptMode.unrestricted`, fullscreen `AppBar` toggle, back button = disconnect
   - Session note: "Console persists until manager timeout — close tab to disconnect"
   - Error if `ServiceEnabled false` → "KVM disabled on BMC" helper
-- [ ] Lifecycle: `KvmSessionProvider` tracks `activeManagerId`, `connectedSince`, handles app background → keep session alive until explicit disconnect or `MaxConcurrentSessions` eviction; `disconnect()` no Redfish call needed (pure UI session) but log
+- [x] Lifecycle: `KvmSessionProvider` tracks `activeManagerId`, `connectedSince`, handles app background → keep session alive until explicit disconnect or `MaxConcurrentSessions` eviction; `disconnect()` no Redfish call needed (pure UI session) but log — implemented as `KvmSessionController`/`KvmSessionState`/`kvmSessionProvider` in `lib/features/kvm/kvm_session.dart` (run 2026-11-18, commit pending); 17 tests in `test/features/kvm/kvm_session_test.dart`
 - [ ] Vendor extensibility: `KvmOemRegistry` — pluggable parsers for `Oem.AMI`, `Oem.HPE`, etc. (interface only in v1, no vendor impl yet)
 - [ ] Tests: `test/features/kvm/kvm_service_test.dart` — mocked Manager with `KVMIP`, without, OEM variant, disabled, maxSessions; widget test gated hidden when `kvm false`, embed fallback
 - [ ] Coverage ≥75%
@@ -68,6 +68,7 @@ estimated_tokens: 45000
 
 ## Progress Log
 
+- 2026-11-18 10:07 UTC (run, agent:redfish-automation) — Partial progress (non-dependency, TLS-safe slice, highest-value unblocked item): landed the pure-UI **console session lifecycle** — `KvmSessionState` + `KvmSessionController` + `kvmSessionProvider` (+ injectable `kvmSessionClockProvider`) in new `lib/features/kvm/kvm_session.dart`, exported from the `kvm.dart` barrel. Tracks `activeManagerId` + `connectedSince` (injected clock), maps app lifecycle (`paused`/`hidden`/`detached` → `backgrounded`) but deliberately **keeps the session alive on background** (a BMC console persists until its own timeout), ends it only on explicit `disconnect()` or single-session (`MaxConcurrentSessions == 1`) eviction on a newer `connect()`, and keeps a bounded audit log. `disconnect()` is pure UI state — the controller takes no `RedfishClient`, so no Redfish call is possible. Added `test/features/kvm/kvm_session_test.dart` (17 tests: lifecycle mapping, connect/disconnect, no-op safety, background-keeps-alive, resume, eviction vs multi-session vs same-manager, bounded log, clock-override provider) — written before the implementation (RED by absence) then GREEN. No WebView/protocol dependency; no production TLS touched. This acceptance box is now checked; HTML5 embed + input forwarding / fullscreen / OEM registry remain open (blocked on platform WebView + BMC TLS validation).
 - 2026-08-26 — Created. Depends on #001 #003 #004. Lower priority (P3) — do after #005–#008.
 - 2026-08-30 — STALE (triage): no Progress Log update for 4 days (>1-day threshold).
 
