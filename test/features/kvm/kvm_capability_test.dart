@@ -307,5 +307,106 @@ void main() {
 
       expect(uri, isNull);
     });
+
+    // #009: the per-manager capability card must surface the same launchable
+    // console endpoint the per-console card already reads via
+    // `KvmConsole._fromBlock` (`ConnectUri`). Prior to this fix the capability
+    // only looked at `GraphicalConsole.@odata.id` (a Redfish API link, not a
+    // console URL) and OEM `Uri`, so a manager exposing a real `ConnectUri`
+    // rendered "No console URI resolved" — inconsistent with the console card.
+    test('prefers GraphicalConsole.ConnectUri over its @odata.id link', () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC/GraphicalConsole',
+          'ConnectUri': 'https://bmc.example/kvm',
+        },
+      });
+
+      expect(uri, 'https://bmc.example/kvm');
+    });
+
+    test('resolves GraphicalConsole.ConnectUri when no @odata.id present', () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectUri': 'https://bmc.example:443/kvm',
+        },
+      });
+
+      expect(uri, 'https://bmc.example:443/kvm');
+    });
+
+    test('falls back to SerialConsole.ConnectUri', () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{'ServiceEnabled': true},
+        'SerialConsole': <String, dynamic>{
+          'ConnectUri': 'ssh://bmc.example:22',
+        },
+      });
+
+      expect(uri, 'ssh://bmc.example:22');
+    });
+
+    test('falls back to RemoteConsole.ConnectUri', () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'RemoteConsole': <String, dynamic>{
+          'ConnectUri': 'https://bmc.example/html5',
+        },
+      });
+
+      expect(uri, 'https://bmc.example/html5');
+    });
+
+    test('a standard ConnectUri is preferred over an OEM KVM Uri', () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ConnectUri': 'https://bmc.example/kvm',
+        },
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{
+            'KVM': <String, dynamic>{'Uri': 'https://bmc.example/oem-kvm'},
+          },
+        },
+      });
+
+      expect(uri, 'https://bmc.example/kvm');
+    });
+
+    test('empty or non-string ConnectUri falls through to the next source', () {
+      final String? empty = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ConnectUri': '',
+          '@odata.id': '/redfish/v1/Managers/BMC/GraphicalConsole',
+        },
+      });
+      expect(empty, '/redfish/v1/Managers/BMC/GraphicalConsole');
+
+      final String? nonString =
+          KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{'ConnectUri': 42},
+        'SerialConsole': <String, dynamic>{'ConnectUri': 'ssh://bmc'},
+      });
+      expect(nonString, 'ssh://bmc');
+    });
+  });
+
+  group('KvmCapability.fromManager — ConnectUri consistency (#009)', () {
+    test('a manager ConnectUri is surfaced as the resolved capability URI', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC',
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP', 'HTML5'],
+            'ConnectUri': 'https://bmc.example/kvm',
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.supported, isTrue);
+      expect(capability.hasUri, isTrue);
+      expect(capability.uri, 'https://bmc.example/kvm');
+    });
   });
 }

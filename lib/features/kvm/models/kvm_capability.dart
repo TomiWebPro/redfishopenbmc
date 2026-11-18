@@ -53,8 +53,10 @@ class KvmCapability {
   /// The maximum number of concurrent sessions, or `null` when unreported.
   final int? maxSessions;
 
-  /// The resolved console URI (prefer `GraphicalConsole.@odata.id`, fall back
-  /// to an OEM `KVM`/`WebConsole` `Uri`), or `null` when none is exposed.
+  /// The resolved console URI: the first standard console block's `ConnectUri`
+  /// (the actual, launchable console endpoint), then `GraphicalConsole.
+  /// @odata.id`, then an OEM `KVM`/`WebConsole` `Uri`; `null` when none is
+  /// exposed. See [KvmCapability.resolveLaunchUri].
   final String? uri;
 
   /// The `@odata.id` of the manager resource this capability was read from.
@@ -115,11 +117,25 @@ class KvmCapability {
   /// Resolves the console URI for a Redfish manager [body].
   ///
   /// Preference order:
-  ///  1. `GraphicalConsole.@odata.id` (the standard graphical console link);
-  ///  2. an OEM `KVM` / `WebConsole` block's `Uri` member (bounded recursive
+  ///  1. a standard console block's `ConnectUri` (graphical → serial → remote)
+  ///     — the actual, launchable console endpoint already read by
+  ///     `KvmConsole.fromManager`; kept in sync so the per-manager capability
+  ///     card and the per-console card never disagree about the endpoint;
+  ///  2. `GraphicalConsole.@odata.id` (the standard graphical console link,
+  ///     retained for managers that expose only a Redfish resource link);
+  ///  3. an OEM `KVM` / `WebConsole` block's `Uri` member (bounded recursive
   ///     search, case-insensitive key matching);
-  ///  3. `null` when neither is exposed.
+  ///  4. `null` when none is exposed.
+  ///
+  /// Resolution is read-only: it exposes a URI string to the caller and never
+  /// opens a connection or changes transport security (issues #009 / #021).
   static String? resolveLaunchUri(Map<String, dynamic> body) {
+    // A `ConnectUri` is the endpoint a console client actually connects to,
+    // so it outranks a Redfish `@odata.id` resource link (which is a JSON API
+    // path, not a browser-launchable console URL).
+    final String? connectUri = _standardConnectUri(body);
+    if (connectUri != null) return connectUri;
+
     final Map<String, dynamic>? graphical =
         _consoleBlock(body, 'GraphicalConsole');
     if (graphical != null) {
@@ -127,6 +143,22 @@ class KvmCapability {
       if (odata != null) return odata;
     }
     return _findOemConsoleUri(body['Oem'], 0);
+  }
+
+  /// Returns the first non-empty `ConnectUri` across the standard console
+  /// blocks (graphical → serial → remote), or `null`.
+  static String? _standardConnectUri(Map<String, dynamic> body) {
+    for (final String name in <String>[
+      'GraphicalConsole',
+      'SerialConsole',
+      'RemoteConsole',
+    ]) {
+      final Map<String, dynamic>? block = _consoleBlock(body, name);
+      if (block == null) continue;
+      final String? uri = _nonEmptyString(block['ConnectUri']);
+      if (uri != null) return uri;
+    }
+    return null;
   }
 
   /// Returns a console block from [body] only when it is a JSON object.

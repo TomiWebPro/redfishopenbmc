@@ -142,4 +142,51 @@ void main() {
       );
     });
   });
+
+  group('KvmService capability ConnectUri surfacing (#009)', () {
+    late MockRedfishServer server;
+
+    setUpAll(() async {
+      server = await MockRedfishServer(
+        fixturesDir: 'test/fixtures/redfish/kvm_connecturi_mockup',
+      ).start();
+    });
+
+    tearDownAll(() async {
+      await server.close();
+    });
+
+    test('fetchCapability surfaces a graphical console ConnectUri end-to-end',
+        () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final KvmCapability? bmc = await svc.fetchCapability('BMC');
+      expect(bmc, isNotNull);
+      expect(bmc!.supported, isTrue);
+      expect(bmc.serviceEnabled, isTrue);
+      expect(bmc.hasUri, isTrue);
+      // The actual launchable endpoint (already read by the per-console card)
+      // must now be the resolved capability URI, not the manager API link.
+      expect(bmc.uri, 'https://bmc.example/kvm');
+    });
+
+    test('fetchConsoles and fetchCapabilities agree on the ConnectUri',
+        () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+      final KvmCapability? bmc = await svc.fetchCapability('BMC');
+      final KvmConsole graphical = consoles.firstWhere(
+        (KvmConsole c) => c.type == KvmConsoleType.graphical,
+      );
+      expect(graphical.connectUri, 'https://bmc.example/kvm');
+      expect(bmc!.uri, graphical.connectUri);
+    });
+  });
 }

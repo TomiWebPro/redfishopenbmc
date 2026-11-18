@@ -10049,3 +10049,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration change or >7 days.
 
 **Issues touched:** #009 (open — coverage box done)
+
+## 2026-11-18 13:17 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — genuine correctness fix closing a real consistency gap between the two KVM views. `KvmConsole._fromBlock` has always read the launchable standard-console `ConnectUri`, but `KvmCapability.resolveLaunchUri` (per-manager capability card) ignored it and only looked at `GraphicalConsole.@odata.id` (a Redfish JSON API link, not a browser URL) and OEM `Uri` — a manager exposing a real `ConnectUri` rendered "No console URI resolved" on the capability card while the console card showed the endpoint. `resolveLaunchUri` now prefers the first standard console `ConnectUri` (graphical → serial → remote), then `@odata.id`, then the bounded case-insensitive OEM `Uri` search; read-only, no IPC, no transport change. Added 7 RED→GREEN pure-Dart tests (`test/features/kvm/kvm_capability_test.dart`, +19 → +26) +2 end-to-end service tests (`kvm_service_test.dart`) over a new focused fixture (`test/fixtures/redfish/kvm_connecturi_mockup`) proving `fetchCapability()` surfaces the endpoint and agrees with `fetchConsoles()`. Baseline green at 3666671 (analyze 0, 946 passed / 1 skipped; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; flutter test 955 passed / 1 skipped (+9); DMTF emulator 85/85 (lib/ + fixture changed — §1.4 gate); coverage gates PASS overall 89.1% / scoped 90.3% / kvm 92.2%; issues validate OK.
+
+**Decisions:**
+- Chose a real model-consistency defect over manufactured getter/guidance churn: #009's and #021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation, so the honest unblocked work was aligning the capability card's URI resolution with the existing `KvmConsole` contract. A `ConnectUri` is the endpoint a console client actually connects to; a Redfish `@odata.id` is a JSON API path, so preferring `ConnectUri` both fixes the inconsistency and surfaces a genuinely useful launch target. Kept the old `@odata.id`-over-OEM ordering intact as a fallback, so all 19 pre-existing capability tests stay green. Fix is pure Dart, read-only, and adds no WebView/protocol dependency and no production TLS change. Full emulator re-run (85/85) because `lib/` changed and a fixture was added; no wire/request/header/payload handling touched. Issue stays OPEN — embedded HTML5 rendering, fullscreen, input forwarding and the WebView dependency remain blocked.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. other console-block field consistency between `KvmConsole` and `KvmCapability`) or epic-triage/split the blocked rendering work, never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — URI-resolution consistency fix)
