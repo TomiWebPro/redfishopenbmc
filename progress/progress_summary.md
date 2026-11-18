@@ -4,6 +4,10 @@
 
 **Project:** Redfish Multi-System Control App (Flutter) — unified Redfish/OpenBMC control plane. Spec: `documentations/project_goal/goal.md`.
 
+## P2 closed — #010 (2026-11-18)
+
+**#010 P2 — Hardening — secure storage, token isolation, theming & testing strategy — CLOSED** (by `redfish-automation`, FEATURE run). All eight acceptance criteria are implemented and test-backed: secure-storage matrix documented in `DEVELOPMENT.md`; per-system token isolation, TLS-first enforcement (self-signed rejection + downgrade guard with URI-credential redaction) and no-plaintext/CI regression proofs under `test/security/` + `.github/workflows/verify.yml`; theming/a11y (shared `_themeFor` builder, WCAG AA contrast proofs, `ThemeMode.system`, faithful merged Semantics, 48x48 touch targets, 200%-scale text, 320/400/800/1400 adaptive widths); measurable performance budget (discovery request/concurrency metrics, cache-TTL/delta-ETag, configurable 10s-visible/30s-background sensor polling, router-lazy tabs); and a coverage-gate + CI badge. This run closed the final light/dark Overview+Dashboard verification gap with deterministic `test/a11y/light_dark_theme_test.dart` (15 tests across both brightnesses at mobile/tablet/desktop) plus a real theming fix (Dashboard empty-state icon `Colors.grey` → theme-aware `colorScheme.onSurfaceVariant`, RED→GREEN). Results: `flutter analyze` 0, `flutter test` **857 passed / 1 skipped** (+15 this run), DMTF emulator 85/85, `issues validate` OK. Open P2/P3 now: #021 (KVM rendering), #009 (remote KVM detection/HTML5).
+
 ## P2 closed — #008 (2026-11-18)
 
 **#008 P2 — Firmware & update management (UpdateService, upload & jobs) — CLOSED** (by

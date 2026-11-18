@@ -9929,3 +9929,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on further lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #010 (open — a11y touch-target slice)
+
+## 2026-11-18 — agent:redfish-automation — #010 (CLOSED)
+
+**Done:**
+- FEATURE #010 (was smallest open P2 issue) — landed the final theming/a11y acceptance item (light/dark Overview + Dashboard verification at mobile/tablet/desktop) and closed the issue. Deterministic `test/a11y/light_dark_theme_test.dart` (15 tests) replaces platform-fragile pixel goldens: active-theme brightness, theme-derived render colours, content parity across brightnesses and no-overflow, for both views at 400/800/1300 px in light and dark. Fixed the theming defect it exposed — Dashboard empty-state icon `Colors.grey` → theme-aware `colorScheme.onSurfaceVariant` (two tests RED pre-fix, GREEN after). Verified every other acceptance box still backed by implemented/tested code (secure-storage matrix, token isolation, TLS enforcement/downgrade, no-plaintext/CI, adaptive layout, performance budget, coverage gate). Closed via `python3 issues/issues.py close 010`. Baseline green at a50cf71 (analyze 0, 842 passed / 1 skipped; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; flutter test 857 passed / 1 skipped (+15); DMTF emulator 85/85 (lib/ changed — §1.4 gate); issues validate OK.
+
+**Decisions:**
+- Used deterministic theme/colour/content assertions instead of committed pixel golden PNGs: the latter re-render differently across hosts/fonts and would make CI flaky; the former catch the real regressions a light/dark screenshot review targets (a view ignoring the theme, or a theme-colour drift) while staying stable. Kept the production change to one small, test-proven theming fix rather than a repo-wide colour sweep. Open #010 only after confirming every acceptance criterion has real code + tests behind it (progress log + file audit), not just a checklist. No production TLS touched; no new dependency; no visual churn (existing 320/800/1300/1400 px no-overflow tests pass). Full EMULATOR re-run performed (85/85) because `lib/` changed this run.
+
+**Next:**
+- Start #021 (KVM console rendering, P2) via a non-dependency slice — no WebView/protocol dependency, no production TLS weakening.
+- Advance #009 (remote KVM detection/HTML5 console, P3) non-dependency slices only.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #010 (closed)

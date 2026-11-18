@@ -55,16 +55,20 @@ class DashboardView extends ConsumerWidget {
                     container: true,
                     excludeSemantics: true,
                     label: 'No systems yet. Tap + to add a BMC.',
-                    child: const Column(
+                    // #010 theming: derive the empty-state icon colour from the
+                    // active ColorScheme (onSurfaceVariant) instead of a fixed
+                    // Colors.grey, so the placeholder adapts to light/dark and
+                    // keeps adequate contrast in both brightnesses.
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         Icon(
                           Icons.dns_outlined,
                           size: 48,
-                          color: Colors.grey,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
-                        SizedBox(height: 12),
-                        Text('No systems yet. Tap + to add a BMC.'),
+                        const SizedBox(height: 12),
+                        const Text('No systems yet. Tap + to add a BMC.'),
                       ],
                     ),
                   ),
