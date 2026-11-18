@@ -10124,3 +10124,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration change or >7 days.
 
 **Issues touched:** #009 (open — spec-anchored session-limit tolerance fix)
+
+## 2026-11-18 16:30 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free, TLS-safe blank-`ConnectUri` tolerance fix across both KVM models + the console card. A whitespace-only `ConnectUri` (`'   '`, `'\t\n'`) was stored by both models as a real endpoint (`KvmConsole._fromBlock` used `_asString`; `KvmCapability._nonEmptyString` only checked `isNotEmpty`), so the console card rendered "Connect URI:   ", the capability card showed an empty "Resolved URI:" row (`hasUri == true`), a blank value shadowed a valid `@odata.id`/OEM fallback, and the viewer/clipboard target used the blank string instead of the manager URI. Both parsers now reject blank strings (`_uriString` / `_nonEmptyString`), the normalized accessors (`launchUri` / `hasUri`) hide a blank URI for any construction path, and the console card uses `launchUri` for its URI row / launch button / clipboard target. Added 13 RED→GREEN tests (6 model + 6 capability + 1 capability-card widget; 10 new assertions confirmed failing pre-fix): blank/empty/tab-newline/non-string → null, valid preserved, @odata.id + OEM fallbacks, console ↔ capability agreement, blank resolved URI shows source notice. Baseline green at db54f2b (analyze 0, 971 passed / 1 skipped; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; targeted 87 passed (10 RED→GREEN); KVM suite 160; full `flutter test` 984 passed / 1 skipped (+13); DMTF emulator 85/85 (lib changed — §1.4 gate); coverage gates PASS overall 89.1% / scoped 90.3% / kvm 92.3%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a genuine model/UI correctness defect over manufactured churn: #009's and #021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation, so the honest unblocked work was making a malformed (blank) `ConnectUri` uniformly mean "no URI" across both read paths and the card. Applied the identical rule in both models (the recurring cross-view consistency theme), hardened the two normalized accessors `launchUri`/`hasUri` so any construction path (widget fixtures, future call sites) hides a blank URI, and switched the console card to the accessor so a blank URI no longer produces an empty row / launch button / blank clipboard target. Kept non-blank values byte-for-byte unchanged (valid URIs with padding are a separate candidate), added a regression test for console ↔ capability agreement, and shipped a widget test proving the user-visible fallback. Pure Dart + a card accessor change, read-only, no WebView/protocol dependency and no production TLS change. Full emulator re-run (85/85) because `lib/` changed; no wire/request/header/payload handling touched.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. `KvmConsole`/`KvmCapability` URI agreement for a non-string `Oem.Uri`, or a whitespace-padded-but-valid `ConnectUri` trimmed consistently in both models) or epic-triage/split the blocked rendering work, never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration change or >7 days.
+
+**Issues touched:** #009 (open — blank-ConnectUri tolerance fix)

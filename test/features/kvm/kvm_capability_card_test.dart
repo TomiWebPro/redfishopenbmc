@@ -148,6 +148,34 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('a blank resolved URI shows the source notice, not a blank row',
+        (WidgetTester tester) async {
+      // A BMC can emit a whitespace-only ConnectUri. The card must take the
+      // "no URI" branch rather than rendering an empty "Resolved URI:" row
+      // (a real user-visible defect fixed with the model blank-URI handling).
+      const KvmCapability capability = KvmCapability(
+        managerId: 'BMC3',
+        supported: true,
+        connectTypes: <String>['KVMIP'],
+        serviceEnabled: true,
+        uri: '   ',
+        sourceManagerUri: '/redfish/v1/Managers/BMC3',
+      );
+      await tester.pumpWidget(
+        const MaterialApp(home: KvmCapabilityCard(capability: capability)),
+      );
+
+      expect(find.text('Resolved URI:'), findsNothing);
+      expect(find.text('No console URI resolved. Source:'), findsOneWidget);
+      expect(find.text('/redfish/v1/Managers/BMC3'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'No console URI resolved. Source: /redfish/v1/Managers/BMC3',
+        ),
+        findsOneWidget,
+      );
+    });
   });
 
   group('KvmView capability section', () {

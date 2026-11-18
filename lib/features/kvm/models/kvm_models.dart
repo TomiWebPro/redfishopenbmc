@@ -170,9 +170,13 @@ class KvmConsole {
 
   /// The preferred URI for launching/opening this console.
   ///
-  /// Uses [connectUri] when present; returns `null` when there is no direct
-  /// console endpoint to open.
-  String? get launchUri => connectUri;
+  /// Uses [connectUri] when it is a non-blank string; a blank (empty or
+  /// whitespace-only) value is not a usable endpoint and is surfaced as `null`
+  /// so the console card hides its URI row and the viewer falls back to the
+  /// manager URI instead of opening an empty target. Mirrors
+  /// `KvmCapability.hasUri` so both KVM views agree (issue #009).
+  String? get launchUri =>
+      (connectUri != null && connectUri!.trim().isNotEmpty) ? connectUri : null;
 
   /// Whether [launchUri] is an HTTP(S) URL suitable for browser/WebView launch.
   bool get hasHttpLaunchUri {
@@ -365,7 +369,7 @@ class KvmConsole {
     final List<String> types =
         _normalizedConnectTypes(block['ConnectTypesSupported']);
     final int? maxSessions = _sessionLimit(block['MaxConcurrentSessions']);
-    final String? connectUri = _asString(block['ConnectUri']);
+    final String? connectUri = _uriString(block['ConnectUri']);
     final bool enabled =
         block['ServiceEnabled'] == true || block['Enabled'] == true;
     final dynamic oem = block['Oem'];
@@ -425,8 +429,16 @@ String kvmLaunchStatusText(
   }
 }
 
-/// Returns [value] as a [String] or `null` when it is not a string.
-String? _asString(Object? value) => value is String ? value : null;
+/// Returns [value] as a usable URI [String], or `null` when it is not a string
+/// or is blank (empty / whitespace-only).
+///
+/// A Redfish `ConnectUri` must be a real endpoint; a blank value would make the
+/// console card render "Connect URI:   " and the viewer target an empty string
+/// instead of falling back to the manager URI. This mirrors
+/// `KvmCapability._nonEmptyString` so the per-console and per-manager KVM views
+/// treat the same malformed value identically (issue #009).
+String? _uriString(Object? value) =>
+    (value is String && value.trim().isNotEmpty) ? value : null;
 
 /// Returns [value] as a spec-valid `MaxConcurrentSessions` limit, or `null`.
 ///

@@ -636,4 +636,77 @@ void main() {
       expect(capability.maxSessions, isNull);
     });
   });
+
+  group('KvmConsole blank ConnectUri tolerance (#009)', () {
+    KvmConsole consoleWithUri(Object? value) => KvmConsole.fromManager(
+          <String, dynamic>{
+            'GraphicalConsole': <String, dynamic>{
+              'ServiceEnabled': true,
+              'ConnectTypesSupported': <dynamic>['KVMIP', 'HTML5'],
+              'ConnectUri': value,
+            },
+          },
+          managerId: 'BMC',
+        ).single;
+
+    test('whitespace-only ConnectUri is treated as no URI', () {
+      final KvmConsole console = consoleWithUri('   ');
+      // A blank string is not a usable endpoint: the console card must not
+      // render "Connect URI:   " and the viewer must fall back to the manager
+      // URI rather than trying to open a blank target.
+      expect(console.connectUri, isNull);
+      expect(console.launchUri, isNull);
+      expect(console.hasHttpLaunchUri, isFalse);
+      expect(console.launchStrategy, KvmLaunchStrategy.noUri);
+    });
+
+    test('empty and tab/newline ConnectUri values are treated as no URI', () {
+      expect(consoleWithUri('').connectUri, isNull);
+      expect(consoleWithUri('\t\n ').connectUri, isNull);
+    });
+
+    test('non-string ConnectUri is treated as no URI', () {
+      expect(consoleWithUri(42).connectUri, isNull);
+    });
+
+    test('a valid ConnectUri is preserved unchanged', () {
+      final KvmConsole console = consoleWithUri('https://bmc.example/kvm');
+      expect(console.connectUri, 'https://bmc.example/kvm');
+      expect(console.launchUri, 'https://bmc.example/kvm');
+      expect(console.launchStrategy, KvmLaunchStrategy.inAppHtml5);
+    });
+
+    test('a directly constructed blank connectUri has no launchUri', () {
+      const KvmConsole console = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['KVMIP', 'HTML5'],
+        serviceEnabled: true,
+        connectUri: '   ',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      expect(console.connectUri, '   ');
+      // The normalized accessor must hide a blank URI even when a console is
+      // constructed directly (widget-test fixtures, future call sites).
+      expect(console.launchUri, isNull);
+      expect(console.launchStrategy, KvmLaunchStrategy.noUri);
+    });
+
+    test('console and capability cards agree a blank ConnectUri is no URI', () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['KVMIP', 'HTML5'],
+          'ConnectUri': '   ',
+        },
+      };
+      final KvmConsole console =
+          KvmConsole.fromManager(body, managerId: 'BMC').single;
+      final KvmCapability capability =
+          KvmCapability.fromManager(body, managerId: 'BMC');
+      expect(console.launchUri, isNull);
+      expect(capability.uri, isNull);
+      expect(capability.hasUri, isFalse);
+    });
+  });
 }

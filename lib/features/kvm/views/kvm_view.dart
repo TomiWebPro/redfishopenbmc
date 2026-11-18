@@ -296,7 +296,11 @@ class _ConsoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String targetUri = console.connectUri ?? console.sourceManagerUri;
+    // Use the normalized accessor so a blank (whitespace-only) ConnectUri is
+    // treated as no URI: the card hides its URI row / launch button and the
+    // clipboard target falls back to the manager URI (issue #009).
+    final String? launchUri = console.launchUri;
+    final String targetUri = launchUri ?? console.sourceManagerUri;
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
@@ -418,7 +422,7 @@ class _ConsoleCard extends StatelessWidget {
                 ),
               ),
             ],
-            if (console.connectUri != null) ...<Widget>[
+            if (launchUri != null) ...<Widget>[
               const SizedBox(height: 8),
               // UI-2: the label + value announce as ONE merged node — the
               // established row pattern — so a screen reader hears
@@ -427,7 +431,7 @@ class _ConsoleCard extends StatelessWidget {
               Semantics(
                 container: true,
                 excludeSemantics: true,
-                label: 'Connect URI: ${console.connectUri}',
+                label: 'Connect URI: $launchUri',
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
@@ -435,7 +439,7 @@ class _ConsoleCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: SelectableText(
-                        console.connectUri!,
+                        launchUri,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ),
@@ -473,7 +477,7 @@ class _ConsoleCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: <Widget>[
-                if (console.connectUri != null)
+                if (launchUri != null)
                   FilledButton.icon(
                     onPressed: () {
                       Navigator.of(context).push(

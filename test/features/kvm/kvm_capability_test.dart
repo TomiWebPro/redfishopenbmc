@@ -541,4 +541,86 @@ void main() {
       expect(capability.maxSessions, 0);
     });
   });
+
+  group('KvmCapability blank ConnectUri tolerance (#009)', () {
+    test('blank graphical ConnectUri falls back to its @odata.id link', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC',
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'ConnectUri': '   ',
+            '@odata.id': '/redfish/v1/Managers/BMC/GraphicalConsole',
+          },
+        },
+        managerId: 'BMC',
+      );
+      // A blank ConnectUri must not shadow the valid Redfish resource link.
+      expect(capability.uri, '/redfish/v1/Managers/BMC/GraphicalConsole');
+      expect(capability.hasUri, isTrue);
+    });
+
+    test('blank ConnectUri across all standard blocks resolves to no URI', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'ConnectUri': '  ',
+          },
+          'SerialConsole': <String, dynamic>{'ConnectUri': '\t\n'},
+          'RemoteConsole': <String, dynamic>{'ConnectUri': ''},
+        },
+        managerId: 'BMC',
+      );
+      expect(capability.uri, isNull);
+      expect(capability.hasUri, isFalse);
+    });
+
+    test('resolveLaunchUri skips a blank ConnectUri to the OEM KVM Uri', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{'ConnectUri': '   '},
+          'Oem': <String, dynamic>{
+            'KVM': <String, dynamic>{'Uri': 'https://oem.example/kvm'},
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(capability.uri, 'https://oem.example/kvm');
+    });
+
+    test('a blank OEM Uri is ignored', () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'Oem': <String, dynamic>{
+          'KVM': <String, dynamic>{'Uri': '  \t '},
+        },
+      });
+      expect(uri, isNull);
+    });
+
+    test('a valid ConnectUri is still preferred and preserved', () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ConnectUri': 'https://bmc.example/kvm',
+        },
+      });
+      expect(uri, 'https://bmc.example/kvm');
+    });
+
+    test('hasUri is false for a directly constructed blank uri', () {
+      const KvmCapability capability = KvmCapability(
+        managerId: 'BMC',
+        supported: true,
+        connectTypes: <String>['KVMIP'],
+        serviceEnabled: true,
+        uri: '   ',
+      );
+      expect(capability.uri, '   ');
+      // The UI uses hasUri to decide whether to show a URI row; a blank uri
+      // must take the "no URI" branch instead of rendering an empty value.
+      expect(capability.hasUri, isFalse);
+    });
+  });
 }

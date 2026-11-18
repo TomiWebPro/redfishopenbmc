@@ -73,8 +73,12 @@ class KvmCapability {
   /// in which case [supportsKvmIp] falls back to scanning [connectTypes].
   final bool? graphicalKvmIp;
 
-  /// Whether a non-empty console [uri] was resolved.
-  bool get hasUri => uri != null && uri!.isNotEmpty;
+  /// Whether a usable (non-blank) console [uri] was resolved.
+  ///
+  /// A whitespace-only [uri] is not an endpoint: treating it as one makes the
+  /// capability card render an empty "Resolved URI:" row instead of the source
+  /// notice. Mirrors `KvmConsole.launchUri` so both KVM views agree (issue #009).
+  bool get hasUri => uri != null && uri!.trim().isNotEmpty;
 
   /// True when the graphical console advertises a `KVMIP` connection type.
   ///
@@ -280,9 +284,14 @@ class KvmCapability {
     return null;
   }
 
-  /// Returns [value] as a non-empty string, or `null`.
+  /// Returns [value] as a non-blank string, or `null`.
+  ///
+  /// A whitespace-only value is not a usable `ConnectUri`, `@odata.id` or OEM
+  /// console `Uri` — treating it as one would shadow a valid fallback (the
+  /// graphical link / OEM URI) and render a blank "Resolved URI:" row. Mirrors
+  /// `KvmConsole._uriString` so both KVM views agree (issue #009).
   static String? _nonEmptyString(dynamic value) {
-    if (value is String && value.isNotEmpty) return value;
+    if (value is String && value.trim().isNotEmpty) return value;
     return null;
   }
 
