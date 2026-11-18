@@ -1,6 +1,19 @@
 import 'package:dio/dio.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_error.dart';
 
+/// Removes any URL userinfo (`username:password@`) component from [uri].
+///
+/// A BMC address or a redirect `Location` can embed credentials in a URI's
+/// userinfo (e.g. `https://root:s3cret@bmc/redfish/v1/`). [RedfishException]
+/// objects flow into error UI, debug logs and diagnostics, so carrying the raw
+/// URI would leak a plaintext password/token. Every transport URI captured by
+/// the exception factories is passed through this helper first (issue #010
+/// credential-leak audit). URIs without userinfo are returned unchanged; a
+/// `null` URI stays `null`. Scheme, host, port, path, query and fragment are
+/// preserved — only the userinfo is dropped.
+Uri? redactUriCredentials(Uri? uri) =>
+    (uri == null || uri.userInfo.isEmpty) ? uri : uri.replace(userInfo: '');
+
 /// Normalized error type for all Redfish transport failures.
 ///
 /// Every [DioException] or non-2xx [Response] is mapped into this single
@@ -90,7 +103,10 @@ class RedfishException implements Exception {
     final Object? underlying = error.error;
     if (underlying is RedfishException) return underlying;
     final response = error.response;
-    final resolvedUri = uri ?? response?.realUri;
+    // #010 credential-leak audit: a redirect's final URI can carry
+    // `user:password@` userinfo — never let it reach the exception's public
+    // `uri` (which error UI / debug logs render).
+    final Uri? resolvedUri = redactUriCredentials(uri ?? response?.realUri);
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
@@ -175,7 +191,7 @@ class RedfishException implements Exception {
       message: message,
       retryable: retryable,
       raw: data?.toString(),
-      uri: uri ?? response.realUri,
+      uri: redactUriCredentials(uri ?? response.realUri),
       details: details,
     );
   }

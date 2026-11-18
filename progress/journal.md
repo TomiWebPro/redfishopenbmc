@@ -9824,3 +9824,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on wire/fixture/test_integration change or >7 days.
 
 **Issues touched:** #010 (open — Testing-gate box closed)
+
+## 2026-11-18 03:54 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 (smallest open issue, P2) — credential-leak audit hardening. Baseline green at 4a8d3f6 (analyze 0, 793 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Found a concrete leak vector: `assertNoTlsDowngrade` interpolated the full final URI of an `https → http` redirect into a user-facing error message (error UI + debug logs) and stored it on the exception — a redirect URL carrying `user:password@` userinfo would surface that plaintext password. Added `redactUriCredentials(Uri?)`, a pure helper in `redfish_exception.dart` that drops only the userinfo component while preserving scheme/host/port/path/query/fragment (null / userinfo-free URIs pass through unchanged). Applied it at every transport-URI capture point: `RedfishException.fromDioException` (explicit `uri` override + `Response.realUri`) and `.fromResponse`, plus `RedfishClient.assertNoTlsDowngrade` (redact before interpolating the message and before storing on the exception). Added 7 unit tests in `test/redfish/models/redfish_exception_test.dart` (null / no-userinfo identity, full component preservation, percent-encoded userinfo, both factory URI paths) +1 in `test/security/tls_downgrade_test.dart` (downgraded redirect URI with userinfo → message + exception.uri redacted but still diagnostic). Verify: analyze 0; flutter test 801 passed / 1 skipped (793 +8); DMTF emulator suite 85/85 green; issues validate OK; diff check + secret scan clean.
+
+**Decisions:**
+- Kept the `const RedfishException` generative constructor intact (it is used in ~15 call sites) and applied redaction in the two factory methods + the TLS guard rather than transforming the field at construction — those are the only points where a transport-derived URI (which can carry userinfo from a redirect `Location`) is captured. Direct constructions elsewhere pass known-safe relative/library paths. Redaction drops only `userInfo` so diagnostics still name the host/path and remain useful. Kept the fix out of the wire request path (no new requests, no header/payload change) — it only sanitizes error URIs/messages. Skipped UI: non-visual security hardening with no user-facing surface; the runbook §5 bans manufactured UI churn while FEATURE work is open. No production TLS weakened (this hardens the downgrade *error path*, not the TLS policy); no new dependency. DOCS anchor gate not re-run (no corpus/manifest change). Full EMULATOR re-run WAS performed (85/85 green) because this run changed `lib/` (the transport client) — the §1.4 gate condition was met, and the wire surface is confirmed unaffected.
+
+**Next:**
+- Continue #010 remaining a11y/adaptive slices (touch-target/focus semantics, populated-state 320/800/1300 px width coverage) with widget tests.
+- Advance #021 / #009 via non-dependency KVM slices only — no WebView/protocol dep, no production TLS weakening.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration change or >7 days.
+
+**Issues touched:** #010 (open)

@@ -51,11 +51,15 @@ class RedfishClient {
     if (!profile.useTls) return;
     if (effectiveUri == null) return;
     if (effectiveUri.scheme != 'https') {
+      // #010 credential-leak audit: the final URI of an https -> http redirect
+      // may carry `user:password@` userinfo. This message reaches error UI and
+      // logs, so redact embedded credentials before interpolating/storing it.
+      final Uri safeUri = redactUriCredentials(effectiveUri) ?? effectiveUri;
       throw RedfishException(
         errorCode: 'TlsDowngradeRejected',
-        message: 'Refusing to accept a $effectiveUri response while TLS is '
+        message: 'Refusing to accept a $safeUri response while TLS is '
             'required for ${profile.id.isEmpty ? profile.host : profile.id}',
-        uri: effectiveUri,
+        uri: safeUri,
       );
     }
   }

@@ -100,6 +100,27 @@ void main() {
       expect(caught.message, isNot(contains('admin')));
     });
 
+    test('redacts userinfo embedded in a downgraded redirect URI (#010)', () {
+      // A redirect's final URL can carry `user:password@` userinfo. The
+      // downgrade message is shown in error UI and logged, so neither it nor
+      // the exception's uri may retain the embedded credential.
+      late RedfishException caught;
+      try {
+        RedfishClient.assertNoTlsDowngrade(
+          tlsProfile,
+          Uri.parse('http://root:redirect-secret@bmc.example/redfish/v1/'),
+        );
+      } on RedfishException catch (e) {
+        caught = e;
+      }
+      expect(caught.message, isNot(contains('redirect-secret')));
+      expect(caught.message, isNot(contains('root')));
+      expect(caught.message, contains('bmc.example')); // still diagnostic
+      expect(caught.uri, isNotNull);
+      expect(caught.uri!.userInfo, isEmpty);
+      expect(caught.uri.toString(), isNot(contains('redirect-secret')));
+    });
+
     test('fromDioException preserves an embedded RedfishException', () {
       // The raw-transport guard attaches an already-normalized exception to
       // the DioException; error normalization must not reclassify it.
