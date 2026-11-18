@@ -21,6 +21,8 @@ class KvmConsoleViewerPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final String? uri = console.launchUri;
+    final bool insecureHtml5 =
+        console.supportsHtml5 && console.usesInsecureHttpLaunchUri;
     final bool html5 = console.canLaunchInAppHtml5;
     final bool externalClient = console.requiresExternalConsoleClient;
     final String externalProtocol =
@@ -31,16 +33,31 @@ class KvmConsoleViewerPage extends StatelessWidget {
     // same actionable guidance as sighted users (previously the announced label
     // was shorter and silently dropped the "open in a browser" / "copy the URI"
     // steps). No internal issue references in user-facing copy.
-    final String statusText = html5
-        ? 'In-app HTML5 console path available for this URI. '
-            'Embedded rendering requires a WebView dependency. '
-            'You can open this URI in a web browser if your BMC allows it.'
-        : externalClient
-            ? 'This console URI uses a protocol that requires an external '
-                '$externalProtocol client. Embedded rendering is not available '
-                'in-app. Copy the URI and open it with a compatible client.'
-            : 'In-app embedded rendering is not available for this console. '
-                'Use the URI externally if provided.';
+    // Security (#021): a plaintext-HTTP HTML5 console is never an in-app render
+    // candidate. Surface that explicitly (rather than the generic fallback) so
+    // operators are told to enable HTTPS instead of assuming the app supports
+    // an unencrypted console. The message is also styled as an error for a
+    // visual cue; it never weakens the app's TLS posture.
+    final String statusText = insecureHtml5
+        ? 'This HTML5 console uses an unencrypted HTTP connection. '
+            'In-app rendering is disabled to keep console video and input '
+            'encrypted. Configure the BMC console to use HTTPS before '
+            'opening it in a browser.'
+        : html5
+            ? 'In-app HTML5 console path available for this URI. '
+                'Embedded rendering requires a WebView dependency. '
+                'You can open this URI in a web browser if your BMC allows it.'
+            : externalClient
+                ? 'This console URI uses a protocol that requires an external '
+                    '$externalProtocol client. Embedded rendering is not '
+                    'available in-app. Copy the URI and open it with a '
+                    'compatible client.'
+                : 'In-app embedded rendering is not available for this console. '
+                    'Use the URI externally if provided.';
+    final TextStyle? statusStyle = insecureHtml5
+        ? theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.error, fontWeight: FontWeight.w600)
+        : theme.textTheme.bodyMedium;
     return Scaffold(
       appBar: AppBar(
         title: Text('${console.type.label} viewer'),
@@ -71,7 +88,7 @@ class KvmConsoleViewerPage extends StatelessWidget {
                     label: statusText,
                     child: Text(
                       statusText,
-                      style: theme.textTheme.bodyMedium,
+                      style: statusStyle,
                     ),
                   ),
                   if (uri != null) ...<Widget>[

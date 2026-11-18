@@ -211,4 +211,77 @@ void main() {
       );
     });
   });
+
+  group('KvmConsole secure-transport gating (#021)', () {
+    // RED proof: today `canLaunchInAppHtml5` accepts a plaintext HTTP URI,
+    // which would let the app treat an unencrypted BMC console as an in-app
+    // render candidate. The app must never weaken TLS — HTTPS only.
+    test('plain-HTTP HTML5 console is NOT in-app render eligible (#021)', () {
+      const KvmConsole http = KvmConsole(
+        type: KvmConsoleType.remote,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['HTML5'],
+        serviceEnabled: true,
+        connectUri: 'http://bmc.example.com/kvm',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      expect(http.hasHttpLaunchUri, isTrue,
+          reason: 'plain HTTP is still an HTTP(S) launch URI');
+      expect(http.canLaunchInAppHtml5, isFalse,
+          reason: 'in-app console rendering must require HTTPS, never '
+              'downgrade to plaintext HTTP');
+    });
+
+    test(
+        'HTTPS HTML5 console is in-app eligible and not flagged insecure '
+        '(#021)', () {
+      const KvmConsole https = KvmConsole(
+        type: KvmConsoleType.remote,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['HTML5'],
+        serviceEnabled: true,
+        connectUri: 'https://bmc.example.com/kvm',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      expect(https.hasSecureLaunchUri, isTrue);
+      expect(https.usesInsecureHttpLaunchUri, isFalse);
+      expect(https.canLaunchInAppHtml5, isTrue);
+    });
+
+    test(
+        'secure/insecure transport getters classify schemes precisely '
+        '(#021)', () {
+      const KvmConsole plain = KvmConsole(
+        type: KvmConsoleType.remote,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['HTML5'],
+        serviceEnabled: true,
+        connectUri: 'http://bmc.example.com/kvm',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      const KvmConsole vnc = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['KVMIP'],
+        serviceEnabled: true,
+        connectUri: 'vnc://bmc.example.com:5900',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      const KvmConsole noUri = KvmConsole(
+        type: KvmConsoleType.oem,
+        managerId: 'BMC',
+        serviceEnabled: true,
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      // Plaintext HTTP is an HTTP URI and is flagged insecure; never secure.
+      expect(plain.hasHttpLaunchUri, isTrue);
+      expect(plain.hasSecureLaunchUri, isFalse);
+      expect(plain.usesInsecureHttpLaunchUri, isTrue);
+      // Non-HTTP schemes and missing URIs are neither secure nor insecure HTTP.
+      expect(vnc.hasSecureLaunchUri, isFalse);
+      expect(vnc.usesInsecureHttpLaunchUri, isFalse);
+      expect(noUri.hasSecureLaunchUri, isFalse);
+      expect(noUri.usesInsecureHttpLaunchUri, isFalse);
+    });
+  });
 }

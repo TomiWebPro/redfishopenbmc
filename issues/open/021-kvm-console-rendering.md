@@ -5,7 +5,7 @@ status: open
 priority: P2
 type: bug
 created: 2026-08-30
-updated: 2026-11-16
+updated: 2026-11-18
 closed: null
 assignee: unassigned
 labels: [kvm, console, unimplemented]
@@ -57,6 +57,7 @@ estimated_tokens: 18000
 
 ## Progress Log
 
+- 2026-11-18 (run, agent:redfish-automation) — Partial progress (non-dependency, TLS-safe slice): hardened in-app KVM HTML5 rendering to be **HTTPS-only**. `KvmConsole` gained `hasSecureLaunchUri` (TLS-encrypted HTTP(S) URI), `usesInsecureHttpLaunchUri` (plaintext HTTP), and `canLaunchInAppHtml5` now requires HTTPS (previously accepted plaintext HTTP) — the app never downgrades a BMC console to unencrypted transport. `KvmConsoleViewerPage` now shows an explicit, error-styled secure-transport warning for plaintext-HTTP HTML5 consoles (visible text == announced Semantics label, no internal issue refs) instead of the generic fallback; HTTPS/external-client/fallback guidance unchanged. Added model tests (RED proof: plaintext HTTP was previously `canLaunchInAppHtml5 == true`, now false; HTTPS still eligible; precise scheme classification) and a viewer widget test (warning shown + "path available" copy absent). No WebView/protocol dependency added; no production TLS weakened. Full "renders in-app" and "dependency added" acceptance boxes remain open (platform WebView + BMC TLS/self-signed validation still needed).
 - 2026-11-16 (run, agent:redfish-automation) — Partial progress: refined #021 external-client handling by classifying serial SSH/Telnet/IPMI URI schemes and adding protocol-specific labels/guidance in `KvmConsole` and `KvmConsoleViewerPage` (HTML5 viewer now includes browser-open hint; VNC/RFB/SSH guidance clarified). Added model and widget coverage in `test/features/kvm/kvm_model_test.dart` and `test/features/kvm/kvm_widget_test.dart`. WebView dependency remains intentionally deferred/blocked (platform + BMC TLS/self-signed validation needed; no production TLS weakening); full "renders in-app" acceptance remains open.
 - 2026-11-16 (run, agent:redfish-automation) — Partial progress: added `KvmConsole.requiresExternalConsoleClient` for VNC/RFB/KVMIP URI schemes and updated `KvmConsoleViewerPage` to show explicit external-client guidance for those protocols (copy URI preserved). Added model and widget coverage for KVMIP/RFB external-client handling in `test/features/kvm/kvm_model_test.dart` and `test/features/kvm/kvm_widget_test.dart`. Remaining: add/validate embedded WebView dependency for HTML5 HTTP(S) rendering (platform/TLS constraints) and/or a protocol client strategy for in-app VNC/RFB/KVMIP rendering; full "renders in-app" acceptance remains open.
 - 2026-11-16 (run, agent:redfish-automation) — Partial progress: added `KvmConsole` HTML5 launch helpers (`launchUri`, `hasHttpLaunchUri`, `canLaunchInAppHtml5`), in-app `KvmConsoleViewerPage` scaffold, and `KvmView` "Open console" action navigating to the viewer for consoles with a direct `ConnectUri` (copy remains available). Documented WebView-vs-external rendering strategy in issue. Added model and widget coverage (`kvm_model_test.dart`, `kvm_widget_test.dart`). Remaining: add/validate WebView dependency for embedded HTML5 rendering (platform/TLS constraints), RFB/KVMIP in-app handling decision, and full acceptance for "renders in-app".

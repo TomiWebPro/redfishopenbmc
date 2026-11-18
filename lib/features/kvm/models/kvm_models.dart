@@ -135,13 +135,37 @@ class KvmConsole {
         parsed.host.isNotEmpty;
   }
 
+  /// Whether [launchUri] uses HTTPS (TLS-encrypted) with a non-empty host.
+  ///
+  /// In-app console rendering must never downgrade a BMC console to plaintext;
+  /// only a TLS-encrypted URI is eligible (issue #021 — never weaken TLS).
+  bool get hasSecureLaunchUri {
+    final String? uri = launchUri;
+    if (uri == null || uri.isEmpty) return false;
+    final Uri? parsed = Uri.tryParse(uri);
+    return parsed != null && parsed.scheme == 'https' && parsed.host.isNotEmpty;
+  }
+
+  /// Whether [launchUri] uses plaintext HTTP (unencrypted transport).
+  ///
+  /// The UI uses this to warn that an HTML5 console must be configured for
+  /// HTTPS before in-app rendering is permitted — console video and injected
+  /// input (potentially credentials) must stay encrypted (issue #021).
+  bool get usesInsecureHttpLaunchUri {
+    final String? uri = launchUri;
+    if (uri == null || uri.isEmpty) return false;
+    final Uri? parsed = Uri.tryParse(uri);
+    return parsed != null && parsed.scheme == 'http' && parsed.host.isNotEmpty;
+  }
+
   /// Whether this console can follow the in-app HTML5 rendering path.
   ///
-  /// This is the minimal client-side criterion: an enabled HTML5 console with a
-  /// direct HTTP(S) [connectUri]. Actual embedded rendering depends on a
-  /// platform WebView dependency (tracked in issue #021).
+  /// Minimal client-side criterion: an enabled HTML5 console with a direct
+  /// **HTTPS** [connectUri]. Plaintext HTTP is deliberately rejected so the app
+  /// never weakens TLS for an embedded console (issue #021). Actual embedded
+  /// rendering still depends on a platform WebView dependency (tracked there).
   bool get canLaunchInAppHtml5 =>
-      serviceEnabled && supportsHtml5 && hasHttpLaunchUri;
+      serviceEnabled && supportsHtml5 && hasSecureLaunchUri;
 
   /// Whether [launchUri] uses a protocol that requires an external client
   /// (e.g. VNC/RFB/KVMIP or serial SSH/Telnet/IPMI) rather than browser/

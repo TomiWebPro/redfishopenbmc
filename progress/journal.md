@@ -9944,3 +9944,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #010 (closed)
+
+## 2026-11-18 08:52 UTC — agent:redfish-automation — #021
+
+**Done:**
+- FEATURE #021 (highest-priority open issue, P2) — non-dependency, TLS-safe slice: in-app KVM HTML5 rendering is now HTTPS-only. `KvmConsole.canLaunchInAppHtml5` previously accepted plaintext HTTP URIs (via `hasHttpLaunchUri`), meaning an unencrypted BMC console would be treated as an in-app render candidate — a TLS posture defect. Added `hasSecureLaunchUri` (HTTPS + host) and `usesInsecureHttpLaunchUri` (plaintext HTTP + host); `canLaunchInAppHtml5` now requires `hasSecureLaunchUri`. `KvmConsoleViewerPage` now shows an explicit, error-styled secure-transport warning for plaintext-HTTP HTML5 consoles (visible text is the single announced Semantics label, no internal issue references) instead of the generic fallback; HTTPS/external-client/fallback guidance unchanged. Baseline green at 6bda54b (analyze 0, 857 passed / 1 skipped, issues validate OK; known untracked `testing/` harness + pre-existing stash left untouched). Added a RED→GREEN model test (plaintext HTTP was `canLaunchInAppHtml5 == true`, now false), HTTPS-eligibility + precise scheme-classification model tests, and a viewer widget test (warning shown, "path available" copy absent). Verify: analyze 0; flutter test 861 passed / 1 skipped (+4); DMTF emulator 85/85 (lib/ changed — §1.4 gate); issues validate OK.
+
+**Decisions:**
+- Chose HTTPS-only gating for in-app HTML5 rendering rather than adding a WebView/protocol dependency: the latter is explicitly deferred in #021 pending platform WebView support and BMC self-signed/TLS validation, cannot be validated unattended, and must never weaken production TLS. Gating plaintext HTTP out is a real security hardening (console video + injected input stay encrypted) with a clean RED→GREEN proof, not cosmetic churn. Kept the warning as a single exact-match status message (matching the viewer's established a11y pattern) with an error-coloured style cue, so no structural layout churn; existing 320/800/1300 px no-overflow tests pass. Issue stays OPEN — "renders in-app" and "dependency added/documented" acceptance boxes remain unmet until a platform WebView + BMC TLS validation is possible. No production TLS touched; no new dependency. Full EMULATOR re-run performed (85/85) because lib/ changed this run; change is model + widget presentation only, no wire/request/header/payload change.
+
+**Next:**
+- Continue #021: platform WebView dependency + BMC TLS/self-signed validation for embedded HTML5 rendering (only when a platform target is available unattended; never weaken TLS).
+- Advance #009 (remote KVM detection/HTML5 console, P3) via non-dependency slices only.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #021 (open — HTTPS-only in-app rendering gating slice)

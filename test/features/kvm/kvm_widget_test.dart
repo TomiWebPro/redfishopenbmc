@@ -779,6 +779,42 @@ void main() {
     });
 
     testWidgets(
+        'plaintext-HTTP HTML5 console shows a secure-transport warning '
+        'and is not offered as an in-app render path (#021)', (tester) async {
+      await pumpViewer(
+        tester,
+        const KvmConsole(
+          type: KvmConsoleType.remote,
+          managerId: 'BMC',
+          connectTypesSupported: <String>['HTML5'],
+          serviceEnabled: true,
+          connectUri: 'http://bmc.example.com/kvm',
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        ),
+      );
+
+      const String expected =
+          'This HTML5 console uses an unencrypted HTTP connection. '
+          'In-app rendering is disabled to keep console video and input '
+          'encrypted. Configure the BMC console to use HTTPS before '
+          'opening it in a browser.';
+      // Exact-match on both trees: the announced guidance equals the visible
+      // warning, and it explicitly tells the operator to enable HTTPS.
+      expect(find.bySemanticsLabel(expected), findsOneWidget,
+          reason: 'a11y: the insecure-transport warning must be announced');
+      expect(find.text(expected), findsOneWidget);
+      expect(
+          find.textContaining('unencrypted HTTP connection'), findsOneWidget);
+      expect(find.textContaining('Configure the BMC console to use HTTPS'),
+          findsOneWidget);
+      // The generic "path available" copy must NOT appear for plaintext HTTP.
+      expect(
+        find.textContaining('In-app HTML5 console path available'),
+        findsNothing,
+      );
+    });
+
+    testWidgets(
         'external-client status announces the copy-and-open step '
         '(#010)', (tester) async {
       await pumpViewer(
