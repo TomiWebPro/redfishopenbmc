@@ -6,6 +6,7 @@
 /// [KvmConsole] so the UI can list them uniformly.
 library;
 
+import 'package:redfishopenbmc/features/kvm/models/kvm_oem_registry.dart';
 import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
 
 /// The kind of Redfish console a [KvmConsole] represents.
@@ -271,9 +272,16 @@ class KvmConsole {
   /// `RemoteConsole`) yields one [KvmConsole]; an `Oem` console member, when
   /// present, yields an OEM console. Managers without any console block return
   /// an empty list.
+  ///
+  /// When [oemRegistry] is supplied, vendor parsers are consulted first: a
+  /// recognized [KvmOemConsoleInfo] enriches the OEM console with the vendor's
+  /// connect URI / types / enabled flag (issue #009 extensibility hook). No
+  /// registry or no matching parser keeps the existing strict
+  /// `FeatureRules.oemHasConsole` detection unchanged.
   static List<KvmConsole> fromManager(
     Map<String, dynamic> managerBody, {
     required String managerId,
+    KvmOemRegistry? oemRegistry,
   }) {
     final String sourceManagerUri = (managerBody['@odata.id'] as String?) ??
         '/redfish/v1/Managers/$managerId';
@@ -304,17 +312,33 @@ class KvmConsole {
     // Manager) must not be reported as a console — only blocks that actually
     // contain a console-like structure count (DOCS-4, 2026-10-22).
     final dynamic oem = managerBody['Oem'];
-    if (oem is Map<String, dynamic> && FeatureRules.oemHasConsole(oem)) {
-      consoles.add(
-        KvmConsole(
-          type: KvmConsoleType.oem,
-          managerId: managerId,
-          connectTypesSupported: const <String>[],
-          serviceEnabled: true,
-          sourceManagerUri: sourceManagerUri,
-          oem: oem,
-        ),
-      );
+    if (oem is Map<String, dynamic>) {
+      final KvmOemConsoleInfo? parsed = oemRegistry?.parse(oem);
+      if (parsed != null) {
+        // A registered vendor parser produced console details — use them.
+        consoles.add(
+          KvmConsole(
+            type: KvmConsoleType.oem,
+            managerId: managerId,
+            connectTypesSupported: parsed.connectTypesSupported,
+            serviceEnabled: parsed.serviceEnabled,
+            connectUri: parsed.connectUri,
+            sourceManagerUri: sourceManagerUri,
+            oem: oem,
+          ),
+        );
+      } else if (FeatureRules.oemHasConsole(oem)) {
+        consoles.add(
+          KvmConsole(
+            type: KvmConsoleType.oem,
+            managerId: managerId,
+            connectTypesSupported: const <String>[],
+            serviceEnabled: true,
+            sourceManagerUri: sourceManagerUri,
+            oem: oem,
+          ),
+        );
+      }
     }
 
     return consoles;

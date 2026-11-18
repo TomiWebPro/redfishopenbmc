@@ -9989,3 +9989,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — session lifecycle box done)
+
+## 2026-11-18 10:44 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (next genuinely-unimplemented, unblocked slice) — landed the vendor extensibility `KvmOemRegistry` interface. New `lib/features/kvm/models/kvm_oem_registry.dart` (`KvmOemConsoleParser` pluggable interface, immutable `KvmOemConsoleInfo`, deterministic `KvmOemRegistry` with registration-order resolution, case-insensitive/trimmed vendor-key matching, bounded nested-block search, duplicate rejection, unmodifiable snapshot). No vendor parser ships in v1 (registry empty by default) — exactly the acceptance item's "interface only in v1". Wired into `KvmConsole.fromManager(..., oemRegistry:)` as an OPTIONAL hook: a registered parser's info enriches the OEM console with connect URI/types/enabled flag, flowing through existing HTTPS/in-app launch gating; no registry or no match keeps strict `oemHasConsole` behaviour unchanged. Exported from `kvm.dart`. Added `test/features/kvm/kvm_oem_registry_test.dart` (19 tests: model defaults, registration/duplicate/unmodifiable, case-insensitive + nested + sub-block resolution, RED proof vendor KVM URI has no launch URI without a registry, GREEN integration reaches `KvmLaunchStrategy.inAppHtml5`, fallback/bare-metadata/standard-console no-regression). No WebView/protocol dependency; no production TLS weakened. Baseline green at f43b3fc (analyze 0, 890 passed / 1 skipped; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; flutter test 909 passed / 1 skipped (+19); DMTF emulator 85/85 (lib/ changed — §1.4 gate); issues validate OK.
+
+**Decisions:**
+- Advanced #009's vendor-extensibility box rather than another #021 slice: #021's remaining boxes are externally blocked on platform WebView + BMC self-signed/TLS validation, and prior runs' progressively smaller getter/guidance slices had become manufactured churn the runbook bans. The OEM registry is genuinely unimplemented, self-contained, dependency-free and testable. Kept it as an interface + registry only (no AMI/HPE vendor impl), matching the acceptance text. Made the `fromManager` hook OPTIONAL so existing callers and strict OEM detection are byte-for-byte unchanged — the registry only adds behaviour when a caller registers a parser. Vendor-supplied URIs still pass through the existing HTTPS/in-app gating, so TLS is never weakened. Fixed all analyze lint infos (prefer_const_constructors, directive ordering, dangling doc comment) to reach 0 issues. Full emulator re-run (85/85) because lib/ changed; change is pure Dart with no wire/payload impact.
+
+**Next:**
+- #009 remaining non-dependency slices (capability-card model + detection/URI-resolution + coverage) with real tests.
+- #021 embedded HTML5 rendering + BMC TLS/self-signed validation — only when a platform WebView target is available unattended; never weaken TLS.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — vendor-extensibility box done)

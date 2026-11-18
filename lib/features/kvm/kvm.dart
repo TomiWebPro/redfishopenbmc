@@ -4,5 +4,6 @@ export 'kvm_providers.dart';
 export 'kvm_service.dart';
 export 'kvm_session.dart';
 export 'models/kvm_models.dart';
+export 'models/kvm_oem_registry.dart';
 export 'views/kvm_console_viewer_page.dart';
 export 'views/kvm_view.dart';
