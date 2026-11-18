@@ -210,6 +210,42 @@ void main() {
       );
     });
 
+    testWidgets(
+        'a disabled graphical @odata.id does not become the resolved URI '
+        'when an OEM console exists (#009)', (WidgetTester tester) async {
+      // A disabled graphical console's Redfish API link is not a browser-
+      // launchable console endpoint. When a launchable OEM KVM URI exists (the
+      // one the per-console card surfaces), the capability card must show that
+      // URI instead of the disabled console's resource link.
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': false,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            '@odata.id': '/redfish/v1/Managers/BMC/GraphicalConsole',
+          },
+          'Oem': <String, dynamic>{
+            'OpenBMC': <String, dynamic>{
+              'KVM': <String, dynamic>{'Uri': 'https://bmc.example/kvm'},
+            },
+          },
+        },
+        managerId: 'BMC',
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: KvmCapabilityCard(capability: capability)),
+      );
+
+      expect(capability.uri, 'https://bmc.example/kvm');
+      expect(find.text('https://bmc.example/kvm'), findsOneWidget);
+      expect(
+          find.text('/redfish/v1/Managers/BMC/GraphicalConsole'), findsNothing);
+      expect(
+        find.bySemanticsLabel('Resolved URI: https://bmc.example/kvm'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('a whitespace-padded resolved URI is displayed trimmed',
         (WidgetTester tester) async {
       // A BMC can pad an otherwise valid ConnectUri. The card must display the

@@ -1121,4 +1121,91 @@ void main() {
       expect(uri, 'https://bmc.example/unknown-kvm');
     });
   });
+
+  group('KvmCapability resolved URI — disabled graphical @odata.id (#009)', () {
+    test('a disabled graphical @odata.id does not shadow an OEM KVM Uri', () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          '@odata.id': '/redfish/v1/Managers/BMC/GraphicalConsole',
+        },
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{
+            'KVM': <String, dynamic>{'Uri': 'https://bmc.example/kvm'},
+          },
+        },
+      });
+
+      expect(uri, 'https://bmc.example/kvm');
+    });
+
+    test('a legacy Enabled:false graphical @odata.id is also skipped', () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'Enabled': false,
+          '@odata.id': '/redfish/v1/Managers/BMC/GraphicalConsole',
+        },
+        'Oem': <String, dynamic>{
+          'Vendor': <String, dynamic>{
+            'WebConsole': <String, dynamic>{'Uri': 'https://bmc.example/web'},
+          },
+        },
+      });
+
+      expect(uri, 'https://bmc.example/web');
+    });
+
+    test('fromManager agrees with the openable per-console card', () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+          '@odata.id': '/redfish/v1/Managers/BMC/GraphicalConsole',
+        },
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{
+            'KVM': <String, dynamic>{'Uri': 'https://bmc.example/kvm'},
+          },
+        },
+      };
+      final KvmCapability capability =
+          KvmCapability.fromManager(body, managerId: 'BMC');
+      expect(capability.uri, 'https://bmc.example/kvm');
+
+      final List<KvmConsole> consoles =
+          KvmConsole.fromManager(body, managerId: 'BMC');
+      final KvmConsole openable =
+          consoles.firstWhere((KvmConsole c) => c.canOpenConsole);
+      expect(openable.launchUri, capability.uri);
+    });
+
+    test('a sole disabled graphical @odata.id is still surfaced (fallback)',
+        () {
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          '@odata.id': '/redfish/v1/Managers/BMC/GraphicalConsole',
+        },
+      });
+
+      expect(uri, '/redfish/v1/Managers/BMC/GraphicalConsole');
+    });
+
+    test('unknown-enablement graphical @odata.id keeps its priority', () {
+      // Mockups that omit the enablement flag keep the established behaviour.
+      final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC/GraphicalConsole',
+        },
+        'Oem': <String, dynamic>{
+          'Vendor': <String, dynamic>{
+            'KVM': <String, dynamic>{'Uri': 'https://bmc.example/kvm'},
+          },
+        },
+      });
+
+      expect(uri, '/redfish/v1/Managers/BMC/GraphicalConsole');
+    });
+  });
 }

@@ -187,7 +187,10 @@ class KvmCapability {
   ///     kept in sync so the capability card never recommends a disabled
   ///     console's URI over an enabled one (issue #009);
   ///  2. `GraphicalConsole.@odata.id` (the standard graphical console link,
-  ///     retained for managers that expose only a Redfish resource link);
+  ///     retained for managers that expose only a Redfish resource link) — but
+  ///     when that graphical console is explicitly disabled and an OEM console
+  ///     URI is available, the OEM URI wins (a disabled console cannot be
+  ///     opened, issue #009);
   ///  3. an OEM `KVM` / `WebConsole` block's `Uri` member (bounded recursive
   ///     search, case-insensitive key matching);
   ///  4. `null` when none is exposed.
@@ -203,13 +206,25 @@ class KvmCapability {
 
     final Map<String, dynamic>? graphical =
         _consoleBlock(body, 'GraphicalConsole');
-    if (graphical != null) {
-      final String? odata = _nonEmptyString(graphical['@odata.id']);
-      if (odata != null) return odata;
-    }
+    final String? odata =
+        graphical == null ? null : _nonEmptyString(graphical['@odata.id']);
     // Shared with KvmConsole.fromManager so the per-console and per-manager
     // cards resolve the same OEM endpoint for the same manager (issue #009).
-    return kvmOemConsoleUri(body['Oem']);
+    final String? oemUri = kvmOemConsoleUri(body['Oem']);
+    if (odata != null) {
+      // A graphical console that explicitly reports itself disabled cannot be
+      // opened (its KvmConsole.launchStrategy is `disabled` and canOpenConsole
+      // is false), so its Redfish API resource link must not be recommended as
+      // the capability card's "Resolved URI" over a genuinely launchable OEM
+      // console URI that the per-console card surfaces (issue #009). A block
+      // that omits the enablement flag is "unknown" (most mockups do) and keeps
+      // its link's priority; when no OEM URI exists the link is still the best
+      // available choice — this only changes which URI wins when a launchable
+      // one exists, so all prior resolveLaunchUri behaviour is preserved.
+      if (_explicitlyDisabled(graphical!) && oemUri != null) return oemUri;
+      return odata;
+    }
+    return oemUri;
   }
 
   /// Returns the launchable `ConnectUri` across the standard console blocks

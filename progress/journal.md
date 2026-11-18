@@ -10274,3 +10274,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — aggregate maxSessions skip-disabled-block fix)
+
+## 2026-11-18 22:53 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free, TLS-safe resolved-URI enabled-state fix for the `@odata.id` fallback. `KvmCapability.resolveLaunchUri` returned the first `GraphicalConsole.@odata.id` regardless of enablement, so an explicitly disabled graphical console (`ServiceEnabled: false` / legacy `Enabled: false`) carrying a Redfish API resource link had that non-browser-launchable link surfaced as the capability card's "Resolved URI" while an enabled OEM KVM console's genuinely launchable `Uri` (shown by the per-console card) was ignored — the same enabled-state gap already fixed for the `ConnectUri` pass (21:40) and aggregate `maxSessions` (22:16). `resolveLaunchUri` now prefers the OEM URI when the graphical block is explicitly disabled and an OEM URI exists; unknown-enablement blocks (most mockups) keep their link's priority and a sole disabled graphical link is still surfaced when no OEM URI exists. Added 6 RED→GREEN tests (5 pure-Dart `kvm_capability_test.dart` incl. a `fromManager` cross-view agreement vs the openable `KvmConsole`, 1 `kvm_capability_card_test.dart` widget; 3 confirmed RED pre-fix with `Expected: 'https://bmc.example/kvm' Actual: '/redfish/v1/Managers/BMC/GraphicalConsole'`, 2 green fallback/priority guards). Baseline analyze 0 / 1051 passed / 1 skipped → verify analyze 0 / 1057 passed / 1 skipped (+6); KVM suite 228; DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.2% / scoped 90.4% / kvm 92.7%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a genuine cross-view data defect — the capability card recommending a disabled console's Redfish API link over a launchable OEM console URI — over manufactured churn: #009's/#021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation. Extended the established two-pass "skip explicitly disabled, keep a fallback" rule already used by `_standardConnectUri`/`_aggregateMaxSessions` to the `@odata.id` fallback, so mockups that omit the enablement flag and managers with no OEM console keep their prior URI byte-for-byte — only which URI wins when a launchable alternative exists changes. Pure Dart + doc comments, read-only, no WebView/protocol dependency and no production TLS change. Full emulator re-run (85/85) because `lib/` changed.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. the capability card's `connectTypes` still aggregating an explicitly disabled console's types, or epic-triage/split the WebView-blocked rendering work), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — resolved-URI `@odata.id` disabled-graphical fix)
