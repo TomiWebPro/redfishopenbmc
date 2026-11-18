@@ -564,6 +564,47 @@ void main() {
       expect(console.connectTypesSupported, capability.connectTypes);
       expect(console.connectTypesSupported, <String>['KVMIP', 'HTML5']);
     });
+
+    test('null and non-string ConnectTypesSupported entries are ignored (#009)',
+        () {
+      final List<KvmConsole> consoles = KvmConsole.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>[
+              'KVMIP',
+              null,
+              42,
+              true,
+              'HTML5',
+            ],
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(consoles, hasLength(1));
+      // A malformed BMC payload must not surface literal "null"/"42"/"true"
+      // connection-type strings on the console card — only real Redfish
+      // ConnectType enum string values are kept.
+      expect(consoles.single.connectTypesSupported, <String>['KVMIP', 'HTML5']);
+    });
+
+    test('console and capability cards agree on malformed connect types (#009)',
+        () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['KVMIP', null, 7, 'HTML5'],
+        },
+      };
+      final KvmConsole console =
+          KvmConsole.fromManager(body, managerId: 'BMC').single;
+      final KvmCapability capability =
+          KvmCapability.fromManager(body, managerId: 'BMC');
+      expect(console.connectTypesSupported, <String>['KVMIP', 'HTML5']);
+      expect(capability.connectTypes, <String>['KVMIP', 'HTML5']);
+      expect(console.connectTypesSupported, capability.connectTypes);
+    });
   });
 
   group('KvmConsole session-limit tolerance (#009)', () {

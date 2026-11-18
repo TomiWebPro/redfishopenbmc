@@ -201,6 +201,36 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+        'malformed ConnectTypesSupported entries render no bogus '
+        'chips (#009)', (WidgetTester tester) async {
+      // A malformed BMC payload can carry null / numeric entries in the
+      // Redfish ConnectTypesSupported string array. The capability card must
+      // surface only real string enum values, never literal "null"/"42" chips.
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP', null, 42, 'HTML5'],
+          },
+        },
+        managerId: 'BMC5',
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: KvmCapabilityCard(capability: capability)),
+      );
+
+      expect(capability.connectTypes, <String>['KVMIP', 'HTML5']);
+      expect(find.text('KVMIP'), findsOneWidget);
+      expect(find.text('HTML5'), findsOneWidget);
+      expect(find.text('null'), findsNothing);
+      expect(find.text('42'), findsNothing);
+      expect(
+        find.bySemanticsLabel('Connection types: KVMIP, HTML5'),
+        findsOneWidget,
+      );
+    });
   });
 
   group('KvmView capability section', () {

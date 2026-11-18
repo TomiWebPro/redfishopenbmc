@@ -223,21 +223,26 @@ class KvmCapability {
     final dynamic value = block['ConnectTypesSupported'];
     if (value is! List<dynamic>) return false;
     return value.any(
-      (dynamic e) => e.toString().trim().toUpperCase() == type,
+      (dynamic e) => e is String && e.trim().toUpperCase() == type,
     );
   }
 
   /// Appends a block's `ConnectTypesSupported` entries to [target].
   ///
+  /// `ConnectTypesSupported` is an array of Redfish `ConnectType` strings, so a
+  /// `null` / numeric / boolean entry is malformed data and is ignored rather
+  /// than stringified into a literal "null"/"42" chip on the capability card.
   /// Dedup is case-insensitive so a BMC that emits the same canonical type in
   /// different casing across console blocks is rendered only once; the first
-  /// (graphical-first) spelling is kept for deterministic display.
+  /// (graphical-first) spelling is kept for deterministic display. Mirrors
+  /// `KvmConsole._normalizedConnectTypes` (issue #009).
   static void _appendTypes(List<String> target, Map<String, dynamic>? block) {
     if (block == null) return;
     final dynamic value = block['ConnectTypesSupported'];
     if (value is! List<dynamic>) return;
     for (final dynamic entry in value) {
-      final String type = entry.toString().trim();
+      if (entry is! String) continue;
+      final String type = entry.trim();
       if (type.isEmpty) continue;
       final bool duplicate = target.any(
         (String existing) => existing.toUpperCase() == type.toUpperCase(),

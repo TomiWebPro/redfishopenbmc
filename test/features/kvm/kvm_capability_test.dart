@@ -302,6 +302,48 @@ void main() {
     });
   });
 
+  group('KvmCapability connect-type tolerance (#009)', () {
+    test('null and non-string ConnectTypesSupported entries are ignored', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>[
+              'KVMIP',
+              null,
+              42,
+              false,
+              'HTML5',
+            ],
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.connectTypes, <String>['KVMIP', 'HTML5']);
+      expect(capability.supported, isTrue);
+      expect(capability.supportsKvmIp, isTrue);
+    });
+
+    test('a null-only ConnectTypesSupported list yields no chips', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>[
+              null,
+              1,
+              <String>[],
+            ],
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.connectTypes, isEmpty);
+    });
+  });
+
   group('KvmCapability.resolveLaunchUri', () {
     test('prefers GraphicalConsole.@odata.id over an OEM KVM Uri', () {
       final String? uri = KvmCapability.resolveLaunchUri(<String, dynamic>{

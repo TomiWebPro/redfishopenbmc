@@ -481,19 +481,26 @@ int? _sessionLimit(Object? value) {
 }
 
 /// Builds a normalized [List<String>] of `ConnectTypesSupported` values from a
-/// Redfish JSON list: each entry is trimmed, empty entries are dropped and
-/// duplicates are removed case-insensitively while keeping the first (BMC-
-/// provided) spelling for deterministic display.
+/// Redfish JSON list: non-string entries are ignored, each string entry is
+/// trimmed, empty entries are dropped and duplicates are removed
+/// case-insensitively while keeping the first (BMC-provided) spelling for
+/// deterministic display.
+///
+/// `ConnectTypesSupported` is an array of Redfish `ConnectType` strings, so a
+/// `null` / numeric / boolean entry is malformed data rather than a connection
+/// type. Stringifying it would render a literal "null" / "42" chip on the
+/// console card; ignoring it keeps the UI honest.
 ///
 /// This mirrors `KvmCapability._appendTypes` so the per-console card and the
 /// per-manager capability card — which read the same console blocks — surface
 /// the same clean set of connection types instead of duplicate/garbled chips
-/// when a BMC mixes casing or whitespace (issue #009).
+/// when a BMC mixes casing, whitespace or emits a malformed entry (issue #009).
 List<String> _normalizedConnectTypes(dynamic value) {
   if (value is! List<dynamic>) return const <String>[];
   final List<String> result = <String>[];
   for (final dynamic entry in value) {
-    final String type = entry.toString().trim();
+    if (entry is! String) continue;
+    final String type = entry.trim();
     if (type.isEmpty) continue;
     final bool duplicate = result.any(
       (String existing) => existing.toUpperCase() == type.toUpperCase(),

@@ -10169,3 +10169,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — cross-view OEM console URI resolution)
+
+## 2026-11-18 18:24 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free, TLS-safe malformed-`ConnectTypesSupported` tolerance fix across #009's two KVM models + the capability card. Redfish defines `ConnectTypesSupported` as an array of `ConnectType` strings, but both models stringified every entry (`entry.toString()`), so a malformed BMC payload containing `null`/numeric/boolean values rendered literal "null"/"42"/"true" connection-type chips. `KvmConsole._normalizedConnectTypes` and `KvmCapability._appendTypes` now ignore non-string entries; `KvmCapability._advertises` matches only real `String` values. Added 5 RED→GREEN tests (2 model, 2 capability, 1 widget — all confirmed failing pre-fix with `Expected: ['KVMIP','HTML5'] Actual: ['KVMIP','null','42','HTML5']`). Baseline green at f0f62b2 (analyze 0, 999 passed / 1 skipped; known untracked `testing/` + pre-existing stash left untouched). Verify: analyze 0; targeted 3-file run 106 passed; KVM suite 180; full `flutter test --coverage` 1004 passed / 1 skipped (+5); DMTF emulator 85/85 (lib changed — §1.4 gate); coverage gates PASS overall 89.2% / scoped 90.3% / kvm 92.5%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a genuine malformed-data robustness defect over manufactured churn: #009's and #021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation, so the honest unblocked work was making both read paths ignore non-string `ConnectTypesSupported` entries — the recurring cross-view consistency theme. Fixing only one parser would have created a *new* inconsistency (stringified bogus chips on one card, clean chips on the other), so both were changed with an identical string-only rule and a console↔capability agreement regression test. Pure Dart, read-only, no WebView/protocol dependency and no production TLS change. Full emulator re-run (85/85) because `lib/` changed. Issue stays OPEN — embedded HTML5 rendering, fullscreen, input forwarding and the WebView dependency remain blocked.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. a manager exposing only a `RemoteConsole` is detected as an enabled console by `KvmConsole` but as `supported=false`/`serviceEnabled=false` by `KvmCapability`, or epic-triage/split the WebView-blocked rendering work), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — malformed connect-type tolerance fix)
