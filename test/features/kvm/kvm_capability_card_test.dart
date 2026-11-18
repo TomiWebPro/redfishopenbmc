@@ -304,6 +304,38 @@ void main() {
     });
 
     testWidgets(
+        'Max sessions shows the enabled console limit, not the disabled '
+        'graphical one (#009)', (WidgetTester tester) async {
+      // A disabled graphical console carrying MaxConcurrentSessions 1 used to
+      // win the aggregate, so the card reported "Max sessions: 1" while the
+      // launchable RemoteConsole allowed 4. Pin the enabled-console limit.
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': false,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'ConnectUri': 'https://bmc.example/disabled-kvm',
+            'MaxConcurrentSessions': 1,
+          },
+          'RemoteConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['HTML5'],
+            'ConnectUri': 'https://bmc.example/html5',
+            'MaxConcurrentSessions': 4,
+          },
+        },
+        managerId: 'BMC8',
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: KvmCapabilityCard(capability: capability)),
+      );
+
+      expect(find.text('Max sessions: 4'), findsOneWidget);
+      expect(find.text('Max sessions: 1'), findsNothing);
+      expect(find.bySemanticsLabel('Max sessions: 4'), findsOneWidget);
+    });
+
+    testWidgets(
         'a malformed manager @odata.id still renders a usable source '
         'notice (#009)', (WidgetTester tester) async {
       // A non-string @odata.id used to throw a TypeError in fromManager,

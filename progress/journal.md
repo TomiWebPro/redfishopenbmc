@@ -10259,3 +10259,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — resolved-URI skip-disabled-block fix)
+
+## 2026-11-18 22:16 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free, TLS-safe aggregate-`maxSessions` fix, the last enabled-state gap left after the 21:40 resolved-URI fix. `KvmCapability.fromManager` aggregated the capability card's "Max sessions" as `_maxSessions(graphical) ?? _maxSessions(serial) ?? _maxSessions(remote)` with no enablement check, so a disabled graphical console's limit (e.g. 1) won over an enabled RemoteConsole's launchable limit (4) — contradicting `canOpenConsole`/`launchStrategy` and the tiered `pickPrimary`. New `_aggregateMaxSessions(body)` mirrors `_standardConnectUri`: first pass prefers a not-explicitly-disabled block's limit (graphical→serial→remote), fallback to any block preserves all-disabled fixtures, unknown enablement keeps its limit. Added 6 RED→GREEN tests (5 model incl. a console↔capability agreement vs the openable `KvmConsole`, 1 capability-card widget; 4 confirmed failing pre-fix with `Expected: <4> Actual: <1>` / `Expected: <2> Actual: <1>`, 2 fallback/unknown guards green pre-fix). Baseline analyze 0 / 1045 passed / 1 skipped → verify analyze 0 / 1051 passed / 1 skipped (+6); KVM suite 222; DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.2% / scoped 90.4% / kvm 92.7%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a genuine cross-view data defect — the capability card recommending a session limit from a console the operator cannot open — over manufactured churn: #009's/#021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation, so the honest unblocked work was completing the enabled-state contract across the capability card's last aggregate field (resolved URI at 21:40, now max sessions). Fixed it in the single aggregation helper with the same two-pass rule `_standardConnectUri` already uses, so all-disabled fixtures and mockups omitting the enablement flag keep their prior behaviour byte-for-byte — only which limit wins among competing blocks changes. A block truthy on either enablement member stays enabled, matching the shared `_blockEnabled` rule. Pure Dart + doc comments, read-only, no WebView/protocol dependency and no production TLS change. Full emulator re-run (85/85) because `lib/` changed. Issue stays OPEN — embedded HTML5 rendering, fullscreen, input forwarding and the WebView dependency remain blocked.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. audit the per-console `maxConcurrentSessions` / connect-type chips for the same enabled-state contract now applied to all three aggregate capability fields, or epic-triage/split the WebView-blocked rendering work), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — aggregate maxSessions skip-disabled-block fix)

@@ -586,6 +586,115 @@ void main() {
     });
   });
 
+  group('KvmCapability maxSessions skips disabled blocks (#009)', () {
+    // The aggregate "Max sessions" must come from a console the operator can
+    // actually launch, mirroring the enabled-preference already applied to the
+    // resolved URI. Before this fix the limit was aggregated graphical-first
+    // with no enablement check, so a disabled graphical console's limit won
+    // over an enabled remote console's.
+
+    test('disabled graphical limit is skipped for an enabled remote limit', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': false,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'ConnectUri': 'https://bmc.example/disabled-kvm',
+            'MaxConcurrentSessions': 1,
+          },
+          'RemoteConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['HTML5'],
+            'ConnectUri': 'https://bmc.example/html5',
+            'MaxConcurrentSessions': 4,
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.maxSessions, 4);
+      // Both the limit and the resolved URI point at the launchable console.
+      expect(capability.uri, 'https://bmc.example/html5');
+    });
+
+    test('legacy Enabled: false graphical limit is skipped', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'Enabled': false,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'MaxConcurrentSessions': 1,
+          },
+          'SerialConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['Serial'],
+            'MaxConcurrentSessions': 2,
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.maxSessions, 2);
+    });
+
+    test('capability maxSessions agrees with the openable console card', () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+          'ConnectUri': 'https://bmc.example/disabled-kvm',
+          'MaxConcurrentSessions': 1,
+        },
+        'RemoteConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['HTML5'],
+          'ConnectUri': 'https://bmc.example/html5',
+          'MaxConcurrentSessions': 4,
+        },
+      };
+      final KvmConsole console = KvmConsole.fromManager(
+        body,
+        managerId: 'BMC',
+      ).firstWhere((KvmConsole c) => c.canOpenConsole);
+      final KvmCapability capability = KvmCapability.fromManager(
+        body,
+        managerId: 'BMC',
+      );
+
+      expect(capability.maxSessions, console.maxConcurrentSessions);
+      expect(capability.maxSessions, 4);
+    });
+
+    test('sole disabled limit is still surfaced as the fallback', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': false,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'MaxConcurrentSessions': 1,
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.maxSessions, 1);
+    });
+
+    test('unknown-enablement block keeps its limit', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'MaxConcurrentSessions': 3,
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.maxSessions, 3);
+    });
+  });
+
   group('KvmCapability blank ConnectUri tolerance (#009)', () {
     test('blank graphical ConnectUri falls back to its @odata.id link', () {
       final KvmCapability capability = KvmCapability.fromManager(

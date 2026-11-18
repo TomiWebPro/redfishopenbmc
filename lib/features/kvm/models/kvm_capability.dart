@@ -153,8 +153,11 @@ class KvmCapability {
     // supported regardless of the exact `ConnectType` spelling a BMC uses.
     final bool supported =
         (graphicalEnabled && kvmIp) || remoteEnabled || oemConsole;
-    final int? maxSessions =
-        _maxSessions(graphical) ?? _maxSessions(serial) ?? _maxSessions(remote);
+    // Aggregate the session limit across standard console blocks, preferring an
+    // enabled block so the capability card never reports a disabled console's
+    // limit over the launchable console's (issue #009). Mirrors the
+    // enabled-preference in resolveLaunchUri / _standardConnectUri.
+    final int? maxSessions = _aggregateMaxSessions(body);
 
     return KvmCapability(
       managerId: managerId,
@@ -330,6 +333,47 @@ class KvmCapability {
       parsed = null;
     }
     return (parsed == null || parsed < 0) ? null : parsed;
+  }
+
+  /// Aggregates `MaxConcurrentSessions` across the standard console blocks
+  /// (graphical → serial → remote), preferring a block that is not explicitly
+  /// disabled.
+  ///
+  /// A limit on a console that explicitly reports itself disabled
+  /// (`ServiceEnabled: false` / `Enabled: false`) is not one the operator can
+  /// actually use — that console's `KvmConsole.launchStrategy` is `disabled`
+  /// and `KvmService.pickPrimary` now prefers an openable console. Reporting
+  /// such a limit as the capability card's "Max sessions" would contradict the
+  /// launchable console (issue #009). So an explicitly disabled block is
+  /// skipped while any non-disabled block reports a valid limit. A block that
+  /// omits the enablement flag is "unknown" (not disabled) and keeps its limit,
+  /// and when every limit-bearing block is disabled the limit is still surfaced
+  /// as the best available choice — this only changes which limit wins when an
+  /// enabled one exists.
+  static int? _aggregateMaxSessions(Map<String, dynamic> body) {
+    const List<String> names = <String>[
+      'GraphicalConsole',
+      'SerialConsole',
+      'RemoteConsole',
+    ];
+
+    // First pass: prefer a limit from a block that is not explicitly disabled.
+    for (final String name in names) {
+      final Map<String, dynamic>? block = _consoleBlock(body, name);
+      if (block == null || _explicitlyDisabled(block)) continue;
+      final int? limit = _maxSessions(block);
+      if (limit != null) return limit;
+    }
+    // Fallback: when the only limit source is an explicitly disabled block,
+    // still surface it rather than showing no limit (preserves the prior
+    // behaviour for all-disabled fixtures).
+    for (final String name in names) {
+      final Map<String, dynamic>? block = _consoleBlock(body, name);
+      if (block == null) continue;
+      final int? limit = _maxSessions(block);
+      if (limit != null) return limit;
+    }
+    return null;
   }
 
   /// Returns [value] as a trimmed, non-blank string, or `null`.
