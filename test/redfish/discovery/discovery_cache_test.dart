@@ -255,4 +255,48 @@ void main() {
       expect(chassis['Members'], isA<List<dynamic>>());
     });
   });
+
+  group('DiscoveryCache — TTL expiry (#010 cache-TTL proof)', () {
+    DiscoveryCacheEntry entryAt(DateTime fetchedAt) => DiscoveryCacheEntry(
+          systemId: 'bmc1',
+          features: const SystemFeatures(systemId: 'bmc1'),
+          rawTree: <String, dynamic>{},
+          etags: <String, String>{'/redfish/v1/': 'W/"v1"'},
+          fetchedAt: fetchedAt,
+        );
+
+    test('default TTL is 5 minutes', () {
+      expect(DiscoveryCache().ttl, const Duration(minutes: 5));
+    });
+
+    test('get() returns a fresh entry but lazily evicts an expired one', () {
+      final DiscoveryCache cache = DiscoveryCache();
+      cache.put(entryAt(DateTime.now()));
+      expect(cache.get('bmc1'), isNotNull);
+      expect(cache.length, 1);
+
+      cache.put(entryAt(DateTime.now().subtract(const Duration(minutes: 6))));
+      expect(cache.get('bmc1'), isNull);
+      expect(cache.length, 0);
+    });
+
+    test('peek() exposes an expired entry before get() evicts it', () {
+      final DiscoveryCache cache = DiscoveryCache();
+      final DiscoveryCacheEntry stale =
+          entryAt(DateTime.now().subtract(const Duration(minutes: 6)));
+      cache.put(stale);
+      // The engine peeks first to keep the learned ETags for a delta re-crawl;
+      // get() would drop them via lazy eviction.
+      expect(cache.peek('bmc1'), same(stale));
+      expect(cache.get('bmc1'), isNull);
+      expect(cache.peek('bmc1'), isNull);
+    });
+
+    test('a custom TTL is honored', () {
+      final DiscoveryCache cache =
+          DiscoveryCache(ttl: const Duration(seconds: 1));
+      cache.put(entryAt(DateTime.now().subtract(const Duration(seconds: 2))));
+      expect(cache.get('bmc1'), isNull);
+    });
+  });
 }

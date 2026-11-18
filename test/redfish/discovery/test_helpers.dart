@@ -34,6 +34,10 @@ class FakeBmc {
   /// All requested paths, in order, across every crawl.
   final List<String> requests = <String>[];
 
+  /// Paths requested with an `If-None-Match` conditional header — the proof
+  /// that a re-crawl reused a learned ETag (delta polling, issue #010).
+  final List<String> conditionalRequests = <String>[];
+
   /// Builds a [RedfishClient] wired to this simulator.
   RedfishClient buildClient() {
     final Dio dio = Dio(
@@ -64,6 +68,7 @@ class FakeBmc {
             return;
           }
           final dynamic ifNone = options.headers['If-None-Match'];
+          if (ifNone != null) conditionalRequests.add(options.path);
           if (ifNone == etag) {
             handler.resolve(
               Response<dynamic>(

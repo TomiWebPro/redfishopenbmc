@@ -380,6 +380,78 @@ void main() {
       expect(bmc.requests.length, greaterThan(afterFirst));
       expect(b.toJson(), a.toJson());
     });
+
+    test('expired cache entry still reuses ETags for a conditional re-crawl',
+        () async {
+      final FakeBmc bmc = openBmc();
+      final DiscoveryEngine engine = DiscoveryEngine();
+      final SystemFeatures first =
+          await engine.discover(bmc.buildClient(), 'bmc1');
+      final DiscoveryCacheEntry warm = engine.cache.peek('bmc1')!;
+      final int afterFirst = bmc.requests.length;
+
+      // Age the cached entry past the default 5-minute TTL without dropping
+      // its learned ETags/rawTree (the delta-polling seed, issue #010).
+      engine.cache.put(DiscoveryCacheEntry(
+        systemId: 'bmc1',
+        features: first,
+        rawTree: warm.rawTree,
+        etags: warm.etags,
+        fetchedAt: DateTime.now().subtract(const Duration(minutes: 6)),
+      ));
+
+      final SystemFeatures refreshed =
+          await engine.discover(bmc.buildClient(), 'bmc1');
+
+      // A re-crawl happened (the stale entry was not a cache hit)...
+      expect(bmc.requests.length, greaterThan(afterFirst));
+      // ...but the learned URIs were revalidated with If-None-Match (304),
+      // so unchanged branches replay their bodies instead of refetching.
+      expect(bmc.conditionalRequests, contains('/redfish/v1/'));
+      expect(refreshed.toJson(), first.toJson());
+      // The fresh result is written back with an up-to-date timestamp.
+      final DiscoveryCacheEntry fresh = engine.cache.peek('bmc1')!;
+      expect(fresh.isExpired(const Duration(minutes: 5)), isFalse);
+    });
+
+    test('cold cache warmed from persister reuses ETags across engines',
+        () async {
+      final FakeBmc firstBmc = openBmc();
+      final InMemoryDiscoveryPersister persister = InMemoryDiscoveryPersister();
+      final DiscoveryEngine firstEngine = DiscoveryEngine(persister: persister);
+      final SystemFeatures first =
+          await firstEngine.discover(firstBmc.buildClient(), 'bmc1');
+      expect(persister.entries['bmc1']!.etags, isNotEmpty);
+
+      // A brand-new engine has an empty in-memory cache but shares the
+      // persister: its first discover must still revalidate conditionally.
+      final FakeBmc secondBmc = openBmc();
+      final DiscoveryEngine secondEngine =
+          DiscoveryEngine(persister: persister);
+      expect(secondEngine.cache.peek('bmc1'), isNull);
+
+      final SystemFeatures second =
+          await secondEngine.discover(secondBmc.buildClient(), 'bmc1');
+
+      expect(secondBmc.requests, isNotEmpty);
+      expect(secondBmc.conditionalRequests, contains('/redfish/v1/'));
+      expect(second.toJson(), first.toJson());
+      expect(secondEngine.cache.peek('bmc1'), isNotNull);
+    });
+
+    test('forceRefresh bypasses both cache and persister (unconditional)',
+        () async {
+      final FakeBmc bmc = openBmc();
+      final InMemoryDiscoveryPersister persister = InMemoryDiscoveryPersister();
+      final DiscoveryEngine engine = DiscoveryEngine(persister: persister);
+      await engine.discover(bmc.buildClient(), 'bmc1');
+
+      final int before = bmc.requests.length;
+      await engine.discover(bmc.buildClient(), 'bmc1', forceRefresh: true);
+
+      expect(bmc.requests.length, greaterThan(before));
+      expect(bmc.conditionalRequests, isEmpty);
+    });
   });
 
   group('DiscoveryEngine — injection & concurrency', () {

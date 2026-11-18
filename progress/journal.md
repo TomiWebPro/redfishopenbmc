@@ -9779,3 +9779,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on code/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #010 (open)
+
+## 2026-11-18 02:04 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 (smallest open issue, P2, oldest), the cache-TTL / delta-ETag hardening slice. Baseline green (analyze 0, 770 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Fixed two concrete gaps in `DiscoveryEngine.discover`: (1) `DiscoveryPersister.load()` was documented as seeding ETags before a crawl but was never called, so a cold in-memory cache forced a full refetch; (2) `DiscoveryCache.get()` lazily evicts an expired entry, destroying the learned ETags before they could seed a conditional re-crawl. The engine now `peek()`s first, returns directly only when fresh, warms a cold cache from the persister, and reuses the ETags for a 304 short-circuit; `forceRefresh` still bypasses both. Corrected the stale `discover()` doc comment. Added 7 tests (3 engine + 4 pure `DiscoveryCache` TTL) with `If-None-Match` request tracking on the `FakeBmc` helper. Verify: analyze 0; flutter test 777 passed / 1 skipped (+7); issues validate OK. #010 stays OPEN (lazy-load tabs, sensor-poll cadence, coverage gate remain).
+
+**Decisions:**
+- Used `peek()` rather than `get()` as the first read so a stale entry's ETags/rawTree survive the re-crawl — `get()`'s lazy eviction is still exercised elsewhere (pure cache tests) but must not run before the delta seed is captured. Warm a cold cache from the persister unconditionally (then crawl with the conditional ETag) rather than returning a persisted fresh entry directly: the persister is a slower mirror and the crawl still verifies freshness via 304, matching the documented "load seeds ETags before a crawl" contract. Kept `forceRefresh` semantics unchanged (bypass cache + persister, unconditional crawl) and pinned it with a test — the old doc comment wrongly claimed forceRefresh reused ETags; corrected rather than changing behavior. Skipped UI: non-visual cache/delta diagnostics with no user-facing surface; the runbook bans manufactured UI churn while FEATURE work is open. No production TLS weakened; no new dependency; DOCS anchor gate not re-run (no corpus/manifest change); full EMULATOR re-run skipped (no wire-contract/fixture/`test_integration/`/`tool/` change; <7 days since last green 2026-11-16 05:27 UTC).
+
+**Next:**
+- Continue #010 Performance budget: lazy-load FirmwareInventory/Sensors on tab visit, sensor-poll cadence configurability, or the ≥75%/≥80% coverage gate, with tests.
+- Split/advance #009 or #021 via non-dependency KVM slices only — no WebView/protocol dep, no production TLS weakening.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on code/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #010 (open)

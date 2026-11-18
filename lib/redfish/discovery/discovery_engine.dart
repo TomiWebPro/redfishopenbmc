@@ -86,23 +86,41 @@ class DiscoveryEngine {
 
   /// Discovers (or returns the cached) [SystemFeatures] for [systemId].
   ///
-  /// When [forceRefresh] is `true` the cache is bypassed and a fresh crawl is
-  /// performed — but previously learned ETags are still reused for conditional
-  /// requests. On success the result is written back to [cache] and
-  /// [persister]. A failed ServiceRoot fetch propagates a [RedfishException];
-  /// failures on individual branches are tolerated (graceful degradation).
+  /// A fresh cache hit returns directly (no network). When the cached entry is
+  /// expired — or the in-memory cache is cold but [persister] holds a mirror —
+  /// its learned ETags/rawTree seed a conditional (delta) re-crawl so unchanged
+  /// branches short-circuit with HTTP 304. When [forceRefresh] is `true` both
+  /// the cache and persister are bypassed for an unconditional crawl. On
+  /// success the result is written back to [cache] and [persister]. A failed
+  /// ServiceRoot fetch propagates a [RedfishException]; failures on individual
+  /// branches are tolerated (graceful degradation).
   Future<SystemFeatures> discover(
     RedfishClient client,
     String systemId, {
     bool forceRefresh = false,
   }) async {
-    if (!forceRefresh) {
-      final DiscoveryCacheEntry? hit = _cache.get(systemId);
-      if (hit != null) return hit.features;
+    // Peek *before* any TTL check: a stale entry is still valuable for its
+    // learned ETags/rawTree, which let the re-crawl revalidate with 304s
+    // (the "delta polling" half of the #010 performance budget). Using
+    // DiscoveryCache.get() here would lazily evict the expired entry and lose
+    // those ETags. A forceRefresh bypasses both the cache and the persister.
+    final DiscoveryCacheEntry? inMemory =
+        forceRefresh ? null : _cache.peek(systemId);
+    if (inMemory != null && !inMemory.isExpired(_cache.ttl)) {
+      return inMemory.features;
     }
 
-    final DiscoveryCacheEntry? previous =
-        forceRefresh ? null : _cache.peek(systemId);
+    DiscoveryCacheEntry? previous = inMemory;
+    if (previous == null && !forceRefresh) {
+      // Cold in-memory cache: warm it from the slower-storage mirror so a new
+      // session still revalidates conditionally instead of refetching the
+      // whole tree. The persister is documented to seed ETags before a crawl.
+      final DiscoveryCacheEntry? persisted = await _persister.load(systemId);
+      if (persisted != null) {
+        _cache.put(persisted);
+        previous = persisted;
+      }
+    }
     final Map<String, String> etags = <String, String>{
       if (previous != null) ...previous.etags,
     };
