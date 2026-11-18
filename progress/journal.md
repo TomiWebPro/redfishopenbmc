@@ -9749,3 +9749,18 @@
 - Cheap DOCS anchor re-verify only; no full corpus re-download unless anchors changed.
 
 **Issues touched:** #008 (closed)
+
+## 2026-11-18 00:55 UTC — agent:redfish-automation — #010
+
+**Done:**
+- FEATURE #010 (smallest open issue, P2, oldest), the discovery request-budget slice. Baseline green at cb4ca86 (analyze 0, 761 passed / 1 skipped, issues validate OK; known untracked `testing/` + pre-existing stash left untouched). Implemented the "Discovery: ≤8 requests for typical OpenBMC — measured, logged debug" half of #010's Performance Budget acceptance criterion. `DiscoveryEngine` now funnels every GET through a single `fetch()` helper that counts requests and enforces a hard `maxRequestsPerCrawl` ceiling (default 64, clamped ≥1). Measurement exposed via `lastCrawlMetrics` (`DiscoveryCrawlMetrics`: systemId/requestCount/maxRequests/budgetSkips + withinBudget/withinTypicalBudget/toJson), an optional `onCrawlMetrics` observer, and a `dart:developer` debug log when no observer is set; `typicalRequestBudget = 8` encodes the soft target. A budget-capped crawl skips remaining URIs and still returns a usable partial map. Added 5 unit tests. Verify: analyze 0; flutter test 766 passed / 1 skipped (+5); issues validate OK. #010 stays OPEN (remaining perf/a11y/credential slices).
+
+**Decisions:**
+- Routed all GETs (ServiceRoot, seeds, BFS workers) through one `fetch()` closure so counting and the cap are enforced in a single place rather than duplicated across three call sites — the request count then provably equals the number of network GETs (`FakeBmc.requests` in tests). Chose a high default cap (64) so normal discovery behaviour is completely unchanged; the cap is a defensive ceiling for misbehaving/cyclic BMC link graphs, not a tool to shrink a healthy crawl. Kept the ≤8 figure as a soft, logged target (`typicalRequestBudget`) because the rich test fixture legitimately fetches >8 URIs — enforcing 8 would produce incorrect feature maps on real hardware. Used `dart:developer.log` rather than `debugPrint` so metrics don't spam test stdout, and added an injectable observer so callers/tests can consume metrics without parsing logs. Metrics reflect the last real crawl only; a cache hit intentionally leaves them unchanged (no network work happened). Skipped UI: this is a non-visual diagnostics slice and the runbook bans manufactured UI churn while FEATURE work is open. No production TLS weakened; no new dependency; DOCS anchor gate not re-run (no corpus/manifest change); full EMULATOR re-run skipped (no wire-contract/fixture/test_integration/tool change; <7 days since last green 2026-11-16 05:27 UTC).
+
+**Next:**
+- Continue #010 Performance budget: sensor poll cadence (5–10s visible / 30s background, configurable) or lazy-load FirmwareInventory/Sensors on tab visit, with tests.
+- Continue #010 a11y/credential-audit slices, or split/advance #009/#021 via non-dependency KVM slices only (no WebView/protocol dep, no production TLS weakening).
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on code/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #010 (open)

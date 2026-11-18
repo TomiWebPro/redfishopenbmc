@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:developer' as developer;
 
 import 'package:dio/dio.dart';
 import 'package:redfishopenbmc/redfish/client/redfish_client.dart';
@@ -34,18 +35,42 @@ class DiscoveryEngine {
   /// Creates a [DiscoveryEngine].
   ///
   /// [maxConcurrency] bounds in-flight requests during a crawl (clamped to
-  /// ≥1). [cacheTtl] controls the in-memory freshness window. [cache] and
+  /// ≥1). [maxRequestsPerCrawl] caps total HTTP GETs per crawl (clamped to ≥1).
+  /// [cacheTtl] controls the in-memory freshness window. [cache] and
   /// [persister] can be injected for testing or to plug in real storage.
+  /// [onCrawlMetrics] observes per-crawl request metrics; when omitted they are
+  /// emitted via [developer.log].
   DiscoveryEngine({
     this.maxConcurrency = 4,
+    this.maxRequestsPerCrawl = 64,
     Duration? cacheTtl,
     DiscoveryCache? cache,
     DiscoveryPersister? persister,
+    this.onCrawlMetrics,
   })  : _cache = cache ?? DiscoveryCache(ttl: cacheTtl),
         _persister = persister ?? const NoOpDiscoveryPersister();
 
   /// Maximum number of concurrent requests issued while crawling.
   final int maxConcurrency;
+
+  /// Hard safety ceiling on HTTP GETs a single crawl may issue (clamped to
+  /// ≥1). The default is well above a typical OpenBMC tree so normal discovery
+  /// is unaffected; a misbehaving/cyclic link graph can never turn a crawl
+  /// into an unbounded request storm (#010 performance budget).
+  final int maxRequestsPerCrawl;
+
+  /// Soft target for a typical OpenBMC discovery, from the #010 performance
+  /// budget ("≤8 requests for typical OpenBMC"). Used for logging/inspection
+  /// only — it never short-circuits a crawl.
+  static const int typicalRequestBudget = 8;
+
+  /// Optional observer invoked once per completed crawl with its metrics.
+  /// When omitted, metrics are emitted through [developer.log] instead.
+  final void Function(DiscoveryCrawlMetrics metrics)? onCrawlMetrics;
+
+  /// Metrics for the most recent crawl. A cache hit does not update these.
+  DiscoveryCrawlMetrics? get lastCrawlMetrics => _lastCrawlMetrics;
+  DiscoveryCrawlMetrics? _lastCrawlMetrics;
 
   final DiscoveryCache _cache;
   final DiscoveryPersister _persister;
@@ -92,7 +117,7 @@ class DiscoveryEngine {
       }
     }
 
-    final DiscoveryContext ctx = await _crawl(client, etags, bodies);
+    final DiscoveryContext ctx = await _crawl(client, systemId, etags, bodies);
     final SystemFeatures features = FeatureRules.build(systemId, ctx);
     final DiscoveryCacheEntry entry = DiscoveryCacheEntry(
       systemId: systemId,
@@ -133,9 +158,26 @@ class DiscoveryEngine {
   /// The actual crawl: ServiceRoot → top-level seeds → concurrent BFS.
   Future<DiscoveryContext> _crawl(
     RedfishClient client,
+    String systemId,
     Map<String, String> etags,
     Map<String, Map<String, dynamic>> bodies,
   ) async {
+    final int requestBudget = maxRequestsPerCrawl < 1 ? 1 : maxRequestsPerCrawl;
+    int requestsIssued = 0;
+    int budgetSkips = 0;
+
+    // Single entry point for every GET in this crawl: counts requests and
+    // enforces the per-crawl budget. Returns null when the budget stopped the
+    // crawl so callers can skip that node without fetching it.
+    Future<Map<String, dynamic>?> fetch(String uri) async {
+      if (requestsIssued >= requestBudget) {
+        budgetSkips++;
+        return null;
+      }
+      requestsIssued++;
+      return _fetchUri(client, uri, etags, bodies);
+    }
+
     final Map<String, dynamic> rawTree = <String, dynamic>{};
     final List<Map<String, dynamic>> systems = <Map<String, dynamic>>[];
     final List<Map<String, dynamic>> managers = <Map<String, dynamic>>[];
@@ -177,10 +219,10 @@ class DiscoveryEngine {
       }
     }
 
-    // Step 1 — ServiceRoot.
+    // Step 1 — ServiceRoot (the first request; always within a ≥1 budget).
     const String rootUri = '/redfish/v1/';
     final Map<String, dynamic> root =
-        await _fetchUri(client, rootUri, etags, bodies);
+        (await fetch(rootUri)) ?? <String, dynamic>{};
     rawTree[rootUri] = root;
     classify(root);
 
@@ -209,8 +251,8 @@ class DiscoveryEngine {
       while (queue.isNotEmpty) {
         final _Node node = queue.removeFirst();
         try {
-          final Map<String, dynamic> res =
-              await _fetchUri(client, node.uri, etags, bodies);
+          final Map<String, dynamic>? res = await fetch(node.uri);
+          if (res == null) continue; // request budget exhausted — skip node.
           rawTree[node.uri] = res;
           classify(res);
           if (node.depth < 3) {
@@ -230,6 +272,27 @@ class DiscoveryEngine {
     await Future.wait<void>(
       List<Future<void>>.generate(workerCount, (_) => worker()),
     );
+
+    // #010 performance budget: measure + log (or hand to the observer) how
+    // many HTTP requests this crawl actually issued.
+    final DiscoveryCrawlMetrics metrics = DiscoveryCrawlMetrics(
+      systemId: systemId,
+      requestCount: requestsIssued,
+      maxRequests: requestBudget,
+      budgetSkips: budgetSkips,
+    );
+    _lastCrawlMetrics = metrics;
+    final void Function(DiscoveryCrawlMetrics)? observer = onCrawlMetrics;
+    if (observer != null) {
+      observer(metrics);
+    } else {
+      developer.log(
+        '[discovery] $systemId crawl: $requestsIssued HTTP requests '
+        '(soft target ≤$typicalRequestBudget, hard cap $requestBudget, '
+        'skipped $budgetSkips)',
+        name: 'redfish.discovery',
+      );
+    }
 
     return DiscoveryContext(
       serviceRoot: root,
@@ -378,6 +441,57 @@ class DiscoveryEngine {
     }
     return <String, dynamic>{'value': data};
   }
+}
+
+/// Per-crawl request metrics for [DiscoveryEngine].
+///
+/// This is the measurement half of the #010 performance budget ("Discovery:
+/// ≤8 requests for typical OpenBMC — measured, logged debug"): [requestCount]
+/// is the exact number of HTTP GETs a crawl issued, [maxRequests] the hard
+/// ceiling it ran under, and [budgetSkips] how many discovered URIs were left
+/// unfetched because that ceiling was reached.
+class DiscoveryCrawlMetrics {
+  /// Creates crawl metrics.
+  const DiscoveryCrawlMetrics({
+    required this.systemId,
+    required this.requestCount,
+    required this.maxRequests,
+    required this.budgetSkips,
+  });
+
+  /// The system this crawl was for.
+  final String systemId;
+
+  /// Number of HTTP GETs issued during the crawl.
+  final int requestCount;
+
+  /// Hard request ceiling the crawl ran under (clamped to ≥1).
+  final int maxRequests;
+
+  /// Discovered URIs skipped because the hard ceiling was reached.
+  final int budgetSkips;
+
+  /// Whether the crawl stayed within its hard request budget.
+  bool get withinBudget => budgetSkips == 0;
+
+  /// Whether the crawl met the soft "≤8 for a typical OpenBMC" target.
+  bool get withinTypicalBudget =>
+      requestCount <= DiscoveryEngine.typicalRequestBudget;
+
+  /// JSON form, handy for debug logging / diagnostics.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'systemId': systemId,
+        'requestCount': requestCount,
+        'maxRequests': maxRequests,
+        'budgetSkips': budgetSkips,
+        'withinBudget': withinBudget,
+        'withinTypicalBudget': withinTypicalBudget,
+      };
+
+  @override
+  String toString() => 'DiscoveryCrawlMetrics('
+      'systemId: $systemId, requestCount: $requestCount, '
+      'maxRequests: $maxRequests, budgetSkips: $budgetSkips)';
 }
 
 /// A unit of work in the discovery BFS: a URI and its current depth.

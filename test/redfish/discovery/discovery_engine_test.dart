@@ -489,4 +489,79 @@ void main() {
       expect(f.sensorCount, 1);
     });
   });
+
+  group('DiscoveryEngine — request budget & metrics (#010 performance)', () {
+    test('records the exact request count for a fresh crawl', () async {
+      final FakeBmc bmc = openBmc();
+      final DiscoveryEngine engine = DiscoveryEngine();
+      await engine.discover(bmc.buildClient(), 'bmc1');
+
+      final DiscoveryCrawlMetrics? m = engine.lastCrawlMetrics;
+      expect(m, isNotNull);
+      expect(m!.systemId, 'bmc1');
+      expect(m.requestCount, bmc.requests.length);
+      expect(m.requestCount, greaterThan(0));
+      expect(m.maxRequests, 64);
+      expect(m.budgetSkips, 0);
+      expect(m.withinBudget, isTrue);
+    });
+
+    test('soft-target getter reflects the ≤8 typical-OpenBMC budget', () async {
+      final FakeBmc bmc = openBmc();
+      final DiscoveryEngine engine = DiscoveryEngine();
+      await engine.discover(bmc.buildClient(), 'bmc1');
+
+      // openBmc() is a deliberately rich fixture (>8 URIs), so the soft target
+      // is met only when the measured count is at or below eight.
+      expect(engine.lastCrawlMetrics!.withinTypicalBudget,
+          engine.lastCrawlMetrics!.requestCount <= 8);
+    });
+
+    test('observer receives metrics for each real crawl, not cache hits',
+        () async {
+      final FakeBmc bmc = openBmc();
+      final List<DiscoveryCrawlMetrics> seen = <DiscoveryCrawlMetrics>[];
+      final DiscoveryEngine engine = DiscoveryEngine(onCrawlMetrics: seen.add);
+
+      await engine.discover(bmc.buildClient(), 'bmc1');
+      await engine.discover(bmc.buildClient(), 'bmc1');
+      expect(seen, hasLength(1));
+      expect(seen.single.withinBudget, isTrue);
+
+      await engine.discover(bmc.buildClient(), 'bmc1', forceRefresh: true);
+      expect(seen, hasLength(2));
+    });
+
+    test('a small request budget caps the crawl and records skips', () async {
+      final FakeBmc bmc = openBmc();
+      final List<DiscoveryCrawlMetrics> seen = <DiscoveryCrawlMetrics>[];
+      final DiscoveryEngine engine = DiscoveryEngine(
+        maxRequestsPerCrawl: 3,
+        onCrawlMetrics: seen.add,
+      );
+
+      final SystemFeatures f = await engine.discover(bmc.buildClient(), 'bmc1');
+
+      expect(bmc.requests.length, 3);
+      expect(seen.single.requestCount, 3);
+      expect(seen.single.maxRequests, 3);
+      expect(seen.single.budgetSkips, greaterThan(0));
+      expect(seen.single.withinBudget, isFalse);
+      // A budget-capped crawl still returns a usable (partial) map, no crash.
+      expect(f, isA<SystemFeatures>());
+    });
+
+    test('maxRequestsPerCrawl is clamped to >= 1', () async {
+      final FakeBmc bmc = openBmc();
+      final List<DiscoveryCrawlMetrics> seen = <DiscoveryCrawlMetrics>[];
+      final DiscoveryEngine engine = DiscoveryEngine(
+        maxRequestsPerCrawl: 0,
+        onCrawlMetrics: seen.add,
+      );
+
+      await engine.discover(bmc.buildClient(), 'bmc1');
+      expect(seen.single.maxRequests, 1);
+      expect(seen.single.requestCount, 1);
+    });
+  });
 }
