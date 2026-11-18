@@ -209,16 +209,17 @@ class FeatureRules {
   // ---------------------------------------------------------------------------
   // Rule: kvm
   //   kvm = Managers[*].(GraphicalConsole.Enabled || SerialConsole.Enabled
-  //                       || Oem console)
+  //                       || RemoteConsole.Enabled || Oem console)
   // ---------------------------------------------------------------------------
 
-  /// True when any manager exposes an enabled graphical / serial / OEM console.
+  /// True when any manager exposes an enabled graphical / serial / remote / OEM
+  /// console.
   static bool kvm(List<Map<String, dynamic>> managers) => managers.any(
         (Map<String, dynamic> m) => _managerConsoleType(m) != null,
       );
 
   /// The first detected console type (`GraphicalConsole`, `SerialConsole`,
-  /// `Oem`), or `null` when no console is enabled.
+  /// `RemoteConsole`, `Oem`), or `null` when no console is enabled.
   static String? kvmType(List<Map<String, dynamic>> managers) {
     for (final Map<String, dynamic> m in managers) {
       final String? type = _managerConsoleType(m);
@@ -346,6 +347,14 @@ class FeatureRules {
   /// mockup and shipping BMCs) and falls back to the older `Enabled` key for
   /// backwards compatibility.
   ///
+  /// All three standard Redfish console blocks — `GraphicalConsole`,
+  /// `SerialConsole`, `RemoteConsole` — are recognized, in that order, matching
+  /// `KvmConsole.fromManager` and `KvmCapability.fromManager` so the discovery
+  /// gate (which gates the KVM tab) never contradicts the per-console / capability
+  /// views. `RemoteConsole` is a standard block parsed by both KVM models; a
+  /// manager exposing only an enabled one must therefore still report KVM
+  /// available (issue #009).
+  ///
   /// The `Oem` fallback is deliberate but strict: it only fires when the OEM
   /// block actually contains a console-like structure (`GraphicalConsole`,
   /// `SerialConsole`, or a `Kvm`/`Console` marker). OpenBMC bmcweb Managers
@@ -361,6 +370,10 @@ class FeatureRules {
     final dynamic serial = manager['SerialConsole'];
     if (serial is Map<dynamic, dynamic> && _consoleEnabled(serial)) {
       return 'SerialConsole';
+    }
+    final dynamic remote = manager['RemoteConsole'];
+    if (remote is Map<dynamic, dynamic> && _consoleEnabled(remote)) {
+      return 'RemoteConsole';
     }
     if (FeatureRules.oemHasConsole(manager['Oem'])) return 'Oem';
     return null;

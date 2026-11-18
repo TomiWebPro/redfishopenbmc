@@ -18,6 +18,7 @@ import 'package:redfishopenbmc/features/systems/views/system_profile_form.dart';
 import 'package:redfishopenbmc/features/systems/views/system_shell.dart';
 import 'package:redfishopenbmc/features/systems/widgets/status_badges.dart';
 import 'package:redfishopenbmc/features/systems/widgets/system_card.dart';
+import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
 import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 import 'package:redfishopenbmc/redfish/models/session.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
@@ -812,6 +813,40 @@ void main() {
       expect(find.text('KVM'), findsNothing);
       // Entering the shell selects the system (instant context switch).
       expect(m.state.selectedId, 'bmc1');
+    });
+
+    testWidgets('RemoteConsole-only manager opens the KVM tab (#009)',
+        (tester) async {
+      // End-to-end gate: a manager exposing only an enabled RemoteConsole is
+      // detected by discovery (kvm=true) and therefore surfaces the KVM tab —
+      // agreeing with the per-console and capability models (issue #009).
+      final SystemFeatures features = FeatureRules.build(
+        'bmc1',
+        const DiscoveryContext(
+          serviceRoot: <String, dynamic>{},
+          managers: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'Id': 'BMC',
+              'RemoteConsole': <String, dynamic>{
+                'ServiceEnabled': true,
+                'ConnectTypesSupported': <dynamic>['HTML5'],
+                'ConnectUri': 'https://bmc.example/kvm',
+              },
+            },
+          ],
+        ),
+      );
+      expect(features.kvm, isTrue);
+      expect(features.kvmType, 'RemoteConsole');
+
+      final SystemManager m = seededManager(
+        systems: <String, SystemHandle>{
+          'bmc1': connectedHandle(id: 'bmc1', features: features),
+        },
+        selectedId: 'bmc1',
+      );
+      await pumpManaged(tester, m, const Text('child'));
+      expect(find.text('KVM'), findsOneWidget);
     });
 
     testWidgets('shows not-found scaffold for unknown system', (tester) async {

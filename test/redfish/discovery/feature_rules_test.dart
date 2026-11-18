@@ -422,6 +422,64 @@ void main() {
           FeatureRules.kvmType(<Map<String, dynamic>>[m]), 'GraphicalConsole');
     });
 
+    test('detects enabled RemoteConsole (ServiceEnabled)', () {
+      // A manager exposing only a RemoteConsole must still open the KVM tab:
+      // KvmConsole.fromManager and KvmCapability.fromManager both detect it,
+      // so the discovery gate is the last read path out of sync (issue #009).
+      final Map<String, dynamic> m = <String, dynamic>{
+        '@odata.type': '#Manager.v1_16_0.Manager',
+        'RemoteConsole': <String, dynamic>{'ServiceEnabled': true},
+      };
+      expect(FeatureRules.kvm(<Map<String, dynamic>>[m]), isTrue);
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[m]), 'RemoteConsole');
+    });
+
+    test('detects enabled RemoteConsole (legacy Enabled)', () {
+      // Same enablement rule as the other two read paths: the older `Enabled`
+      // member (shipping in the OpenBMC fixture) is honored as well.
+      final Map<String, dynamic> m = <String, dynamic>{
+        'RemoteConsole': <String, dynamic>{'Enabled': true},
+      };
+      expect(FeatureRules.kvm(<Map<String, dynamic>>[m]), isTrue);
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[m]), 'RemoteConsole');
+    });
+
+    test('ignores disabled RemoteConsole', () {
+      final Map<String, dynamic> m = <String, dynamic>{
+        'RemoteConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          'Enabled': false,
+        },
+      };
+      expect(FeatureRules.kvm(<Map<String, dynamic>>[m]), isFalse);
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[m]), isNull);
+    });
+
+    test('ranks RemoteConsole after graphical/serial but before OEM', () {
+      // Priority must match KvmConsole.fromManager's block order
+      // (graphical → serial → remote → oem), so kvmType is deterministic.
+      final Map<String, dynamic> graphicalAndRemote = <String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{'Enabled': true},
+        'RemoteConsole': <String, dynamic>{'Enabled': true},
+      };
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[graphicalAndRemote]),
+          'GraphicalConsole');
+      final Map<String, dynamic> serialAndRemote = <String, dynamic>{
+        'SerialConsole': <String, dynamic>{'Enabled': true},
+        'RemoteConsole': <String, dynamic>{'Enabled': true},
+      };
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[serialAndRemote]),
+          'SerialConsole');
+      final Map<String, dynamic> remoteAndOem = <String, dynamic>{
+        'RemoteConsole': <String, dynamic>{'Enabled': true},
+        'Oem': <String, dynamic>{
+          'Vendor': <String, dynamic>{'Kvm': <String, dynamic>{}},
+        },
+      };
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[remoteAndOem]),
+          'RemoteConsole');
+    });
+
     test('ignores disabled consoles', () {
       final Map<String, dynamic> m = <String, dynamic>{
         'GraphicalConsole': <String, dynamic>{'Enabled': false},

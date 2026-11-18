@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
+import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
 
 void main() {
   group('KvmCapability.fromManager — detection', () {
@@ -835,6 +836,36 @@ void main() {
 
       expect(capability.supported, isFalse);
       expect(capability.serviceEnabled, isFalse);
+    });
+  });
+
+  group('RemoteConsole discovery-gate agreement (#009)', () {
+    test(
+        'RemoteConsole-only manager: discovery gate agrees with both KVM '
+        'models', () {
+      // A manager exposing only an enabled RemoteConsole is parsed by
+      // KvmConsole.fromManager and reported supported by KvmCapability, but
+      // FeatureRules.kvm (which gates the KVM tab) historically ignored it —
+      // the last read path out of sync. All three must agree.
+      final Map<String, dynamic> body = <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'RemoteConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['HTML5'],
+          'ConnectUri': 'https://bmc.example/kvm',
+        },
+      };
+
+      final KvmCapability capability =
+          KvmCapability.fromManager(body, managerId: 'BMC');
+      final List<KvmConsole> consoles =
+          KvmConsole.fromManager(body, managerId: 'BMC');
+
+      expect(capability.supported, isTrue);
+      expect(consoles, isNotEmpty);
+      expect(FeatureRules.kvm(<Map<String, dynamic>>[body]), isTrue);
+      expect(
+          FeatureRules.kvmType(<Map<String, dynamic>>[body]), 'RemoteConsole');
     });
   });
 }

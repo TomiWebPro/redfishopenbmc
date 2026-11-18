@@ -10199,3 +10199,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — RemoteConsole detection consistency fix)
+
+## 2026-11-18 19:40 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free, TLS-safe `RemoteConsole` **discovery-gate** fix, the last read path out of sync. `KvmConsole.fromManager` parses `RemoteConsole` and `KvmCapability.fromManager` reports it `supported` (19:01 run), but discovery-level `FeatureRules._managerConsoleType` — which computes `SystemFeatures.kvm`/`kvmType` and gates the KVM tab in `system_shell.dart` — checked only `GraphicalConsole`/`SerialConsole`/`Oem`. A manager exposing only an enabled `RemoteConsole` got `features.kvm == false` (no KVM tab) while both KVM views showed a live console. `_managerConsoleType` now recognizes `RemoteConsole` between serial and OEM (matching `KvmConsole.fromManager`'s block order) via the shared `_consoleEnabled` rule; `kvm`/`kvmType`/rule doc comments updated. Added 6 RED→GREEN tests (4 `feature_rules_test.dart`: ServiceEnabled + legacy-Enabled detection, disabled guard, graphical/serial/remote/oem ranking; 1 cross-view agreement `kvm_capability_test.dart`: RemoteConsole-only manager is capability-supported + has consoles + `FeatureRules.kvm == true`/`kvmType == 'RemoteConsole'`; 1 end-to-end widget `ui_widget_test.dart`: `FeatureRules.build` over a RemoteConsole-only manager opens the "KVM" tab — 5 confirmed failing pre-fix). Baseline analyze 0 / 1010 passed / 1 skipped → verify analyze 0 / 1016 passed / 1 skipped (+6); DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.2% / scoped 90.4% / kvm 92.5%; issues validate OK. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a genuine cross-layer detection defect over manufactured churn: #009's/#021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation, so the honest unblocked work was completing the three-way `RemoteConsole` consistency — after 19:01 aligned the capability model and earlier runs aligned the console model, the discovery gate (which actually controls whether the KVM tab is reachable) was the only read path still ignoring this standard Redfish console block. Fixed it in the single table-driven detector with the exact enablement + block-order rule the other two paths already use, rather than adding new behavior or a dependency, and pinned the full chain from raw manager body through `FeatureRules.build` to the visible tab with three kinds of test. Pure Dart + doc comments, read-only, no WebView/protocol dependency and no production TLS change. Full emulator re-run (85/85) because `lib/` changed. Issue stays OPEN — embedded HTML5 rendering, fullscreen, input forwarding and the WebView dependency remain blocked.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment or epic-triage/split the blocked rendering work, never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — RemoteConsole discovery-gate detection fix)
