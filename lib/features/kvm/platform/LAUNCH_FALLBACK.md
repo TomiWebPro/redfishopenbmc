@@ -13,7 +13,7 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 9 targeted tests.
+consume; today it locks the fallback behaviour with 14 targeted tests.
 
 ## Decision contract (`planConsoleLaunch`)
 
@@ -38,12 +38,19 @@ Invariants, enforced by tests:
    never set it — production TLS is never weakened (issue #021).
 3. **Fail closed.** A blank/missing URI degrades to `copyOnly` rather than
    handing a launcher a null/whitespace target; URIs are trimmed.
-4. **Scheme re-validation (defense in depth).** `hasSecureUri` alone is never
-   trusted for a TLS-sensitive decision: the raw URI string must also use the
-   `https://` scheme (case-insensitive). A stale/incorrect secure flag paired
-   with a plaintext `http://` or non-HTTPS URI fails closed to `copyOnly` —
-   even under the test opt-in — so plaintext can never be rendered in-app or
-   receive self-signed acceptance. Covered by 3 targeted tests.
+4. **Scheme + host re-validation (defense in depth).** `hasSecureUri` alone is
+   never trusted for a TLS-sensitive decision: the raw URI string must also be
+   an HTTPS URL with a non-empty host (mirroring `hasSecureLaunchUri`).
+   Re-validation uses the same `Uri.tryParse` + `scheme == 'https'` + non-empty
+   `host` check as the model, so it can never be more permissive than
+   production. A stale/incorrect secure flag paired with a plaintext `http://`,
+   non-HTTPS, host-less (`https:///console`, `https://?q`, `https://#f`,
+   `https://user@/`), or malformed-authority (`https://bmc.example:notaport/`,
+   `https://bmc.example::443/`) URI fails closed to `copyOnly` — even under the
+   test opt-in — so such targets can never be rendered in-app or receive
+   self-signed acceptance. Legitimate userinfo/port URIs still pass.
+   Covered by 6 targeted tests (including malformed-authority parity with the
+   model's `Uri.tryParse` contract).
 
 ## What remains gated (not done here)
 

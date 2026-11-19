@@ -49,21 +49,30 @@ class KvmConsoleLaunchPlan {
   bool get isCopyOnly => route == KvmConsoleRenderRoute.copyOnly;
 }
 
-/// Returns `true` only when [uri] explicitly uses the HTTPS scheme.
+/// Returns `true` only when [uri] is an HTTPS URI with a non-empty host.
 ///
 /// Defense in depth: the caller-supplied `hasSecureUri` signal may be stale or
 /// inaccurate, so the raw URI string is independently checked before any
 /// security-sensitive decision (in-app rendering / self-signed acceptance).
-/// Scheme matching is case-insensitive (schemes are case-insensitive per RFC
-/// 3986); anything without an explicit `https://` prefix — plaintext HTTP,
-/// `file:`, protocol-relative, malformed — is treated as not secure.
-bool _uriUsesHttps(String? uri) {
+///
+/// This uses the very same parser as the `KvmConsole.hasSecureLaunchUri`
+/// contract it mirrors (`Uri.tryParse` + `scheme == 'https'` + non-empty
+/// `host`), so the re-validation can never be more permissive than production.
+/// A hand-rolled authority scan is deliberately avoided: it can call a
+/// malformed target "secure" (e.g. an invalid/duplicated port such as
+/// `https://bmc.example:notaport/console`) that `Uri.tryParse` rejects, which
+/// under a stale secure flag could reach in-app self-signed acceptance.
+/// Host-less forms such as `https:///console`, `https://?q`, `https://#f` and
+/// `https://user@/` also fail closed. Scheme matching is case-insensitive
+/// (Dart normalises it), and legitimate userinfo/port URIs remain secure.
+bool _uriHasSecureHttpsTarget(String? uri) {
   if (uri == null) return false;
   final String trimmed = uri.trim();
   if (trimmed.isEmpty) return false;
-  final int schemeEnd = trimmed.indexOf('://');
-  if (schemeEnd <= 0) return false;
-  return trimmed.substring(0, schemeEnd).toLowerCase() == 'https';
+  final Uri? parsed = Uri.tryParse(trimmed);
+  return parsed != null &&
+      parsed.scheme == 'https' &&
+      parsed.host.isNotEmpty;
 }
 
 /// Builds the concrete launch plan from the RP-1 policy and a console's public
@@ -76,9 +85,10 @@ bool _uriUsesHttps(String? uri) {
 ///
 /// Decision order:
 ///  1. Derive the *effective* secure signal: BOTH the caller's [hasSecureUri]
-///     flag AND an actual `https://` URI scheme must agree. This closes the
-///     stale-flag gap so plaintext/non-HTTPS URIs can never reach in-app
-///     rendering or self-signed acceptance (no TLS weakening).
+///     flag AND a real `https://` URI with a non-empty host must agree. This
+///     closes the stale-flag gap so plaintext/non-HTTPS/host-less URIs can
+///     never reach in-app rendering or self-signed acceptance (no TLS
+///     weakening).
 ///  2. Route via RP-1's [resolveRenderRoute] (single source of truth) using the
 ///     effective signal.
 ///  3. Self-signed acceptance is granted only for an in-app route under the
@@ -93,9 +103,10 @@ KvmConsoleLaunchPlan planConsoleLaunch({
   required bool isEnabled,
 }) {
   // Never trust a lone boolean for a TLS-sensitive decision: require the raw
-  // URI to actually use HTTPS as well, so an inaccurate/stale signal fails
-  // closed instead of enabling in-app self-signed acceptance on plaintext.
-  final bool effectiveSecure = hasSecureUri && _uriUsesHttps(uri);
+  // URI to actually be an HTTPS URL with a host, so an inaccurate/stale signal
+  // fails closed instead of enabling in-app self-signed acceptance on plaintext
+  // or a host-less URI.
+  final bool effectiveSecure = hasSecureUri && _uriHasSecureHttpsTarget(uri);
 
   final KvmConsoleRenderRoute route = resolveRenderRoute(
     policy: policy,
