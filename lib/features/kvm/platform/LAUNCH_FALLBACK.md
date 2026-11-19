@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 29 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (40 across the platform
+consume; today it locks the fallback behaviour with 32 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (43 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -91,10 +91,19 @@ Invariants, enforced by tests:
    could reach in-app rendering and self-signed acceptance on a malformed/spoofed
    authority. Every raw unwise char is rejected outright — its `%XX` form stays
    launchable — while legal gen/sub-delims (`[` `]` `&` `=`) and userinfo/port
-   URIs are unaffected, so no valid target is lost. Covered by 15 targeted tests
-   (malformed-authority parity + control-character + raw-space +
-   Unicode-whitespace/invisible + raw-backslash + RFC-3986 unwise-char
-   rejection).
+   URIs are unaffected, so no valid target is lost.
+   **Malformed percent-encoding rejection:** RFC 3986 requires
+   `pct-encoded = "%" HEXDIG HEXDIG`, but `Uri.tryParse` silently encodes a bare
+   or malformed `%` into the host rather than rejecting it (`...%` ->
+   `bmc.example%25`, `...%ZZ` -> `bmc.example%25zz`), so it too passes a purely
+   syntactic re-check. A bare `%` is not in the forbidden char class (valid
+   `%XX` must stay launchable), so under a stale flag + test opt-in it could
+   reach in-app rendering and self-signed acceptance on a malformed host. Every
+   `%` not followed by exactly two hex digits (either case) fails closed, while
+   valid `%XX` stays launchable — no valid target is lost. Covered by 18 targeted
+   tests (malformed-authority parity + control-character + raw-space +
+   Unicode-whitespace/invisible + raw-backslash + RFC-3986 unwise-char +
+   malformed-percent-encoding rejection).
 
 ## What remains gated (not done here)
 

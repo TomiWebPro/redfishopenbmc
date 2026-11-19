@@ -108,8 +108,24 @@ class KvmConsoleLaunchPlan {
 /// rendering and self-signed acceptance on a malformed/spoofed authority.
 /// Rejecting them raw loses no valid target (their `%XX` forms stay
 /// launchable), and legal gen/sub-delims (`[` `]` `&` `=` ...) are unaffected.
+///
+/// A malformed percent-encoding is rejected for the same reason: RFC 3986
+/// requires `pct-encoded = "%" HEXDIG HEXDIG`, but `Uri.tryParse` silently
+/// percent-encodes a bare or malformed `%` into the host rather than rejecting
+/// it — e.g. `https://bmc.example%/console` yields host `bmc.example%25` and
+/// `https://bmc.example%ZZ/console` yields `bmc.example%25zz`, both still
+/// passing a purely syntactic re-check (a bare `%` is not in the forbidden
+/// char class, because valid `%XX` escapes must remain launchable). Under a
+/// stale secure flag + test opt-in that parser differential could grant in-app
+/// rendering and self-signed acceptance on a malformed/spoofed host. Every
+/// `%` not followed by exactly two hex digits fails closed, while valid `%XX`
+/// (either hex case) stays launchable — no valid target is lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
+
+/// Matches a `%` that does not begin a valid `%XX` escape (RFC 3986
+/// `pct-encoded = "%" HEXDIG HEXDIG`). Valid escapes contain no bare `%`.
+final RegExp _malformedPercentEncoding = RegExp(r'%(?![0-9A-Fa-f]{2})');
 
 bool _uriHasSecureHttpsTarget(String? uri) {
   if (uri == null) return false;
@@ -120,6 +136,9 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // None are legal unescaped in a URI; `%20`/`%5C`/`%XX` escapes contain none
   // of them and stay launchable, as do legal gen/sub-delims.
   if (_rawUriForbiddenChars.hasMatch(trimmed)) return false;
+  // Reject a bare/malformed `%` that Uri.tryParse would silently encode rather
+  // than reject (RFC 3986 requires "%" HEXDIG HEXDIG).
+  if (_malformedPercentEncoding.hasMatch(trimmed)) return false;
   final Uri? parsed = Uri.tryParse(trimmed);
   return parsed != null &&
       parsed.scheme == 'https' &&
