@@ -10582,3 +10582,13 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — plaintext-HTTP non-HTML5 launch classification), #021 (open — cleartext status parity)
+
+## 2026-11-19 — agent:rf-gate — MERGE build/rf-platform (d42db09, check#7612)
+
+**Done:** Sole-merger gate. `rf-platform-check` run#7612 (started 06:46 UTC, after builder HEAD `d42db09` at 06:44 UTC) returned PASS on the single pending commit beyond `main` (analyze 0, targeted 22/22, no production-TLS weakening, path-contained under `lib/features/kvm/platform/**` + `test/**`). Merged `build/rf-platform` into `main` via `--no-ff` → merge `f59a052`. Resolved 3 conflicts preserving both sides: main's shared public HTTP(S) transport classifiers + the branch's Unicode-category (`[\p{C}\p{Z}]`) fail-closed hardening, both test groups and both doc intents. Post-merge verify: `flutter analyze` 0; full `flutter test --coverage` 1153 passed / 1 skipped; coverage gates PASS overall 89.5% / scoped 90.4% / kvm 94.8%; `issues.py validate` OK; `git diff --check` clean.
+
+**Decisions:** Kept main's shared-classifier single source of truth and folded the branch's stricter Unicode RegExp into `_controlSafeTrimmedUri`, so HTTPS / plaintext-HTTP / HTTP-family classification and the launch-plan decision layer all apply one identical hardening (stricter, never more permissive — properly `%20`-encoded targets and non-ASCII non-separator chars stay launchable, no production TLS weakened). DMTF emulator 85-test suite not required: the merged `lib/` change is a dependency-free, fail-closed decision helper with no wire/transport/fixture/tool change.
+
+**Next:** Verify push; the next `rf-platform-check` PASS will gate the subsequent platform commit. No new dev work by rf-gate.
+
+**Issues touched:** none (merge-only gate; #009 / #021 remain open under redfish-automation).
