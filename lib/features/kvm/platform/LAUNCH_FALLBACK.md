@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 47 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (59 across the platform
+consume; today it locks the fallback behaviour with 52 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (64 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -148,10 +148,23 @@ Invariants, enforced by tests:
    — scoped so an ASCII punycode/pct-encoded host and non-ASCII path/query text
    stay launchable, no valid target lost; folded into the same shared
    control-safety gate so every HTTP(S) classifier and the launch-plan target
-   reject it identically. Covered by 47 targeted tests
-   (malformed-authority parity + control-character + raw-space +
-   Unicode-whitespace/invisible + raw-backslash + RFC-3986 unwise-char +
-   malformed-percent-encoding + raw non-ASCII authority rejection) in
+   reject it identically.
+   **Encoded authority-delimiter rejection:** a percent-encoded RFC 3986
+   gen-delim (`:` `/` `?` `#` `[` `]` `@`) or backslash in the authority is a
+   host-confusion vector: consumers disagree on decode order, so `Uri.tryParse`
+   keeps `%40` in the host (`bmc.example%40evil.com`) while a decode-first
+   launcher reads `@evil.com` as the real userinfo/host. Under a stale flag +
+   test opt-in that parser differential could grant in-app rendering and
+   self-signed acceptance on a spoofed authority. Every encoded gen-delim/
+   backslash (either hex case) in the authority fails closed; the rule is
+   scoped so encoded delimiters in the path/query and valid pct-encoded
+   non-delimiter host bytes (`bmc%C3%A9.example`) stay launchable, no valid
+   target lost. Folded into the same shared gate so every HTTP(S) classifier
+   and the launch-plan target reject it identically.
+   Covered by 52 targeted tests (malformed-authority parity +
+   control-character + raw-space + Unicode-whitespace/invisible +
+   raw-backslash + RFC-3986 unwise-char + malformed-percent-encoding +
+   raw non-ASCII authority + encoded authority-delimiter rejection) in
    `launch_plan_test.dart`.
 
 ## What remains gated (not done here)

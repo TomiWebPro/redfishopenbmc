@@ -188,6 +188,20 @@ bool isControlSafeConsoleUri(String? uri) =>
 /// malformed/spoofed host. The rule is scoped to the authority, so an ASCII
 /// punycode/pct-encoded host and non-ASCII path/query text stay launchable — no
 /// valid target is lost.
+///
+/// A percent-encoded structural delimiter in the authority is rejected for the
+/// same reason: RFC 3986 gen-delims (`:` `/` `?` `#` `[` `]` `@`) and the
+/// backslash decide where the authority ends and which host is contacted, and
+/// consumers disagree on whether to percent-decode before or after splitting
+/// the authority. `Uri.tryParse` keeps `%40` inside the host
+/// (`https://bmc.example%40evil.com/console` -> host `bmc.example%40evil.com`,
+/// still non-empty), while a launcher that decodes first reads `@evil.com` as
+/// the real userinfo/host. Under a stale secure flag + test opt-in that parser
+/// differential could grant in-app rendering and self-signed acceptance on a
+/// spoofed authority. Every pct-encoded gen-delim/backslash (either hex case)
+/// in the authority fails closed; the rule is scoped so encoded delimiters in
+/// the path/query and valid pct-encoded non-delimiter host bytes (e.g.
+/// `bmc%C3%A9.example`) stay launchable — no valid target is lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -199,17 +213,17 @@ final RegExp _malformedPercentEncoding = RegExp(r'%(?![0-9A-Fa-f]{2})');
 /// non-ASCII character must be pct-encoded (or punycode-encoded in a host).
 final RegExp _nonAscii = RegExp(r'[^\x00-\x7F]');
 
-/// Returns `true` when the raw authority (userinfo + host + port, i.e. the part
-/// between `://` and the first `/`, `?` or `#`) contains a non-ASCII character.
+/// Returns the raw authority (userinfo + host + port, i.e. the part between
+/// `://` and the first `/`, `?` or `#`), or `null` when there is no `://` marker.
 ///
-/// The check must run on the *raw* string: `Uri.tryParse` silently pct-encodes a
-/// raw non-ASCII authority into the host (e.g. Cyrillic 'a' U+0430 ->
-/// `bmc%D0%B0.example`), so inspecting the parsed host cannot detect it. This is
-/// scoped to the authority (the TLS-sensitive part) so non-ASCII path/query text
-/// — which does not affect which host is contacted — stays launchable.
-bool _authorityHasNonAscii(String uri) {
+/// Security checks must run on the *raw* authority string: `Uri.tryParse`
+/// silently rewrites parts of it (pct-encoding non-ASCII, folding backslashes,
+/// keeping pct-encoded delimiters in the host), so inspecting the parsed URL
+/// cannot detect these parser differentials. Scoping to the authority (the
+/// TLS-sensitive part) keeps legitimate path/query text launchable.
+String? _authorityOf(String uri) {
   final int marker = uri.indexOf('://');
-  if (marker < 0) return false; // no authority; Uri parse fails closed below
+  if (marker < 0) return null; // no authority; Uri parse fails closed below
   const int authorityStart = 3; // length of '://'
   final int start = marker + authorityStart;
   int end = uri.length;
@@ -220,7 +234,45 @@ bool _authorityHasNonAscii(String uri) {
       break;
     }
   }
-  return _nonAscii.hasMatch(uri.substring(start, end));
+  return uri.substring(start, end);
+}
+
+/// Returns `true` when the raw authority contains a non-ASCII character.
+///
+/// The check must run on the *raw* string: `Uri.tryParse` silently pct-encodes a
+/// raw non-ASCII authority into the host (e.g. Cyrillic 'a' U+0430 ->
+/// `bmc%D0%B0.example`), so inspecting the parsed host cannot detect it. This is
+/// scoped to the authority (the TLS-sensitive part) so non-ASCII path/query text
+/// — which does not affect which host is contacted — stays launchable.
+bool _authorityHasNonAscii(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  return _nonAscii.hasMatch(authority);
+}
+
+/// Matches a percent-encoded RFC 3986 gen-delim (`:` `/` `?` `#` `[` `]` `@`)
+/// or a percent-encoded backslash. Hex digits are case-insensitive.
+///
+/// These characters are structural: they decide where the authority ends and
+/// which host is contacted. Percent-encoding one in the authority is a
+/// host-confusion vector because consumers disagree on decode order —
+/// `Uri.tryParse` keeps `%40` in the host (`bmc.example%40evil.com`) while a
+/// launcher that decodes before splitting the authority reads `@evil.com` as
+/// userinfo/host. A purely syntactic re-check would call such a target "secure".
+final RegExp _encodedAuthorityDelimiter =
+    RegExp(r'%(?:40|2F|5C|3F|23|3A|5B|5D)', caseSensitive: false);
+
+/// Returns `true` when the raw authority contains a percent-encoded structural
+/// delimiter (RFC 3986 gen-delims or backslash).
+///
+/// Scoped to the authority so percent-encoded delimiters in the path/query —
+/// which do not affect which host is contacted — stay launchable, and so valid
+/// percent-encoded non-delimiter bytes in a host (e.g. `bmc%C3%A9.example`) are
+/// not lost. Stricter than the model, never more permissive.
+bool _authorityHasEncodedDelimiter(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  return _encodedAuthorityDelimiter.hasMatch(authority);
 }
 
 /// Trims [uri] and returns it only when it is non-blank and contains no raw
@@ -250,6 +302,14 @@ String? _controlSafeTrimmedUri(String? uri) {
   // Folded into this shared control-safety gate so every HTTP(S) classifier and
   // the launch-plan target refuse a raw non-ASCII authority identically.
   if (_authorityHasNonAscii(trimmed)) return null;
+  // Reject a pct-encoded structural delimiter (gen-delim or backslash) in the
+  // authority: decode-order differences between Uri.tryParse and a launcher can
+  // turn a "secure-looking" authority into a different, spoofed host. Scoped to
+  // the authority so encoded delimiters in the path/query and valid pct-encoded
+  // non-delimiter bytes in a host stay launchable. Folded into this single shared
+  // gate (returns `null`, matching the other checks) so every HTTP(S) classifier
+  // AND the launch-plan target refuse such an authority identically.
+  if (_authorityHasEncodedDelimiter(trimmed)) return null;
   return trimmed;
 }
 
