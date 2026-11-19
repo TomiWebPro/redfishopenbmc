@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 52 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (63 across the platform
+consume; today it locks the fallback behaviour with 55 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (66 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -159,13 +159,26 @@ Invariants, enforced by tests:
    non-delimiter non-ASCII (e-acute `%C3%A9`, euro `%E2%82%AC`, emoji), ASCII
    escapes and confusables in the path/query stay launchable, no valid target
    lost. Scoped to the authority (the TLS-sensitive part).
-   Covered by 43 targeted tests across the defense-in-depth re-validation
+   **IDNA dot-confusable rejection:** the confusable set also covers the
+   classic CJK/halfwidth dot confusables that a decode+IDNA launcher resolves
+   to the domain-label dot ('.') but that are neither Unicode Separator/Other
+   nor NFKC-mapped to a literal ASCII character: `%E3%80%82` (U+3002
+   IDEOGRAPHIC FULL STOP), `%EF%BD%A1` (U+FF61 HALFWIDTH IDEOGRAPHIC FULL
+   STOP) and `%E2%B8%BC` (U+2E3C TWO DOT LEADER, NFKC -> '..'). `Uri.tryParse`
+   keeps each encoded and reports an HTTPS host, yet a launcher applying
+   UTS-46 IDNA resolves `bmc.example%E3%80%82evil.com` as
+   `bmc.example.evil.com` — a parser-differential host-spoofing vector that
+   under a stale flag + test opt-in could reach in-app rendering and
+   self-signed acceptance on a spoofed/mismatched host. Each fails closed in
+   the authority; encoded forms in the path/query and punycode ASCII hosts
+   stay launchable, no valid target lost.
+   Covered by targeted tests across the defense-in-depth re-validation
    groups (scheme/host/malformed-authority parity + control-character +
    raw-space + Unicode-whitespace/invisible + raw-backslash + RFC-3986
    unwise-char + malformed-percent-encoding + raw non-ASCII authority + encoded
    authority-delimiter + encoded control-octet + encoded Unicode
    separator/invisible + encoded compatibility-confusable delimiter + extended
-   compatibility-confusable delimiter rejection).
+   compatibility-confusable delimiter + IDNA dot-confusable rejection).
 
 ## What remains gated (not done here)
 

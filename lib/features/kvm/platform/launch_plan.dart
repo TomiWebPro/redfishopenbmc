@@ -348,7 +348,8 @@ bool _hasEncodedUnicodeControlOrSeparator(String uri) {
 /// mappings (fraction/division slash, IDNA-mapped to '/'), the fullwidth
 /// forms, the "small" forms (U+FE52 '.'/U+FE55 ':'/U+FE68 '\'/U+FE6B '@' ...),
 /// the vertical presentation forms (U+FE13 ':'/U+FE47 '[' ...), the dot
-/// leaders / ellipses (U+2024 '.'/U+2025 '..'/U+2026 '...'), the numeric
+/// leaders / ellipses (U+2024 '.'/U+2025 '..'/U+2026 '...'), the CJK/halfwidth
+/// IDNA dot confusables (U+3002/U+FF61 -> '.', U+2E3C -> '..'), the numeric
 /// "full stop" forms (U+2488..U+249B, U+1F100) and squared/fractional forms
 /// whose NFKC expansion embeds a delimiter (e.g. U+2100 'a/c', U+33C2
 /// 'a.m.'). Missing any one of these leaves the same parser-differential hole
@@ -373,6 +374,14 @@ const Set<int> _compatibilityDelimiterCodePoints = <int>{
   0x2026, // HORIZONTAL ELLIPSIS                        -> '...'
   0xFE19, // VERTICAL HORIZONTAL ELLIPSIS               -> '...'
   0xFE30, // VERTICAL TWO DOT LEADER                    -> '..'
+  // IDNA dot confusables (UTS-46) -> the domain-label dot '.'. These are NOT
+  // Unicode Separator/Other, so the encoded C/Z rule misses them, and their
+  // NFKC mapping may be a no-op or a multi-step IDNA mapping (not a literal
+  // ASCII char), so they must be listed explicitly. A decode+IDNA launcher
+  // resolves `bmc.example%E3%80%82evil.com` as `bmc.example.evil.com`.
+  0x3002, // IDEOGRAPHIC FULL STOP                      -> '.' (IDNA)
+  0xFF61, // HALFWIDTH IDEOGRAPHIC FULL STOP            -> '.' (IDNA)
+  0x2E3C, // TWO DOT LEADER (NFKC -> two U+2024)        -> '..'
   // "Small" ASCII look-alikes -> the ASCII delimiter.
   0xFE52, // SMALL FULL STOP                            -> '.'
   0xFE55, // SMALL COLON                                -> ':'
