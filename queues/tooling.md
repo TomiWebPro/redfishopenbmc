@@ -5,6 +5,25 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-19 16:43 UTC (main repo): slices the one remaining un-split
+     FUTUREWORK "Blocked / needs a human" item — "[!] Large spec/binary assets — if over the
+     download budget, ask a human before committing; store links and hashes meanwhile" —
+     into an unblocked, dependency-free tooling guard. Mirrors the earlier Live-BMC → EP-T6
+     and WebView → EP-P4 splits. The other blocked items (Live BMC integration, KVM
+     webview/native console) are already fully split into existing EP-* items; no code touched. -->
+
+- [ ] LA-1 Large/binary asset policy + guard (closeout of FUTUREWORK "[!] Large spec/binary
+      assets"): add a repo asset-reference manifest listing any large DMTF spec / binary asset by
+      source URL + SHA-256 hash (never commit the binary itself), and a pure-Dart guard test that
+      fails when a spec/binary asset over an agreed size threshold is added under
+      `test/fixtures/**` (or the repo) without a matching manifest entry; document the "ask a
+      human before committing large assets / store link + hash meanwhile" gate in `DEVELOPMENT.md`.
+      No binary download, no dependency added, no `lib/` change, production TLS untouched.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/ && flutter analyze` (0 issues), with a new RED→GREEN guard
+              test pinning the manifest-required-for-large-assets contract; writes limited to
+              `test/**`, `tool/**`, `.github/workflows/**`, `DEVELOPMENT.md`; never `lib/`.
+
 <!-- rf-ideate split 2026-11-19 12:37 UTC: slices the FUTUREWORK "Blocked / needs a human"
      "[!] Live BMC integration — requires real credentials/network; never attempt in the unattended
      job. Keep the live-BMC test skipped" blocker into a tooling guard. Pure CI/test work, no lib/. -->
