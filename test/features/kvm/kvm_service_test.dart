@@ -446,4 +446,72 @@ void main() {
       expect(capabilities, isEmpty);
     });
   });
+
+  group('KvmService padded member URI tolerance (#009)', () {
+    late MockRedfishServer server;
+
+    setUpAll(() async {
+      // The Managers collection exposes one healthy manager whose `@odata.id`
+      // is surrounded by whitespace (a malformed-but-seen BMC payload) plus a
+      // whitespace-only plain-string member. The padded link must be trimmed so
+      // the manager (and its console) is still discovered; the blank member must
+      // be skipped rather than fetched. Mirrors the malformed-payload tolerance
+      // already applied to every other KVM URI source (issue #009).
+      server = await MockRedfishServer(
+        fixturesDir: 'test/fixtures/redfish/kvm_padded_member_mockup',
+      ).start();
+    });
+
+    tearDownAll(() async {
+      await server.close();
+    });
+
+    // RED proof: `_memberUri` returned the raw padded `@odata.id` (only checking
+    // `isNotEmpty`), so the GET 404'd and the manager was silently dropped — no
+    // consoles shown even though KVM was fully available on the BMC.
+    test('fetchConsoles trims a padded member @odata.id and keeps its console',
+        () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+
+      expect(consoles, hasLength(1));
+      expect(consoles.single.managerId, 'BMC');
+      expect(consoles.single.type, KvmConsoleType.graphical);
+      expect(consoles.single.canOpenConsole, isTrue);
+    });
+
+    test(
+        'fetchCapabilities trims a padded member @odata.id and skips a blank member',
+        () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+
+      expect(capabilities, hasLength(1));
+      expect(capabilities.single.managerId, 'BMC');
+      expect(capabilities.single.supported, isTrue);
+    });
+
+    // A padded manager `Id` must be normalized too, otherwise the capability
+    // is keyed under '  BMC  ' and a lookup by the real id ('BMC') misses it.
+    test('fetchCapability resolves a manager whose Id is padded', () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final KvmCapability? capability = await svc.fetchCapability('BMC');
+
+      expect(capability, isNotNull);
+      expect(capability!.managerId, 'BMC');
+      expect(capability.supported, isTrue);
+    });
+  });
 }

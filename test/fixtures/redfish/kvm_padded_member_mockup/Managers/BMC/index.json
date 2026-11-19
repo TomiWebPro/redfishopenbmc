@@ -1,0 +1,20 @@
+{
+  "@odata.type": "#Manager.v1_19_0.Manager",
+  "Id": "  BMC  ",
+  "Name": "BMC",
+  "ManagerType": "BMC",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "GraphicalConsole": {
+    "ServiceEnabled": true,
+    "MaxConcurrentSessions": 2,
+    "ConnectTypesSupported": [
+      "KVMIP",
+      "HTML5"
+    ],
+    "ConnectUri": "https://bmc.example/kvm"
+  },
+  "@odata.id": "/redfish/v1/Managers/BMC"
+}

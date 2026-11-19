@@ -10351,3 +10351,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — malformed `Members` tolerance)
+
+## 2026-11-19 01:26 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — genuine, dependency-free, TLS-safe malformed-manager-metadata tolerance in the KVM manager walk. `KvmService._memberUri` was the last KVM URI parser still returning the raw Redfish value: a whitespace-padded `Members[].@odata.id` was fetched verbatim, 404'd and — via the 00:10 stale-member skip — silently dropped the manager and every console/capability it exposed (gated KVM list blank even though KVM was fully available); a whitespace-only plain-string member was fetched instead of ignored. It now trims both link-object + string member forms and treats blank as absent (mirroring `KvmConsole._uriString` / `KvmCapability._nonEmptyString`); the companion `_managerId` trims + rejects a blank body `Id` so a padded Id no longer renders stray whitespace on the cards or makes `fetchCapability(realId)` miss the manager. Added 3 RED→GREEN service tests over a new `kvm_padded_member_mockup` fixture (padded map member link, blank string member, padded `Id`; all 3 confirmed RED pre-fix — `Actual: []` / `Expected: 'BMC' Actual: '  BMC  '` / `fetchCapability('BMC') == null`). Baseline analyze 0 / 1084 passed / 1 skipped → verify analyze 0 / 1087 passed / 1 skipped (+3); DMTF emulator 85/85 (lib + fixture changed — §1.4 gate met); coverage gates PASS overall 89.3% / scoped 90.4% / kvm 93.1%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a genuine data-loss defect — one padded manager link silently dropping a whole manager's consoles/capabilities — over manufactured churn: #009's/#021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation. The manager walk's member URIs and manager `Id` were the last metadata fields not following the project's established "trim + reject blank" malformed-payload contract (already applied to `ConnectUri`, `@odata.id`, OEM URI, connect types), so normalizing them completes that contract across the read path. The 404-skip is unchanged: a truly dead/padded-unresolvable member is still skipped, never masking auth/other errors; trimming simply makes a padded-but-valid link resolve to the real manager. Pure Dart + doc comments and an isolated fixture; no WebView/protocol dependency, no production TLS change. Full emulator re-run (85/85) because `lib/` and a fixture changed.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. cross-view launch-strategy / secure-transport gaps in the capability card + viewer, or wiring the merged `webview_policy.dart` `resolveRenderRoute` pure helper), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — padded/blank member URI + manager Id tolerance)

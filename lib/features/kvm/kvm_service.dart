@@ -203,20 +203,43 @@ class KvmService {
   }
 
   /// Resolves the `@odata.id` of a collection member (string or link map).
+  ///
+  /// A Redfish `Members` entry is either a string URI or a link object carrying
+  /// `@odata.id`. Both forms are normalized through [String.trim] and a blank
+  /// (empty or whitespace-only) value is treated as absent: a BMC may emit a
+  /// padded-but-valid link (`'  /redfish/v1/Managers/BMC  '`), which `Uri.tryParse`
+  /// / Dio would reject as a malformed target and drop the manager (and all of
+  /// its consoles) from the gated KVM screen, while a whitespace-only link must
+  /// never be fetched at all. Mirrors the malformed-payload tolerance applied to
+  /// every other KVM URI source (`KvmConsole._uriString`,
+  /// `KvmCapability._nonEmptyString`, issue #009).
   String? _memberUri(dynamic entry) {
+    final dynamic value;
     if (entry is Map<dynamic, dynamic>) {
-      final dynamic id = entry['@odata.id'];
-      if (id is String && id.isNotEmpty) return id;
-    } else if (entry is String && entry.isNotEmpty) {
-      return entry;
+      value = entry['@odata.id'];
+    } else if (entry is String) {
+      value = entry;
+    } else {
+      return null;
     }
-    return null;
+    if (value is! String) return null;
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   /// Derives a stable manager id from its body `Id` or trailing URI segment.
+  ///
+  /// The `Id` is trimmed and a blank value rejected so a malformed BMC payload
+  /// cannot key a console/capability under a padded id (which would show stray
+  /// whitespace on the cards and make `fetchCapability(realId)` miss it). The
+  /// same normalization applies to the `@odata.id` source and the manager URI
+  /// fallback (issue #009).
   String _managerId(Map<String, dynamic> body, String managerUri) {
     final dynamic id = body['Id'];
-    if (id is String && id.isNotEmpty) return id;
+    if (id is String) {
+      final String trimmed = id.trim();
+      if (trimmed.isNotEmpty) return trimmed;
+    }
     final String? odataId = ODataResource(body).id;
     if (odataId != null && odataId.isNotEmpty) {
       final String? last = _lastSegment(odataId);
