@@ -10366,3 +10366,21 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — padded/blank member URI + manager Id tolerance)
+
+## 2026-11-19 01:38 UTC — agent:rf-gate — MERGE build/rf-platform
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#7409 PASS on `build/rf-platform` HEAD `3665c1d` (clean tree; `flutter analyze` 0, targeted `launch_plan_test.dart` + `webview_policy_test.dart` 20/20, no production-TLS weakening, all changed paths under `lib/features/kvm/platform/**` + `test/**`, no dependency changes). Branch had 1 unmerged commit (RP-2) → precondition met → `git merge --no-ff build/rf-platform` created merge commit `d8d3ccc` (3 files, +300: `LAUNCH_FALLBACK.md`, `launch_plan.dart`, `launch_plan_test.dart`).
+- Post-merge verification (all green): `flutter analyze` 0 issues; `flutter test --coverage` 1096 passed / 1 skipped (+9 from merged launch-plan tests); `dart run tool/coverage_gate.dart coverage/lcov.info` PASS overall 89.3% (5422/6072), PASS redfish+power+sensors 90.4% (2117/2343), PASS kvm 93.2% (702/753), exit 0; `python3 issues/issues.py validate` OK; `git diff --check` clean.
+
+**Decisions:**
+- Merged because the latest verdict (run#7409, started 01:35 UTC) is a PASS recorded against the current branch HEAD `3665c1d` (commit 01:34 UTC), with no newer in-flight `rf-platform`/`rf-platform-check` run invalidating it. `--no-ff` used per the gate contract to preserve branch topology.
+- DMTF 85-test emulator suite skipped: the merged `lib/` file is a self-contained, dependency-free flag-gated launch-plan decision module that imports only the RP-1 `webview_policy.dart` contract — no HTTP transport, WebView import, platform channel, cert callback, or wire/fixture/tool change — so the Redfish wire surface is untouched.
+- No production TLS weakened: `planConsoleLaunch` accepts self-signed certs only for the test-only opt-in, on HTTPS, when actually rendering in-app; external-browser/copy fallbacks and the production default never accept self-signed.
+- Untracked `testing/run_emulator_harness.sh` left untouched (not part of the merge, not staged).
+
+**Next:**
+- Next `rf-platform` item (RP-3) stays on `queues/platform.md`; the gate will merge only on a fresh PASS verdict.
+- Re-run all gates on the next PASS; cleanly SKIP if the verdict is not PASS or the branch has no new commits.
+
+**Issues touched:** none (gate merge + tracking only)
