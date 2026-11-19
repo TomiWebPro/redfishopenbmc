@@ -148,7 +148,9 @@ void main() {
   });
 
   group('planConsoleLaunch — defense in depth: URI scheme re-validation', () {
-    test('a stale secure flag on a plaintext URI cannot enable in-app TLS weakening', () {
+    test(
+        'a stale secure flag on a plaintext URI cannot enable in-app TLS weakening',
+        () {
       // The caller-supplied hasSecureUri may be stale or wrong. Defense in
       // depth: the actual URI string must also be HTTPS, otherwise plaintext
       // HTTP could be rendered in-app with a self-signed cert under the opt-in.
@@ -165,7 +167,8 @@ void main() {
       expect(plan.acceptSelfSigned, isFalse);
     });
 
-    test('a non-HTTPS scheme cannot be rendered in-app even with a secure flag', () {
+    test('a non-HTTPS scheme cannot be rendered in-app even with a secure flag',
+        () {
       final KvmConsoleLaunchPlan plan = planConsoleLaunch(
         policy: KvmWebViewPolicy.testOptIn,
         uri: 'file:///etc/passwd',
@@ -264,8 +267,11 @@ void main() {
     });
   });
 
-  group('planConsoleLaunch — defense in depth: control-character rejection', () {
-    test('embedded control characters fail closed even with a stale secure flag', () {
+  group('planConsoleLaunch — defense in depth: control-character rejection',
+      () {
+    test(
+        'embedded control characters fail closed even with a stale secure flag',
+        () {
       // `Uri.tryParse` silently percent-encodes C0/DEL control characters into
       // the host/path instead of rejecting them, so a purely syntactic
       // `scheme == 'https' && host.isNotEmpty` re-check calls these "secure".
@@ -294,7 +300,8 @@ void main() {
       }
     });
 
-    test('a control-char URI never reaches in-app even with a strict opt-in', () {
+    test('a control-char URI never reaches in-app even with a strict opt-in',
+        () {
       // Even without granting self-signed acceptance, a malformed URI must not
       // be rendered in-app by an enabled+strict opt-in.
       final KvmConsoleLaunchPlan plan = planConsoleLaunch(
@@ -309,7 +316,8 @@ void main() {
       expect(plan.acceptSelfSigned, isFalse);
     });
 
-    test('a clean HTTPS URI is still accepted (guard against over-rejection)', () {
+    test('a clean HTTPS URI is still accepted (guard against over-rejection)',
+        () {
       final KvmConsoleLaunchPlan plan = planConsoleLaunch(
         policy: KvmWebViewPolicy.productionDefault,
         uri: 'https://bmc.example:8443/console',
@@ -324,7 +332,8 @@ void main() {
   });
 
   group('planConsoleLaunch — defense in depth: raw-space rejection', () {
-    test('a raw space that Uri.tryParse encodes into the host fails closed', () {
+    test('a raw space that Uri.tryParse encodes into the host fails closed',
+        () {
       // `Uri.tryParse` percent-encodes a raw space instead of rejecting it
       // (e.g. `https://bmc.exa mple/console` -> host `bmc.exa%20mple`, still
       // non-empty), so a purely syntactic re-check calls it "secure". With a
@@ -369,8 +378,12 @@ void main() {
     });
   });
 
-  group('planConsoleLaunch — defense in depth: Unicode whitespace/invisible rejection', () {
-    test('invisible/whitespace Unicode that Uri.tryParse encodes into the host fails closed', () {
+  group(
+      'planConsoleLaunch — defense in depth: Unicode whitespace/invisible rejection',
+      () {
+    test(
+        'invisible/whitespace Unicode that Uri.tryParse encodes into the host fails closed',
+        () {
       // The ASCII-only raw-space/control rejection is not enough: Uri.tryParse
       // also silently percent-encodes Unicode separators and format/invisible
       // characters (NBSP, zero-width space, line separator, ideographic space)
@@ -419,7 +432,8 @@ void main() {
   });
 
   group('planConsoleLaunch — defense in depth: raw-backslash rejection', () {
-    test('a raw backslash that Uri.tryParse treats as a slash fails closed', () {
+    test('a raw backslash that Uri.tryParse treats as a slash fails closed',
+        () {
       // A raw backslash is not a legal URI character (it must be percent-encoded
       // as %5C), yet `Uri.tryParse` treats it as a path/authority separator and
       // can still call the result an HTTPS URI with a non-empty host. E.g.
@@ -482,8 +496,11 @@ void main() {
     });
   });
 
-  group('planConsoleLaunch — defense in depth: RFC-3986 unwise-char rejection', () {
-    test('raw unwise ASCII that Uri.tryParse encodes into the host fails closed', () {
+  group('planConsoleLaunch — defense in depth: RFC-3986 unwise-char rejection',
+      () {
+    test(
+        'raw unwise ASCII that Uri.tryParse encodes into the host fails closed',
+        () {
       // Uri.tryParse silently percent-encodes the RFC-3986 "unwise" ASCII
       // characters (", <, >, ^, `, {, |, }) instead of rejecting them, so e.g.
       // `https://bmc<example/console` parses with scheme https and a non-empty
@@ -550,7 +567,8 @@ void main() {
       expect(plan.acceptSelfSigned, isFalse);
     });
 
-    test('percent-encoded unwise chars and legal delimiters stay launchable', () {
+    test('percent-encoded unwise chars and legal delimiters stay launchable',
+        () {
       // Guard against over-rejection: %3C/%22 are correct encodings (no raw
       // unwise char), and sub-delims/gen-delims (& = [ ]) are legal raw in a
       // URI, so none may be dropped from the fallback path (no TLS weakening).
@@ -575,7 +593,9 @@ void main() {
     });
   });
 
-  group('planConsoleLaunch — defense in depth: malformed percent-encoding rejection', () {
+  group(
+      'planConsoleLaunch — defense in depth: malformed percent-encoding rejection',
+      () {
     test('a raw percent that is not a valid %XX escape fails closed', () {
       // `Uri.tryParse` silently percent-encodes a malformed `%` (one not
       // followed by exactly two hex digits) into the host instead of rejecting
@@ -609,7 +629,8 @@ void main() {
       }
     });
 
-    test('a malformed percent URI never reaches in-app under a strict opt-in', () {
+    test('a malformed percent URI never reaches in-app under a strict opt-in',
+        () {
       // Even without granting self-signed acceptance, a malformed escape must
       // not be rendered in-app by an enabled+strict opt-in.
       final KvmConsoleLaunchPlan plan = planConsoleLaunch(
@@ -649,8 +670,12 @@ void main() {
     });
   });
 
-  group('planConsoleLaunch — defense in depth: raw non-ASCII authority rejection', () {
-    test('a raw non-ASCII character in the authority fails closed with a stale flag', () {
+  group(
+      'planConsoleLaunch — defense in depth: raw non-ASCII authority rejection',
+      () {
+    test(
+        'a raw non-ASCII character in the authority fails closed with a stale flag',
+        () {
       // RFC 3986 URIs are ASCII-only: a raw non-ASCII character (an IDN
       // homograph, accented letter, or emoji) must be pct-encoded / punycode
       // encoded before it can appear in a host. `Uri.tryParse` does NOT reject
@@ -682,7 +707,8 @@ void main() {
       }
     });
 
-    test('a raw non-ASCII authority never reaches in-app under a strict opt-in', () {
+    test('a raw non-ASCII authority never reaches in-app under a strict opt-in',
+        () {
       // Even without granting self-signed acceptance, a raw Unicode authority
       // must not be rendered in-app by an enabled+strict opt-in.
       final KvmConsoleLaunchPlan plan = planConsoleLaunch(
@@ -719,6 +745,129 @@ void main() {
         expect(plan.targetUri, uri, reason: uri);
         expect(plan.acceptSelfSigned, isFalse, reason: uri);
       }
+    });
+  });
+
+  group(
+      'planConsoleLaunch — defense in depth: encoded authority-delimiter rejection',
+      () {
+    test('a percent-encoded authority delimiter fails closed with a stale flag',
+        () {
+      // RFC 3986 gen-delims (`: / ? # [ ] @`) and the backslash are structural:
+      // they decide where the authority ends and which host is contacted.
+      // Percent-encoding one in the authority is a host-confusion vector because
+      // consumers disagree on decode order: `Uri.tryParse` keeps `%40` in the
+      // host (`bmc.example%40evil.com`) while a launcher that decodes before
+      // splitting the authority reads `@evil.com` as userinfo/host. Under a
+      // stale secure flag + test opt-in that parser differential would grant
+      // in-app rendering and self-signed acceptance on a spoofed authority.
+      // Every encoded structural char in the authority must fail closed.
+      for (final String uri in <String>[
+        'https://bmc.example%40evil.com/console', // %40 @ (userinfo delimiter)
+        'https://bmc.example%2F.evil.com/console', // %2F / (authority terminator)
+        'https://bmc.example%5C.evil.com/console', // %5C backslash (folded by parsers)
+        'https://bmc.example%3F.evil.com/console', // %3F ? (query delimiter)
+        'https://bmc.example%23.evil.com/console', // %23 # (fragment delimiter)
+        'https://bmc.example%3A8443/console', // %3A : (port delimiter)
+        'https://bmc.example%5Bevil%5D/console', // %5B %5D [] (IPv6 literal)
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('lowercase percent-encoded delimiters also fail closed', () {
+      // Percent-encoding hex is case-insensitive (RFC 3986), so the lowercase
+      // spellings must be rejected just like their uppercase counterparts.
+      for (final String uri in <String>[
+        'https://bmc.example%2fevil.com/console', // %2F
+        'https://bmc.example%5c.evil.com/console', // %5C
+        'https://bmc.example%3a8443/console', // %3A
+        'https://bmc.example%5bevil%5d/console', // %5B %5D
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test(
+        'an encoded authority delimiter never reaches in-app under a strict opt-in',
+        () {
+      // Even without granting self-signed acceptance, a host-confused authority
+      // must not be rendered in-app by an enabled+strict opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc.example%40evil.com/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('encoded delimiters in path/query stay launchable (authority-scoped)',
+        () {
+      // Guard against over-rejection: path/query bytes do not decide which host
+      // is contacted, so a pct-encoded delimiter there stays launchable via the
+      // external-browser fallback (no TLS weakening, no valid target lost).
+      for (final String uri in <String>[
+        'https://bmc.example/console%40note', // %40 in path
+        'https://bmc.example/console%2Fone', // %2F in path
+        'https://bmc.example/console?a%3Ab', // %3A in query
+        'https://bmc.example/caf%C3%A9', // encoded non-ASCII in path
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test(
+        'a pct-encoded non-delimiter host stays launchable (no over-rejection)',
+        () {
+      // Guard: the rule targets structural delimiters only. A percent-encoded
+      // non-ASCII byte in the host (a valid RFC 3986 pct-encoded IDN form) is
+      // not a delimiter and must remain launchable via the fallback.
+      const String uri = 'https://bmc%C3%A9.example/console';
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.productionDefault,
+        uri: uri,
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.route, KvmConsoleRenderRoute.externalBrowser);
+      expect(plan.targetUri, uri);
+      expect(plan.acceptSelfSigned, isFalse);
     });
   });
 }
