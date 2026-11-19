@@ -11135,3 +11135,22 @@
 - Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-19 — agent:rf-gate — merge build/rf-platform (check#8869 PASS)
+
+**Done:**
+- Confirmed `rf-platform-check` run#8869 returned `CHECK: PASS` for `build/rf-platform` tip `57e10fd` (verify started 22:00:31 UTC, ~1 min after the 21:59:19 UTC commit; analyze 0, targeted `launch_plan_test.dart` 70/70, no TLS weakening, allowlisted paths).
+- Merged `57e10fd` into `main` with `--no-ff` as `314a10e`; resolved two `launch_plan.dart` conflicts by keeping main's shared `_controlSafeTrimmedUri` gate and folding in the branch's malformed-UTF-8 helper/check (`return null`); test file auto-merged with all 3 new tests.
+- Verified in a clean isolated worktree at `314a10e`: analyze 0, full suite 1338 passed / 1 skipped, three coverage gates PASS (90.0% / 90.4% / 96.5%), issues validate OK, `git diff --check` clean. DMTF emulator skipped (no wire/fixture/tool change).
+- Left the concurrent `redfish-automation` run#8864 WIP in the shared tree untouched (hash-verified unchanged).
+
+**Decisions:**
+- Merged because the PASS verdict covered the exact current branch tip; skipped the emulator because the change is a dependency-free decision-gate hardening (no wire/transport/fixture/tool change).
+- Verified in an isolated worktree because a live concurrent build agent held unrelated WIP in the shared main tree.
+
+**Next:**
+- Gate only PASS-verified dept branches with `--no-ff`; cross-check check verdicts against the current branch tip.
+- Keep all launch-plan URI hardening in the single shared fail-closed classifier core; no WebView/protocol dependency, no production-TLS weakening.
+- Re-run the DMTF emulator 85/85 on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none — gate merged a platform-branch hardening; #009 (open), #021 (open) unchanged.
