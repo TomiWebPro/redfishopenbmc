@@ -212,6 +212,19 @@ class KvmConsoleLaunchPlan {
 /// opt-in. Every `%25` (either hex case) in the authority fails closed, while
 /// `%25` in the path/query and valid pct-encoded UTF-8 host bytes (`%C3%A9`)
 /// stay launchable — no valid target lost.
+///
+/// A percent-encoded ASCII domain-label dot (`%2E`) in the authority is
+/// rejected for the same reason, with a sharper differential: unlike the
+/// gen-delims above (which `Uri.tryParse` keeps encoded in the host),
+/// `Uri.tryParse` DECODES `%2E` into a literal '.', so
+/// `https://bmc.example%2Eevil.com/console` reports the host
+/// `bmc.example.evil.com`. A launcher that does not percent-decode the host
+/// resolves a different authority, so one raw URI can name two different hosts
+/// — a decode-order host-spoofing vector. Under a stale secure flag + test
+/// opt-in that could grant in-app rendering and self-signed acceptance on a
+/// mismatched/spoofed host. A literal dot is always written as '.', so
+/// rejecting `%2E` loses no valid target; scoped to the authority so `%2E` in
+/// the path/query and valid pct-encoded UTF-8 host bytes stay launchable.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -321,6 +334,31 @@ bool _authorityHasEncodedPercent(String uri) {
   final String? authority = _authorityOf(uri);
   if (authority == null) return false;
   return _encodedPercent.hasMatch(authority);
+}
+
+/// Matches a percent-encoded ASCII domain-label dot (`%2E`, either hex case).
+///
+/// The encoded-delimiter rule blocks RFC 3986 gen-delims and backslash, but not
+/// the '.' that separates DNS labels. Unlike those delimiters — which
+/// [Uri.tryParse] keeps encoded in the host — `Uri.tryParse` DECODES `%2E` into
+/// a literal '.', silently changing the reported host (e.g.
+/// `https://bmc.example%2Eevil.com/console` reports host
+/// `bmc.example.evil.com`). A launcher that does not percent-decode the host
+/// resolves a DIFFERENT authority, so the same raw URI can name two different
+/// hosts — a parser-differential / host-spoofing vector. Under a stale secure
+/// flag + test opt-in that could grant in-app rendering and self-signed
+/// acceptance on a mismatched/spoofed host. Rejecting a raw ASCII dot written
+/// as `%2E` loses no valid target (a literal dot is always written as '.',
+/// which stays launchable). Scoped to the authority so `%2E` in the path/query
+/// and valid pct-encoded UTF-8 host bytes (`%C3%A9`) stay launchable.
+final RegExp _encodedDot = RegExp(r'%2E', caseSensitive: false);
+
+/// Returns `true` when the raw authority contains a percent-encoded ASCII dot
+/// (`%2E`), a decode-order host-spoofing vector (see [_encodedDot]).
+bool _authorityHasEncodedDot(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  return _encodedDot.hasMatch(authority);
 }
 
 /// Returns the numeric value of a single ASCII hex digit, or `null`.
@@ -548,6 +586,14 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // Scoped to the authority, so `%25` in path/query and valid pct-encoded
   // non-percent host bytes stay launchable.
   if (_authorityHasEncodedPercent(trimmed)) return false;
+  // Reject a percent-encoded ASCII domain-label dot (`%2E`) in the authority:
+  // unlike other encoded delimiters, Uri.tryParse DECODES it into a literal '.',
+  // silently changing the reported host while a non-decoding launcher resolves
+  // a different authority — a parser-differential host-spoofing vector that
+  // under a stale flag + test opt-in could grant in-app rendering and
+  // self-signed acceptance on a mismatched host. A literal dot written raw
+  // stays launchable, so no valid target is lost.
+  if (_authorityHasEncodedDot(trimmed)) return false;
   // Reject a percent-encoded multi-byte UTF-8 character that decodes to a
   // Unicode Separator/Other code point (NBSP, zero-width space, NEL, ...): a
   // decode-first launcher could see an invisible/control character in the
