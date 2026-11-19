@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_service.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
@@ -780,6 +783,87 @@ void main() {
           ),
         );
       });
+    });
+  });
+
+  group('KvmService manager member dedup (RS-4)', () {
+    late Directory fixtureDir;
+    late MockRedfishServer server;
+
+    setUpAll(() async {
+      // A minimal in-temp mockup (no committed fixture) whose Managers
+      // collection repeats the same manager URI in several shapes, plus one
+      // genuinely distinct manager. `_memberUri` normalizes each entry (trim +
+      // reject blank/non-string) BEFORE the walk, so all BMC spellings must
+      // collapse to a single manager while BMC2 stays separate.
+      fixtureDir = await Directory.systemTemp.createTemp('kvm_dedup_fixture_');
+      final Directory managersDir = Directory('${fixtureDir.path}/Managers')
+        ..createSync(recursive: true);
+      File('${managersDir.path}/index.json').writeAsStringSync(
+        jsonEncode(<String, dynamic>{
+          'Members': <dynamic>[
+            <String, dynamic>{'@odata.id': '/redfish/v1/Managers/BMC'},
+            <String, dynamic>{'@odata.id': '  /redfish/v1/Managers/BMC  '},
+            '/redfish/v1/Managers/BMC',
+            <String, dynamic>{'@odata.id': '   '},
+            <String, dynamic>{'@odata.id': 42},
+            <String, dynamic>{'@odata.id': '/redfish/v1/Managers/BMC2'},
+          ],
+        }),
+      );
+      for (final String id in <String>['BMC', 'BMC2']) {
+        final Directory managerDir = Directory('${managersDir.path}/$id')
+          ..createSync(recursive: true);
+        File('${managerDir.path}/index.json').writeAsStringSync(
+          jsonEncode(<String, dynamic>{
+            'Id': id,
+            '@odata.id': '/redfish/v1/Managers/$id',
+            'GraphicalConsole': <String, dynamic>{
+              'ServiceEnabled': true,
+              'ConnectTypesSupported': <String>['KVMIP'],
+            },
+          }),
+        );
+      }
+      server = await MockRedfishServer(fixturesDir: fixtureDir.path).start();
+    });
+
+    tearDownAll(() async {
+      await server.close();
+      fixtureDir.deleteSync(recursive: true);
+    });
+
+    test('fetchConsoles emits one console per distinct manager (RS-4)',
+        () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+
+      expect(consoles, hasLength(2));
+      expect(
+        consoles.map((KvmConsole c) => c.managerId).toSet(),
+        <String>{'BMC', 'BMC2'},
+      );
+    });
+
+    test('fetchCapabilities emits one capability per distinct manager (RS-4)',
+        () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+
+      expect(capabilities, hasLength(2));
+      expect(
+        capabilities.map((KvmCapability c) => c.managerId).toSet(),
+        <String>{'BMC', 'BMC2'},
+      );
+      expect((await svc.fetchCapability('BMC'))!.supported, isTrue);
     });
   });
 }

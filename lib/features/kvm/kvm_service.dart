@@ -110,6 +110,12 @@ class KvmService {
   /// missing optional sub-resource (issue #009/#021). A malformed (non-list)
   /// `Members` collection is treated as no managers rather than blanking the
   /// screen with a cast error (issue #009).
+  ///
+  /// Members are deduplicated by their normalized member URI (first occurrence
+  /// wins), so a BMC that repeats a manager link — verbatim, padded or in a
+  /// different member shape — yields exactly one console/capability card rather
+  /// than duplicate cards. Blank/malformed links are already rejected by
+  /// [_memberUri] before this point (RS-4).
   Future<List<({String managerId, Map<String, dynamic> body})>>
       _fetchManagerBodies() async {
     final RedfishClient? c = client;
@@ -135,9 +141,15 @@ class KvmService {
 
       final List<({String managerId, Map<String, dynamic> body})> managers =
           <({String managerId, Map<String, dynamic> body})>[];
+      // Deduplicate by normalized member URI (already trimmed + blank-rejected
+      // by `_memberUri`), first occurrence wins. A repeated manager link would
+      // otherwise be walked twice and render duplicate console/capability cards
+      // for the same physical manager (RS-4).
+      final Set<String> seenUris = <String>{};
       for (final dynamic entry in members) {
         final String? managerUri = _memberUri(entry);
         if (managerUri == null || managerUri.isEmpty) continue;
+        if (!seenUris.add(managerUri)) continue;
 
         final Map<String, dynamic> body;
         try {

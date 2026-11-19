@@ -9,7 +9,7 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
      robustness slice out of the #009/#021 epic (distinct from RS-2's transient-failure skip and
      EP-S2's safe-primary target). No wire/TLS change, no dependency. -->
 
-- [ ] RS-4 Deterministic manager-member dedup in the KVM read path: `KvmService.fetchConsoles` /
+- [x] RS-4 LANDED 2026-11-19 (run `auto: FEATURE #009/#021 RS-4 manager-member dedup + tests`). Deterministic manager-member dedup in the KVM read path: `KvmService.fetchConsoles` /
       `fetchCapabilities` must tolerate duplicate and blank `@odata.id` entries in the
       `/redfish/v1/Managers` `Members` array — dedup by normalized member URI (first occurrence
       wins), skip blank/malformed ids, and never emit duplicate console/capability cards or
@@ -54,3 +54,5 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
               test files under `test/features/kvm/`.
 
 ## Log
+
+- 2026-11-19 21:26 — RS-4 LANDED (agent:redfish-automation, FEATURE #009/#021): `_fetchManagerBodies` now dedups `/redfish/v1/Managers` `Members` by normalized member URI (first wins), so repeated/padded/string-form manager links yield one console/capability card per physical manager; blank/non-string links already rejected, RS-2 skip semantics + wire shape unchanged. +2 RED→GREEN in-temp-fixture service tests (no committed fixture), analyze 0 / 1335 passed / 1 skipped, emulator 85/85. No dependency, no wire/TLS change.

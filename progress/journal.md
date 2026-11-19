@@ -11117,3 +11117,21 @@
 - Next `build/rf-platform` slice must be re-verified by a fresh `rf-platform-check` PASS covering its new tip before this gate will merge it.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-19 — agent:redfish-automation — #009/#021
+
+**Done:**
+- FEATURE — RS-4 dept slice (`queues/service.md`) for #009/#021: `KvmService._fetchManagerBodies` now deduplicates `/redfish/v1/Managers` `Members` by normalized member URI (first occurrence wins), so a BMC repeating a manager link (verbatim, whitespace-padded, or plain-string shape) yields exactly one console/capability card instead of one per duplicate. Blank/non-string links are still rejected by `_memberUri`; the RS-2 404/retryable/auth skip semantics and the wire shape are unchanged; distinct managers are never collapsed.
+- +2 RED→GREEN service tests using an in-temp minimal mockup (raw/padded/string-form duplicate BMC members + blank + non-string members + a distinct BMC2 manager) — no committed fixture, no helper change. RED proof: 4 cards before the fix (3 duplicate BMC + 1 BMC2) → 2 after.
+- Verify all green: analyze 0; full suite 1335 passed / 1 skipped (baseline 1333 +2); DMTF emulator 85/85 (lib changed — §1.4 gate met); issues validate OK; git diff --check clean.
+
+**Decisions:**
+- Dedup happens on the already-normalized member URI (trim + blank/non-string reject in `_memberUri`), so padded duplicates collapse without a second normalization policy; first occurrence wins and identical URIs resolve to the same GET, so skipping later duplicates does not change RS-2 failure handling.
+- Dependency-free, wire-shape-preserving, TLS-safe; both issues stay OPEN (embedded HTML5 rendering / fullscreen / input forwarding remain externally blocked on platform WebView + BMC self-signed/TLS validation). No production TLS weakening.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` (RM-3 non-map console payload tolerance, EP-U5 launch-status parity, EP-P5 no-WebView import guard, EP-S1 service launch edges) — genuine tested dependency-free increments only.
+- Never add a WebView/url_launcher dependency unattended; never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
