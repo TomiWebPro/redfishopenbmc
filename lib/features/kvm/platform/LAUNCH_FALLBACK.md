@@ -13,7 +13,7 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 18 targeted tests.
+consume; today it locks the fallback behaviour with 22 targeted tests.
 
 ## Decision contract (`planConsoleLaunch`)
 
@@ -61,8 +61,19 @@ Invariants, enforced by tests:
    stale flag. Raw spaces are never valid in a URI (they must be `%20`), so
    they are rejected outright alongside C0/DEL controls — stricter than the
    model, never more permissive; legitimate `%20`-encoded URIs stay launchable.
-   Legitimate userinfo/port URIs are unaffected. Covered by 11 targeted tests
-   (malformed-authority parity + control-character + raw-space rejection).
+   **Unicode separator/invisible rejection:** the check is now a principled
+   Unicode-category rule (`RegExp(r'[\p{C}\p{Z}]', unicode: true)`), not just an
+   ASCII scan. `Uri.tryParse` also silently percent-encodes Unicode separators
+   and format/invisible characters (NBSP `U+00A0`, zero-width space, line
+   separator, ideographic space, BOM) into the host/path; an embedded one is not
+   removed by `String.trim()`, so under a stale flag + test opt-in it could
+   reach in-app rendering and self-signed acceptance on a malformed/spoofed
+   host. All Unicode `Separator` (Z) and `Other` (C) code points are rejected
+   raw; non-ASCII characters outside those categories (e.g. an emoji in the
+   path) stay launchable, so no properly encoded target is lost.
+   Legitimate userinfo/port URIs are unaffected. Covered by 13 targeted tests
+   (malformed-authority parity + control-character + raw-space +
+   Unicode-whitespace/invisible rejection).
 
 ## What remains gated (not done here)
 

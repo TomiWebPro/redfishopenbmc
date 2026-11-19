@@ -67,26 +67,34 @@ class KvmConsoleLaunchPlan {
 /// (Dart normalises it), and legitimate userinfo/port URIs remain secure.
 ///
 /// Fail-closed hardening beyond parity: `Uri.tryParse` silently
-/// percent-encodes C0/DEL control characters (e.g. CR, LF, NUL, TAB) AND the
-/// ASCII space (0x20) into the host/path rather than rejecting them, so a
-/// purely syntactic `scheme == 'https' && host.isNotEmpty` check can call such
-/// a target "secure". Handing a CRLF/NUL-bearing URI to a launcher risks
-/// header/URI injection, and a raw space inside the authority (e.g.
-/// `https://bmc.exa mple/console` -> host `bmc.exa%20mple`) yields a
-/// non-empty but malformed host; under a stale secure flag + test opt-in
-/// either could reach in-app rendering and self-signed acceptance. Raw spaces
-/// are never valid in a URI (they must be percent-encoded as `%20`), so all
-/// such characters are rejected outright; this is stricter than the model but
-/// never more permissive, so no valid (properly encoded) target is lost.
+/// percent-encodes control characters, the ASCII space (0x20) AND Unicode
+/// separator / invisible format characters (e.g. NBSP `U+00A0`, zero-width
+/// space, line/paragraph separators, ideographic space, BOM) into the host or
+/// path rather than rejecting them, so a purely syntactic
+/// `scheme == 'https' && host.isNotEmpty` check can call such a target
+/// "secure". Handing a CRLF/NUL-bearing URI to a launcher risks header/URI
+/// injection; a raw or Unicode space inside the authority (e.g.
+/// `https://bmc.exa mple/console` -> host `bmc.exa%20mple`, or an embedded NBSP
+/// `https://bmc<U+00A0>.example/console` -> host `bmc%C2%A0.example`) yields a
+/// non-empty but malformed/spoofed host; under a stale secure flag + test
+/// opt-in any of these could reach in-app rendering and self-signed
+/// acceptance. None of these characters are valid raw in a URI (they must be
+/// percent-encoded), and an embedded one is not removed by `String.trim()`.
+/// They are therefore all rejected via the Unicode `Separator` (Z) and
+/// `Other` (C) general categories — a principled category rule rather than an
+/// ASCII-only scan — which is stricter than the model but never more
+/// permissive, so no valid (properly encoded) target is lost. Non-ASCII
+/// characters outside those categories (e.g. an emoji in the path) remain
+/// launchable.
+final RegExp _rawUriForbiddenChars = RegExp(r'[\p{C}\p{Z}]', unicode: true);
+
 bool _uriHasSecureHttpsTarget(String? uri) {
   if (uri == null) return false;
   final String trimmed = uri.trim();
   if (trimmed.isEmpty) return false;
-  for (final int codeUnit in trimmed.codeUnits) {
-    // C0 controls, ASCII space (0x20), and DEL are never valid raw in a URI.
-    // `%20` is the correct space encoding and contains no raw 0x20 code unit.
-    if (codeUnit <= 0x20 || codeUnit == 0x7f) return false;
-  }
+  // Reject any raw separator or control/format/invisible code point. These are
+  // never legal unescaped in a URI; `%20`/`%XX` sequences contain none of them.
+  if (_rawUriForbiddenChars.hasMatch(trimmed)) return false;
   final Uri? parsed = Uri.tryParse(trimmed);
   return parsed != null &&
       parsed.scheme == 'https' &&
