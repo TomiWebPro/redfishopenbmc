@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 32 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (43 across the platform
+consume; today it locks the fallback behaviour with 35 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (46 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -100,10 +100,18 @@ Invariants, enforced by tests:
    `%XX` must stay launchable), so under a stale flag + test opt-in it could
    reach in-app rendering and self-signed acceptance on a malformed host. Every
    `%` not followed by exactly two hex digits (either case) fails closed, while
-   valid `%XX` stays launchable — no valid target is lost. Covered by 18 targeted
-   tests (malformed-authority parity + control-character + raw-space +
+   valid `%XX` stays launchable — no valid target is lost.
+   **Raw non-ASCII authority rejection:** RFC 3986 URIs are ASCII-only, but
+   `Uri.tryParse` silently pct-encodes a raw non-ASCII host/userinfo into a
+   non-empty host (e.g. Cyrillic 'a' U+0430 -> `bmc%D0%B0.example`, an IDN
+   homograph/confusable), passing a purely syntactic re-check. Under a stale
+   secure flag + test opt-in that could reach in-app rendering and self-signed
+   acceptance on a malformed/spoofed host. The raw authority is rejected outright
+   — scoped so an ASCII punycode/pct-encoded host and non-ASCII path/query text
+   stay launchable, no valid target lost. Covered by 21 targeted tests
+   (malformed-authority parity + control-character + raw-space +
    Unicode-whitespace/invisible + raw-backslash + RFC-3986 unwise-char +
-   malformed-percent-encoding rejection).
+   malformed-percent-encoding + raw non-ASCII authority rejection).
 
 ## What remains gated (not done here)
 

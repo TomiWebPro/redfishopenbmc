@@ -648,4 +648,77 @@ void main() {
       }
     });
   });
+
+  group('planConsoleLaunch — defense in depth: raw non-ASCII authority rejection', () {
+    test('a raw non-ASCII character in the authority fails closed with a stale flag', () {
+      // RFC 3986 URIs are ASCII-only: a raw non-ASCII character (an IDN
+      // homograph, accented letter, or emoji) must be pct-encoded / punycode
+      // encoded before it can appear in a host. `Uri.tryParse` does NOT reject
+      // a raw non-ASCII authority — it silently pct-encodes it into the host
+      // (e.g. Cyrillic 'a' U+0430 -> host `bmc%D0%B0.example`), which still has
+      // a non-empty host and passes a purely syntactic re-check. A raw Unicode
+      // authority is a host-spoofing risk (confusable/homograph labels): under
+      // a stale secure flag + test opt-in it would reach in-app rendering and
+      // self-signed acceptance on a malformed/spoofed host. The rule is scoped
+      // to the authority so legitimate non-ASCII path/query text stays
+      // launchable (no valid target lost).
+      for (final String uri in <String>[
+        'https://bmc\u0430.example/console', // Cyrillic 'a' homograph in host
+        'https://bmc\u00E9.example/console', // e-acute in host
+        'https://bmc\u{1F600}.example/console', // emoji in host
+        'https://user\u00E9@bmc.example/console', // non-ASCII in userinfo
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('a raw non-ASCII authority never reaches in-app under a strict opt-in', () {
+      // Even without granting self-signed acceptance, a raw Unicode authority
+      // must not be rendered in-app by an enabled+strict opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc\u0430.example/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('ASCII punycode host and non-ASCII path/query stay launchable', () {
+      // Guard against over-rejection: an ASCII-only pct-encoded/punycode host
+      // is a valid encoding, and non-ASCII text in the path/query does not
+      // affect the TLS-sensitive authority decision, so both stay launchable
+      // via the external-browser fallback (no TLS weakening, no target lost).
+      for (final String uri in <String>[
+        'https://xn--bmc-esab.example/console', // ASCII punycode host
+        'https://bmc.example/console\u00E9', // non-ASCII in path
+        'https://bmc.example/caf\u00E9?q=\u{1F600}', // non-ASCII path + query
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }
