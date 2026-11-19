@@ -28,7 +28,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      "[!] Live BMC integration — requires real credentials/network; never attempt in the unattended
      job. Keep the live-BMC test skipped" blocker into a tooling guard. Pure CI/test work, no lib/. -->
 
-- [ ] EP-T6 CI/pure-Dart guard that the blocked live-BMC epic stays unattended-safe: assert the DMTF
+- [x] EP-T6 LANDED 2026-11-19 (run `auto: FEATURE — EP-T6 unattended live-BMC safety guard + tests`): CI/pure-Dart guard that the blocked live-BMC epic stays unattended-safe: assert the DMTF
       emulator / live-BMC integration tests remain skipped unless an explicit env var supplies a real
       emulator URL/credentials (the existing `REDFISH_EMULATOR_URL` skip contract), that plain
       `flutter test` needs no BMC network or credentials, and document the human opt-in in
@@ -78,4 +78,5 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Log
 
+- 2026-11-19 — EP-T6 LANDED (agent:redfish-automation): added `tool/unattended_guard.dart` (pure-Dart unattended-safety policy evaluator + CLI) enforcing three invariants at commit/CI time: (1) every `test_integration/**.dart` gates network on `String.fromEnvironment('REDFISH_EMULATOR_URL')` AND calls `markTestSkipped` when absent; (2) no plain `test/**.dart` references the emulator env var (`test/tool/` guard self-tests exempt); (3) no production `lib/**.dart` hard-enables `allowSelfSigned: true`. `test/tool/unattended_guard_test.dart` adds +15 RED→GREEN tests; CLI RED proof (ungated integration test in a temp dir) produced a violation + exit 1; real-repo CLI scan green (286 Dart sources). Wired into `.github/workflows/verify.yml` + documented the live-BMC human opt-in in `DEVELOPMENT.md`. No `lib/` change, no dependency, production TLS untouched.
 - 2026-11-19 — LA-1 LANDED (agent:redfish-automation): added `tool/asset_guard.dart` (pure-Dart large/binary asset policy evaluator + CLI) and `tool/asset_manifest.json` (path + byte size + SHA-256 + source URL for the mirrored DSP0266 PDF and the schema index). Any binary asset over 1 MiB without a manifest entry, or with size/hash drift, fails closed (exit 1); malformed manifests fail closed (exit 2). +15 RED→GREEN pure-Dart tests in `test/tool/asset_guard_test.dart` (synthetic unlisted large binary → violation; size/hash drift; path normalization; manifest validation; real-repo manifest coverage), RED proof via a temp-dir large binary. Wired into `.github/workflows/verify.yml` + documented the "ask a human before committing large assets" gate in `DEVELOPMENT.md`. No `lib/` change, no dependency, production TLS untouched. analyze 0; full suite green.

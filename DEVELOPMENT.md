@@ -122,6 +122,34 @@ their provenance is tracked in the human manifest at
 Exit codes: `0` = no violations, `1` = an unlisted/mismatched asset, `2` =
 manifest input error. The gate is mirrored in `.github/workflows/verify.yml`.
 
+### Unattended live-BMC safety gate (EP-T6 / FUTUREWORK "[!] Live BMC integration")
+
+The scheduler runs with **no real BMC credentials or network**, and must never
+enable them unattended. `tool/unattended_guard.dart` enforces this at commit/CI
+time (pure Dart, unit-tested in `test/tool/unattended_guard_test.dart`):
+
+```bash
+dart run tool/unattended_guard.dart          # scan the repo, exit 1 on violation
+```
+
+It fails closed when any of these invariants is broken:
+
+1. A Dart file under `test_integration/` does not gate network access on
+   `String.fromEnvironment('REDFISH_EMULATOR_URL')` **and** call
+   `markTestSkipped` when the define is absent — so plain `flutter test` never
+   contacts a BMC/emulator.
+2. A plain unit/widget test under `test/` references the emulator env var
+   (network tests belong under `test_integration/` only; `test/tool/` guard
+   self-tests that merely carry the key as data are exempt).
+3. Production `lib/` code hard-enables self-signed TLS (`allowSelfSigned: true`).
+   Self-signed acceptance is a **test-only** profile concern; production keeps
+   TLS validation on.
+
+Exit codes: `0` = clean, `1` = a violation, `2` = input error. The gate is
+mirrored in `.github/workflows/verify.yml`. Live-BMC testing stays an explicit
+human opt-in: pass `--dart-define=REDFISH_EMULATOR_URL=...` via
+`tool/emulator/run_tests.sh`; never enable it in the scheduler.
+
 ## Progress tracking contract
 
 ### `progress/journal.md` — daily (append, never overwrite)

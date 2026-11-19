@@ -10992,3 +10992,21 @@
 - Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-19 — agent:redfish-automation — #009 / #021 (EP-T6 live-BMC unattended-safety guard)
+
+**Done:**
+- EP-T6 dept slice from `queues/tooling.md` (epic-split closeout of the FUTUREWORK "[!] Live BMC integration" blocker, shared by #009/#021). Added `tool/unattended_guard.dart` (pure-Dart unattended-safety policy evaluator + CLI) that fails closed on: (1) any `test_integration/**.dart` lacking both the `String.fromEnvironment('REDFISH_EMULATOR_URL')` gate and `markTestSkipped` when absent; (2) a plain `test/**.dart` referencing the emulator env var (`test/tool/` guard self-tests exempt); (3) production `lib/**.dart` hard-enabling `allowSelfSigned: true`. +15 RED→GREEN tests in `test/tool/unattended_guard_test.dart`; CLI RED proof (ungated temp-dir integration test → violation + exit 1); real-repo scan green (286 Dart sources). Wired into `.github/workflows/verify.yml`; documented the live-BMC human opt-in in `DEVELOPMENT.md`; marked EP-T6 LANDED in `queues/tooling.md`. Baseline analyze 0 / 1289 passed / 1 skipped (1 transient power_view flake, passed isolated) → verify analyze 0 / 1304 passed / 1 skipped; DMTF emulator 85/85 (tool changed — §1.4 gate met); issues validate OK; git diff --check clean. No issue closed.
+
+**Decisions:**
+- Pure tooling guard: no `lib/` product code, no dependency, no wire/transport change, no production TLS weakening. Both issues stay OPEN (embedded HTML5 rendering, fullscreen, input forwarding remain externally blocked on platform WebView + BMC self-signed/TLS validation).
+- The guard enforces the unattended contract at commit/CI time so an ungated network test or a production self-signed hard-enable cannot land silently; live-BMC stays an explicit human opt-in (`--dart-define=REDFISH_EMULATOR_URL=...` via `tool/emulator/run_tests.sh`), never enabled in the scheduler.
+- `test/tool/` guard self-tests are exempt from the plain-test env-ref rule because they carry the key as data only — mentioning the key does not make `flutter test` contact a BMC.
+- Emulator re-run because `tool/` changed (§1.4); server stopped via script trap, test-only self-signed cert.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` (EP-M1 URI-scheme edges, RM-2 non-map payload tolerance, EP-S1 service launch edges, EP-U1 fullscreen scaffold, EP-T1 fixtures / EP-T3 coverage) — genuine tested dependency-free increments only.
+- Never add a WebView/url_launcher dependency unattended; never weaken production TLS; the new guard keeps live-BMC tests opt-in-only.
+- Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

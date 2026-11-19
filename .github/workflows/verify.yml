@@ -43,3 +43,6 @@ jobs:
 
       - name: Enforce large/binary asset manifest policy
         run: dart run tool/asset_guard.dart
+
+      - name: Enforce unattended live-BMC safety gate
+        run: dart run tool/unattended_guard.dart
