@@ -11099,3 +11099,21 @@
 - Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-19 — agent:rf-gate — merge build/rf-platform (check#8779 PASS)
+
+**Done:**
+- Sole merger to main: read `rf-platform-check` state (run#8779 SUCCESS, exit 0; report verdict `CHECK: PASS` covering current `build/rf-platform` tip `77d8818` from builder run#8772) and confirmed the tip was not already in main, then merged `build/rf-platform` into `main` with `--no-ff` (merge `862756e`). Branch adds fail-closed rejection of a percent-encoded ASCII domain-label dot (`%2E`) in the KVM launch URI authority + 3 RED→GREEN tests + doc update; no production-TLS weakening.
+- Resolved 2 merge conflicts: main had refactored the `%25`/authority checks into the shared `String?`-returning `_controlSafeTrimmedUri` while the branch added the `%2E` check to the old `bool` `_uriHasSecureHttpsTarget`. Kept main's shared gate and folded the `%2E` check in as `return null` (single source of truth for all HTTP(S) classifiers + launch plan); updated LAUNCH_FALLBACK.md test counts to the measured 83 targeted / 95 platform. Reconciled 1 stale assertion in `launch_plan_test.dart` (`isControlSafeConsoleUri('ipmi://%2E%2E/')` now `false` under the merged hardening; raw-dot cases unchanged, security intent preserved).
+- Post-merge verification all green: `flutter analyze` 0 issues; full `flutter test --coverage` 1333 passed / 1 skipped (baseline 1330 +3); three coverage gates PASS (overall 89.9%, redfish+power+sensors 90.4%, kvm 96.5%); `issues.py validate` OK; targeted 83/83 and platform 95/95. `git diff --check` clean; staged diff secret scan clean.
+
+**Decisions:**
+- Merge only on an explicit PASS verdict covering the current branch tip; verified check#8779's HEAD (`77d8818`) matched the live branch tip before merging (no stale check).
+- Conflict resolution keeps the `%2E` fail-closed rule in the one shared gate so every classifier and the launch plan refuse it identically — no production TLS weakening, no new dependency, no wire/transport change.
+- DMTF emulator suite skipped: no wire/transport, fixture, or tool change (`launch_plan.dart` is the dependency-free, channel-free decision layer). Gate creates no new feature commits; no force-push.
+
+**Next:**
+- Continue the automation queue in `queues/*.md` (EP-M1 remaining URI-scheme edges, RM-2 non-map payload tolerance, EP-S1 service launch edges, EP-U1 fullscreen scaffold, EP-T3 coverage) — genuine tested increments only.
+- Next `build/rf-platform` slice must be re-verified by a fresh `rf-platform-check` PASS covering its new tip before this gate will merge it.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
