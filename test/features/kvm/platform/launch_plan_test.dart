@@ -1126,4 +1126,88 @@ void main() {
       }
     });
   });
+
+  group(
+      'planConsoleLaunch — defense in depth: extended compatibility-confusable delimiter rejection',
+      () {
+    test(
+        'small/vertical/dot-leader confusables that IDNA maps to delimiters fail closed',
+        () {
+      // The compatibility-confusable set must cover more than the fullwidth
+      // forms. A launcher applying IDNA/NFKC to an internationalised host
+      // resolves many more non-ASCII code points to ASCII structural delimiters:
+      // SMALL FULL STOP (U+FE52 -> '.'), SMALL COLON (U+FE55 -> ':'), SMALL
+      // REVERSE SOLIDUS (U+FE68 -> '\'), SMALL COMMERCIAL AT (U+FE6B -> '@'),
+      // the vertical presentation forms (e.g. U+FE13 -> ':', U+FE47 -> '['),
+      // and the dot leaders (U+2024 -> '.', U+2025 -> '..'). `Uri.tryParse`
+      // keeps each escape encoded and reports an HTTPS host with a non-empty
+      // host, so a purely syntactic re-check calls these "secure" — yet a
+      // decode+IDNA launcher resolves a different/forged authority. Under a
+      // stale secure flag + test opt-in any could reach in-app rendering and
+      // self-signed acceptance on a spoofed host, so they must fail closed.
+      for (final String uri in <String>[
+        'https://bmc.example%EF%B9%92evil.com/console', // U+FE52 SMALL FULL STOP -> '.'
+        'https://bmc.example%EF%B9%958443/console', // U+FE55 SMALL COLON -> ':'
+        'https://bmc.example%EF%B9%A8evil.com/console', // U+FE68 SMALL REVERSE SOLIDUS -> '\'
+        'https://bmc.example%EF%B9%ABevil.com/console', // U+FE6B SMALL COMMERCIAL AT -> '@'
+        'https://bmc.example%EF%B8%93.evil/console', // U+FE13 VERTICAL COLON -> ':'
+        'https://bmc%EF%B9%87evil.example/console', // U+FE47 VERTICAL LEFT SQUARE BRACKET -> '['
+        'https://bmc%E2%80%A4example/console', // U+2024 ONE DOT LEADER -> '.'
+        'https://bmc.example%EF%B9%9Fq/console', // U+FE5F SMALL NUMBER SIGN -> '#'
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('an extended confusable never reaches in-app under a strict opt-in', () {
+      // Even without granting self-signed acceptance, a host carrying an
+      // IDNA-confusable delimiter must not be rendered in-app by an
+      // enabled+strict opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc.example%EF%B9%92evil.com/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('extended confusables in the path stay launchable (authority-scoped)',
+        () {
+      // Guard against over-rejection: the rule targets only code points in the
+      // authority (the TLS-sensitive part). An IDNA confusable in the path/query
+      // cannot change which host is contacted, so it stays launchable via the
+      // external-browser fallback — no valid target lost, no TLS weakening.
+      for (final String uri in <String>[
+        'https://bmc.example/console%EF%B9%92one', // SMALL FULL STOP in path
+        'https://bmc.example/console%EF%B9%ABone', // SMALL COMMERCIAL AT in path
+        'https://bmc.example/caf%C3%A9', // e-acute (Letter, not a confusable)
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }
