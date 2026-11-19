@@ -514,4 +514,60 @@ void main() {
       expect(capability.supported, isTrue);
     });
   });
+
+  group('KvmService malformed manager @odata.id fallback tolerance (#009)', () {
+    late MockRedfishServer server;
+
+    setUpAll(() async {
+      // Two managers, each with NO `Id`, whose identity must fall back to the
+      // manager body's `@odata.id` (then the member URI) last segment:
+      //  * PADDED has a whitespace-padded `@odata.id`;
+      //  * BLANK has a whitespace-only `@odata.id`.
+      // A BMC emitting either malformed value must not key a console/capability
+      // under a stray-whitespace id, and a lookup by the real id must still work
+      // (mirrors the `Id` normalization, issue #009).
+      server = await MockRedfishServer(
+        fixturesDir: 'test/fixtures/redfish/kvm_blank_odata_id_mockup',
+      ).start();
+    });
+
+    tearDownAll(() async {
+      await server.close();
+    });
+
+    // RED proof: `_managerId` derived the fallback id from the raw body
+    // `@odata.id` via `ODataResource(body).id` without trimming or rejecting a
+    // blank value, so PADDED was keyed as 'PADDED  ' and BLANK as '   ' — stray
+    // whitespace on the cards and fetchCapability('PADDED'/'BLANK') missed.
+    test('fetchConsoles trims a padded @odata.id fallback id', () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+
+      expect(consoles.map((KvmConsole c) => c.managerId), <String>[
+        'PADDED',
+        'BLANK',
+      ]);
+    });
+
+    test('fetchCapability resolves both managers by their real ids', () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final KvmCapability? padded = await svc.fetchCapability('PADDED');
+      final KvmCapability? blank = await svc.fetchCapability('BLANK');
+
+      expect(padded, isNotNull);
+      expect(padded!.managerId, 'PADDED');
+      expect(padded.supported, isTrue);
+      expect(blank, isNotNull);
+      expect(blank!.managerId, 'BLANK');
+      expect(blank.supported, isTrue);
+    });
+  });
 }

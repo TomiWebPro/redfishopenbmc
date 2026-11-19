@@ -10384,3 +10384,18 @@
 - Re-run all gates on the next PASS; cleanly SKIP if the verdict is not PASS or the branch has no new commits.
 
 **Issues touched:** none (gate merge + tracking only)
+
+## 2026-11-19 02:03 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — genuine, dependency-free, TLS-safe manager-id normalization in the KVM manager walk, closing a documented-but-unimplemented contract. `KvmService._managerId`'s docstring claimed the `@odata.id` source got the same trim/blank-reject normalization as the `Id` path, but the fallback used `ODataResource(body).id` (raw, untrimmed). A manager body with a missing/blank `Id` plus a padded `@odata.id` was keyed as `'PADDED  '`, a whitespace-only one as `'   '` — stray whitespace on the console/capability cards + broken `fetchCapability(realId)`. Added a private `_trimmedNonBlank` helper applied to the whole `@odata.id`, its derived last segment and the member-URI fallback. Added 2 RED→GREEN service tests over a new `kvm_blank_odata_id_mockup` fixture (both confirmed RED pre-fix: `Actual: ['PADDED  ', '   ']` / `Actual: <null>`). Baseline analyze 0 / 1096 passed / 1 skipped → verify analyze 0 / 1098 passed / 1 skipped (+2); DMTF emulator 85/85 (lib + fixture changed — §1.4 gate met); coverage gates PASS overall 89.4% / scoped 90.4% / kvm 94.2%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose to complete the manager-id normalization contract rather than manufactured churn: the 01:26 run fixed `_managerId`'s `Id` path and the docstring explicitly promised the same for the `@odata.id` fallback, which was still returning raw Redfish data. This is a real data-correctness defect (stray-whitespace ids, broken lookup) with a clear RED→GREEN proof. Pure Dart + a corrected doc comment + an isolated fixture; no WebView/protocol dependency, no production TLS change. Full emulator re-run (85/85) because `lib/` and a fixture changed.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. cross-view launch-strategy / secure-transport gaps in the capability card + viewer, or wiring the merged `webview_policy.dart` `resolveRenderRoute` pure helper), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — manager-id `@odata.id` fallback normalization)

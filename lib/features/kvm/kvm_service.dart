@@ -229,23 +229,40 @@ class KvmService {
 
   /// Derives a stable manager id from its body `Id` or trailing URI segment.
   ///
-  /// The `Id` is trimmed and a blank value rejected so a malformed BMC payload
-  /// cannot key a console/capability under a padded id (which would show stray
-  /// whitespace on the cards and make `fetchCapability(realId)` miss it). The
-  /// same normalization applies to the `@odata.id` source and the manager URI
-  /// fallback (issue #009).
+  /// Every source is trimmed and a blank value rejected so a malformed BMC
+  /// payload cannot key a console/capability under a padded id (which would
+  /// show stray whitespace on the cards and make `fetchCapability(realId)` miss
+  /// it). This applies to the canonical `Id`, the body `@odata.id` fallback and
+  /// the member-URI fallback alike (issue #009).
   String _managerId(Map<String, dynamic> body, String managerUri) {
     final dynamic id = body['Id'];
     if (id is String) {
       final String trimmed = id.trim();
       if (trimmed.isNotEmpty) return trimmed;
     }
-    final String? odataId = ODataResource(body).id;
-    if (odataId != null && odataId.isNotEmpty) {
-      final String? last = _lastSegment(odataId);
+    // A manager may omit `Id`; fall back to the body `@odata.id` last segment.
+    // Normalize BOTH the whole URI and the derived segment: a padded URI can
+    // still yield a padded segment, and a whitespace-only `@odata.id` is not a
+    // usable id at all — in that case fall through to the member URI. This
+    // mirrors the `Id` normalization and every other KVM URI source (issue
+    // #009).
+    final String? odataId = _trimmedNonBlank(ODataResource(body).id);
+    if (odataId != null) {
+      final String? last = _trimmedNonBlank(_lastSegment(odataId));
       if (last != null) return last;
     }
-    return _lastSegment(managerUri) ?? managerUri;
+    return _trimmedNonBlank(_lastSegment(managerUri)) ?? managerUri;
+  }
+
+  /// Returns [value] trimmed, or `null` when it is null or blank.
+  ///
+  /// Shared by the manager-id fallbacks so a padded/blank `@odata.id` or member
+  /// URI segment can never leak stray whitespace into a card or key a manager
+  /// under an id the operator cannot look up (issue #009).
+  String? _trimmedNonBlank(String? value) {
+    if (value == null) return null;
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   /// Returns the last non-empty path segment of [uri], or `null`.

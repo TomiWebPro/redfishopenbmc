@@ -1,0 +1,19 @@
+{
+  "@odata.type": "#Manager.v1_19_0.Manager",
+  "Name": "Blank Id manager",
+  "ManagerType": "BMC",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "GraphicalConsole": {
+    "ServiceEnabled": true,
+    "MaxConcurrentSessions": 4,
+    "ConnectTypesSupported": [
+      "KVMIP",
+      "HTML5"
+    ],
+    "ConnectUri": "https://bmc.example/blank-kvm"
+  },
+  "@odata.id": "   "
+}
