@@ -145,12 +145,33 @@ class KvmConsoleLaunchPlan {
 /// in the authority fails closed; the rule is scoped so encoded delimiters in
 /// the path/query and valid pct-encoded non-delimiter host bytes (e.g.
 /// `bmc%C3%A9.example`) stay launchable — no valid target is lost.
+///
+/// A percent-encoded C0 control or DEL octet is rejected for the same reason:
+/// it is a *valid* `%XX` escape (so the malformed-percent rule does not catch
+/// it) and contains no raw forbidden character, yet `Uri.tryParse` keeps it
+/// encoded and still reports an HTTPS URI with a non-empty host. Such octets
+/// are classic parser-differential / injection vectors: a NUL (`%00`)
+/// truncates the host in many consumers (`bmc.example%00.evil.com` reads as
+/// `bmc.example`), CRLF (`%0D%0A`) enables header/URI injection, and other C0
+/// bytes confuse authority splitting. Under a stale secure flag + test opt-in
+/// that could grant in-app rendering and self-signed acceptance on a
+/// spoofed/malformed host. Every pct-encoded 0x00-0x1F or 0x7F octet fails
+/// closed (either hex case), while non-control escapes (`%20`, `%2F`, UTF-8
+/// bytes, ...) stay launchable — no valid target is lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
 /// Matches a `%` that does not begin a valid `%XX` escape (RFC 3986
 /// `pct-encoded = "%" HEXDIG HEXDIG`). Valid escapes contain no bare `%`.
 final RegExp _malformedPercentEncoding = RegExp(r'%(?![0-9A-Fa-f]{2})');
+
+/// Matches a percent-encoded octet whose value is a C0 control (0x00-0x1F) or
+/// DEL (0x7F). Hex digits are case-insensitive. Such an octet is a *valid*
+/// `%XX` escape (so the malformed-percent rule does not catch it) and contains
+/// no raw forbidden character, yet it is never valid in a launchable URI and
+/// is a classic host-truncation / injection vector (see below).
+final RegExp _encodedControlOctet =
+    RegExp(r'%(?:0[0-9A-Fa-f]|1[0-9A-Fa-f]|7[Ff])');
 
 /// Matches any non-ASCII code unit. RFC 3986 URIs are ASCII-only: a raw
 /// non-ASCII character must be pct-encoded (or punycode-encoded in a host).
@@ -230,6 +251,11 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // Reject a bare/malformed `%` that Uri.tryParse would silently encode rather
   // than reject (RFC 3986 requires "%" HEXDIG HEXDIG).
   if (_malformedPercentEncoding.hasMatch(trimmed)) return false;
+  // Reject a pct-encoded C0 control / DEL octet: a valid %XX escape that
+  // Uri.tryParse keeps encoded while still reporting a secure HTTPS host, but
+  // that consumers decode into NUL host truncation / CRLF injection / authority
+  // confusion on a malformed/spoofed host. Non-control escapes stay launchable.
+  if (_encodedControlOctet.hasMatch(trimmed)) return false;
   // Reject a raw non-ASCII authority (IDN homograph / confusable / emoji host
   // or userinfo): Uri.tryParse silently pct-encodes it into a non-empty host,
   // which under a stale secure flag + test opt-in could reach in-app rendering
