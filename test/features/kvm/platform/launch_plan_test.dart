@@ -321,4 +321,63 @@ void main() {
       }
     });
   });
+
+  group('planConsoleLaunch — defense in depth: control-character rejection', () {
+    test('embedded control characters fail closed even with a stale secure flag', () {
+      // `Uri.tryParse` silently percent-encodes C0/DEL control characters into
+      // the host/path instead of rejecting them, so a purely syntactic
+      // `scheme == 'https' && host.isNotEmpty` re-check calls these "secure".
+      // Handing a CRLF/NUL-bearing URI to a launcher risks header/URI injection,
+      // and under a stale secure flag + test opt-in it would also grant
+      // self-signed acceptance. All control chars must fail closed.
+      for (final String uri in <String>[
+        'https://bmc.example/con\nsol', // LF
+        'https://bmc.example/con\r\nsol', // CRLF
+        'https://bmc.example/con\u0000sol', // NUL
+        'https://bmc.example/con\tsol', // TAB
+        'https://bmc.example/con\u007Fsol', // DEL
+        'https://bmc.exa\nmple/console', // control char in host
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('a control-char URI never reaches in-app even with a strict opt-in', () {
+      // Even without granting self-signed acceptance, a malformed URI must not
+      // be rendered in-app by an enabled+strict opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc.example/con\u0001sol',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('a clean HTTPS URI is still accepted (guard against over-rejection)', () {
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.productionDefault,
+        uri: 'https://bmc.example:8443/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.route, KvmConsoleRenderRoute.externalBrowser);
+      expect(plan.targetUri, 'https://bmc.example:8443/console');
+    });
+  });
 }
