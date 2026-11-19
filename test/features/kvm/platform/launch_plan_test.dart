@@ -1453,4 +1453,85 @@ void main() {
       }
     });
   });
+
+  group(
+      'planConsoleLaunch — defense in depth: double-encoded authority delimiter rejection',
+      () {
+    test('a percent-encoded percent in the authority fails closed with a stale flag',
+        () {
+      // The single-encoded-delimiter rule rejects `%2F`/`%40`/`%2E` in the
+      // authority, but a DOUBLE-encoded form bypasses it: `%252F` decodes once
+      // to the literal characters `%2F`, which a launcher that decodes twice
+      // turns into `/`; `%2540` -> `%40` -> '@'; `%252E` -> `%2E` -> '.'.
+      // `Uri.tryParse` keeps `%25` encoded and reports a non-empty HTTPS host,
+      // so a purely syntactic re-check calls these "secure". A literal `%` is
+      // never valid in a host, and double-decoding is a parser-differential /
+      // host-spoofing vector: under a stale secure flag + test opt-in any of
+      // these could reach in-app rendering and self-signed acceptance on a
+      // spoofed authority. A pct-encoded percent in the authority must fail
+      // closed, in either hex case.
+      for (final String uri in <String>[
+        'https://bmc.example%252Fevil.com/console', // %252F -> %2F -> /
+        'https://bmc.example%252fevil.com/console', // lowercase hex
+        'https://bmc.example%2540evil.com/console', // %2540 -> %40 -> @
+        'https://bmc.example%252Eevil.com/console', // %252E -> %2E -> .
+        'https://bmc%252Fexample.com/console', // double-encoded slash mid-host
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('a double-encoded authority delimiter never reaches in-app under a strict opt-in',
+        () {
+      // Even without granting self-signed acceptance, a double-encoded
+      // authority must not be rendered in-app by an enabled+strict opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc.example%252Fevil.com/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('encoded percent in path/query and valid pct-encoded hosts stay launchable',
+        () {
+      // Guard against over-rejection: the rule is scoped to the authority (the
+      // TLS-sensitive part). `%25` in the path/query cannot change which host
+      // is contacted and stays launchable, as do valid pct-encoded UTF-8 host
+      // bytes (`%C3%A9`) that are not an encoded percent — no valid target lost,
+      // no TLS weakening.
+      for (final String uri in <String>[
+        'https://bmc.example/console%252Fone', // %25 in path
+        'https://bmc.example/console?q=100%25', // %25 in query
+        'https://bmc%C3%A9.example/console', // valid pct-encoded host byte
+        'https://bmc.example/caf%C3%A9', // valid pct-encoded path byte
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }
