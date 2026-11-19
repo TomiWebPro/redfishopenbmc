@@ -352,6 +352,127 @@ void main() {
     });
   });
 
+  group('KvmService.pickPrimary prefers a safe external-browser target (#021)',
+      () {
+    KvmConsole console(
+      KvmConsoleType type, {
+      required bool enabled,
+      String? uri,
+      String id = 'A',
+    }) =>
+        KvmConsole(
+          type: type,
+          managerId: id,
+          serviceEnabled: enabled,
+          connectUri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/$id',
+        );
+
+    test(
+        'prefers a secure-HTTPS graphical over a plaintext-HTTP graphical '
+        'listed first', () {
+      final KvmConsole plaintext = console(
+        KvmConsoleType.graphical,
+        enabled: true,
+        uri: 'http://bmc.example/kvm',
+        id: 'plaintext',
+      );
+      final KvmConsole secure = console(
+        KvmConsoleType.graphical,
+        enabled: true,
+        uri: 'https://bmc.example/kvm',
+        id: 'secure',
+      );
+      expect(
+        KvmService.pickPrimary(<KvmConsole>[plaintext, secure]),
+        same(secure),
+      );
+    });
+
+    test('prefers a secure-HTTPS console over an external-client (SSH) console',
+        () {
+      final KvmConsole external = console(
+        KvmConsoleType.serial,
+        enabled: true,
+        uri: 'ssh://bmc.example',
+        id: 'external',
+      );
+      final KvmConsole secure = console(
+        KvmConsoleType.remote,
+        enabled: true,
+        uri: 'https://bmc.example/kvm',
+        id: 'secure',
+      );
+      expect(
+        KvmService.pickPrimary(<KvmConsole>[external, secure]),
+        same(secure),
+      );
+    });
+
+    test('prefers a secure-HTTPS graphical over a secure non-graphical', () {
+      final KvmConsole secureRemote = console(
+        KvmConsoleType.remote,
+        enabled: true,
+        uri: 'https://bmc.example/kvm',
+        id: 'secure-remote',
+      );
+      final KvmConsole secureGraphical = console(
+        KvmConsoleType.graphical,
+        enabled: true,
+        uri: 'https://bmc.example/kvm-ip',
+        id: 'secure-graphical',
+      );
+      expect(
+        KvmService.pickPrimary(<KvmConsole>[secureRemote, secureGraphical]),
+        same(secureGraphical),
+      );
+    });
+
+    test(
+        'guard: with no secure console, keeps the first openable graphical '
+        '(plaintext preserved)', () {
+      final KvmConsole plaintextGraphical = console(
+        KvmConsoleType.graphical,
+        enabled: true,
+        uri: 'http://bmc.example/kvm',
+        id: 'plaintext',
+      );
+      final KvmConsole externalSerial = console(
+        KvmConsoleType.serial,
+        enabled: true,
+        uri: 'ssh://bmc.example',
+        id: 'external',
+      );
+      expect(
+        KvmService.pickPrimary(
+          <KvmConsole>[plaintextGraphical, externalSerial],
+        ),
+        same(plaintextGraphical),
+      );
+    });
+
+    test(
+        'guard: a disabled secure-HTTPS console is not preferred over an '
+        'enabled plaintext one', () {
+      final KvmConsole disabledSecure = console(
+        KvmConsoleType.graphical,
+        enabled: false,
+        uri: 'https://bmc.example/kvm-disabled',
+        id: 'disabled-secure',
+      );
+      final KvmConsole enabledPlaintext = console(
+        KvmConsoleType.graphical,
+        enabled: true,
+        uri: 'http://bmc.example/kvm',
+        id: 'enabled-plaintext',
+      );
+      expect(
+        KvmService.pickPrimary(<KvmConsole>[disabledSecure, enabledPlaintext]),
+        same(enabledPlaintext),
+      );
+    });
+  });
+
   group('KvmService stale manager member resilience (#009)', () {
     late MockRedfishServer server;
 

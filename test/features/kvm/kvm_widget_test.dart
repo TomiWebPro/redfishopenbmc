@@ -879,6 +879,60 @@ void main() {
     });
 
     testWidgets(
+        'the Primary badge prefers a secure-HTTPS console over a plaintext '
+        'one (#021)', (WidgetTester tester) async {
+      // The final render route is external-browser + copy, so the recommended
+      // ("Primary") console must be the control-safe HTTPS target even when a
+      // plaintext-HTTP console is listed first — never badge an unsafe target.
+      const KvmConsole plaintext = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: 'plaintext',
+        connectTypesSupported: <String>['KVMIP'],
+        serviceEnabled: true,
+        connectUri: 'http://bmc.example/kvm',
+        sourceManagerUri: '/redfish/v1/Managers/plaintext',
+      );
+      const KvmConsole secure = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: 'secure',
+        connectTypesSupported: <String>['KVMIP'],
+        serviceEnabled: true,
+        connectUri: 'https://bmc.example/kvm',
+        sourceManagerUri: '/redfish/v1/Managers/secure',
+      );
+      final List<KvmConsole> consoles = <KvmConsole>[plaintext, secure];
+      final KvmController controller = _StubController()
+        ..state = KvmUiState(
+          consoles: consoles,
+          primaryConsole: KvmService.pickPrimary(consoles),
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Primary'), findsOneWidget);
+      final Finder primaryCard = find.ancestor(
+        of: find.text('Primary'),
+        matching: find.byType(Card),
+      );
+      expect(
+        find.descendant(
+          of: primaryCard,
+          matching: find.text('Manager: secure'),
+        ),
+        findsOneWidget,
+        reason: 'the Primary badge must sit on the secure-HTTPS console card',
+      );
+    });
+
+    testWidgets(
         'a disabled console with a connect URI does not offer an actionable '
         '"Open console" (#009/#021)', (WidgetTester tester) async {
       // A BMC can report ServiceEnabled: false yet still publish a ConnectUri.

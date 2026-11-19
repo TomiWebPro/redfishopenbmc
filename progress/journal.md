@@ -10661,3 +10661,19 @@
 **Next:** Verify push settled; the next `rf-platform-check` PASS gates the subsequent platform commit. No new dev work by rf-gate.
 
 **Issues touched:** none (merge-only gate; #009 / #021 remain open under redfish-automation).
+
+## 2026-11-19 — agent:redfish-automation — #021/#009
+
+**Done:**
+- FEATURE #021 (P2) / #009 — EP-S2 service slice (rf-ideate dept re-split; EP-P1 resolved → external-browser + copy is the final route). `KvmService.pickPrimary` selects `KvmUiState.primaryConsole` (badged "Primary", the recommended launch target) but chose the first openable graphical console with no transport-safety check, so a plaintext-HTTP or external-client VNC/SSH console listed first was recommended over an available control-safe HTTPS console. It now prefers a secure-HTTPS graphical → any secure-HTTPS console before the existing openable/graphical/fallback tiers. `canOpenConsole` (excludes disabled/URI-less) and the fail-closed `hasSecureLaunchUri` classifier gate the new tiers, so only a genuinely safe, enabled, encrypted target outranks the fallbacks; with no secure console the badge is unchanged. Dependency-free, no wire/transport change, no production TLS weakening. +6 RED→GREEN tests (2 service confirmed RED pre-fix, 3 service guards, 1 widget "Primary"-badge guard). Baseline analyze 0 / 1174 passed / 1 skipped → verify analyze 0 / 1180 passed / 1 skipped; DMTF emulator 85/85 (lib changed — §1.4 gate met); issues validate OK; git diff --check clean. Issues stay OPEN (remaining work tracked as dept slices in `queues/*.md`).
+
+**Decisions:**
+- EP-P1 (WebView/TLS validation matrix) is resolved: no embedded WebView on the available target, so external-browser + copy is the final render route. A control-safe HTTPS URI is therefore the only target safe to recommend as "Primary"; plaintext-HTTP and external-client consoles must not outrank it. Reused the existing fail-closed `hasSecureLaunchUri` classifier rather than a new rule so the badge can never disagree with the launch plan about whether a URI is usable (strictly better recommendation, no valid target lost, no dependency, no TLS weakening).
+- Kept all fallback tiers so a BMC exposing only insecure/external/URI-less consoles still gets a sensible "Primary" badge — no console left unbadged. Scope kept to `lib/features/kvm/kvm_service.dart` + service/widget tests (rf-service dept boundary), avoiding overlap with the concurrent rf-platform/rf-model work. Untracked `testing/` harness dir and pre-existing stash left untouched.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` for #009/#021 (EP-S1, EP-P3, EP-M2/RM-1, EP-U3/EP-U1, EP-T4) — genuine tested dependency-free increments only; never verification-only churn.
+- Do NOT add a WebView/url_launcher dependency unattended (EP-P2/EP-T2/EP-U2 deferred on manual per-target validation); never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — safe "Primary" external-browser target), #021 (open — secure-first launch recommendation)

@@ -174,15 +174,25 @@ class KvmService {
   /// Picks the preferred [KvmConsole] from [consoles] without fetching.
   ///
   /// The primary console is badged "Primary" and is the recommended launch
-  /// target, so it must be one the user can actually open. Selection order:
-  /// first openable graphical console, then first openable console of any type,
-  /// then first graphical, then first overall. The last two tiers keep a
-  /// sensible badge when a BMC exposes only disabled or URI-less consoles
-  /// (which cannot be opened but are still the best available choice).
+  /// target, so it must be one the user can actually open — and, because the
+  /// final render route is an external browser + copy (no embedded WebView),
+  /// it should be one that is *safe* to open externally. Selection order:
+  /// first openable secure-HTTPS graphical console, then first openable
+  /// secure-HTTPS console of any type, then first openable graphical, then
+  /// first openable of any type, then first graphical, then first overall.
+  /// The secure-HTTPS tiers prefer a control-safe TLS endpoint (the only
+  /// target safe to recommend for the external-browser route) over a
+  /// plaintext-HTTP or external-client-only console when one exists — a
+  /// plaintext / VNC / SSH console is never badged "Primary" while a secure
+  /// browser-openable console is available (issue #021, never weaken TLS).
+  /// The later tiers keep a sensible badge when a BMC exposes only disabled /
+  /// URI-less / insecure consoles (which are still the best available choice).
   /// Returns `null` when [consoles] is empty (issue #009).
   static KvmConsole? pickPrimary(List<KvmConsole> consoles) {
     if (consoles.isEmpty) return null;
 
+    KvmConsole? firstSecureGraphical;
+    KvmConsole? firstSecure;
     KvmConsole? firstOpenable;
     KvmConsole? firstOpenableGraphical;
     KvmConsole? firstGraphical;
@@ -191,12 +201,27 @@ class KvmService {
       if (graphical) firstGraphical ??= console;
       if (!console.canOpenConsole) continue;
       firstOpenable ??= console;
-      if (graphical) {
-        firstOpenableGraphical ??= console;
-        break;
+      if (graphical) firstOpenableGraphical ??= console;
+
+      // A control-safe HTTPS URI is the only target safe to recommend for the
+      // final external-browser + copy route. Prefer it over a plaintext-HTTP
+      // or external-client console so the "Primary" badge never advertises an
+      // unsafe / non-browser target when a secure console exists. Disabled and
+      // URI-less consoles are already excluded by canOpenConsole above, and
+      // hasSecureLaunchUri uses the same fail-closed classifier as the launch
+      // plan (a CRLF/spoofed target never counts as secure). A secure graphical
+      // console is the best possible target, so stop as soon as one is found.
+      if (console.hasSecureLaunchUri) {
+        firstSecure ??= console;
+        if (graphical) {
+          firstSecureGraphical ??= console;
+          break;
+        }
       }
     }
-    return firstOpenableGraphical ??
+    return firstSecureGraphical ??
+        firstSecure ??
+        firstOpenableGraphical ??
         firstOpenable ??
         firstGraphical ??
         consoles.first;
