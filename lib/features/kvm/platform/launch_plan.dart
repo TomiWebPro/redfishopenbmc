@@ -337,6 +337,20 @@ String? externalClientConsoleProtocol(String? uri) {
 /// mismatched/spoofed host. A literal dot is always written as '.', so
 /// rejecting `%2E` loses no valid target; scoped to the authority so `%2E` in
 /// the path/query and valid pct-encoded UTF-8 host bytes stay launchable.
+///
+/// A percent-encoded octet sequence in the authority that is not well-formed
+/// UTF-8 is rejected for the same reason: the encoded-control rule catches a
+/// single C0/DEL octet and the encoded C/Z rule catches well-formed UTF-8
+/// controls, but an invalid sequence (a lone C1 byte `%80`/`%9F`, an overlong
+/// form `%C0%80`, a truncated multi-byte sequence `%E2%82`) decodes under
+/// `utf8.decode(allowMalformed: true)` to U+FFFD (category So), slipping past
+/// both. `Uri.tryParse` keeps such escapes encoded and reports a non-empty
+/// HTTPS host, so a purely syntactic re-check calls it "secure" while a launcher
+/// that decodes host bytes as Latin-1 (or does not validate UTF-8) sees
+/// different, invisible/control bytes — a decode-differential / host-spoofing
+/// vector. A valid URI percent-encodes well-formed UTF-8 (or ASCII), so
+/// rejecting malformed UTF-8 in the authority loses no valid target; properly
+/// encoded multi-byte text (e-acute, euro, emoji) stays launchable.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -663,6 +677,53 @@ bool _authorityHasCompatibilityDelimiter(String uri) {
   return false;
 }
 
+/// Returns `true` when the raw authority carries a percent-encoded octet
+/// sequence that is not well-formed UTF-8.
+///
+/// The encoded-control-octet rule catches a single pct-encoded C0/DEL octet and
+/// [_hasEncodedUnicodeControlOrSeparator] catches *well-formed* multi-byte
+/// UTF-8 controls, but an INVALID UTF-8 byte sequence slips past both:
+/// `utf8.decode(allowMalformed: true)` turns every bad byte into U+FFFD
+/// (category So, not C/Z), so neither rule sees it. `Uri.tryParse` keeps such
+/// escapes encoded and reports a non-empty HTTPS host, so a purely syntactic
+/// re-check calls it "secure" — yet a launcher that decodes percent-encoded
+/// host bytes as Latin-1 (or otherwise does not validate UTF-8) sees different,
+/// possibly invisible/control bytes in the host: a lone 0x80/0x9F is a C1
+/// control, `%C0%80` is an overlong NUL, `%E2%82` is a truncated sequence.
+/// Under a stale secure flag + test opt-in that decode differential could grant
+/// in-app rendering and self-signed acceptance on a malformed/spoofed
+/// authority. A valid URI percent-encodes well-formed UTF-8 (or ASCII), so
+/// rejecting malformed UTF-8 loses no valid target; properly encoded multi-byte
+/// text — e-acute, euro, emoji, whose continuation bytes lie in 0x80-0xBF —
+/// stays launchable. Scoped to the authority so path/query text is unaffected.
+bool _authorityHasMalformedUtf8(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  final List<int> bytes = <int>[];
+  for (int i = 0; i < authority.length; i++) {
+    final String char = authority[i];
+    if (char == '%' && i + 2 < authority.length) {
+      final int? hi = _hexDigit(authority[i + 1]);
+      final int? lo = _hexDigit(authority[i + 2]);
+      if (hi != null && lo != null) {
+        bytes.add((hi << 4) | lo);
+        i += 2;
+        continue;
+      }
+    }
+    // Raw characters here are ASCII (raw non-ASCII/forbidden chars were
+    // rejected by earlier rules); keep the byte so an encoded UTF-8 sequence
+    // is validated in the correct byte context.
+    bytes.add(char.codeUnitAt(0));
+  }
+  try {
+    utf8.decode(bytes); // allowMalformed == false: reject invalid sequences.
+    return false;
+  } on FormatException {
+    return true;
+  }
+}
+
 /// Trims [uri] and returns it only when it is non-blank and contains no raw
 /// control/separator/invisible code point, or `null` otherwise. Shared by every
 /// HTTP(S) transport classifier so HTTPS and HTTP classification apply
@@ -741,6 +802,15 @@ String? _controlSafeTrimmedUri(String? uri) {
   // this single shared gate (returning `null`, like the other checks) so every
   // HTTP(S) classifier and the launch-plan target reject it identically.
   if (_authorityHasCompatibilityDelimiter(trimmed)) return null;
+  // Reject a percent-encoded octet sequence in the authority that is not
+  // well-formed UTF-8 (lone C1 byte, overlong form, truncated sequence): a
+  // decode-first launcher could see different/invisible bytes in the host than
+  // Uri.tryParse reports, which under a stale flag + test opt-in could reach
+  // in-app rendering and self-signed acceptance on a malformed/spoofed host.
+  // Valid pct-encoded UTF-8 (e-acute, euro, emoji) stays launchable. Folded
+  // into this single shared gate (returning `null`, like the other checks) so
+  // every HTTP(S) classifier and the launch-plan target reject it identically.
+  if (_authorityHasMalformedUtf8(trimmed)) return null;
   return trimmed;
 }
 

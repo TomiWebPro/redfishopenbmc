@@ -1646,7 +1646,8 @@ void main() {
       expect(plan.acceptSelfSigned, isFalse);
     });
 
-    test('middle-dot confusables in the path stay launchable (authority-scoped)',
+    test(
+        'middle-dot confusables in the path stay launchable (authority-scoped)',
         () {
       // Guard against over-rejection: the rule is scoped to the authority (the
       // TLS-sensitive part). A middle dot in the path/query cannot change which
@@ -1754,7 +1755,8 @@ void main() {
   group(
       'planConsoleLaunch — defense in depth: double-encoded authority delimiter rejection',
       () {
-    test('a percent-encoded percent in the authority fails closed with a stale flag',
+    test(
+        'a percent-encoded percent in the authority fails closed with a stale flag',
         () {
       // The single-encoded-delimiter rule rejects `%2F`/`%40`/`%2E` in the
       // authority, but a DOUBLE-encoded form bypasses it: `%252F` decodes once
@@ -1788,7 +1790,8 @@ void main() {
       }
     });
 
-    test('a double-encoded authority delimiter never reaches in-app under a strict opt-in',
+    test(
+        'a double-encoded authority delimiter never reaches in-app under a strict opt-in',
         () {
       // Even without granting self-signed acceptance, a double-encoded
       // authority must not be rendered in-app by an enabled+strict opt-in.
@@ -1804,7 +1807,8 @@ void main() {
       expect(plan.acceptSelfSigned, isFalse);
     });
 
-    test('encoded percent in path/query and valid pct-encoded hosts stay launchable',
+    test(
+        'encoded percent in path/query and valid pct-encoded hosts stay launchable',
         () {
       // Guard against over-rejection: the rule is scoped to the authority (the
       // TLS-sensitive part). `%25` in the path/query cannot change which host
@@ -1834,7 +1838,8 @@ void main() {
 
   group('planConsoleLaunch — defense in depth: encoded authority-dot rejection',
       () {
-    test('a single percent-encoded dot in the authority fails closed with a stale flag',
+    test(
+        'a single percent-encoded dot in the authority fails closed with a stale flag',
         () {
       // The encoded-delimiter rule blocks gen-delims (`%2F`, `%40`, ...) but
       // not the percent-encoded ASCII domain-label dot (`%2E`). `Uri.tryParse`
@@ -1869,7 +1874,8 @@ void main() {
       }
     });
 
-    test('a single-encoded authority dot never reaches in-app under a strict opt-in',
+    test(
+        'a single-encoded authority dot never reaches in-app under a strict opt-in',
         () {
       // Even without granting self-signed acceptance, an authority whose host
       // relies on a percent-encoded dot must not be rendered in-app by an
@@ -1886,7 +1892,8 @@ void main() {
       expect(plan.acceptSelfSigned, isFalse);
     });
 
-    test('encoded dot in path/query and valid pct-encoded hosts stay launchable (authority-scoped)',
+    test(
+        'encoded dot in path/query and valid pct-encoded hosts stay launchable (authority-scoped)',
         () {
       // Guard against over-rejection: the rule is scoped to the authority (the
       // TLS-sensitive part). `%2E` in the path/query cannot change which host
@@ -1897,6 +1904,96 @@ void main() {
         'https://bmc.example/console?q=a%2Eb', // %2E in query
         'https://bmc%C3%A9.example/console', // valid pct-encoded host byte
         'https://bmc.example/caf%C3%A9', // valid pct-encoded path byte
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
+
+  group(
+      'planConsoleLaunch — defense in depth: malformed UTF-8 authority rejection',
+      () {
+    test(
+        'a percent-encoded malformed UTF-8 sequence in the authority fails closed with a stale flag',
+        () {
+      // The encoded-control-octet rule catches pct-encoded C0/DEL (0x00-0x1F,
+      // 0x7F) and the encoded C/Z rule catches *well-formed* multi-byte UTF-8
+      // controls, but an INVALID UTF-8 byte sequence slips through both:
+      // `utf8.decode(allowMalformed: true)` turns each bad byte into U+FFFD
+      // (category So), which neither the C/Z rule nor the confusable set
+      // rejects. `Uri.tryParse` keeps such escapes encoded and still reports a
+      // non-empty HTTPS host, so a purely syntactic re-check calls them
+      // "secure" — yet a launcher that decodes percent-encoded host bytes as
+      // Latin-1 (or otherwise does not validate UTF-8) sees different, possibly
+      // invisible/control bytes in the host: a lone 0x80/0x9F is a C1 control,
+      // `%C0%80` is an overlong NUL, `%E2%82` a truncated sequence. Under a
+      // stale secure flag + test opt-in that decode differential could grant
+      // in-app rendering and self-signed acceptance on a malformed/spoofed
+      // authority. A valid URI percent-encodes well-formed UTF-8 (or ASCII), so
+      // rejecting malformed UTF-8 in the authority loses no valid target.
+      for (final String uri in <String>[
+        'https://bmc.example%80.evil.com/console', // lone C1 control (0x80)
+        'https://bmc%9F.example/console', // C1 control (0x9F)
+        'https://bmc.example%FF.evil.com/console', // invalid UTF-8 start byte
+        'https://bmc.example%C0%80.evil.com/console', // overlong NUL
+        'https://bmc.example%E2%82/console', // truncated 3-byte sequence
+        'https://bmc.example%80/console', // stray continuation byte in host
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test(
+        'a malformed UTF-8 authority never reaches in-app under a strict opt-in',
+        () {
+      // Even without granting self-signed acceptance, a host whose percent
+      // escapes are not well-formed UTF-8 must not be rendered in-app by an
+      // enabled+strict opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc.example%80.evil.com/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('well-formed pct-encoded UTF-8 stays launchable (authority-scoped)',
+        () {
+      // Guard against over-rejection: valid multi-byte UTF-8 — whose trailing
+      // continuation bytes (e.g. 0x82 in the euro sign) fall in the 0x80-0xBF
+      // range — must stay launchable, including in the authority. Malformed
+      // UTF-8 in the path/query cannot change which host is contacted, so it
+      // stays launchable too (the rule is scoped to the authority). No valid
+      // target lost, no TLS weakening.
+      for (final String uri in <String>[
+        'https://bmc.example/caf%C3%A9?q=%E2%82%AC', // e-acute + euro (valid)
+        'https://bmc%C3%A9.example/console', // valid UTF-8 in authority
+        'https://bmc.example/%F0%9F%98%80', // emoji (valid 4-byte)
+        'https://bmc.example/console%80', // malformed UTF-8 in path (scoped out)
       ]) {
         final KvmConsoleLaunchPlan plan = planConsoleLaunch(
           policy: KvmWebViewPolicy.productionDefault,
