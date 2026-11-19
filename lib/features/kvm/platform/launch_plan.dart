@@ -187,6 +187,19 @@ class KvmConsoleLaunchPlan {
 /// points that normalise to a structural delimiter in the authority are
 /// rejected; encoded non-delimiter non-ASCII (e-acute, euro, emoji) and
 /// confusables in the path/query stay launchable, so no valid target is lost.
+///
+/// A degenerate, label-less authority is rejected for the same reason:
+/// `Uri.tryParse` reports a host made only of dots (`https://./console`,
+/// `https://../console`) as an HTTPS URI with a NON-EMPTY host, so the bare
+/// `scheme == 'https' && host.isNotEmpty` check calls it "secure". It also
+/// decodes a percent-encoded dot (`%2E`) in the host into a literal '.', so
+/// `https://%2E%2E/console` likewise reports host `..`. There is no real BMC
+/// host to contact (no DNS label at all), and a launcher may resolve `..` as a
+/// relative/traversal path rather than a host. Under a stale secure flag +
+/// test opt-in that could reach in-app rendering and self-signed acceptance on
+/// a bogus host. A host with no character other than '.' therefore fails
+/// closed; hosts with a real label (including an absolute FQDN trailing dot)
+/// and IPv6 literals stay launchable — no valid target lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -497,7 +510,18 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // escapes and encoded non-delimiter non-ASCII stay launchable.
   if (_authorityHasCompatibilityDelimiter(trimmed)) return false;
   final Uri? parsed = Uri.tryParse(trimmed);
-  return parsed != null && parsed.scheme == 'https' && parsed.host.isNotEmpty;
+  if (parsed == null || parsed.scheme != 'https' || parsed.host.isEmpty) {
+    return false;
+  }
+  // Degenerate, label-less authority: a host made only of dots ('.', '..',
+  // '%2E%2E' decoded by Uri to '..') is not a real BMC host. `Uri.tryParse`
+  // still reports it as a non-empty HTTPS host, so without this check a stale
+  // secure flag + test opt-in would grant in-app rendering and self-signed
+  // acceptance on a bogus/traversal target. A real label (incl. an absolute
+  // FQDN trailing dot) or an IPv6 literal contains non-dot characters and is
+  // unaffected — stricter than the model, never more permissive.
+  if (parsed.host.replaceAll('.', '').isEmpty) return false;
+  return true;
 }
 
 /// Builds the concrete launch plan from the RP-1 policy and a console's public

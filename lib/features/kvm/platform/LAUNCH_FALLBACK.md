@@ -172,13 +172,24 @@ Invariants, enforced by tests:
    self-signed acceptance on a spoofed/mismatched host. Each fails closed in
    the authority; encoded forms in the path/query and punycode ASCII hosts
    stay launchable, no valid target lost.
+   **Degenerate dot-host rejection:** `Uri.tryParse` reports a label-less host
+   made only of dots (`https://./console`, `https://../console`) as an HTTPS
+   URI with a non-empty host, so the bare scheme+host re-check calls it
+   "secure"; it also decodes a percent-encoded dot (`%2E`) in the host to a
+   literal '.', so `https://%2E%2E/console` likewise reports host `..`. There
+   is no real BMC host (no DNS label) and a launcher may resolve `..` as a
+   relative/traversal path. Under a stale flag + test opt-in such a target
+   could reach in-app rendering and self-signed acceptance on a bogus host, so
+   a host with no non-dot character fails closed; hosts with a real label
+   (including an absolute FQDN trailing dot) and IPv6 literals stay launchable.
    Covered by targeted tests across the defense-in-depth re-validation
    groups (scheme/host/malformed-authority parity + control-character +
    raw-space + Unicode-whitespace/invisible + raw-backslash + RFC-3986
    unwise-char + malformed-percent-encoding + raw non-ASCII authority + encoded
    authority-delimiter + encoded control-octet + encoded Unicode
    separator/invisible + encoded compatibility-confusable delimiter + extended
-   compatibility-confusable delimiter + IDNA dot-confusable rejection).
+   compatibility-confusable delimiter + IDNA dot-confusable rejection +
+   degenerate dot-host rejection).
 
 ## What remains gated (not done here)
 
