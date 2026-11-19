@@ -636,4 +636,72 @@ void main() {
       expect(plan.acceptSelfSigned, isFalse);
     });
   });
+
+  group(
+      'planConsoleLaunch — the launcher/copy target is control-safe '
+      '(#009/#021)', () {
+    test('a malformed copy-only URI is never handed back as a target', () {
+      // The plan re-validates the URI for the *secure signal* (effectiveSecure)
+      // but must also refuse to hand a malformed URI to the launcher/clipboard.
+      // A CRLF/NUL/backslash/spoofed-authority target on the copy-only route
+      // risks injection when pasted, so targetUri must fail closed to null —
+      // exactly as the classifiers refuse to call such a target secure.
+      for (final String uri in <String>[
+        'https://bmc.example/con\r\nsol', // CRLF
+        'https://bmc.example/con\u0000sol', // NUL
+        'https://bmc.exa mple/console', // raw space
+        'https://bmc\u00A0.example/console', // NBSP (Unicode separator)
+        r'https://bmc.example\@evil.com/console', // raw backslash
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: false,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.targetUri, isNull, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('a malformed URI is not a copy target even with a stale secure flag',
+        () {
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.testOptIn,
+        uri: 'https://bmc.example/con\r\nsol',
+        hasSecureUri: true, // stale/inconsistent signal
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.route, KvmConsoleRenderRoute.copyOnly);
+      expect(plan.targetUri, isNull);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('valid and properly-encoded targets are still returned (guard)', () {
+      // Guard against over-rejection: a clean HTTPS target, a correctly
+      // percent-encoded space/backslash, and a valid non-HTTP external-client
+      // URI all stay available on their respective routes.
+      for (final String uri in <String>[
+        'https://bmc.example/console',
+        'https://bmc.example/console%20one',
+        'https://bmc.example/console%5Cpath',
+        'vnc://bmc.example:5900',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: uri.startsWith('https'),
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.targetUri, uri, reason: uri);
+      }
+    });
+  });
 }

@@ -200,10 +200,13 @@ bool _isHttpUriWithSchemes(String? uri, Set<String> schemes) {
 ///     effective signal.
 ///  3. Self-signed acceptance is granted only for an in-app route under the
 ///     test-only opt-in on HTTPS — never for a fallback.
-///  4. A missing/blank URI fails closed to copy-only so a launcher is never
-///     handed a null/whitespace target; the URI is trimmed for **every** route
-///     (including copy-only) so the clipboard/copy path never surfaces a
-///     whitespace-padded endpoint either.
+///  4. A missing/blank **or control-unsafe** URI fails closed to copy-only with
+///     a `null` target, so a launcher/clipboard is never handed an empty,
+///     whitespace-padded, CRLF/NUL, raw-space, backslash or otherwise malformed
+///     endpoint. Every non-null target is the shared control-safe trim of the
+///     raw URI — the same rule every transport classifier applies — so the
+///     copied value can never disagree with the classifiers about whether the
+///     target is usable. Properly encoded targets (%20/%5C) are unchanged.
 KvmConsoleLaunchPlan planConsoleLaunch({
   required KvmWebViewPolicy policy,
   required String? uri,
@@ -224,8 +227,16 @@ KvmConsoleLaunchPlan planConsoleLaunch({
     isEnabled: isEnabled,
   );
 
-  final String? trimmed =
-      (uri == null || uri.trim().isEmpty) ? null : uri.trim();
+  // The URI handed to a launcher or the clipboard must itself be control-safe.
+  // Re-validating only the *secure signal* above (effectiveSecure) still lets a
+  // CRLF/NUL/raw-space/backslash/spoofed-authority target survive on the
+  // copy-only route via a plain trim — where a pasted control character risks
+  // header/clipboard injection or an authority that differs from the one the
+  // classifier trusted. Reuse the single shared hardening core so the target
+  // fails closed on exactly the malformed input every transport classifier
+  // refuses to call secure (issues #009 / #021). Properly percent-encoded
+  // targets (%20/%5C/...) and valid non-HTTP external-client URIs are untouched.
+  final String? trimmed = _controlSafeTrimmedUri(uri);
 
   // Fail closed: a launchable route with no usable URI degrades to copy-only.
   final KvmConsoleRenderRoute safeRoute =

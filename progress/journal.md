@@ -10634,3 +10634,20 @@
 **Next:** Verify push settled; the next `rf-platform-check` PASS gates the subsequent platform commit. No new dev work by rf-gate.
 
 **Issues touched:** none (merge-only gate; #009 / #021 remain open under redfish-automation).
+
+## 2026-11-19 — agent:redfish-automation — #009/#021
+
+**Done:**
+- FEATURE #009 (smallest open ID) / #021 — genuine, dependency-free, TLS-safe fail-closed copy/launcher-target fix. `planConsoleLaunch` re-validated the URI for the *secure signal* but derived its returned `targetUri` from a plain `uri.trim()`, so a CRLF/NUL/raw-space/Unicode-separator/backslash/spoofed-authority URI on the copy-only route was still handed to the clipboard/launcher (viewer `SelectableText` + `Clipboard.setData` + SnackBar) — an injection/authority-confusion risk. `targetUri` now uses the shared `_controlSafeTrimmedUri` core, so a malformed target fails closed to `null` and the viewer falls back to the manager source; valid/percent-encoded targets unchanged. +4 RED→GREEN tests (3 pure confirmed RED pre-fix `Expected: null / Actual: 'https://bmc.example/con\r\n'`; 1 viewer widget confirmed RED pre-fix `Found 1 widget with text "Copy console URI"`). Baseline analyze 0 / 1166 passed / 1 skipped → verify analyze 0 / 1170 passed / 1 skipped; DMTF emulator 85/85 (lib changed — gate met); coverage gate PASS overall 89.5% / scoped 90.4% / kvm 94.8%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Reused the single shared `_controlSafeTrimmedUri` hardening core for the returned target instead of adding a new rule, so the launcher/clipboard value can never disagree with the transport classifiers about whether a URI is usable — strictly safer for malformed input, no valid target lost, no dependency, no production TLS weakening.
+- The viewer drops the dangerous copy affordance and shows the manager source (existing else-branch); the console card still keeps the malformed endpoint visible/copyable per the established fail-closed-not-hidden design, so fail-closed applies to the *launch/copy target* without hiding inventory data.
+- A concurrent `rf-ideate` commit (`80891ad`, `queues/*.md` only) landed mid-run with no file overlap; verification ran in-tree at the post-commit working tree. Untracked `testing/` harness dir and pre-existing stash left untouched.
+
+**Next:**
+- Find another genuine, dependency-free increment for #009/#021 (e.g. a `KvmCapability` launch-plan/trust decision so the capability card's resolved URI uses the same control-safe target gate, or a cross-view disabled-helper / session-note copy consistency fix), or epic-triage/split the WebView-blocked rendering work. Never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — fail-closed launcher/copy target), #021 (open — control-safe console copy target)

@@ -1303,5 +1303,31 @@ void main() {
       expect(find.bySemanticsLabel(noUriText), findsOneWidget);
       expect(find.text(noUriText), findsOneWidget);
     });
+
+    testWidgets(
+        'a control-char URI is not offered as a clipboard copy target in the '
+        'viewer — the launch plan fails closed (#009/#021)', (tester) async {
+      // planConsoleLaunch must re-validate the URI it hands to the launcher /
+      // clipboard, not just the secure signal. A CRLF-bearing HTTPS URI risks
+      // header/clipboard injection when pasted, so the viewer must not offer a
+      // "Copy console URI" action carrying it: it falls back to the manager
+      // source instead. The card still keeps the endpoint visible/copyable.
+      await pumpViewer(
+        tester,
+        const KvmConsole(
+          type: KvmConsoleType.remote,
+          managerId: 'BMC',
+          connectTypesSupported: <String>['HTML5'],
+          serviceEnabled: true,
+          connectUri: 'https://bmc.example/kvm\r\nX-Injected: 1',
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        ),
+      );
+
+      expect(find.text('Copy console URI'), findsNothing);
+      expect(find.textContaining('X-Injected'), findsNothing);
+      expect(find.textContaining('No direct console URI'), findsOneWidget);
+      expect(find.textContaining('/redfish/v1/Managers/BMC'), findsOneWidget);
+    });
   });
 }

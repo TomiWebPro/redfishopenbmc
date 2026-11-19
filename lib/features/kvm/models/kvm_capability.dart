@@ -120,8 +120,6 @@ class KvmCapability {
   /// secure nor insecure HTTP.
   bool get hasSecureLaunchUri => isSecureHttpsConsoleUri(launchUri);
 
-  /// Whether [launchUri] uses plaintext HTTP (unencrypted transport).
-  ///
   /// Whether [launchUri] is an HTTP(S) URL suitable for browser/WebView launch.
   ///
   /// Mirrors `KvmConsole.hasHttpLaunchUri` via the shared, control-char-safe
