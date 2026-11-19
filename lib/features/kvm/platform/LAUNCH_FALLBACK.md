@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 55 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (67 across the platform
+consume; today it locks the fallback behaviour with 58 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (70 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -174,11 +174,23 @@ Invariants, enforced by tests:
    bytes, ...) stay launchable, no valid target lost. Folded into the same
    shared gate so every HTTP(S) classifier and the launch-plan target reject
    it identically.
-   Covered by 55 targeted tests (malformed-authority parity +
+   **Encoded Unicode separator/invisible rejection:** a percent-encoded
+   multi-byte UTF-8 character that decodes to a Unicode `Separator` (Z) or
+   `Other` (C) code point is likewise a valid `%XX` escape with no raw
+   non-ASCII, kept encoded by `Uri.tryParse` while reporting a "secure" host.
+   A decode-first launcher turns `%C2%A0` (NBSP, Zs) into an invisible
+   separator in the host, or `%E2%80%8B` (zero-width space, Cf) / `%C2%85`
+   (NEL, Cc) into an invisible control — a parser-differential / host-spoofing
+   vector. Every encoded non-ASCII C/Z code point fails closed; ASCII escapes
+   (`%20`) and non-C/Z escapes (`%C3%A9` e-acute, emoji) stay launchable, no
+   valid target lost. Folded into the same shared gate so every HTTP(S)
+   classifier and the launch-plan target reject it identically.
+   Covered by 58 targeted tests (malformed-authority parity +
    control-character + raw-space + Unicode-whitespace/invisible +
    raw-backslash + RFC-3986 unwise-char + malformed-percent-encoding +
    raw non-ASCII authority + encoded authority-delimiter + encoded C0/DEL
-   control-octet rejection) in `launch_plan_test.dart`.
+   control-octet + encoded Unicode separator/invisible rejection) in
+   `launch_plan_test.dart`.
 
 ## What remains gated (not done here)
 

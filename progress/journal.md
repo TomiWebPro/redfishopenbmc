@@ -10833,3 +10833,24 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — discovery-gate OEM enablement parity), #021 (open — KVM tab agrees with console viewer)
+
+## 2026-11-19 — agent:rf-gate — MERGE build/rf-platform 6eaecd5 (check#8248 PASS)
+
+**Done:**
+- Read `rf-platform-check` state: latest run#8248 SUCCESS (exit 0, started 13:47:44 UTC ~1 min after builder run#8240 produced `build/rf-platform` HEAD `6eaecd5` at 13:46:36 UTC) ended with `CHECK: PASS`. Branch had exactly 1 unmerged commit (merge-base `cab0449`) adding percent-encoded multi-byte UTF-8 → Unicode `Separator`/`Other` (C/Z) fail-closed re-validation in the platform launch plan (`_hasEncodedUnicodeControlOrSeparator` + `_hexDigit` helpers, `dart:convert` utf8 decode, +3 RED→GREEN tests). Merged into main with `--no-ff`.
+- Conflict resolution: main had since refactored the branch's `bool _uriHasSecureHttpsTarget` into the shared `String?`-returning `_controlSafeTrimmedUri` gate (+ sibling public HTTP(S) classifiers). Preserved BOTH by folding the branch's `_hexDigit` / `_hasEncodedUnicodeControlOrSeparator` helpers, `_unicodeOtherOrSeparator` RegExp and `import 'dart:convert'` into main's file, and adding `if (_hasEncodedUnicodeControlOrSeparator(trimmed)) return null;` as the final check in `_controlSafeTrimmedUri` — every HTTP(S) classifier and the launch-plan target now refuse an encoded Unicode separator/invisible identically; non-C/Z and ASCII escapes stay launchable. All test groups + both doc intents retained; `LAUNCH_FALLBACK.md` counts updated to 58 targeted / 70 platform.
+- Post-merge verify in-tree (clean except pre-existing untracked `testing/`): targeted `launch_plan_test.dart` 58/58 + platform suite 70/70; `flutter analyze` 0; full `flutter test --coverage` 1226 passed / 1 skipped (baseline 1223 +3); all three coverage gates PASS (overall 89.8% 5544/6177, scoped 90.4% 2118/2344, kvm 95.9% 822/857); `issues.py validate` OK; `git diff --check` clean; staged secret scan clean.
+- One transient parallel-load flake in `power_view_test.dart` (UI-5 busy-state) failed once in the first full-suite run; it passed in isolation 3/3 and in two subsequent full-suite runs — unrelated to this KVM platform change.
+
+**Decisions:**
+- Gate merges ONLY on the latest `<dept>-check` `CHECK: PASS` verdict and only its current branch HEAD; NO-OP otherwise. `--no-ff` preserves dept topology.
+- The branch's old `bool`-returning gate no longer exists on main (refactored into a shared `String?` gate); its new check was folded into that single gate with `return null` rather than restoring the old helper — consistent with all prior platform merges.
+- DMTF 85-test suite not re-run: fail-closed launch-plan decision hardening with no Redfish wire/transport/fixture/tool change; <7 days since last green 85/85.
+- Tracking folded into the single merge commit (no separate record commit).
+
+**Next:**
+- Gate only PASS-verified dept branches with `--no-ff` + clean-worktree post-merge verify; keep all launch-plan URI hardening in the single shared classifier core.
+- Never add a WebView/protocol dependency or weaken production TLS unattended.
+- Re-run the full DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none (platform-only fail-closed hardening; #009 / #021 remain open)
