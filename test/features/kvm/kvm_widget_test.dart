@@ -1647,4 +1647,58 @@ void main() {
       );
     });
   });
+
+  group('KvmView — per-console external-client guidance parity (#009/#021)',
+      () {
+    // The per-console card is the operator's first launch-decision surface. A
+    // non-HTTP transport (VNC/RFB/serial) cannot be rendered in-app, so the
+    // card must name the specific external client — exactly the same guidance
+    // the capability card and viewer give — instead of silently offering
+    // "Open console" with no transport note. EP-U3 cross-surface parity.
+    for (final MapEntry<String, String> c in <String, String>{
+      'vnc://bmc.example:5900': 'VNC/RFB',
+      'ssh://bmc.example:22': 'SSH',
+    }.entries) {
+      for (final double width in <double>[320, 800, 1300]) {
+        testWidgets(
+            'a ${c.value} console card names the external client at '
+            '${width.toInt()} px', (WidgetTester tester) async {
+          tester.view.physicalSize = Size(width, 900);
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(tester.view.reset);
+
+          final KvmController controller = _StubController()
+            ..state = KvmUiState(
+              consoles: <KvmConsole>[
+                KvmConsole(
+                  type: KvmConsoleType.graphical,
+                  managerId: 'BMC',
+                  connectTypesSupported: <String>['KVMIP'],
+                  serviceEnabled: true,
+                  connectUri: c.key,
+                  sourceManagerUri: '/redfish/v1/Managers/BMC',
+                ),
+              ],
+            );
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: <Override>[
+                systemHandleProvider('bmc1')
+                    .overrideWithValue(_handle(kvm: true)),
+                kvmControllerProvider.overrideWith((ref, id) => controller),
+              ],
+              child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final String expected = kvmExternalClientNoticeFor(c.value);
+          expect(expected, contains('external ${c.value} client'));
+          expect(find.bySemanticsLabel(expected), findsOneWidget);
+          expect(find.text(expected), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
+      }
+    }
+  });
 }

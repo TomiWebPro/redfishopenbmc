@@ -29,6 +29,11 @@ class KvmCapabilityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    // One shared, protocol-aware string is both the visible text and the
+    // merged `excludeSemantics` label, so sighted and screen-reader users get
+    // identical guidance naming the client they actually need (EP-U3).
+    final String externalClientNotice =
+        kvmExternalClientNoticeFor(capability.externalClientProtocolLabel);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -206,16 +211,20 @@ class KvmCapabilityCard extends StatelessWidget {
             // transport (VNC/RFB/KVMIP/serial) must carry the same
             // "requires an external client" guidance the viewer's launch status
             // gives — this surface is an operator's launch decision point too.
-            // Both views classify via the same shared gate, so this notice can
-            // never appear for an endpoint the console model treats as secure
-            // HTTP(S). Display-only: no URL opened, no transport weakened.
+            // EP-U3: the notice names the *specific* protocol the model already
+            // computed (`externalClientProtocolLabel`), matching the viewer's
+            // protocol-aware guidance instead of listing every possibility, so
+            // the operator knows which client to open the endpoint with. Both
+            // views classify via the same shared gate, so this notice can never
+            // appear for an endpoint the console model treats as secure HTTP(S).
+            // Display-only: no URL opened, no transport weakened.
             if (capability.hasUri &&
                 capability.requiresExternalConsoleClient) ...<Widget>[
               const SizedBox(height: 8),
               Semantics(
                 container: true,
                 excludeSemantics: true,
-                label: kvmExternalClientNotice,
+                label: externalClientNotice,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
@@ -224,7 +233,7 @@ class KvmCapabilityCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        kvmExternalClientNotice,
+                        externalClientNotice,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),

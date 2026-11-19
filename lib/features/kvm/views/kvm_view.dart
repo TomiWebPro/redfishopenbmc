@@ -514,6 +514,44 @@ class _ConsoleCard extends StatelessWidget {
                 ),
               ),
             ],
+            // EP-U3 / #009 / #021: a non-HTTP transport (VNC/RFB, serial
+            // SSH/Telnet/IPMI, KVMIP) cannot be rendered in-app. The per-console
+            // card is the operator's first launch-decision surface, so it must
+            // name the specific external client — the same protocol-aware
+            // guidance the capability card and viewer give — instead of
+            // silently offering "Open console" with no transport note. One
+            // shared string is both the visible text and the merged
+            // `excludeSemantics` label; mutually exclusive with the plaintext
+            // HTTP warning above. Display-only: no URL opened, TLS untouched.
+            if (console.requiresExternalConsoleClient) ...<Widget>[
+              const SizedBox(height: 8),
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: kvmExternalClientNoticeFor(
+                    console.externalClientProtocolLabel),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(Icons.open_in_new,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        kvmExternalClientNoticeFor(
+                            console.externalClientProtocolLabel),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,

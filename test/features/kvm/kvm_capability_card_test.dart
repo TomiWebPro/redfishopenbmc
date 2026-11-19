@@ -669,40 +669,63 @@ void main() {
     // the per-console card and the viewer. A non-HTTP transport (VNC/RFB, KVMIP,
     // serial SSH/Telnet/IPMI) cannot be rendered in-app, so the operator needs
     // the same "requires an external client" guidance on this surface too.
-    // The shared constant keeps the test and the view from drifting apart.
-    const String expectedNotice = kvmExternalClientNotice;
-
-    testWidgets(
-        'a resolved VNC URI shows the external-client notice with merged '
-        'a11y and no overflow at 320/800/1300 px', (WidgetTester tester) async {
-      final KvmCapability capability = KvmCapability.fromManager(
-        <String, dynamic>{
-          '@odata.id': '/redfish/v1/Managers/BMC',
-          'GraphicalConsole': <String, dynamic>{
-            'ServiceEnabled': true,
-            'ConnectTypesSupported': <dynamic>['KVMIP'],
-            'ConnectUri': 'vnc://bmc.example:5900',
+    // EP-U3: the notice names the *specific* protocol the model already knows,
+    // matching the viewer's guidance, instead of listing every possibility.
+    KvmCapability capabilityFor(String uri) => KvmCapability.fromManager(
+          <String, dynamic>{
+            '@odata.id': '/redfish/v1/Managers/BMC',
+            'GraphicalConsole': <String, dynamic>{
+              'ServiceEnabled': true,
+              'ConnectTypesSupported': <dynamic>['KVMIP'],
+              'ConnectUri': uri,
+            },
           },
-        },
-        managerId: 'BMC',
-      );
-      expect(capability.hasUri, isTrue);
-
-      for (final double width in <double>[320, 800, 1300]) {
-        await tester.binding.setSurfaceSize(Size(width, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-        await pumpView(
-          tester,
-          capabilities: <KvmCapability>[capability],
-          kvm: true,
+          managerId: 'BMC',
         );
 
-        expect(find.text(expectedNotice), findsOneWidget);
-        expect(find.bySemanticsLabel(expectedNotice), findsOneWidget);
-        // The plaintext-HTTP notice must not leak onto a non-HTTP transport.
-        expect(find.text(kvmInsecureTransportNotice), findsNothing);
-        expect(tester.takeException(), isNull);
-      }
+    for (final MapEntry<String, String> c in <String, String>{
+      'vnc://bmc.example:5900': 'VNC/RFB',
+      'ssh://bmc.example:22': 'SSH',
+      'ipmi://bmc.example': 'IPMI serial-over-LAN',
+    }.entries) {
+      testWidgets(
+          'a resolved ${c.value} URI names the external client protocol with '
+          'merged a11y and no overflow at 320/800/1300 px',
+          (WidgetTester tester) async {
+        final KvmCapability capability = capabilityFor(c.key);
+        expect(capability.hasUri, isTrue);
+        expect(capability.externalClientProtocolLabel, c.value);
+
+        // RED proof: before the fix the card rendered the generic list notice,
+        // which never contains "requires an external <protocol> client".
+        final String expectedNotice = kvmExternalClientNoticeFor(
+          capability.externalClientProtocolLabel,
+        );
+        expect(expectedNotice, contains('external ${c.value} client'));
+
+        for (final double width in <double>[320, 800, 1300]) {
+          await tester.binding.setSurfaceSize(Size(width, 900));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+          await pumpView(
+            tester,
+            capabilities: <KvmCapability>[capability],
+            kvm: true,
+          );
+
+          expect(find.text(expectedNotice), findsOneWidget);
+          expect(find.bySemanticsLabel(expectedNotice), findsOneWidget);
+          // The plaintext-HTTP notice must not leak onto a non-HTTP transport.
+          expect(find.text(kvmInsecureTransportNotice), findsNothing);
+          expect(tester.takeException(), isNull);
+        }
+      });
+    }
+
+    test('kvmExternalClientNoticeFor falls back for a blank/unknown label', () {
+      expect(kvmExternalClientNoticeFor(null), kvmExternalClientNotice);
+      expect(kvmExternalClientNoticeFor('   '), kvmExternalClientNotice);
+      expect(kvmExternalClientNoticeFor(' VNC/RFB '),
+          contains('external VNC/RFB client'));
     });
   });
 }

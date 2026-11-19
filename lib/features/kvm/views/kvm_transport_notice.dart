@@ -43,6 +43,29 @@ const String kvmExternalClientNotice =
     'This console URI requires an external client (VNC/RFB, KVMIP, SSH, '
     'Telnet or IPMI). Copy the URI and open it with a compatible client.';
 
+/// The protocol-specific variant of [kvmExternalClientNotice].
+///
+/// [protocol] is the shared external-client label computed by both KVM models
+/// (`KvmConsole` / `KvmCapability`.`externalClientProtocolLabel`, e.g.
+/// `'VNC/RFB'`, `'SSH'`, `'Telnet'`, `'IPMI serial-over-LAN'`, `'KVMIP'`). When
+/// a concrete protocol is known the operator is told *which* client to use,
+/// matching the guidance the per-console viewer already gives — a generic list
+/// of every possible protocol is less actionable at the per-manager capability
+/// card, which is also an operator launch-decision surface (EP-U3, #009/#021).
+///
+/// A blank/unknown label falls back to the generic [kvmExternalClientNotice] so
+/// no surface regresses to empty or misleading guidance. Pure presentation
+/// copy: it opens no URL and never changes transport security (production TLS
+/// is never weakened). The returned string is used verbatim as both the visible
+/// text and the merged `excludeSemantics` label, so sighted and screen-reader
+/// users hear identical wording.
+String kvmExternalClientNoticeFor(String? protocol) {
+  final String? label = protocol?.trim();
+  if (label == null || label.isEmpty) return kvmExternalClientNotice;
+  return 'This console URI requires an external $label client. '
+      'Copy the URI and open it with a compatible client.';
+}
+
 /// The single visible + announced string for the session-persistence notice.
 ///
 /// A BMC console session outlives the app's backgrounding and persists until

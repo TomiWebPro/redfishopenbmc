@@ -10921,3 +10921,20 @@
 **Next:** Continue unblocked dept slices in `queues/*.md` (EP-M1 URI-scheme edges, RM-2 malformed-payload tolerance, EP-S1 service launch edges, EP-U1 fullscreen scaffold, EP-T4 fixture/CI guard). Keep auditing classifier/enablement parity across console card, capability card, discovery gate and viewer. Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-19 — agent:redfish-automation — #009 / #021 (EP-U3)
+
+**Done:**
+- EP-U3 cross-surface external-client launch-guidance parity. The viewer already named the specific external protocol (`KvmConsole.externalClientProtocolLabel`), but the per-console card showed no external-client note and the capability card listed every protocol generically. Added pure `kvmExternalClientNoticeFor(protocol)` in `kvm_transport_notice.dart` (blank/unknown → generic fallback) as the single source of truth and wired both cards' external-client rows to it, so visible text == merged `excludeSemantics` label == viewer wording on all three surfaces; the two transport notices stay mutually exclusive (HTTP(S) vs non-HTTP). +9 RED→GREEN widget tests (3 capability-card protocol cases +1 pure fallback; 6 per-console-card cases VNC/RFB + SSH at 320/800/1300 px, all confirmed RED pre-fix). Baseline analyze 0 / 1248 passed / 1 skipped → verify analyze 0 / 1257 passed / 1 skipped; DMTF emulator 85/85 (lib changed — §1.4 gate met); issues validate OK; git diff --check clean.
+
+**Decisions:**
+- One shared pure formatter is the single source of truth for all three surfaces, so the client name can never drift between the cards and the viewer; a blank/unknown label falls back to the existing generic notice so no surface regresses.
+- Presentation-only: no URL opened, no dependency, no wire/request/payload/transport change, no production TLS weakening. No issue closed — embedded HTML5 rendering / fullscreen / input forwarding remain externally blocked on platform WebView + BMC self-signed/TLS validation.
+- Full emulator re-run because lib/ changed (§1.4 gate); server stopped via script trap, test-only self-signed cert.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` (EP-M1 URI-scheme edges, RM-2 malformed-payload tolerance, EP-S1 service launch edges, EP-U1 fullscreen scaffold, EP-T4/EP-T6 tooling); genuine tested dependency-free increments only.
+- Never add a WebView/protocol dependency unattended; never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
