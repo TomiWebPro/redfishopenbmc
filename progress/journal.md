@@ -10319,3 +10319,20 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — Oem marker case-insensitive dedup + stale 404 manager member resilience)
+
+## 2026-11-19 00:35 UTC — agent:rf-gate — MERGE build/rf-platform
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#7370 PASS on `build/rf-platform` HEAD `2fbe889` (clean tree; `flutter analyze` 0, targeted `webview_policy_test.dart` 11/11, no production-TLS weakening, all changed paths under `lib/features/kvm/platform/**` + `test/**`, no dependency changes). Branch had 1 unmerged commit → precondition met → `git merge --no-ff build/rf-platform` created merge commit `38dc688` (3 files, +339: `WEBVIEW_TLS_MATRIX.md`, `webview_policy.dart`, `webview_policy_test.dart`).
+- Post-merge verification (all green): `flutter analyze` 0 issues; `flutter test --coverage` 1082 passed / 1 skipped (+11 from merged policy tests); `dart run tool/coverage_gate.dart coverage/lcov.info` PASS overall 89.2% (5403/6054), PASS redfish+power+sensors 90.4% (2117/2343), PASS kvm 92.9% (683/735), exit 0; `python3 issues/issues.py validate` OK; `git diff --check` clean.
+
+**Decisions:**
+- Merged because the latest verdict (run#7370) is a PASS recorded against the current branch HEAD `2fbe889`, with no newer in-flight `rf-platform`/`rf-platform-check` run invalidating it. `--no-ff` used per the gate contract to preserve branch topology.
+- DMTF 85-test emulator suite skipped: the merged `lib/` file is a self-contained, dependency-free design-only policy contract — no HTTP transport, WebView import, platform channel, cert callback, or wire/fixture/tool change — so the Redfish wire surface is untouched.
+- No production TLS weakened: the module defaults the in-app flag OFF and TLS to `strict`, confining self-signed acceptance to an explicit test-only opt-in (HTTPS only).
+
+**Next:**
+- Next `rf-platform` item (RP-2) stays on `queues/platform.md`; the gate will merge only on a fresh PASS verdict.
+- Re-run all gates on the next PASS; cleanly SKIP if the verdict is not PASS or the branch has no new commits.
+
+**Issues touched:** none (gate merge + tracking only)
