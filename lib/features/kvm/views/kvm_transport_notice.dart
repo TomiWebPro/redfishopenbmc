@@ -7,7 +7,7 @@
 /// injected input (potentially credentials) would travel unencrypted, so both
 /// cards must warn with the **exact same** sentence — a single source of truth
 /// keeps the two views from drifting. The per-console viewer has its own, more
-/// detailed `kvmLaunchStatusText(KvmLaunchStrategy.insecureHtml5)` message,
+/// detailed `kvmLaunchStatusText` message for `insecureHtml5` / `insecureHttp`,
 /// which is intentionally distinct.
 ///
 /// This is pure presentation copy: it opens no URL and never changes transport

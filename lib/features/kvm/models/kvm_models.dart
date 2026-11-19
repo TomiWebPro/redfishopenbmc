@@ -87,6 +87,15 @@ enum KvmLaunchStrategy {
   /// deliberately blocked with an explicit enable-HTTPS warning.
   insecureHtml5,
 
+  /// Non-HTML5 console whose connect URI is plaintext HTTP (e.g. KVMIP over
+  /// `http://`). It is NOT a browser/in-app render target — no unencrypted
+  /// browser console is ever suggested — but it still carries a real, copyable
+  /// URI, so it must not be collapsed into [noUri] (whose "use the URI if
+  /// provided" guidance gives no unencrypted warning). It gets its own explicit
+  /// cleartext warning so it agrees with the transport signals on both cards
+  /// (issues #009 / #021; never weaken TLS).
+  insecureHttp,
+
   /// A protocol (VNC/RFB/KVMIP/serial) that needs an external client.
   externalClient,
 
@@ -273,9 +282,13 @@ class KvmConsole {
   /// The single, deterministic launch strategy for this console (issue #021).
   ///
   /// Decision order: no URI → disabled service → insecure (plaintext HTTP)
-  /// HTML5 → in-app HTML5 (HTTPS) → external-protocol client → secure browser
-  /// (HTTPS, non-HTML5) → no URI fallback. Plaintext HTTP is never offered as a
-  /// browser or in-app render target, so the app cannot weaken BMC TLS.
+  /// HTML5 → insecure (plaintext HTTP) non-HTML5 → in-app HTML5 (HTTPS) →
+  /// external-protocol client → secure browser (HTTPS, non-HTML5) → no URI
+  /// fallback. Plaintext HTTP is never offered as a browser or in-app render
+  /// target, so the app cannot weaken BMC TLS; a plain HTTP URI is reported as
+  /// [KvmLaunchStrategy.insecureHttp] (with a cleartext warning) instead of the
+  /// misleading [KvmLaunchStrategy.noUri], matching both cards' transport signal
+  /// (issues #009 / #021).
   KvmLaunchStrategy get launchStrategy {
     final String? uri = launchUri;
     if (uri == null || uri.isEmpty) return KvmLaunchStrategy.noUri;
@@ -283,6 +296,13 @@ class KvmConsole {
     if (supportsHtml5 && usesInsecureHttpLaunchUri) {
       return KvmLaunchStrategy.insecureHtml5;
     }
+    // A plaintext HTTP endpoint with a real, copyable URI must not be reported
+    // as "no URI" — that would skip the unencrypted-transport warning both
+    // cards already show. It is still never a browser/in-app render target (no
+    // TLS weakening); it just gets honest cleartext guidance. Checked before
+    // the external-protocol branch so an `http://` KVMIP endpoint is flagged
+    // for its cleartext transport rather than only as an external client.
+    if (usesInsecureHttpLaunchUri) return KvmLaunchStrategy.insecureHttp;
     if (canLaunchInAppHtml5) return KvmLaunchStrategy.inAppHtml5;
     if (requiresExternalConsoleClient) return KvmLaunchStrategy.externalClient;
     if (hasSecureLaunchUri) return KvmLaunchStrategy.secureBrowser;
@@ -297,9 +317,9 @@ class KvmConsole {
   /// opened. Both the card's "Open console" action and `KvmService.pickPrimary`
   /// gate on this getter, so neither offers a console the viewer refuses to
   /// launch (a BMC may publish a ConnectUri while reporting ServiceEnabled:
-  /// false). `insecureHtml5` still counts: its URI can be copied/opened
-  /// externally (in-app rendering alone is blocked so BMC TLS is never weakened,
-  /// issue #021).
+  /// false). `insecureHtml5` and `insecureHttp` still count: their URIs can be
+  /// copied/opened externally (in-app/browser rendering alone is blocked so BMC
+  /// TLS is never weakened, issue #021).
   ///
   /// `KvmService.pickPrimary` uses this so the "Primary" badge never lands on a
   /// console the user cannot launch (issue #009).
@@ -471,6 +491,11 @@ String kvmLaunchStatusText(
           'In-app rendering is disabled to keep console video and input '
           'encrypted. Configure the BMC console to use HTTPS before '
           'opening it in a browser.';
+    case KvmLaunchStrategy.insecureHttp:
+      return 'This console uses an unencrypted HTTP connection. '
+          'In-app rendering is disabled to keep console video and input '
+          'encrypted. Configure the BMC console to use HTTPS, or copy the '
+          'URI for an external client.';
     case KvmLaunchStrategy.inAppHtml5:
       return 'In-app HTML5 console path available for this URI. '
           'Embedded rendering requires a WebView dependency. '

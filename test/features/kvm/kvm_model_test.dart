@@ -413,15 +413,42 @@ void main() {
         build(types: const <String>['KVMIP']).launchStrategy,
         KvmLaunchStrategy.secureBrowser,
       );
-      // A secure-browser suggestion is never offered for plaintext HTTP.
-      expect(
-        build(
-          types: const <String>['KVMIP'],
-          uri: 'http://bmc.example.com/kvm',
-        ).launchStrategy,
-        KvmLaunchStrategy.noUri,
-        reason: 'the app must never suggest an unencrypted browser console',
+    });
+
+    test(
+        'plaintext HTTP non-HTML5 resolves to insecureHttp, not noUri '
+        '(#009/#021)', () {
+      // A plaintext HTTP endpoint still carries a real, copyable URI — it must
+      // not be collapsed into `noUri` (whose guidance says "use the URI if
+      // provided" and gives NO unencrypted warning). It gets its own explicit
+      // status that warns about the cleartext transport WITHOUT ever suggesting
+      // an unencrypted browser console — the original safety intent is kept.
+      final KvmConsole console = build(
+        types: const <String>['KVMIP'],
+        uri: 'http://bmc.example.com/kvm',
       );
+      expect(console.hasHttpLaunchUri, isTrue);
+      expect(console.usesInsecureHttpLaunchUri, isTrue);
+      expect(console.launchStrategy, KvmLaunchStrategy.insecureHttp,
+          reason: 'a plain HTTP endpoint is insecureHttp, not noUri');
+      expect(console.canOpenConsole, isTrue,
+          reason:
+              'its URI is copyable/openable externally, like insecureHtml5');
+      expect(kvmLaunchStatusText(console.launchStrategy),
+          isNot(kvmLaunchStatusText(KvmLaunchStrategy.noUri)),
+          reason: 'must not reuse the generic no-URI guidance');
+    });
+
+    test(
+        'insecureHttp status warns about cleartext without suggesting a '
+        'browser console (#021)', () {
+      final String text = kvmLaunchStatusText(KvmLaunchStrategy.insecureHttp);
+      expect(text, contains('unencrypted HTTP connection'));
+      expect(text, contains('Configure the BMC console to use HTTPS'));
+      expect(text, isNot(contains('secure HTTPS connection')));
+      expect(text, isNot(contains('Open the URI in a secure')));
+      expect(text, isNot(contains('HTML5 console')),
+          reason: 'a non-HTML5 console must not be labelled HTML5');
     });
   });
 

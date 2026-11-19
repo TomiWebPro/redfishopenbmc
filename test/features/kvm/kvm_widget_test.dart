@@ -367,6 +367,53 @@ void main() {
     });
 
     testWidgets(
+        'plaintext HTTP non-HTML5 console is openable and warns about '
+        'cleartext in the viewer (#009)', (WidgetTester tester) async {
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(
+          consoles: <KvmConsole>[
+            KvmConsole(
+              type: KvmConsoleType.graphical,
+              managerId: 'BMC',
+              connectTypesSupported: <String>['KVMIP'],
+              serviceEnabled: true,
+              connectUri: 'http://bmc.example.com/kvm',
+              sourceManagerUri: '/redfish/v1/Managers/BMC',
+            ),
+          ],
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The card warns about the unencrypted endpoint AND offers the launch
+      // action (its URI is copyable externally, like an insecure HTML5 console).
+      // Before the fix a plain-HTTP non-HTML5 console was mislabelled `noUri`,
+      // so canOpenConsole was false and there was no "Open console" action.
+      expect(find.byIcon(Icons.lock_open_outlined), findsOneWidget);
+      expect(find.text('Open console'), findsOneWidget,
+          reason: 'a plaintext HTTP URI is openable/copyable, not "no URI"');
+      await tester.tap(find.text('Open console'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Graphical Console viewer'), findsOneWidget);
+      expect(
+        find.textContaining('uses an unencrypted HTTP connection'),
+        findsOneWidget,
+      );
+      expect(find.text('http://bmc.example.com/kvm'), findsWidgets);
+      // Never suggest a secure/browser render route for plaintext HTTP.
+      expect(find.textContaining('secure HTTPS connection'), findsNothing);
+    });
+
+    testWidgets(
         'console card body rows announce as one merged semantics node each '
         '(Manager / Max concurrent sessions / HTML5, UI-2)', (tester) async {
       final KvmController controller = _StubController()
@@ -1071,6 +1118,43 @@ void main() {
       expect(find.bySemanticsLabel(expected), findsOneWidget,
           reason: 'a11y: announcement must include the copy-and-open step');
       expect(find.text(expected), findsOneWidget);
+    });
+
+    testWidgets(
+        'non-HTML5 plaintext HTTP status announces the cleartext warning '
+        'with error styling (#009)', (tester) async {
+      await pumpViewer(
+        tester,
+        const KvmConsole(
+          type: KvmConsoleType.graphical,
+          managerId: 'BMC',
+          connectTypesSupported: <String>['KVMIP'],
+          serviceEnabled: true,
+          connectUri: 'http://bmc.example.com/kvm',
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        ),
+      );
+
+      const String expected =
+          'This console uses an unencrypted HTTP connection. '
+          'In-app rendering is disabled to keep console video and input '
+          'encrypted. Configure the BMC console to use HTTPS, or copy the '
+          'URI for an external client.';
+      expect(find.bySemanticsLabel(expected), findsOneWidget,
+          reason: 'a11y: the cleartext warning must be announced');
+      expect(find.text(expected), findsOneWidget);
+      expect(
+        find.textContaining('In-app embedded rendering is not available'),
+        findsNothing,
+        reason: 'must not show the generic no-URI guidance for a real HTTP URI',
+      );
+      // The warning is error-styled on every surface that flags plaintext HTTP.
+      final Text status = tester.widget<Text>(find.text(expected));
+      expect(
+        status.style?.color,
+        Theme.of(tester.element(find.text(expected))).colorScheme.error,
+        reason: 'plaintext HTTP status carries the security error colour',
+      );
     });
 
     testWidgets('fallback status announces exactly its visible text (#010)',

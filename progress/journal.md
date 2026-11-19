@@ -10567,3 +10567,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — two-view transport-classifier parity), #021 (open — hardened plaintext-HTTP classification)
+
+## 2026-11-19 — agent:redfish-automation — #009/#021
+
+**Done:**
+- FEATURE #009 (smallest open ID) / #021 — genuine, dependency-free, TLS-safe launch-classification fix. `KvmConsole.launchStrategy` mislabelled an enabled plaintext-HTTP **non-HTML5** console (e.g. KVMIP over `http://`) as `noUri` despite its real, copyable URI: the viewer gave the generic "Use the URI externally if provided" guidance with no unencrypted warning, and `canOpenConsole == false` withheld "Open console", while both cards already flag `usesInsecureHttpLaunchUri`. Added a dedicated `KvmLaunchStrategy.insecureHttp` (decided after `insecureHtml5`, before external client) with its own merged-a11y cleartext status and error styling in the viewer; still never an in-app/browser render target, so no unencrypted browser console is suggested and production TLS is never weakened. +4 RED→GREEN tests (3 confirmed RED pre-fix: model load against missing enum, absent "Open console", absent viewer semantics label). Baseline analyze 0 / 1147 passed / 1 skipped → verify analyze 0 / 1151 passed / 1 skipped; DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.5% / scoped 90.4% / kvm 94.8%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Added a new strategy rather than broadening `secureBrowser` or reverting to `noUri`: a plaintext HTTP endpoint must never be offered as a secure browser console (the original test's safety intent is preserved), but it must also not be lied about as "no URI" — a distinct `insecureHttp` status carries the honest cleartext warning and keeps the URI copyable, matching `insecureHtml5`. Error-styled in the viewer to agree with the two cards' existing flags. `canOpenConsole` is true for it, so the card's launch action is no longer a dead end. No WebView/protocol dependency and no production TLS weakening; full emulator re-run because `lib/` changed.
+
+**Next:**
+- Find another genuine, dependency-free increment for #009/#021 (e.g. the console card still shows "HTML5 console — open via BMC web UI." for a cleartext HTML5 endpoint alongside the unencrypted warning; or epic-triage/split the WebView-blocked rendering work). Never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — plaintext-HTTP non-HTML5 launch classification), #021 (open — cleartext status parity)

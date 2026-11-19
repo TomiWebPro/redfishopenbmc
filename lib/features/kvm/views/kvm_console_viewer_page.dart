@@ -35,18 +35,23 @@ class KvmConsoleViewerPage extends StatelessWidget {
     // was shorter and silently dropped the "open in a browser" / "copy the URI"
     // steps). No internal issue references in user-facing copy.
     // #021: the strategy is resolved once in the model (deterministic priority:
-    // no URI → disabled → insecure HTML5 → in-app HTML5 → external client →
-    // secure browser) and the guidance is produced by one pure resolver, so the
-    // viewer cannot disagree with the model's launch decision.
+    // no URI → disabled → insecure HTML5 → insecure HTTP → in-app HTML5 →
+    // external client → secure browser) and the guidance is produced by one
+    // pure resolver, so the viewer cannot disagree with the model's launch
+    // decision.
     final KvmLaunchStrategy strategy = console.launchStrategy;
     final String statusText = kvmLaunchStatusText(
       strategy,
       externalProtocol: console.externalClientProtocolLabel,
     );
-    // Security (#021): a plaintext-HTTP HTML5 console is never an in-app render
-    // candidate — colour its warning as an error for a visual cue, without ever
-    // weakening the app's TLS posture.
-    final TextStyle? statusStyle = strategy == KvmLaunchStrategy.insecureHtml5
+    // Security (#021): a plaintext-HTTP console (HTML5 or not) is never an
+    // in-app/browser render candidate — colour its cleartext warning as an
+    // error for a visual cue, matching both cards, without ever weakening the
+    // app's TLS posture.
+    final bool insecureTransport =
+        strategy == KvmLaunchStrategy.insecureHtml5 ||
+            strategy == KvmLaunchStrategy.insecureHttp;
+    final TextStyle? statusStyle = insecureTransport
         ? theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.error, fontWeight: FontWeight.w600)
         : theme.textTheme.bodyMedium;
