@@ -146,4 +146,50 @@ void main() {
       expect(plan.targetUri, 'https://bmc.example/console');
     });
   });
+
+  group('planConsoleLaunch — defense in depth: URI scheme re-validation', () {
+    test('a stale secure flag on a plaintext URI cannot enable in-app TLS weakening', () {
+      // The caller-supplied hasSecureUri may be stale or wrong. Defense in
+      // depth: the actual URI string must also be HTTPS, otherwise plaintext
+      // HTTP could be rendered in-app with a self-signed cert under the opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.testOptIn,
+        uri: 'http://bmc.example/console',
+        hasSecureUri: true, // inconsistent signal
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.route, KvmConsoleRenderRoute.copyOnly);
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('a non-HTTPS scheme cannot be rendered in-app even with a secure flag', () {
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.testOptIn,
+        uri: 'file:///etc/passwd',
+        hasSecureUri: true, // inconsistent signal
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.route, KvmConsoleRenderRoute.copyOnly);
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('uppercase HTTPS scheme is still recognised as secure', () {
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.productionDefault,
+        uri: 'HTTPS://bmc.example/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.route, KvmConsoleRenderRoute.externalBrowser);
+      expect(plan.targetUri, 'HTTPS://bmc.example/console');
+    });
+  });
 }

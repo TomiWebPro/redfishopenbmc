@@ -38,6 +38,12 @@ Invariants, enforced by tests:
    never set it — production TLS is never weakened (issue #021).
 3. **Fail closed.** A blank/missing URI degrades to `copyOnly` rather than
    handing a launcher a null/whitespace target; URIs are trimmed.
+4. **Scheme re-validation (defense in depth).** `hasSecureUri` alone is never
+   trusted for a TLS-sensitive decision: the raw URI string must also use the
+   `https://` scheme (case-insensitive). A stale/incorrect secure flag paired
+   with a plaintext `http://` or non-HTTPS URI fails closed to `copyOnly` —
+   even under the test opt-in — so plaintext can never be rendered in-app or
+   receive self-signed acceptance. Covered by 3 targeted tests.
 
 ## What remains gated (not done here)
 

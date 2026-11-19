@@ -49,6 +49,23 @@ class KvmConsoleLaunchPlan {
   bool get isCopyOnly => route == KvmConsoleRenderRoute.copyOnly;
 }
 
+/// Returns `true` only when [uri] explicitly uses the HTTPS scheme.
+///
+/// Defense in depth: the caller-supplied `hasSecureUri` signal may be stale or
+/// inaccurate, so the raw URI string is independently checked before any
+/// security-sensitive decision (in-app rendering / self-signed acceptance).
+/// Scheme matching is case-insensitive (schemes are case-insensitive per RFC
+/// 3986); anything without an explicit `https://` prefix — plaintext HTTP,
+/// `file:`, protocol-relative, malformed — is treated as not secure.
+bool _uriUsesHttps(String? uri) {
+  if (uri == null) return false;
+  final String trimmed = uri.trim();
+  if (trimmed.isEmpty) return false;
+  final int schemeEnd = trimmed.indexOf('://');
+  if (schemeEnd <= 0) return false;
+  return trimmed.substring(0, schemeEnd).toLowerCase() == 'https';
+}
+
 /// Builds the concrete launch plan from the RP-1 policy and a console's public
 /// signals.
 ///
@@ -58,10 +75,15 @@ class KvmConsoleLaunchPlan {
 /// module dependency-free (it does not import the model).
 ///
 /// Decision order:
-///  1. Route via RP-1's [resolveRenderRoute] (single source of truth).
-///  2. Self-signed acceptance is granted only for an in-app route under the
+///  1. Derive the *effective* secure signal: BOTH the caller's [hasSecureUri]
+///     flag AND an actual `https://` URI scheme must agree. This closes the
+///     stale-flag gap so plaintext/non-HTTPS URIs can never reach in-app
+///     rendering or self-signed acceptance (no TLS weakening).
+///  2. Route via RP-1's [resolveRenderRoute] (single source of truth) using the
+///     effective signal.
+///  3. Self-signed acceptance is granted only for an in-app route under the
 ///     test-only opt-in on HTTPS — never for a fallback.
-///  3. A missing/blank URI fails closed to copy-only so a launcher is never
+///  4. A missing/blank URI fails closed to copy-only so a launcher is never
 ///     handed a null/whitespace target; the URI is trimmed for every other route.
 KvmConsoleLaunchPlan planConsoleLaunch({
   required KvmWebViewPolicy policy,
@@ -70,9 +92,14 @@ KvmConsoleLaunchPlan planConsoleLaunch({
   required bool isHtml5,
   required bool isEnabled,
 }) {
+  // Never trust a lone boolean for a TLS-sensitive decision: require the raw
+  // URI to actually use HTTPS as well, so an inaccurate/stale signal fails
+  // closed instead of enabling in-app self-signed acceptance on plaintext.
+  final bool effectiveSecure = hasSecureUri && _uriUsesHttps(uri);
+
   final KvmConsoleRenderRoute route = resolveRenderRoute(
     policy: policy,
-    hasSecureUri: hasSecureUri,
+    hasSecureUri: effectiveSecure,
     isHtml5: isHtml5,
     isEnabled: isEnabled,
   );
@@ -91,7 +118,7 @@ KvmConsoleLaunchPlan planConsoleLaunch({
   // test-only opt-in cannot weaken TLS on an external-browser/copy fallback.
   final bool acceptSelfSigned =
       safeRoute == KvmConsoleRenderRoute.inAppWebView &&
-      policy.mayAcceptSelfSigned(hasSecureUri: hasSecureUri);
+      policy.mayAcceptSelfSigned(hasSecureUri: effectiveSecure);
 
   return KvmConsoleLaunchPlan._(
     route: safeRoute,
