@@ -177,12 +177,51 @@ bool isControlSafeConsoleUri(String? uri) =>
 /// rendering and self-signed acceptance on a malformed/spoofed host. Every
 /// `%` not followed by exactly two hex digits fails closed, while valid `%XX`
 /// (either hex case) stays launchable — no valid target is lost.
+///
+/// A raw non-ASCII authority is rejected for the same reason: RFC 3986 URIs are
+/// ASCII-only (a raw non-ASCII character must be pct-encoded, or punycode in a
+/// host), but `Uri.tryParse` silently pct-encodes a raw non-ASCII host/userinfo
+/// into a non-empty host (e.g. Cyrillic 'a' U+0430 -> `bmc%D0%B0.example`),
+/// passing a purely syntactic re-check. A raw Unicode authority is a
+/// host-spoofing risk (confusable/homograph labels); under a stale secure flag +
+/// test opt-in it could reach in-app rendering and self-signed acceptance on a
+/// malformed/spoofed host. The rule is scoped to the authority, so an ASCII
+/// punycode/pct-encoded host and non-ASCII path/query text stay launchable — no
+/// valid target is lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
 /// Matches a `%` that does not begin a valid `%XX` escape (RFC 3986
 /// `pct-encoded = "%" HEXDIG HEXDIG`). Valid escapes contain no bare `%`.
 final RegExp _malformedPercentEncoding = RegExp(r'%(?![0-9A-Fa-f]{2})');
+
+/// Matches any non-ASCII code unit. RFC 3986 URIs are ASCII-only: a raw
+/// non-ASCII character must be pct-encoded (or punycode-encoded in a host).
+final RegExp _nonAscii = RegExp(r'[^\x00-\x7F]');
+
+/// Returns `true` when the raw authority (userinfo + host + port, i.e. the part
+/// between `://` and the first `/`, `?` or `#`) contains a non-ASCII character.
+///
+/// The check must run on the *raw* string: `Uri.tryParse` silently pct-encodes a
+/// raw non-ASCII authority into the host (e.g. Cyrillic 'a' U+0430 ->
+/// `bmc%D0%B0.example`), so inspecting the parsed host cannot detect it. This is
+/// scoped to the authority (the TLS-sensitive part) so non-ASCII path/query text
+/// — which does not affect which host is contacted — stays launchable.
+bool _authorityHasNonAscii(String uri) {
+  final int marker = uri.indexOf('://');
+  if (marker < 0) return false; // no authority; Uri parse fails closed below
+  const int authorityStart = 3; // length of '://'
+  final int start = marker + authorityStart;
+  int end = uri.length;
+  for (int i = start; i < uri.length; i++) {
+    final String char = uri[i];
+    if (char == '/' || char == '?' || char == '#') {
+      end = i;
+      break;
+    }
+  }
+  return _nonAscii.hasMatch(uri.substring(start, end));
+}
 
 /// Trims [uri] and returns it only when it is non-blank and contains no raw
 /// control/separator/invisible code point, or `null` otherwise. Shared by every
@@ -203,6 +242,14 @@ String? _controlSafeTrimmedUri(String? uri) {
   // than reject (RFC 3986 requires "%" HEXDIG HEXDIG). Valid `%XX` escapes (any
   // hex case) contain no bare `%` and stay launchable.
   if (_malformedPercentEncoding.hasMatch(trimmed)) return null;
+  // Reject a raw non-ASCII authority (IDN homograph / confusable / emoji host
+  // or userinfo): Uri.tryParse silently pct-encodes it into a non-empty host,
+  // which under a stale secure flag + test opt-in could reach in-app rendering
+  // and self-signed acceptance on a malformed/spoofed host. Punycode/pct-encoded
+  // ASCII hosts and non-ASCII path/query text stay launchable.
+  // Folded into this shared control-safety gate so every HTTP(S) classifier and
+  // the launch-plan target refuse a raw non-ASCII authority identically.
+  if (_authorityHasNonAscii(trimmed)) return null;
   return trimmed;
 }
 

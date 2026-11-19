@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 44 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (56 across the platform
+consume; today it locks the fallback behaviour with 47 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (59 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -139,6 +139,20 @@ Invariants, enforced by tests:
    HTTP(S) classifier and the launch-plan target refuse a malformed escape
    identically. Covered by 3 additional targeted tests (malformed-percent-encoding
    rejection) in `launch_plan_test.dart`.
+   **Raw non-ASCII authority rejection:** RFC 3986 URIs are ASCII-only, but
+   `Uri.tryParse` silently pct-encodes a raw non-ASCII host/userinfo into a
+   non-empty host (e.g. Cyrillic 'a' U+0430 -> `bmc%D0%B0.example`, an IDN
+   homograph/confusable), passing a purely syntactic re-check. Under a stale
+   secure flag + test opt-in that could reach in-app rendering and self-signed
+   acceptance on a malformed/spoofed host. The raw authority is rejected outright
+   — scoped so an ASCII punycode/pct-encoded host and non-ASCII path/query text
+   stay launchable, no valid target lost; folded into the same shared
+   control-safety gate so every HTTP(S) classifier and the launch-plan target
+   reject it identically. Covered by 47 targeted tests
+   (malformed-authority parity + control-character + raw-space +
+   Unicode-whitespace/invisible + raw-backslash + RFC-3986 unwise-char +
+   malformed-percent-encoding + raw non-ASCII authority rejection) in
+   `launch_plan_test.dart`.
 
 ## What remains gated (not done here)
 
