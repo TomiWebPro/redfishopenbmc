@@ -10447,3 +10447,21 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — capability-card resolved-URI transport safety), #021 (open — TLS guidance consistency)
+
+## 2026-11-19 — agent:rf-gate — MERGE build/rf-platform (e1c6c4b)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` latest run#7498 SUCCESS (started after builder `rf-platform` #7495 that produced branch HEAD `e1c6c4b`; no newer in-flight run invalidating it). Branch had 2 unmerged commits beyond the last-merged `036dd98` (`83e9819` host re-validation, `e1c6c4b` malformed-authority parity) → precondition met → `git merge --no-ff build/rf-platform` created merge `19cea3d` (3 files, +110/-21: `lib/features/kvm/platform/LAUNCH_FALLBACK.md`, `launch_plan.dart`, `test/features/kvm/platform/launch_plan_test.dart`).
+- Post-merge verify (all green): `flutter analyze` 0; full `flutter test` 1114 passed / 1 skipped (+3 merged tests); `dart run tool/coverage_gate.dart coverage/lcov.info` PASS overall 89.5% (5460/6103), PASS redfish+power+sensors 90.4% (2117/2343), PASS kvm 94.4% (740/784), exit 0; `python3 issues/issues.py validate` OK; `git diff --check` clean. No new commit needed beyond the merge itself + this tracking record.
+
+**Decisions:**
+- Merged because the latest verdict (run#7498, SUCCESS) is a PASS against the current branch HEAD; `--no-ff` used per the gate contract to preserve branch topology. Branch diff since `036dd98` touched only `lib/features/kvm/platform/**` + `test/**`, no dependency changes.
+- DMTF 85-test emulator suite skipped: the merged `lib/` change is a self-contained, dependency-free tightening of the launch-plan re-validator (`_uriHasSecureHttpsTarget`: `Uri.tryParse` + `scheme=='https'` + non-empty host, mirroring production `hasSecureLaunchUri`) — no HTTP transport, WebView import, platform channel, cert callback, or wire/fixture/tool change.
+- No production TLS weakened: the change only *tightens* re-validation (host-less/malformed-authority URIs now fail closed to `copyOnly` even under the test opt-in); legitimate userinfo/port HTTPS URIs still pass; self-signed acceptance remains test-only, HTTPS, in-app only.
+- One transient full-suite failure in unrelated `power_view_test.dart` ('dialog confirm button disables + spins while reset is in flight', UI-5) under parallel load; passed in isolation and on a clean full-suite re-run — pre-existing flake, not introduced by this merge.
+
+**Next:**
+- Next `rf-platform` item stays on `queues/platform.md`; gate merges only on a fresh PASS verdict.
+- Re-run all gates on the next PASS; cleanly SKIP if verdict not PASS or branch has no new commits.
+
+**Issues touched:** none (gate merge + tracking only)
