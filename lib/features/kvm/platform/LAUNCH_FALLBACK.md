@@ -41,13 +41,16 @@ Invariants, enforced by tests:
 4. **Scheme + host re-validation (defense in depth).** `hasSecureUri` alone is
    never trusted for a TLS-sensitive decision: the raw URI string must also be
    an HTTPS URL with a non-empty host (mirroring `hasSecureLaunchUri`).
-   Scheme matching is case-insensitive and optional `userinfo@` is stripped
-   before checking the host. A stale/incorrect secure flag paired with a
-   plaintext `http://`, non-HTTPS, or host-less (`https:///console`,
-   `https://?q`, `https://#f`, `https://user@/`) URI fails closed to `copyOnly`
-   — even under the test opt-in — so such targets can never be rendered in-app
-   or receive self-signed acceptance. Legitimate userinfo/port URIs still pass.
-   Covered by 5 targeted tests.
+   Re-validation uses the same `Uri.tryParse` + `scheme == 'https'` + non-empty
+   `host` check as the model, so it can never be more permissive than
+   production. A stale/incorrect secure flag paired with a plaintext `http://`,
+   non-HTTPS, host-less (`https:///console`, `https://?q`, `https://#f`,
+   `https://user@/`), or malformed-authority (`https://bmc.example:notaport/`,
+   `https://bmc.example::443/`) URI fails closed to `copyOnly` — even under the
+   test opt-in — so such targets can never be rendered in-app or receive
+   self-signed acceptance. Legitimate userinfo/port URIs still pass.
+   Covered by 6 targeted tests (including malformed-authority parity with the
+   model's `Uri.tryParse` contract).
 
 ## What remains gated (not done here)
 

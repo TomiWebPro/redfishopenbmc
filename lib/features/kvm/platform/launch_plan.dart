@@ -54,32 +54,25 @@ class KvmConsoleLaunchPlan {
 /// Defense in depth: the caller-supplied `hasSecureUri` signal may be stale or
 /// inaccurate, so the raw URI string is independently checked before any
 /// security-sensitive decision (in-app rendering / self-signed acceptance).
-/// This mirrors the `KvmConsole.hasSecureLaunchUri` contract ("HTTPS with a
-/// non-empty host"): scheme matching is case-insensitive (RFC 3986) and the
-/// authority must contain a real host — after stripping optional `userinfo@`.
+///
+/// This uses the very same parser as the `KvmConsole.hasSecureLaunchUri`
+/// contract it mirrors (`Uri.tryParse` + `scheme == 'https'` + non-empty
+/// `host`), so the re-validation can never be more permissive than production.
+/// A hand-rolled authority scan is deliberately avoided: it can call a
+/// malformed target "secure" (e.g. an invalid/duplicated port such as
+/// `https://bmc.example:notaport/console`) that `Uri.tryParse` rejects, which
+/// under a stale secure flag could reach in-app self-signed acceptance.
 /// Host-less forms such as `https:///console`, `https://?q`, `https://#f` and
-/// `https://user@/` therefore fail closed. Anything else — plaintext HTTP,
-/// `file:`, protocol-relative, malformed — is also treated as not secure.
+/// `https://user@/` also fail closed. Scheme matching is case-insensitive
+/// (Dart normalises it), and legitimate userinfo/port URIs remain secure.
 bool _uriHasSecureHttpsTarget(String? uri) {
   if (uri == null) return false;
   final String trimmed = uri.trim();
   if (trimmed.isEmpty) return false;
-  final int schemeEnd = trimmed.indexOf('://');
-  if (schemeEnd <= 0) return false;
-  if (trimmed.substring(0, schemeEnd).toLowerCase() != 'https') return false;
-
-  // Authority runs from just after `://` up to the first path/query/fragment
-  // delimiter. Strip optional userinfo so `https://user@/x` (empty host) fails.
-  final String afterScheme = trimmed.substring(schemeEnd + 3);
-  int authorityEnd = afterScheme.length;
-  for (final String delimiter in const <String>['/', '?', '#']) {
-    final int index = afterScheme.indexOf(delimiter);
-    if (index >= 0 && index < authorityEnd) authorityEnd = index;
-  }
-  String authority = afterScheme.substring(0, authorityEnd);
-  final int at = authority.lastIndexOf('@');
-  if (at >= 0) authority = authority.substring(at + 1);
-  return authority.isNotEmpty;
+  final Uri? parsed = Uri.tryParse(trimmed);
+  return parsed != null &&
+      parsed.scheme == 'https' &&
+      parsed.host.isNotEmpty;
 }
 
 /// Builds the concrete launch plan from the RP-1 policy and a console's public

@@ -237,4 +237,30 @@ void main() {
       }
     });
   });
+
+  group('planConsoleLaunch — defense in depth: malformed authority parity', () {
+    test('a malformed authority with a stale secure flag fails closed', () {
+      // The re-validator mirrors `hasSecureLaunchUri`, which uses Uri.tryParse.
+      // A hand-rolled authority check can be fooled into calling a malformed
+      // target "secure" (e.g. a non-numeric or duplicated port). With a stale
+      // secure flag under the test opt-in that false positive would enable
+      // in-app rendering and self-signed acceptance — so it must fail closed.
+      for (final String uri in <String>[
+        'https://bmc.example:notaport/console',
+        'https://bmc.example::443/console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }
