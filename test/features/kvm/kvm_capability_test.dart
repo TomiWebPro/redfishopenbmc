@@ -1506,4 +1506,60 @@ void main() {
       expect(cap('https://bmc.example:8443/kvm').hasSecureLaunchUri, isTrue);
     });
   });
+
+  group(
+      'KvmCapability plaintext-HTTP classification is control-char-safe '
+      '(#009/#021)', () {
+    KvmCapability cap(String? uri) => KvmCapability(
+          managerId: 'BMC',
+          supported: true,
+          connectTypes: const <String>['HTML5'],
+          serviceEnabled: true,
+          uri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+
+    // Mirrors the console-view hardening: a raw-space/C0/DEL HTTP authority
+    // must not be presented as a genuine unencrypted endpoint on the
+    // capability card either. `Uri.tryParse` alone percent-encodes them.
+    test('a control-char/raw-space HTTP URI is not flagged insecure', () {
+      for (final String uri in <String>[
+        'http://bmc.exa mple/console',
+        'http://bmc.example/con\nsol',
+        'http://bmc.example/con\u0000sol',
+        'http://bmc.example/con\u007Fsol',
+      ]) {
+        expect(cap(uri).usesInsecureHttpLaunchUri, isFalse, reason: uri);
+      }
+    });
+
+    test('a clean HTTP URI is still flagged insecure (guard)', () {
+      expect(cap('http://bmc.example/kvm').usesInsecureHttpLaunchUri, isTrue);
+    });
+
+    test('console and capability views agree on HTTP-family classification',
+        () {
+      for (final String uri in <String>[
+        'http://bmc.example/kvm',
+        'https://bmc.example/kvm',
+        'http://bmc.exa mple/console',
+        'http://bmc.example/con\r\nsol',
+        'vnc://bmc.example:5900',
+      ]) {
+        final KvmConsole console = KvmConsole(
+          type: KvmConsoleType.remote,
+          managerId: 'BMC',
+          connectTypesSupported: const <String>['HTML5'],
+          serviceEnabled: true,
+          connectUri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+        expect(cap(uri).hasHttpLaunchUri, console.hasHttpLaunchUri,
+            reason: uri);
+        expect(cap(uri).usesInsecureHttpLaunchUri,
+            console.usesInsecureHttpLaunchUri,
+            reason: uri);
+      }
+    });
+  });
 }

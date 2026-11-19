@@ -47,11 +47,14 @@ Invariants, enforced by tests:
 4. **Scheme + host + control-char re-validation (defense in depth).**
    `hasSecureUri` alone is never trusted for a TLS-sensitive decision: the raw
    URI string must also be an HTTPS URL with a non-empty host and no embedded
-   control characters. One shared pure classifier — `isSecureHttpsConsoleUri`
-   — is now used by the decision layer here AND by
-   `KvmConsole.hasSecureLaunchUri` / `KvmCapability.hasSecureLaunchUri`, so the
-   console card's "Open console" affordance can never disagree with the launch
-   plan about a malformed target. It uses `Uri.tryParse` + `scheme == 'https'`
+   control characters. Three sibling pure classifiers share the same
+   raw-space/control-char hardening: `isSecureHttpsConsoleUri` (HTTPS),
+   `isPlaintextHttpConsoleUri` (plaintext HTTP) and `isHttpConsoleUri`
+   (HTTP or HTTPS). They back the decision layer here AND every model
+   transport classifier — `hasSecureLaunchUri` / `usesInsecureHttpLaunchUri` /
+   `hasHttpLaunchUri` on both `KvmConsole` and `KvmCapability` — so no surface
+   can disagree with the launch plan about a malformed target, whatever its
+   scheme. It uses `Uri.tryParse` + `scheme == 'https'`
    + non-empty `host` (a hand-rolled authority scan could call a malformed port
    "secure") and rejects C0/DEL controls, which `Uri.tryParse` silently
    percent-encodes. A stale/incorrect secure flag paired with a plaintext
@@ -74,10 +77,14 @@ Invariants, enforced by tests:
    stale flag. Raw spaces are never valid in a URI (they must be `%20`), so
    they are rejected outright alongside C0/DEL controls — stricter than the
    model, never more permissive; legitimate `%20`-encoded URIs stay launchable.
-   Legitimate userinfo/port URIs are unaffected. Covered by 11 targeted tests
-   (malformed-authority parity + control-character + raw-space rejection) in
-   `launch_plan_test.dart`, plus classifier-agreement tests in
-   `kvm_model_test.dart` and `kvm_capability_test.dart`.
+   Legitimate userinfo/port URIs are unaffected. The same hardening now applies
+   to plaintext-HTTP / HTTP-family classification via the sibling classifiers,
+   so a raw-space/C0/DEL HTTP URI can no longer drive an "Unencrypted HTTP
+   console URI" warning as if it were a real endpoint. Covered by targeted tests
+   (malformed-authority parity + control-character + raw-space rejection +
+   HTTP-family classifier agreement) in `launch_plan_test.dart`, plus
+   classifier-agreement tests in `kvm_model_test.dart` and
+   `kvm_capability_test.dart`.
 
 ## What remains gated (not done here)
 

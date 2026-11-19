@@ -1082,4 +1082,48 @@ void main() {
       expect(console.launchStrategy, KvmLaunchStrategy.inAppHtml5);
     });
   });
+
+  group(
+      'KvmConsole plaintext-HTTP classification is control-char-safe '
+      '(#009/#021)', () {
+    KvmConsole consoleWith(String uri) => KvmConsole(
+          type: KvmConsoleType.remote,
+          managerId: 'BMC',
+          connectTypesSupported: const <String>['HTML5'],
+          serviceEnabled: true,
+          connectUri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+
+    // `isSecureHttpsConsoleUri` already rejects raw spaces / C0 / DEL, but the
+    // plaintext-HTTP classifiers used a bare `Uri.tryParse`, which silently
+    // percent-encodes those code units into the host/path and still reports a
+    // valid `http` scheme + non-empty host. A malformed HTTP target must be
+    // classified exactly like a malformed HTTPS one (fail closed), on both
+    // the console and capability views — otherwise a CRLF/NUL-bearing URI can
+    // drive the "Unencrypted HTTP console URI" warning as if it were real.
+    test('a control-char/raw-space HTTP URI is not an HTTP/insecure target',
+        () {
+      for (final String uri in <String>[
+        'http://bmc.exa mple/console', // raw space in host
+        'http://bmc.example/con sol', // raw space in path
+        'http://bmc.example/con\nsol', // LF
+        'http://bmc.example/con\r\nsol', // CRLF
+        'http://bmc.example/con\u0000sol', // NUL
+        'http://bmc.example/con\tsol', // TAB
+        'http://bmc.example/con\u007Fsol', // DEL
+      ]) {
+        final KvmConsole console = consoleWith(uri);
+        expect(console.hasHttpLaunchUri, isFalse, reason: uri);
+        expect(console.usesInsecureHttpLaunchUri, isFalse, reason: uri);
+      }
+    });
+
+    test('a clean HTTP URI is still flagged insecure (guard)', () {
+      final KvmConsole console = consoleWith('http://bmc.example/kvm');
+      expect(console.hasHttpLaunchUri, isTrue);
+      expect(console.usesInsecureHttpLaunchUri, isTrue);
+      expect(console.launchStrategy, KvmLaunchStrategy.insecureHtml5);
+    });
+  });
 }

@@ -322,8 +322,11 @@ void main() {
     });
   });
 
-  group('planConsoleLaunch — defense in depth: control-character rejection', () {
-    test('embedded control characters fail closed even with a stale secure flag', () {
+  group('planConsoleLaunch — defense in depth: control-character rejection',
+      () {
+    test(
+        'embedded control characters fail closed even with a stale secure flag',
+        () {
       // `Uri.tryParse` silently percent-encodes C0/DEL control characters into
       // the host/path instead of rejecting them, so a purely syntactic
       // `scheme == 'https' && host.isNotEmpty` re-check calls these "secure".
@@ -352,7 +355,8 @@ void main() {
       }
     });
 
-    test('a control-char URI never reaches in-app even with a strict opt-in', () {
+    test('a control-char URI never reaches in-app even with a strict opt-in',
+        () {
       // Even without granting self-signed acceptance, a malformed URI must not
       // be rendered in-app by an enabled+strict opt-in.
       final KvmConsoleLaunchPlan plan = planConsoleLaunch(
@@ -367,7 +371,8 @@ void main() {
       expect(plan.acceptSelfSigned, isFalse);
     });
 
-    test('a clean HTTPS URI is still accepted (guard against over-rejection)', () {
+    test('a clean HTTPS URI is still accepted (guard against over-rejection)',
+        () {
       final KvmConsoleLaunchPlan plan = planConsoleLaunch(
         policy: KvmWebViewPolicy.productionDefault,
         uri: 'https://bmc.example:8443/console',
@@ -382,7 +387,8 @@ void main() {
   });
 
   group('planConsoleLaunch — defense in depth: raw-space rejection', () {
-    test('a raw space that Uri.tryParse encodes into the host fails closed', () {
+    test('a raw space that Uri.tryParse encodes into the host fails closed',
+        () {
       // `Uri.tryParse` percent-encodes a raw space instead of rejecting it
       // (e.g. `https://bmc.exa mple/console` -> host `bmc.exa%20mple`, still
       // non-empty), so a purely syntactic re-check calls it "secure". With a
@@ -424,6 +430,64 @@ void main() {
       expect(plan.route, KvmConsoleRenderRoute.externalBrowser);
       expect(plan.targetUri, 'https://bmc.example/console%20one');
       expect(plan.acceptSelfSigned, isFalse);
+    });
+  });
+
+  group('HTTP transport classifiers share the control-char hardening', () {
+    test('plaintext/HTTP-family classifiers reject raw spaces and C0/DEL', () {
+      for (final String uri in <String>[
+        'http://bmc.exa mple/console', // raw space in host
+        'http://bmc.example/con sol', // raw space in path
+        'http://bmc.example/con\nsol', // LF
+        'http://bmc.example/con\r\nsol', // CRLF
+        'http://bmc.example/con\u0000sol', // NUL
+        'http://bmc.example/con\tsol', // TAB
+        'http://bmc.example/con\u007Fsol', // DEL
+      ]) {
+        expect(isPlaintextHttpConsoleUri(uri), isFalse, reason: uri);
+        expect(isHttpConsoleUri(uri), isFalse, reason: uri);
+      }
+    });
+
+    test('clean HTTP(S) URIs are classified correctly (guards)', () {
+      expect(isPlaintextHttpConsoleUri('http://bmc.example/kvm'), isTrue);
+      expect(isPlaintextHttpConsoleUri('  http://bmc.example/kvm  '), isTrue);
+      expect(isPlaintextHttpConsoleUri('https://bmc.example/kvm'), isFalse);
+      expect(isHttpConsoleUri('http://bmc.example/kvm'), isTrue);
+      expect(isHttpConsoleUri('  https://bmc.example/kvm  '), isTrue);
+      expect(isHttpConsoleUri('https://bmc.example/console%20one'), isTrue);
+    });
+
+    test('non-HTTP, host-less and malformed URIs fail closed', () {
+      for (final String? uri in <String?>[
+        null,
+        '',
+        '   ',
+        'vnc://bmc.example:5900',
+        'file:///etc/passwd',
+        '/redfish/v1/Managers/BMC',
+        'http:///console',
+        'http://bmc.example:notaport/kvm',
+      ]) {
+        expect(isHttpConsoleUri(uri), isFalse, reason: 'uri=$uri');
+        expect(isPlaintextHttpConsoleUri(uri), isFalse, reason: 'uri=$uri');
+      }
+    });
+
+    test('all three classifiers agree on hardened control-char rejection', () {
+      for (final String uri in <String>[
+        'https://bmc.exa mple/console',
+        'https://bmc.example/con\r\nsol',
+        'http://bmc.exa mple/console',
+        'http://bmc.example/con\u0000sol',
+      ]) {
+        expect(isSecureHttpsConsoleUri(uri), isFalse, reason: uri);
+        expect(isPlaintextHttpConsoleUri(uri), isFalse, reason: uri);
+        expect(isHttpConsoleUri(uri), isFalse, reason: uri);
+      }
+      expect(isSecureHttpsConsoleUri('https://bmc.example/kvm'), isTrue);
+      expect(isHttpConsoleUri('https://bmc.example/kvm'), isTrue);
+      expect(isPlaintextHttpConsoleUri('http://bmc.example/kvm'), isTrue);
     });
   });
 }

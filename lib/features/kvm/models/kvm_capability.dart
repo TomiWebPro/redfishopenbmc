@@ -122,16 +122,22 @@ class KvmCapability {
 
   /// Whether [launchUri] uses plaintext HTTP (unencrypted transport).
   ///
+  /// Whether [launchUri] is an HTTP(S) URL suitable for browser/WebView launch.
+  ///
+  /// Mirrors `KvmConsole.hasHttpLaunchUri` via the shared, control-char-safe
+  /// [isHttpConsoleUri] classifier so both KVM views agree on what counts as a
+  /// browser-launchable URI, including for malformed targets (issue #009).
+  bool get hasHttpLaunchUri => isHttpConsoleUri(launchUri);
+
   /// The capability card uses this to flag a resolved endpoint whose console
   /// video and injected input would travel in the clear, matching the
   /// `KvmConsoleViewerPage` warning for an `insecureHtml5` console (issue #021).
-  /// This is read-only classification — it never changes transport security.
-  bool get usesInsecureHttpLaunchUri {
-    final String? uri = launchUri;
-    if (uri == null || uri.isEmpty) return false;
-    final Uri? parsed = Uri.tryParse(uri);
-    return parsed != null && parsed.scheme == 'http' && parsed.host.isNotEmpty;
-  }
+  ///
+  /// Uses the shared, control-char-safe [isPlaintextHttpConsoleUri] classifier
+  /// (the plaintext sibling of [hasSecureLaunchUri]), matching the console
+  /// view's classification for malformed targets. This is read-only
+  /// classification — it never changes transport security.
+  bool get usesInsecureHttpLaunchUri => isPlaintextHttpConsoleUri(launchUri);
 
   /// True when the graphical console advertises a `KVMIP` connection type.
   ///

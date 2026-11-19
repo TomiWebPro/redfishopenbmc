@@ -189,14 +189,11 @@ class KvmConsole {
   }
 
   /// Whether [launchUri] is an HTTP(S) URL suitable for browser/WebView launch.
-  bool get hasHttpLaunchUri {
-    final String? uri = launchUri;
-    if (uri == null || uri.isEmpty) return false;
-    final Uri? parsed = Uri.tryParse(uri);
-    return parsed != null &&
-        (parsed.scheme == 'http' || parsed.scheme == 'https') &&
-        parsed.host.isNotEmpty;
-  }
+  ///
+  /// Uses the shared, control-char-safe [isHttpConsoleUri] classifier so a
+  /// raw-space/C0/DEL-bearing target is not treated as a browser-launchable
+  /// URI (matching the fail-closed decision layer and `KvmCapability`).
+  bool get hasHttpLaunchUri => isHttpConsoleUri(launchUri);
 
   /// Whether [launchUri] is a genuine HTTPS (TLS-encrypted) target with a
   /// non-empty host and no embedded control characters.
@@ -216,12 +213,12 @@ class KvmConsole {
   /// The UI uses this to warn that an HTML5 console must be configured for
   /// HTTPS before in-app rendering is permitted — console video and injected
   /// input (potentially credentials) must stay encrypted (issue #021).
-  bool get usesInsecureHttpLaunchUri {
-    final String? uri = launchUri;
-    if (uri == null || uri.isEmpty) return false;
-    final Uri? parsed = Uri.tryParse(uri);
-    return parsed != null && parsed.scheme == 'http' && parsed.host.isNotEmpty;
-  }
+  ///
+  /// Uses the shared, control-char-safe [isPlaintextHttpConsoleUri] classifier
+  /// (the plaintext sibling of [hasSecureLaunchUri]), so a malformed HTTP
+  /// target is never presented as a real unencrypted endpoint on the console
+  /// card. Strictly tightens classification; never changes transport security.
+  bool get usesInsecureHttpLaunchUri => isPlaintextHttpConsoleUri(launchUri);
 
   /// Whether this console can follow the in-app HTML5 rendering path.
   ///

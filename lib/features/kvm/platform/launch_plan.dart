@@ -54,10 +54,12 @@ class KvmConsoleLaunchPlan {
 ///
 /// This is the single source of truth for "is this a genuinely secure HTTPS
 /// console target", shared by the fail-closed launch decision layer here and
-/// the `KvmConsole` / `KvmCapability` model transport classifiers. Because all
-/// three call the same pure function, the UI's "is this console secure /
-/// openable" decision can never disagree with the launch plan about a
-/// malformed target.
+/// the `KvmConsole` / `KvmCapability` model transport classifiers. It is one
+/// of three sibling classifiers ([isSecureHttpsConsoleUri],
+/// [isPlaintextHttpConsoleUri], [isHttpConsoleUri]) backed by the same
+/// raw-space/control-char hardening, so the UI's "is this console secure /
+/// openable / unencrypted" decision can never disagree with the launch plan
+/// about a malformed target — regardless of the URI scheme.
 ///
 /// Defense in depth: a caller-supplied `hasSecureUri` signal may be stale or
 /// inaccurate, so the raw URI string is independently checked before any
@@ -82,17 +84,60 @@ class KvmConsoleLaunchPlan {
 /// (they must be percent-encoded as `%20`), so all such characters are rejected
 /// outright. This can only make classification stricter, so no valid (properly
 /// encoded) HTTPS endpoint is lost.
-bool isSecureHttpsConsoleUri(String? uri) {
-  if (uri == null) return false;
+bool isSecureHttpsConsoleUri(String? uri) =>
+    _isHttpUriWithSchemes(uri, const <String>{'https'});
+
+/// Returns `true` only when [uri] is a control-safe **plaintext HTTP** URI with
+/// a non-empty host.
+///
+/// The plaintext sibling of [isSecureHttpsConsoleUri], backed by the identical
+/// raw-space/C0/DEL hardening. The `KvmConsole` / `KvmCapability`
+/// `usesInsecureHttpLaunchUri` classifiers delegate here so a malformed HTTP
+/// target can never be presented as a genuine unencrypted endpoint on one
+/// surface while the fail-closed decision layer refuses it on another (a bare
+/// `Uri.tryParse` silently percent-encodes CRLF/NUL/space into the host/path and
+/// would flag such a target). Strictly tightens classification — no valid HTTP
+/// endpoint is lost. This is read-only guidance: it never changes transport
+/// security (issue #021).
+bool isPlaintextHttpConsoleUri(String? uri) =>
+    _isHttpUriWithSchemes(uri, const <String>{'http'});
+
+/// Returns `true` only when [uri] is a control-safe HTTP **or** HTTPS URI with
+/// a non-empty host — the browser/WebView launch URI family.
+///
+/// Shares the same hardening as [isSecureHttpsConsoleUri] and
+/// [isPlaintextHttpConsoleUri] so the `KvmConsole` / `KvmCapability`
+/// `hasHttpLaunchUri` classifiers agree on what counts as a browser-launchable
+/// URI, including for malformed targets (issues #009 / #021).
+bool isHttpConsoleUri(String? uri) =>
+    _isHttpUriWithSchemes(uri, const <String>{'http', 'https'});
+
+/// Trims [uri] and returns it only when it is non-blank and contains no raw
+/// control/space code unit (C0 controls, the ASCII space `0x20`, or DEL), or
+/// `null` otherwise. Shared by every HTTP(S) transport classifier so HTTPS and
+/// HTTP classification apply identical hardening — `Uri.tryParse` alone
+/// percent-encodes those code units instead of rejecting them.
+String? _controlSafeTrimmedUri(String? uri) {
+  if (uri == null) return null;
   final String trimmed = uri.trim();
-  if (trimmed.isEmpty) return false;
+  if (trimmed.isEmpty) return null;
   for (final int codeUnit in trimmed.codeUnits) {
     // C0 controls, ASCII space (0x20), and DEL are never valid raw in a URI.
     // `%20` is the correct space encoding and contains no raw 0x20 code unit.
-    if (codeUnit <= 0x20 || codeUnit == 0x7f) return false;
+    if (codeUnit <= 0x20 || codeUnit == 0x7f) return null;
   }
+  return trimmed;
+}
+
+/// Whether [uri] is a control-safe HTTP(S) URI with a host whose (Dart-
+/// normalised, here lower-cased) scheme is in [schemes].
+bool _isHttpUriWithSchemes(String? uri, Set<String> schemes) {
+  final String? trimmed = _controlSafeTrimmedUri(uri);
+  if (trimmed == null) return false;
   final Uri? parsed = Uri.tryParse(trimmed);
-  return parsed != null && parsed.scheme == 'https' && parsed.host.isNotEmpty;
+  return parsed != null &&
+      schemes.contains(parsed.scheme.toLowerCase()) &&
+      parsed.host.isNotEmpty;
 }
 
 /// Builds the concrete launch plan from the RP-1 policy and a console's public

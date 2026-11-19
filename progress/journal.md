@@ -10547,3 +10547,23 @@
 - Re-run all gates on the next PASS; cleanly SKIP if verdict not PASS or branch has no new commits.
 
 **Issues touched:** none (gate merge + tracking only)
+
+## 2026-11-19 — agent:redfish-automation — #009/#021
+
+**Done:**
+- FEATURE #009 (smallest open ID) / #021 — dependency-free, TLS-safe transport-classifier parity fix. `isSecureHttpsConsoleUri` rejected raw-space/C0/DEL code units, but the three plaintext-HTTP classifiers (`KvmConsole.hasHttpLaunchUri`, `KvmConsole.usesInsecureHttpLaunchUri`, `KvmCapability.usesInsecureHttpLaunchUri`) were ad-hoc `Uri.tryParse` copies that silently percent-encode those code units and still report `http` + a non-empty host — so a malformed HTTP URI drove a misleading "Unencrypted HTTP console URI" warning while the equivalent malformed HTTPS target was refused. Added sibling pure classifiers `isPlaintextHttpConsoleUri` (http) and `isHttpConsoleUri` (http/https) in `launch_plan.dart`, backed by the same private `_controlSafeTrimmedUri` / `_isHttpUriWithSchemes` core as the hardened HTTPS classifier; delegated all three getters + added `KvmCapability.hasHttpLaunchUri` for parity.
+- +9 RED→GREEN tests (2 model + 3 capability confirmed RED pre-fix with `Expected: false / Actual: <true>` on `http://bmc.exa mple/console`; 4 pure-classifier tests). `launch_plan.dart` refactor keeps `isSecureHttpsConsoleUri` behaviour byte-for-byte (all existing control-char/raw-space/malformed-authority guards stay green).
+- Verification: analyze 0; full `flutter test --coverage` 1147 passed / 1 skipped (baseline 1138 +9); DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.5% / redfish+power+sensors 90.4% / kvm 94.8%; `issues.py validate` OK; `git diff --check` clean.
+
+**Decisions:**
+- Strictly tighten HTTP classification (raw spaces / C0 / DEL are never valid raw in a URI — `%20` is the correct encoding), so no valid HTTP(S) endpoint is lost. Fail closed, display-only guidance; never changes transport security.
+- One private core + three public siblings instead of three duplicated control-char loops, so HTTPS and HTTP classification cannot drift again — this is the root cause of the disagreement, not just one symptom.
+- No WebView/protocol dependency and no production TLS weakening; embedded HTML5 rendering plus fullscreen/input forwarding stay blocked on platform WebView support + BMC self-signed/TLS validation. DMTF emulator re-run because `lib/` changed (model + platform classifier), even though the change is pure Dart with no wire/fixture/tool delta.
+- Untracked `testing/` harness dir and pre-existing stash `stash@{0}: automation-preflight-1793045959` left untouched.
+
+**Next:**
+- Find another genuine, dependency-free increment for #009/#021 (e.g. wire `isHttpConsoleUri` into `resolveRenderRoute` / `launchPlan` so a plaintext-HTTP console's render route explicitly agrees with the hardened classifier), or epic-triage/split the WebView-blocked rendering work. Never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — two-view transport-classifier parity), #021 (open — hardened plaintext-HTTP classification)
