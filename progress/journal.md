@@ -11209,3 +11209,22 @@
 - Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — no closure (gate merge only).
+
+## 2026-11-19 — agent:redfish-automation — #009/#021 (EP-P5)
+
+**Done:**
+- FEATURE — EP-P5 (head of `queues/platform.md`, shared by #009/#021): added the test-only pure-Dart guard `test/features/kvm/platform/product_import_policy_test.dart` (19 tests) that machine-checks the resolved no-embedded-WebView / external-browser + copy decision. A comment/string/filename-aware scanner fails closed if any product `lib/**.dart` imports `webview_flutter` / `flutter_inappwebview` / `url_launcher` or opens a raw `MethodChannel` / `EventChannel` console channel, or if `pubspec.yaml` / `pubspec.lock` carry such a dependency.
+- Guards against reintroducing the in-app WebView rendering that #021 defers on manual per-target validation evidence; no `lib/` change, no dependency, no wire/transport/fixture change, no production TLS weakening. Auto-enforced by CI's existing `flutter test --coverage` step.
+- 6 assertions confirmed RED pre-fix by temporarily neutering the scanner (`Expected: non-empty / Actual: []`, `Expected: length <2 / Actual: []`) → GREEN 19/19. Baseline analyze 0 / 1353 passed / 1 skipped → verify analyze 0 / 1372 passed / 1 skipped (+19); issues validate OK; git diff --check clean. DMTF emulator skipped (test-only change — no lib/wire/fixture/tool change, <7 days since last green 85/85).
+
+**Decisions:**
+- Kept the evaluator entirely in a TEST-only file so its forbidden tokens never appear in product `lib/` (the very thing the guard scans) — no self-flagging, no production-code churn.
+- Comment/string stripping + anchored import directives + word-boundary channel detection keep the existing `webview_policy.dart` doc mention and `launch_plan.dart` filename clean; a real forbidden import is still flagged even in a policy-named file (filename is not immunity).
+- Both issues stay OPEN (embedded HTML5 rendering / fullscreen / input forwarding remain externally blocked on platform WebView + BMC self-signed/TLS validation).
+
+**Next:**
+- Continue unblocked dept slices (EP-T7 emulator prerequisite doctor, EP-S1 service launch edges, EP-U1 fullscreen scaffold) — genuine tested increments only.
+- Never add a WebView/url_launcher dependency unattended; never weaken production TLS (EP-P5 guard now fails closed on both).
+- Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

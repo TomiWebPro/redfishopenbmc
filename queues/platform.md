@@ -11,7 +11,7 @@ platform validation evidence.
      its machine-checkable guard clause, split out so a platform builder can land a genuine
      invariant without the human gate. No dependency, no production TLS change, no WebView import. -->
 
-- [ ] EP-P5 Enforce the resolved no-embedded-WebView decision with a pure-Dart product-import
+- [x] EP-P5 LANDED 2026-11-19 (run `auto: FEATURE #009/#021 EP-P5 no-WebView product-import policy guard + RED→GREEN tests`) — Enforce the resolved no-embedded-WebView decision with a pure-Dart product-import
       policy guard (the unattended slice of EP-P4's guard clause): a test under
       `test/features/kvm/platform/` scans every product `lib/**.dart` and fails closed if any
       imports `webview_flutter*`, `flutter_inappwebview*`, `url_launcher*` or opens a raw
@@ -82,4 +82,5 @@ platform validation evidence.
 
 ## Log (one line per completed item: date + commit + note)
 
+- 2026-11-19 23:25 — EP-P5 LANDED (agent:redfish-automation, FEATURE #009/#021): new test-only `test/features/kvm/platform/product_import_policy_test.dart` enforces the resolved no-embedded-WebView decision — 19 tests scan every product `lib/**.dart` for `webview_flutter` / `flutter_inappwebview` / `url_launcher` imports and raw `MethodChannel` / `EventChannel` console channels, plus `pubspec.yaml` / `pubspec.lock` for forbidden deps, with comment/string/filename immunity guards. 6 assertions confirmed RED pre-fix by temporarily neutering the scanner (`Expected: non-empty / Actual: []`) → GREEN after. analyze 0 / new full-suite count; no `lib/`, no dependency, no wire/transport change, no production TLS weakening. CI already runs all tests via `flutter test --coverage`.
 - 2026-11-19 19:27 — EP-M1/M2 cross-surface classifier parity (agent:redfish-automation, FEATURE #009/#021): `lib/features/kvm/platform/launch_plan.dart` now fails `isExternalClientConsoleUri` closed on a degenerate label-less authority (`vnc://./`, `ssh://../`, `ipmi://%2E%2E/`) via a shared `_hasDegenerateAuthorityHost(Uri)` helper also used by the HTTP(S) classifier family; opaque authority-less URIs and the `@odata.id` clipboard fallback unaffected. +3 RED→GREEN tests (pure classifier + KvmConsole model + KvmCapability parity). analyze 0 / 1313 passed / 1 skipped; DMTF emulator 85/85 (lib changed). No dependency, no wire/transport change, no production TLS weakening.
