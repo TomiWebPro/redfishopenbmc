@@ -10624,3 +10624,13 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — external-client classifier parity), #021 (open — transport classification consistency)
+
+## 2026-11-19 — agent:rf-gate — MERGE build/rf-platform (005c985, check#7664)
+
+**Done:** Sole-merger gate. `rf-platform-check` run#7664 (started 07:51:38 UTC, ~75 s after builder HEAD `005c985` at 07:50:23 UTC) returned PASS on the single pending commit beyond `main` (analyze 0, targeted `launch_plan_test.dart` 25/25 incl. 3 new raw-backslash cases, no production-TLS weakening, path-contained under `lib/features/kvm/platform/**` + `test/**`). Merged `build/rf-platform` into `main` via `--no-ff` → merge `7043579`. Resolved 2 conflicts preserving both sides: main's shared public HTTP(S) classifiers + `String?`-returning `_controlSafeTrimmedUri`, and the branch's stricter raw-backslash regex in `_rawUriForbiddenChars` (closing a `Uri.tryParse` backslash→slash parser-differential host-confusion gap); both test groups and both doc intents retained. Post-merge verify in a clean isolated worktree at `7043579` (a concurrent `redfish-automation` FEATURE run held unrelated unstaged WIP in `lib/features/kvm/models/**` + `test/**` whose transient `String?`/`Uri.tryParse` compile error + 2 failing tests were NOT present at the merge commit — that run later committed cleanly as `b8fd16e`): `flutter analyze` 0; full `flutter test --coverage` 1161 passed / 1 skipped; coverage gates PASS overall 89.5% / scoped 90.4% / kvm 94.8%; `issues.py validate` OK; `git diff --check` clean. Pushed `main` 7e7bb5a..7043579.
+
+**Decisions:** Kept main's shared-classifier single source of truth and folded the branch's raw-backslash rejection into the single `_rawUriForbiddenChars` RegExp, so HTTPS / plaintext-HTTP / HTTP-family classification and the launch-plan decision layer all apply one identical fail-closed hardening (stricter only for illegal raw chars — properly `%5C`/`%20`-encoded targets stay launchable; no production TLS weakened, no valid target lost). DMTF emulator 85-test suite not required: the merged `lib/` change is a dependency-free regex hardening in the decision helper with no wire/transport/fixture/tool change. No new dev work by rf-gate.
+
+**Next:** Verify push settled; the next `rf-platform-check` PASS gates the subsequent platform commit. No new dev work by rf-gate.
+
+**Issues touched:** none (merge-only gate; #009 / #021 remain open under redfish-automation).
