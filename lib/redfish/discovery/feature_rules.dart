@@ -1,3 +1,8 @@
+// Pure, import-free helper shared with both KVM views so the discovery gate's
+// OEM enablement rule cannot drift from KvmConsole.fromManager /
+// KvmCapability.fromManager (issue #009; no cycle — the helper imports nothing).
+import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart'
+    show kvmOemConsoleEnabled;
 import 'package:redfishopenbmc/redfish/models/odata.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
@@ -361,7 +366,12 @@ class FeatureRules {
   /// always carry an `Oem` block for vendor metadata (see `Redfish.md` Manager
   /// field list), so a bare `Oem` map must **not** be treated as a console —
   /// otherwise KVM would report available on every OpenBMC system (DOCS-4,
-  /// 2026-10-22).
+  /// 2026-10-22). The OEM console's own enablement is also honored, via the
+  /// same shared `kvmOemConsoleEnabled` helper both KVM views use: a BMC that
+  /// explicitly reports its OEM console as disabled must not open a KVM tab
+  /// that the capability card reports "not supported / disabled" and the
+  /// console card refuses to launch (issue #009). An OEM block that omits the
+  /// enablement flag stays enabled (the common mockup case).
   static String? _managerConsoleType(Map<String, dynamic> manager) {
     final dynamic graphical = manager['GraphicalConsole'];
     if (graphical is Map<dynamic, dynamic> && _consoleEnabled(graphical)) {
@@ -375,7 +385,10 @@ class FeatureRules {
     if (remote is Map<dynamic, dynamic> && _consoleEnabled(remote)) {
       return 'RemoteConsole';
     }
-    if (FeatureRules.oemHasConsole(manager['Oem'])) return 'Oem';
+    final dynamic oem = manager['Oem'];
+    if (FeatureRules.oemHasConsole(oem) && kvmOemConsoleEnabled(oem)) {
+      return 'Oem';
+    }
     return null;
   }
 

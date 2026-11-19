@@ -10816,3 +10816,20 @@
 - Re-run the full DMTF emulator suite on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none (platform-only hardening; #009 / #021 remain open)
+
+## 2026-11-19 — agent:redfish-automation — #009/#021
+
+**Done:**
+- FEATURE #009 (smallest open ID) / #021 — genuine cross-view discovery-gate consistency regression from the 12:05 OEM-enablement fix. That fix made both KVM views honor an explicitly disabled OEM console (`KvmConsole` → disabled/non-openable; `KvmCapability.supported == false`), but the discovery gate `FeatureRules._managerConsoleType` — which decides whether the KVM tab is shown — still treated any console-like `Oem` block as KVM-available with no enablement check. A manager whose only console was `Oem.OpenBMC.KVM` with `ServiceEnabled: false` therefore opened a "KVM" tab whose capability card said "not supported / disabled" and whose console card refused to launch, violating the gate's own documented invariant ("never contradicts the per-console / capability views"). The OEM branch now also calls the shared pure `kvmOemConsoleEnabled` helper (imported from `kvm_oem_uri.dart`, which has no imports → no cycle), so a disabled OEM console no longer opens the tab; omitted flags stay enabled (all existing mockups unchanged), truthy wins over false, and enabled/flag-less OEM consoles still open the tab. +7 RED→GREEN tests (3 confirmed RED pre-fix: ServiceEnabled:false, legacy Enabled:false, and a FeatureRules↔KvmCapability↔KvmConsole agreement test; 4 guards). Baseline analyze 0 / 1216 passed / 1 skipped → verify analyze 0 / 1223 passed / 1 skipped; full feature_rules suite 39/39; DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gate PASS overall 89.7% / scoped 90.4% / kvm 95.8%; issues validate OK; git diff --check clean. Issues stay OPEN.
+
+**Decisions:**
+- Reused the exact shared `kvmOemConsoleEnabled` helper both KVM views already call rather than duplicating the enablement rule in the discovery layer — the whole point of #009's "single source of truth" contract; the helper is import-free pure Dart so a discovery→features import introduces no cycle.
+- Honored "unknown → enabled" (mockup compatibility): only an explicit disable changes the gate, so no existing OEM fixture loses its KVM tab. Strictly tightens classification; no dependency, no wire/payload/transport change, no production TLS weakening.
+- UI increment skipped: discovery-rule fix with no widget change; §5 bans manufactured churn. The user-visible effect (no dead KVM tab for a BMC-disabled console) is pinned by the new cross-view test. Known untracked `testing/` harness dir and pre-existing stash left untouched; no concurrent commits landed this run.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` for #009/#021 (EP-M2/RM-1/RM-2 model parity + per-console enabled-state audit, EP-S1 service, EP-P3 platform, EP-U3/EP-U4/EP-U1 UI, EP-T4/EP-T6 tooling); keep auditing discovery↔view enablement/consistency gaps — a recurring source of real regressions. Genuine tested dependency-free increments only; never verification-only churn.
+- Do NOT add a WebView/url_launcher dependency unattended; never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — discovery-gate OEM enablement parity), #021 (open — KVM tab agrees with console viewer)

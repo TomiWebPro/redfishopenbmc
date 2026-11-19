@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
+import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
 import 'package:redfishopenbmc/redfish/discovery/discovery_cache.dart';
 import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
@@ -517,6 +519,128 @@ void main() {
         },
       };
       expect(FeatureRules.kvmType(<Map<String, dynamic>>[m]), 'Oem');
+    });
+
+    // The 12:05 OEM-enablement fix made both KVM views honor an explicitly
+    // disabled OEM console (KvmConsole.launchStrategy == disabled,
+    // KvmCapability.supported == false). The discovery gate — which opens the
+    // KVM tab in the first place — must agree; its own doc comment promises it
+    // "never contradicts the per-console / capability views". Before this fix
+    // it reported kvm == true / kvmType == 'Oem' for the same payload.
+    test('ignores an explicitly disabled OEM console (ServiceEnabled)', () {
+      final Map<String, dynamic> m = <String, dynamic>{
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{
+            'KVM': <String, dynamic>{
+              'Uri': 'https://bmc.example/kvm',
+              'ServiceEnabled': false,
+            },
+          },
+        },
+      };
+      expect(FeatureRules.kvm(<Map<String, dynamic>>[m]), isFalse);
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[m]), isNull);
+    });
+
+    test('ignores an explicitly disabled OEM console (legacy Enabled)', () {
+      final Map<String, dynamic> m = <String, dynamic>{
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{
+            'KVM': <String, dynamic>{
+              'Uri': 'https://bmc.example/kvm',
+              'Enabled': false,
+            },
+          },
+        },
+      };
+      expect(FeatureRules.kvm(<Map<String, dynamic>>[m]), isFalse);
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[m]), isNull);
+    });
+
+    test('OEM console with no enablement flag stays enabled (mockups)', () {
+      // The common OpenBMC mockup shape carries only a Uri. "Unknown" must
+      // remain enabled so existing fixtures keep their KVM tab (guard).
+      final Map<String, dynamic> m = <String, dynamic>{
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{
+            'KVM': <String, dynamic>{'Uri': 'https://bmc.example/kvm'},
+          },
+        },
+      };
+      expect(FeatureRules.kvm(<Map<String, dynamic>>[m]), isTrue);
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[m]), 'Oem');
+    });
+
+    test('enabled OEM console flag still opens the KVM tab (guard)', () {
+      final Map<String, dynamic> m = <String, dynamic>{
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{
+            'KVM': <String, dynamic>{
+              'Uri': 'https://bmc.example/kvm',
+              'ServiceEnabled': true,
+            },
+          },
+        },
+      };
+      expect(FeatureRules.kvm(<Map<String, dynamic>>[m]), isTrue);
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[m]), 'Oem');
+    });
+
+    test('truthy OEM enablement wins over a false one (guard)', () {
+      final Map<String, dynamic> m = <String, dynamic>{
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{
+            'KVM': <String, dynamic>{
+              'Uri': 'https://bmc.example/kvm',
+              'ServiceEnabled': false,
+              'Enabled': true,
+            },
+          },
+        },
+      };
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[m]), 'Oem');
+    });
+
+    test('disabled OEM console does not mask an enabled standard console', () {
+      final Map<String, dynamic> m = <String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{'Enabled': true},
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{
+            'KVM': <String, dynamic>{
+              'Uri': 'https://bmc.example/kvm',
+              'ServiceEnabled': false,
+            },
+          },
+        },
+      };
+      expect(FeatureRules.kvm(<Map<String, dynamic>>[m]), isTrue);
+      expect(
+          FeatureRules.kvmType(<Map<String, dynamic>>[m]), 'GraphicalConsole');
+    });
+
+    test('discovery agrees with both KVM views for a disabled OEM console', () {
+      final Map<String, dynamic> m = <String, dynamic>{
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{
+            'KVM': <String, dynamic>{
+              'Uri': 'https://bmc.example/kvm',
+              'ServiceEnabled': false,
+            },
+          },
+        },
+      };
+      final KvmCapability capability =
+          KvmCapability.fromManager(m, managerId: 'BMC');
+      final List<KvmConsole> consoles =
+          KvmConsole.fromManager(m, managerId: 'BMC');
+      expect(capability.supported, isFalse);
+      expect(capability.serviceEnabled, isFalse);
+      expect(consoles, hasLength(1));
+      expect(consoles.single.serviceEnabled, isFalse);
+      // The gate must not open a KVM tab for a manager whose only console is
+      // explicitly disabled — the two views below already refuse to expose it.
+      expect(FeatureRules.kvm(<Map<String, dynamic>>[m]), isFalse);
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[m]), isNull);
     });
   });
 
