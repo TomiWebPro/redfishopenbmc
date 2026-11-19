@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 76 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (88 across the platform
+consume; today it locks the fallback behaviour with 80 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (92 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -238,6 +238,18 @@ Invariants, enforced by tests:
    could reach in-app rendering and self-signed acceptance on a bogus host, so
    a host with no non-dot character fails closed; hosts with a real label
    (including an absolute FQDN trailing dot) and IPv6 literals stay launchable.
+   **Double-encoded authority-delimiter rejection:** the encoded-delimiter rule
+   blocks a single-encoded structural char (`%2F` -> `/`), but a DOUBLE-encoded
+   form bypasses it: a pct-encoded percent (`%25`) decodes once to the literal
+   characters `%2F`/`%40`/`%2E`, which a launcher that decodes twice turns into
+   `/`/`@`/`.` (`%252F` -> `%2F` -> `/`). `Uri.tryParse` keeps `%25` encoded and
+   reports a non-empty HTTPS host, so a purely syntactic re-check calls it
+   "secure"; a literal `%` is never valid in a host and double-decoding is a
+   parser-differential / host-spoofing vector. Under a stale flag + test opt-in
+   any such target could reach in-app rendering and self-signed acceptance on a
+   spoofed authority, so every `%25` (either hex case) in the authority fails
+   closed; it is scoped so `%25` in the path/query and valid pct-encoded UTF-8
+   host bytes (`%C3%A9`) stay launchable, no valid target lost.
    Covered by targeted tests across the defense-in-depth re-validation
    groups (scheme/host/malformed-authority parity + control-character +
    raw-space + Unicode-whitespace/invisible + raw-backslash + RFC-3986
@@ -245,7 +257,8 @@ Invariants, enforced by tests:
    authority-delimiter + encoded control-octet + encoded Unicode
    separator/invisible + encoded compatibility-confusable delimiter + extended
    compatibility-confusable delimiter + IDNA dot-confusable rejection +
-   IDNA middle-dot confusable rejection + degenerate dot-host rejection).
+   IDNA middle-dot confusable rejection + degenerate dot-host rejection +
+   double-encoded authority-delimiter rejection).
 
 ## What remains gated (not done here)
 

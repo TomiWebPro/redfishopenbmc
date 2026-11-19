@@ -312,6 +312,18 @@ String? externalClientConsoleProtocol(String? uri) {
 /// a bogus host. A host with no character other than '.' therefore fails
 /// closed; hosts with a real label (including an absolute FQDN trailing dot)
 /// and IPv6 literals stay launchable — no valid target lost.
+///
+/// A percent-encoded percent sign (`%25`) in the authority is rejected for the
+/// same reason: it bypasses the single-encoded-delimiter rule via
+/// double-decoding. A launcher that decodes twice turns `%252F` into `%2F` and
+/// then `/` (`%2540` -> `@`, `%252E` -> `.`), while `Uri.tryParse` keeps `%25`
+/// encoded and reports a non-empty HTTPS host, so a purely syntactic re-check
+/// calls it "secure". A literal `%` is never valid in a host, and the
+/// double-decode parser differential could grant in-app rendering and
+/// self-signed acceptance on a spoofed authority under a stale flag + test
+/// opt-in. Every `%25` (either hex case) in the authority fails closed, while
+/// `%25` in the path/query and valid pct-encoded UTF-8 host bytes (`%C3%A9`)
+/// stay launchable — no valid target lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -397,6 +409,30 @@ bool _authorityHasEncodedDelimiter(String uri) {
   final String? authority = _authorityOf(uri);
   if (authority == null) return false;
   return _encodedAuthorityDelimiter.hasMatch(authority);
+}
+
+/// Matches a percent-encoded percent sign (`%25`, either hex case).
+///
+/// A literal `%` is not a legal character in a host, and — more importantly —
+/// `%25` enables DOUBLE-decoding parser differentials that bypass
+/// [_encodedAuthorityDelimiter]: a launcher that decodes twice turns
+/// `bmc.example%252Fevil` into `bmc.example%2Fevil` and then `bmc.example/evil`
+/// (`%252F` -> `%2F` -> `/`, `%2540` -> `@`, `%252E` -> `.`). `Uri.tryParse`
+/// keeps `%25` encoded and reports a non-empty HTTPS host, so a purely
+/// syntactic re-check calls it "secure"; under a stale secure flag + test
+/// opt-in that could grant in-app rendering and self-signed acceptance on a
+/// spoofed authority. Rejecting `%25` in the authority loses no valid target
+/// (a literal `%` is never valid in a host, while pct-encoded UTF-8 host bytes
+/// such as `%C3%A9` are unaffected). Scoped to the authority so `%25` in the
+/// path/query stays launchable.
+final RegExp _encodedPercent = RegExp(r'%25', caseSensitive: false);
+
+/// Returns `true` when the raw authority contains a percent-encoded percent
+/// sign (`%25`), a double-decoding host-spoofing vector (see [_encodedPercent]).
+bool _authorityHasEncodedPercent(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  return _encodedPercent.hasMatch(authority);
 }
 
 /// Returns the numeric value of a single ASCII hex digit, or `null`.
@@ -632,6 +668,14 @@ String? _controlSafeTrimmedUri(String? uri) {
   // gate (returns `null`, matching the other checks) so every HTTP(S) classifier
   // AND the launch-plan target refuse such an authority identically.
   if (_authorityHasEncodedDelimiter(trimmed)) return null;
+  // Reject a pct-encoded percent sign (`%25`) in the authority: a literal `%`
+  // is not valid in a host and enables double-decoding differentials
+  // (`%252F` -> `%2F` -> `/`) that bypass the single-encoded-delimiter rule.
+  // Scoped to the authority, so `%25` in path/query and valid pct-encoded
+  // non-percent host bytes stay launchable. Folded into this single shared gate
+  // (returns `null`, like the other checks) so every classifier and the
+  // launch-plan target refuse such an authority identically.
+  if (_authorityHasEncodedPercent(trimmed)) return null;
   // Reject a percent-encoded multi-byte UTF-8 character that decodes to a
   // Unicode Separator/Other code point (NBSP, zero-width space, NEL, ...): a
   // decode-first launcher could see an invisible/control character in the
