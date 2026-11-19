@@ -148,7 +148,9 @@ void main() {
   });
 
   group('planConsoleLaunch — defense in depth: URI scheme re-validation', () {
-    test('a stale secure flag on a plaintext URI cannot enable in-app TLS weakening', () {
+    test(
+        'a stale secure flag on a plaintext URI cannot enable in-app TLS weakening',
+        () {
       // The caller-supplied hasSecureUri may be stale or wrong. Defense in
       // depth: the actual URI string must also be HTTPS, otherwise plaintext
       // HTTP could be rendered in-app with a self-signed cert under the opt-in.
@@ -165,7 +167,8 @@ void main() {
       expect(plan.acceptSelfSigned, isFalse);
     });
 
-    test('a non-HTTPS scheme cannot be rendered in-app even with a secure flag', () {
+    test('a non-HTTPS scheme cannot be rendered in-app even with a secure flag',
+        () {
       final KvmConsoleLaunchPlan plan = planConsoleLaunch(
         policy: KvmWebViewPolicy.testOptIn,
         uri: 'file:///etc/passwd',
@@ -235,6 +238,61 @@ void main() {
         expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
         expect(plan.targetUri, uri, reason: uri);
       }
+    });
+  });
+
+  group('planConsoleLaunch — fail closed for an unopenable console', () {
+    test('a disabled HTTPS console gets a copy-only plan, never a launch route',
+        () {
+      // A disabled console is not openable (KvmConsole.canOpenConsole ==
+      // false). Even under the test opt-in the plan must not hand its URI to
+      // an external browser or an in-app WebView, and must never grant
+      // self-signed acceptance.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.testOptIn,
+        uri: 'https://bmc.example/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: false,
+      );
+
+      expect(plan.route, KvmConsoleRenderRoute.copyOnly);
+      expect(plan.isInApp, isFalse);
+      expect(plan.isExternalBrowser, isFalse);
+      expect(plan.isCopyOnly, isTrue);
+      expect(plan.acceptSelfSigned, isFalse);
+      expect(plan.targetUri, 'https://bmc.example/console');
+    });
+
+    test('a copy-only plan still hands back a trimmed, usable URI', () {
+      // The copy path is the only route for an insecure/disabled console, so
+      // it must never surface a whitespace-padded target (which would break a
+      // clipboard paste or an external client). Trimming applies to every
+      // route, not just the launchable ones.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.productionDefault,
+        uri: '  http://bmc.example/console  ',
+        hasSecureUri: false,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.route, KvmConsoleRenderRoute.copyOnly);
+      expect(plan.targetUri, 'http://bmc.example/console');
+    });
+
+    test('a disabled console with no URI fails closed with a null target', () {
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.productionDefault,
+        uri: null,
+        hasSecureUri: false,
+        isHtml5: true,
+        isEnabled: false,
+      );
+
+      expect(plan.route, KvmConsoleRenderRoute.copyOnly);
+      expect(plan.targetUri, isNull);
+      expect(plan.acceptSelfSigned, isFalse);
     });
   });
 

@@ -20,12 +20,13 @@ consume; today it locks the fallback behaviour with 14 targeted tests.
 | Console + policy | Route | `targetUri` | `acceptSelfSigned` |
 |---|---|---|---|
 | flag off + HTTPS HTML5 enabled | `externalBrowser` | trimmed HTTPS URI | `false` |
-| flag off + plaintext HTTP | `copyOnly` | original URI (for copy) | `false` |
+| flag off + plaintext HTTP | `copyOnly` | trimmed URI (for copy) | `false` |
 | flag off + no URI | `copyOnly` | `null` | `false` |
-| flag off + blank URI / inconsistent "secure" flag | `copyOnly` (fail closed) | raw value | `false` |
+| flag off + blank URI / inconsistent "secure" flag | `copyOnly` (fail closed) | `null` | `false` |
+| flag off + **disabled** console (even HTTPS) | `copyOnly` (fail closed) | trimmed HTTPS URI | `false` |
 | test opt-in + HTTPS HTML5 enabled | `inAppWebView` | trimmed HTTPS URI | `true` (test-only) |
 | opt-in but strict TLS | `inAppWebView` | trimmed HTTPS URI | `false` |
-| opt-in + plaintext / disabled / non-HTML5 | never in-app | original URI | `false` |
+| opt-in + plaintext / disabled / non-HTML5 | never launchable | trimmed URI | `false` |
 
 Invariants, enforced by tests:
 
@@ -37,7 +38,12 @@ Invariants, enforced by tests:
    test-only opt-in AND HTTPS. External-browser and copy-only fallbacks can
    never set it — production TLS is never weakened (issue #021).
 3. **Fail closed.** A blank/missing URI degrades to `copyOnly` rather than
-   handing a launcher a null/whitespace target; URIs are trimmed.
+   handing a launcher a null/whitespace target; URIs are trimmed on **every**
+   route (including copy-only, so the clipboard never surfaces a padded
+   endpoint). A console the BMC reports disabled is never routed to a
+   launchable target — it always degrades to `copyOnly` even when its URI is
+   HTTPS, keeping the decision layer in lockstep with
+   `KvmConsole.canOpenConsole` and the card/viewer gating.
 4. **Scheme + host re-validation (defense in depth).** `hasSecureUri` alone is
    never trusted for a TLS-sensitive decision: the raw URI string must also be
    an HTTPS URL with a non-empty host (mirroring `hasSecureLaunchUri`).

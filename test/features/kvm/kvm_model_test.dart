@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
+import 'package:redfishopenbmc/features/kvm/platform/webview_policy.dart';
 
 /// Reads and decodes the real DMTF `public-rackmount1` BMC manager fixture.
 Map<String, dynamic> _loadBmc() {
@@ -952,6 +953,86 @@ void main() {
 
     test('false for a blank URI', () {
       expect(make(uri: '   ').canOpenConsole, isFalse);
+    });
+  });
+
+  group('KvmConsole.launchPlan — fail-closed production decision (#009/#021)',
+      () {
+    KvmConsole make({
+      bool enabled = true,
+      String? uri,
+      List<String> types = const <String>[],
+    }) =>
+        KvmConsole(
+          type: KvmConsoleType.graphical,
+          managerId: 'BMC',
+          connectTypesSupported: types,
+          serviceEnabled: enabled,
+          connectUri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+
+    test('an enabled HTTPS HTML5 console routes to the external browser', () {
+      final plan = make(
+        uri: 'https://bmc.example/console',
+        types: const <String>['HTML5'],
+      ).launchPlan;
+
+      expect(plan.route, KvmConsoleRenderRoute.externalBrowser);
+      expect(plan.targetUri, 'https://bmc.example/console');
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('a disabled console with an HTTPS URI fails closed to copy-only', () {
+      // Mirrors canOpenConsole: a BMC may publish a ConnectUri while reporting
+      // ServiceEnabled: false — the fail-closed plan must never hand it to a
+      // browser (nor grant self-signed acceptance) even though it is HTTPS.
+      final console = make(
+        enabled: false,
+        uri: 'https://bmc.example/console',
+        types: const <String>['HTML5'],
+      );
+      expect(console.canOpenConsole, isFalse);
+      expect(console.launchPlan.route, KvmConsoleRenderRoute.copyOnly);
+      expect(console.launchPlan.isExternalBrowser, isFalse);
+      expect(console.launchPlan.acceptSelfSigned, isFalse);
+      expect(console.launchPlan.targetUri, 'https://bmc.example/console');
+    });
+
+    test('an insecure HTML5 console routes to copy-only', () {
+      final plan = make(
+        uri: 'http://bmc.example/console',
+        types: const <String>['HTML5'],
+      ).launchPlan;
+
+      expect(plan.route, KvmConsoleRenderRoute.copyOnly);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('a padded URI is trimmed in the copy-only target', () {
+      final plan = make(uri: '  http://bmc.example/console\n').launchPlan;
+
+      expect(plan.route, KvmConsoleRenderRoute.copyOnly);
+      expect(plan.targetUri, 'http://bmc.example/console');
+    });
+
+    test('production can never render in-app or accept self-signed', () {
+      // Even a fully-qualified, enabled, HTTPS HTML5 console stays on the
+      // external-browser fallback under the production default policy, and no
+      // console ever reaches inAppWebView or self-signed acceptance here.
+      for (final KvmConsole console in <KvmConsole>[
+        make(
+            uri: 'https://bmc.example/console', types: const <String>['HTML5']),
+        make(enabled: false, uri: 'https://bmc.example/console'),
+        make(uri: 'http://bmc.example/console', types: const <String>['HTML5']),
+      ]) {
+        expect(console.launchPlan.isInApp, isFalse, reason: console.toString());
+        expect(
+          console.launchPlan.acceptSelfSigned,
+          isFalse,
+          reason: console.toString(),
+        );
+      }
     });
   });
 }

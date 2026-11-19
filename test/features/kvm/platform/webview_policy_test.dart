@@ -132,4 +132,29 @@ void main() {
       );
     });
   });
+
+  group('resolveRenderRoute — fail closed for an unopenable console', () {
+    test('a disabled HTTPS console is never routed to a launchable target', () {
+      // A BMC may publish a ConnectUri while reporting ServiceEnabled: false.
+      // The app's card and viewer already refuse to launch such a console
+      // (KvmConsole.canOpenConsole == false); the launch decision layer must
+      // agree and fail closed to copyOnly instead of offering the URI to an
+      // external browser just because it happens to be HTTPS.
+      for (final KvmWebViewPolicy policy in <KvmWebViewPolicy>[
+        KvmWebViewPolicy.productionDefault,
+        KvmWebViewPolicy.testOptIn,
+      ]) {
+        expect(
+          resolveRenderRoute(
+            policy: policy,
+            hasSecureUri: true,
+            isHtml5: true,
+            isEnabled: false,
+          ),
+          KvmConsoleRenderRoute.copyOnly,
+          reason: 'flag=${policy.enabled}',
+        );
+      }
+    });
+  });
 }

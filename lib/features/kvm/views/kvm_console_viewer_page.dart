@@ -20,7 +20,14 @@ class KvmConsoleViewerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final String? uri = console.launchUri;
+    // #009/#021: take the copy target from the fail-closed launch decision
+    // layer rather than the raw model URI. Under the production policy this is
+    // the trimmed endpoint for every route (never a whitespace-padded target),
+    // and a plaintext/disabled console is copy-only — its URI stays visible and
+    // copyable for external use, but is never handed to a launcher. The viewer
+    // cannot disagree with the model's canOpenConsole / launchStrategy about
+    // what may be launched. No WebView/protocol plugin, no TLS weakening.
+    final String? uri = console.launchPlan.targetUri;
     // UI-2 / a11y: the status card uses `excludeSemantics`, so this ONE message
     // is both the visible text and the announced Semantics label. Keeping a
     // single source of truth guarantees screen-reader users hear exactly the

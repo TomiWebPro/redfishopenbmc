@@ -70,9 +70,7 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   final String trimmed = uri.trim();
   if (trimmed.isEmpty) return false;
   final Uri? parsed = Uri.tryParse(trimmed);
-  return parsed != null &&
-      parsed.scheme == 'https' &&
-      parsed.host.isNotEmpty;
+  return parsed != null && parsed.scheme == 'https' && parsed.host.isNotEmpty;
 }
 
 /// Builds the concrete launch plan from the RP-1 policy and a console's public
@@ -94,7 +92,9 @@ bool _uriHasSecureHttpsTarget(String? uri) {
 ///  3. Self-signed acceptance is granted only for an in-app route under the
 ///     test-only opt-in on HTTPS — never for a fallback.
 ///  4. A missing/blank URI fails closed to copy-only so a launcher is never
-///     handed a null/whitespace target; the URI is trimmed for every other route.
+///     handed a null/whitespace target; the URI is trimmed for **every** route
+///     (including copy-only) so the clipboard/copy path never surfaces a
+///     whitespace-padded endpoint either.
 KvmConsoleLaunchPlan planConsoleLaunch({
   required KvmWebViewPolicy policy,
   required String? uri,
@@ -115,9 +115,8 @@ KvmConsoleLaunchPlan planConsoleLaunch({
     isEnabled: isEnabled,
   );
 
-  final String? trimmed = (uri == null || uri.trim().isEmpty)
-      ? null
-      : uri.trim();
+  final String? trimmed =
+      (uri == null || uri.trim().isEmpty) ? null : uri.trim();
 
   // Fail closed: a launchable route with no usable URI degrades to copy-only.
   final KvmConsoleRenderRoute safeRoute =
@@ -129,11 +128,15 @@ KvmConsoleLaunchPlan planConsoleLaunch({
   // test-only opt-in cannot weaken TLS on an external-browser/copy fallback.
   final bool acceptSelfSigned =
       safeRoute == KvmConsoleRenderRoute.inAppWebView &&
-      policy.mayAcceptSelfSigned(hasSecureUri: effectiveSecure);
+          policy.mayAcceptSelfSigned(hasSecureUri: effectiveSecure);
 
   return KvmConsoleLaunchPlan._(
     route: safeRoute,
-    targetUri: safeRoute == KvmConsoleRenderRoute.copyOnly ? uri : trimmed,
+    // Always hand back the trimmed value (never the raw `uri`): even the
+    // copy-only fallback is a user-facing clipboard/launcher target, so a
+    // whitespace-padded endpoint must not leak through it. A null/blank URI is
+    // already normalized to `null` above.
+    targetUri: trimmed,
     acceptSelfSigned: acceptSelfSigned,
   );
 }

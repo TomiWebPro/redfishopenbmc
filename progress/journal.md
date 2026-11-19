@@ -10465,3 +10465,18 @@
 - Re-run all gates on the next PASS; cleanly SKIP if verdict not PASS or branch has no new commits.
 
 **Issues touched:** none (gate merge + tracking only)
+
+## 2026-11-19 — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009/#021 (smallest open issue ID #009) — genuine, dependency-free, TLS-safe fail-closed launch-decision fix. The merged `webview_policy.dart` / `launch_plan.dart` helpers were test-only artifacts and **failed open** for a BMC-disabled console with an HTTPS `ConnectUri` (routed to `externalBrowser`) and returned a raw/padded URI on the copy-only path — contradicting `KvmConsole.canOpenConsole` and the card/viewer gating. `resolveRenderRoute` now never routes a disabled console to a launchable target (always `copyOnly`, even HTTPS); `planConsoleLaunch` always returns a trimmed target. Added `KvmConsole.launchPlan` (production default) as the model's single fail-closed decision, exported both helpers from the `kvm.dart` barrel, and wired `KvmConsoleViewerPage`'s copy target to `console.launchPlan.targetUri`. +9 tests (3 confirmed RED pre-fix); baseline analyze 0 / 1114 passed / 1 skipped → verify analyze 0 / 1123 passed / 1 skipped; DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.5% / scoped 90.4% / kvm 94.8%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Placed the fail-closed rule in `resolveRenderRoute` (the RP-1 single source of truth) so every consumer — including a future validated WebView — inherits it, rather than patching only the current card/viewer; checked after the in-app `permitsInAppRendering` gate so the opt-in's own `isEnabled` check stays authoritative, and before the transport fallback so HTTPS cannot sneak a disabled console into a launcher. Reused the plan's own URI re-validation/trim as the single source for the viewer's copy target. Chose no UI affordance change (copy target only) to avoid manufactured churn; no WebView/protocol dependency, no production TLS weakening. Full emulator re-run (85/85) because `lib/` changed.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. epic-triage/split the WebView-blocked rendering work, or wire `launchPlan` into the console card's launch affordance), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — fail-closed launch decision layer), #021 (open — TLS-safe launch decision)

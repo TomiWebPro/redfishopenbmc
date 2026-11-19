@@ -98,11 +98,19 @@ enum KvmConsoleRenderRoute {
 
 /// Picks the render route for a console without embedding anything.
 ///
-/// With the flag off this always selects [KvmConsoleRenderRoute.externalBrowser]
-/// for an HTTPS console and [KvmConsoleRenderRoute.copyOnly] otherwise, so the
-/// existing external-browser + copy path keeps working unchanged (RP-2
+/// With the flag off this selects [KvmConsoleRenderRoute.externalBrowser] for
+/// an enabled HTTPS console and [KvmConsoleRenderRoute.copyOnly] otherwise, so
+/// the existing external-browser + copy path keeps working unchanged (RP-2
 /// fallback requirement). `hasSecureUri` mirrors `KvmConsole.hasSecureLaunchUri`
 /// (HTTPS with a non-empty host).
+///
+/// A console the BMC reports disabled is **never** given a launchable route —
+/// it always fails closed to [KvmConsoleRenderRoute.copyOnly], even when its
+/// URI is HTTPS. This keeps the decision layer in lockstep with
+/// `KvmConsole.canOpenConsole` (and the console card / viewer gating): a BMC may
+/// publish a `ConnectUri` while reporting `ServiceEnabled: false`, and handing
+/// that URI to a browser when a WebView/launcher is eventually wired would
+/// reintroduce the dead-end launch the UI already refuses (issue #009/#021).
 KvmConsoleRenderRoute resolveRenderRoute({
   required KvmWebViewPolicy policy,
   required bool hasSecureUri,
@@ -116,6 +124,11 @@ KvmConsoleRenderRoute resolveRenderRoute({
   )) {
     return KvmConsoleRenderRoute.inAppWebView;
   }
+  // Fail closed for a console the BMC reports disabled: no browser/in-app
+  // launch target, only the copy path. Checked after the in-app branch so the
+  // opt-in's own isEnabled gate stays authoritative, but before the transport
+  // fallback so an HTTPS URI cannot sneak a disabled console into a launcher.
+  if (!isEnabled) return KvmConsoleRenderRoute.copyOnly;
   if (hasSecureUri) return KvmConsoleRenderRoute.externalBrowser;
   return KvmConsoleRenderRoute.copyOnly;
 }

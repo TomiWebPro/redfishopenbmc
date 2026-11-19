@@ -8,6 +8,8 @@ library;
 
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_registry.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart';
+import 'package:redfishopenbmc/features/kvm/platform/launch_plan.dart';
+import 'package:redfishopenbmc/features/kvm/platform/webview_policy.dart';
 import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
 
 /// The kind of Redfish console a [KvmConsole] represents.
@@ -307,6 +309,30 @@ class KvmConsole {
     return strategy != KvmLaunchStrategy.noUri &&
         strategy != KvmLaunchStrategy.disabled;
   }
+
+  /// The fail-closed launch decision for this console under the **production**
+  /// policy (embedded WebView flag OFF, strict TLS).
+  ///
+  /// This is the single, testable decision layer shared by the console card /
+  /// viewer and any future, validated renderer: it re-validates the raw URI
+  /// (HTTPS + non-empty host) before any TLS-sensitive choice, never accepts a
+  /// self-signed certificate in production, and fails closed to a copy-only
+  /// plan for a plaintext, malformed or BMC-disabled console. It can never
+  /// disagree with [canOpenConsole] about whether a console is launchable — a
+  /// disabled console is routed to `copyOnly` even when its URI is HTTPS.
+  ///
+  /// The raw [connectUri] is passed through so the plan's own re-validation and
+  /// trimming are authoritative; [hasSecureLaunchUri] / [supportsHtml5] /
+  /// [serviceEnabled] are the same public signals the UI uses. No WebView or
+  /// protocol plugin is involved and production TLS is never weakened
+  /// (issues #009 / #021).
+  KvmConsoleLaunchPlan get launchPlan => planConsoleLaunch(
+        policy: KvmWebViewPolicy.productionDefault,
+        uri: connectUri,
+        hasSecureUri: hasSecureLaunchUri,
+        isHtml5: supportsHtml5,
+        isEnabled: serviceEnabled,
+      );
 
   /// Builds the list of [KvmConsole]s detected in a Redfish [managerBody].
   ///
