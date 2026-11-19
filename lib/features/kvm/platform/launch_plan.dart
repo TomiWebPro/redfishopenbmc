@@ -138,6 +138,65 @@ bool isHttpConsoleUri(String? uri) =>
 bool isControlSafeConsoleUri(String? uri) =>
     _controlSafeTrimmedUri(uri) != null;
 
+/// URI schemes whose console endpoint requires an external/native client
+/// (VNC/RFB, KVMIP, or serial SSH/Telnet/IPMI) rather than browser/WebView
+/// rendering (issues #009 / #021). Scheme comparison is case-insensitive —
+/// Dart's [Uri.scheme] is already lower-cased, and this set is lower-case too.
+const Set<String> kExternalClientConsoleSchemes = <String>{
+  'vnc',
+  'rfb',
+  'kvmip',
+  'kvm',
+  'ssh',
+  'telnet',
+  'ipmi',
+};
+
+/// Returns `true` only when [uri] is a control-safe URI whose scheme requires
+/// an external client (VNC/RFB/KVMIP/serial) rather than in-app rendering.
+///
+/// Shares the single fail-closed [isControlSafeConsoleUri] gate with the HTTP(S)
+/// classifier families, so a CRLF/NUL/raw-space/spoofed-authority external URI
+/// fails closed just like an equivalent malformed HTTPS/HTTP target. This is
+/// the one source of truth both `KvmConsole` and `KvmCapability` delegate to,
+/// guaranteeing the per-console and per-manager KVM views classify the same
+/// endpoint identically (EP-M2 cross-surface classifier parity). Read-only: it
+/// opens no URL, adds no dependency and never weakens transport security.
+bool isExternalClientConsoleUri(String? uri) {
+  final String? trimmed = _controlSafeTrimmedUri(uri);
+  if (trimmed == null) return false;
+  final Uri? parsed = Uri.tryParse(trimmed);
+  return parsed != null &&
+      kExternalClientConsoleSchemes.contains(parsed.scheme.toLowerCase());
+}
+
+/// Human-readable label for the external-client protocol of [uri], or `null`
+/// when [uri] is not an external-client console endpoint (issues #009 / #021).
+///
+/// Built on [isExternalClientConsoleUri] so classification and labelling can
+/// never disagree. Shared by `KvmConsole` / `KvmCapability` to keep both KVM
+/// views' external-client guidance identical.
+String? externalClientConsoleProtocol(String? uri) {
+  if (!isExternalClientConsoleUri(uri)) return null;
+  final String scheme = Uri.tryParse(uri!.trim())!.scheme.toLowerCase();
+  switch (scheme) {
+    case 'vnc':
+    case 'rfb':
+      return 'VNC/RFB';
+    case 'kvmip':
+    case 'kvm':
+      return 'KVMIP';
+    case 'ssh':
+      return 'SSH';
+    case 'telnet':
+      return 'Telnet';
+    case 'ipmi':
+      return 'IPMI serial-over-LAN';
+    default:
+      return 'external console';
+  }
+}
+
 /// Rejects raw characters that are never legal unescaped in a URI: Unicode
 /// `Separator` (Z: ASCII space, NBSP, line/paragraph/ideographic spaces) and
 /// `Other` (C: C0/C1 controls, DEL, zero-width/invisible format chars).

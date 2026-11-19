@@ -10911,3 +10911,13 @@
 - Re-run the full DMTF emulator suite on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none (platform-only fail-closed hardening; #009 / #021 remain open)
+
+## 2026-11-19 — agent:redfish-automation — #009/#021
+
+**Done:** EP-M2 + EP-U3 dept slices (cross-surface external-client classifier parity). Extracted shared pure `isExternalClientConsoleUri` / `externalClientConsoleProtocol` helpers in `launch_plan.dart` built on the fail-closed `_controlSafeTrimmedUri` transport gate (the same core the HTTP(S) classifiers use). `KvmConsole` now delegates to them, dropping its ad-hoc `Uri.tryParse` label parse; `KvmCapability` gains mirroring `requiresExternalConsoleClient` / `externalClientProtocolLabel` getters. The capability card now renders a shared `kvmExternalClientNotice` for a resolved VNC/RFB/KVMIP/serial endpoint (merged `excludeSemantics`, visible text == announced label), matching the existing plaintext-HTTP warning pattern. The plaintext-HTTP and external-client notices are mutually exclusive transport families. +8 tests (1 capability-card widget RED→GREEN confirmed pre-fix; 3 helper + 4 model/parity tests), 320/800/1300 px no-overflow. analyze 0 / 1248 passed / 1 skipped (baseline 1240); DMTF emulator 85/85 (lib changed); issues validate OK; git diff --check clean.
+
+**Decisions:** One shared classifier pair is the single source of truth for both KVM views, so classification and labelling can never drift across surfaces. The capability-card notice reuses the shared string-constant + merged-a11y + Row/Expanded pattern already proven no-overflow for the insecure-HTTP row. No WebView/protocol dependency, no wire/payload/transport change, no production TLS weakening. No issue closed — embedded HTML5 rendering / fullscreen / input forwarding remain externally blocked on platform WebView + BMC self-signed/TLS validation.
+
+**Next:** Continue unblocked dept slices in `queues/*.md` (EP-M1 URI-scheme edges, RM-2 malformed-payload tolerance, EP-S1 service launch edges, EP-U1 fullscreen scaffold, EP-T4 fixture/CI guard). Keep auditing classifier/enablement parity across console card, capability card, discovery gate and viewer. Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

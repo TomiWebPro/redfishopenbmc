@@ -1336,4 +1336,60 @@ void main() {
       }
     });
   });
+
+  group('external-client classifier shares the fail-closed transport gate', () {
+    test('classifies every external-client scheme and its label', () {
+      const Map<String, String> labels = <String, String>{
+        'vnc://bmc.example:5900': 'VNC/RFB',
+        'rfb://bmc.example:5900': 'VNC/RFB',
+        'kvmip://bmc.example': 'KVMIP',
+        'kvm://bmc.example': 'KVMIP',
+        'ssh://bmc.example:22': 'SSH',
+        'telnet://bmc.example': 'Telnet',
+        'ipmi://bmc.example': 'IPMI serial-over-LAN',
+      };
+      labels.forEach((String uri, String label) {
+        expect(isExternalClientConsoleUri(uri), isTrue, reason: uri);
+        expect(externalClientConsoleProtocol(uri), label, reason: uri);
+      });
+      expect(isExternalClientConsoleUri('  vnc://bmc.example:5900  '), isTrue);
+      expect(externalClientConsoleProtocol('  vnc://bmc.example:5900  '),
+          'VNC/RFB');
+    });
+
+    test('non-external schemes and blank values fail closed', () {
+      for (final String? uri in <String?>[
+        null,
+        '',
+        '   ',
+        'https://bmc.example/kvm',
+        'http://bmc.example/kvm',
+        '/redfish/v1/Managers/BMC/GraphicalConsole',
+        'https://bmc.example/console%20one',
+      ]) {
+        expect(isExternalClientConsoleUri(uri), isFalse, reason: '$uri');
+        expect(externalClientConsoleProtocol(uri), isNull, reason: '$uri');
+      }
+    });
+
+    test('a control-unsafe external URI is refused like a malformed HTTPS one',
+        () {
+      for (final String uri in <String>[
+        'vnc://bmc.exa mple:5900', // raw space
+        'ssh://bmc.example/con\rsol', // C0 control
+        'vnc://bmc.example/con\u0000sol', // NUL
+        'vnc://bmc.example/con\u007Fsol', // DEL
+        'vnc://bmc.example\\@evil.com', // raw backslash -> authority confusion
+        'vnc://bmc.example/%zz', // malformed percent escape
+        'vnc://b\x01mc.example:5900', // C0 control in the host
+      ]) {
+        expect(isControlSafeConsoleUri(uri), isFalse, reason: uri);
+        expect(isExternalClientConsoleUri(uri), isFalse, reason: uri);
+        expect(externalClientConsoleProtocol(uri), isNull, reason: uri);
+      }
+      // Valid percent-encoded target stays a genuine external endpoint.
+      expect(isExternalClientConsoleUri('vnc://bmc.example/console%20one'),
+          isTrue);
+    });
+  });
 }

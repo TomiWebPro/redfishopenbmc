@@ -1668,4 +1668,96 @@ void main() {
       }
     });
   });
+
+  group('KvmCapability external-client classifier parity (EP-M2 / #009/#021)',
+      () {
+    KvmCapability cap(String? uri) => KvmCapability(
+          managerId: 'BMC',
+          supported: true,
+          connectTypes: const <String>['KVMIP'],
+          serviceEnabled: true,
+          uri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+
+    KvmConsole console(String? uri) => KvmConsole(
+          type: KvmConsoleType.remote,
+          managerId: 'BMC',
+          connectTypesSupported: const <String>['KVMIP'],
+          serviceEnabled: true,
+          connectUri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+
+    test('every external-client scheme is classified and labelled', () {
+      const Map<String, String> labels = <String, String>{
+        'vnc://bmc.example:5900': 'VNC/RFB',
+        'rfb://bmc.example:5900': 'VNC/RFB',
+        'kvmip://bmc.example': 'KVMIP',
+        'kvm://bmc.example': 'KVMIP',
+        'ssh://bmc.example:22': 'SSH',
+        'telnet://bmc.example': 'Telnet',
+        'ipmi://bmc.example': 'IPMI serial-over-LAN',
+        // Dart lower-cases Uri.scheme, so an uppercase BMC spelling matches.
+        'VNC://bmc.example:5900': 'VNC/RFB',
+      };
+      labels.forEach((String uri, String label) {
+        expect(cap(uri).requiresExternalConsoleClient, isTrue, reason: uri);
+        expect(cap(uri).externalClientProtocolLabel, label, reason: uri);
+      });
+    });
+
+    test('padded external URI is classified; blank/HTTP/@odata are not', () {
+      expect(cap('  vnc://bmc.example:5900  ').requiresExternalConsoleClient,
+          isTrue);
+      for (final String? uri in <String?>[
+        null,
+        '   ',
+        'https://bmc.example/kvm',
+        'http://bmc.example/kvm',
+        '/redfish/v1/Managers/BMC/GraphicalConsole',
+      ]) {
+        expect(cap(uri).requiresExternalConsoleClient, isFalse, reason: '$uri');
+        expect(cap(uri).externalClientProtocolLabel, isNull, reason: '$uri');
+      }
+    });
+
+    test('a control-unsafe external URI fails closed on the capability too',
+        () {
+      for (final String uri in <String>[
+        'vnc://bmc.exa mple:5900',
+        'ssh://bmc.example/con\rsol',
+        'vnc://bmc.example/con\u0000sol',
+        'vnc://bmc.example\\@evil.com',
+        'vnc://bmc.example/%zz',
+      ]) {
+        expect(cap(uri).requiresExternalConsoleClient, isFalse, reason: uri);
+      }
+      // A properly encoded target stays a genuine external endpoint.
+      expect(
+          cap('vnc://bmc.example/console%20one').requiresExternalConsoleClient,
+          isTrue);
+    });
+
+    test('console and capability views agree on external-client classification',
+        () {
+      for (final String uri in <String>[
+        'vnc://bmc.example:5900',
+        'ssh://bmc.example:22',
+        'ipmi://bmc.example',
+        'https://bmc.example/kvm',
+        'http://bmc.example/kvm',
+        '/redfish/v1/Managers/BMC/GraphicalConsole',
+        'vnc://bmc.exa mple:5900',
+        'vnc://bmc.example/con\u0000sol',
+      ]) {
+        expect(cap(uri).requiresExternalConsoleClient,
+            console(uri).requiresExternalConsoleClient,
+            reason: uri);
+        expect(cap(uri).externalClientProtocolLabel,
+            console(uri).externalClientProtocolLabel,
+            reason: uri);
+      }
+    });
+  });
 }

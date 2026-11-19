@@ -268,43 +268,17 @@ class KvmConsole {
   /// external client" endpoint (with a copy affordance) — disagreeing with how
   /// an equivalent malformed HTTPS/HTTP URI is already failed closed. Such a
   /// target now fails closed to `noUri` here too (issues #009 / #021).
-  bool get requiresExternalConsoleClient {
-    final String? uri = launchUri;
-    if (uri == null || !isControlSafeConsoleUri(uri)) return false;
-    final Uri? parsed = Uri.tryParse(uri);
-    if (parsed == null) return false;
-    final String scheme = parsed.scheme.toLowerCase();
-    return scheme == 'vnc' ||
-        scheme == 'rfb' ||
-        scheme == 'kvmip' ||
-        scheme == 'kvm' ||
-        scheme == 'ssh' ||
-        scheme == 'telnet' ||
-        scheme == 'ipmi';
-  }
+  bool get requiresExternalConsoleClient =>
+      isExternalClientConsoleUri(launchUri);
 
   /// Human-readable label for the external client protocol implied by
   /// [launchUri], or `null` when no external client is required.
-  String? get externalClientProtocolLabel {
-    if (!requiresExternalConsoleClient) return null;
-    final String scheme = Uri.tryParse(launchUri!)?.scheme.toLowerCase() ?? '';
-    switch (scheme) {
-      case 'vnc':
-      case 'rfb':
-        return 'VNC/RFB';
-      case 'kvmip':
-      case 'kvm':
-        return 'KVMIP';
-      case 'ssh':
-        return 'SSH';
-      case 'telnet':
-        return 'Telnet';
-      case 'ipmi':
-        return 'IPMI serial-over-LAN';
-      default:
-        return 'external console';
-    }
-  }
+  ///
+  /// Delegates to the same shared classifier as [requiresExternalConsoleClient]
+  /// (and as `KvmCapability`), so classification and labelling can never drift
+  /// across the two KVM views (EP-M2 cross-surface parity).
+  String? get externalClientProtocolLabel =>
+      externalClientConsoleProtocol(launchUri);
 
   /// The single, deterministic launch strategy for this console (issue #021).
   ///

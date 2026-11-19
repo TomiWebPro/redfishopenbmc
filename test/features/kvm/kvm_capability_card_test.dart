@@ -663,4 +663,46 @@ void main() {
       expect(find.bySemanticsLabel(kvmDisabledOnBmcNotice), findsOneWidget);
     });
   });
+
+  group('KvmCapabilityCard — external-client transport parity (#009/#021)', () {
+    // The capability card surfaces the manager's resolved endpoint just like
+    // the per-console card and the viewer. A non-HTTP transport (VNC/RFB, KVMIP,
+    // serial SSH/Telnet/IPMI) cannot be rendered in-app, so the operator needs
+    // the same "requires an external client" guidance on this surface too.
+    // The shared constant keeps the test and the view from drifting apart.
+    const String expectedNotice = kvmExternalClientNotice;
+
+    testWidgets(
+        'a resolved VNC URI shows the external-client notice with merged '
+        'a11y and no overflow at 320/800/1300 px', (WidgetTester tester) async {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC',
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'ConnectUri': 'vnc://bmc.example:5900',
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(capability.hasUri, isTrue);
+
+      for (final double width in <double>[320, 800, 1300]) {
+        await tester.binding.setSurfaceSize(Size(width, 900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await pumpView(
+          tester,
+          capabilities: <KvmCapability>[capability],
+          kvm: true,
+        );
+
+        expect(find.text(expectedNotice), findsOneWidget);
+        expect(find.bySemanticsLabel(expectedNotice), findsOneWidget);
+        // The plaintext-HTTP notice must not leak onto a non-HTTP transport.
+        expect(find.text(kvmInsecureTransportNotice), findsNothing);
+        expect(tester.takeException(), isNull);
+      }
+    });
+  });
 }

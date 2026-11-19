@@ -138,6 +138,24 @@ class KvmCapability {
   /// classification — it never changes transport security.
   bool get usesInsecureHttpLaunchUri => isPlaintextHttpConsoleUri(launchUri);
 
+  /// Whether [launchUri] uses a protocol that requires an external/native client
+  /// (VNC/RFB/KVMIP/serial SSH/Telnet/IPMI) rather than browser/WebView rendering.
+  ///
+  /// Mirrors `KvmConsole.requiresExternalConsoleClient` through the same shared
+  /// fail-closed [isExternalClientConsoleUri] classifier, so the per-manager
+  /// capability card and the per-console card/viewer classify the same resolved
+  /// endpoint identically (EP-M2 cross-surface classifier parity, #009/#021).
+  bool get requiresExternalConsoleClient =>
+      isExternalClientConsoleUri(launchUri);
+
+  /// Human-readable label for the external-client protocol of [launchUri], or
+  /// `null` when no external client is required.
+  ///
+  /// Delegates to the same shared classifier as [requiresExternalConsoleClient]
+  /// and `KvmConsole`, so both KVM views announce identical guidance.
+  String? get externalClientProtocolLabel =>
+      externalClientConsoleProtocol(launchUri);
+
   /// True when the graphical console advertises a `KVMIP` connection type.
   ///
   /// Uses the graphical-only detection bit computed by [fromManager], keeping

@@ -29,6 +29,20 @@ const String kvmInsecureTransportNotice =
     'Unencrypted HTTP console URI. Configure the BMC console to use HTTPS '
     'before opening it in a browser.';
 
+/// The single visible + announced string for a non-HTTP console endpoint that
+/// can only be opened with an external/native client (VNC/RFB, KVMIP, serial
+/// SSH/Telnet/IPMI) — never rendered in-app (issues #009 / #021).
+///
+/// The per-manager capability card surfaces the resolved console endpoint just
+/// like the per-console card and viewer; when that endpoint needs an external
+/// client, the operator must be told so on this surface too. This constant is
+/// the single source of truth so the card's visible text always equals its
+/// merged `excludeSemantics` label. Pure presentation copy: it opens no URL and
+/// never changes transport security (production TLS is never weakened).
+const String kvmExternalClientNotice =
+    'This console URI requires an external client (VNC/RFB, KVMIP, SSH, '
+    'Telnet or IPMI). Copy the URI and open it with a compatible client.';
+
 /// The single visible + announced string for the session-persistence notice.
 ///
 /// A BMC console session outlives the app's backgrounding and persists until

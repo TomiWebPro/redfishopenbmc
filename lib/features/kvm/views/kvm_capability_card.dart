@@ -201,6 +201,39 @@ class KvmCapabilityCard extends StatelessWidget {
                 ),
               ),
             ],
+            // #009 / #021: like the plaintext-HTTP warning above, the
+            // capability card surfaces the resolved endpoint, so a non-HTTP
+            // transport (VNC/RFB/KVMIP/serial) must carry the same
+            // "requires an external client" guidance the viewer's launch status
+            // gives — this surface is an operator's launch decision point too.
+            // Both views classify via the same shared gate, so this notice can
+            // never appear for an endpoint the console model treats as secure
+            // HTTP(S). Display-only: no URL opened, no transport weakened.
+            if (capability.hasUri &&
+                capability.requiresExternalConsoleClient) ...<Widget>[
+              const SizedBox(height: 8),
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: kvmExternalClientNotice,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(Icons.open_in_new,
+                        size: 18, color: scheme.onSurfaceVariant),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        kvmExternalClientNotice,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (!capability.serviceEnabled) ...<Widget>[
               const SizedBox(height: 12),
               // Acceptance #009: an explicit helper when KVM is disabled.
