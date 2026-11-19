@@ -54,8 +54,15 @@ Invariants, enforced by tests:
    would otherwise pass the syntactic re-check; these now fail closed
    (stricter than the model, never more permissive) to block launcher
    URI/header injection and self-signed acceptance on malformed targets.
-   Legitimate userinfo/port URIs are unaffected. Covered by 9 targeted tests
-   (malformed-authority parity + control-character rejection).
+   **Raw-space rejection:** `Uri.tryParse` also percent-encodes a raw space
+   (0x20) into the authority (`https://bmc.exa mple/console` → host
+   `bmc.exa%20mple`, still non-empty), so it too would pass a purely syntactic
+   re-check and gain in-app self-signed acceptance on a malformed host under a
+   stale flag. Raw spaces are never valid in a URI (they must be `%20`), so
+   they are rejected outright alongside C0/DEL controls — stricter than the
+   model, never more permissive; legitimate `%20`-encoded URIs stay launchable.
+   Legitimate userinfo/port URIs are unaffected. Covered by 11 targeted tests
+   (malformed-authority parity + control-character + raw-space rejection).
 
 ## What remains gated (not done here)
 
