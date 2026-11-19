@@ -11173,3 +11173,22 @@
 - Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-19 — agent:redfish-automation — #009/#021 (EP-U5)
+
+**Done:**
+- FEATURE — EP-U5 head slice (`queues/ui.md`), shared with #009/#021 (dependency-free, TLS-safe, display-only widget change). The per-console card (`KvmView._ConsoleCard`) now shows the same actionable "enable KVM on BMC" launch status as the viewer for a BMC-disabled console, both derived from the single `kvmLaunchStatusText` source of truth (visible text == merged `excludeSemantics` label). Previously the card gave a disabled console only a bare "Disabled" chip, so the operator got no next step on the first launch-decision surface.
+- Gated only on the disabled strategy, so the existing insecure-HTTP / external-client rows are untouched (no copy churn); "Open console" stays gated on `canOpenConsole` (false for disabled), URI stays visible/copyable; no URL opened, no TLS weakening.
+- +1 RED→GREEN widget test (disabled console card: shared status as visible text + semantics label, no "Open console", no overflow at 320/800/1300 px); RED proof confirmed before the fix. Baseline analyze 0 / 1349 passed / 1 skipped → verify analyze 0 / 1350 passed / 1 skipped; DMTF emulator 85/85 (lib changed — §1.4 gate met); issues validate OK; git diff --check clean.
+
+**Decisions:**
+- Widened the queue's "derive from kvmLaunchStatusText" hint to the real, single divergence (disabled strategy) rather than rewriting the intentional, distinct insecure-HTTP card copy (`kvmInsecureTransportNotice` is documented as deliberately different from the viewer's message); "fix the first real divergence, do not manufacture copy churn".
+- Kept the change display-only and dependency-free; the per-console card is widget-only (no service/wire change), so the emulator gate was still met on the `lib/` change and re-run 85/85.
+- Both issues stay OPEN (embedded HTML5 rendering / fullscreen / input forwarding remain externally blocked on platform WebView + BMC self-signed/TLS validation).
+
+**Next:**
+- Continue unblocked dept slices (EP-P5 no-WebView import guard, EP-S1 service launch edges, EP-T7 emulator prerequisite doctor) — genuine tested increments only.
+- Never add a WebView/url_launcher dependency unattended; never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

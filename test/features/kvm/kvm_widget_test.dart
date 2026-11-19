@@ -1026,6 +1026,54 @@ void main() {
     });
 
     testWidgets(
+        'EP-U5: a BMC-disabled console card shows the shared enable-on-BMC '
+        'launch status at 320/800/1300 px (#009/#021)',
+        (WidgetTester tester) async {
+      // EP-U5: the per-console card is the operator's first launch-decision
+      // surface, but unlike the viewer it gave a disabled console only a bare
+      // "Disabled" chip — no actionable "enable KVM on BMC" guidance. Both
+      // surfaces must derive the same message from kvmLaunchStatusText so a
+      // screen reader and a sighted operator hear/read identical wording.
+      const KvmConsole disabledWithUri = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['KVMIP'],
+        serviceEnabled: false,
+        connectUri: 'https://bmc.example/kvm',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      expect(disabledWithUri.launchStrategy, KvmLaunchStrategy.disabled);
+      final String expected = kvmLaunchStatusText(KvmLaunchStrategy.disabled);
+      for (final double width in <double>[320, 800, 1300]) {
+        tester.view.physicalSize = Size(width, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+        final KvmController controller = _StubController()
+          ..state = const KvmUiState(consoles: <KvmConsole>[disabledWithUri]);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: <Override>[
+              systemHandleProvider('bmc1')
+                  .overrideWithValue(_handle(kvm: true)),
+              kvmControllerProvider.overrideWith((ref, id) => controller),
+            ],
+            child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(expected), findsOneWidget,
+            reason: 'disabled card must show the shared status at $width px');
+        expect(find.bySemanticsLabel(expected), findsOneWidget,
+            reason: 'a11y: visible text == announced label at $width px');
+        expect(find.text('Open console'), findsNothing,
+            reason: 'a disabled console stays non-launchable at $width px');
+        expect(tester.takeException(), isNull,
+            reason: 'disabled card must not overflow at $width px');
+      }
+    });
+
+    testWidgets(
         'an explicitly disabled OEM console is not offered as openable '
         '(#009)', (WidgetTester tester) async {
       // RED proof: the generic OEM path hard-coded serviceEnabled: true, so

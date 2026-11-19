@@ -552,6 +552,30 @@ class _ConsoleCard extends StatelessWidget {
                 ),
               ),
             ],
+            // EP-U5 / #009 / #021: a BMC-disabled console must carry the same
+            // actionable "enable KVM on BMC" guidance on the per-console card as
+            // the viewer shows. Both surfaces derive it from the single
+            // kvmLaunchStatusText source of truth, so visible text always equals
+            // the merged excludeSemantics label and the two launch surfaces
+            // cannot drift. The URI stays visible/copyable; only the launch
+            // affordance is gated below. Display-only: no URL opened, TLS
+            // untouched. Other strategies already have their own rows above, so
+            // this is shown only for the disabled strategy (no copy churn).
+            if (console.launchStrategy ==
+                KvmLaunchStrategy.disabled) ...<Widget>[
+              const SizedBox(height: 8),
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: kvmLaunchStatusText(KvmLaunchStrategy.disabled),
+                child: Text(
+                  kvmLaunchStatusText(KvmLaunchStrategy.disabled),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
