@@ -19,6 +19,45 @@ class _StubParser extends KvmOemConsoleParser {
   }
 }
 
+/// A vendor parser that returns *unnormalized* values: a padded URI, and
+/// connection types with surrounding whitespace, a case-duplicate and an empty
+/// entry. Real vendor parsers are a data source like any BMC block, so these
+/// must be normalized by `KvmConsole.fromManager` just like every other source.
+class _MessyVendorParser extends KvmOemConsoleParser {
+  const _MessyVendorParser();
+
+  @override
+  String get vendorKey => 'AMI';
+
+  @override
+  KvmOemConsoleInfo? parse(Map<String, dynamic> block) {
+    return const KvmOemConsoleInfo(
+      vendor: 'AMI',
+      connectUri: '  https://bmc.example/kvm  ',
+      connectTypesSupported: <String>[' HTML5 ', 'html5', ''],
+      serviceEnabled: true,
+    );
+  }
+}
+
+/// A vendor parser that reports a blank (whitespace-only) URI and no types.
+class _BlankUriVendorParser extends KvmOemConsoleParser {
+  const _BlankUriVendorParser();
+
+  @override
+  String get vendorKey => 'AMI';
+
+  @override
+  KvmOemConsoleInfo? parse(Map<String, dynamic> block) {
+    return const KvmOemConsoleInfo(
+      vendor: 'AMI',
+      connectUri: '   ',
+      connectTypesSupported: <String>['', '  '],
+      serviceEnabled: true,
+    );
+  }
+}
+
 /// A realistic AMI parser: finds `Oem.AMI.KVM.ConnectUri`.
 class _AmiKvmParser extends KvmOemConsoleParser {
   const _AmiKvmParser();
@@ -274,6 +313,50 @@ void main() {
       // The vendor URI flows through the existing secure launch gating.
       expect(oem.canLaunchInAppHtml5, isTrue);
       expect(oem.launchStrategy, KvmLaunchStrategy.inAppHtml5);
+    });
+
+    test(
+        'vendor-parser values are normalized like every other console source '
+        '(#009 cross-view consistency)', () {
+      final KvmOemRegistry registry = KvmOemRegistry(
+        parsers: const <KvmOemConsoleParser>[_MessyVendorParser()],
+      );
+      final KvmConsole? oem = oemOf(
+        KvmConsole.fromManager(
+          vendorManager(),
+          managerId: 'BMC',
+          oemRegistry: registry,
+        ),
+      );
+      expect(oem, isNotNull);
+      // Trims the padded URI and trims/drops-empty/dedups the types, matching
+      // KvmConsole._fromBlock / the generic OEM path / KvmCapability.
+      expect(oem!.connectUri, 'https://bmc.example/kvm');
+      expect(oem.connectTypesSupported, <String>['HTML5']);
+      // The normalized URI still flows through the secure launch gating.
+      expect(oem.canLaunchInAppHtml5, isTrue);
+      expect(oem.launchStrategy, KvmLaunchStrategy.inAppHtml5);
+    });
+
+    test('a vendor parser blank URI normalizes to no URI / no chips (#009)',
+        () {
+      final KvmOemRegistry registry = KvmOemRegistry(
+        parsers: const <KvmOemConsoleParser>[_BlankUriVendorParser()],
+      );
+      final KvmConsole? oem = oemOf(
+        KvmConsole.fromManager(
+          vendorManager(),
+          managerId: 'BMC',
+          oemRegistry: registry,
+        ),
+      );
+      expect(oem, isNotNull);
+      // _uriString drops a whitespace-only value and _normalizedConnectTypes
+      // drops blank entries — the OEM card hides its URI row / chip list just
+      // as it would for a standard block reporting blank values.
+      expect(oem!.connectUri, isNull);
+      expect(oem.launchUri, isNull);
+      expect(oem.connectTypesSupported, isEmpty);
     });
 
     test('an unmatched registry falls back to strict OEM detection', () {

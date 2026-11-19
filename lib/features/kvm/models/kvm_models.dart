@@ -453,14 +453,23 @@ class KvmConsole {
     if (oem is Map<String, dynamic>) {
       final KvmOemConsoleInfo? parsed = oemRegistry?.parse(oem);
       if (parsed != null) {
-        // A registered vendor parser produced console details — use them.
+        // A registered vendor parser produced console details — use them, but
+        // normalize through the SAME helpers every other console source uses.
+        // A vendor parser is a data source like any BMC block, not a trusted
+        // shortcut: storing its raw values verbatim let a padded ConnectUri and
+        // duplicate/blank/garbled connection types reach the OEM console card
+        // while the capability card / launch plan already trim and dedup the
+        // same manager (issue #009 cross-view consistency). Both KVM views now
+        // agree for any construction path: a blank URI becomes `null` and an
+        // empty type list stays empty, exactly as for standard blocks.
         consoles.add(
           KvmConsole(
             type: KvmConsoleType.oem,
             managerId: managerId,
-            connectTypesSupported: parsed.connectTypesSupported,
+            connectTypesSupported:
+                _normalizedConnectTypes(parsed.connectTypesSupported),
             serviceEnabled: parsed.serviceEnabled,
-            connectUri: parsed.connectUri,
+            connectUri: _uriString(parsed.connectUri),
             sourceManagerUri: sourceManagerUri,
             oem: oem,
           ),

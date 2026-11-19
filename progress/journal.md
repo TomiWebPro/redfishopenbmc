@@ -10764,3 +10764,20 @@
 - `rf-platform` should rebase `build/rf-platform` onto current `main` before its next commit — the drift past `0966397` caused these three-file conflicts.
 
 **Issues touched:** none (platform launch-plan defense-in-depth hardening; #009/#021 remain open)
+
+## 2026-11-19 — agent:redfish-automation — #009/#021
+
+**Done:**
+- FEATURE #009 (smallest open ID) / #021 — genuine, dependency-free, TLS-safe cross-view normalization fix on the `#009` OEM-parser extensibility hook. `KvmConsole.fromManager`'s registered-vendor-parser branch stored the parser's raw `connectUri` / `connectTypesSupported` verbatim, while every other console source routes the same data through the shared `_uriString` (trim/reject-blank) and `_normalizedConnectTypes` (trim/drop-empty/case-insensitive dedup) helpers — so a padded URI or duplicate/blank/garbled types rendered inconsistently between the OEM console card and the capability card / launch plan for the same manager. Both fields now use the shared helpers; a blank URI → `null` (URI row hidden, clipboard falls back to manager source), blank types → empty. +2 RED→GREEN integration tests (1 confirmed RED pre-fix: `Expected: 'https://bmc.example/kvm' / Actual: '  https://bmc.example/kvm  '`) with messy + blank-URI vendor parser fixtures; targeted 20/20, KVM suite 375/375. Baseline analyze 0 / 1207 passed / 1 skipped → verify analyze 0 / 1209 passed / 1 skipped; coverage gate PASS overall 89.7% / scoped 90.4% / kvm 95.7%; DMTF emulator 85/85 (lib changed — §1.4 gate met, re-run after a mid-run rf-gate rebase); issues validate OK; git diff --check clean. Issues stay OPEN (remaining work tracked as unblocked dept slices in `queues/*.md`).
+
+**Decisions:**
+- Treated a registered vendor parser as just another data source, not a trusted shortcut: normalizing its output at the single `KvmConsole.fromManager` boundary keeps the per-console card and the capability card / launch plan in agreement for any construction path (issue #009 cross-view contract) without adding a second sanitizer on each surface.
+- Scope kept to `lib/features/kvm/models/kvm_models.dart` + one model test file; no WebView/protocol dependency, no Redfish request/header/payload/transport change, no production TLS weakening. UI increment skipped (no parser ships in v1 → no current user-visible surface; §5 bans manufactured churn).
+- A concurrent `rf-gate` agent held an in-progress UU merge of `build/rf-platform` in the shared main working tree when this run started; I did NOT touch it and worked in a clean isolated worktree, then rebased my two non-overlapping files onto the pushed merge `c68dba3` and re-verified. Known untracked `testing/` harness dir and pre-existing stash left untouched.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` for #009/#021 (EP-M2/RM-1/RM-2 model, EP-S1/RS-2 service, EP-P3 platform, EP-U3/EP-U1 UI, EP-T4 tooling) — genuine tested dependency-free increments only; never verification-only churn.
+- Do NOT add a WebView/url_launcher dependency unattended (EP-P2/EP-T2/EP-U2 deferred on manual per-target validation); never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — vendor-parser cross-view normalization), #021 (open — same hook, viewer/capability agreement)
