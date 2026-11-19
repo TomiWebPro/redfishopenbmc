@@ -443,9 +443,23 @@ bool _hasEncodedUnicodeControlOrSeparator(String uri) {
 /// percent-encoded form in the host — a parser-differential host-spoofing
 /// vector. Checked on the percent-decoded code points (see
 /// [_authorityHasCompatibilityDelimiter]).
+///
+/// The set is the complete family of non-ASCII code points that a launcher
+/// applying IDNA/NFKC to an internationalised host can turn into an ASCII
+/// structural delimiter — not just the fullwidth forms. It covers the slash
+/// mappings (fraction/division slash, IDNA-mapped to '/'), the fullwidth
+/// forms, the "small" forms (U+FE52 '.'/U+FE55 ':'/U+FE68 '\'/U+FE6B '@' ...),
+/// the vertical presentation forms (U+FE13 ':'/U+FE47 '[' ...), the dot
+/// leaders / ellipses (U+2024 '.'/U+2025 '..'/U+2026 '...'), the numeric
+/// "full stop" forms (U+2488..U+249B, U+1F100) and squared/fractional forms
+/// whose NFKC expansion embeds a delimiter (e.g. U+2100 'a/c', U+33C2
+/// 'a.m.'). Missing any one of these leaves the same parser-differential hole
+/// the fullwidth forms already close, so every member fails closed in the
+/// authority.
 const Set<int> _compatibilityDelimiterCodePoints = <int>{
-  0x2044, // FRACTION SLASH           -> '/'
-  0x2215, // DIVISION SLASH           -> '/'
+  // Slash + fullwidth forms (original set).
+  0x2044, // FRACTION SLASH           -> '/' (IDNA mapping)
+  0x2215, // DIVISION SLASH           -> '/' (IDNA mapping)
   0xFF03, // FULLWIDTH NUMBER SIGN    -> '#'
   0xFF0E, // FULLWIDTH FULL STOP      -> '.'
   0xFF0F, // FULLWIDTH SOLIDUS        -> '/'
@@ -455,6 +469,42 @@ const Set<int> _compatibilityDelimiterCodePoints = <int>{
   0xFF3B, // FULLWIDTH LEFT SQUARE BRACKET  -> '['
   0xFF3C, // FULLWIDTH REVERSE SOLIDUS      -> '\'
   0xFF3D, // FULLWIDTH RIGHT SQUARE BRACKET -> ']'
+  // Dot leaders / ellipses -> '.' / '..' / '...'.
+  0x2024, // ONE DOT LEADER                             -> '.'
+  0x2025, // TWO DOT LEADER                             -> '..'
+  0x2026, // HORIZONTAL ELLIPSIS                        -> '...'
+  0xFE19, // VERTICAL HORIZONTAL ELLIPSIS               -> '...'
+  0xFE30, // VERTICAL TWO DOT LEADER                    -> '..'
+  // "Small" ASCII look-alikes -> the ASCII delimiter.
+  0xFE52, // SMALL FULL STOP                            -> '.'
+  0xFE55, // SMALL COLON                                -> ':'
+  0xFE56, // SMALL QUESTION MARK                        -> '?'
+  0xFE5F, // SMALL NUMBER SIGN                          -> '#'
+  0xFE68, // SMALL REVERSE SOLIDUS                      -> '\'
+  0xFE6B, // SMALL COMMERCIAL AT                        -> '@'
+  // Vertical presentation forms -> the ASCII delimiter.
+  0xFE13, // PRESENTATION FORM FOR VERTICAL COLON            -> ':'
+  0xFE16, // PRESENTATION FORM FOR VERTICAL QUESTION MARK    -> '?'
+  0xFE47, // PRESENTATION FORM FOR VERTICAL LEFT SQUARE BRACKET  -> '['
+  0xFE48, // PRESENTATION FORM FOR VERTICAL RIGHT SQUARE BRACKET -> ']'
+  // Question/exclamation clusters embedding a delimiter.
+  0x2047, // DOUBLE QUESTION MARK        -> '??'
+  0x2048, // QUESTION EXCLAMATION MARK   -> '?!'
+  0x2049, // EXCLAMATION QUESTION MARK   -> '!?'
+  // Numeric "full stop" forms -> digit + '.'.
+  0x2488, 0x2489, 0x248A, 0x248B, 0x248C, 0x248D, 0x248E, 0x248F, // 1.-8.
+  0x2490, 0x2491, 0x2492, 0x2493, 0x2494, 0x2495, 0x2496, 0x2497, // 9.-16.
+  0x2498, 0x2499, 0x249A, 0x249B, // 17.-20.
+  0x1F100, // DIGIT ZERO FULL STOP      -> '0.'
+  // Squared/fractional forms whose NFKC expansion embeds a delimiter.
+  0x2100, // ACCOUNT OF                 -> 'a/c'
+  0x2101, // ADDRESSED TO THE SUBJECT   -> 'a/s'
+  0x2105, // CARE OF                    -> 'c/o'
+  0x2106, // CADA UNA                   -> 'c/u'
+  0x2A74, // DOUBLE COLON EQUAL         -> '::='
+  0x33C2, // SQUARE AM                  -> 'a.m.'
+  0x33C7, // SQUARE CO                  -> 'Co.'
+  0x33D8, // SQUARE PM                  -> 'p.m.'
 };
 
 /// Returns `true` when the raw authority carries a percent-encoded non-ASCII

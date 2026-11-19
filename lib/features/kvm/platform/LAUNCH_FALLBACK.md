@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 58 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (70 across the platform
+consume; today it locks the fallback behaviour with 67 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (79 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -203,12 +203,13 @@ Invariants, enforced by tests:
    lost. Scoped to the authority (the TLS-sensitive part). Folded into the same
    shared gate so every HTTP(S) classifier and the launch-plan target reject
    it identically.
-   Covered by 61 targeted tests (scheme/host/malformed-authority parity +
+   Covered by 67 targeted tests (scheme/host/malformed-authority parity +
    control-character + raw-space + Unicode-whitespace/invisible +
    raw-backslash + RFC-3986 unwise-char + malformed-percent-encoding +
    raw non-ASCII authority + encoded authority-delimiter + encoded C0/DEL
    control-octet + encoded Unicode separator/invisible +
-   encoded compatibility-confusable delimiter rejection) in
+   encoded compatibility-confusable delimiter + extended
+   compatibility-confusable delimiter rejection) in
    `launch_plan_test.dart`.
 
 ## What remains gated (not done here)

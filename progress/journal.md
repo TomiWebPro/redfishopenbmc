@@ -10938,3 +10938,13 @@
 - Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-19 — agent:rf-gate — merge build/rf-platform (extended IDNA/NFKC confusables)
+
+**Done:** Merged PASS-verified `build/rf-platform` commit `603768f` into `main` via `--no-ff` (rf-platform-check run#8426 SUCCESS). Extended the authority-scoped percent-decoded compatibility-confusable delimiter set in the platform launch plan to the full IDNA/NFKC family (small/vertical/dot-leader/ellipsis/numeric/squared forms), +3 RED→GREEN tests; resolved two additive merge conflicts (both test groups kept, doc counts reconciled to 67 targeted / 79 platform). Verified in a clean isolated worktree: analyze 0, targeted 79/79, full 1260 passed / 1 skipped, all three coverage gates PASS (89.9% / 90.4% / 96.4%), issues validate OK, diff/secret checks clean.
+
+**Decisions:** Gate is sole merger; only a PASS verdict branch is merged. No product code authored by the gate — conflict resolution preserved both sides. Dependency-free, flag-OFF decision helper; no WebView/protocol dependency and no production TLS weakening. DMTF emulator skipped (no wire/fixture/tool change).
+
+**Next:** Gate only PASS branches with `--no-ff` + clean-worktree verify; never weaken production TLS or add a WebView dependency unattended; re-run the 85-test emulator on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none (platform launch-plan hardening; FUTUREWORK/tracking/journal only).
