@@ -94,6 +94,34 @@ These three checks are mirrored in `.github/workflows/verify.yml`, which runs on
 every push to `main` and every pull request; the `README.md` status badge tracks
 its result.
 
+### Large / binary asset gate (FUTUREWORK "[!] Large spec/binary assets")
+
+The reference mirror policy caps downloads at **25 MB per file / 50 MB per run**
+and stores a link + SHA-256 + extracted notes instead of any larger artifact.
+`tool/asset_guard.dart` enforces the committed side of that policy (pure Dart,
+unit-tested in `test/tool/asset_guard_test.dart`):
+
+```bash
+dart run tool/asset_guard.dart                 # scan the repo, exit 1 on violation
+```
+
+Any **binary** file larger than the configured threshold (default **1 MiB**;
+`thresholdBytes` in `tool/asset_manifest.json`) must have an entry in that
+manifest with its repository path, exact byte size, SHA-256 and authoritative
+source URL. Text formats (`.md`, `.dart`, `.json`, `.html`, ...) are not flagged —
+their provenance is tracked in the human manifest at
+`documentations/external/README.md`. To add a large binary asset:
+
+1. **Ask a human before committing it** — unattended runs must not add large
+   binaries. If the artifact exceeds the download budget, do not commit it at
+   all; store its URL + SHA-256 + extracted notes in the docs manifest instead.
+2. Verify `sha256sum <file>` and add a matching entry to
+   `tool/asset_manifest.json` (and to `documentations/external/README.md`).
+3. Confirm `dart run tool/asset_guard.dart` reports `OK` before pushing.
+
+Exit codes: `0` = no violations, `1` = an unlisted/mismatched asset, `2` =
+manifest input error. The gate is mirrored in `.github/workflows/verify.yml`.
+
 ## Progress tracking contract
 
 ### `progress/journal.md` — daily (append, never overwrite)

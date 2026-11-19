@@ -10958,3 +10958,20 @@
 **Next:** Gate only PASS branches with `--no-ff` + full verification before push; never weaken production TLS or add a WebView dependency unattended; re-run the 85-test emulator on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none (platform launch-plan hardening; FUTUREWORK/tracking/journal only).
+
+## 2026-11-19 — agent:redfish-automation — #009 / #021 (LA-1 tooling closeout)
+
+**Done:**
+- LA-1 (fresh epic-split tooling slice, closeout of the FUTUREWORK "[!] Large spec/binary assets" blocker). Added `tool/asset_guard.dart` (pure-Dart policy evaluator + CLI) and `tool/asset_manifest.json` (path, exact byte size, SHA-256, authoritative source URL for the mirrored DSP0266 1.25.0 PDF and the DMTF schema index — both hashes verified this run). Any binary asset over 1 MiB that is unlisted, size-drifted or hash-drifted fails closed (exit 1); a malformed manifest fails closed (exit 2); text formats are excluded so tracked logs/docs are not flagged. RED proof: a synthetic 1.2 MB unlisted `.pdf` produced a violation. Wired into `.github/workflows/verify.yml`; documented the "ask a human before committing large assets / store link + hash meanwhile" gate in `DEVELOPMENT.md`; logged in `queues/tooling.md`. +15 RED→GREEN pure-Dart tests. Baseline analyze 0 / 1263 passed / 1 skipped → verify analyze 0 / 1278 passed / 1 skipped; DMTF emulator 85/85 (tool changed — §1.4 gate met); issues validate OK; git diff --check clean. No issue closed.
+
+**Decisions:**
+- Pure tooling guard, no `lib/` product code, no dependency, no wire/transport change, no production TLS weakening. Both issues stay OPEN (substantive acceptance boxes remain externally blocked on platform WebView + BMC self-signed/TLS validation).
+- The guard enforces the *committed* side of the existing 25 MB/file mirror policy; the human manifest in `documentations/external/README.md` stays the source of truth for provenance. Over-budget artifacts are stored as link + hash + notes, never committed.
+- Emulator re-run because `tool/` changed (§1.4); server stopped via script trap, test-only self-signed cert.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` (EP-M1 URI-scheme edges, RM-2 malformed-payload tolerance, EP-S1 service launch edges, EP-U1 fullscreen scaffold, EP-T4/EP-T6 tooling) — genuine tested dependency-free increments only.
+- Never add a WebView/url_launcher dependency unattended; never weaken production TLS; the new asset guard blocks unlisted large binaries.
+- Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

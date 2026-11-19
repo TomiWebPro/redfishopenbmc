@@ -12,7 +12,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      and WebView → EP-P4 splits. The other blocked items (Live BMC integration, KVM
      webview/native console) are already fully split into existing EP-* items; no code touched. -->
 
-- [ ] LA-1 Large/binary asset policy + guard (closeout of FUTUREWORK "[!] Large spec/binary
+- [x] LA-1 Large/binary asset policy + guard (LANDED 2026-11-19, run `auto: FEATURE — LA-1 asset guard`). (closeout of FUTUREWORK "[!] Large spec/binary
       assets"): add a repo asset-reference manifest listing any large DMTF spec / binary asset by
       source URL + SHA-256 hash (never commit the binary itself), and a pure-Dart guard test that
       fails when a spec/binary asset over an agreed size threshold is added under
@@ -77,3 +77,5 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
               writes limited to `tool/**` + `test/tool/**`.
 
 ## Log
+
+- 2026-11-19 — LA-1 LANDED (agent:redfish-automation): added `tool/asset_guard.dart` (pure-Dart large/binary asset policy evaluator + CLI) and `tool/asset_manifest.json` (path + byte size + SHA-256 + source URL for the mirrored DSP0266 PDF and the schema index). Any binary asset over 1 MiB without a manifest entry, or with size/hash drift, fails closed (exit 1); malformed manifests fail closed (exit 2). +15 RED→GREEN pure-Dart tests in `test/tool/asset_guard_test.dart` (synthetic unlisted large binary → violation; size/hash drift; path normalization; manifest validation; real-repo manifest coverage), RED proof via a temp-dir large binary. Wired into `.github/workflows/verify.yml` + documented the "ask a human before committing large assets" gate in `DEVELOPMENT.md`. No `lib/` change, no dependency, production TLS untouched. analyze 0; full suite green.

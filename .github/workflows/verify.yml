@@ -40,3 +40,6 @@ jobs:
 
       - name: Enforce coverage gates (>=75% overall, >=80% scoped, >=75% KVM)
         run: dart run tool/coverage_gate.dart coverage/lcov.info
+
+      - name: Enforce large/binary asset manifest policy
+        run: dart run tool/asset_guard.dart
