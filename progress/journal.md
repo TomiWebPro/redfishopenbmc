@@ -10781,3 +10781,20 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — vendor-parser cross-view normalization), #021 (open — same hook, viewer/capability agreement)
+
+## 2026-11-19 — agent:redfish-automation — #009/#021
+
+**Done:**
+- FEATURE #009 (smallest open ID) / #021 — RS-2 manager-walk robustness, a genuine user-visible defect. `_fetchManagerBodies` skipped only a stale per-member 404; any other per-member failure (503, 429, network timeout/connection) rethrew and blanked the whole gated KVM screen although other managers still exposed usable consoles. It now skips a member when `e.statusCode == 404 || e.retryable` (the existing normalized retryable classification: 429, transient 5xx except 501, timeout/connection), while 401/403, TLS certificate and all other non-retryable failures still propagate — so an expired session is re-authenticated and a bad certificate is never tolerated. Root-collection failures still propagate. +4 RED→GREEN service tests (2 confirmed RED pre-fix with an injected 503; 401/501 guards stay green), opt-in test-only fault injection in `MockRedfishServer` (empty by default, existing 5 call sites unchanged). Targeted service suite 35/35. Baseline analyze 0 / 1209 passed / 1 skipped → verify analyze 0 / 1216 passed / 1 skipped (a concurrent rf-platform merge `811214b` added +3 tests mid-run, no file overlap, included in the verified total); DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gate PASS overall 89.7% / scoped 90.4% / kvm 95.8%; issues validate OK; git diff --check clean. Issues stay OPEN.
+
+**Decisions:**
+- Reused `RedfishException.retryable` + HTTP-status semantics rather than inventing a new skip list: 429/5xx/timeout are the BMC's own signal that a member is transiently unavailable, while 401/403/certificate/non-retryable responses are real signals that must reach the auth/TLS layer. Skipping is per-member only — a failing Managers root still surfaces an error, so a genuinely unreachable BMC is never disguised as an empty console list.
+- Fault injection is test-only and opt-in (`statusByPath` defaults to empty), so the shared mock helper's existing fixture-backed tests are byte-for-byte unchanged; no new fixture or dependency needed (reused the existing stale-manager fixture).
+- UI increment skipped: a service-layer error-classification fix with no widget change; §5 bans manufactured churn. The user-visible effect (screen stays populated when one manager flaps) is pinned by both views' service tests. Known untracked `testing/` harness dir and pre-existing stash left untouched; the concurrent rf-gate/rf-platform merge in the shared tree was not modified.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` for #009/#021 (RS-2 done here; EP-S1 launch-path edges, EP-M2/RM-1/RM-2 model parity + enabled-state audit, EP-P3 platform, EP-U3/EP-U1 UI, EP-T4 tooling) — genuine tested dependency-free increments only; never verification-only churn.
+- Do NOT add a WebView/url_launcher dependency unattended; never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — RS-2 manager-walk robustness), #021 (open — same service path, viewer stays populated)

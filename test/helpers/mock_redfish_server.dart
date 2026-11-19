@@ -21,10 +21,19 @@ import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
 class MockRedfishServer {
   /// Creates a server that will serve [fixturesDir] (the folder holding the
   /// mockup's root `index.json`, i.e. the `redfish/v1` document root).
-  MockRedfishServer({required this.fixturesDir});
+  ///
+  /// [statusByPath] optionally maps exact request paths (e.g.
+  /// `/redfish/v1/Managers/FLAPPY`) to a forced HTTP status for test-only fault
+  /// injection. It is empty by default, so every existing fixture-backed test
+  /// behaves byte-for-byte as before. It never changes production code.
+  MockRedfishServer(
+      {required this.fixturesDir, this.statusByPath = const <String, int>{}});
 
   /// Directory containing the unzipped DMTF mockup document root.
   final String fixturesDir;
+
+  /// Optional exact-path → forced-status fault injection map (test only).
+  final Map<String, int> statusByPath;
 
   HttpServer? _server;
 
@@ -54,6 +63,16 @@ class MockRedfishServer {
         _respond(request, 202, headers: <String, String>{
           'Location': '$path/Tasks/1',
         });
+        return;
+      }
+
+      // Test-only fault injection: force a specific status for a path so a
+      // single manager member can simulate a flapping BMC (503), an expired
+      // session (401), a permanently unsupported request (501), etc.
+      final int? forcedStatus = statusByPath[path];
+      if (forcedStatus != null) {
+        _respond(request, forcedStatus,
+            body: _error('Base.1.0.InjectedFault', path));
         return;
       }
 

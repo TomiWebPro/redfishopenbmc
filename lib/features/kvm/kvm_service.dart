@@ -100,10 +100,14 @@ class KvmService {
   ///
   /// Shared by [fetchConsoles] and [fetchCapabilities] so both views stay in
   /// sync. Surfaces a friendly [RedfishException] when not connected and
-  /// normalises transport errors. A single member that answers 404 (a stale /
-  /// removed manager link, common on hot-swap or transient BMC states) is
-  /// skipped so one dead link cannot blank the whole KVM screen; auth errors
-  /// (401/403) and every other failure still propagate. A malformed (non-list)
+  /// normalises transport errors. A member that cannot be read is skipped when
+  /// its failure is not fatal to the session — a stale/removed link (404) or a
+  /// transient, retryable failure (429, 5xx except 501, timeout / connection
+  /// error) — so one dead or flapping manager cannot blank the whole gated KVM
+  /// screen while the other managers still expose usable consoles (RS-2).
+  /// Auth errors (401/403), TLS certificate failures and every other
+  /// non-retryable failure still propagate so they are never masked as a
+  /// missing optional sub-resource (issue #009/#021). A malformed (non-list)
   /// `Members` collection is treated as no managers rather than blanking the
   /// screen with a cast error (issue #009).
   Future<List<({String managerId, Map<String, dynamic> body})>>
@@ -139,13 +143,17 @@ class KvmService {
         try {
           body = await c.getJson(managerUri);
         } on RedfishException catch (e) {
-          // A stale/deleted member (404) is not a failure of discovery — the
-          // other, healthy managers still expose consoles the operator can use.
-          // Skipping it keeps both KVM views populated instead of blanking the
-          // gated screen on one dead link (issue #009). Auth failures (401/403)
-          // and all other errors are rethrown so they are never masked as a
-          // missing optional sub-resource.
-          if (e.statusCode == 404) continue;
+          // A per-member failure is not a failure of discovery when it is a
+          // stale/deleted link (404) or a transient, retryable condition (429,
+          // 5xx except 501, timeout / connection error — see
+          // RedfishException.retryable). Skipping it keeps both KVM views
+          // populated from the healthy managers instead of blanking the gated
+          // screen on one dead or flapping member (RS-2). Auth failures
+          // (401/403), TLS certificate failures and all other non-retryable
+          // errors are rethrown so they are never masked as a missing optional
+          // sub-resource: the session must be re-authenticated on 401/403 and
+          // a bad certificate must never be silently tolerated (issue #009).
+          if (e.statusCode == 404 || e.retryable) continue;
           rethrow;
         }
         final String managerId = _managerId(body, managerUri);

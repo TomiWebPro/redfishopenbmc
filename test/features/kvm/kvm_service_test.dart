@@ -691,4 +691,95 @@ void main() {
       expect(blank.supported, isTrue);
     });
   });
+
+  group('KvmService transient manager member resilience (RS-2)', () {
+    // The stale-manager fixture has one healthy manager (BMC) and one member
+    // (STALE) whose GET is fault-injected to a chosen status. A transient,
+    // per-member failure must not blank the gated KVM screen, while an auth /
+    // non-retryable failure must still surface so it is never masked.
+    Future<void> withStaleStatus(
+      int status,
+      Future<void> Function(KvmService svc) body,
+    ) async {
+      final MockRedfishServer server = await MockRedfishServer(
+        fixturesDir: 'test/fixtures/redfish/kvm_stale_manager_mockup',
+        statusByPath: <String, int>{
+          '/redfish/v1/Managers/STALE': status,
+        },
+      ).start();
+      try {
+        await body(
+          KvmService(client: server.buildClient(), systemId: 'bmc1'),
+        );
+      } finally {
+        await server.close();
+      }
+    }
+
+    // RED proof: a per-member 503 rethrew out of `_fetchManagerBodies`, so both
+    // views were blanked even though the healthy manager exposed a console.
+    test(
+        'fetchConsoles skips a transient 5xx member and keeps healthy consoles',
+        () async {
+      await withStaleStatus(503, (KvmService svc) async {
+        final List<KvmConsole> consoles = await svc.fetchConsoles();
+
+        expect(consoles, isNotEmpty);
+        expect(consoles.every((KvmConsole c) => c.managerId == 'BMC'), isTrue);
+        expect(
+          consoles.any((KvmConsole c) =>
+              c.type == KvmConsoleType.graphical && c.canOpenConsole),
+          isTrue,
+        );
+      });
+    });
+
+    test(
+        'fetchCapabilities skips a transient 5xx member and keeps the healthy capability',
+        () async {
+      await withStaleStatus(503, (KvmService svc) async {
+        final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+
+        expect(capabilities, hasLength(1));
+        expect(capabilities.single.managerId, 'BMC');
+        expect(capabilities.single.supported, isTrue);
+        expect(capabilities.single.hasUri, isTrue);
+      });
+    });
+
+    // Guard: an expired session must never be silently degraded to a partial
+    // console list — the auth manager needs to see it and re-authenticate.
+    test('fetchConsoles still surfaces a per-member auth failure', () async {
+      await withStaleStatus(401, (KvmService svc) async {
+        await expectLater(
+          svc.fetchConsoles(),
+          throwsA(
+            isA<RedfishException>().having(
+              (RedfishException e) => e.statusCode,
+              'statusCode',
+              401,
+            ),
+          ),
+        );
+      });
+    });
+
+    // Guard: only transient/retryable failures are skipped; a permanent (non-
+    // retryable) response is a real signal and must keep propagating.
+    test('fetchConsoles still surfaces a non-retryable per-member failure',
+        () async {
+      await withStaleStatus(501, (KvmService svc) async {
+        await expectLater(
+          svc.fetchConsoles(),
+          throwsA(
+            isA<RedfishException>().having(
+              (RedfishException e) => e.statusCode,
+              'statusCode',
+              501,
+            ),
+          ),
+        );
+      });
+    });
+  });
 }
