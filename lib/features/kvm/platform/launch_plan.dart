@@ -150,10 +150,23 @@ bool isControlSafeConsoleUri(String? uri) =>
 /// malformed/spoofed authority. Rejecting raw backslashes loses no valid target
 /// (a literal backslash must be `%5C`, which stays launchable).
 ///
-/// `%20`/`%5C`/`%XX` escape sequences contain none of these, so properly encoded
-/// targets pass. Shared by every HTTP(S) transport classifier so HTTPS and HTTP
-/// classification and the launch-plan decision layer apply identical hardening.
-final RegExp _rawUriForbiddenChars = RegExp(r'[\\\p{C}\p{Z}]', unicode: true);
+/// The RFC 3986 "unwise" ASCII characters (`"` `<` `>` `^` `` ` `` `{` `|` `}`)
+/// are rejected for the same reason: they are not in the `unreserved` /
+/// `reserved` sets, so a literal one must be percent-encoded (`%22`, `%3C`,
+/// ...), yet `Uri.tryParse` silently percent-encodes a raw occurrence into the
+/// authority/path instead of rejecting it — e.g.
+/// `https://bmc<example/console` parses with scheme `https` and the non-empty
+/// host `bmc%3Cexample`, passing a purely syntactic re-check. Under a stale
+/// secure flag + test opt-in that parser differential could reach in-app
+/// rendering and self-signed acceptance on a malformed/spoofed authority.
+/// `%20`/`%5C`/`%XX` escape sequences contain none of these raw characters, so
+/// properly encoded targets pass. Rejecting raw unwise chars loses no valid
+/// target (their `%XX` forms stay launchable), and legal gen/sub-delims
+/// (`[` `]` `&` `=` ...) are unaffected. Shared by every HTTP(S) transport
+/// classifier so HTTPS/HTTP classification and the launch-plan decision layer
+/// apply identical hardening.
+final RegExp _rawUriForbiddenChars =
+    RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
 /// Trims [uri] and returns it only when it is non-blank and contains no raw
 /// control/separator/invisible code point, or `null` otherwise. Shared by every
@@ -164,9 +177,11 @@ String? _controlSafeTrimmedUri(String? uri) {
   if (uri == null) return null;
   final String trimmed = uri.trim();
   if (trimmed.isEmpty) return null;
-  // C0/C1 controls, DEL, ASCII + Unicode spaces, invisible format chars and a
-  // raw backslash are never legal raw in a URI; `%20`/`%5C`/`%XX` sequences
-  // contain none of them, and an embedded one is not removed by `String.trim()`.
+  // Reject any raw separator, control/format/invisible code point, raw
+  // backslash (delimiter/authority confusion), or RFC-3986 "unwise" ASCII char.
+  // None are legal unescaped in a URI; `%20`/`%5C`/`%XX` escapes contain none
+  // of them and stay launchable, as do legal gen/sub-delims. An embedded raw
+  // one is not removed by `String.trim()`.
   if (_rawUriForbiddenChars.hasMatch(trimmed)) return null;
   return trimmed;
 }

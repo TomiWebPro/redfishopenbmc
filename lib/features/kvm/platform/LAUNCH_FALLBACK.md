@@ -13,7 +13,9 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 22 targeted tests.
+consume; today it locks the fallback behaviour with 29 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (40 across the platform
+suite).
 
 ## Decision contract (`planConsoleLaunch`)
 
@@ -109,10 +111,20 @@ Invariants, enforced by tests:
    differential could grant in-app rendering and self-signed acceptance on a
    malformed/spoofed authority. Raw backslashes are rejected outright — a
    properly encoded `%5C` stays launchable, so no valid target is lost.
-   Legitimate userinfo/port URIs are unaffected. Covered by targeted tests
+   **RFC-3986 "unwise" character rejection:** the raw ASCII characters `"`,
+   `<`, `>`, `^`, `` ` ``, `{`, `|`, `}` are not in the `unreserved`/`reserved`
+   sets, so a literal one must be percent-encoded (`%22`, `%3C`, ...), but
+   `Uri.tryParse` silently percent-encodes a raw occurrence into the host/path
+   instead of rejecting it — e.g. `https://bmc<example/console` parses with
+   scheme `https` and the non-empty host `bmc%3Cexample`, passing a purely
+   syntactic re-check. Under a stale flag + test opt-in that parser differential
+   could reach in-app rendering and self-signed acceptance on a malformed/spoofed
+   authority. Every raw unwise char is rejected outright — its `%XX` form stays
+   launchable — while legal gen/sub-delims (`[` `]` `&` `=`) and userinfo/port
+   URIs are unaffected, so no valid target is lost. Covered by 15 targeted tests
    (malformed-authority parity + control-character + raw-space +
-   Unicode-whitespace/invisible + raw-backslash rejection) in
-   `launch_plan_test.dart`, plus classifier-agreement tests in
+   Unicode-whitespace/invisible + raw-backslash + RFC-3986 unwise-char
+   rejection) in `launch_plan_test.dart`, plus classifier-agreement tests in
    `kvm_model_test.dart` and `kvm_capability_test.dart`.
 
 ## What remains gated (not done here)
