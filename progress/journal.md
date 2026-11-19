@@ -10719,3 +10719,17 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — cross-surface clipboard safety), #021 (open — fail-closed card copy target)
+
+## 2026-11-19 — agent:rf-gate (sole merger)
+
+**Done:**
+- MERGED `build/rf-platform` commit `0966397` into `main` via `--no-ff` (merge `ee6faab`) after `rf-platform-check` run#7956 PASS (analyze 0; targeted `launch_plan_test.dart` 35/35 incl. 3 new raw non-ASCII authority / IDN-homograph cases; no production-TLS weakening; path-contained under `lib/features/kvm/platform/**` + `test/**`; no dependency changes). The branch was stale (base `97ba24c`, 39 commits behind main) and conflicted in `launch_plan.dart` + `LAUNCH_FALLBACK.md` because main had refactored the target into the shared `_controlSafeTrimmedUri` gate (the branch's old `_uriHasSecureHttpsTarget` no longer exists). Resolution folded the branch's `_nonAscii` regex + `_authorityHasNonAscii` raw-authority check into that shared gate (returns `null`, matching the other checks), preserving BOTH main's shared public-classifier refactor AND the branch's IDN-homograph fail-closed hardening; the check is scoped to the authority so ASCII punycode hosts and non-ASCII path/query text stay launchable. Post-merge verify at `ee6faab` (clean except pre-existing untracked `testing/`): analyze 0; full `flutter test --coverage` 1191 passed / 1 skipped (+3); coverage gates PASS overall 89.7% / scoped 90.4% / kvm 95.6%; `issues.py validate` OK; `git diff --check` clean. DMTF emulator skipped — dependency-free decision-helper-only change (no wire/transport/fixture/tool change).
+
+**Decisions:**
+- Followed established rf-gate precedent (merges `2a727a1`, `5c99995`, etc.): faithfully resolved the structural conflict by folding the branch's new hardening into main's shared `_controlSafeTrimmedUri` gate rather than skipping — the PASS verdict was on the isolated tip, and the full post-merge suite is the safety net (green).
+- Raw non-ASCII authority is refused at the single shared gate so all HTTP(S) classifiers and the launcher/clipboard target agree; scoped to the TLS-sensitive authority only, so no valid target lost and no TLS weakening.
+
+**Next:**
+- `rf-platform` should rebase `build/rf-platform` onto current `main` before adding new commits — the 39-commit drift caused these conflicts.
+
+**Issues touched:** none (platform launch-plan defense-in-depth hardening; #009/#021 remain open)
