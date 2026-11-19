@@ -491,6 +491,34 @@ void main() {
     });
   });
 
+  group('isControlSafeConsoleUri — shared non-HTTP transport gate', () {
+    test('rejects null, blank, raw-space, C0/DEL and Unicode separators', () {
+      for (final String? uri in <String?>[
+        null,
+        '',
+        '   ',
+        'vnc://bmc.exa mple:5900',
+        'vnc://bmc.example/con\nsol',
+        'rfb://bmc.example/con\r\nsol',
+        'kvmip://bmc.example/con\u0000sol',
+        'ssh://bmc.example/con\tsol',
+        'telnet://bmc.example/con\u007Fsol',
+        'rfb://bmc\u00A0.example:5900',
+        'vnc://bmc.example/\u200Bx',
+      ]) {
+        expect(isControlSafeConsoleUri(uri), isFalse, reason: 'uri=$uri');
+      }
+    });
+
+    test('accepts clean, padded and percent-encoded targets (guards)', () {
+      expect(isControlSafeConsoleUri('vnc://bmc.example:5900'), isTrue);
+      expect(isControlSafeConsoleUri('  ssh://bmc.example:22  '), isTrue);
+      expect(
+          isControlSafeConsoleUri('vnc://bmc.example/console%20one'), isTrue);
+      expect(isControlSafeConsoleUri('https://bmc.example/kvm'), isTrue);
+    });
+  });
+
   group(
       'planConsoleLaunch — defense in depth: Unicode whitespace/invisible rejection',
       () {
@@ -545,7 +573,8 @@ void main() {
   });
 
   group('planConsoleLaunch — defense in depth: raw-backslash rejection', () {
-    test('a raw backslash that Uri.tryParse treats as a slash fails closed', () {
+    test('a raw backslash that Uri.tryParse treats as a slash fails closed',
+        () {
       // A raw backslash is not a legal URI character (it must be percent-encoded
       // as %5C), yet `Uri.tryParse` treats it as a path/authority separator and
       // can still call the result an HTTPS URI with a non-empty host. E.g.

@@ -54,7 +54,13 @@ Invariants, enforced by tests:
    transport classifier — `hasSecureLaunchUri` / `usesInsecureHttpLaunchUri` /
    `hasHttpLaunchUri` on both `KvmConsole` and `KvmCapability` — so no surface
    can disagree with the launch plan about a malformed target, whatever its
-   scheme. It uses `Uri.tryParse` + `scheme == 'https'`
+   scheme. The scheme-agnostic `isControlSafeConsoleUri` exposes the same
+   shared gate so the **non-HTTP** external-client classifiers
+   (`KvmConsole.requiresExternalConsoleClient` /
+   `externalClientProtocolLabel`: VNC/RFB/KVMIP/serial) cannot announce a
+   raw-space/C0/DEL/Unicode-separator-bearing URI as a trustworthy external
+   client while an equivalent malformed HTTP(S) URI is refused — it fails
+   closed to `noUri` instead. It uses `Uri.tryParse` + `scheme == 'https'`
    + non-empty `host` (a hand-rolled authority scan could call a malformed port
    "secure") and rejects C0/DEL controls, which `Uri.tryParse` silently
    percent-encodes. A stale/incorrect secure flag paired with a plaintext

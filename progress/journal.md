@@ -10609,3 +10609,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — cleartext HTML5 launch-guidance consistency), #021 (open — cleartext transport guidance)
+
+## 2026-11-19 — agent:redfish-automation — #009/#021
+
+**Done:**
+- FEATURE #009 (smallest open ID) / #021 — genuine, dependency-free, TLS-safe classifier-parity fix. The non-HTTP external-client classifiers (`KvmConsole.requiresExternalConsoleClient` / `externalClientProtocolLabel`: VNC/RFB/KVMIP/serial) still used bare `Uri.tryParse`, which percent-encodes raw spaces/C0/DEL/Unicode separators into a spoofed host while reporting a valid scheme — so a CRLF/NUL/NBSP-bearing `vnc://`/`rfb://` URI was announced as a trustworthy external client with a copy path, while the equivalent malformed HTTPS/HTTP URI was refused. Added the shared scheme-agnostic `isControlSafeConsoleUri` gate (`launch_plan.dart`, same `_controlSafeTrimmedUri` core) and applied it in `requiresExternalConsoleClient`; malformed external URIs now fail closed to `noUri`. +6 RED→GREEN tests (2 model + 1 viewer widget confirmed RED pre-fix; 2 pure classifier + guards). Baseline analyze 0 / 1158 passed / 1 skipped → verify analyze 0 / 1166 passed / 1 skipped; DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.5% / scoped 90.4% / kvm 94.8%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Reused the existing `_controlSafeTrimmedUri` core via a new public scheme-agnostic `isControlSafeConsoleUri` rather than duplicating the control-char rule, so HTTP(S) and non-HTTP transport families apply one identical hardening and cannot drift. Stricter only for malformed/control-bearing URIs — no valid (incl. percent-encoded) external endpoint is lost. `externalClientProtocolLabel` inherits the guard via its existing `requiresExternalConsoleClient` check. Display-only classification: no URL opened, no WebView/protocol dependency, no production TLS weakening. DMTF 85-test emulator re-run because `lib/` changed. Untracked `testing/` harness dir and pre-existing stash left untouched.
+
+**Next:**
+- Find another genuine, dependency-free increment for #009/#021 (e.g. a cross-view disabled-helper / session-note copy consistency gap, or epic-triage/split the WebView-blocked rendering work into an unblocked testable plan). Never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — external-client classifier parity), #021 (open — transport classification consistency)

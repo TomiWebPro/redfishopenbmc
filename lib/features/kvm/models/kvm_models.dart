@@ -258,9 +258,18 @@ class KvmConsole {
   /// Whether [launchUri] uses a protocol that requires an external client
   /// (e.g. VNC/RFB/KVMIP or serial SSH/Telnet/IPMI) rather than browser/
   /// WebView rendering.
+  ///
+  /// Applies the same shared [isControlSafeConsoleUri] gate as the HTTP(S)
+  /// classifier families before parsing. A raw-space / C0/DEL / Unicode-
+  /// separator-bearing URI would otherwise be silently percent-encoded by
+  /// `Uri.tryParse` into a spoofed host while still reporting a valid external
+  /// scheme, and be presented to the operator as a trustworthy "requires an
+  /// external client" endpoint (with a copy affordance) — disagreeing with how
+  /// an equivalent malformed HTTPS/HTTP URI is already failed closed. Such a
+  /// target now fails closed to `noUri` here too (issues #009 / #021).
   bool get requiresExternalConsoleClient {
     final String? uri = launchUri;
-    if (uri == null || uri.isEmpty) return false;
+    if (uri == null || !isControlSafeConsoleUri(uri)) return false;
     final Uri? parsed = Uri.tryParse(uri);
     if (parsed == null) return false;
     final String scheme = parsed.scheme.toLowerCase();

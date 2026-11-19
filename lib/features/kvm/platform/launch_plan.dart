@@ -119,6 +119,23 @@ bool isPlaintextHttpConsoleUri(String? uri) =>
 bool isHttpConsoleUri(String? uri) =>
     _isHttpUriWithSchemes(uri, const <String>{'http', 'https'});
 
+/// Returns `true` only when [uri] is a non-blank string with no raw control,
+/// separator or invisible code point — the shared hardening every transport
+/// classifier family (HTTP(S) and non-HTTP external-client schemes) applies.
+///
+/// The three HTTP(S) classifiers reject raw-space/C0/DEL/Unicode-separator
+/// targets via [_controlSafeTrimmedUri] before checking scheme/host. The
+/// external-client families (VNC/RFB/KVMIP/serial) previously used a bare
+/// `Uri.tryParse`, which silently percent-encodes those characters into a
+/// spoofed host while still reporting a valid scheme — so a CRLF/NUL-bearing
+/// `vnc://` URI was announced as a trustworthy external client while an
+/// equivalent malformed HTTPS/HTTP URI was correctly refused. Exposing the
+/// shared control-safety gate here makes the non-HTTP classifiers apply the
+/// identical rule (issue #009/#021). It is scheme-agnostic and read-only: it
+/// never opens a URL, adds a dependency or weakens transport security.
+bool isControlSafeConsoleUri(String? uri) =>
+    _controlSafeTrimmedUri(uri) != null;
+
 /// Rejects raw characters that are never legal unescaped in a URI: Unicode
 /// `Separator` (Z: ASCII space, NBSP, line/paragraph/ideographic spaces) and
 /// `Other` (C: C0/C1 controls, DEL, zero-width/invisible format chars).

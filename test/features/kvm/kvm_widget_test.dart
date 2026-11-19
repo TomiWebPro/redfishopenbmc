@@ -1277,5 +1277,31 @@ void main() {
           findsNothing);
       expect(find.textContaining('unencrypted HTTP connection'), findsNothing);
     });
+
+    testWidgets(
+        'a control-char external URI does not present a trusted external-client '
+        'path (#009/#021)', (tester) async {
+      await pumpViewer(
+        tester,
+        const KvmConsole(
+          type: KvmConsoleType.graphical,
+          managerId: 'BMC',
+          connectTypesSupported: <String>['KVMIP'],
+          serviceEnabled: true,
+          connectUri: 'vnc://bmc.example/con\r\nsol',
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        ),
+      );
+
+      // Bare Uri.tryParse percent-encodes CRLF into a spoofed host but still
+      // reports the `vnc` scheme, so pre-fix the viewer announced a trustworthy
+      // "requires an external VNC/RFB client" path for an injection-bearing URI.
+      // It must instead fail closed to the generic no-URI guidance.
+      expect(find.textContaining('requires an external'), findsNothing);
+      expect(find.textContaining('VNC/RFB client'), findsNothing);
+      final String noUriText = kvmLaunchStatusText(KvmLaunchStrategy.noUri);
+      expect(find.bySemanticsLabel(noUriText), findsOneWidget);
+      expect(find.text(noUriText), findsOneWidget);
+    });
   });
 }

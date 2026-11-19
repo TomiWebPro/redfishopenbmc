@@ -1200,4 +1200,63 @@ void main() {
       expect(console.launchStrategy, KvmLaunchStrategy.insecureHtml5);
     });
   });
+
+  group('external-client classifiers share control-char hardening (#009/#021)',
+      () {
+    KvmConsole externalConsoleWith(String uri) => KvmConsole(
+          type: KvmConsoleType.graphical,
+          managerId: 'BMC',
+          connectTypesSupported: const <String>['KVMIP'],
+          serviceEnabled: true,
+          connectUri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+
+    // The HTTP(S) families share the _controlSafeTrimmedUri hardening, but the
+    // non-HTTP external-client classifiers still used a bare Uri.tryParse that
+    // silently percent-encodes raw spaces / C0 / DEL / Unicode separators into
+    // a spoofed host. Because requiresExternalConsoleClient only checked the
+    // scheme, such a malformed URI was still presented to the operator as a
+    // legitimate external client ("requires an external VNC/RFB client") with
+    // a copy affordance — disagreeing with how an equivalent malformed HTTPS or
+    // HTTP URI is refused. It must fail closed to `noUri` on every surface.
+    test('a control-char/raw-space external URI is not an external client', () {
+      for (final String uri in <String>[
+        'vnc://bmc.exa mple:5900', // raw space in host
+        'vnc://bmc.example/con sol', // raw space in path
+        'vnc://bmc.example/con\nsol', // LF
+        'rfb://bmc.example/con\r\nsol', // CRLF
+        'kvmip://bmc.example/con\u0000sol', // NUL
+        'ssh://bmc.example/con\tsol', // TAB
+        'telnet://bmc.example/con\u007Fsol', // DEL
+        'rfb://bmc\u00A0.example:5900', // NBSP (Unicode separator)
+        'vnc://bmc.example/\u200Bx', // zero-width space (invisible)
+      ]) {
+        final KvmConsole console = externalConsoleWith(uri);
+        expect(console.requiresExternalConsoleClient, isFalse, reason: uri);
+        expect(console.externalClientProtocolLabel, isNull, reason: uri);
+        expect(console.launchStrategy, KvmLaunchStrategy.noUri, reason: uri);
+        expect(console.canOpenConsole, isFalse, reason: uri);
+      }
+    });
+
+    test('clean external URIs are still classified (guards)', () {
+      final KvmConsole vnc = externalConsoleWith('vnc://bmc.example:5900');
+      expect(vnc.requiresExternalConsoleClient, isTrue);
+      expect(vnc.externalClientProtocolLabel, 'VNC/RFB');
+      expect(vnc.launchStrategy, KvmLaunchStrategy.externalClient);
+      expect(vnc.canOpenConsole, isTrue);
+
+      final KvmConsole ssh = externalConsoleWith('ssh://bmc.example:22');
+      expect(ssh.requiresExternalConsoleClient, isTrue);
+      expect(ssh.externalClientProtocolLabel, 'SSH');
+
+      // A properly percent-encoded target contains no raw forbidden chars and
+      // stays a legitimate external client.
+      final KvmConsole encoded =
+          externalConsoleWith('vnc://bmc.example/console%20one');
+      expect(encoded.requiresExternalConsoleClient, isTrue);
+      expect(encoded.externalClientProtocolLabel, 'VNC/RFB');
+    });
+  });
 }
