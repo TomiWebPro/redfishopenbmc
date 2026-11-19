@@ -10677,3 +10677,13 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — safe "Primary" external-browser target), #021 (open — secure-first launch recommendation)
+
+## 2026-11-19 — agent:redfish-gate — MERGE 97ba24c
+
+**Done:** Sole-merger gate. `rf-platform-check` run#7839 (started 09:46:46 UTC, ~120 s after builder HEAD `97ba24c` at 09:44:38 UTC) returned PASS on the single pending commit beyond `main` (analyze 0, targeted `launch_plan_test.dart` 32/32 incl. 3 new malformed-percent-encoding cases, no production-TLS weakening, path-contained under `lib/features/kvm/platform/**` + `test/**`, no dependency changes). Merged `build/rf-platform` into `main` via `--no-ff` → merge `2a727a1`. Resolved 2 conflicts preserving both sides: main's shared-classifier refactor (single `_controlSafeTrimmedUri` control-safety gate + `_isHttpUriWithSchemes` + public HTTP(S) classifiers + launcher/copy-target control-safety tests) and the branch's malformed-percent-encoding fail-closed regex; folded the branch gate into the shared control-safe trim, retained both test groups and both doc intents. Post-merge verify in-tree at `2a727a1` (clean except pre-existing untracked `testing/`): `flutter analyze` 0; full `flutter test --coverage` 1183 passed / 1 skipped (+3 merged tests); coverage gates PASS overall 89.6% / scoped 90.4% / kvm 94.9%; `issues.py validate` OK; `git diff --check` clean. Pushed `main` 805830b..2a727a1.
+
+**Decisions:** Kept main's single shared control-safety gate and folded the branch's malformed-percent rejection into `_controlSafeTrimmedUri` (rather than resurrecting the removed `_uriHasSecureHttpsTarget`), so all HTTP(S) classifiers and the launch-plan clipboard/launcher target apply one identical fail-closed rule — stricter only for illegal `%` escapes that `Uri.tryParse` would silently encode into a host; properly percent-encoded `%XX` targets (any hex case) stay launchable, no production TLS weakened, no valid target lost. Merged both additive test groups and both doc intents. DMTF emulator 85-test suite not required: the change is a dependency-free regex hardening in a decision helper with no wire/transport/fixture/tool change. No new dev work by rf-gate.
+
+**Next:** Verify push settled; the next `rf-platform-check` PASS gates the subsequent platform commit. No new dev work by rf-gate.
+
+**Issues touched:** none (merge-only gate; #009 / #021 remain open under redfish-automation).
