@@ -490,4 +490,57 @@ void main() {
       expect(isPlaintextHttpConsoleUri('http://bmc.example/kvm'), isTrue);
     });
   });
+
+  group(
+      'planConsoleLaunch — defense in depth: Unicode whitespace/invisible rejection',
+      () {
+    test(
+        'invisible/whitespace Unicode that Uri.tryParse encodes into the host fails closed',
+        () {
+      // The ASCII-only raw-space/control rejection is not enough: Uri.tryParse
+      // also silently percent-encodes Unicode separators and format/invisible
+      // characters (NBSP, zero-width space, line separator, ideographic space)
+      // into the host/path rather than rejecting them, so a purely ASCII
+      // syntactic re-check still calls these "secure". None of these are valid
+      // raw in a URI (they must be percent-encoded), and an embedded one is not
+      // removed by String.trim(); under a stale secure flag + test opt-in it
+      // would reach in-app rendering and self-signed acceptance on a malformed
+      // or spoofed host. All such characters must fail closed.
+      for (final String uri in <String>[
+        'https://bmc\u00A0.example/console', // NBSP in host
+        'https://bmc\u200B.example/console', // zero-width space in host
+        'https://bmc\u2028.example/console', // line separator in host
+        'https://bmc\u3000.example/console', // ideographic space in host
+        'https://bmc.example/con\u00A0sole', // NBSP in path
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('a non-ASCII but non-whitespace path char is not over-rejected', () {
+      // Guard: the rule targets Unicode separator/control/format categories,
+      // not all non-ASCII. A legitimate non-ASCII path character remains
+      // launchable via the external-browser fallback (no TLS weakening).
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.productionDefault,
+        uri: 'https://bmc.example/\u{1F600}',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.route, KvmConsoleRenderRoute.externalBrowser);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+  });
 }

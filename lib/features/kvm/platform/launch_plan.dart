@@ -74,16 +74,23 @@ class KvmConsoleLaunchPlan {
 /// (Dart normalises it), and legitimate userinfo/port URIs remain secure.
 ///
 /// `Uri.tryParse` silently percent-encodes C0/DEL control characters (CR, LF,
-/// NUL, TAB, DEL) and the ASCII space (0x20) into the host/path rather than
-/// rejecting them, so a purely syntactic `scheme == 'https' && host.isNotEmpty`
-/// check would call such a target "secure". A CRLF/NUL-bearing URI risks
-/// header/URI injection, and a raw space inside the authority (e.g.
-/// `https://bmc.exa mple/console` -> host `bmc.exa%20mple`) yields a non-empty
-/// but malformed host that under a stale secure flag could reach in-app
-/// rendering and self-signed acceptance. Raw spaces are never valid in a URI
-/// (they must be percent-encoded as `%20`), so all such characters are rejected
-/// outright. This can only make classification stricter, so no valid (properly
-/// encoded) HTTPS endpoint is lost.
+/// NUL, TAB, DEL), the ASCII space (0x20) AND Unicode separator / invisible
+/// format characters (e.g. NBSP `U+00A0`, zero-width space, line/paragraph
+/// separators, ideographic space, BOM) into the host/path rather than rejecting
+/// them, so a purely syntactic `scheme == 'https' && host.isNotEmpty` check
+/// would call such a target "secure". A CRLF/NUL-bearing URI risks header/URI
+/// injection; a raw or Unicode space inside the authority (e.g.
+/// `https://bmc.exa mple/console` -> host `bmc.exa%20mple`, or an embedded NBSP
+/// `https://bmc<U+00A0>.example/console` -> host `bmc%C2%A0.example`) yields a
+/// non-empty but malformed/spoofed host that under a stale secure flag could
+/// reach in-app rendering and self-signed acceptance. None of these characters
+/// are valid raw in a URI (they must be percent-encoded) and an embedded one is
+/// not removed by `String.trim()`; they are therefore all rejected via the
+/// Unicode `Separator` (Z) and `Other` (C) general categories — a principled
+/// category rule that is stricter than an ASCII-only scan but never more
+/// permissive, so no valid (properly encoded) HTTPS endpoint is lost. Non-ASCII
+/// characters outside those categories (e.g. an emoji in the path) remain
+/// launchable.
 bool isSecureHttpsConsoleUri(String? uri) =>
     _isHttpUriWithSchemes(uri, const <String>{'https'});
 
@@ -91,14 +98,14 @@ bool isSecureHttpsConsoleUri(String? uri) =>
 /// a non-empty host.
 ///
 /// The plaintext sibling of [isSecureHttpsConsoleUri], backed by the identical
-/// raw-space/C0/DEL hardening. The `KvmConsole` / `KvmCapability`
+/// Unicode-separator/control-char hardening. The `KvmConsole` / `KvmCapability`
 /// `usesInsecureHttpLaunchUri` classifiers delegate here so a malformed HTTP
 /// target can never be presented as a genuine unencrypted endpoint on one
 /// surface while the fail-closed decision layer refuses it on another (a bare
-/// `Uri.tryParse` silently percent-encodes CRLF/NUL/space into the host/path and
-/// would flag such a target). Strictly tightens classification — no valid HTTP
-/// endpoint is lost. This is read-only guidance: it never changes transport
-/// security (issue #021).
+/// `Uri.tryParse` silently percent-encodes CRLF/NUL/space/Unicode separators
+/// into the host/path and would flag such a target). Strictly tightens
+/// classification — no valid HTTP endpoint is lost. This is read-only guidance:
+/// it never changes transport security (issue #021).
 bool isPlaintextHttpConsoleUri(String? uri) =>
     _isHttpUriWithSchemes(uri, const <String>{'http'});
 
@@ -112,20 +119,27 @@ bool isPlaintextHttpConsoleUri(String? uri) =>
 bool isHttpConsoleUri(String? uri) =>
     _isHttpUriWithSchemes(uri, const <String>{'http', 'https'});
 
+/// Rejects raw characters that are never legal unescaped in a URI: Unicode
+/// `Separator` (Z: ASCII space, NBSP, line/paragraph/ideographic spaces) and
+/// `Other` (C: C0/C1 controls, DEL, zero-width/invisible format chars).
+/// `%20`/`%XX` escape sequences contain none of these, so properly encoded
+/// targets pass. Shared by every HTTP(S) transport classifier so HTTPS and HTTP
+/// classification and the launch-plan decision layer apply identical hardening.
+final RegExp _rawUriForbiddenChars = RegExp(r'[\p{C}\p{Z}]', unicode: true);
+
 /// Trims [uri] and returns it only when it is non-blank and contains no raw
-/// control/space code unit (C0 controls, the ASCII space `0x20`, or DEL), or
-/// `null` otherwise. Shared by every HTTP(S) transport classifier so HTTPS and
-/// HTTP classification apply identical hardening — `Uri.tryParse` alone
-/// percent-encodes those code units instead of rejecting them.
+/// control/separator/invisible code point, or `null` otherwise. Shared by every
+/// HTTP(S) transport classifier so HTTPS and HTTP classification apply
+/// identical hardening — `Uri.tryParse` alone percent-encodes those characters
+/// instead of rejecting them.
 String? _controlSafeTrimmedUri(String? uri) {
   if (uri == null) return null;
   final String trimmed = uri.trim();
   if (trimmed.isEmpty) return null;
-  for (final int codeUnit in trimmed.codeUnits) {
-    // C0 controls, ASCII space (0x20), and DEL are never valid raw in a URI.
-    // `%20` is the correct space encoding and contains no raw 0x20 code unit.
-    if (codeUnit <= 0x20 || codeUnit == 0x7f) return null;
-  }
+  // C0/C1 controls, DEL, ASCII + Unicode spaces and invisible format chars are
+  // never legal raw in a URI; `%20`/`%XX` sequences contain none of them, and an
+  // embedded one is not removed by `String.trim()`.
+  if (_rawUriForbiddenChars.hasMatch(trimmed)) return null;
   return trimmed;
 }
 

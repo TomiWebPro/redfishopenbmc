@@ -13,7 +13,7 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 18 targeted tests.
+consume; today it locks the fallback behaviour with 22 targeted tests.
 
 ## Decision contract (`planConsoleLaunch`)
 
@@ -80,11 +80,25 @@ Invariants, enforced by tests:
    Legitimate userinfo/port URIs are unaffected. The same hardening now applies
    to plaintext-HTTP / HTTP-family classification via the sibling classifiers,
    so a raw-space/C0/DEL HTTP URI can no longer drive an "Unencrypted HTTP
-   console URI" warning as if it were a real endpoint. Covered by targeted tests
-   (malformed-authority parity + control-character + raw-space rejection +
-   HTTP-family classifier agreement) in `launch_plan_test.dart`, plus
-   classifier-agreement tests in `kvm_model_test.dart` and
-   `kvm_capability_test.dart`.
+   console URI" warning as if it were a real endpoint.
+
+   **Unicode separator/invisible rejection:** the check is now a principled
+   Unicode-category rule (`RegExp(r'[\p{C}\p{Z}]', unicode: true)`), not just an
+   ASCII scan. `Uri.tryParse` also silently percent-encodes Unicode separators
+   and format/invisible characters (NBSP `U+00A0`, zero-width space, line
+   separator, ideographic space, BOM) into the host/path; an embedded one is not
+   removed by `String.trim()`, so under a stale flag + test opt-in it could
+   reach in-app rendering and self-signed acceptance on a malformed/spoofed
+   host. All Unicode `Separator` (Z) and `Other` (C) code points are rejected
+   raw (stricter than, and subsuming, the C0/DEL/ASCII-space scan); non-ASCII
+   characters outside those categories (e.g. an emoji in the path) stay
+   launchable, so no properly encoded target is lost. It is applied uniformly by
+   all three sibling classifiers, so a malformed HTTP URI can no longer drive
+   an "Unencrypted HTTP console URI" warning as if it were a real endpoint.
+   Covered by targeted tests (malformed-authority parity + control-character +
+   raw-space + Unicode-whitespace/invisible rejection + HTTP-family classifier
+   agreement) in `launch_plan_test.dart`, plus classifier-agreement tests in
+   `kvm_model_test.dart` and `kvm_capability_test.dart`.
 
 ## What remains gated (not done here)
 
