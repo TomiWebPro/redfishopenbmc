@@ -16,6 +16,13 @@ import 'package:flutter/material.dart';
 
 import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
 
+/// The single visible + announced string for the plaintext-HTTP resolved-URI
+/// warning (UI-2: the row uses `excludeSemantics`, so this is both the text a
+/// sighted operator reads and the label a screen reader announces).
+const String _insecureUriNotice =
+    'Unencrypted HTTP console URI. Configure the BMC console to use HTTPS '
+    'before opening it in a browser.';
+
 /// A single per-manager remote-KVM capability summary card (issue #009).
 class KvmCapabilityCard extends StatelessWidget {
   /// Creates a [KvmCapabilityCard] for [capability].
@@ -168,6 +175,38 @@ class KvmCapabilityCard extends StatelessWidget {
                   ],
                 ),
               ),
+            // #021: the capability card surfaces the resolved console endpoint,
+            // so it must flag a plaintext-HTTP one just like the console card and
+            // the viewer do for an `insecureHtml5` console. Without this, an
+            // operator could copy/open the resolved URI without realising the
+            // console video and injected input would travel unencrypted. This is
+            // display-only guidance — no URL is opened and no transport is
+            // weakened (never weaken production TLS).
+            if (capability.hasUri &&
+                capability.usesInsecureHttpLaunchUri) ...<Widget>[
+              const SizedBox(height: 8),
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: _insecureUriNotice,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(Icons.lock_open_outlined,
+                        size: 18, color: scheme.error),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _insecureUriNotice,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (!capability.serviceEnabled) ...<Widget>[
               const SizedBox(height: 12),
               // Acceptance #009: an explicit helper when KVM is disabled.

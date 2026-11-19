@@ -1425,4 +1425,51 @@ void main() {
       expect(capability.connectTypes, consoleTypes);
     });
   });
+
+  group('KvmCapability resolved URI transport classification (#021)', () {
+    KvmCapability cap(String? uri) => KvmCapability(
+          managerId: 'BMC',
+          supported: true,
+          connectTypes: const <String>['HTML5'],
+          serviceEnabled: true,
+          uri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+
+    test('a plaintext-HTTP resolved URI is flagged as insecure', () {
+      final KvmCapability capability = cap('http://bmc.example/kvm');
+      expect(capability.usesInsecureHttpLaunchUri, isTrue);
+      expect(capability.hasSecureLaunchUri, isFalse);
+    });
+
+    test('an HTTPS resolved URI is secure and never flagged', () {
+      final KvmCapability capability = cap('https://bmc.example/kvm');
+      expect(capability.hasSecureLaunchUri, isTrue);
+      expect(capability.usesInsecureHttpLaunchUri, isFalse);
+    });
+
+    test('a Redfish @odata.id path is neither secure nor insecure HTTP', () {
+      final KvmCapability capability =
+          cap('/redfish/v1/Managers/BMC/GraphicalConsole');
+      expect(capability.hasSecureLaunchUri, isFalse);
+      expect(capability.usesInsecureHttpLaunchUri, isFalse);
+    });
+
+    test('a padded plaintext-HTTP URI is trimmed then classified', () {
+      final KvmCapability capability = cap('  http://bmc.example/kvm\t');
+      expect(capability.launchUri, 'http://bmc.example/kvm');
+      expect(capability.usesInsecureHttpLaunchUri, isTrue);
+    });
+
+    test('null / blank / non-HTTP-scheme URIs are never flagged insecure', () {
+      for (final String? uri in <String?>[
+        null,
+        '   ',
+        'vnc://bmc.example:5900',
+        'file:///etc/passwd',
+      ]) {
+        expect(cap(uri).usesInsecureHttpLaunchUri, isFalse, reason: 'uri=$uri');
+      }
+    });
+  });
 }

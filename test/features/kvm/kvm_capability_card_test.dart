@@ -45,6 +45,17 @@ const KvmCapability _supportedCapability = KvmCapability(
   sourceManagerUri: '/redfish/v1/Managers/BMC',
 );
 
+/// A capability whose resolved endpoint is plaintext HTTP — never a safe
+/// in-app render target (issue #021 — never weaken TLS).
+const KvmCapability _insecureCapability = KvmCapability(
+  managerId: 'BMC7',
+  supported: true,
+  connectTypes: <String>['HTML5'],
+  serviceEnabled: true,
+  uri: 'http://bmc.example.com/kvm',
+  sourceManagerUri: '/redfish/v1/Managers/BMC7',
+);
+
 const String _sessionNote =
     'Console persists until manager timeout — close tab to disconnect';
 
@@ -268,6 +279,43 @@ void main() {
       expect(
         find.bySemanticsLabel('Resolved URI: https://padded.example/kvm'),
         findsOneWidget,
+      );
+    });
+
+    testWidgets(
+        'a plaintext-HTTP resolved URI flags unencrypted transport '
+        'with a merged a11y label (#021)', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+            home: KvmCapabilityCard(capability: _insecureCapability)),
+      );
+
+      // The resolved endpoint stays visible/read-only, but it must carry the
+      // same unencrypted-transport warning the console card / viewer show —
+      // otherwise an operator could copy/open it without realising console
+      // video and injected input would travel in the clear. Display-only: no
+      // transport is weakened and no URL is opened (issue #021).
+      expect(find.text('http://bmc.example.com/kvm'), findsOneWidget);
+      expect(
+        find.textContaining('Unencrypted HTTP console URI'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+          'Unencrypted HTTP console URI. Configure the BMC console to use '
+          'HTTPS before opening it in a browser.',
+        ),
+        findsOneWidget,
+      );
+
+      // A secure HTTPS capability shows no warning.
+      await tester.pumpWidget(
+        const MaterialApp(
+            home: KvmCapabilityCard(capability: _supportedCapability)),
+      );
+      expect(
+        find.textContaining('Unencrypted HTTP console URI'),
+        findsNothing,
       );
     });
 
@@ -529,6 +577,27 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.byType(KvmCapabilityCard), findsOneWidget);
         expect(find.text(_sessionNote), findsOneWidget);
+      });
+    }
+
+    for (final double width in <double>[320, 800, 1300]) {
+      testWidgets(
+          'plaintext-HTTP warning row renders without overflow at '
+          '${width.toInt()} px (#021)', (WidgetTester tester) async {
+        tester.view.physicalSize = Size(width, 1000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          const MaterialApp(
+              home: KvmCapabilityCard(capability: _insecureCapability)),
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(
+          find.textContaining('Unencrypted HTTP console URI'),
+          findsOneWidget,
+        );
       });
     }
   });

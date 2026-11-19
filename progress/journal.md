@@ -10432,3 +10432,18 @@
 - Re-run all gates on the next PASS; cleanly SKIP if the verdict is not PASS or the branch has no new commits.
 
 **Issues touched:** none (gate merge + tracking only)
+
+## 2026-11-19 — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009/#021 (smallest open issue ID #009) — genuine, dependency-free, TLS-safe capability-card transport-safety fix. `KvmCapabilityCard` showed the resolved console URI with no security signal, so a plaintext-HTTP endpoint looked safe there while the console card/viewer flagged it. Added `KvmCapability.hasSecureLaunchUri` / `usesInsecureHttpLaunchUri` (mirroring `KvmConsole`, off the trimmed `launchUri`; a scheme-less `@odata.id` is neither) and an error-styled, merged-a11y "Unencrypted HTTP console URI…" warning for a plaintext-HTTP resolved URI. Added 1 behavioral RED→GREEN widget test (RED pre-fix: warning text not found), 3 no-overflow widgets (320/800/1300), 5 model classification tests. Baseline analyze 0 / 1102 passed / 1 skipped → verify analyze 0 / 1111 passed / 1 skipped (+9); DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.5% / scoped 90.4% / kvm 94.4%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Reused the model's `launchUri` (already trimmed/blank-normalized) as the single source for both transport getters, mirroring `KvmConsole`, so the capability card cannot disagree with the console card / viewer about whether an endpoint is plaintext. Chose display-only guidance (no URL opening, no WebView dependency) so production TLS is never weakened. Full emulator re-run (85/85) because `lib/` changed.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. wire the merged `webview_policy.dart` / `launch_plan.dart` flag-gated helpers into production as a fail-closed security decision layer), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — capability-card resolved-URI transport safety), #021 (open — TLS guidance consistency)

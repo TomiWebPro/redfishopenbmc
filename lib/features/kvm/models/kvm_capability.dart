@@ -104,6 +104,35 @@ class KvmCapability {
   /// notice. Mirrors `KvmConsole.launchUri` so both KVM views agree (issue #009).
   bool get hasUri => launchUri != null;
 
+  /// Whether [launchUri] uses HTTPS (TLS-encrypted) with a non-empty host.
+  ///
+  /// Mirrors `KvmConsole.hasSecureLaunchUri` so the capability card can tell a
+  /// TLS-protected resolved endpoint from an unencrypted one. In-app rendering
+  /// must never downgrade a BMC console to plaintext (issue #021 — never weaken
+  /// TLS), and the capability card surfaces the resolved endpoint to the
+  /// operator, so it needs the same transport classification as the console
+  /// card / viewer. A Redfish `@odata.id` resource path has no scheme and is
+  /// therefore neither secure nor insecure HTTP.
+  bool get hasSecureLaunchUri {
+    final String? uri = launchUri;
+    if (uri == null || uri.isEmpty) return false;
+    final Uri? parsed = Uri.tryParse(uri);
+    return parsed != null && parsed.scheme == 'https' && parsed.host.isNotEmpty;
+  }
+
+  /// Whether [launchUri] uses plaintext HTTP (unencrypted transport).
+  ///
+  /// The capability card uses this to flag a resolved endpoint whose console
+  /// video and injected input would travel in the clear, matching the
+  /// `KvmConsoleViewerPage` warning for an `insecureHtml5` console (issue #021).
+  /// This is read-only classification — it never changes transport security.
+  bool get usesInsecureHttpLaunchUri {
+    final String? uri = launchUri;
+    if (uri == null || uri.isEmpty) return false;
+    final Uri? parsed = Uri.tryParse(uri);
+    return parsed != null && parsed.scheme == 'http' && parsed.host.isNotEmpty;
+  }
+
   /// True when the graphical console advertises a `KVMIP` connection type.
   ///
   /// Uses the graphical-only detection bit computed by [fromManager], keeping
