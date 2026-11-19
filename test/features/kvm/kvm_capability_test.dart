@@ -1340,6 +1340,72 @@ void main() {
     });
   });
 
+  group('KvmCapability OEM console enablement (#009)', () {
+    KvmCapability capabilityFrom(Object? oem) => KvmCapability.fromManager(
+          <String, dynamic>{'Oem': oem},
+          managerId: 'BMC',
+        );
+
+    // RED proof: oemConsole (key presence) alone made the capability supported
+    // + enabled regardless of the OEM block's own enablement flags, so the
+    // capability card showed "Supported / Enabled" for a BMC-disabled KVM.
+    test(
+        'an explicitly disabled OEM console is neither supported nor '
+        'enabled (#009)', () {
+      final KvmCapability capability = capabilityFrom(<String, dynamic>{
+        'KVM': <String, dynamic>{
+          'Uri': 'https://bmc.example/kvm',
+          'ServiceEnabled': false,
+        },
+      });
+      expect(capability.supported, isFalse);
+      expect(capability.serviceEnabled, isFalse);
+    });
+
+    test(
+        'the legacy Enabled:false marker also disables an OEM capability '
+        '(#009)', () {
+      final KvmCapability capability = capabilityFrom(<String, dynamic>{
+        'KVM': <String, dynamic>{
+          'Uri': 'https://bmc.example/kvm',
+          'Enabled': false,
+        },
+      });
+      expect(capability.supported, isFalse);
+      expect(capability.serviceEnabled, isFalse);
+    });
+
+    test(
+        'a disabled OEM console does not suppress an enabled graphical '
+        'KVM (#009)', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+          },
+          'Oem': <String, dynamic>{
+            'KVM': <String, dynamic>{
+              'Uri': 'https://oem.example/kvm',
+              'ServiceEnabled': false,
+            },
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(capability.supported, isTrue);
+      expect(capability.serviceEnabled, isTrue);
+    });
+
+    test('an OEM console with no enablement flag stays supported (guard)', () {
+      final KvmCapability capability = capabilityFrom(<String, dynamic>{
+        'KVM': <String, dynamic>{'Uri': 'https://bmc.example/kvm'},
+      });
+      expect(capability.supported, isTrue);
+      expect(capability.serviceEnabled, isTrue);
+    });
+  });
+
   group('KvmCapability connectTypes Oem marker dedup (#009)', () {
     test('a literal OEM connect type is not duplicated by the Oem marker', () {
       final KvmCapability capability = KvmCapability.fromManager(

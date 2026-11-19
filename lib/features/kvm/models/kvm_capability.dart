@@ -11,7 +11,8 @@
 /// #009 / #021).
 library;
 
-import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart';
+import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart'
+    show kvmOemConsoleEnabled, kvmOemConsoleUri;
 import 'package:redfishopenbmc/features/kvm/platform/launch_plan.dart';
 import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
 
@@ -157,7 +158,9 @@ class KvmCapability {
   /// `Oem.*` for console keys (via the shared strict
   /// `FeatureRules.oemHasConsole` contract), and resolves the launch URI through
   /// [resolveLaunchUri]. Detection rule: `supported = (graphical enabled &&
-  /// KVMIP advertised) || remote enabled || OEM console`.
+  /// KVMIP advertised) || remote enabled || (OEM console && OEM enabled)`.
+  /// An OEM console counts only when its own `ServiceEnabled` / `Enabled`
+  /// flags do not explicitly disable it (issue #009).
   factory KvmCapability.fromManager(
     Map<String, dynamic> body, {
     required String managerId,
@@ -174,6 +177,13 @@ class KvmCapability {
     final Map<String, dynamic>? remote = _consoleBlock(body, 'RemoteConsole');
 
     final bool oemConsole = FeatureRules.oemHasConsole(body['Oem']);
+    // The OEM path was the one console source that ignored enablement: any
+    // console-like Oem key made the capability supported + enabled. Read the
+    // OEM console block's own flags with the shared helper (the same block the
+    // URI is resolved from) so an explicitly disabled OEM console is not
+    // advertised as usable, while an OEM block that omits the flag stays
+    // enabled. Mirrors `KvmConsole.fromManager` (issue #009).
+    final bool oemEnabled = kvmOemConsoleEnabled(body['Oem']);
     final bool graphicalEnabled = _blockEnabled(graphical);
     final bool serialEnabled = _blockEnabled(serial);
     final bool remoteEnabled = _blockEnabled(remote);
@@ -191,8 +201,9 @@ class KvmCapability {
     // (a purely HTML5 graphical console is a web console, not KVM-over-IP). A
     // `RemoteConsole` is a remote console by definition, so an enabled one is
     // supported regardless of the exact `ConnectType` spelling a BMC uses.
-    final bool supported =
-        (graphicalEnabled && kvmIp) || remoteEnabled || oemConsole;
+    final bool supported = (graphicalEnabled && kvmIp) ||
+        remoteEnabled ||
+        (oemConsole && oemEnabled);
     // Aggregate the session limit across standard console blocks, preferring an
     // enabled block so the capability card never reports a disabled console's
     // limit over the launchable console's (issue #009). Mirrors the
@@ -203,8 +214,10 @@ class KvmCapability {
       managerId: managerId,
       supported: supported,
       connectTypes: List<String>.unmodifiable(types),
-      serviceEnabled:
-          graphicalEnabled || serialEnabled || remoteEnabled || oemConsole,
+      serviceEnabled: graphicalEnabled ||
+          serialEnabled ||
+          remoteEnabled ||
+          (oemConsole && oemEnabled),
       maxSessions: maxSessions,
       uri: resolveLaunchUri(body),
       // Normalize both the explicit override and the body `@odata.id`: a

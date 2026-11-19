@@ -10733,3 +10733,20 @@
 - `rf-platform` should rebase `build/rf-platform` onto current `main` before adding new commits — the 39-commit drift caused these conflicts.
 
 **Issues touched:** none (platform launch-plan defense-in-depth hardening; #009/#021 remain open)
+
+## 2026-11-19 — agent:redfish-automation — #009/#021
+
+**Done:**
+- FEATURE #009 (smallest open ID) / #021 — genuine, dependency-free, TLS-safe OEM-console enablement fix, the last console source that ignored enablement. `KvmConsole.fromManager`'s generic OEM branch hard-coded `serviceEnabled: true` and `KvmCapability.fromManager` treated any console-like `Oem` key as supported+enabled, so a BMC publishing `ServiceEnabled: false` / legacy `Enabled: false` on `Oem.OpenBMC.KVM` was still offered as a launchable "Open console" (`secureBrowser`, `canOpenConsole == true`) with a Supported/Enabled capability card — contradicting #009's disabled-helper contract honored by every Graphical/Serial/Remote path. Added pure, bounded `kvmOemConsoleBlock` + `kvmOemConsoleEnabled` to the shared `kvm_oem_uri.dart` (reads the exact block the URI is resolved from; an omitted flag is "unknown"/enabled so all existing OEM mockups are unchanged, a truthy flag wins over a false one) and wired both models: `serviceEnabled: kvmOemConsoleEnabled(oem)` and `(oemConsole && oemEnabled)` for `supported`/`serviceEnabled`. A disabled OEM console now fails closed to `launchStrategy == disabled`, `canOpenConsole == false`, `launchPlan.isCopyOnly`, and its capability card shows the shared "KVM disabled on BMC" helper. +11 RED→GREEN tests (5 model, 4 capability, 1 console-card widget, 1 capability-card widget); 6 behavioral assertions confirmed RED pre-fix by temporarily reverting only the two caller wirings (trap-restored): `Expected: false / Actual: <true>`, "Open console" found, helper absent. Baseline analyze 0 / 1191 passed / 1 skipped → verify analyze 0 / 1202 passed / 1 skipped; DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.7% / scoped 90.4% / kvm 95.6%; issues validate OK; git diff --check clean. Issues stay OPEN (remaining work tracked as unblocked dept slices in `queues/*.md`).
+
+**Decisions:**
+- Reused the shared OEM block search (already single-sourced for the URI across both views) to also read enablement from the *same* block, so the resolved URI and the enabled state can never come from two different OEM nodes — the smallest change that closes the contradiction without a parallel parser.
+- Chose "omitted flag = unknown/enabled" (not the standard blocks' "absent = disabled") so every existing OEM mockup that carries only a `Uri` keeps its current enabled behaviour; only an explicit disable tightens. A truthy enablement member wins over a false one, exactly as the standard `_blockEnabled` rule.
+- Scope kept to `lib/features/kvm/models/**` + `test/features/kvm/**`; no WebView/url_launcher dependency, no Redfish request/header/payload/transport change, no production TLS weakening. Untracked `testing/` harness dir and pre-existing stash left untouched.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` for #009/#021 (EP-M2/RM-1/RM-2 model, EP-S1 service, EP-P3 platform, EP-U3 UI, EP-T4 tooling) — genuine tested dependency-free increments only; never verification-only churn.
+- Do NOT add a WebView/url_launcher dependency unattended (EP-P2/EP-T2/EP-U2 deferred on manual per-target validation); never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — OEM console enablement), #021 (open — disabled OEM console launch affordance)

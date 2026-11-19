@@ -944,6 +944,84 @@ void main() {
     });
   });
 
+  group('OEM console enablement (#009)', () {
+    KvmConsole oemConsoleFrom(Object? oem) => KvmConsole.fromManager(
+          <String, dynamic>{
+            '@odata.id': '/redfish/v1/Managers/BMC',
+            'Oem': oem,
+          },
+          managerId: 'BMC',
+        ).firstWhere((KvmConsole c) => c.type == KvmConsoleType.oem);
+
+    // RED proof: the generic OEM path hard-coded serviceEnabled: true, so a
+    // BMC that explicitly disables its OEM console was still reported enabled
+    // and launchable (secureBrowser / canOpenConsole == true) — the console card
+    // offered "Open console" for a service the BMC said was off. Every other
+    // console source (graphical/serial/remote) honors enablement.
+    test(
+        'an OEM console with ServiceEnabled:false is disabled and not '
+        'openable (#009)', () {
+      final KvmConsole console = oemConsoleFrom(<String, dynamic>{
+        'KVM': <String, dynamic>{
+          'Uri': 'https://bmc.example/kvm',
+          'ServiceEnabled': false,
+        },
+      });
+      expect(console.serviceEnabled, isFalse);
+      expect(console.launchStrategy, KvmLaunchStrategy.disabled);
+      expect(console.canOpenConsole, isFalse);
+      expect(console.launchPlan.isCopyOnly, isTrue);
+    });
+
+    test(
+        'the legacy Enabled:false marker also disables an OEM console '
+        '(#009)', () {
+      final KvmConsole console = oemConsoleFrom(<String, dynamic>{
+        'KVM': <String, dynamic>{
+          'Uri': 'https://bmc.example/kvm',
+          'Enabled': false,
+        },
+      });
+      expect(console.serviceEnabled, isFalse);
+      expect(console.canOpenConsole, isFalse);
+    });
+
+    // Guards: no enablement member (the common mockup) and an explicit true
+    // preserve the prior enabled behaviour; a truthy member wins over a false
+    // one, exactly as for the standard console blocks.
+    test('an OEM console with no enablement flag stays enabled (#009)', () {
+      final KvmConsole console = oemConsoleFrom(<String, dynamic>{
+        'KVM': <String, dynamic>{'Uri': 'https://bmc.example/kvm'},
+      });
+      expect(console.serviceEnabled, isTrue);
+      expect(console.canOpenConsole, isTrue);
+      expect(console.launchStrategy, KvmLaunchStrategy.secureBrowser);
+    });
+
+    test('an OEM console with ServiceEnabled:true stays enabled (#009)', () {
+      final KvmConsole console = oemConsoleFrom(<String, dynamic>{
+        'KVM': <String, dynamic>{
+          'Uri': 'https://bmc.example/kvm',
+          'ServiceEnabled': true,
+        },
+      });
+      expect(console.serviceEnabled, isTrue);
+      expect(console.canOpenConsole, isTrue);
+    });
+
+    test('a truthy legacy Enabled overrides ServiceEnabled:false (#009)', () {
+      final KvmConsole console = oemConsoleFrom(<String, dynamic>{
+        'KVM': <String, dynamic>{
+          'Uri': 'https://bmc.example/kvm',
+          'ServiceEnabled': false,
+          'Enabled': true,
+        },
+      });
+      expect(console.serviceEnabled, isTrue);
+      expect(console.canOpenConsole, isTrue);
+    });
+  });
+
   group('KvmConsole malformed @odata.id tolerance (#009)', () {
     KvmConsole consoleFrom(Object? odataId) => KvmConsole.fromManager(
           <String, dynamic>{

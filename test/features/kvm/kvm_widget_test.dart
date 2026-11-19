@@ -973,6 +973,45 @@ void main() {
       expect(find.text('Copy connect info'), findsOneWidget);
       expect(find.text('Open console'), findsNothing);
     });
+
+    testWidgets(
+        'an explicitly disabled OEM console is not offered as openable '
+        '(#009)', (WidgetTester tester) async {
+      // RED proof: the generic OEM path hard-coded serviceEnabled: true, so
+      // the console card offered "Open console" for a BMC that explicitly
+      // reported ServiceEnabled: false on its OEM KVM block (every other
+      // console source already honors enablement).
+      final KvmConsole disabledOem = KvmConsole.fromManager(
+        <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC',
+          'Oem': <String, dynamic>{
+            'KVM': <String, dynamic>{
+              'Uri': 'https://bmc.example/kvm',
+              'ServiceEnabled': false,
+            },
+          },
+        },
+        managerId: 'BMC',
+      ).firstWhere((KvmConsole c) => c.type == KvmConsoleType.oem);
+      expect(disabledOem.canOpenConsole, isFalse);
+      final KvmController controller = _StubController()
+        ..state = KvmUiState(consoles: <KvmConsole>[disabledOem]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // A disabled console keeps its URI visible + copyable but no longer
+      // offers the dead-end "Open console" action.
+      expect(find.text('Open console'), findsNothing);
+      expect(find.text('Copy connect info'), findsOneWidget);
+    });
   });
 
   group('KvmView — console-card transport warning (#009/#021)', () {

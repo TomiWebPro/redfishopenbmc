@@ -600,4 +600,38 @@ void main() {
       });
     }
   });
+
+  group('KvmCapabilityCard — OEM console enablement (#009)', () {
+    testWidgets(
+        'an explicitly disabled OEM console renders a disabled, unsupported '
+        'capability card (#009)', (WidgetTester tester) async {
+      // RED proof: oemConsole key presence alone produced supported+enabled,
+      // so the card showed "Supported / Enabled" and no BMC-disabled helper
+      // for a console the BMC explicitly reported ServiceEnabled: false.
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC',
+          'Oem': <String, dynamic>{
+            'KVM': <String, dynamic>{
+              'Uri': 'https://bmc.example/kvm',
+              'ServiceEnabled': false,
+            },
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(capability.supported, isFalse);
+      expect(capability.serviceEnabled, isFalse);
+      await pumpView(
+        tester,
+        capabilities: <KvmCapability>[capability],
+        kvm: true,
+      );
+
+      expect(find.text('Service enabled: No'), findsOneWidget);
+      expect(find.text('Supported'), findsNothing);
+      expect(find.text(kvmDisabledOnBmcNotice), findsOneWidget);
+      expect(find.bySemanticsLabel(kvmDisabledOnBmcNotice), findsOneWidget);
+    });
+  });
 }

@@ -7,7 +7,8 @@
 library;
 
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_registry.dart';
-import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart';
+import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart'
+    show kvmOemConsoleEnabled, kvmOemConsoleUri;
 import 'package:redfishopenbmc/features/kvm/platform/launch_plan.dart';
 import 'package:redfishopenbmc/features/kvm/platform/webview_policy.dart';
 import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
@@ -471,12 +472,18 @@ class KvmConsole {
         // available" — the same URI the capability card resolves via
         // `KvmCapability.resolveLaunchUri` (issue #009). A registered vendor
         // parser above stays authoritative; this is the generic default path.
+        // The OEM console's own enablement flags are honored just like every
+        // standard block: a BMC that explicitly reports `ServiceEnabled: false`
+        // (or `Enabled: false`) must not yield a launchable console
+        // (`launchStrategy == disabled`, `canOpenConsole == false`), while an
+        // OEM block that omits the flag stays enabled. Reuses the shared helper
+        // so this agrees with `KvmCapability.fromManager` (issue #009).
         consoles.add(
           KvmConsole(
             type: KvmConsoleType.oem,
             managerId: managerId,
             connectTypesSupported: const <String>[],
-            serviceEnabled: true,
+            serviceEnabled: kvmOemConsoleEnabled(oem),
             connectUri: kvmOemConsoleUri(oem),
             sourceManagerUri: sourceManagerUri,
             oem: oem,
