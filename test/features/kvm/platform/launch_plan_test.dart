@@ -1712,4 +1712,89 @@ void main() {
       }
     });
   });
+
+  group(
+      'planConsoleLaunch — defense in depth: encoded ASCII space in authority rejection',
+      () {
+    test(
+        'a percent-encoded space in the authority fails closed with a stale flag',
+        () {
+      // The raw-space rule rejects a literal U+0020, and the encoded-control /
+      // encoded-C/Z rules reject pct-encoded C0/DEL and non-ASCII separators —
+      // but a pct-encoded ASCII space (%20) escapes all three: 0x20 is above
+      // the C0/DEL range, it is ASCII (so the non-ASCII C/Z rule skips it), and
+      // it contains no raw forbidden character. `Uri.tryParse` keeps %20 encoded
+      // and reports a non-empty HTTPS host, so a purely syntactic re-check calls
+      // it "secure" — yet a launcher/browser that decodes the host first sees an
+      // embedded space, which is a FORBIDDEN domain code point (WHATWG URL /
+      // IDNA): the browser rejects or renormalises the host, resolving a
+      // different authority than `Uri.tryParse` reported. Under a stale secure
+      // flag + test opt-in that parser differential could grant in-app
+      // rendering and self-signed acceptance on a malformed/spoofed host. A
+      // space is never valid in a host, so every %20 in the authority fails
+      // closed — including in userinfo and leading/trailing positions.
+      for (final String uri in <String>[
+        'https://bmc.example%20.evil.com/console', // %20 mid-host
+        'https://bmc%20example/console', // %20 inside a host label
+        'https://%20evil.com/console', // leading %20 in host
+        'https://bmc.example%20/console', // trailing %20 in host
+        'https://user%20name@bmc.example/console', // %20 in userinfo
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test(
+        'an encoded-space authority never reaches in-app under a strict opt-in',
+        () {
+      // Even without granting self-signed acceptance, a host whose authority
+      // relies on a pct-encoded space must not be rendered in-app by an
+      // enabled+strict opt-in (no TLS weakening, no host-confusion render).
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc.example%20.evil.com/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('encoded space in path/query stays launchable (authority-scoped)', () {
+      // Guard against over-rejection: %20 is the correct encoding of a space
+      // and is legitimate in the path/query, where it cannot affect which host
+      // is contacted. It must stay launchable via the external-browser
+      // fallback, as must valid pct-encoded UTF-8 host bytes — no valid target
+      // lost, no TLS weakening.
+      for (final String uri in <String>[
+        'https://bmc.example/console%20one', // %20 in path
+        'https://bmc.example/?q=a%20b', // %20 in query
+        'https://bmc%C3%A9.example/console', // valid pct-encoded host byte
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }

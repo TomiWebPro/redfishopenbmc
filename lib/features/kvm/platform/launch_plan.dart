@@ -239,6 +239,23 @@ class KvmConsoleLaunchPlan {
 /// vector. A valid URI percent-encodes well-formed UTF-8 (or ASCII), so
 /// rejecting malformed UTF-8 in the authority loses no valid target; properly
 /// encoded multi-byte text (e-acute, euro, emoji) stays launchable.
+///
+/// A pct-encoded ASCII space (`%20`) in the authority is rejected for the same
+/// reason: it escapes every earlier rule. The raw-space/control rules see no
+/// literal U+0020 (only the characters `%`, `2`, `0`); 0x20 is above the
+/// C0/DEL range so [_encodedControlOctet] misses it; and it is ASCII so the
+/// non-ASCII encoded-C/Z rule skips it. `Uri.tryParse` keeps `%20` encoded and
+/// reports a non-empty HTTPS host, so a purely syntactic re-check calls it
+/// "secure" — yet a launcher/browser that decodes the host first sees an
+/// embedded space, which is a FORBIDDEN domain code point (WHATWG URL / IDNA):
+/// the browser rejects or renormalises the host, resolving a *different*
+/// authority than `Uri.tryParse` reported. Under a stale secure flag + test
+/// opt-in that parser differential could grant in-app rendering and self-signed
+/// acceptance on a malformed/spoofed host. A space is never valid in a host, so
+/// every `%20` in the authority fails closed (including in userinfo and in
+/// leading/trailing positions); scope is the authority so `%20` in the
+/// path/query — the correct encoding of a space and harmless to which host is
+/// contacted — stays launchable, losing no valid target.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -373,6 +390,24 @@ bool _authorityHasEncodedDot(String uri) {
   final String? authority = _authorityOf(uri);
   if (authority == null) return false;
   return _encodedDot.hasMatch(authority);
+}
+
+/// Matches a percent-encoded ASCII space (`%20`).
+///
+/// A space is a FORBIDDEN domain code point in a host, but `Uri.tryParse`
+/// keeps `%20` encoded and still reports a non-empty HTTPS host, so a purely
+/// syntactic re-check calls it "secure" while a decode-first launcher sees an
+/// embedded space in the host and resolves/rejects a different authority. Scope
+/// to the authority so `%20` in the path/query (its correct encoding) stays
+/// launchable.
+final RegExp _encodedAsciiSpace = RegExp(r'%20');
+
+/// Returns `true` when the raw authority contains a percent-encoded ASCII space
+/// (`%20`), a forbidden-in-host / parser-differential vector.
+bool _authorityHasEncodedSpace(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  return _encodedAsciiSpace.hasMatch(authority);
 }
 
 /// Returns the numeric value of a single ASCII hex digit, or `null`.
@@ -655,6 +690,13 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // self-signed acceptance on a mismatched host. A literal dot written raw
   // stays launchable, so no valid target is lost.
   if (_authorityHasEncodedDot(trimmed)) return false;
+  // Reject a percent-encoded ASCII space (`%20`) in the authority: a decode-first
+  // launcher sees a FORBIDDEN domain code point in the host, resolving a different
+  // authority than Uri.tryParse reports, which under a stale flag + test opt-in
+  // could grant in-app rendering and self-signed acceptance on a spoofed host.
+  // Scoped to the authority, so `%20` in the path/query (its correct encoding)
+  // and valid pct-encoded UTF-8 host bytes stay launchable.
+  if (_authorityHasEncodedSpace(trimmed)) return false;
   // Reject a percent-encoded multi-byte UTF-8 character that decodes to a
   // Unicode Separator/Other code point (NBSP, zero-width space, NEL, ...): a
   // decode-first launcher could see an invisible/control character in the
