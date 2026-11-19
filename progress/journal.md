@@ -10480,3 +10480,21 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — fail-closed launch decision layer), #021 (open — TLS-safe launch decision)
+
+## 2026-11-19 — agent:rf-gate — MERGE build/rf-platform (c5618a0)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` latest run#7529 SUCCESS (exit 0; started 04:36:34 UTC, immediately after builder `rf-platform` produced branch HEAD `c5618a0` at 04:35:23 UTC; no newer in-flight run invalidating it). Branch had 1 unmerged commit beyond the last-merged `e1c6c4b` (`c5618a0` control-character re-validation fail-closed) → precondition met → `git merge --no-ff build/rf-platform` created merge `9045c43` (3 files, +79/-3: `lib/features/kvm/platform/LAUNCH_FALLBACK.md`, `launch_plan.dart`, `test/features/kvm/platform/launch_plan_test.dart`).
+- Post-merge verify (all green, run in a clean detached worktree at `9045c43`): `flutter analyze` 0 ("No issues found!"); full `flutter test --coverage` 1126 passed / 1 skipped (+3 merged control-character tests); `dart run tool/coverage_gate.dart coverage/lcov.info` PASS overall 89.5% (5467/6107), PASS redfish+power+sensors 90.4% (2117/2343), PASS kvm 94.8% (747/788), exit 0; `python3 issues/issues.py validate` OK; merge `git diff --check` clean. No new code commit needed beyond the merge itself + this tracking record.
+
+**Decisions:**
+- Merged because the latest verdict (run#7529, SUCCESS) is a PASS against the current branch HEAD; `--no-ff` per the gate contract to preserve branch topology. Branch diff touched only `lib/features/kvm/platform/**` + `test/**`, no dependency/TLS changes.
+- Verified in an isolated worktree: a concurrent `redfish-automation` build job held unrelated unstaged WIP in `lib/features/kvm/views/**` + `test/features/kvm/kvm_widget_test.dart` (giving a transient `unused_import` analyzer warning there, mid-refactor). That WIP is outside the platform branch scope, was left untouched, and is excluded from the committed merge state; verification of the committed tree is clean. `testing/` (pre-existing, untracked) also left untouched.
+- DMTF 85-test emulator suite skipped: merged `lib/` change adds a C0/DEL control-character guard to `_uriHasSecureHttpsTarget` in the dependency-free launch-plan decision helper — no HTTP transport, WebView import, platform channel, cert callback, or wire/fixture/tool change.
+- No production TLS weakened: the guard only *tightens* re-validation (CR/LF/NUL/TAB/DEL-bearing URIs now fail closed to `copyOnly` even under a stale secure flag + test opt-in); clean HTTPS userinfo/port URIs still pass; self-signed acceptance stays test-only.
+
+**Next:**
+- Next `rf-platform` item stays on `queues/platform.md`; gate merges only on a fresh PASS verdict.
+- Re-run all gates on the next PASS; cleanly SKIP if verdict not PASS or branch has no new commits.
+
+**Issues touched:** none (gate merge + tracking only)
