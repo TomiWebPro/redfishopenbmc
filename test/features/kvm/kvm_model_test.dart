@@ -1492,4 +1492,58 @@ void main() {
       }
     });
   });
+
+  group(
+      'KvmConsole.fromManager — non-map OEM console values fail closed (RM-3)',
+      () {
+    test('no console for a console-like OEM key with a non-map value', () {
+      for (final dynamic value in <dynamic>[
+        'enabled',
+        42,
+        true,
+        <String>['x'],
+        null,
+      ]) {
+        final List<KvmConsole> consoles = KvmConsole.fromManager(
+          <String, dynamic>{
+            'Oem': <String, dynamic>{
+              'Vendor': <String, dynamic>{'KVM': value},
+            },
+          },
+          managerId: 'BMC',
+        );
+        expect(consoles, isEmpty, reason: 'value=$value');
+      }
+    });
+
+    test('top-level non-map console blocks are tolerated (List/bool/null)', () {
+      final List<KvmConsole> consoles = KvmConsole.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String>['KVMIP'],
+          'SerialConsole': true,
+          'RemoteConsole': null,
+          'Oem': false,
+        },
+        managerId: 'BMC',
+      );
+      expect(consoles, isEmpty);
+    });
+
+    test('a valid graphical console survives a non-map OEM console value', () {
+      final List<KvmConsole> consoles = KvmConsole.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+          },
+          'Oem': <String, dynamic>{
+            'Vendor': <String, dynamic>{'KVM': 42},
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(consoles, hasLength(1));
+      expect(consoles.single.type, KvmConsoleType.graphical);
+    });
+  });
 }

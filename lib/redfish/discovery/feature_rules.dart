@@ -396,6 +396,15 @@ class FeatureRules {
   /// metadata. Recurses a bounded depth looking for console-like keys
   /// (`console`, `kvm`) — the shape used by vendor OEM consoles.
   ///
+  /// A console-like key only counts when its value is a JSON object (a
+  /// `Map`). A malformed BMC payload that publishes `KVM` / `Console` as a
+  /// scalar, list or `null` is not a console structure and must fail closed —
+  /// treating it as one made this discovery gate open a KVM tab while
+  /// `KvmConsole.fromManager` / `KvmCapability.fromManager` resolved no usable
+  /// endpoint from the same non-map value (RM-3, issue #009/#021). Any valid
+  /// map console elsewhere in the `Oem` tree still wins, so one malformed
+  /// sibling cannot mask a genuine console.
+  ///
   /// Public so feature parsers (e.g. `KvmConsole.fromManager`) share the same
   /// strict contract instead of treating any `Oem` map as a console (DOCS-4).
   static bool oemHasConsole(dynamic oem) {
@@ -404,9 +413,12 @@ class FeatureRules {
 
   static bool _oemHasConsoleAt(dynamic oem, int depth) {
     if (depth > 3 || oem is! Map<dynamic, dynamic>) return false;
-    for (final dynamic key in oem.keys) {
-      final String k = key.toString().toLowerCase();
-      if (k.contains('console') || k.contains('kvm')) return true;
+    for (final MapEntry<dynamic, dynamic> entry in oem.entries) {
+      final String key = entry.key.toString().toLowerCase();
+      if ((key.contains('console') || key.contains('kvm')) &&
+          entry.value is Map<dynamic, dynamic>) {
+        return true;
+      }
     }
     for (final dynamic value in oem.values) {
       if (_oemHasConsoleAt(value, depth + 1)) return true;

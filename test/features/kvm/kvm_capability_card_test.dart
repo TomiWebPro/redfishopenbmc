@@ -188,6 +188,43 @@ void main() {
       expect(find.text('No console URI resolved. Source:'), findsOneWidget);
     });
 
+    testWidgets(
+        'a non-map OEM console value renders no Supported capability card '
+        '(RM-3 / #009)', (WidgetTester tester) async {
+      // A malformed BMC can publish a console-like key (KVM) with a scalar
+      // instead of a console object ('Oem.OpenBMC.KVM': 'https://…'). RM-3 must
+      // fail closed in the shared walk so the capability card cannot advertise
+      // a bogus Supported/Enabled console. RED pre-fix: oemHasConsole keyed only
+      // on the name, so the model reported supported=true and this card showed
+      // the Supported chip / no disabled helper.
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC',
+          'Oem': <String, dynamic>{
+            'OpenBMC': <String, dynamic>{'KVM': 'https://bmc.example/kvm'},
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(capability.supported, isFalse);
+      await tester.pumpWidget(
+        MaterialApp(home: KvmCapabilityCard(capability: capability)),
+      );
+      expect(find.text('Supported'), findsNothing);
+      expect(find.text(kvmDisabledOnBmcNotice), findsOneWidget);
+      expect(find.bySemanticsLabel(kvmDisabledOnBmcNotice), findsOneWidget);
+
+      for (final double width in <double>[320, 800, 1300]) {
+        await tester.binding.setSurfaceSize(Size(width, 900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(
+          MaterialApp(home: KvmCapabilityCard(capability: capability)),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    });
+
     testWidgets('a blank resolved URI shows the source notice, not a blank row',
         (WidgetTester tester) async {
       // A BMC can emit a whitespace-only ConnectUri. The card must take the

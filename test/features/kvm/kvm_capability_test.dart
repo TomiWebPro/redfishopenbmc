@@ -1814,4 +1814,70 @@ void main() {
       }
     });
   });
+
+  group(
+      'KvmCapability.fromManager — non-map OEM console values fail closed (RM-3)',
+      () {
+    test(
+        'not supported/enabled for a console-like OEM key with a non-map value',
+        () {
+      for (final dynamic value in <dynamic>[
+        'enabled',
+        42,
+        true,
+        <String>['x'],
+        null,
+      ]) {
+        final KvmCapability capability = KvmCapability.fromManager(
+          <String, dynamic>{
+            'Oem': <String, dynamic>{
+              'Vendor': <String, dynamic>{'Console': value},
+            },
+          },
+          managerId: 'BMC',
+        );
+        expect(capability.supported, isFalse, reason: 'value=$value');
+        expect(capability.serviceEnabled, isFalse, reason: 'value=$value');
+        expect(capability.connectTypes, isEmpty, reason: 'value=$value');
+        expect(capability.uri, isNull, reason: 'value=$value');
+      }
+    });
+
+    test('top-level non-map console blocks are tolerated (List/bool/null)', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String>['KVMIP'],
+          'SerialConsole': true,
+          'RemoteConsole': null,
+          'Oem': false,
+        },
+        managerId: 'BMC',
+      );
+      expect(capability.supported, isFalse);
+      expect(capability.serviceEnabled, isFalse);
+      expect(capability.uri, isNull);
+    });
+
+    test(
+        'cross-view agreement: a non-map OEM console value fails closed on all '
+        'three surfaces', () {
+      final Map<String, dynamic> manager = <String, dynamic>{
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{
+            'KVM': 'https://bmc.example/kvm',
+          },
+        },
+      };
+      final List<KvmConsole> consoles =
+          KvmConsole.fromManager(manager, managerId: 'BMC');
+      final KvmCapability capability =
+          KvmCapability.fromManager(manager, managerId: 'BMC');
+      expect(consoles, isEmpty);
+      expect(capability.supported, isFalse);
+      expect(capability.serviceEnabled, isFalse);
+      expect(capability.uri, isNull);
+      expect(FeatureRules.kvm(<Map<String, dynamic>>[manager]), isFalse);
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[manager]), isNull);
+    });
+  });
 }

@@ -11154,3 +11154,22 @@
 - Re-run the DMTF emulator 85/85 on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none — gate merged a platform-branch hardening; #009 (open), #021 (open) unchanged.
+## 2026-11-19 — agent:redfish-automation — #009/#021 (RM-3)
+
+**Done:**
+- FEATURE — RM-3 dept slice (`queues/model.md`): shared `FeatureRules.oemHasConsole` walk now requires a console-like key (`KVM` / `Console` / `webconsole`) to map to a JSON object, so a non-map (String/num/bool/List/null) value fails closed. A malformed BMC could previously publish `Oem.OpenBMC.KVM: "https://…"` and get a phantom enabled OEM console on all three surfaces (discovery KVM tab, per-console card, capability card) with no resolvable URI. A valid map console elsewhere in `Oem` still wins.
+- Central fix in the shared walk (all three surfaces call it) rather than a model-local guard that would leave the discovery gate contradicting the cards; documented in the helper's doc comment.
+- +11 tests: shared-walk non-map tolerance, `KvmConsole.fromManager`, `KvmCapability.fromManager` + three-surface cross-view agreement, and one capability-card widget (no bogus Supported card, merged a11y disabled helper, 320/800/1300 px no-overflow). 6 behavioral assertions confirmed RED pre-fix.
+- Verify in a clean detached worktree at baseline `51cf4c2` (a concurrent rf-gate merge was mid-flight in the shared tree and was left untouched): analyze 0; full suite 1346 passed / 1 skipped (baseline 1335 +11); DMTF emulator 85/85 (lib changed — §1.4 gate met); issues validate OK; git diff --check clean.
+
+**Decisions:**
+- Widen the queue's model-only write hint to the one shared `FeatureRules` helper: RM-3 names "any shared walk" and requires cross-view agreement; fixing only the two models would break the documented discovery-vs-cards invariant.
+- Non-map top-level console blocks already failed closed via `is Map` checks (existing guard tests stay green); this adds the nested console-like-value case.
+- Dependency-free, wire-shape-preserving, TLS-safe; both issues stay OPEN (embedded HTML5 rendering / fullscreen / input forwarding remain externally blocked on platform WebView + BMC self-signed/TLS validation).
+
+**Next:**
+- Continue unblocked dept slices (EP-U5 launch-status parity, EP-P5 no-WebView import guard, EP-S1 service launch edges, EP-T7 emulator prerequisite doctor) — genuine tested increments only.
+- Never add a WebView/url_launcher dependency unattended; never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

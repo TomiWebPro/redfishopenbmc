@@ -8,7 +8,7 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
      RM-2 (its session-limit portion LANDED 18:01) into a fresh, unblocked, dependency-free
      model slice of #009/#021. No transport/TLS change, no dependency. -->
 
-- [ ] RM-3 Non-map payload tolerance across the KVM model read path (the open remainder of RM-2):
+- [x] RM-3 LANDED 2026-11-19 (run `auto: FEATURE #009/#021 RM-3 non-map OEM console value fail-closed + tests`). Non-map payload tolerance across the KVM model read path (the open remainder of RM-2):
       `Members` entries and `GraphicalConsole` / `SerialConsole` / `RemoteConsole` / `Oem` values
       that decode to a non-map (String / num / bool / List / null) must fail closed — treated as
       absent/disabled — in `KvmConsole.fromManager`, `KvmCapability.fromManager` and any shared
@@ -61,6 +61,7 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Log
 
+- 2026-11-19 22:09 — RM-3 LANDED (agent:redfish-automation, FEATURE #009/#021): shared `FeatureRules.oemHasConsole` walk now requires a console-like key's value to be a JSON object — a `KVM`/`Console` key with a scalar/list/null value no longer fakes an OEM console on the discovery gate or either KVM model. +11 RED→GREEN tests (shared walk, both models, cross-view agreement + capability-card widget at 320/800/1300 px), analyze 0 / 1346 passed / 1 skipped, emulator 85/85. No dependency, no wire/transport change, no TLS weakening. `FeatureRules` is the shared walk all three surfaces call, so the central fix keeps them in agreement (the queue's model-only write hint was deliberately widened to this one shared helper).
 - 2026-11-19 20:48 — OEM `ConnectUri` alias gap (agent:redfish-automation, FEATURE #009/#021): the shared `kvm_oem_uri.dart` helper (generic fallback for both KVM views) now recognizes the canonical Redfish `ConnectUri` member in addition to `Uri` (preferring `Uri`), so an unregistered vendor's `Oem.<Vendor>.KVM.ConnectUri` resolves on both the per-console card and capability card instead of showing no URI; enablement is read from the same block. +10 pure/parity tests + 1 card widget test (320 px), 2 outdated registry tests updated; analyze 0 / 1330 passed / 1 skipped; emulator 85/85; no dependency, no wire/transport change, no TLS weakening. Adjacent to EP-M2/RM-2 (neither acceptance box fully covered — no item checked off).
 - 2026-11-19 15:35 — EP-M2 LANDED (agent:redfish-automation, FEATURE #009/#021): extracted shared pure `isExternalClientConsoleUri` / `externalClientConsoleProtocol` in `launch_plan.dart` on the fail-closed `_controlSafeTrimmedUri` gate; `KvmConsole` delegates (ad-hoc parse removed) and `KvmCapability` gains mirroring `requiresExternalConsoleClient` / `externalClientProtocolLabel` getters — both KVM views now classify/label VNC/RFB/KVMIP/serial endpoints identically. +7 helper/model/parity tests, analyze 0 / 1248 passed / 1 skipped, emulator 85/85. No dependency, no TLS change.
 - 2026-11-19 14:56 — RM-1 LANDED (agent:redfish-automation, FEATURE #009/#021): `kvmOemConsoleEnabled` now honors an explicit disable on a URI-less OEM console block (fallback to the console-like block only when no URI-bearing console exists); +6 tests, analyze 0 / 1237 passed / 1 skipped, emulator 85/85. No dependency, no TLS change.

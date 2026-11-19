@@ -860,4 +860,66 @@ void main() {
       expect(await p.load('bmc1'), isNull);
     });
   });
+
+  group('FeatureRules — non-map OEM console values fail closed (RM-3)', () {
+    // A Redfish console is a structured JSON object. A BMC that publishes a
+    // console-like key (KVM / Console) with a scalar/list/null value is
+    // malformed; oemHasConsole must not report it as a console, otherwise the
+    // discovery gate opens a KVM tab that both KVM views leave empty.
+    test('oemHasConsole ignores a console-like key with a non-map value', () {
+      for (final dynamic value in <dynamic>[
+        'enabled',
+        42,
+        true,
+        <String>['x'],
+        null,
+      ]) {
+        expect(
+          FeatureRules.oemHasConsole(<String, dynamic>{
+            'Vendor': <String, dynamic>{'KVM': value},
+          }),
+          isFalse,
+          reason: 'value=$value',
+        );
+      }
+    });
+
+    test('kvm/kvmType fail closed when the only OEM console value is non-map',
+        () {
+      final Map<String, dynamic> manager = <String, dynamic>{
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{
+            'KVM': 'https://bmc.example/kvm',
+          },
+        },
+      };
+      expect(FeatureRules.kvm(<Map<String, dynamic>>[manager]), isFalse);
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[manager]), isNull);
+    });
+
+    test('a non-map console-like value does not mask a valid map console', () {
+      final Map<String, dynamic> oem = <String, dynamic>{
+        'Bad': <String, dynamic>{'KVM': 'not-a-map'},
+        'Good': <String, dynamic>{
+          'Vendor': <String, dynamic>{
+            'KVM': <String, dynamic>{'Uri': 'https://bmc.example/kvm'},
+          },
+        },
+      };
+      expect(FeatureRules.oemHasConsole(oem), isTrue);
+      final Map<String, dynamic> manager = <String, dynamic>{'Oem': oem};
+      expect(FeatureRules.kvmType(<Map<String, dynamic>>[manager]), 'Oem');
+    });
+
+    test('console-like key with a Map value still counts (guard)', () {
+      expect(
+        FeatureRules.oemHasConsole(<String, dynamic>{
+          'Vendor': <String, dynamic>{
+            'Console': <String, dynamic>{},
+          },
+        }),
+        isTrue,
+      );
+    });
+  });
 }
