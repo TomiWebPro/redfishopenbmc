@@ -174,6 +174,19 @@ class KvmConsoleLaunchPlan {
 /// Only decoded non-ASCII C/Z code points are rejected (ASCII escapes such as
 /// `%20` and non-C/Z escapes such as `%C3%A9` stay launchable), so no valid
 /// target is lost.
+///
+/// A percent-encoded non-ASCII code point that NFKC-normalises to an ASCII
+/// structural delimiter (a "compatibility confusable") is rejected for the same
+/// reason: it is a valid `%XX` escape that has no raw forbidden character, so
+/// every earlier rule misses it, yet `Uri.tryParse` keeps it encoded while a
+/// launcher applying IDNA/NFKC to the host (as browsers do) resolves a
+/// different authority — `%EF%BC%8F` (fullwidth solidus) becomes `/`,
+/// `%EF%BC%8E` (fullwidth full stop) becomes `.`, and so on. Under a stale
+/// secure flag + test opt-in that parser differential could reach in-app
+/// rendering and self-signed acceptance on a spoofed host. Only decoded code
+/// points that normalise to a structural delimiter in the authority are
+/// rejected; encoded non-delimiter non-ASCII (e-acute, euro, emoji) and
+/// confusables in the path/query stay launchable, so no valid target is lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -320,6 +333,68 @@ bool _hasEncodedUnicodeControlOrSeparator(String uri) {
   return false;
 }
 
+/// Non-ASCII code points whose Unicode NFKC normalisation is an ASCII RFC 3986
+/// structural delimiter: gen-delims (`:` `/` `?` `#` `[` `]` `@`), backslash,
+/// or the domain-label full stop (`.`). These are "compatibility confusables":
+/// a launcher that applies IDNA/NFKC to an internationalised host (as browsers
+/// do) turns them into the ASCII delimiter, while [Uri.tryParse] keeps the
+/// percent-encoded form in the host — a parser-differential host-spoofing
+/// vector. Checked on the percent-decoded code points (see
+/// [_authorityHasCompatibilityDelimiter]).
+const Set<int> _compatibilityDelimiterCodePoints = <int>{
+  0x2044, // FRACTION SLASH           -> '/'
+  0x2215, // DIVISION SLASH           -> '/'
+  0xFF03, // FULLWIDTH NUMBER SIGN    -> '#'
+  0xFF0E, // FULLWIDTH FULL STOP      -> '.'
+  0xFF0F, // FULLWIDTH SOLIDUS        -> '/'
+  0xFF1A, // FULLWIDTH COLON          -> ':'
+  0xFF1F, // FULLWIDTH QUESTION MARK  -> '?'
+  0xFF20, // FULLWIDTH COMMERCIAL AT  -> '@'
+  0xFF3B, // FULLWIDTH LEFT SQUARE BRACKET  -> '['
+  0xFF3C, // FULLWIDTH REVERSE SOLIDUS      -> '\'
+  0xFF3D, // FULLWIDTH RIGHT SQUARE BRACKET -> ']'
+};
+
+/// Returns `true` when the raw authority carries a percent-encoded non-ASCII
+/// code point that NFKC-normalises to an ASCII structural delimiter.
+///
+/// `Uri.tryParse` keeps such an escape encoded and reports an HTTPS URI with a
+/// non-empty host, so a purely syntactic re-check calls it "secure". A launcher
+/// applying IDNA/NFKC to the host (as browsers do) resolves a *different*
+/// authority — e.g. `%EF%BC%8F` (fullwidth solidus) becomes `/`, `%EF%BC%8E`
+/// (fullwidth full stop) becomes `.`. Under a stale secure flag + test opt-in
+/// that parser differential could grant in-app rendering and self-signed
+/// acceptance on a spoofed/mismatched host. This is the percent-encoded
+/// analogue of the raw non-ASCII authority rule. Scoped to the authority (the
+/// TLS-sensitive part) so encoded confusables in the path/query and encoded
+/// non-delimiter non-ASCII (e-acute, euro, emoji) stay launchable.
+bool _authorityHasCompatibilityDelimiter(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  final List<int> bytes = <int>[];
+  for (int i = 0; i < authority.length; i++) {
+    final String char = authority[i];
+    if (char == '%' && i + 2 < authority.length) {
+      final int? hi = _hexDigit(authority[i + 1]);
+      final int? lo = _hexDigit(authority[i + 2]);
+      if (hi != null && lo != null) {
+        bytes.add((hi << 4) | lo);
+        i += 2;
+        continue;
+      }
+    }
+    // Raw characters here are ASCII (raw non-ASCII/forbidden chars were
+    // rejected by earlier rules); keep the byte so an encoded UTF-8 sequence
+    // is decoded in the correct byte context.
+    bytes.add(char.codeUnitAt(0));
+  }
+  final String decoded = utf8.decode(bytes, allowMalformed: true);
+  for (final int rune in decoded.runes) {
+    if (_compatibilityDelimiterCodePoints.contains(rune)) return true;
+  }
+  return false;
+}
+
 bool _uriHasSecureHttpsTarget(String? uri) {
   if (uri == null) return false;
   final String trimmed = uri.trim();
@@ -355,6 +430,13 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // host, yet Uri.tryParse keeps it encoded and reports a "secure" HTTPS host.
   // ASCII escapes (incl. %20) and non-C/Z escapes stay launchable.
   if (_hasEncodedUnicodeControlOrSeparator(trimmed)) return false;
+  // Reject a percent-encoded non-ASCII code point that NFKC-normalises to an
+  // ASCII structural delimiter (fullwidth solidus/colon/dot/@/[ ]/...): a
+  // launcher applying IDNA/NFKC resolves a different authority than
+  // Uri.tryParse reports, which under a stale flag + test opt-in could reach
+  // in-app rendering and self-signed acceptance on a spoofed host. ASCII
+  // escapes and encoded non-delimiter non-ASCII stay launchable.
+  if (_authorityHasCompatibilityDelimiter(trimmed)) return false;
   final Uri? parsed = Uri.tryParse(trimmed);
   return parsed != null && parsed.scheme == 'https' && parsed.host.isNotEmpty;
 }

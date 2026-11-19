@@ -1037,4 +1037,93 @@ void main() {
       }
     });
   });
+
+  group(
+      'planConsoleLaunch — defense in depth: encoded confusable-delimiter rejection',
+      () {
+    test(
+        'a percent-encoded compatibility-confusable delimiter fails closed with a stale flag',
+        () {
+      // A percent-encoded non-ASCII code point whose Unicode NFKC
+      // normalisation is an ASCII structural delimiter (gen-delims `:/?#[]@`,
+      // backslash, or the domain-label dot) is an IDNA/compatibility-confusable
+      // host-spoofing vector. `Uri.tryParse` keeps such an escape encoded and
+      // reports an HTTPS URI with a non-empty host, so a purely syntactic
+      // re-check calls it "secure" — yet a launcher that applies IDNA/NFKC to
+      // an internationalised host (as browsers do) resolves a *different*
+      // authority: `%EF%BC%8F` (fullwidth solidus) becomes `/`,
+      // `%EF%BC%8E` (fullwidth full stop) becomes `.`, etc. This is the
+      // percent-encoded analogue of the raw non-ASCII authority rule. Under a
+      // stale secure flag + test opt-in it would reach in-app rendering and
+      // self-signed acceptance on a spoofed/mismatched authority, so it fails
+      // closed — stricter than the model, never more permissive.
+      for (final String uri in <String>[
+        'https://bmc.example%EF%BC%8Fconsole', // fullwidth solidus -> /
+        'https://bmc.example%EF%BC%9A8443/console', // fullwidth colon -> :
+        'https://bmc.example%EF%BC%8Eevil.com/console', // fullwidth dot -> .
+        'https://bmc.example%EF%BC%9Fq/console', // fullwidth ? -> ?
+        'https://bmc.example%EF%BC%BBevil%EF%BC%BD/console', // fullwidth []
+        'https://bmc.example%E2%88%95evil/console', // division slash -> /
+        'https://bmc.example%E2%81%84evil/console', // fraction slash -> /
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test(
+        'an encoded confusable delimiter never reaches in-app under a strict opt-in',
+        () {
+      // Even without granting self-signed acceptance, a host-confused authority
+      // must not be rendered in-app by an enabled+strict opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc.example%EF%BC%8Fconsole',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('encoded non-delimiters and path confusables stay launchable', () {
+      // Guard against over-rejection: the rule targets only code points that
+      // NFKC-normalise to a structural delimiter in the authority (the
+      // TLS-sensitive part). Encoded non-delimiter non-ASCII (e-acute, euro,
+      // emoji) stays launchable, and compat-confusable bytes in the path/query
+      // do not affect which host is contacted, so they stay launchable too —
+      // no valid target lost, no TLS weakening.
+      for (final String uri in <String>[
+        'https://bmc.example/caf%C3%A9', // e-acute (Letter)
+        'https://bmc.example/con%E2%82%AC', // euro sign (not a delimiter)
+        'https://bmc.example/%F0%9F%98%80', // emoji (Symbol)
+        'https://bmc.example/console%EF%BC%8Fone', // fullwidth solidus in path
+        'https://bmc.example/console%E2%88%95one', // division slash in path
+        'https://xn--bmc-esab.example/console', // punycode ASCII host
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }

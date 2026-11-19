@@ -135,12 +135,29 @@ Invariants, enforced by tests:
    (NEL, Cc) into an invisible control — a parser-differential / host-spoofing
    vector. Every encoded non-ASCII C/Z code point fails closed; ASCII escapes
    (`%20`) and non-C/Z escapes (`%C3%A9` e-acute, emoji) stay launchable, no
-   valid target lost. Covered by 37 targeted tests across the defense-in-depth
-   re-validation groups (scheme/host/malformed-authority parity +
-   control-character + raw-space + Unicode-whitespace/invisible +
-   raw-backslash + RFC-3986 unwise-char + malformed-percent-encoding +
-   raw non-ASCII authority + encoded authority-delimiter + encoded
-   control-octet + encoded Unicode separator/invisible rejection).
+   valid target lost.
+   **Encoded compatibility-confusable delimiter rejection:** a percent-encoded
+   non-ASCII code point whose Unicode NFKC normalisation is an ASCII structural
+   delimiter (gen-delims `:` `/` `?` `#` `[` `]` `@`, backslash, or the
+   domain-label dot) is a valid `%XX` escape with no raw forbidden character,
+   so every earlier rule misses it. `Uri.tryParse` keeps it encoded and reports
+   a "secure" HTTPS host, but a launcher applying IDNA/NFKC to an
+   internationalised host (as browsers do) resolves a *different* authority:
+   `%EF%BC%8F` (fullwidth solidus) becomes `/`, `%EF%BC%8E` (fullwidth full
+   stop) becomes `.`, `%EF%BC%9A` (fullwidth colon) becomes `:`, and the
+   FRACTION/DIVISION SLASH characters become `/`. Under a stale flag + test
+   opt-in that parser differential could grant in-app rendering and self-signed
+   acceptance on a spoofed/mismatched host. Only decoded code points that
+   normalise to a structural delimiter in the authority fail closed; encoded
+   non-delimiter non-ASCII (e-acute `%C3%A9`, euro `%E2%82%AC`, emoji), ASCII
+   escapes and confusables in the path/query stay launchable, no valid target
+   lost. Scoped to the authority (the TLS-sensitive part).
+   Covered by 40 targeted tests across the defense-in-depth re-validation
+   groups (scheme/host/malformed-authority parity + control-character +
+   raw-space + Unicode-whitespace/invisible + raw-backslash + RFC-3986
+   unwise-char + malformed-percent-encoding + raw non-ASCII authority + encoded
+   authority-delimiter + encoded control-octet + encoded Unicode
+   separator/invisible + encoded compatibility-confusable delimiter rejection).
 
 ## What remains gated (not done here)
 
