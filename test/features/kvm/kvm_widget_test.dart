@@ -414,6 +414,55 @@ void main() {
     });
 
     testWidgets(
+        'plaintext-HTTP HTML5 console card warns about cleartext without '
+        'advertising a normal "open via BMC web UI" path (#009)',
+        (WidgetTester tester) async {
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(
+          consoles: <KvmConsole>[
+            KvmConsole(
+              type: KvmConsoleType.remote,
+              managerId: 'BMC',
+              connectTypesSupported: <String>['HTML5'],
+              serviceEnabled: true,
+              connectUri: 'http://bmc.example.com/kvm',
+              sourceManagerUri: '/redfish/v1/Managers/BMC',
+            ),
+          ],
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The card must still surface the unencrypted-transport warning (the
+      // operator has to be told the endpoint is unsafe until HTTPS is set up).
+      expect(find.bySemanticsLabel(kvmInsecureTransportNotice), findsOneWidget);
+      expect(find.byIcon(Icons.lock_open_outlined), findsOneWidget);
+      // But it must NOT simultaneously advertise a normal "open via the BMC
+      // web UI" path for that same unsafe endpoint — that contradicts the
+      // warning ("configure HTTPS before opening it in a browser") and gave a
+      // plaintext-HTTP HTML5 console two conflicting launch messages. RED
+      // before the fix: the unconditional supportsHtml5 hint was still shown.
+      expect(
+        find.text('HTML5 console — open via BMC web UI.'),
+        findsNothing,
+        reason: 'no normal-open hint for an unencrypted HTML5 endpoint',
+      );
+      expect(
+        find.bySemanticsLabel('HTML5 console — open via BMC web UI.'),
+        findsNothing,
+        reason: 'no announced normal-open hint for a cleartext endpoint',
+      );
+    });
+
+    testWidgets(
         'console card body rows announce as one merged semantics node each '
         '(Manager / Max concurrent sessions / HTML5, UI-2)', (tester) async {
       final KvmController controller = _StubController()

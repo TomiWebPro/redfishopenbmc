@@ -180,6 +180,23 @@ class KvmConsole {
         (String type) => type.trim().toUpperCase() == 'HTML5',
       );
 
+  /// Whether the console card should show the "HTML5 console — open via BMC
+  /// web UI" hint (a normal-open suggestion for a browser-managed console).
+  ///
+  /// An HTML5 console whose direct [launchUri] is plaintext HTTP must NOT get
+  /// this hint: the card already renders the unencrypted-transport warning
+  /// ([usesInsecureHttpLaunchUri] → `kvmInsecureTransportNotice`, "configure
+  /// HTTPS before opening it in a browser"), so also telling the operator the
+  /// console can be opened normally via the web UI gives two contradictory
+  /// launch messages for the same unsafe endpoint (issues #009 / #021). This
+  /// keeps the hint for URI-less HTML5 consoles (opened from the BMC web UI —
+  /// no direct insecure endpoint) and for secure HTTPS HTML5 consoles.
+  ///
+  /// Pure and widget-free so the rule is unit-testable; display-only, opens no
+  /// URL and never changes transport security (production TLS is never
+  /// weakened).
+  bool get showHtml5WebUiHint => supportsHtml5 && !usesInsecureHttpLaunchUri;
+
   /// The preferred URI for launching/opening this console.
   ///
   /// Returns a trimmed [connectUri] when it is a non-blank string; a blank

@@ -356,6 +356,53 @@ void main() {
     });
   });
 
+  group('KvmConsole.showHtml5WebUiHint (#009)', () {
+    KvmConsole build({
+      List<String> types = const <String>['HTML5'],
+      String? uri,
+      bool enabled = true,
+    }) =>
+        KvmConsole(
+          type: KvmConsoleType.remote,
+          managerId: 'BMC',
+          connectTypesSupported: types,
+          serviceEnabled: enabled,
+          connectUri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+
+    // The card shows this hint beside the unencrypted-transport warning for a
+    // plaintext-HTTP HTML5 console — two contradictory launch messages. The
+    // hint must be suppressed for that case.
+    test('plaintext-HTTP HTML5 console suppresses the normal-open hint', () {
+      final KvmConsole console = build(uri: 'http://bmc.example.com/kvm');
+      expect(console.supportsHtml5, isTrue);
+      expect(console.usesInsecureHttpLaunchUri, isTrue);
+      expect(console.showHtml5WebUiHint, isFalse,
+          reason:
+              'an unencrypted endpoint must not advertise a normal open path');
+    });
+
+    test('secure HTTPS HTML5 console keeps the normal-open hint', () {
+      expect(
+          build(uri: 'https://bmc.example.com/kvm').showHtml5WebUiHint, isTrue);
+    });
+
+    test('URI-less HTML5 console keeps the BMC web UI hint', () {
+      // No direct ConnectUri means the console is opened from the BMC web UI —
+      // there is no insecure endpoint for the hint to contradict.
+      expect(build(uri: null).showHtml5WebUiHint, isTrue);
+    });
+
+    test('non-HTML5 console never shows the HTML5 hint', () {
+      expect(
+        build(types: const <String>['KVMIP'], uri: 'https://bmc/kvm')
+            .showHtml5WebUiHint,
+        isFalse,
+      );
+    });
+  });
+
   group('KvmConsole.launchStrategy (#021)', () {
     KvmConsole build({
       List<String> types = const <String>['HTML5'],

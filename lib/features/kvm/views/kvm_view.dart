@@ -407,7 +407,13 @@ class _ConsoleCard extends StatelessWidget {
                 ),
               ),
             ],
-            if (console.supportsHtml5) ...<Widget>[
+            // #009 / #021: suppress the normal "open via BMC web UI" hint for
+            // a plaintext-HTTP HTML5 endpoint — the unencrypted-transport
+            // warning below already carries the honest "configure HTTPS first"
+            // guidance, so advertising an ordinary open path here would
+            // contradict it. The getter keeps the hint for URI-less and secure
+            // HTTPS HTML5 consoles.
+            if (console.showHtml5WebUiHint) ...<Widget>[
               const SizedBox(height: 8),
               // UI-2: the informative line announces as ONE node too — no
               // bare detached sentence in the card body.

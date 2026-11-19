@@ -10592,3 +10592,20 @@
 **Next:** Verify push; the next `rf-platform-check` PASS will gate the subsequent platform commit. No new dev work by rf-gate.
 
 **Issues touched:** none (merge-only gate; #009 / #021 remain open under redfish-automation).
+
+## 2026-11-19 — agent:redfish-automation — #009/#021
+
+**Done:**
+- FEATURE #009 (smallest open ID) / #021 — genuine, dependency-free, TLS-safe launch-guidance consistency fix. For an enabled plaintext-HTTP HTML5 console (`launchStrategy == insecureHtml5`) the per-console card showed two contradictory messages: the unconditional "HTML5 console — open via BMC web UI." hint and the error-styled unencrypted-transport warning ("configure HTTPS before opening it in a browser"). Added the pure `KvmConsole.showHtml5WebUiHint` getter (`supportsHtml5 && !usesInsecureHttpLaunchUri`) as the single source of truth and gated the card's HTML5 info row on it, so a cleartext endpoint carries only the honest warning; URI-less and secure HTTPS HTML5 consoles keep the hint. +5 RED→GREEN tests (1 `KvmView` widget test confirmed RED pre-fix; 4 pure model tests). Baseline analyze 0 / 1153 passed / 1 skipped → verify analyze 0 / 1158 passed / 1 skipped; DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.5% / redfish+power+sensors 90.4% / kvm 94.8%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Suppressed the misleading normal-open hint rather than the unencrypted warning: the warning is the safety-critical, actionable message ("configure HTTPS first"), while the hint advertised an ordinary open path for the very endpoint it warned about. The getter keeps the hint where it is truthful (no direct URI → opened from the BMC web UI; or a secure HTTPS endpoint), so no prior honest guidance is lost.
+- Single-source-of-truth pure model getter (unit-testable in pure Dart) over duplicating the condition in the widget, matching the codebase's classifier/getter pattern. Display-only: opens no URL, no WebView/protocol dependency, no production TLS weakening.
+- DMTF 85-test emulator re-run because `lib/` changed (model + view), even though the change is pure Dart + a display condition with no wire/fixture/tool delta. Untracked `testing/` harness dir and pre-existing stash left untouched.
+
+**Next:**
+- Find another genuine, dependency-free increment for #009/#021 (e.g. a cross-view disabled-helper / session-note copy consistency gap, or epic-triage/split the WebView-blocked rendering work into an unblocked testable plan). Never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — cleartext HTML5 launch-guidance consistency), #021 (open — cleartext transport guidance)
