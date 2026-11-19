@@ -11028,3 +11028,20 @@
 - Never force-push; never weaken production TLS; DMTF re-run only on wire/fixture/tool change or >7 days.
 
 **Issues touched:** none (gate merge only); #009 / #021 remain open.
+
+## 2026-11-19 — agent:redfish-automation — #009 / #021 (EP-M1/M2 external-client degenerate-host fail-closed parity)
+
+**Done:**
+- FEATURE dept slice for #009/#021 (dependency-free, TLS-safe). `isExternalClientConsoleUri` (shared single source of truth for `KvmConsole` / `KvmCapability` external-client classification) accepted a degenerate label-less authority (`vnc://./`, `ssh://../`, `ipmi://%2E%2E/` — `Uri.tryParse` reports a dot-only host as non-empty), badging such a `ConnectUri` as a trustworthy external-client endpoint with copy affordance on the viewer and both KVM cards while the equivalent HTTPS target already failed closed. Factored the dot-only-host rule into a shared `_hasDegenerateAuthorityHost(Uri)` helper used by both the HTTP(S) classifier family and the external-client classifier; opaque authority-less URIs and `@odata.id` clipboard fallbacks unaffected. The malformed endpoint now degrades to `noUri` / `canOpenConsole == false` / no external-client notice on every surface. +3 RED→GREEN tests (pure classifier + model + capability parity), all confirmed RED pre-fix. Baseline analyze 0 / 1310 passed / 1 skipped → verify analyze 0 / 1313 passed / 1 skipped; DMTF emulator 85/85 (lib changed — §1.4 gate met); issues validate OK; git diff --check clean.
+
+**Decisions:**
+- The dot-only-authority rule now has a single source of truth shared by both classifier families, so the HTTP(S) and external-client paths can never disagree about the same malformed endpoint (EP-M1/M2 cross-surface parity). Scoped to URIs that actually have an authority, so scheme-relative/Redfish `@odata.id` clipboard-fallback values stay launchable — no valid target lost.
+- Pure classifier change: no widget surface edited, no dependency, no wire/request/header/payload/fixture change, no production TLS weakening. Both issues stay OPEN (embedded HTML5 rendering, fullscreen, input forwarding remain externally blocked on platform WebView + BMC self-signed/TLS validation).
+- Emulator re-run because `lib/` changed (§1.4); server stopped via script trap, test-only self-signed cert.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` (EP-M1 remaining URI-scheme edges, RM-2 non-map payload tolerance, EP-S1 service launch edges, EP-U1 fullscreen scaffold) — genuine tested dependency-free increments only.
+- Never add a WebView/url_launcher dependency unattended; never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

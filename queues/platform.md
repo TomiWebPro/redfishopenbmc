@@ -62,3 +62,5 @@ platform validation evidence.
               `lib/features/kvm/platform/`; no `pubspec.yaml` change; no production TLS weakening.
 
 ## Log (one line per completed item: date + commit + note)
+
+- 2026-11-19 19:27 — EP-M1/M2 cross-surface classifier parity (agent:redfish-automation, FEATURE #009/#021): `lib/features/kvm/platform/launch_plan.dart` now fails `isExternalClientConsoleUri` closed on a degenerate label-less authority (`vnc://./`, `ssh://../`, `ipmi://%2E%2E/`) via a shared `_hasDegenerateAuthorityHost(Uri)` helper also used by the HTTP(S) classifier family; opaque authority-less URIs and the `@odata.id` clipboard fallback unaffected. +3 RED→GREEN tests (pure classifier + KvmConsole model + KvmCapability parity). analyze 0 / 1313 passed / 1 skipped; DMTF emulator 85/85 (lib changed). No dependency, no wire/transport change, no production TLS weakening.

@@ -1471,5 +1471,25 @@ void main() {
       expect(encoded.requiresExternalConsoleClient, isTrue);
       expect(encoded.externalClientProtocolLabel, 'VNC/RFB');
     });
+
+    test('a degenerate dot-only external host is not an external client (#009)',
+        () {
+      // Uri.tryParse reports a label-less authority ('.' / '..') as a non-empty
+      // host for these external schemes, so the console card previously badged
+      // them as trustworthy external endpoints with a copy affordance even
+      // though the equivalent HTTPS target fails closed. Both views now agree.
+      for (final String uri in <String>[
+        'vnc://./',
+        'ssh://../',
+        'ipmi://%2E%2E/',
+        'rfb://./console',
+      ]) {
+        final KvmConsole console = externalConsoleWith(uri);
+        expect(console.requiresExternalConsoleClient, isFalse, reason: uri);
+        expect(console.externalClientProtocolLabel, isNull, reason: uri);
+        expect(console.launchStrategy, KvmLaunchStrategy.noUri, reason: uri);
+        expect(console.canOpenConsole, isFalse, reason: uri);
+      }
+    });
   });
 }

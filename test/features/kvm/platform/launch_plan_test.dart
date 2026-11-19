@@ -1391,6 +1391,29 @@ void main() {
       expect(isExternalClientConsoleUri('vnc://bmc.example/console%20one'),
           isTrue);
     });
+
+    test('a degenerate dot-only external host fails closed like HTTPS (#009)',
+        () {
+      // `Uri.tryParse` reports these as external-client URIs with a non-empty
+      // host ('.' / '..'), so the HTTP(S) classifiers already refuse them but
+      // the external-client family previously badged them as trustworthy
+      // endpoints with a copy affordance. Both families now agree (EP-M1/M2).
+      for (final String uri in <String>[
+        'vnc://./',
+        'ssh://../',
+        'kvm://.',
+        'ipmi://%2E%2E/', // pct-encoded dots decoded by Uri to '..'
+        'rfb://./console',
+      ]) {
+        expect(isControlSafeConsoleUri(uri), isTrue, reason: uri);
+        expect(isExternalClientConsoleUri(uri), isFalse, reason: uri);
+        expect(externalClientConsoleProtocol(uri), isNull, reason: uri);
+      }
+      // A real external-client host is still classified and labelled.
+      expect(isExternalClientConsoleUri('vnc://bmc.example:5900'), isTrue);
+      expect(
+          externalClientConsoleProtocol('vnc://bmc.example:5900'), 'VNC/RFB');
+    });
   });
 
   group(

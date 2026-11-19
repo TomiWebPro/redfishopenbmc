@@ -162,12 +162,22 @@ const Set<String> kExternalClientConsoleSchemes = <String>{
 /// guaranteeing the per-console and per-manager KVM views classify the same
 /// endpoint identically (EP-M2 cross-surface classifier parity). Read-only: it
 /// opens no URL, adds no dependency and never weakens transport security.
+///
+/// A degenerate, label-less authority is also refused: `Uri.tryParse` reports
+/// `vnc://./`, `ssh://../` and `ipmi://%2E%2E/` as having a non-empty host (`.` /
+/// `..`) with an external-client scheme, so a purely syntactic check would badge
+/// such a target as a trustworthy "requires an external VNC/SSH client" endpoint
+/// with a copy affordance — exactly the parser-differential host confusion the
+/// HTTP(S) classifiers already fail closed on (dot-only authority, no real BMC
+/// host to contact). Both classifier families now share [_hasDegenerateAuthorityHost]
+/// so they can never disagree about the same malformed endpoint. Opaque external
+/// URIs with no authority (e.g. `vnc:host=…`) are unaffected.
 bool isExternalClientConsoleUri(String? uri) {
   final String? trimmed = _controlSafeTrimmedUri(uri);
   if (trimmed == null) return false;
   final Uri? parsed = Uri.tryParse(trimmed);
-  return parsed != null &&
-      kExternalClientConsoleSchemes.contains(parsed.scheme.toLowerCase());
+  if (parsed == null || _hasDegenerateAuthorityHost(parsed)) return false;
+  return kExternalClientConsoleSchemes.contains(parsed.scheme.toLowerCase());
 }
 
 /// Human-readable label for the external-client protocol of [uri], or `null`
@@ -642,6 +652,21 @@ String? _controlSafeTrimmedUri(String? uri) {
   return trimmed;
 }
 
+/// True when [parsed] has an authority whose host has no real DNS label — a
+/// host made only of dots (`.`, `..`, or a percent-encoded dot such as
+/// `https://%2E%2E/` that `Uri.tryParse` decodes to `..`).
+///
+/// `Uri.tryParse` still reports these as URIs with a NON-EMPTY host, so a bare
+/// `scheme && host.isNotEmpty` check calls them "secure"/usable. There is no
+/// real BMC host to contact and a launcher may resolve `..` as a relative /
+/// traversal path rather than a host. Scoped to URIs that actually have an
+/// authority, so scheme-relative/path-only values (e.g. a Redfish `@odata.id`
+/// used as a clipboard fallback, which has no authority) are unaffected.
+/// Shared by the HTTP(S) classifier family and the external-client classifier
+/// so both fail closed on the same malformed authority.
+bool _hasDegenerateAuthorityHost(Uri parsed) =>
+    parsed.hasAuthority && parsed.host.replaceAll('.', '').isEmpty;
+
 /// Whether [uri] is a control-safe HTTP(S) URI with a host whose (Dart-
 /// normalised, here lower-cased) scheme is in [schemes].
 bool _isHttpUriWithSchemes(String? uri, Set<String> schemes) {
@@ -660,7 +685,7 @@ bool _isHttpUriWithSchemes(String? uri, Set<String> schemes) {
   // acceptance on a bogus/traversal target. A real label (incl. an absolute
   // FQDN trailing dot) or an IPv6 literal contains non-dot characters and is
   // unaffected — stricter than the model, never more permissive.
-  if (parsed.host.replaceAll('.', '').isEmpty) return false;
+  if (_hasDegenerateAuthorityHost(parsed)) return false;
   return true;
 }
 

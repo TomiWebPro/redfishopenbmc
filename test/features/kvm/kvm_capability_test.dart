@@ -1793,5 +1793,25 @@ void main() {
             reason: uri);
       }
     });
+
+    test(
+        'a degenerate dot-only external host fails closed on both views (#009)',
+        () {
+      for (final String uri in <String>[
+        'vnc://./',
+        'ssh://../',
+        'ipmi://%2E%2E/',
+        'rfb://./console',
+      ]) {
+        expect(cap(uri).requiresExternalConsoleClient, isFalse, reason: uri);
+        expect(cap(uri).externalClientProtocolLabel, isNull, reason: uri);
+        expect(cap(uri).requiresExternalConsoleClient,
+            console(uri).requiresExternalConsoleClient,
+            reason: uri);
+        expect(cap(uri).externalClientProtocolLabel,
+            console(uri).externalClientProtocolLabel,
+            reason: uri);
+      }
+    });
   });
 }
