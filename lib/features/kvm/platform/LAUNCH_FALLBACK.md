@@ -83,7 +83,7 @@ Invariants, enforced by tests:
    console URI" warning as if it were a real endpoint.
 
    **Unicode separator/invisible rejection:** the check is now a principled
-   Unicode-category rule (`RegExp(r'[\p{C}\p{Z}]', unicode: true)`), not just an
+   Unicode-category rule (`RegExp(r'[\\\p{C}\p{Z}]', unicode: true)`), not just an
    ASCII scan. `Uri.tryParse` also silently percent-encodes Unicode separators
    and format/invisible characters (NBSP `U+00A0`, zero-width space, line
    separator, ideographic space, BOM) into the host/path; an embedded one is not
@@ -95,9 +95,18 @@ Invariants, enforced by tests:
    launchable, so no properly encoded target is lost. It is applied uniformly by
    all three sibling classifiers, so a malformed HTTP URI can no longer drive
    an "Unencrypted HTTP console URI" warning as if it were a real endpoint.
-   Covered by targeted tests (malformed-authority parity + control-character +
-   raw-space + Unicode-whitespace/invisible rejection + HTTP-family classifier
-   agreement) in `launch_plan_test.dart`, plus classifier-agreement tests in
+   **Raw-backslash rejection:** a raw `\` is not a legal URI character
+   (RFC 3986; a literal backslash must be `%5C`), but `Uri.tryParse` folds it to
+   `/`, so `https://bmc.example\@evil.com/console` parses with the *trusted*
+   host `bmc.example` while a launcher that does not fold backslashes may
+   resolve a different authority. Under a stale flag + test opt-in that parser
+   differential could grant in-app rendering and self-signed acceptance on a
+   malformed/spoofed authority. Raw backslashes are rejected outright — a
+   properly encoded `%5C` stays launchable, so no valid target is lost.
+   Legitimate userinfo/port URIs are unaffected. Covered by targeted tests
+   (malformed-authority parity + control-character + raw-space +
+   Unicode-whitespace/invisible + raw-backslash rejection) in
+   `launch_plan_test.dart`, plus classifier-agreement tests in
    `kvm_model_test.dart` and `kvm_capability_test.dart`.
 
 ## What remains gated (not done here)

@@ -122,10 +122,21 @@ bool isHttpConsoleUri(String? uri) =>
 /// Rejects raw characters that are never legal unescaped in a URI: Unicode
 /// `Separator` (Z: ASCII space, NBSP, line/paragraph/ideographic spaces) and
 /// `Other` (C: C0/C1 controls, DEL, zero-width/invisible format chars).
-/// `%20`/`%XX` escape sequences contain none of these, so properly encoded
+///
+/// Raw backslash (U+005C) is rejected for the same reason: it is not a legal
+/// URI character (RFC 3986; a literal backslash must be `%5C`), but
+/// `Uri.tryParse` folds `\` into `/`, so e.g.
+/// `https://bmc.example\@evil.com/console` parses with the *trusted* host
+/// `bmc.example` while a launcher that does not fold backslashes may resolve a
+/// different authority. Under a stale secure flag + test opt-in that parser
+/// differential could grant in-app rendering and self-signed acceptance on a
+/// malformed/spoofed authority. Rejecting raw backslashes loses no valid target
+/// (a literal backslash must be `%5C`, which stays launchable).
+///
+/// `%20`/`%5C`/`%XX` escape sequences contain none of these, so properly encoded
 /// targets pass. Shared by every HTTP(S) transport classifier so HTTPS and HTTP
 /// classification and the launch-plan decision layer apply identical hardening.
-final RegExp _rawUriForbiddenChars = RegExp(r'[\p{C}\p{Z}]', unicode: true);
+final RegExp _rawUriForbiddenChars = RegExp(r'[\\\p{C}\p{Z}]', unicode: true);
 
 /// Trims [uri] and returns it only when it is non-blank and contains no raw
 /// control/separator/invisible code point, or `null` otherwise. Shared by every
@@ -136,9 +147,9 @@ String? _controlSafeTrimmedUri(String? uri) {
   if (uri == null) return null;
   final String trimmed = uri.trim();
   if (trimmed.isEmpty) return null;
-  // C0/C1 controls, DEL, ASCII + Unicode spaces and invisible format chars are
-  // never legal raw in a URI; `%20`/`%XX` sequences contain none of them, and an
-  // embedded one is not removed by `String.trim()`.
+  // C0/C1 controls, DEL, ASCII + Unicode spaces, invisible format chars and a
+  // raw backslash are never legal raw in a URI; `%20`/`%5C`/`%XX` sequences
+  // contain none of them, and an embedded one is not removed by `String.trim()`.
   if (_rawUriForbiddenChars.hasMatch(trimmed)) return null;
   return trimmed;
 }

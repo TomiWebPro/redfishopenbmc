@@ -543,4 +543,68 @@ void main() {
       expect(plan.acceptSelfSigned, isFalse);
     });
   });
+
+  group('planConsoleLaunch — defense in depth: raw-backslash rejection', () {
+    test('a raw backslash that Uri.tryParse treats as a slash fails closed', () {
+      // A raw backslash is not a legal URI character (it must be percent-encoded
+      // as %5C), yet `Uri.tryParse` treats it as a path/authority separator and
+      // can still call the result an HTTPS URI with a non-empty host. E.g.
+      // `https://bmc.example\@evil.com/console` parses with host `bmc.example`
+      // while a launcher that does not fold backslashes to slashes may resolve
+      // a different authority — a parser-differential/host-confusion risk. With
+      // a stale secure flag + test opt-in that would reach in-app rendering and
+      // self-signed acceptance on a malformed/spoofed authority, so every raw
+      // backslash must fail closed.
+      for (final String uri in <String>[
+        r'https:\\bmc.example\console', // backslashes as authority separators
+        r'https://bmc.example\console', // backslash as path separator
+        r'https://bmc.example\@evil.com/console', // host confusion
+        r'https://trusted.example\@evil.example/console', // host confusion
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('a raw-backslash URI never reaches in-app under a strict opt-in', () {
+      // Even without granting self-signed acceptance, a backslash-delimited URI
+      // must not be rendered in-app by an enabled+strict opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: r'https:\bmc.example\console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('a percent-encoded backslash is legitimate and stays launchable', () {
+      // Guard against over-rejection: %5C is the correct encoding of a backslash
+      // and contains no raw backslash, so it must remain launchable via the
+      // external-browser fallback (no TLS weakening, no valid target lost).
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.productionDefault,
+        uri: 'https://bmc.example/console%5Cpath',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.route, KvmConsoleRenderRoute.externalBrowser);
+      expect(plan.targetUri, 'https://bmc.example/console%5Cpath');
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+  });
 }
