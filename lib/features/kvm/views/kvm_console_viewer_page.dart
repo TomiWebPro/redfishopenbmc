@@ -33,7 +33,6 @@ class KvmConsoleViewerPage extends ConsumerStatefulWidget {
 
 class _KvmConsoleViewerPageState extends ConsumerState<KvmConsoleViewerPage> {
   late final KvmSessionController _session;
-  bool _sessionActive = false;
 
   @override
   void initState() {
@@ -49,22 +48,38 @@ class _KvmConsoleViewerPageState extends ConsumerState<KvmConsoleViewerPage> {
         widget.console.managerId,
         maxConcurrentSessions: widget.console.maxConcurrentSessions,
       );
-      if (mounted) setState(() => _sessionActive = true);
     });
+  }
+
+  /// Whether the shared session is still this viewer's console.
+  ///
+  /// The viewer must not keep a local "connected" flag: the session is owned by
+  /// the app-wide [kvmSessionProvider] and can change underneath this widget —
+  /// a single-session BMC evicts this console when another viewer connects. A
+  /// stale local flag then advertised a session we no longer own and, worse,
+  /// left the Disconnect button able to end the *other* console's session on
+  /// tap/pop. Always derive ownership from the shared state at use time
+  /// (EP-U4 closeout / #009). The trim matches [KvmSessionController.connect]'s
+  /// normalization of the manager id.
+  bool _ownsActiveSession() {
+    final KvmSessionState session = ref.read(kvmSessionProvider);
+    return session.isConnected &&
+        session.activeManagerId == widget.console.managerId.trim();
   }
 
   // Back / system pop ends the session (EP-U4): the BMC console itself persists
   // until its own timeout, but the app no longer tracks it. This runs from a
   // PopScope callback (not a widget lifecycle method), so Riverpod's "no
-  // provider writes during build/lifecycle" guard is respected. disconnect() is
-  // a safe no-op if the explicit button already ended the session.
+  // provider writes during build/lifecycle" guard is respected. Only end the
+  // session when this viewer still owns it — popping an evicted viewer must not
+  // disconnect the newer console (EP-U4 closeout).
   void _endSessionOnExit(bool didPop, Object? result) {
-    if (didPop) _session.disconnect();
+    if (didPop && _ownsActiveSession()) _session.disconnect();
   }
 
   void _disconnectConsole() {
+    if (!_ownsActiveSession()) return;
     _session.disconnect();
-    if (mounted) setState(() => _sessionActive = false);
   }
 
   @override
@@ -106,8 +121,16 @@ class _KvmConsoleViewerPageState extends ConsumerState<KvmConsoleViewerPage> {
         ? theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.error, fontWeight: FontWeight.w600)
         : theme.textTheme.bodyMedium;
+    // Session disclosure is derived from the shared controller (EP-U4 closeout):
+    // watching the provider rebuilds this page when the session changes, so an
+    // evicted viewer flips to the idle notice and disables Disconnect instead
+    // of advertising a session it no longer owns. Visible text == announced
+    // label stays true via one merged excludeSemantics node below.
+    final KvmSessionState session = ref.watch(kvmSessionProvider);
+    final bool sessionActive = session.isConnected &&
+        session.activeManagerId == console.managerId.trim();
     final String sessionNotice =
-        _sessionActive ? kvmSessionActiveNotice : kvmSessionIdleNotice;
+        sessionActive ? kvmSessionActiveNotice : kvmSessionIdleNotice;
     return PopScope<void>(
       onPopInvokedWithResult: _endSessionOnExit,
       child: Scaffold(
@@ -224,7 +247,7 @@ class _KvmConsoleViewerPageState extends ConsumerState<KvmConsoleViewerPage> {
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
                       key: const Key('kvm-disconnect-console'),
-                      onPressed: _sessionActive ? _disconnectConsole : null,
+                      onPressed: sessionActive ? _disconnectConsole : null,
                       icon: const Icon(Icons.link_off),
                       label: const Text('Disconnect console'),
                     ),

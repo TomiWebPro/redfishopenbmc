@@ -11045,3 +11045,20 @@
 - Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-19 — agent:redfish-automation — #009 / #021 (EP-U4 viewer session-ownership closeout)
+
+**Done:**
+- FEATURE #009/#021 (dependency-free, TLS-safe, pure UI state). `KvmConsoleViewerPage` cached a local `_sessionActive` flag set once in `initState`'s post-frame callback, but the real session lives in `kvmSessionProvider`. After a single-session BMC evicted this console for a newer one, the evicted viewer still announced the active-session notice and left Disconnect enabled — a stale tap or back-pop could then end the *other* manager's console session. The viewer now watches the provider in `build`, derives active state from `session.isConnected && session.activeManagerId == console.managerId.trim()`, and re-checks ownership inside both the Disconnect callback and the `PopScope` pop handler before ending a session. Active/idle disclosures keep one merged `excludeSemantics` node (visible text == announced label). +3 RED→GREEN widget tests (all confirmed RED pre-fix), 320 px no-overflow; targeted 61/61 + 17/17; analyze 0, full 1316 passed / 1 skipped (baseline 1313 +3), DMTF emulator 85/85 (lib changed — §1.4 gate met), issues validate OK, diff/secret checks clean. No issue closed.
+
+**Decisions:**
+- A viewer must never own a local copy of app-wide session state: the shared controller is the single source of truth, so ownership is derived at build/use time and an evicted console cannot advertise a session it no longer has or disconnect a newer console.
+- Pure Flutter state wiring: no dependency, no wire/request/payload/transport change, no production TLS weakening. Both issues stay OPEN (embedded HTML5 rendering, a real fullscreen renderer and input forwarding remain externally blocked on platform WebView + BMC self-signed/TLS validation).
+- Emulator re-run because `lib/` changed (§1.4); server stopped via script trap, test-only self-signed cert.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` (EP-M1 URI-scheme edges, RM-2 non-map payload tolerance, EP-S1 service launch edges, EP-U1 fullscreen scaffold, EP-T3 coverage gate) — genuine tested dependency-free increments only.
+- Never add a WebView/protocol dependency unattended; never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

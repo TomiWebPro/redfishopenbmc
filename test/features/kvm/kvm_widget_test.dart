@@ -1646,6 +1646,108 @@ void main() {
         contains(contains('Evicted console session for manager "BMC"')),
       );
     });
+
+    testWidgets(
+        'session disclosure follows the shared controller after a '
+        'single-session eviction (EP-U4 closeout)', (tester) async {
+      final ProviderContainer container = await pumpWithContainer(tester);
+      // The viewer owns the session it just opened: active notice + enabled
+      // disconnect affordance.
+      expect(find.text(kvmSessionActiveNotice), findsOneWidget);
+      expect(
+        tester
+            .widget<OutlinedButton>(
+                find.byKey(const Key('kvm-disconnect-console')))
+            .onPressed,
+        isNotNull,
+      );
+
+      // A newer single-session console evicts this manager in the SHARED
+      // controller. The evicted viewer must stop advertising a session it no
+      // longer owns, or its Disconnect button could end the OTHER manager's
+      // session (both a stale a11y disclosure and a cross-console data bug).
+      container
+          .read(kvmSessionProvider.notifier)
+          .connect('OTHER', maxConcurrentSessions: 1);
+      await tester.pumpAndSettle();
+      expect(find.text(kvmSessionActiveNotice), findsNothing);
+      expect(find.bySemanticsLabel(kvmSessionIdleNotice), findsOneWidget);
+      expect(find.text(kvmSessionIdleNotice), findsOneWidget);
+      expect(
+        tester
+            .widget<OutlinedButton>(
+                find.byKey(const Key('kvm-disconnect-console')))
+            .onPressed,
+        isNull,
+      );
+
+      // Even a stale callback on the disabled button cannot end the new
+      // manager's session.
+      await tester.tap(find.byKey(const Key('kvm-disconnect-console')),
+          warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(container.read(kvmSessionProvider).activeManagerId, 'OTHER');
+      expect(container.read(kvmSessionProvider).isConnected, isTrue);
+    });
+
+    testWidgets(
+        'back out of an evicted viewer keeps the newer console '
+        'session (EP-U4 closeout)', (tester) async {
+      final ProviderContainer container = ProviderContainer(
+        overrides: <Override>[
+          kvmSessionClockProvider.overrideWithValue(() => t0),
+        ],
+      );
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (BuildContext context) => ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const KvmConsoleViewerPage(
+                            console: lifecycleConsole),
+                      ),
+                    );
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(container.read(kvmSessionProvider).activeManagerId, 'BMC');
+      container
+          .read(kvmSessionProvider.notifier)
+          .connect('OTHER', maxConcurrentSessions: 1);
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.byType(KvmConsoleViewerPage))).pop();
+      await tester.pumpAndSettle();
+      // Popping an evicted viewer must not disconnect the newer session.
+      expect(container.read(kvmSessionProvider).activeManagerId, 'OTHER');
+      expect(container.read(kvmSessionProvider).isConnected, isTrue);
+    });
+
+    testWidgets(
+        'idle session disclosure announces its visible text and does '
+        'not overflow at 320 px (EP-U4 closeout)', (tester) async {
+      tester.view.physicalSize = const Size(320, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final ProviderContainer container = await pumpWithContainer(tester);
+      container.read(kvmSessionProvider.notifier).disconnect();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.bySemanticsLabel(kvmSessionIdleNotice), findsOneWidget);
+      expect(find.text(kvmSessionIdleNotice), findsOneWidget);
+    });
   });
 
   group('KvmView — per-console external-client guidance parity (#009/#021)',
