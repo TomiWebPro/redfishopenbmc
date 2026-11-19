@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_controller.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_providers.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_service.dart';
+import 'package:redfishopenbmc/features/kvm/kvm_session.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
 import 'package:redfishopenbmc/features/kvm/views/kvm_console_viewer_page.dart';
 import 'package:redfishopenbmc/features/kvm/views/kvm_transport_notice.dart';
@@ -1223,7 +1224,9 @@ void main() {
   group('KvmConsoleViewerPage — status announcement (a11y)', () {
     Future<void> pumpViewer(WidgetTester tester, KvmConsole console) async {
       await tester.pumpWidget(
-        MaterialApp(home: KvmConsoleViewerPage(console: console)),
+        ProviderScope(
+          child: MaterialApp(home: KvmConsoleViewerPage(console: console)),
+        ),
       );
       await tester.pumpAndSettle();
     }
@@ -1523,6 +1526,125 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(
           find.bySemanticsLabel(kvmSessionPersistenceNotice), findsOneWidget);
+    });
+  });
+
+  group('KvmConsoleViewerPage — session lifecycle (EP-U4 / #009)', () {
+    final DateTime t0 = DateTime.utc(2026, 11, 19, 12);
+    const KvmConsole lifecycleConsole = KvmConsole(
+      type: KvmConsoleType.remote,
+      managerId: 'BMC',
+      connectTypesSupported: <String>['HTML5'],
+      serviceEnabled: true,
+      connectUri: 'https://bmc.example.com/kvm',
+      sourceManagerUri: '/redfish/v1/Managers/BMC',
+      maxConcurrentSessions: 1,
+    );
+
+    Future<ProviderContainer> pumpWithContainer(
+      WidgetTester tester, {
+      KvmConsole console = lifecycleConsole,
+    }) async {
+      final ProviderContainer container = ProviderContainer(
+        overrides: <Override>[
+          kvmSessionClockProvider.overrideWithValue(() => t0),
+        ],
+      );
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(home: KvmConsoleViewerPage(console: console)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return container;
+    }
+
+    testWidgets('entering the viewer opens a session for the console manager',
+        (tester) async {
+      final ProviderContainer container = await pumpWithContainer(tester);
+      final KvmSessionState session = container.read(kvmSessionProvider);
+      expect(session.activeManagerId, 'BMC');
+      expect(session.connectedSince, t0);
+      expect(session.isConnected, isTrue);
+      expect(
+        session.log,
+        contains(contains('Connected console session for manager "BMC"')),
+      );
+    });
+
+    testWidgets('tapping Disconnect console ends the active session',
+        (tester) async {
+      final ProviderContainer container = await pumpWithContainer(tester);
+      expect(container.read(kvmSessionProvider).isConnected, isTrue);
+      await tester.tap(find.byKey(const Key('kvm-disconnect-console')));
+      await tester.pumpAndSettle();
+      expect(container.read(kvmSessionProvider).isConnected, isFalse);
+      expect(container.read(kvmSessionProvider).activeManagerId, isNull);
+    });
+
+    testWidgets('navigating back out of the viewer ends the session',
+        (tester) async {
+      final ProviderContainer container = ProviderContainer(
+        overrides: <Override>[
+          kvmSessionClockProvider.overrideWithValue(() => t0),
+        ],
+      );
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (BuildContext context) => ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const KvmConsoleViewerPage(
+                            console: lifecycleConsole),
+                      ),
+                    );
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(container.read(kvmSessionProvider).isConnected, isTrue);
+      Navigator.of(tester.element(find.byType(KvmConsoleViewerPage))).pop();
+      await tester.pumpAndSettle();
+      expect(container.read(kvmSessionProvider).isConnected, isFalse);
+    });
+
+    testWidgets(
+        'session disclosure announces exactly its visible text and '
+        'does not overflow at 320 px (#010)', (tester) async {
+      tester.view.physicalSize = const Size(320, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await pumpWithContainer(tester);
+      expect(tester.takeException(), isNull);
+      expect(find.bySemanticsLabel(kvmSessionActiveNotice), findsOneWidget);
+      expect(find.text(kvmSessionActiveNotice), findsOneWidget);
+    });
+
+    testWidgets('single-session eviction is logged on the connected manager',
+        (tester) async {
+      final ProviderContainer container = await pumpWithContainer(tester);
+      container
+          .read(kvmSessionProvider.notifier)
+          .connect('OTHER', maxConcurrentSessions: 1);
+      await tester.pumpAndSettle();
+      expect(
+        container.read(kvmSessionProvider).log,
+        contains(contains('Evicted console session for manager "BMC"')),
+      );
     });
   });
 }

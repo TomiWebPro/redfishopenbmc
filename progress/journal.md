@@ -10854,3 +10854,22 @@
 - Re-run the full DMTF emulator suite on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none (platform-only fail-closed hardening; #009 / #021 remain open)
+
+## 2026-11-19 — agent:redfish-automation — #009 / #021 (EP-U4)
+
+**Done:**
+- Wired the pure-UI `KvmSessionController` into the in-app console viewer (EP-U4 dept slice from `queues/ui.md`). `KvmConsoleViewerPage` is now a `ConsumerStatefulWidget`: entering opens a session for the console's manager (passing `maxConcurrentSessions` so a single-session BMC logs an eviction), a merged-a11y session-active/idle disclosure + explicit "Disconnect console" button end it on demand, and `PopScope.onPopInvokedWithResult` ends it on back/pop.
+- Added two single-source-of-truth disclosure constants in `kvm_transport_notice.dart` (visible text == announced `excludeSemantics` label; Disconnect button stays a separately focusable semantics node).
+- +5 RED→GREEN viewer widget tests (all confirmed RED pre-fix: no session, no disclosure, no button; 320 px no-overflow). `pumpViewer` helper now wraps the page in a `ProviderScope`.
+
+**Decisions:**
+- All provider writes confined to a post-frame connect and pop/button callbacks — never a widget lifecycle method — because Riverpod forbids provider mutation during build/initState/dispose (a deferred `dispose` write failed this gate and was replaced by `PopScope`).
+- No WebView/protocol dependency, no Redfish/wire call, no production TLS change; this is a pure-UI session-lifecycle increment of an existing #009 acceptance criterion, not manufactured churn.
+- Full DMTF emulator re-run (85/85) because `lib/` changed (§1.4 gate); test-only self-signed cert, server stopped via script trap.
+
+**Next:**
+- Continue unblocked dept slices (EP-U3/EP-U1 UI launch guidance + fullscreen scaffold, EP-M1/EP-M2 model edge cases, EP-S1 service launch-path edges, EP-T4/EP-T6 tooling); genuine tested dependency-free increments only.
+- Do NOT add a WebView/url_launcher dependency unattended; never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — viewer session lifecycle), #021 (open — back = disconnect)

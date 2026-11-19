@@ -44,3 +44,18 @@ const String kvmSessionPersistenceNotice =
 /// enabled console (issue #009; RU-2 cross-surface a11y consistency).
 const String kvmDisabledOnBmcNotice =
     'KVM disabled on BMC. Enable the console service in the BMC settings.';
+
+/// The single visible + announced disclosure shown on the per-console viewer
+/// while a pure-UI console session is active (EP-U4 / #009).
+///
+/// The viewer is the app's full-screen console surface: entering it opens a
+/// client-side session for that manager and leaving it ends the session. The
+/// disclosure tells the operator how to end the session explicitly, and is
+/// rendered as one merged `excludeSemantics` node so visible text always equals
+/// the announced label (no screen-reader-only wording).
+const String kvmSessionActiveNotice =
+    'Console session active — go back or tap Disconnect console to end it';
+
+/// The single visible + announced disclosure shown on the per-console viewer
+/// when no pure-UI console session is active (EP-U4 / #009).
+const String kvmSessionIdleNotice = 'No active console session';
