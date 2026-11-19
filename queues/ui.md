@@ -5,6 +5,23 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-19 20:47 UTC: unblocked cross-surface guidance slice of the #009/#021
+     final-route epic (external-browser + copy; EP-P1 resolved). Complements EP-U3 (external-client
+     guidance) and EP-U4 (session ownership) without duplicating them. No WebView import, no
+     dependency, no TLS change. -->
+
+- [ ] EP-U5 Launch-status parity for the `insecureHttp` and `disabled` strategies across the
+      viewer and the per-console card: both surfaces must derive their visible copy from the
+      single `kvmLaunchStatusText` source of truth for a plaintext-HTTP console ("configure HTTPS
+      first", never an open affordance) and a BMC-disabled console ("enable KVM on BMC", no
+      "Open console"), with merged `excludeSemantics` labels where visible text == announced
+      label and 320/800/1300 px no-overflow. Fix the first real divergence found via RED→GREEN
+      widget tests; do not manufacture copy churn where the surfaces already agree.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_widget_test.dart && flutter analyze` (0 issues),
+              with RED→GREEN proof; merged a11y + 320/800/1300 no-overflow; writes limited to
+              `lib/features/kvm/views/**`; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-19 12:37 UTC: slices the still-open fullscreen/session portion of the
      #009 rendering epic into an unblocked UI item (EP-U1 is the scaffold/disclosure note; this is
      the session-lifecycle wiring). No WebView, no url_launcher, no Redfish call. -->

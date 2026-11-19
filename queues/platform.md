@@ -6,6 +6,25 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-19 20:47 UTC: unblocks the unattended-doable half of the blocked
+     EP-P4 WebView closeout. EP-P4 stays human-gated (per-target validation evidence); this is
+     its machine-checkable guard clause, split out so a platform builder can land a genuine
+     invariant without the human gate. No dependency, no production TLS change, no WebView import. -->
+
+- [ ] EP-P5 Enforce the resolved no-embedded-WebView decision with a pure-Dart product-import
+      policy guard (the unattended slice of EP-P4's guard clause): a test under
+      `test/features/kvm/platform/` scans every product `lib/**.dart` and fails closed if any
+      imports `webview_flutter*`, `flutter_inappwebview*`, `url_launcher*` or opens a raw
+      `MethodChannel`/`EventChannel` for console rendering, and pins that `pubspec.yaml` /
+      `pubspec.lock` carry no such dependency. Must not flag the existing pure
+      `webview_policy.dart` / `launch_plan.dart` filenames or test-only files. The resolved
+      route stays external-browser + copy with the flag OFF in production.
+      Dept: rf-platform
+      Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues);
+              `git diff --exit-code -- pubspec.yaml pubspec.lock` (no dependency bump); no
+              production TLS behaviour change; writes limited to `lib/features/kvm/platform/**`
+              and `test/features/kvm/platform/**`.
+
 <!-- rf-ideate split 2026-11-19 12:37 UTC: slices the remaining blocked/epic work in issues
      #009/#021 and the FUTUREWORK "Blocked / needs a human" section into unblocked dept items.
      EP-P1/EP-P3 are now DONE in-tree (WEBVIEW_TLS_MATRIX.md + LAUNCH_FALLBACK.md exist); this is

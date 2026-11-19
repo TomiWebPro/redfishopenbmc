@@ -4,6 +4,23 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-19 20:47 UTC: splits the still-open non-map-payload remainder of
+     RM-2 (its session-limit portion LANDED 18:01) into a fresh, unblocked, dependency-free
+     model slice of #009/#021. No transport/TLS change, no dependency. -->
+
+- [ ] RM-3 Non-map payload tolerance across the KVM model read path (the open remainder of RM-2):
+      `Members` entries and `GraphicalConsole` / `SerialConsole` / `RemoteConsole` / `Oem` values
+      that decode to a non-map (String / num / bool / List / null) must fail closed — treated as
+      absent/disabled — in `KvmConsole.fromManager`, `KvmCapability.fromManager` and any shared
+      walk, never throwing a cast/NoSuchMethodError or reporting a bogus enabled/launchable
+      console. Keep the already-covered per-block non-map behaviour green; add cross-view
+      agreement tests so the console card and capability card never disagree for the same
+      malformed manager. If a fixture is needed, request it via rf-tooling (do not write
+      `test/fixtures/**`).
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof; writes limited to `lib/features/kvm/models/**`.
+
 <!-- rf-ideate re-split 2026-11-19 08:34 UTC: EP-P1 (platform WebView/TLS matrix) is RESOLVED —
      no embedded WebView on the available target; external-browser + copy is the final render route.
      New head-first, unblocked, dependency-free, TLS-safe dept slices of #009/#021. -->
@@ -44,6 +61,7 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Log
 
+- 2026-11-19 20:48 — OEM `ConnectUri` alias gap (agent:redfish-automation, FEATURE #009/#021): the shared `kvm_oem_uri.dart` helper (generic fallback for both KVM views) now recognizes the canonical Redfish `ConnectUri` member in addition to `Uri` (preferring `Uri`), so an unregistered vendor's `Oem.<Vendor>.KVM.ConnectUri` resolves on both the per-console card and capability card instead of showing no URI; enablement is read from the same block. +10 pure/parity tests + 1 card widget test (320 px), 2 outdated registry tests updated; analyze 0 / 1330 passed / 1 skipped; emulator 85/85; no dependency, no wire/transport change, no TLS weakening. Adjacent to EP-M2/RM-2 (neither acceptance box fully covered — no item checked off).
 - 2026-11-19 15:35 — EP-M2 LANDED (agent:redfish-automation, FEATURE #009/#021): extracted shared pure `isExternalClientConsoleUri` / `externalClientConsoleProtocol` in `launch_plan.dart` on the fail-closed `_controlSafeTrimmedUri` gate; `KvmConsole` delegates (ad-hoc parse removed) and `KvmCapability` gains mirroring `requiresExternalConsoleClient` / `externalClientProtocolLabel` getters — both KVM views now classify/label VNC/RFB/KVMIP/serial endpoints identically. +7 helper/model/parity tests, analyze 0 / 1248 passed / 1 skipped, emulator 85/85. No dependency, no TLS change.
 - 2026-11-19 14:56 — RM-1 LANDED (agent:redfish-automation, FEATURE #009/#021): `kvmOemConsoleEnabled` now honors an explicit disable on a URI-less OEM console block (fallback to the console-like block only when no URI-bearing console exists); +6 tests, analyze 0 / 1237 passed / 1 skipped, emulator 85/85. No dependency, no TLS change.
 - 2026-11-19 18:01 — RM-2-adjacent LANDED (agent:redfish-automation, FEATURE #009/#021): extracted pure `kvmSessionLimit(Object?)` in new `lib/features/kvm/models/kvm_session_limit.dart` (exported from the barrel) as the single source of truth for both KVM views' `MaxConcurrentSessions`; the two duplicated private parsers silently dropped an integer-valued JSON double (`4.0`) on both cards. Tolerates integral/finite/≤2^53 doubles + numeric strings, rejects fractional/non-finite/negative/blank/wrong types. 4 RED→GREEN behavioral assertions + 6 pure helper tests (+11 total); analyze 0 / 1289 passed / 1 skipped, emulator 85/85. No dependency, no TLS change. RM-2's non-map-payload portion remains open.

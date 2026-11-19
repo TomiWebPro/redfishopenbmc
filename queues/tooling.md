@@ -5,6 +5,28 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-19 20:47 UTC: splits the last un-split FUTUREWORK "[!] Environment
+     quota blocking verification (2026-11-08)" blocker — its harness-robustness portion (the
+     quota itself was transient; baselines are green). Mirrors EP-T6 / LA-1: pure tooling, no
+     lib/, no dependency, no product TLS change. -->
+
+- [ ] EP-T7 Emulator prerequisite doctor (closeout of FUTUREWORK "[!] Environment quota blocking
+      verification"): add a pure-Dart `tool/emulator_doctor.dart` (CLI + tests) that fails closed
+      with a precise, actionable diagnostic when a required prerequisite is absent — `docker`,
+      `curl`, `jq`, `redfishtool` on PATH, and the pinned local DMTF mockup fixture
+      `test/fixtures/redfish/dmtf_mockup` (never a hardcoded container-internal DSP2043 path) —
+      plus a `--check` mode that validates prerequisites without starting containers or any
+      network/credential use. Document that `tool/emulator/run_tests.sh` remains the standard
+      suite and `testing/run_emulator_harness.sh` is optional. Do not enable live-BMC, do not
+      add a dependency, never weaken production TLS.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/ && flutter analyze` (0 issues), with RED→GREEN doctor tests
+              (temp-PATH missing prerequisite → violation + nonzero exit; all-present → zero exit);
+              `dart run tool/emulator_doctor.dart --check` names each missing prerequisite (exit 0
+              only when all present — `redfishtool` is currently absent, so an actionable nonzero
+              report is the correct result here); writes limited to `tool/**`, `test/tool/**`,
+              `DEVELOPMENT.md`; never `lib/`.
+
 <!-- rf-ideate split 2026-11-19 16:43 UTC (main repo): slices the one remaining un-split
      FUTUREWORK "Blocked / needs a human" item — "[!] Large spec/binary assets — if over the
      download budget, ask a human before committing; store links and hashes meanwhile" —

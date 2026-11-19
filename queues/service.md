@@ -5,6 +5,22 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-19 20:47 UTC: carves an unblocked, dependency-free manager-walk
+     robustness slice out of the #009/#021 epic (distinct from RS-2's transient-failure skip and
+     EP-S2's safe-primary target). No wire/TLS change, no dependency. -->
+
+- [ ] RS-4 Deterministic manager-member dedup in the KVM read path: `KvmService.fetchConsoles` /
+      `fetchCapabilities` must tolerate duplicate and blank `@odata.id` entries in the
+      `/redfish/v1/Managers` `Members` array — dedup by normalized member URI (first occurrence
+      wins), skip blank/malformed ids, and never emit duplicate console/capability cards or
+      throw — with RED→GREEN service tests and the existing padded/malformed-member fixtures if
+      reusable. If a new fixture is needed, request it via rf-tooling. Do not change the wire
+      shape or the 404/retryable/auth skip semantics established by RS-2.
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_service_test.dart && flutter analyze` (0 issues),
+              with RED→GREEN proof; writes limited to `lib/features/kvm/kvm_service.dart` and
+              service tests under `test/features/kvm/`; emulator 85/85 only if `lib/` wire changes.
+
 <!-- rf-ideate re-split 2026-11-19 08:34 UTC: EP-P1 RESOLVED (external-browser + copy is the final
      render route; no WebView). New head-first, unblocked, dependency-free, TLS-safe service slice. -->
 
