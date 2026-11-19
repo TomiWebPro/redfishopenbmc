@@ -1339,4 +1339,90 @@ void main() {
       expect(uri, '/redfish/v1/Managers/BMC/GraphicalConsole');
     });
   });
+
+  group('KvmCapability connectTypes Oem marker dedup (#009)', () {
+    test('a literal OEM connect type is not duplicated by the Oem marker', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            // 'OEM' is a valid Redfish ConnectType; the capability card must
+            // not also render its own case-different 'Oem' marker chip.
+            'ConnectTypesSupported': <dynamic>['OEM'],
+          },
+          'Oem': <String, dynamic>{
+            'Vendor': <String, dynamic>{
+              'KVM': <String, dynamic>{'Uri': 'https://bmc.example/kvm'},
+            },
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(
+        capability.connectTypes,
+        <String>['OEM'],
+        reason: 'the BMC-provided "OEM" spelling is kept once; the capability '
+            'marker must not render a second, case-different chip',
+      );
+    });
+
+    test('Oem marker dedup is case-insensitive (lower-case oem)', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['oem', 'HTML5'],
+          },
+          'Oem': <String, dynamic>{
+            'KVM': <String, dynamic>{'Uri': 'https://bmc.example/kvm'},
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.connectTypes, <String>['oem', 'HTML5']);
+    });
+
+    test('Oem marker is still appended when no block advertises OEM', () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+          },
+          'Oem': <String, dynamic>{
+            'KVM': <String, dynamic>{'Uri': 'https://bmc.example/kvm'},
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.connectTypes, <String>['KVMIP', 'Oem']);
+    });
+
+    test('per-console cards agree with the capability Oem dedup', () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['OEM'],
+        },
+        'Oem': <String, dynamic>{
+          'KVM': <String, dynamic>{'Uri': 'https://bmc.example/kvm'},
+        },
+      };
+      final KvmCapability capability =
+          KvmCapability.fromManager(body, managerId: 'BMC');
+      final List<KvmConsole> consoles =
+          KvmConsole.fromManager(body, managerId: 'BMC');
+      final List<String> consoleTypes =
+          consoles.expand((KvmConsole c) => c.connectTypesSupported).toList();
+
+      // The graphical console card shows the single "OEM" type and the generic
+      // OEM console card advertises no types, so the capability card must show
+      // exactly the same set rather than a second case-different chip.
+      expect(consoleTypes, <String>['OEM']);
+      expect(capability.connectTypes, consoleTypes);
+    });
+  });
 }

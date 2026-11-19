@@ -10304,3 +10304,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — connectTypes skip-disabled-block fix)
+
+## 2026-11-19 00:10 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — two complementary, dependency-free, TLS-safe correctness fixes preserved across a mid-run OpenCode server restart. (1) `KvmCapability._aggregateConnectTypes` appended its `'Oem'` display marker with a case-sensitive `types.contains('Oem')`, violating the documented case-insensitive dedup contract: a BMC advertising the valid canonical Redfish `'OEM'` ConnectType alongside an OEM console rendered two chips (`OEM` + `Oem`) on the capability card while the per-console card showed one. The marker is now appended only when no block already advertised an OEM type in any casing (`type.toUpperCase() == 'OEM'`), so the BMC-provided spelling is kept once. (2) `KvmService._fetchManagerBodies` aborted the whole `/redfish/v1/Managers` walk on any single 404 member body (a stale/removed manager link), blanking the gated KVM screen even though healthy managers exposed launchable consoles; a `RedfishException` with `statusCode == 404` is now skipped while auth (401/403) and every other failure is rethrown. Added 7 RED→GREEN tests (4 model — 3 confirmed RED pre-fix with `Expected: ['OEM'] Actual: ['OEM', 'Oem']`; 1 capability-card widget — RED pre-fix; 2 service tests over a new `kvm_stale_manager_mockup` fixture). Baseline analyze 0 / 1064 passed / 1 skipped → verify analyze 0 / 1071 passed / 1 skipped (+7); DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.2% / scoped 90.4% / kvm 92.8%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose genuine correctness defects over manufactured churn: #009's/#021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation, so the honest unblocked work was (a) making the capability card's connection-type row honour its own documented case-insensitive dedup contract — `'OEM'` is a canonical Redfish ConnectType, so a second `'Oem'` marker chip is a real duplicate — and (b) making manager discovery resilient to a single stale 404 member without masking auth failures. Both are pure Dart + doc comments, read-only, no WebView/protocol dependency and no production TLS change. The 404 branch only skips a dead member body; it makes no new wire calls and rethrows 401/403/other errors so auth problems are never hidden. Full emulator re-run (85/85) because `lib/` changed.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. audit the capability card / manager walk for malformed non-map payload gaps, or epic-triage/split the WebView-blocked rendering work), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — Oem marker case-insensitive dedup + stale 404 manager member resilience)

@@ -100,7 +100,10 @@ class KvmService {
   ///
   /// Shared by [fetchConsoles] and [fetchCapabilities] so both views stay in
   /// sync. Surfaces a friendly [RedfishException] when not connected and
-  /// normalises transport errors.
+  /// normalises transport errors. A single member that answers 404 (a stale /
+  /// removed manager link, common on hot-swap or transient BMC states) is
+  /// skipped so one dead link cannot blank the whole KVM screen; auth errors
+  /// (401/403) and every other failure still propagate (issue #009).
   Future<List<({String managerId, Map<String, dynamic> body})>>
       _fetchManagerBodies() async {
     final RedfishClient? c = client;
@@ -122,7 +125,20 @@ class KvmService {
       for (final dynamic entry in members) {
         final String? managerUri = _memberUri(entry);
         if (managerUri == null || managerUri.isEmpty) continue;
-        final Map<String, dynamic> body = await c.getJson(managerUri);
+
+        final Map<String, dynamic> body;
+        try {
+          body = await c.getJson(managerUri);
+        } on RedfishException catch (e) {
+          // A stale/deleted member (404) is not a failure of discovery — the
+          // other, healthy managers still expose consoles the operator can use.
+          // Skipping it keeps both KVM views populated instead of blanking the
+          // gated screen on one dead link (issue #009). Auth failures (401/403)
+          // and all other errors are rethrown so they are never masked as a
+          // missing optional sub-resource.
+          if (e.statusCode == 404) continue;
+          rethrow;
+        }
         final String managerId = _managerId(body, managerUri);
         managers.add((managerId: managerId, body: body));
       }

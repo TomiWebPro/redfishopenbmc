@@ -50,10 +50,12 @@ class KvmCapability {
   /// `'Oem'` when an OEM console is detected. Order is deterministic (graphical
   /// first, then serial, then remote, then the OEM marker) and duplicates are removed
   /// case-insensitively (a BMC that mixes casing across console blocks must
-  /// not render the same type twice on the capability card). When built via
-  /// [fromManager], types from an explicitly disabled console block are skipped
-  /// while any non-disabled block advertises a type — matching the
-  /// enabled-preference of [uri] and [maxSessions] (issue #009).
+  /// not render the same type twice on the capability card). The `'Oem'` marker
+  /// is deduped case-insensitively against a literal `'OEM'` ConnectType too, so
+  /// a BMC that already advertises that canonical value gets a single chip.
+  /// When built via [fromManager], types from an explicitly disabled console
+  /// block are skipped while any non-disabled block advertises a type — matching
+  /// the enabled-preference of [uri] and [maxSessions] (issue #009).
   final List<String> connectTypes;
 
   /// Whether any standard console block (graphical, serial or remote) reports
@@ -353,7 +355,16 @@ class KvmCapability {
         _appendTypes(types, block);
       }
     }
-    if (oemConsole && !types.contains('Oem')) types.add('Oem');
+    // The 'Oem' marker is a display chip, not a distinct Redfish ConnectType:
+    // 'OEM' is itself a valid canonical value a BMC may advertise in
+    // ConnectTypesSupported. Append the marker only when no block already
+    // advertised an OEM type in any casing, so the capability card never
+    // renders two case-different OEM chips where the per-console card shows one
+    // — keeping the documented case-insensitive dedup contract (issue #009).
+    if (oemConsole &&
+        !types.any((String type) => type.toUpperCase() == 'OEM')) {
+      types.add('Oem');
+    }
     return types;
   }
 

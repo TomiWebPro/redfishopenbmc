@@ -351,4 +351,58 @@ void main() {
       expect(KvmService.pickPrimary(const <KvmConsole>[]), isNull);
     });
   });
+
+  group('KvmService stale manager member resilience (#009)', () {
+    late MockRedfishServer server;
+
+    setUpAll(() async {
+      // The Managers collection has one healthy manager (BMC) and one stale
+      // member (STALE) whose body file is intentionally absent — the mock
+      // server answers 404 for it, as a real BMC does for a removed manager.
+      server = await MockRedfishServer(
+        fixturesDir: 'test/fixtures/redfish/kvm_stale_manager_mockup',
+      ).start();
+    });
+
+    tearDownAll(() async {
+      await server.close();
+    });
+
+    // RED proof: a single 404 manager member aborted the whole walk, so both
+    // fetchConsoles and fetchCapabilities threw and the gated KVM screen was
+    // blanked even though the healthy manager exposed a launchable console.
+    test('fetchConsoles skips a 404 manager member and keeps healthy consoles',
+        () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+
+      expect(consoles, isNotEmpty);
+      expect(consoles.every((KvmConsole c) => c.managerId == 'BMC'), isTrue);
+      expect(
+        consoles.any((KvmConsole c) =>
+            c.type == KvmConsoleType.graphical && c.canOpenConsole),
+        isTrue,
+      );
+    });
+
+    test(
+        'fetchCapabilities skips a 404 manager member and keeps the healthy capability',
+        () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+
+      expect(capabilities, hasLength(1));
+      expect(capabilities.single.managerId, 'BMC');
+      expect(capabilities.single.supported, isTrue);
+      expect(capabilities.single.hasUri, isTrue);
+    });
+  });
 }

@@ -484,6 +484,34 @@ void main() {
       expect(find.text(_sessionNote), findsNothing);
     });
 
+    testWidgets(
+        'capability card does not duplicate a literal OEM type as an Oem '
+        'marker chip (#009)', (WidgetTester tester) async {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['OEM'],
+          },
+          'Oem': <String, dynamic>{
+            'KVM': <String, dynamic>{'Uri': 'https://bmc.example/kvm'},
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      await pumpView(
+        tester,
+        capabilities: <KvmCapability>[capability],
+        kvm: true,
+      );
+
+      expect(find.text('OEM'), findsOneWidget);
+      expect(find.text('Oem'), findsNothing,
+          reason: 'the case-insensitive dedup must not render a second chip');
+      expect(find.bySemanticsLabel('Connection types: OEM'), findsOneWidget);
+    });
+
     for (final double width in <double>[320, 800, 1300]) {
       testWidgets(
           'capability section renders without overflow at '
