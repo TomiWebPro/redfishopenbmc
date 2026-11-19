@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 55 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (66 across the platform
+consume; today it locks the fallback behaviour with 61 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (72 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -172,6 +172,18 @@ Invariants, enforced by tests:
    self-signed acceptance on a spoofed/mismatched host. Each fails closed in
    the authority; encoded forms in the path/query and punycode ASCII hosts
    stay launchable, no valid target lost.
+   **IDNA middle-dot confusable rejection:** the confusable set also covers the
+   classic IDNA2003/nameprep middle-dot family that a decode+IDNA launcher maps
+   to the domain-label dot ('.'): U+00B7 MIDDLE DOT (`%C2%B7`) and U+0387 GREEK
+   ANO TELEIA (`%CE%87`, NFKC -> U+00B7). Both are Unicode category Po
+   (punctuation), so neither the Separator/Other (C/Z) rule nor the NFKC-based
+   confusable mappings catch them. `Uri.tryParse` keeps each escape encoded and
+   reports a non-empty HTTPS host, yet a decode+IDNA launcher resolves
+   `bmc.example%C2%B7evil.com` as `bmc.example.evil.com` — a parser-differential
+   host-spoofing vector that under a stale flag + test opt-in could reach in-app
+   rendering and self-signed acceptance on a spoofed/mismatched host. Both fail
+   closed in the authority; encoded forms in the path/query and punycode ASCII
+   hosts stay launchable, no valid target lost.
    **Degenerate dot-host rejection:** `Uri.tryParse` reports a label-less host
    made only of dots (`https://./console`, `https://../console`) as an HTTPS
    URI with a non-empty host, so the bare scheme+host re-check calls it
@@ -189,7 +201,7 @@ Invariants, enforced by tests:
    authority-delimiter + encoded control-octet + encoded Unicode
    separator/invisible + encoded compatibility-confusable delimiter + extended
    compatibility-confusable delimiter + IDNA dot-confusable rejection +
-   degenerate dot-host rejection).
+   IDNA middle-dot confusable rejection + degenerate dot-host rejection).
 
 ## What remains gated (not done here)
 

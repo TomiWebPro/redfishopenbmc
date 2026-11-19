@@ -362,8 +362,10 @@ bool _hasEncodedUnicodeControlOrSeparator(String uri) {
 /// forms, the "small" forms (U+FE52 '.'/U+FE55 ':'/U+FE68 '\'/U+FE6B '@' ...),
 /// the vertical presentation forms (U+FE13 ':'/U+FE47 '[' ...), the dot
 /// leaders / ellipses (U+2024 '.'/U+2025 '..'/U+2026 '...'), the CJK/halfwidth
-/// IDNA dot confusables (U+3002/U+FF61 -> '.', U+2E3C -> '..'), the numeric
-/// "full stop" forms (U+2488..U+249B, U+1F100) and squared/fractional forms
+/// IDNA dot confusables (U+3002/U+FF61 -> '.', U+2E3C -> '..'), the IDNA2003
+/// nameprep middle-dot family (U+00B7/U+0387 -> '.', category Po so the C/Z
+/// rule misses them), the numeric "full stop" forms (U+2488..U+249B, U+1F100)
+/// and squared/fractional forms
 /// whose NFKC expansion embeds a delimiter (e.g. U+2100 'a/c', U+33C2
 /// 'a.m.'). Missing any one of these leaves the same parser-differential hole
 /// the fullwidth forms already close, so every member fails closed in the
@@ -395,6 +397,14 @@ const Set<int> _compatibilityDelimiterCodePoints = <int>{
   0x3002, // IDEOGRAPHIC FULL STOP                      -> '.' (IDNA)
   0xFF61, // HALFWIDTH IDEOGRAPHIC FULL STOP            -> '.' (IDNA)
   0x2E3C, // TWO DOT LEADER (NFKC -> two U+2024)        -> '..'
+  // IDNA middle-dot confusables (nameprep / IDNA2003) -> the domain-label
+  // dot '.'. These are Unicode category Po (punctuation), so neither the
+  // Separator/Other (C/Z) rule nor the NFKC-based mappings catch them, yet a
+  // decode+IDNA launcher resolves e.g. `bmc.example%C2%B7evil.com` as
+  // `bmc.example.evil.com` — a host-spoofing parser differential. GREEK ANO
+  // TELEIA NFKC-normalises to U+00B7 MIDDLE DOT, so both map to '.'.
+  0x00B7, // MIDDLE DOT                                 -> '.' (nameprep/IDNA2003)
+  0x0387, // GREEK ANO TELEIA (NFKC -> U+00B7)          -> '.' (nameprep/IDNA2003)
   // "Small" ASCII look-alikes -> the ASCII delimiter.
   0xFE52, // SMALL FULL STOP                            -> '.'
   0xFE55, // SMALL COLON                                -> ':'
