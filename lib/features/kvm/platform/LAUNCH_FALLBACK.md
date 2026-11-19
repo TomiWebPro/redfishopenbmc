@@ -13,7 +13,7 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 14 targeted tests.
+consume; today it locks the fallback behaviour with 18 targeted tests.
 
 ## Decision contract (`planConsoleLaunch`)
 
@@ -49,8 +49,13 @@ Invariants, enforced by tests:
    `https://bmc.example::443/`) URI fails closed to `copyOnly` — even under the
    test opt-in — so such targets can never be rendered in-app or receive
    self-signed acceptance. Legitimate userinfo/port URIs still pass.
-   Covered by 6 targeted tests (including malformed-authority parity with the
-   model's `Uri.tryParse` contract).
+   **Control-character rejection:** `Uri.tryParse` percent-encodes C0/DEL
+   controls (CR, LF, NUL, TAB, DEL) rather than rejecting them, so such a URI
+   would otherwise pass the syntactic re-check; these now fail closed
+   (stricter than the model, never more permissive) to block launcher
+   URI/header injection and self-signed acceptance on malformed targets.
+   Legitimate userinfo/port URIs are unaffected. Covered by 9 targeted tests
+   (malformed-authority parity + control-character rejection).
 
 ## What remains gated (not done here)
 
