@@ -7,6 +7,7 @@ import 'package:redfishopenbmc/features/kvm/kvm_service.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
 import 'package:redfishopenbmc/features/kvm/views/kvm_capability_card.dart';
+import 'package:redfishopenbmc/features/kvm/views/kvm_transport_notice.dart';
 import 'package:redfishopenbmc/features/kvm/views/kvm_view.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
@@ -56,8 +57,9 @@ const KvmCapability _insecureCapability = KvmCapability(
   sourceManagerUri: '/redfish/v1/Managers/BMC7',
 );
 
-const String _sessionNote =
-    'Console persists until manager timeout — close tab to disconnect';
+// RU-2: derive from the single shared constant so the test and the view can
+// never drift apart on the exact session-persistence wording.
+const String _sessionNote = kvmSessionPersistenceNotice;
 
 Future<void> pumpView(
   WidgetTester tester, {
@@ -137,13 +139,10 @@ void main() {
 
       expect(find.text('Service enabled: No'), findsOneWidget);
       expect(find.text('Supported'), findsNothing);
-      expect(find.textContaining('KVM disabled on BMC'), findsOneWidget);
-      expect(
-        find.bySemanticsLabel(
-          'KVM disabled on BMC. Enable the console service in the BMC settings.',
-        ),
-        findsOneWidget,
-      );
+      // RU-2: the disabled helper's visible text equals its merged announced
+      // label, sourced from one shared constant.
+      expect(find.text(kvmDisabledOnBmcNotice), findsOneWidget);
+      expect(find.bySemanticsLabel(kvmDisabledOnBmcNotice), findsOneWidget);
       expect(find.text('No console URI resolved. Source:'), findsOneWidget);
       expect(find.text('/redfish/v1/Managers/BMC2'), findsOneWidget);
       expect(find.text('Resolved URI:'), findsNothing);

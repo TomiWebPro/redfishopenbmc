@@ -229,10 +229,9 @@ class _KvmViewState extends ConsumerState<KvmView> {
         Semantics(
           container: true,
           excludeSemantics: true,
-          label: 'Console persists until manager timeout — close tab to '
-              'disconnect',
+          label: kvmSessionPersistenceNotice,
           child: Text(
-            'Console persists until manager timeout — close tab to disconnect',
+            kvmSessionPersistenceNotice,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),

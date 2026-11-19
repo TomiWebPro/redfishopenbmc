@@ -1383,5 +1383,51 @@ void main() {
       expect(find.textContaining('No direct console URI'), findsOneWidget);
       expect(find.textContaining('/redfish/v1/Managers/BMC'), findsOneWidget);
     });
+
+    testWidgets(
+        'the viewer repeats the session-persistence notice with visible text '
+        'equal to the announced label (#009 / RU-2)', (tester) async {
+      await pumpViewer(
+        tester,
+        const KvmConsole(
+          type: KvmConsoleType.graphical,
+          managerId: 'BMC',
+          connectTypesSupported: <String>['KVMIP'],
+          serviceEnabled: true,
+          connectUri: 'https://bmc.example.com/kvm',
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        ),
+      );
+
+      // One merged Semantics node whose label is exactly the visible text, so
+      // a screen reader drilling into a console hears the same session-persistence
+      // guidance the gated list view shows (single shared constant — RU-2).
+      expect(
+          find.bySemanticsLabel(kvmSessionPersistenceNotice), findsOneWidget);
+      expect(find.text(kvmSessionPersistenceNotice), findsOneWidget);
+    });
+
+    testWidgets(
+        'session-persistence notice does not overflow at 320 px '
+        '(#009 / RU-2)', (tester) async {
+      tester.view.physicalSize = const Size(320, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await pumpViewer(
+        tester,
+        const KvmConsole(
+          type: KvmConsoleType.remote,
+          managerId: 'BMC',
+          connectTypesSupported: <String>['HTML5'],
+          serviceEnabled: true,
+          connectUri: 'https://bmc.example.com/kvm',
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(
+          find.bySemanticsLabel(kvmSessionPersistenceNotice), findsOneWidget);
+    });
   });
 }

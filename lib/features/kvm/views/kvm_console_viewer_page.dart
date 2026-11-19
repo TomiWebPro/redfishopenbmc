@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
+import 'package:redfishopenbmc/features/kvm/views/kvm_transport_notice.dart';
 
 /// In-app console viewer scaffold for a [KvmConsole] (issue #021).
 ///
@@ -131,6 +132,24 @@ class KvmConsoleViewerPage extends StatelessWidget {
                       ),
                     ),
                   ],
+                  // RU-2 / #009: the deepest console surface carries the same
+                  // session-persistence guidance as the gated list view, via
+                  // one shared constant so the visible text and the merged
+                  // announced label can never drift from the list view. A
+                  // screen-reader user who drills into a console still hears
+                  // that the session outlives the tab until manager timeout.
+                  const SizedBox(height: 12),
+                  Semantics(
+                    container: true,
+                    excludeSemantics: true,
+                    label: kvmSessionPersistenceNotice,
+                    child: Text(
+                      kvmSessionPersistenceNotice,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

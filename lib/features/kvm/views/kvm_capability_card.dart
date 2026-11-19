@@ -207,8 +207,7 @@ class KvmCapabilityCard extends StatelessWidget {
               Semantics(
                 container: true,
                 excludeSemantics: true,
-                label: 'KVM disabled on BMC. Enable the console service in the '
-                    'BMC settings.',
+                label: kvmDisabledOnBmcNotice,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
@@ -216,8 +215,7 @@ class KvmCapabilityCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'KVM disabled on BMC. Enable the console service in the '
-                        'BMC settings.',
+                        kvmDisabledOnBmcNotice,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: scheme.error,
                         ),

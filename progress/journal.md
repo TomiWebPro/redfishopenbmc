@@ -10687,3 +10687,20 @@
 **Next:** Verify push settled; the next `rf-platform-check` PASS gates the subsequent platform commit. No new dev work by rf-gate.
 
 **Issues touched:** none (merge-only gate; #009 / #021 remain open under redfish-automation).
+
+## 2026-11-19 — agent:redfish-automation — #009/#021
+
+**Done:**
+- FEATURE #009 (smallest open ID) / #021 — RU-2 dept slice (`queues/ui.md`), genuine cross-surface a11y consistency fix. The "Console persists until manager timeout — close tab to disconnect" session notice lived only on the gated list view (`kvm_view.dart`), so a screen-reader operator who drilled into the per-console viewer lost it; the "KVM disabled on BMC..." helper was a duplicated literal in the capability card. Extracted both into single shared constants in `kvm_transport_notice.dart` (`kvmSessionPersistenceNotice`, `kvmDisabledOnBmcNotice`) and rendered the session notice on `KvmConsoleViewerPage` as one merged `excludeSemantics` node (visible text == announced label), so list view / capability card / viewer announce identical wording. +2 viewer widget tests (1 behavioral confirmed RED pre-fix via a temporary in-place probe substitution of the notice string, restored after; 1 320 px no-overflow); capability-card test switched to the shared constants with exact visible==label assertions. Baseline analyze 0 / 1183 passed / 1 skipped → verify analyze 0 / 1185 passed / 1 skipped; DMTF emulator 85/85 (lib changed — §1.4 gate met); issues validate OK; git diff --check clean. Issues stay OPEN (remaining work tracked as unblocked dept slices in `queues/*.md`).
+
+**Decisions:**
+- Extended the existing shared-copy pattern (established for `kvmInsecureTransportNotice`) to the two session/enablement notices rather than adding a new mechanism, so all KVM cross-surface strings have one source of truth. The viewer notice is display-only — it opens no URL, adds no dependency and never weakens production TLS.
+- Confirmed the behavioral test genuinely fails pre-fix by temporarily substituting the notice constant out of the viewer (test failed on the merged-semantics assertion), then restoring the exact original text — no probe residue left in the tree.
+- The concurrent `rf-gate` merge of `build/rf-platform` (malformed-percent fix `97ba24c` → merge `2a727a1`, chore record `5abc82b`) concluded and its verification finished before this run's edits began; no shared-tree collision. Untracked `testing/` harness dir and pre-existing stash left untouched.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` for #009/#021 (EP-M2/RM-1/RM-2 model, EP-S1/EP-S2 service, EP-P3 platform, EP-T4 tooling) — genuine tested dependency-free increments only; never verification-only churn.
+- Do NOT add a WebView/url_launcher dependency unattended (EP-P2/EP-T2/EP-U2 deferred on manual per-target validation); never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — RU-2 session/disabled a11y notices), #021 (open — viewer session-persistence notice)

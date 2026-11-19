@@ -12,6 +12,14 @@
 ///
 /// This is pure presentation copy: it opens no URL and never changes transport
 /// security (production TLS is never weakened).
+///
+/// The same single-source-of-truth approach is used for the two session/
+/// enablement notices that appear on more than one KVM surface (RU-2):
+/// [kvmSessionPersistenceNotice] and [kvmDisabledOnBmcNotice]. Keeping each of
+/// those strings in one place guarantees a screen reader hears identical
+/// wording on every surface that shows it — the gated list view, the
+/// per-manager capability card and the per-console viewer — with visible text
+/// always equal to the merged `excludeSemantics` label.
 library;
 
 /// The single visible + announced string for a plaintext-HTTP console URI
@@ -20,3 +28,19 @@ library;
 const String kvmInsecureTransportNotice =
     'Unencrypted HTTP console URI. Configure the BMC console to use HTTPS '
     'before opening it in a browser.';
+
+/// The single visible + announced string for the session-persistence notice.
+///
+/// A BMC console session outlives the app's backgrounding and persists until
+/// the manager's own timeout, so the operator is told to close the tab to
+/// disconnect. Shown on the gated KVM list view and on the per-console viewer
+/// (issue #009; RU-2 cross-surface a11y consistency).
+const String kvmSessionPersistenceNotice =
+    'Console persists until manager timeout — close tab to disconnect';
+
+/// The single visible + announced string for a disabled KVM service.
+///
+/// Shown by the per-manager capability card when the manager reports no
+/// enabled console (issue #009; RU-2 cross-surface a11y consistency).
+const String kvmDisabledOnBmcNotice =
+    'KVM disabled on BMC. Enable the console service in the BMC settings.';
