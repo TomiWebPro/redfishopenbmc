@@ -5,6 +5,21 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-19 12:37 UTC: slices the still-open fullscreen/session portion of the
+     #009 rendering epic into an unblocked UI item (EP-U1 is the scaffold/disclosure note; this is
+     the session-lifecycle wiring). No WebView, no url_launcher, no Redfish call. -->
+
+- [ ] EP-U4 Final-route fullscreen session lifecycle: wire `KvmConsoleViewerPage`'s fullscreen/back
+      flow to the pure-UI `KvmSessionController` so entering fullscreen marks the session active
+      (`activeManagerId` / `connectedSince`) and back/exit calls `disconnect()`; add one a11y
+      "connected · disconnect" disclosure (visible text == announced Semantics, merged `excludeSemantics`
+      node) and 320/800/1300 no-overflow. No WebView/url_launcher import, no TLS change, no Redfish
+      call.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_session_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof; visible text == announced Semantics + 320/800/1300
+              no-overflow; writes limited to `lib/features/kvm/views/**`; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate re-split 2026-11-19 08:34 UTC: EP-P1 RESOLVED (no embedded WebView; external-browser +
      copy is final). EP-U2 is DEFERRED pending manual per-target validation evidence — do NOT pick it
      up unattended. New head-first, unblocked, dependency-free, TLS-safe UI slices of #009/#021. -->

@@ -6,6 +6,27 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-19 12:37 UTC: slices the remaining blocked/epic work in issues
+     #009/#021 and the FUTUREWORK "Blocked / needs a human" section into unblocked dept items.
+     EP-P1/EP-P3 are now DONE in-tree (WEBVIEW_TLS_MATRIX.md + LAUNCH_FALLBACK.md exist); this is
+     the human-gate / validation-evidence closeout of the "[!] KVM webview/native console" blocker.
+     No dependency, no production TLS change, no WebView import. -->
+
+- [ ] EP-P4 Human-gated validation-evidence checklist for revisiting in-app rendering (closeout of
+      FUTUREWORK "[!] KVM webview/native console — may require a platform plugin and manual device
+      validation; document the decision before adding dependencies"). The no-embedded-WebView
+      decision is already recorded in `WEBVIEW_TLS_MATRIX.md` / `LAUNCH_FALLBACK.md`; extend the
+      platform docs with a concrete per-target (Linux/desktop/mobile) evidence checklist that must be
+      satisfied BEFORE any `webview_flutter` / `url_launcher` dependency or test-only TLS opt-in is
+      added (WebView availability, self-signed BMC cert handling without weakening production TLS,
+      CSP/mixed-content, fullscreen + input forwarding) plus an explicit human-approval gate. Add a
+      pure-Dart guard test asserting product `lib/` imports no WebView/protocol plugin. No dependency,
+      no production TLS behaviour change.
+      Dept: rf-platform
+      Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues);
+              `git diff --exit-code -- pubspec.yaml` (no dependency bump); writes limited to
+              `lib/features/kvm/platform/**`.
+
 <!-- rf-ideate re-split 2026-11-19 08:34 UTC: EP-P1 (this dept's unblocker) is RESOLVED — the
      WEBVIEW_TLS_MATRIX decision is no embedded WebView on the available target; external-browser +
      copy is the final route. EP-P2 is therefore DEFERRED pending manual per-target validation

@@ -5,6 +5,20 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-19 12:37 UTC: slices the FUTUREWORK "Blocked / needs a human"
+     "[!] Live BMC integration — requires real credentials/network; never attempt in the unattended
+     job. Keep the live-BMC test skipped" blocker into a tooling guard. Pure CI/test work, no lib/. -->
+
+- [ ] EP-T6 CI/pure-Dart guard that the blocked live-BMC epic stays unattended-safe: assert the DMTF
+      emulator / live-BMC integration tests remain skipped unless an explicit env var supplies a real
+      emulator URL/credentials (the existing `REDFISH_EMULATOR_URL` skip contract), that plain
+      `flutter test` needs no BMC network or credentials, and document the human opt-in in
+      `DEVELOPMENT.md`. Never enable live-BMC in the scheduler; no product `lib/` code.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/ && flutter analyze` (0 issues), with a new guard test pinning
+              the skip-without-env contract (RED→GREEN proof); writes limited to `test/**`, `tool/**`,
+              `.github/workflows/**`, `DEVELOPMENT.md`; never `lib/`.
+
 <!-- rf-ideate re-split 2026-11-19 08:34 UTC: EP-P1 RESOLVED (external-browser + copy is the final
      route). EP-T2 (dependency scaffolding) is DEFERRED pending manual validation evidence — do NOT
      add a WebView/url_launcher dependency unattended. New head-first fixture + guard slices. -->
