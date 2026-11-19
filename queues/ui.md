@@ -5,6 +5,19 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate re-split 2026-11-19 08:34 UTC: EP-P1 RESOLVED (no embedded WebView; external-browser +
+     copy is final). EP-U2 is DEFERRED pending manual per-target validation evidence — do NOT pick it
+     up unattended. New head-first, unblocked, dependency-free, TLS-safe UI slices of #009/#021. -->
+
+- [ ] EP-U3 Launch-guidance consistency for the final external-browser + copy route across the
+      viewer and capability card: one shared, tested guidance string so a secure-HTTPS console says
+      "open via BMC web UI", a plaintext-HTTP console gets only the "configure HTTPS" warning, and an
+      external-client console shows its protocol guidance — identical visible text == announced
+      Semantics on both surfaces at 320/800/1300. No WebView import in the product build.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_widget_test.dart && flutter analyze` (0 issues);
+              merged a11y + 320/800/1300 no-overflow; writes limited to `lib/features/kvm/views/**`.
+
 <!-- Epic split of #009/#021 (rf-ideate, 2026-11-19 04:31 UTC): in-app console rendering UI.
      Unblocked scaffolds first; embed gated on EP-P1. Every item carries the mandatory
      Dept:/Verify: fields (MULTI_DEPT hard rule #4). Legacy RU-1 is refined by EP-U1. -->

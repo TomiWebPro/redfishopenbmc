@@ -6,6 +6,20 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate re-split 2026-11-19 08:34 UTC: EP-P1 (this dept's unblocker) is RESOLVED — the
+     WEBVIEW_TLS_MATRIX decision is no embedded WebView on the available target; external-browser +
+     copy is the final route. EP-P2 is therefore DEFERRED pending manual per-target validation
+     evidence — do NOT proceed unattended. New head-first closeout slice. -->
+
+- [ ] EP-P3 Finalize the no-WebView fallback contract (EP-P1 closeout): pin a production-default
+      route-table test in the existing pure helpers — disabled → copyOnly, plaintext HTTP → copyOnly
+      (never external open), secure HTTPS → externalBrowser, flag-off copy fallback byte-for-byte, no
+      plaintext downgrade — and record the resolved decision in `LAUNCH_FALLBACK.md`. No dependency,
+      no production TLS change.
+      Dept: rf-platform
+      Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues);
+              `git diff --exit-code -- pubspec.yaml`; writes limited to `lib/features/kvm/platform/**`.
+
 <!-- Epic split of #009/#021 (rf-ideate, 2026-11-19 04:31 UTC): in-app console rendering.
      EP-P1 is THE unblocker and gates EP-P2 / EP-U2 / EP-T2. Every item carries the mandatory
      Dept:/Verify: fields (MULTI_DEPT hard rule #4). Legacy RP-1/RP-2 are refined by EP-P1/EP-P2. -->

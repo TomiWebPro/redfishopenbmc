@@ -5,6 +5,18 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate re-split 2026-11-19 08:34 UTC: EP-P1 RESOLVED (external-browser + copy is the final
+     render route; no WebView). New head-first, unblocked, dependency-free, TLS-safe service slice. -->
+
+- [ ] EP-S2 Primary-console selection for the final external-browser route: `KvmService.pickPrimary`
+      / `fetchPrimaryConsole` should prefer a secure-HTTPS console as the recommended external-open
+      target and never badge a disabled, plaintext-HTTP or external-client-only console as primary
+      when a secure one exists; RED→GREEN service tests. No wire/TLS change.
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_service_test.dart && flutter analyze` (0 issues),
+              with RED→GREEN proof; writes limited to `lib/features/kvm/kvm_service.dart` + service
+              tests under `test/features/kvm/`.
+
 <!-- Epic split of #009/#021 (rf-ideate, 2026-11-19 04:31 UTC): launch-selection logic.
      Unblocked, no dependency. Every item carries the mandatory Dept:/Verify: fields
      (MULTI_DEPT hard rule #4). Legacy RS-1 is refined by EP-S1. -->
