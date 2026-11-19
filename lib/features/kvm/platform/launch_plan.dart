@@ -86,14 +86,25 @@ class KvmConsoleLaunchPlan {
 /// permissive, so no valid (properly encoded) target is lost. Non-ASCII
 /// characters outside those categories (e.g. an emoji in the path) remain
 /// launchable.
-final RegExp _rawUriForbiddenChars = RegExp(r'[\p{C}\p{Z}]', unicode: true);
+///
+/// Raw backslash (U+005C) is rejected for the same reason: it is not a legal
+/// URI character (RFC 3986; a literal backslash must be `%5C`), but
+/// `Uri.tryParse` folds `\` into `/`, so e.g.
+/// `https://bmc.example\@evil.com/console` parses with the *trusted* host
+/// `bmc.example` while a launcher that does not fold backslashes may resolve a
+/// different authority. Under a stale secure flag + test opt-in that parser
+/// differential could grant in-app rendering and self-signed acceptance on a
+/// malformed/spoofed authority. Rejecting raw backslashes loses no valid target
+/// (a literal backslash must be `%5C`, which stays launchable).
+final RegExp _rawUriForbiddenChars = RegExp(r'[\\\p{C}\p{Z}]', unicode: true);
 
 bool _uriHasSecureHttpsTarget(String? uri) {
   if (uri == null) return false;
   final String trimmed = uri.trim();
   if (trimmed.isEmpty) return false;
-  // Reject any raw separator or control/format/invisible code point. These are
-  // never legal unescaped in a URI; `%20`/`%XX` sequences contain none of them.
+  // Reject any raw separator, control/format/invisible code point, or raw
+  // backslash (delimiter/authority confusion). None are legal unescaped in a
+  // URI; `%20`/`%5C`/`%XX` escapes contain none of them and stay launchable.
   if (_rawUriForbiddenChars.hasMatch(trimmed)) return false;
   final Uri? parsed = Uri.tryParse(trimmed);
   return parsed != null &&

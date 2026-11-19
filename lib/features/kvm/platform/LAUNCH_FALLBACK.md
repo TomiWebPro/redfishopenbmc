@@ -62,7 +62,7 @@ Invariants, enforced by tests:
    they are rejected outright alongside C0/DEL controls — stricter than the
    model, never more permissive; legitimate `%20`-encoded URIs stay launchable.
    **Unicode separator/invisible rejection:** the check is now a principled
-   Unicode-category rule (`RegExp(r'[\p{C}\p{Z}]', unicode: true)`), not just an
+   Unicode-category rule (`RegExp(r'[\\\p{C}\p{Z}]', unicode: true)`), not just an
    ASCII scan. `Uri.tryParse` also silently percent-encodes Unicode separators
    and format/invisible characters (NBSP `U+00A0`, zero-width space, line
    separator, ideographic space, BOM) into the host/path; an embedded one is not
@@ -71,9 +71,17 @@ Invariants, enforced by tests:
    host. All Unicode `Separator` (Z) and `Other` (C) code points are rejected
    raw; non-ASCII characters outside those categories (e.g. an emoji in the
    path) stay launchable, so no properly encoded target is lost.
-   Legitimate userinfo/port URIs are unaffected. Covered by 13 targeted tests
+   **Raw-backslash rejection:** a raw `\` is not a legal URI character
+   (RFC 3986; a literal backslash must be `%5C`), but `Uri.tryParse` folds it to
+   `/`, so `https://bmc.example\@evil.com/console` parses with the *trusted*
+   host `bmc.example` while a launcher that does not fold backslashes may
+   resolve a different authority. Under a stale flag + test opt-in that parser
+   differential could grant in-app rendering and self-signed acceptance on a
+   malformed/spoofed authority. Raw backslashes are rejected outright — a
+   properly encoded `%5C` stays launchable, so no valid target is lost.
+   Legitimate userinfo/port URIs are unaffected. Covered by 16 targeted tests
    (malformed-authority parity + control-character + raw-space +
-   Unicode-whitespace/invisible rejection).
+   Unicode-whitespace/invisible + raw-backslash rejection).
 
 ## What remains gated (not done here)
 
