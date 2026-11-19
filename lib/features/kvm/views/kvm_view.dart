@@ -477,7 +477,13 @@ class _ConsoleCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: <Widget>[
-                if (launchUri != null)
+                // UI-2 / #009: gate the launch affordance on the model's single
+                // source of truth, not just the presence of a URI. A BMC can
+                // publish a ConnectUri while reporting ServiceEnabled: false —
+                // canOpenConsole is false (launchStrategy == disabled) and the
+                // viewer refuses to launch it, so offering "Open console" here
+                // would be a dead-end action. The URI stays visible/copyable.
+                if (console.canOpenConsole)
                   FilledButton.icon(
                     onPressed: () {
                       Navigator.of(context).push(

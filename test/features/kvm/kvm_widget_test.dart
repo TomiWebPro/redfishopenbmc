@@ -780,6 +780,47 @@ void main() {
       );
       expect(find.text('Open console'), findsOneWidget);
     });
+
+    testWidgets(
+        'a disabled console with a connect URI does not offer an actionable '
+        '"Open console" (#009/#021)', (WidgetTester tester) async {
+      // A BMC can report ServiceEnabled: false yet still publish a ConnectUri.
+      // The model already reports canOpenConsole == false for that console (its
+      // launchStrategy is `disabled`) and the viewer refuses to launch a
+      // disabled service, so the card must not offer an "Open console" action
+      // that only leads to a dead-end explanation. The URI stays visible and
+      // copyable — only the launch affordance is gated.
+      const KvmConsole disabledWithUri = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: 'BMC',
+        connectTypesSupported: <String>['KVMIP'],
+        serviceEnabled: false,
+        connectUri: 'https://bmc.example/kvm',
+        sourceManagerUri: '/redfish/v1/Managers/BMC',
+      );
+      expect(disabledWithUri.canOpenConsole, isFalse);
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(consoles: <KvmConsole>[disabledWithUri]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The URI is still shown and copyable, but the launch affordance is gated
+      // on canOpenConsole so a disabled service cannot be offered as openable.
+      expect(
+        find.bySemanticsLabel('Connect URI: https://bmc.example/kvm'),
+        findsOneWidget,
+      );
+      expect(find.text('Copy connect info'), findsOneWidget);
+      expect(find.text('Open console'), findsNothing);
+    });
   });
 
   group('KvmView — responsive layout (UI-3)', () {

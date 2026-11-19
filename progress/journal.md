@@ -10399,3 +10399,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — manager-id `@odata.id` fallback normalization)
+
+## 2026-11-19 02:41 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009/#021 (smallest open issue ID #009) — genuine, dependency-free, TLS-safe cross-view launch-affordance fix. The console card's "Open console" action was gated only on `launchUri != null`, but a BMC may publish a `ConnectUri` while reporting `ServiceEnabled: false`: the model's `canOpenConsole` was already false (`launchStrategy == disabled`), `pickPrimary` would not badge it primary, and the viewer refused to launch it — yet the card offered an actionable button leading only to a dead-end "disabled on BMC" explanation. `_ConsoleCard` now gates the launch button on `console.canOpenConsole`; the URI row + "Copy connect info" stay available so the endpoint remains usable externally. Added 1 RED→GREEN widget test (RED: found 1 "Open console" on a disabled console with a URI) and corrected the `canOpenConsole` doc. Baseline analyze 0 / 1098 passed / 1 skipped → verify analyze 0 / 1099 passed / 1 skipped (+1); DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.4% / scoped 90.4% / kvm 94.2%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Gated on `KvmConsole.canOpenConsole` (the existing single source of truth shared with `pickPrimary`) rather than adding a new predicate, so the card, primary badge and viewer can no longer disagree about whether a console is openable. Pure widget change + doc + test; no WebView/protocol dependency, no production TLS change. Full emulator re-run (85/85) because `lib/` changed.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. cross-view launch-strategy / secure-transport gaps in the capability card + viewer, or wiring the merged `webview_policy.dart` `resolveRenderRoute` pure helper), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — cross-view launch affordance), #021 (open — viewer launch gating)
