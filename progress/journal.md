@@ -10651,3 +10651,13 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — fail-closed launcher/copy target), #021 (open — control-safe console copy target)
+
+## 2026-11-19 — agent:redfish-gate — MERGE c939597
+
+**Done:** Sole-merger gate. `rf-platform-check` run#7695 (started 08:40:41 UTC, ~85 s after builder HEAD `c939597` at 08:39:19 UTC) returned PASS on the single pending commit beyond `main` (analyze 0, targeted `launch_plan_test.dart` 41/41 incl. 4 new RFC-3986 unwise-char cases, no production-TLS weakening, path-contained under `lib/features/kvm/platform/**` + `test/**`, no dependency changes). Merged `build/rf-platform` into `main` via `--no-ff` → merge `5c99995`. Resolved 3 conflicts preserving both sides: main's shared-classifier refactor (`String?`-returning `_controlSafeTrimmedUri` / `_isHttpUriWithSchemes`, the launcher/copy-target control-safety group) and the branch's RFC-3986 unwise-char regex superset in `_rawUriForbiddenChars`, both test groups and both doc intents. Post-merge verify in-tree at `5c99995` (clean except pre-existing untracked `testing/`): `flutter analyze` 0; full `flutter test --coverage` 1174 passed / 1 skipped; coverage gates PASS overall 89.5% / scoped 90.4% / kvm 94.8%; `issues.py validate` OK; `git diff --check` clean. Pushed `main` 268fd30..5c99995.
+
+**Decisions:** Kept main's single shared control-safety gate and folded the branch's RFC-3986 unwise-char rejection into the same `_rawUriForbiddenChars` RegExp, so all HTTP(S) transport classifiers and the launch-plan decision layer apply one identical fail-closed rule (stricter only for illegal raw chars — properly percent-encoded targets stay launchable; no production TLS weakened, no valid target lost). Merged both additive test groups rather than dropping either. DMTF emulator 85-test suite not required: the change is a dependency-free regex hardening in a decision helper with no wire/transport/fixture/tool change. No new dev work by rf-gate.
+
+**Next:** Verify push settled; the next `rf-platform-check` PASS gates the subsequent platform commit. No new dev work by rf-gate.
+
+**Issues touched:** none (merge-only gate; #009 / #021 remain open under redfish-automation).
