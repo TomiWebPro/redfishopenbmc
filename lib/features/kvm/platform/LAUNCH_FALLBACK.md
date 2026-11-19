@@ -44,24 +44,26 @@ Invariants, enforced by tests:
    launchable target — it always degrades to `copyOnly` even when its URI is
    HTTPS, keeping the decision layer in lockstep with
    `KvmConsole.canOpenConsole` and the card/viewer gating.
-4. **Scheme + host re-validation (defense in depth).** `hasSecureUri` alone is
-   never trusted for a TLS-sensitive decision: the raw URI string must also be
-   an HTTPS URL with a non-empty host (mirroring `hasSecureLaunchUri`).
-   Re-validation uses the same `Uri.tryParse` + `scheme == 'https'` + non-empty
-   `host` check as the model, so it can never be more permissive than
-   production. A stale/incorrect secure flag paired with a plaintext `http://`,
-   non-HTTPS, host-less (`https:///console`, `https://?q`, `https://#f`,
-   `https://user@/`), or malformed-authority (`https://bmc.example:notaport/`,
-   `https://bmc.example::443/`) URI fails closed to `copyOnly` — even under the
+4. **Scheme + host + control-char re-validation (defense in depth).**
+   `hasSecureUri` alone is never trusted for a TLS-sensitive decision: the raw
+   URI string must also be an HTTPS URL with a non-empty host and no embedded
+   control characters. One shared pure classifier — `isSecureHttpsConsoleUri`
+   — is now used by the decision layer here AND by
+   `KvmConsole.hasSecureLaunchUri` / `KvmCapability.hasSecureLaunchUri`, so the
+   console card's "Open console" affordance can never disagree with the launch
+   plan about a malformed target. It uses `Uri.tryParse` + `scheme == 'https'`
+   + non-empty `host` (a hand-rolled authority scan could call a malformed port
+   "secure") and rejects C0/DEL controls, which `Uri.tryParse` silently
+   percent-encodes. A stale/incorrect secure flag paired with a plaintext
+   `http://`, non-HTTPS, host-less (`https:///console`, `https://?q`,
+   `https://#f`, `https://user@/`), malformed-authority
+   (`https://bmc.example:notaport/`, `https://bmc.example::443/`) or
+   CRLF/NUL/TAB/DEL-bearing URI fails closed to `copyOnly` — even under the
    test opt-in — so such targets can never be rendered in-app or receive
-   self-signed acceptance. Legitimate userinfo/port URIs still pass.
-   **Control-character rejection:** `Uri.tryParse` percent-encodes C0/DEL
-   controls (CR, LF, NUL, TAB, DEL) rather than rejecting them, so such a URI
-   would otherwise pass the syntactic re-check; these now fail closed
-   (stricter than the model, never more permissive) to block launcher
-   URI/header injection and self-signed acceptance on malformed targets.
-   Legitimate userinfo/port URIs are unaffected. Covered by 9 targeted tests
-   (malformed-authority parity + control-character rejection).
+   self-signed acceptance. Legitimate userinfo/port URIs still pass. This can
+   only tighten classification, so no valid HTTPS endpoint is lost. Covered by
+   targeted tests in `launch_plan_test.dart`, `kvm_model_test.dart` and
+   `kvm_capability_test.dart`.
 
 ## What remains gated (not done here)
 

@@ -198,16 +198,18 @@ class KvmConsole {
         parsed.host.isNotEmpty;
   }
 
-  /// Whether [launchUri] uses HTTPS (TLS-encrypted) with a non-empty host.
+  /// Whether [launchUri] is a genuine HTTPS (TLS-encrypted) target with a
+  /// non-empty host and no embedded control characters.
   ///
   /// In-app console rendering must never downgrade a BMC console to plaintext;
   /// only a TLS-encrypted URI is eligible (issue #021 — never weaken TLS).
-  bool get hasSecureLaunchUri {
-    final String? uri = launchUri;
-    if (uri == null || uri.isEmpty) return false;
-    final Uri? parsed = Uri.tryParse(uri);
-    return parsed != null && parsed.scheme == 'https' && parsed.host.isNotEmpty;
-  }
+  /// Uses the same [isSecureHttpsConsoleUri] classifier as the fail-closed
+  /// launch plan, so the card's "Open console" affordance can never disagree
+  /// with [launchPlan] about a CRLF/NUL-bearing or otherwise malformed target
+  /// (`Uri.tryParse` alone silently percent-encodes control characters and
+  /// would call such a URI secure). This can only tighten classification — no
+  /// valid HTTPS endpoint is lost.
+  bool get hasSecureLaunchUri => isSecureHttpsConsoleUri(launchUri);
 
   /// Whether [launchUri] uses plaintext HTTP (unencrypted transport).
   ///

@@ -887,6 +887,26 @@ void main() {
       expect(find.byIcon(Icons.lock_open_outlined), findsNothing);
     });
 
+    testWidgets(
+        'a control-char-bearing HTTPS URI offers no "Open console" action — '
+        'the card agrees with the fail-closed launch plan (#009/#021)',
+        (tester) async {
+      // Uri.tryParse percent-encodes CRLF/NUL and still reports HTTPS + a host,
+      // so a naive classifier would offer "Open console" for a target the
+      // decision layer refuses to launch (copy-only) and that risks URI
+      // injection. The card gates on canOpenConsole, which now uses the shared
+      // secure classifier, so the two surfaces agree.
+      await pumpCard(
+          tester, console(uri: 'https://bmc.example/kvm\r\nX-Injected: 1'));
+
+      expect(find.text('Open console'), findsNothing);
+      // Fail closed, not hidden: the endpoint stays visible and copyable for
+      // external use.
+      expect(find.text('Copy connect info'), findsOneWidget);
+      // Not a plaintext-HTTP console, so no unencrypted-transport warning.
+      expect(find.text(kvmInsecureTransportNotice), findsNothing);
+    });
+
     for (final double width in <double>[320, 800, 1300]) {
       testWidgets(
           'plaintext-HTTP warning card renders without overflow at '

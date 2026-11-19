@@ -10513,3 +10513,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — console-card transport safety), #021 (open — plaintext-HTTP warning parity)
+
+## 2026-11-19 — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open ID) / #021 — genuine, dependency-free, TLS-safe cross-view secure-URI classification fix. The fail-closed `launch_plan.dart` already rejected C0/DEL control-character URIs (CRLF/NUL/TAB/DEL — `Uri.tryParse` percent-encodes them), but both model classifiers (`KvmConsole.hasSecureLaunchUri` / `KvmCapability.hasSecureLaunchUri`) used bare `Uri.tryParse` + https + host, so a CRLF/NUL-bearing HTTPS `ConnectUri` was called "secure" → "Open console" offered, while `launchPlan` failed closed to `copyOnly`. Extracted one shared public pure classifier `isSecureHttpsConsoleUri` (in `launch_plan.dart`) and pointed both getters at it, so the UI can never disagree with the decision layer. +5 RED→GREEN tests (2 model confirmed RED pre-fix: `Expected: false / Actual: <true>` on `hasSecureLaunchUri`); baseline analyze 0 / 1131 passed / 1 skipped → verify analyze 0 / 1136 passed / 1 skipped; DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.5% / scoped 90.4% / kvm 94.8%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- One shared classifier is the single source of truth for "genuinely secure HTTPS target", used by the decision layer and both models — a CRLF/NUL-bearing target can no longer be secure on one surface and refused on another. Strictly tightens classification (valid HTTPS endpoints unaffected), so no TLS weakening and no dependency. The console card withholds "Open console" for such a target but keeps the URI visible/copyable (fail closed, not hidden). Full emulator re-run because `lib/` changed.
+
+**Next:**
+- Remaining #009/#021 boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. extend the shared classifier to plaintext-HTTP / `hasHttpLaunchUri` parity, epic-triage/split the WebView work, or a cross-view disabled-helper / session-note copy consistency fix), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — shared secure-URI classifier parity), #021 (open — secure-URI classification parity)

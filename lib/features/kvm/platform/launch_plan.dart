@@ -49,32 +49,35 @@ class KvmConsoleLaunchPlan {
   bool get isCopyOnly => route == KvmConsoleRenderRoute.copyOnly;
 }
 
-/// Returns `true` only when [uri] is an HTTPS URI with a non-empty host.
+/// Returns `true` only when [uri] is an HTTPS URI with a non-empty host and no
+/// embedded control characters.
 ///
-/// Defense in depth: the caller-supplied `hasSecureUri` signal may be stale or
+/// This is the single source of truth for "is this a genuinely secure HTTPS
+/// console target", shared by the fail-closed launch decision layer here and
+/// the `KvmConsole` / `KvmCapability` model transport classifiers. Because all
+/// three call the same pure function, the UI's "is this console secure /
+/// openable" decision can never disagree with the launch plan about a
+/// malformed target.
+///
+/// Defense in depth: a caller-supplied `hasSecureUri` signal may be stale or
 /// inaccurate, so the raw URI string is independently checked before any
 /// security-sensitive decision (in-app rendering / self-signed acceptance).
 ///
-/// This uses the very same parser as the `KvmConsole.hasSecureLaunchUri`
-/// contract it mirrors (`Uri.tryParse` + `scheme == 'https'` + non-empty
-/// `host`), so the re-validation can never be more permissive than production.
-/// A hand-rolled authority scan is deliberately avoided: it can call a
-/// malformed target "secure" (e.g. an invalid/duplicated port such as
-/// `https://bmc.example:notaport/console`) that `Uri.tryParse` rejects, which
-/// under a stale secure flag could reach in-app self-signed acceptance.
+/// `Uri.tryParse` is used deliberately rather than a hand-rolled authority scan,
+/// which can call a malformed target "secure" (e.g. an invalid/duplicated port
+/// such as `https://bmc.example:notaport/console`) that `Uri.tryParse` rejects
+/// — under a stale secure flag that could reach in-app self-signed acceptance.
 /// Host-less forms such as `https:///console`, `https://?q`, `https://#f` and
 /// `https://user@/` also fail closed. Scheme matching is case-insensitive
 /// (Dart normalises it), and legitimate userinfo/port URIs remain secure.
 ///
-/// Fail-closed hardening beyond parity: `Uri.tryParse` silently
-/// percent-encodes C0/DEL control characters (e.g. CR, LF, NUL, TAB) into the
-/// host/path rather than rejecting them, so a purely syntactic
-/// `scheme == 'https' && host.isNotEmpty` check can call such a target
-/// "secure". Handing a CRLF/NUL-bearing URI to a launcher risks header/URI
-/// injection, and under a stale secure flag + test opt-in it could also gain
-/// self-signed acceptance. Such URIs are rejected outright; this is stricter
-/// than the model but never more permissive, so no valid target is lost.
-bool _uriHasSecureHttpsTarget(String? uri) {
+/// `Uri.tryParse` silently percent-encodes C0/DEL control characters (CR, LF,
+/// NUL, TAB, DEL) into the host/path rather than rejecting them, so a purely
+/// syntactic `scheme == 'https' && host.isNotEmpty` check would call such a
+/// target "secure". A CRLF/NUL-bearing URI risks header/URI injection, so it is
+/// rejected outright. This can only make classification stricter, so no valid
+/// HTTPS endpoint is lost.
+bool isSecureHttpsConsoleUri(String? uri) {
   if (uri == null) return false;
   final String trimmed = uri.trim();
   if (trimmed.isEmpty) return false;
@@ -118,7 +121,7 @@ KvmConsoleLaunchPlan planConsoleLaunch({
   // URI to actually be an HTTPS URL with a host, so an inaccurate/stale signal
   // fails closed instead of enabling in-app self-signed acceptance on plaintext
   // or a host-less URI.
-  final bool effectiveSecure = hasSecureUri && _uriHasSecureHttpsTarget(uri);
+  final bool effectiveSecure = hasSecureUri && isSecureHttpsConsoleUri(uri);
 
   final KvmConsoleRenderRoute route = resolveRenderRoute(
     policy: policy,

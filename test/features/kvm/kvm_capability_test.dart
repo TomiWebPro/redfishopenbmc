@@ -1472,4 +1472,38 @@ void main() {
       }
     });
   });
+
+  group(
+      'KvmCapability control-character URI is never classified as secure '
+      '(#009/#021)', () {
+    KvmCapability cap(String? uri) => KvmCapability(
+          managerId: 'BMC',
+          supported: true,
+          connectTypes: const <String>['HTML5'],
+          serviceEnabled: true,
+          uri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+
+    // The capability card and the console card must agree on what a "secure"
+    // resolved endpoint is. `Uri.tryParse` percent-encodes C0/DEL control chars
+    // and still reports HTTPS + a host, so without the shared classifier this
+    // getter called a CRLF/NUL-bearing endpoint secure while the fail-closed
+    // launch plan refused it.
+    test('a control-char-bearing HTTPS URI is not classified as secure', () {
+      for (final String uri in <String>[
+        'https://bmc.example/con\r\nsol',
+        'https://bmc.example/con\u0000sol',
+        'https://bmc.example/con\tsol',
+        'https://bmc.exa\nmple/console',
+      ]) {
+        expect(cap(uri).hasSecureLaunchUri, isFalse, reason: uri);
+      }
+    });
+
+    test('a clean HTTPS URI is still classified as secure (guard)', () {
+      expect(cap('https://bmc.example/kvm').hasSecureLaunchUri, isTrue);
+      expect(cap('https://bmc.example:8443/kvm').hasSecureLaunchUri, isTrue);
+    });
+  });
 }

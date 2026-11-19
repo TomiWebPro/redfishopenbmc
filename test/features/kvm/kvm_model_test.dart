@@ -1035,4 +1035,51 @@ void main() {
       }
     });
   });
+
+  group(
+      'KvmConsole control-character URI is never a secure launch target '
+      '(#009/#021)', () {
+    KvmConsole consoleWith(String uri) => KvmConsole(
+          type: KvmConsoleType.remote,
+          managerId: 'BMC',
+          connectTypesSupported: const <String>['HTML5'],
+          serviceEnabled: true,
+          connectUri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+
+    // C0/DEL control characters inside a URI are malformed BMC data.
+    // `Uri.tryParse` silently percent-encodes them and still reports
+    // scheme=https + a non-empty host, so the model used to classify such a
+    // target as secure and offer "Open console" — while the fail-closed launch
+    // plan already refused to launch it. A CRLF/NUL-bearing target also risks
+    // header/URI injection. The model and the decision layer must agree.
+    test('a control-char-bearing HTTPS URI is never secure or openable', () {
+      for (final String uri in <String>[
+        'https://bmc.example/con\nsol', // LF
+        'https://bmc.example/con\r\nsol', // CRLF
+        'https://bmc.example/con\u0000sol', // NUL
+        'https://bmc.example/con\tsol', // TAB
+        'https://bmc.example/con\u007Fsol', // DEL
+        'https://bmc.exa\nmple/console', // control char in host
+      ]) {
+        final KvmConsole console = consoleWith(uri);
+        expect(console.hasSecureLaunchUri, isFalse, reason: uri);
+        expect(console.canLaunchInAppHtml5, isFalse, reason: uri);
+        expect(console.launchStrategy, KvmLaunchStrategy.noUri, reason: uri);
+        expect(console.canOpenConsole, isFalse, reason: uri);
+        // The fail-closed decision layer already agrees: no launchable route.
+        expect(console.launchPlan.route, KvmConsoleRenderRoute.copyOnly,
+            reason: uri);
+      }
+    });
+
+    test('a clean HTTPS URI is still a secure, openable target (guard)', () {
+      final KvmConsole console = consoleWith('https://bmc.example/kvm');
+      expect(console.hasSecureLaunchUri, isTrue);
+      expect(console.canLaunchInAppHtml5, isTrue);
+      expect(console.canOpenConsole, isTrue);
+      expect(console.launchStrategy, KvmLaunchStrategy.inAppHtml5);
+    });
+  });
 }

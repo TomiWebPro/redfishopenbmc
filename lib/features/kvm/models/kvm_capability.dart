@@ -12,6 +12,7 @@
 library;
 
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart';
+import 'package:redfishopenbmc/features/kvm/platform/launch_plan.dart';
 import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
 
 /// Immutable summary of the remote-console capability of one manager.
@@ -104,21 +105,20 @@ class KvmCapability {
   /// notice. Mirrors `KvmConsole.launchUri` so both KVM views agree (issue #009).
   bool get hasUri => launchUri != null;
 
-  /// Whether [launchUri] uses HTTPS (TLS-encrypted) with a non-empty host.
+  /// Whether [launchUri] is a genuine HTTPS (TLS-encrypted) target with a
+  /// non-empty host and no embedded control characters.
   ///
   /// Mirrors `KvmConsole.hasSecureLaunchUri` so the capability card can tell a
   /// TLS-protected resolved endpoint from an unencrypted one. In-app rendering
   /// must never downgrade a BMC console to plaintext (issue #021 — never weaken
   /// TLS), and the capability card surfaces the resolved endpoint to the
   /// operator, so it needs the same transport classification as the console
-  /// card / viewer. A Redfish `@odata.id` resource path has no scheme and is
-  /// therefore neither secure nor insecure HTTP.
-  bool get hasSecureLaunchUri {
-    final String? uri = launchUri;
-    if (uri == null || uri.isEmpty) return false;
-    final Uri? parsed = Uri.tryParse(uri);
-    return parsed != null && parsed.scheme == 'https' && parsed.host.isNotEmpty;
-  }
+  /// card / viewer. Both models and the fail-closed launch plan share
+  /// [isSecureHttpsConsoleUri], so a CRLF/NUL-bearing (or otherwise malformed)
+  /// target can never be called secure on one surface and refused on another.
+  /// A Redfish `@odata.id` resource path has no scheme and is therefore neither
+  /// secure nor insecure HTTP.
+  bool get hasSecureLaunchUri => isSecureHttpsConsoleUri(launchUri);
 
   /// Whether [launchUri] uses plaintext HTTP (unencrypted transport).
   ///
