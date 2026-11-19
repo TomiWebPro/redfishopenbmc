@@ -10750,3 +10750,17 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — OEM console enablement), #021 (open — disabled OEM console launch affordance)
+
+## 2026-11-19 — agent:rf-gate (sole merger)
+
+**Done:**
+- MERGED `build/rf-platform` commit `8afa0b4` into `main` via `--no-ff` (merge `a1a2367`) after `rf-platform-check` run#8075 PASS (exit 0; check started 11:57:31 UTC, ~95 s after builder produced tip `8afa0b4` at 11:55:56 UTC; analyze 0; targeted `launch_plan_test.dart` 52/52 incl. 5 new percent-encoded authority-delimiter cases; no production-TLS weakening; path-contained under `lib/features/kvm/platform/**` + `test/**`; no dependency changes). Branch based on `0966397` (already merged via `ee6faab`); main had since advanced with FEATURE #009/#021 OEM-enablement + fail-closed-launch work (`f0e73b9`), causing conflicts in `launch_plan.dart` + `LAUNCH_FALLBACK.md` + `launch_plan_test.dart`. Resolution folded the branch's `_encodedAuthorityDelimiter` regex + `_authorityHasEncodedDelimiter` helper into main's shared `_controlSafeTrimmedUri` gate (returns `null`, matching the other checks) so all HTTP(S) classifiers and the launch-plan target refuse an encoded structural delimiter in the authority identically, preserving BOTH main's public-classifier refactor + launcher/copy-target control-safety test group AND the branch's host-confusion hardening; authority-scoped so encoded delimiters in path/query and valid pct-encoded host bytes stay launchable. All test groups and both doc intents retained, doc counts updated to 52/64. Post-merge verify at `a1a2367` (clean except pre-existing untracked `testing/`): analyze 0; full `flutter test --coverage` 1207 passed / 1 skipped (+5); coverage gates PASS overall 89.7% / scoped 90.4% / kvm 95.7%; `issues.py validate` OK; `git diff --check` clean. DMTF emulator skipped — dependency-free decision-helper-only change (no wire/transport/fixture/tool change).
+
+**Decisions:**
+- Followed established rf-gate precedent (merges `ee6faab`, `2a727a1`, `5c99995`, etc.): faithfully folded the branch's new hardening into main's single shared `_controlSafeTrimmedUri` gate rather than dropping it — the PASS verdict was on the isolated tip, and the full post-merge suite is the safety net (green). The check returns `null` like every other gate in that function, so the launcher/copy target and all three HTTP(S) classifiers cannot disagree about an encoded-delimiter authority.
+- Kept main's `_isHttpUriWithSchemes` generic structure and its launcher/copy-target + classifier-agreement test groups (the stale branch lacked them); kept the branch's 5 new encoded-delimiter tests (auto-merged, non-conflicting). No production TLS weakened, no dependency/wire change.
+
+**Next:**
+- `rf-platform` should rebase `build/rf-platform` onto current `main` before its next commit — the drift past `0966397` caused these three-file conflicts.
+
+**Issues touched:** none (platform launch-plan defense-in-depth hardening; #009/#021 remain open)
