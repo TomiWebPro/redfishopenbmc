@@ -734,6 +734,58 @@ void main() {
       expect(consoles[1].maxConcurrentSessions, 4);
     });
 
+    test('integral JSON double MaxConcurrentSessions is preserved (#009)', () {
+      // Some BMC serializers emit integer-valued schema fields as JSON doubles
+      // (e.g. nlohmann/jsona style "4.0"). dart:convert decodes that to a
+      // `double`, which the old int-only parser silently dropped — losing the
+      // session limit on the console card. It is a spec-valid count, so it must
+      // be tolerated exactly like an `int` 4 (issues #009/#021).
+      final KvmConsole console = KvmConsole.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'MaxConcurrentSessions': 4.0,
+          },
+        },
+        managerId: 'BMC',
+      ).single;
+      expect(console.maxConcurrentSessions, 4);
+    });
+
+    test('non-integral JSON double session limit is unreported (#009)', () {
+      // A fractional count is out of spec (MaxConcurrentSessions is an integer
+      // with minimum 0). Tolerating integral doubles must NOT admit 2.5.
+      final KvmConsole console = KvmConsole.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'MaxConcurrentSessions': 2.5,
+          },
+        },
+        managerId: 'BMC',
+      ).single;
+      expect(console.maxConcurrentSessions, isNull);
+    });
+
+    test('both KVM views agree on an integral double session limit (#009)', () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+          'MaxConcurrentSessions': 3.0,
+        },
+      };
+      final KvmConsole console =
+          KvmConsole.fromManager(body, managerId: 'BMC').single;
+      final KvmCapability capability =
+          KvmCapability.fromManager(body, managerId: 'BMC');
+      expect(console.maxConcurrentSessions, 3);
+      expect(capability.maxSessions, 3);
+      expect(console.maxConcurrentSessions, capability.maxSessions);
+    });
+
     test(
         'console card and capability card agree on rejecting a negative limit '
         '(#009)', () {

@@ -10975,3 +10975,20 @@
 - Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-19 — agent:redfish-automation — #009 / #021 (RM-2-adjacent session-limit parsing)
+
+**Done:**
+- RM-2-adjacent dept slice from `queues/model.md` (shared with #021). Both KVM views parsed `MaxConcurrentSessions` with two near-identical private parsers that silently dropped a spec-valid integer-valued JSON number emitted as a double (`4.0`), losing the "Max sessions" value on both the per-console card and the capability card. Extracted one pure `kvmSessionLimit(Object?)` helper (new `lib/features/kvm/models/kvm_session_limit.dart`, exported from the barrel), pointed both views at it, and removed the duplicated parsers. The helper tolerates an integral, finite, exactly-representable double (and numeric-string form) while rejecting fractional / non-finite / >2^53 doubles, negatives, blank/non-numeric strings and other types. 4 behavioral RED→GREEN assertions confirmed pre-fix (`Expected: 4 / Actual: <null>` on both cards; cross-view `Expected: 3 / Actual: <null>`); +11 tests total (6 pure helper + 5 model/capability). Baseline analyze 0 / 1278 passed / 1 skipped → verify analyze 0 / 1289 passed / 1 skipped; DMTF emulator 85/85 (`lib/` changed — §1.4 gate met); issues validate OK; git diff --check clean. No issue closed.
+
+**Decisions:**
+- One shared pure parser is the single source of truth for both cards' session limit, so a future tolerance change cannot drift between views (the two old helpers' doc comments already claimed to "mirror" each other). Tolerating an integral double only widens acceptance of spec-valid counts; out-of-spec / non-integral / non-finite values are surfaced as unreported, never as a bogus chip.
+- Pure model parsing: no dependency, no wire/request/payload/transport change, no production TLS weakening. Both issues stay OPEN — embedded HTML5 rendering, fullscreen and input forwarding remain externally blocked on platform WebView + BMC self-signed/TLS validation.
+- Emulator re-run because `lib/` changed (§1.4); server stopped via script trap, test-only self-signed cert.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` (EP-M1 URI-scheme edges, RM-2 non-map payload tolerance, EP-S1 service launch edges, EP-U1 fullscreen scaffold, EP-T4/EP-T6 tooling) — genuine tested dependency-free increments only.
+- Never add a WebView/url_launcher dependency unattended; never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

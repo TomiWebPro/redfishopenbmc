@@ -7,6 +7,7 @@ export 'models/kvm_capability.dart';
 export 'models/kvm_models.dart';
 export 'models/kvm_oem_registry.dart';
 export 'models/kvm_oem_uri.dart';
+export 'models/kvm_session_limit.dart';
 export 'platform/launch_plan.dart';
 export 'platform/webview_policy.dart';
 export 'views/kvm_capability_card.dart';

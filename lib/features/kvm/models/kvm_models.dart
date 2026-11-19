@@ -9,6 +9,7 @@ library;
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_registry.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart'
     show kvmOemConsoleEnabled, kvmOemConsoleUri;
+import 'package:redfishopenbmc/features/kvm/models/kvm_session_limit.dart';
 import 'package:redfishopenbmc/features/kvm/platform/launch_plan.dart';
 import 'package:redfishopenbmc/features/kvm/platform/webview_policy.dart';
 import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
@@ -156,6 +157,11 @@ class KvmConsole {
   /// The maximum number of concurrent sessions (`MaxConcurrentSessions`),
   /// or `null` when the BMC does not report it or reports an out-of-spec
   /// (negative) value — DMTF `Manager` defines a minimum of 0 (issue #009).
+  ///
+  /// Parsed through the shared [kvmSessionLimit] helper, so an integer-valued
+  /// JSON number emitted as a double (e.g. `4.0`) is tolerated exactly like an
+  /// `int` on both KVM views, and the capability card can never disagree about
+  /// the same BMC value.
   final int? maxConcurrentSessions;
 
   /// The connection URI to reach the console (`ConnectUri`), or `null` when the
@@ -487,7 +493,7 @@ class KvmConsole {
   }) {
     final List<String> types =
         _normalizedConnectTypes(block['ConnectTypesSupported']);
-    final int? maxSessions = _sessionLimit(block['MaxConcurrentSessions']);
+    final int? maxSessions = kvmSessionLimit(block['MaxConcurrentSessions']);
     final String? connectUri = _uriString(block['ConnectUri']);
     final bool enabled =
         block['ServiceEnabled'] == true || block['Enabled'] == true;
@@ -567,26 +573,6 @@ String? _uriString(Object? value) {
   if (value is! String) return null;
   final String trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;
-}
-
-/// Returns [value] as a spec-valid `MaxConcurrentSessions` limit, or `null`.
-///
-/// The DMTF `Manager` schema defines `MaxConcurrentSessions` with a minimum of
-/// 0 (`Manager.v1_19_0.json`). A negative value is out of spec (and is used by
-/// some BMCs as a sentinel for "unlimited"), so it is surfaced as unreported
-/// rather than rendering "Max concurrent sessions: -1" on the console card.
-/// This mirrors `KvmCapability._maxSessions` so the per-console and per-manager
-/// KVM views treat the same malformed value identically (issue #009).
-int? _sessionLimit(Object? value) {
-  final int? parsed;
-  if (value is int) {
-    parsed = value;
-  } else if (value is String) {
-    parsed = int.tryParse(value.trim());
-  } else {
-    parsed = null;
-  }
-  return (parsed == null || parsed < 0) ? null : parsed;
 }
 
 /// Builds a normalized [List<String>] of `ConnectTypesSupported` values from a

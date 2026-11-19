@@ -584,6 +584,40 @@ void main() {
       );
       expect(capability.maxSessions, 0);
     });
+
+    test('integral JSON double MaxConcurrentSessions is preserved (#009)', () {
+      // A BMC serializer emitting "2.0" for an integer-valued schema field
+      // must not silently lose the capability card's "Max sessions" value.
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'MaxConcurrentSessions': 2.0,
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(capability.maxSessions, 2);
+    });
+
+    test('negative integral double falls back to a valid serial limit (#009)',
+        () {
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'MaxConcurrentSessions': -1.0,
+          },
+          'SerialConsole': <String, dynamic>{
+            'MaxConcurrentSessions': 5.0,
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(capability.maxSessions, 5);
+    });
   });
 
   group('KvmCapability maxSessions skips disabled blocks (#009)', () {

@@ -13,6 +13,7 @@ library;
 
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart'
     show kvmOemConsoleEnabled, kvmOemConsoleUri;
+import 'package:redfishopenbmc/features/kvm/models/kvm_session_limit.dart';
 import 'package:redfishopenbmc/features/kvm/platform/launch_plan.dart';
 import 'package:redfishopenbmc/redfish/discovery/feature_rules.dart';
 
@@ -66,6 +67,10 @@ class KvmCapability {
 
   /// The maximum number of concurrent sessions, or `null` when unreported or
   /// out of spec (negative — DMTF `Manager` defines a minimum of 0).
+  ///
+  /// Parsed through the shared [kvmSessionLimit] helper so an integer-valued
+  /// JSON number emitted as a double (e.g. `4.0`) is tolerated on the capability
+  /// card exactly as it is on the per-console card (issue #009).
   final int? maxSessions;
 
   /// The resolved console URI: a standard console block's `ConnectUri`
@@ -456,27 +461,6 @@ class KvmCapability {
     }
   }
 
-  /// Reads a block's `MaxConcurrentSessions` as a spec-valid limit, or `null`.
-  ///
-  /// DMTF `Manager` defines `MaxConcurrentSessions` with a minimum of 0
-  /// (`Manager.v1_19_0.json`). A negative value is out of spec (and is used by
-  /// some BMCs as a sentinel for "unlimited"), so it is treated as unreported —
-  /// the capability card must not render "Max sessions: -1". This mirrors
-  /// `KvmConsole._sessionLimit` so both KVM views agree (issue #009).
-  static int? _maxSessions(Map<String, dynamic>? block) {
-    if (block == null) return null;
-    final dynamic value = block['MaxConcurrentSessions'];
-    final int? parsed;
-    if (value is int) {
-      parsed = value;
-    } else if (value is String) {
-      parsed = int.tryParse(value.trim());
-    } else {
-      parsed = null;
-    }
-    return (parsed == null || parsed < 0) ? null : parsed;
-  }
-
   /// Aggregates `MaxConcurrentSessions` across the standard console blocks
   /// (graphical → serial → remote), preferring a block that is not explicitly
   /// disabled.
@@ -503,7 +487,7 @@ class KvmCapability {
     for (final String name in names) {
       final Map<String, dynamic>? block = _consoleBlock(body, name);
       if (block == null || _explicitlyDisabled(block)) continue;
-      final int? limit = _maxSessions(block);
+      final int? limit = kvmSessionLimit(block['MaxConcurrentSessions']);
       if (limit != null) return limit;
     }
     // Fallback: when the only limit source is an explicitly disabled block,
@@ -512,7 +496,7 @@ class KvmCapability {
     for (final String name in names) {
       final Map<String, dynamic>? block = _consoleBlock(body, name);
       if (block == null) continue;
-      final int? limit = _maxSessions(block);
+      final int? limit = kvmSessionLimit(block['MaxConcurrentSessions']);
       if (limit != null) return limit;
     }
     return null;
