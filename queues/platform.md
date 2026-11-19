@@ -6,7 +6,9 @@ platform validation evidence.
 
 ## Backlog (head first)
 
-<!-- Epic split of #009/#021 (rf-ideate, 2026-11-19): in-app console rendering. EP-P1 is THE unblocker. Refines RP-1/RP-2. -->
+<!-- Epic split of #009/#021 (rf-ideate, 2026-11-19 04:31 UTC): in-app console rendering.
+     EP-P1 is THE unblocker and gates EP-P2 / EP-U2 / EP-T2. Every item carries the mandatory
+     Dept:/Verify: fields (MULTI_DEPT hard rule #4). Legacy RP-1/RP-2 are refined by EP-P1/EP-P2. -->
 
 - [ ] EP-P1 (UNBLOCKER) WebView/TLS validation matrix for in-app BMC console rendering — decide
       whether a platform WebView can render an HTTPS BMC console on each available target
@@ -16,19 +18,12 @@ platform validation evidence.
       Dept: rf-platform
       Verify: `test -f lib/features/kvm/platform/WEBVIEW_TLS_MATRIX.md && flutter analyze` (0 issues);
               `git diff --exit-code -- pubspec.yaml` (no dependency bump); no production TLS behaviour change.
+
 - [ ] EP-P2 (after EP-P1) Implement the EP-P1 opt-in platform WebView adapter under
       `lib/features/kvm/platform/**` (conditional import + test-only flag) with tests. The
       external-browser + copy fallback must keep working byte-for-byte with the flag off.
       Dept: rf-platform
       Verify: `flutter test test/features/kvm/ && flutter analyze` (0 issues); changed paths limited to
               `lib/features/kvm/platform/`; no `pubspec.yaml` change; no production TLS weakening.
-
-- [ ] RP-1 WebView/TLS validation matrix: can `webview_flutter` (or platform WebView) render an
-      HTTPS BMC console on the available Linux/desktop target? How are self-signed BMC certs
-      handled **without weakening production TLS**? Output: a doc matrix + reversible opt-in
-      design (per-profile/test-only flag), NOT a forced dependency bump.
-      Verify: matrix doc + `flutter analyze` 0; no `pubspec.yaml` change required in this item.
-- [ ] RP-2 (after RP-1): implement the RP-1 opt-in behind the flag with tests; document fallback
-      (external browser + copy path) which must keep working with the flag off.
 
 ## Log (one line per completed item: date + commit + note)
