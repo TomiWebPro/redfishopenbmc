@@ -11010,3 +11010,21 @@
 - Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-19 — agent:rf-gate — MERGED build/rf-platform (check#8635 PASS)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#8635 verdict `CHECK: PASS` (exit 0, started 19:08:08 UTC, branch HEAD `fefb8f9` verified unchanged since check). Merged `build/rf-platform` HEAD `fefb8f9` into `main` with `--no-ff` (this merge commit). Two branch-only commits vs merge-base `ceb9008`: `dffa04b` + `fefb8f9`, adding degenerate dot-only/no-label host fail-closed re-validation and IDNA middle-dot confusables (U+00B7 / U+0387) to the authority-scoped fail-closed launch-plan gate, +6 RED→GREEN tests. Check: analyze 0, targeted 61/61, no TLS weakening, path allowlist clean, no dependency changes.
+- Conflict resolution: main had refactored the branch's `_uriHasSecureHttpsTarget` into shared `_controlSafeTrimmedUri` + `_isHttpUriWithSchemes(schemes)`; preserved main's generalized-scheme classifier refactor AND carried the branch's `parsed.host.replaceAll('.', '').isEmpty` dot-host guard into `_isHttpUriWithSchemes`. Test file auto-merged (all 6 tests kept); `LAUNCH_FALLBACK.md` kept both new rationale paragraphs + expanded coverage group, counts 76 targeted / 88 platform.
+- Post-merge verify: `flutter analyze` 0; `flutter test --coverage` 1310 passed / 1 skipped (one transient `power_view_test.dart` parallel-load flake failed then passed isolated 4/4 + full re-run); three coverage gates PASS overall 89.9% / scoped 90.4% / kvm 96.4%; `issues.py validate` OK; `git diff --check` clean.
+
+**Decisions:**
+- Merged only because the latest check verdict was PASS and branch HEAD matched the verified commit. No production-TLS weakening; change is a dependency-free, fail-closed URI classifier — no wire/transport/fixture/tool change, so the DMTF 85-test emulator suite was skipped.
+- Conflict kept main's architecture (shared classifier gate + scheme parameter) and layered the branch's stricter dot-host guard on top; strictly tighter, no valid HTTPS target lost.
+
+**Next:**
+- Next rf-gate run: re-read `state rf-platform-check` for the newest verdict; merge only a PASS branch, otherwise NO-OP report.
+- Continue unblocked dept slices in `queues/*.md` for #009 (P3) / #021 (P2) via the build agent.
+- Never force-push; never weaken production TLS; DMTF re-run only on wire/fixture/tool change or >7 days.
+
+**Issues touched:** none (gate merge only); #009 / #021 remain open.

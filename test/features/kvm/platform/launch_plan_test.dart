@@ -1435,7 +1435,8 @@ void main() {
       }
     });
 
-    test('an extended confusable never reaches in-app under a strict opt-in', () {
+    test('an extended confusable never reaches in-app under a strict opt-in',
+        () {
       // Even without granting self-signed acceptance, a host carrying an
       // IDNA-confusable delimiter must not be rendered in-app by an
       // enabled+strict opt-in.
@@ -1477,8 +1478,7 @@ void main() {
     });
   });
 
-  group(
-      'planConsoleLaunch — defense in depth: IDNA dot-confusable rejection',
+  group('planConsoleLaunch — defense in depth: IDNA dot-confusable rejection',
       () {
     test(
         'percent-encoded CJK/halfwidth dot confusables fail closed with a stale flag',
@@ -1545,6 +1545,164 @@ void main() {
         'https://bmc.example/caf%C3%A9', // e-acute (Letter)
         'https://bmc.example/%F0%9F%98%80', // emoji (Symbol)
         'https://xn--bmc-esab.example/console', // punycode ASCII host
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
+
+  group(
+      'planConsoleLaunch — defense in depth: IDNA middle-dot confusable rejection',
+      () {
+    test(
+        'percent-encoded middle-dot dot confusables fail closed with a stale flag',
+        () {
+      // U+00B7 MIDDLE DOT and U+0387 GREEK ANO TELEIA are classic IDNA dot
+      // confusables: nameprep / IDNA2003 maps them to the domain-label dot
+      // ('.'), so a decode+IDNA launcher resolves a DIFFERENT authority —
+      // `bmc.example%C2%B7evil.com` -> `bmc.example.evil.com`. They are Unicode
+      // category Po (punctuation), so neither the Separator/Other rule nor the
+      // existing confusable set caught them. `Uri.tryParse` keeps each escape
+      // encoded and reports a non-empty HTTPS host, so a purely syntactic
+      // re-check calls such a target "secure"; under a stale secure flag +
+      // test opt-in it would reach in-app rendering and self-signed acceptance
+      // on a spoofed/mismatched host. They must fail closed.
+      for (final String uri in <String>[
+        'https://bmc.example%C2%B7evil.com/console', // U+00B7 MIDDLE DOT -> .
+        'https://bmc.example%c2%b7evil.com/console', // lowercase hex
+        'https://bmc.example%CE%87evil.com/console', // U+0387 GREEK ANO TELEIA -> .
+        'https://bmc%CE%87example.com/console', // ano teleia mid-host
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('a middle-dot confusable never reaches in-app under a strict opt-in',
+        () {
+      // Even without granting self-signed acceptance, a host carrying an IDNA
+      // middle-dot confusable must not be rendered in-app by an enabled+strict
+      // opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc.example%C2%B7evil.com/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('middle-dot confusables in the path stay launchable (authority-scoped)',
+        () {
+      // Guard against over-rejection: the rule is scoped to the authority (the
+      // TLS-sensitive part). A middle dot in the path/query cannot change which
+      // host is contacted, so it stays launchable via the external-browser
+      // fallback — no valid target lost, no TLS weakening.
+      for (final String uri in <String>[
+        'https://bmc.example/console%C2%B7one', // U+00B7 in path
+        'https://bmc.example/console%CE%87one', // U+0387 in path
+        'https://bmc.example/caf%C3%A9', // e-acute (Letter, not a confusable)
+        'https://xn--bmc-esab.example/console', // punycode ASCII host
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
+
+  group('planConsoleLaunch — defense in depth: degenerate dot-host rejection',
+      () {
+    test('an authority whose host is only dots fails closed with a stale flag',
+        () {
+      // `Uri.tryParse` reports a dot-only authority (e.g. `https://./`,
+      // `https://../`) as an HTTPS URI with a NON-EMPTY host, so the existing
+      // `scheme == 'https' && host.isNotEmpty` re-check calls it "secure".
+      // `Uri.tryParse` also decodes a percent-encoded dot (`%2E`) in the host
+      // into a literal '.', so `https://%2E%2E/console` reports host `..`.
+      // There is no real BMC host to talk to (no label at all); a launcher may
+      // resolve `..` as a relative/traversal path rather than a host. Under a
+      // stale secure flag + test opt-in such a target would otherwise reach
+      // in-app rendering and self-signed acceptance on a bogus host. Every
+      // dot-only / no-label host must fail closed.
+      for (final String uri in <String>[
+        'https://./console', // single dot
+        'https://../console', // double dot
+        'https://.../console', // triple dot
+        'https://./', // dot-only authority, no path
+        'https://%2E%2E/console', // percent-encoded dot -> '..'
+        'https://.%2E/console', // mixed encoded dot -> '..'
+        'https://%2e/console', // lowercase hex encoded dot
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('a dot-only host never reaches in-app under a strict opt-in', () {
+      // Even without granting self-signed acceptance, a dot-only / no-label
+      // authority must not be rendered in-app by an enabled+strict opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://../console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('real hosts (incl. trailing-dot FQDN) stay launchable', () {
+      // Guard against over-rejection: a host with at least one real label is
+      // valid, including the legitimate fully-qualified trailing-dot form and
+      // IPv6 literals (which contain no '.'). None may be dropped from the
+      // external-browser fallback (no valid target lost, no TLS weakening).
+      for (final String uri in <String>[
+        'https://bmc.example/console', // normal host
+        'https://bmc.example./console', // absolute FQDN trailing dot
+        'https://bmc.example:8443/console', // with port
+        'https://[::1]:8443/console', // IPv6 literal (no '.')
       ]) {
         final KvmConsoleLaunchPlan plan = planConsoleLaunch(
           policy: KvmWebViewPolicy.productionDefault,

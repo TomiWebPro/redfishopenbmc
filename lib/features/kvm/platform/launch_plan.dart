@@ -289,6 +289,19 @@ String? externalClientConsoleProtocol(String? uri) {
 /// points that normalise to a structural delimiter in the authority are
 /// rejected; encoded non-delimiter non-ASCII (e-acute, euro, emoji) and
 /// confusables in the path/query stay launchable, so no valid target is lost.
+///
+/// A degenerate, label-less authority is rejected for the same reason:
+/// `Uri.tryParse` reports a host made only of dots (`https://./console`,
+/// `https://../console`) as an HTTPS URI with a NON-EMPTY host, so the bare
+/// `scheme == 'https' && host.isNotEmpty` check calls it "secure". It also
+/// decodes a percent-encoded dot (`%2E`) in the host into a literal '.', so
+/// `https://%2E%2E/console` likewise reports host `..`. There is no real BMC
+/// host to contact (no DNS label at all), and a launcher may resolve `..` as a
+/// relative/traversal path rather than a host. Under a stale secure flag +
+/// test opt-in that could reach in-app rendering and self-signed acceptance on
+/// a bogus host. A host with no character other than '.' therefore fails
+/// closed; hosts with a real label (including an absolute FQDN trailing dot)
+/// and IPv6 literals stay launchable — no valid target lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -451,8 +464,10 @@ bool _hasEncodedUnicodeControlOrSeparator(String uri) {
 /// forms, the "small" forms (U+FE52 '.'/U+FE55 ':'/U+FE68 '\'/U+FE6B '@' ...),
 /// the vertical presentation forms (U+FE13 ':'/U+FE47 '[' ...), the dot
 /// leaders / ellipses (U+2024 '.'/U+2025 '..'/U+2026 '...'), the CJK/halfwidth
-/// IDNA dot confusables (U+3002/U+FF61 -> '.', U+2E3C -> '..'), the numeric
-/// "full stop" forms (U+2488..U+249B, U+1F100) and squared/fractional forms
+/// IDNA dot confusables (U+3002/U+FF61 -> '.', U+2E3C -> '..'), the IDNA2003
+/// nameprep middle-dot family (U+00B7/U+0387 -> '.', category Po so the C/Z
+/// rule misses them), the numeric "full stop" forms (U+2488..U+249B, U+1F100)
+/// and squared/fractional forms
 /// whose NFKC expansion embeds a delimiter (e.g. U+2100 'a/c', U+33C2
 /// 'a.m.'). Missing any one of these leaves the same parser-differential hole
 /// the fullwidth forms already close, so every member fails closed in the
@@ -484,6 +499,14 @@ const Set<int> _compatibilityDelimiterCodePoints = <int>{
   0x3002, // IDEOGRAPHIC FULL STOP                      -> '.' (IDNA)
   0xFF61, // HALFWIDTH IDEOGRAPHIC FULL STOP            -> '.' (IDNA)
   0x2E3C, // TWO DOT LEADER (NFKC -> two U+2024)        -> '..'
+  // IDNA middle-dot confusables (nameprep / IDNA2003) -> the domain-label
+  // dot '.'. These are Unicode category Po (punctuation), so neither the
+  // Separator/Other (C/Z) rule nor the NFKC-based mappings catch them, yet a
+  // decode+IDNA launcher resolves e.g. `bmc.example%C2%B7evil.com` as
+  // `bmc.example.evil.com` — a host-spoofing parser differential. GREEK ANO
+  // TELEIA NFKC-normalises to U+00B7 MIDDLE DOT, so both map to '.'.
+  0x00B7, // MIDDLE DOT                                 -> '.' (nameprep/IDNA2003)
+  0x0387, // GREEK ANO TELEIA (NFKC -> U+00B7)          -> '.' (nameprep/IDNA2003)
   // "Small" ASCII look-alikes -> the ASCII delimiter.
   0xFE52, // SMALL FULL STOP                            -> '.'
   0xFE55, // SMALL COLON                                -> ':'
@@ -625,9 +648,20 @@ bool _isHttpUriWithSchemes(String? uri, Set<String> schemes) {
   final String? trimmed = _controlSafeTrimmedUri(uri);
   if (trimmed == null) return false;
   final Uri? parsed = Uri.tryParse(trimmed);
-  return parsed != null &&
-      schemes.contains(parsed.scheme.toLowerCase()) &&
-      parsed.host.isNotEmpty;
+  if (parsed == null ||
+      !schemes.contains(parsed.scheme.toLowerCase()) ||
+      parsed.host.isEmpty) {
+    return false;
+  }
+  // Degenerate, label-less authority: a host made only of dots ('.', '..',
+  // '%2E%2E' decoded by Uri to '..') is not a real BMC host. `Uri.tryParse`
+  // still reports it as a non-empty HTTPS host, so without this check a stale
+  // secure flag + test opt-in would grant in-app rendering and self-signed
+  // acceptance on a bogus/traversal target. A real label (incl. an absolute
+  // FQDN trailing dot) or an IPv6 literal contains non-dot characters and is
+  // unaffected — stricter than the model, never more permissive.
+  if (parsed.host.replaceAll('.', '').isEmpty) return false;
+  return true;
 }
 
 /// Builds the concrete launch plan from the RP-1 policy and a console's public
