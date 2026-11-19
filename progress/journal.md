@@ -10414,3 +10414,21 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — cross-view launch affordance), #021 (open — viewer launch gating)
+
+## 2026-11-19 02:42 UTC — agent:rf-gate — MERGE build/rf-platform
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#7454 PASS on `build/rf-platform` HEAD `036dd98` (analyze 0, targeted tests green, no production-TLS weakening, all changed paths under `lib/features/kvm/platform/**` + `test/**`, no dependency changes). Branch had 1 unmerged commit (scheme re-validation defense-in-depth in the launch plan + 3 RED-GREEN tests) → precondition met → `git merge --no-ff build/rf-platform` created merge commit `56aef27` (3 files, +84/-5: `LAUNCH_FALLBACK.md`, `launch_plan.dart`, `launch_plan_test.dart`).
+- Post-merge verification (all green): `flutter analyze` 0 issues; `flutter test --coverage` 1102 passed / 1 skipped (+3 merged scheme re-validation tests; concurrent FEATURE commit `48d53bd` was already present in the tree and included); `dart run tool/coverage_gate.dart coverage/lcov.info` PASS overall 89.4% (5439/6082), PASS redfish+power+sensors 90.4% (2117/2343), PASS kvm 94.2% (719/763), exit 0; `python3 issues/issues.py validate` OK; `git diff --check` clean.
+
+**Decisions:**
+- Merged because the latest verdict (run#7454, SUCCESS) is a PASS recorded against the current branch HEAD `036dd98`, with no newer in-flight `rf-platform`/`rf-platform-check` run invalidating it. `--no-ff` used per the gate contract to preserve branch topology.
+- DMTF 85-test emulator suite skipped: the merged `lib/` change is a self-contained, dependency-free defense-in-depth URI-scheme re-validation inside the platform `launch_plan.dart` helper (`_uriUsesHttps`) + its unit tests — no HTTP transport, WebView import, platform channel, cert callback, or wire/fixture/tool change — so the Redfish wire surface is untouched.
+- No production TLS weakened: the change only *tightens* the secure signal (raw HTTPS scheme must agree with the caller flag) and fails closed to `copyOnly`; self-signed acceptance remains test-only opt-in, HTTPS, in-app only.
+- Dirty-tree concurrency handled safely: the untracked `testing/` harness dir plus a concurrently-running `redfish-automation` FEATURE change were present at preflight. They did not overlap the merged platform paths, so the merge proceeded without stashing; the concurrent run later committed its work as `48d53bd` on top of the merge. `testing/` left untouched.
+
+**Next:**
+- Next `rf-platform` item stays on `queues/platform.md`; the gate will merge only on a fresh PASS verdict.
+- Re-run all gates on the next PASS; cleanly SKIP if the verdict is not PASS or the branch has no new commits.
+
+**Issues touched:** none (gate merge + tracking only)
