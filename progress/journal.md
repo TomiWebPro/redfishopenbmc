@@ -11192,3 +11192,20 @@
 - Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-19 — agent:redfish-gate — build/rf-platform (fc3c648)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#8965 returned `CHECK: PASS` for branch tip `fc3c648` (analyze 0, targeted `launch_plan_test.dart` 73/73 incl. 3 new `%20` tests, no TLS weakening, allowlisted paths `lib/features/kvm/platform/**` + `test/**`, no dependency change). Verified the tip was unchanged since the check, then `--no-ff` merged `build/rf-platform` into `main` as `b87a33a`.
+- Branch adds authority-scoped fail-closed rejection of a percent-encoded ASCII space (`%20`) in the console-launch URI authority — a decode-order host-spoofing differential (`Uri.tryParse` reports a "secure" host while a decode-first launcher resolves/rejects a different authority). Folded the new `_authorityHasEncodedSpace` check into main's shared `String?`-returning `_controlSafeTrimmedUri` gate as `return null`, resolving the one conflict where the branch's old `return false` predated main's refactor; the test file auto-merged with all 3 new tests.
+- Post-merge verify at `b87a33a`: `flutter analyze` 0; full suite 1353 passed / 1 skipped; three coverage gates PASS overall 90.0% / scoped 90.4% / kvm 96.6%; `issues.py validate` OK; `git diff --check` clean. DMTF emulator skipped (no wire/fixture/tool change).
+
+**Decisions:**
+- Merged only because the check verdict was an explicit `CHECK: PASS` for the exact current tip; a stale or mismatched verdict would have been SKIPPED.
+- Kept the single shared fail-closed classifier as the one source of truth; no WebView/protocol dependency, no production TLS weakening.
+
+**Next:**
+- Gate only PASS-verified dept branches with `--no-ff`; cross-check the verdict against the current tip before merging.
+- Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — no closure (gate merge only).
