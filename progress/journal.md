@@ -10948,3 +10948,13 @@
 **Next:** Gate only PASS branches with `--no-ff` + clean-worktree verify; never weaken production TLS or add a WebView dependency unattended; re-run the 85-test emulator on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none (platform launch-plan hardening; FUTUREWORK/tracking/journal only).
+
+## 2026-11-19 — agent:rf-gate — merge build/rf-platform (IDNA CJK/halfwidth dot confusables)
+
+**Done:** Merged PASS-verified `build/rf-platform` commit `ceb9008` into `main` via `--no-ff` (rf-platform-check run#8444 SUCCESS, verdict `CHECK: PASS`). Added the classic CJK/halfwidth IDNA dot confusables (U+3002 / U+FF61 -> '.', U+2E3C -> '..') to the authority-scoped fail-closed `_compatibilityDelimiterCodePoints` set in the platform launch plan, +3 RED→GREEN tests; resolved the single additive doc conflict in `LAUNCH_FALLBACK.md` (kept main's counts/structure, folded in the branch's IDNA rationale), Dart files auto-merged cleanly. Verified in-tree: analyze 0, full 1263 passed / 1 skipped, all three coverage gates PASS (89.9% / 90.4% / 96.4%), issues validate OK, diff/secret checks clean.
+
+**Decisions:** Gate is sole merger; only a PASS-verified branch is merged. No product code authored by the gate — conflict resolution preserved both sides. Dependency-free, flag-OFF decision helper; no WebView/protocol dependency and no production TLS weakening. DMTF emulator skipped (no wire/fixture/tool change).
+
+**Next:** Gate only PASS branches with `--no-ff` + full verification before push; never weaken production TLS or add a WebView dependency unattended; re-run the 85-test emulator on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none (platform launch-plan hardening; FUTUREWORK/tracking/journal only).

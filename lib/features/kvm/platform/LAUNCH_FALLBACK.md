@@ -203,13 +203,26 @@ Invariants, enforced by tests:
    lost. Scoped to the authority (the TLS-sensitive part). Folded into the same
    shared gate so every HTTP(S) classifier and the launch-plan target reject
    it identically.
-   Covered by 67 targeted tests (scheme/host/malformed-authority parity +
+   **IDNA dot-confusable rejection:** the confusable set also covers the
+   classic CJK/halfwidth dot confusables that a decode+IDNA launcher resolves
+   to the domain-label dot ('.') but that are neither Unicode Separator/Other
+   nor NFKC-mapped to a literal ASCII character: `%E3%80%82` (U+3002
+   IDEOGRAPHIC FULL STOP), `%EF%BD%A1` (U+FF61 HALFWIDTH IDEOGRAPHIC FULL
+   STOP) and `%E2%B8%BC` (U+2E3C TWO DOT LEADER, NFKC -> '..'). `Uri.tryParse`
+   keeps each encoded and reports an HTTPS host, yet a launcher applying
+   UTS-46 IDNA resolves `bmc.example%E3%80%82evil.com` as
+   `bmc.example.evil.com` — a parser-differential host-spoofing vector that
+   under a stale flag + test opt-in could reach in-app rendering and
+   self-signed acceptance on a spoofed/mismatched host. Each fails closed in
+   the authority; encoded forms in the path/query and punycode ASCII hosts
+   stay launchable, no valid target lost.
+   Covered by targeted tests (scheme/host/malformed-authority parity +
    control-character + raw-space + Unicode-whitespace/invisible +
    raw-backslash + RFC-3986 unwise-char + malformed-percent-encoding +
    raw non-ASCII authority + encoded authority-delimiter + encoded C0/DEL
    control-octet + encoded Unicode separator/invisible +
    encoded compatibility-confusable delimiter + extended
-   compatibility-confusable delimiter rejection) in
+   compatibility-confusable delimiter + IDNA dot-confusable rejection) in
    `launch_plan_test.dart`.
 
 ## What remains gated (not done here)

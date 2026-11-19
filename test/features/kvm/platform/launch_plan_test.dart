@@ -1476,4 +1476,88 @@ void main() {
       }
     });
   });
+
+  group(
+      'planConsoleLaunch — defense in depth: IDNA dot-confusable rejection',
+      () {
+    test(
+        'percent-encoded CJK/halfwidth dot confusables fail closed with a stale flag',
+        () {
+      // The compatibility-confusable set must also cover the classic IDNA
+      // dot confusables that a launcher applying UTS-46 IDNA to an
+      // internationalised host resolves to the domain-label dot ('.'):
+      //   U+3002 IDEOGRAPHIC FULL STOP
+      //   U+FF61 HALFWIDTH IDEOGRAPHIC FULL STOP
+      //   U+2E3C TWO DOT LEADER (NFKC -> two U+2024 -> '..')
+      // `Uri.tryParse` keeps each escape encoded and reports an HTTPS URI with
+      // a non-empty host, so a purely syntactic re-check calls these "secure"
+      // — yet a decode+IDNA launcher resolves a *different* authority
+      // (`bmc.example%E3%80%82evil.com` -> `bmc.example.evil.com`). None are
+      // Unicode Separator/Other (so the encoded C/Z rule misses them) and none
+      // were in the confusable set, so under a stale secure flag + test opt-in
+      // they could reach in-app rendering and self-signed acceptance on a
+      // spoofed/mismatched host. They must fail closed.
+      for (final String uri in <String>[
+        'https://bmc.example%E3%80%82evil.com/console', // U+3002 -> .
+        'https://bmc.example%EF%BD%A1evil.com/console', // U+FF61 -> .
+        'https://bmc.example%E2%B8%BCevil.com/console', // U+2E3C -> ..
+        'https://bmc%e3%80%82example.com/console', // lowercase hex
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('an IDNA dot confusable never reaches in-app under a strict opt-in',
+        () {
+      // Even without granting self-signed acceptance, a host carrying an IDNA
+      // dot confusable must not be rendered in-app by an enabled+strict opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc.example%E3%80%82evil.com/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('IDNA dot confusables in the path stay launchable (authority-scoped)',
+        () {
+      // Guard against over-rejection: the rule targets only the authority (the
+      // TLS-sensitive part). A dot confusable in the path/query cannot change
+      // which host is contacted, so it stays launchable via the fallback — no
+      // valid target lost, no TLS weakening.
+      for (final String uri in <String>[
+        'https://bmc.example/console%E3%80%82one', // U+3002 in path
+        'https://bmc.example/console%EF%BD%A1one', // U+FF61 in path
+        'https://bmc.example/caf%C3%A9', // e-acute (Letter)
+        'https://bmc.example/%F0%9F%98%80', // emoji (Symbol)
+        'https://xn--bmc-esab.example/console', // punycode ASCII host
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }
