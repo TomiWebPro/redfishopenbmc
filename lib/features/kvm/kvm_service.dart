@@ -103,7 +103,9 @@ class KvmService {
   /// normalises transport errors. A single member that answers 404 (a stale /
   /// removed manager link, common on hot-swap or transient BMC states) is
   /// skipped so one dead link cannot blank the whole KVM screen; auth errors
-  /// (401/403) and every other failure still propagate (issue #009).
+  /// (401/403) and every other failure still propagate. A malformed (non-list)
+  /// `Members` collection is treated as no managers rather than blanking the
+  /// screen with a cast error (issue #009).
   Future<List<({String managerId, Map<String, dynamic> body})>>
       _fetchManagerBodies() async {
     final RedfishClient? c = client;
@@ -117,8 +119,15 @@ class KvmService {
 
     try {
       final Map<String, dynamic> root = await c.getJson('/redfish/v1/Managers');
+      // A malformed BMC payload can advertise `Members` as a non-list value.
+      // A bare `as List<dynamic>?` cast throws a TypeError here; the generic
+      // catch below turns it into a RedfishException and blanks the whole gated
+      // KVM screen. Treat a non-list `Members` as "no managers discovered",
+      // matching the malformed-payload tolerance used by every other KVM parser
+      // (`_memberUri`, `KvmCapability._advertises`, etc., issue #009).
+      final dynamic membersValue = root['Members'];
       final List<dynamic> members =
-          (root['Members'] as List<dynamic>?) ?? <dynamic>[];
+          membersValue is List<dynamic> ? membersValue : <dynamic>[];
 
       final List<({String managerId, Map<String, dynamic> body})> managers =
           <({String managerId, Map<String, dynamic> body})>[];

@@ -10336,3 +10336,18 @@
 - Re-run all gates on the next PASS; cleanly SKIP if the verdict is not PASS or the branch has no new commits.
 
 **Issues touched:** none (gate merge + tracking only)
+
+## 2026-11-19 00:47 UTC — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009 (smallest open issue ID) — dependency-free, TLS-safe malformed-payload crash fix in the KVM manager walk (the last bare cast in the KVM data path). `KvmService._fetchManagerBodies` used `(root['Members'] as List<dynamic>?) ?? <dynamic>[]`; a malformed BMC payload with a non-list `Members` (e.g. a string or map) threw a `TypeError`, converted by the generic catch into a `RedfishException`, blanking the whole gated KVM screen for both `fetchConsoles()` and `fetchCapabilities()`. It now type-checks (`membersValue is List<dynamic> ? membersValue : <dynamic>[]`), treating a non-list `Members` as "no managers discovered", consistent with the malformed-payload tolerance in every other KVM parser. An audit confirmed no bare casts remain in `lib/features/kvm/` or `FeatureRules`. Added 2 RED→GREEN service tests + a new `kvm_malformed_members_mockup` fixture (both confirmed RED pre-fix with the exact cast `TypeError`). Baseline analyze 0 / 1082 passed / 1 skipped → verify analyze 0 / 1084 passed / 1 skipped (+2); DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.2% / scoped 90.4% / kvm 92.9%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Chose a genuine crash defect — one malformed Managers collection blanking both gated KVM views — over manufactured churn: #009's/#021's substantive acceptance boxes remain externally blocked on platform WebView + BMC TLS/self-signed validation. The bare cast was the last unchecked cast in the KVM read path, so fixing it completes the malformed-payload tolerance contract established by the 20:24 (`@odata.id`) and 00:10 (stale 404 member) fixes. Pure Dart + doc comments, read-only, no WebView/protocol dependency and no production TLS change. Full emulator re-run (85/85) because `lib/` changed and a fixture was added.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. a cross-view enabled-state or malformed-payload gap in the console/viewer views — the manager-walk read path now has no bare casts) or epic-triage/split the WebView-blocked rendering work, never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — malformed `Members` tolerance)

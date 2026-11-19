@@ -1,0 +1,6 @@
+{
+  "@odata.type": "#ManagerCollection.ManagerCollection",
+  "Name": "Manager Collection",
+  "Members": "not-an-array",
+  "@odata.id": "/redfish/v1/Managers"
+}

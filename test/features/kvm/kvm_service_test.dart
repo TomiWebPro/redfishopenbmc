@@ -405,4 +405,45 @@ void main() {
       expect(capabilities.single.hasUri, isTrue);
     });
   });
+
+  group('KvmService malformed Members tolerance (#009)', () {
+    late MockRedfishServer server;
+
+    setUpAll(() async {
+      // The Managers collection advertises a non-list `Members` member (a
+      // malformed but not-unseen BMC payload). It must be treated as "no
+      // managers discovered" rather than throwing a TypeError that blanks the
+      // whole gated KVM screen (issue #009).
+      server = await MockRedfishServer(
+        fixturesDir: 'test/fixtures/redfish/kvm_malformed_members_mockup',
+      ).start();
+    });
+
+    tearDownAll(() async {
+      await server.close();
+    });
+
+    // RED proof: a bare `root['Members'] as List<dynamic>?` cast throws a
+    // TypeError on the non-list value; the generic catch turns it into a
+    // RedfishException, so both KVM views are blanked by one malformed payload.
+    test('fetchConsoles tolerates a non-list Members collection', () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+      expect(consoles, isEmpty);
+    });
+
+    test('fetchCapabilities tolerates a non-list Members collection', () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+      expect(capabilities, isEmpty);
+    });
+  });
 }
