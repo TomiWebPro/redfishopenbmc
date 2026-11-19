@@ -380,4 +380,50 @@ void main() {
       expect(plan.targetUri, 'https://bmc.example:8443/console');
     });
   });
+
+  group('planConsoleLaunch — defense in depth: raw-space rejection', () {
+    test('a raw space that Uri.tryParse encodes into the host fails closed', () {
+      // `Uri.tryParse` percent-encodes a raw space instead of rejecting it
+      // (e.g. `https://bmc.exa mple/console` -> host `bmc.exa%20mple`, still
+      // non-empty), so a purely syntactic re-check calls it "secure". With a
+      // stale secure flag + test opt-in it would reach in-app rendering and
+      // self-signed acceptance on a malformed host. A raw space is never valid
+      // in a URI (it must be %20), so every raw space must fail closed — just
+      // like the C0/DEL control characters already rejected.
+      for (final String uri in <String>[
+        'https://bmc.exa mple/console', // space in host
+        'https://user name@bmc.example/console', // space in userinfo
+        'https://bmc.example/con sole', // space in path
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('a percent-encoded space is legitimate and stays launchable', () {
+      // Guard against over-rejection: %20 is the correct encoding of a space
+      // and contains no raw space code unit, so it must remain launchable and
+      // keep the external-browser fallback (no TLS weakening).
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.productionDefault,
+        uri: 'https://bmc.example/console%20one',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.route, KvmConsoleRenderRoute.externalBrowser);
+      expect(plan.targetUri, 'https://bmc.example/console%20one');
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+  });
 }

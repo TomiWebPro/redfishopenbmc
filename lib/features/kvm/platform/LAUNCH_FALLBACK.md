@@ -61,9 +61,23 @@ Invariants, enforced by tests:
    CRLF/NUL/TAB/DEL-bearing URI fails closed to `copyOnly` — even under the
    test opt-in — so such targets can never be rendered in-app or receive
    self-signed acceptance. Legitimate userinfo/port URIs still pass. This can
-   only tighten classification, so no valid HTTPS endpoint is lost. Covered by
-   targeted tests in `launch_plan_test.dart`, `kvm_model_test.dart` and
-   `kvm_capability_test.dart`.
+   only tighten classification, so no valid HTTPS endpoint is lost.
+   **Control-character rejection:** `Uri.tryParse` percent-encodes C0/DEL
+   controls (CR, LF, NUL, TAB, DEL) rather than rejecting them, so such a URI
+   would otherwise pass the syntactic re-check; these now fail closed
+   (stricter than the model, never more permissive) to block launcher
+   URI/header injection and self-signed acceptance on malformed targets.
+   **Raw-space rejection:** `Uri.tryParse` also percent-encodes a raw space
+   (0x20) into the authority (`https://bmc.exa mple/console` → host
+   `bmc.exa%20mple`, still non-empty), so it too would pass a purely syntactic
+   re-check and gain in-app self-signed acceptance on a malformed host under a
+   stale flag. Raw spaces are never valid in a URI (they must be `%20`), so
+   they are rejected outright alongside C0/DEL controls — stricter than the
+   model, never more permissive; legitimate `%20`-encoded URIs stay launchable.
+   Legitimate userinfo/port URIs are unaffected. Covered by 11 targeted tests
+   (malformed-authority parity + control-character + raw-space rejection) in
+   `launch_plan_test.dart`, plus classifier-agreement tests in
+   `kvm_model_test.dart` and `kvm_capability_test.dart`.
 
 ## What remains gated (not done here)
 
