@@ -481,4 +481,97 @@ void main() {
       expect(plan.acceptSelfSigned, isFalse);
     });
   });
+
+  group('planConsoleLaunch — defense in depth: RFC-3986 unwise-char rejection', () {
+    test('raw unwise ASCII that Uri.tryParse encodes into the host fails closed', () {
+      // Uri.tryParse silently percent-encodes the RFC-3986 "unwise" ASCII
+      // characters (", <, >, ^, `, {, |, }) instead of rejecting them, so e.g.
+      // `https://bmc<example/console` parses with scheme https and a non-empty
+      // host `bmc%3Cexample`, passing a purely syntactic re-check. None are
+      // legal raw in a URI (they must be pct-encoded); under a stale secure
+      // flag + test opt-in they would reach in-app rendering and self-signed
+      // acceptance on a malformed/spoofed authority (a parser differential).
+      // Every raw unwise char must therefore fail closed.
+      for (final String uri in <String>[
+        'https://bmc<example/console', // <
+        'https://bmc>example/console', // >
+        'https://bmc"example/console', // "
+        'https://bmc^example/console', // ^
+        'https://bmc`example/console', // `
+        'https://bmc{example/console', // {
+        'https://bmc|example/console', // |
+        'https://bmc}example/console', // }
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('raw unwise chars in path/query fail closed too', () {
+      for (final String uri in <String>[
+        'https://bmc.example/con"sole', // " in path
+        'https://bmc.example/console?<x>', // < > in query
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('a raw-unwise URI never reaches in-app under a strict opt-in', () {
+      // Even without granting self-signed acceptance, a malformed URI must not
+      // be rendered in-app by an enabled+strict opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc<example/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('percent-encoded unwise chars and legal delimiters stay launchable', () {
+      // Guard against over-rejection: %3C/%22 are correct encodings (no raw
+      // unwise char), and sub-delims/gen-delims (& = [ ]) are legal raw in a
+      // URI, so none may be dropped from the fallback path (no TLS weakening).
+      for (final String uri in <String>[
+        'https://bmc.example/console%3Cone', // %3C = <
+        'https://bmc.example/console%22one', // %22 = "
+        'https://bmc.example/console?a=1&b=2', // & = are legal sub-delims
+        'https://[::1]:8443/console', // [ ] are legal gen-delims (IPv6 host)
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }

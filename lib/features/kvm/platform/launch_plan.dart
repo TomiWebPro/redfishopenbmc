@@ -96,15 +96,29 @@ class KvmConsoleLaunchPlan {
 /// differential could grant in-app rendering and self-signed acceptance on a
 /// malformed/spoofed authority. Rejecting raw backslashes loses no valid target
 /// (a literal backslash must be `%5C`, which stays launchable).
-final RegExp _rawUriForbiddenChars = RegExp(r'[\\\p{C}\p{Z}]', unicode: true);
+///
+/// The RFC 3986 "unwise" ASCII characters (`"` `<` `>` `^` `` ` `` `{` `|` `}`)
+/// are rejected for the same reason: they are not in the `unreserved` /
+/// `reserved` sets, so a literal one must be percent-encoded (`%22`, `%3C`,
+/// ...), yet `Uri.tryParse` silently percent-encodes a raw occurrence into the
+/// authority/path instead of rejecting it — e.g.
+/// `https://bmc<example/console` parses with scheme `https` and the non-empty
+/// host `bmc%3Cexample`, passing a purely syntactic re-check. Under a stale
+/// secure flag + test opt-in that parser differential could reach in-app
+/// rendering and self-signed acceptance on a malformed/spoofed authority.
+/// Rejecting them raw loses no valid target (their `%XX` forms stay
+/// launchable), and legal gen/sub-delims (`[` `]` `&` `=` ...) are unaffected.
+final RegExp _rawUriForbiddenChars =
+    RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
 bool _uriHasSecureHttpsTarget(String? uri) {
   if (uri == null) return false;
   final String trimmed = uri.trim();
   if (trimmed.isEmpty) return false;
-  // Reject any raw separator, control/format/invisible code point, or raw
-  // backslash (delimiter/authority confusion). None are legal unescaped in a
-  // URI; `%20`/`%5C`/`%XX` escapes contain none of them and stay launchable.
+  // Reject any raw separator, control/format/invisible code point, raw
+  // backslash (delimiter/authority confusion), or RFC-3986 "unwise" ASCII char.
+  // None are legal unescaped in a URI; `%20`/`%5C`/`%XX` escapes contain none
+  // of them and stay launchable, as do legal gen/sub-delims.
   if (_rawUriForbiddenChars.hasMatch(trimmed)) return false;
   final Uri? parsed = Uri.tryParse(trimmed);
   return parsed != null &&
