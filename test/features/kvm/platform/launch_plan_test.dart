@@ -1079,4 +1079,84 @@ void main() {
       expect(plan.acceptSelfSigned, isFalse);
     });
   });
+
+  group('planConsoleLaunch — defense in depth: encoded control-octet rejection',
+      () {
+    test('a percent-encoded C0/DEL octet fails closed with a stale flag', () {
+      // A percent-encoded control octet is a *valid* %XX escape, so the
+      // malformed-percent rule does not catch it, and it contains no raw
+      // forbidden char. `Uri.tryParse` keeps it encoded and still reports an
+      // https URI with a non-empty host, so a purely syntactic re-check calls
+      // these "secure" — yet they are classic parser-differential vectors:
+      // a NUL (%00) truncates the host in many consumers (`bmc.example%00.evil`
+      // reads as `bmc.example`), CRLF (%0D%0A) enables header/URI injection,
+      // and tab/unit-separator bytes confuse authority splitting. Under a
+      // stale secure flag + test opt-in any could reach in-app rendering and
+      // self-signed acceptance on a spoofed/malformed host. Every pct-encoded
+      // C0 (0x00-0x1F) or DEL (0x7F) octet must fail closed.
+      for (final String uri in <String>[
+        'https://bmc.example%00.evil.com/console', // NUL host truncation
+        'https://bmc.example/con%00sol', // NUL in path
+        'https://bmc.example%0D%0Aevil:80/console', // CRLF injection
+        'https://bmc.example%09.example/console', // TAB
+        'https://bmc.example%1F/console', // unit separator (C0)
+        'https://bmc.example%7F/console', // DEL
+        'https://bmc.example%7f/console', // DEL, lowercase hex
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('an encoded control octet never reaches in-app under a strict opt-in',
+        () {
+      // Even without granting self-signed acceptance, a control-octet-bearing
+      // URI must not be rendered in-app by an enabled+strict opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc.example%00.evil.com/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('non-control pct-encoded octets stay launchable (no over-rejection)',
+        () {
+      // Guard: only C0/DEL octets are rejected. Other valid %XX escapes —
+      // including the space (%20), which is 0x20 and not a C0 control — remain
+      // launchable via the external-browser fallback (no TLS weakening, no
+      // valid target lost). Both hex cases are covered.
+      for (final String uri in <String>[
+        'https://bmc.example/console%20one', // %20 space (0x20)
+        'https://bmc.example/console%2fone', // %2F slash
+        'https://bmc.example/console%7Eone', // %7E tilde (just above DEL)
+        'https://bmc.example/caf%C3%A9', // %C3%A9 = UTF-8 e-acute
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }

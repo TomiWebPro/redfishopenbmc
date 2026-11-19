@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 52 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (64 across the platform
+consume; today it locks the fallback behaviour with 55 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (67 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -161,11 +161,24 @@ Invariants, enforced by tests:
    non-delimiter host bytes (`bmc%C3%A9.example`) stay launchable, no valid
    target lost. Folded into the same shared gate so every HTTP(S) classifier
    and the launch-plan target reject it identically.
-   Covered by 52 targeted tests (malformed-authority parity +
+   **Encoded C0/DEL control-octet rejection:** a pct-encoded octet in the
+   0x00-0x1F (C0) or 0x7F (DEL) range is a *valid* `%XX` escape (so the
+   malformed-percent rule does not catch it) with no raw forbidden character,
+   yet `Uri.tryParse` keeps it encoded while still reporting an HTTPS URI with
+   a non-empty host. Consumers decode such octets into NUL host truncation
+   (`bmc.example%00.evil.com` reads as `bmc.example`), CRLF/header injection,
+   or authority confusion. Under a stale secure flag + test opt-in that parser
+   differential could grant in-app rendering and self-signed acceptance on a
+   spoofed/malformed host. Every pct-encoded C0/DEL octet (either hex case,
+   anywhere in the URI) fails closed; non-control escapes (`%20`, `%2F`, UTF-8
+   bytes, ...) stay launchable, no valid target lost. Folded into the same
+   shared gate so every HTTP(S) classifier and the launch-plan target reject
+   it identically.
+   Covered by 55 targeted tests (malformed-authority parity +
    control-character + raw-space + Unicode-whitespace/invisible +
    raw-backslash + RFC-3986 unwise-char + malformed-percent-encoding +
-   raw non-ASCII authority + encoded authority-delimiter rejection) in
-   `launch_plan_test.dart`.
+   raw non-ASCII authority + encoded authority-delimiter + encoded C0/DEL
+   control-octet rejection) in `launch_plan_test.dart`.
 
 ## What remains gated (not done here)
 
