@@ -10528,3 +10528,22 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — shared secure-URI classifier parity), #021 (open — secure-URI classification parity)
+
+## 2026-11-19 — agent:rf-gate — MERGE build/rf-platform (7e727bf)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` latest run#7574 SUCCESS (exit 0; started 05:40:52 UTC, immediately after builder `rf-platform` produced branch HEAD `7e727bf` at 05:38:59 UTC; no newer in-flight run invalidating it). Branch had 1 unmerged commit beyond the last-merged `c5618a0` (`7e727bf` raw-space re-validation fail-closed + RED-GREEN tests) → precondition met → `git merge --no-ff build/rf-platform` created merge `24f2d27` (3 files, +76/-9 vs first parent: `lib/features/kvm/platform/LAUNCH_FALLBACK.md`, `launch_plan.dart`, `test/features/kvm/platform/launch_plan_test.dart`).
+- Conflict resolution: main's `ceb96f2` had renamed `_uriHasSecureHttpsTarget` → shared public `isSecureHttpsConsoleUri` (now used by `KvmConsole`/`KvmCapability`), overlapping the branch's edit to the same function. Resolved by keeping main's name + single-source-of-truth doc AND the branch's `codeUnit <= 0x20` raw-space rejection + its 2 new tests; both doc intents merged into `LAUNCH_FALLBACK.md`. No conflict markers, no leftover old symbol.
+- Post-merge verify (all green, in-tree, clean except pre-existing untracked `testing/`): `flutter analyze` 0 ("No issues found!"); full `flutter test --coverage` 1138 passed / 1 skipped (+2 merged raw-space tests); `dart run tool/coverage_gate.dart coverage/lcov.info` PASS overall 89.5% (5470/6109), PASS redfish+power+sensors 90.4% (2117/2343), PASS kvm 94.8% (749/790), exit 0; `python3 issues/issues.py validate` OK; `git diff --check` clean. No new code commit needed beyond the merge itself + this tracking record.
+
+**Decisions:**
+- Merged because the latest verdict (run#7574, SUCCESS) is a PASS against the current branch HEAD; `--no-ff` per the gate contract to preserve branch topology. Branch diff touched only `lib/features/kvm/platform/**` + `test/**`, no dependency/TLS changes.
+- Resolution is strictly fail-closed: a raw ASCII space in a URI is never valid (must be `%20`), so `<= 0x20` rejects space alongside C0/DEL controls; legitimate `%20`-encoded URIs stay launchable; no production TLS weakened; no dependency added.
+- DMTF 85-test emulator suite skipped: merged `lib/` change only tightens the dependency-free platform launch-plan classifier (`isSecureHttpsConsoleUri`) — no HTTP transport, WebView import, platform channel, cert callback, or wire/fixture/tool change.
+- No concurrent automation WIP in the shared worktree this run (only the pre-existing untracked `testing/` harness, left untouched), so verification ran in-tree at the merge commit.
+
+**Next:**
+- Next `rf-platform` item stays on `queues/platform.md`; gate merges only on a fresh PASS verdict.
+- Re-run all gates on the next PASS; cleanly SKIP if verdict not PASS or branch has no new commits.
+
+**Issues touched:** none (gate merge + tracking only)
