@@ -10798,3 +10798,21 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — RS-2 manager-walk robustness), #021 (open — same service path, viewer stays populated)
+
+## 2026-11-19 — agent:rf-gate — MERGE build/rf-platform cab0449 (check#8144 PASS)
+
+**Done:**
+- Read `rf-platform-check` state: run#8144 SUCCESS (PASS), started 12:42:49 UTC ~2 s after builder run#8138 produced `build/rf-platform` HEAD `cab0449`. Merged that single unmerged commit into main with `--no-ff` as `811214b` (parents `481c72d` + `cab0449`). Resolved the `launch_plan.dart` conflict by folding the branch's `_encodedControlOctet` C0/DEL check into main's shared `String?`-returning `_controlSafeTrimmedUri` gate (`return null`, like the other checks) — every HTTP(S) classifier and the launch-plan target now refuse a pct-encoded control octet identically; non-control escapes stay launchable. Kept main's public classifiers and all test groups; updated `LAUNCH_FALLBACK.md` (55 targeted / 67 platform tests + rationale). Post-merge verify in a clean isolated worktree (concurrent `redfish-automation` WIP left untouched): analyze 0, full `flutter test --coverage` 1212 passed / 1 skipped, all three coverage gates PASS (89.7% / 90.4% / 95.7%), issues validate OK, diff check clean. DMTF emulator skipped (wire-free decision-gate change).
+
+**Decisions:**
+- Gate merges ONLY on a PASS verdict from the latest `<dept>-check` run, and only its current branch HEAD; NO-OP otherwise. `--no-ff` preserves the dept branch topology.
+- The branch's `bool`-returning helper no longer exists on main (refactored into a shared `String?` gate), so its new check was folded into that single gate with `return null` rather than restoring the old helper — consistent with all prior platform merges.
+- Verified in a detached worktree at the exact merge commit because a concurrent FEATURE run held unrelated unstaged WIP in the shared main tree; staged only the three platform merge paths for the merge commit, never the concurrent work.
+- DMTF 85-test suite not re-run: the change is a dependency-free launch-plan decision helper with no Redfish wire/transport/fixture/tool change.
+
+**Next:**
+- Gate only PASS-verified dept branches, always with `--no-ff` and a clean-worktree post-merge verify.
+- Keep all launch-plan URI hardening in the single shared classifier core; never weaken production TLS or add a WebView/protocol dependency unattended.
+- Re-run the full DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none (platform-only hardening; #009 / #021 remain open)
