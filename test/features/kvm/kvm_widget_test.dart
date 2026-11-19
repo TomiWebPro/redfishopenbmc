@@ -242,6 +242,56 @@ void main() {
     });
 
     testWidgets(
+        'OEM console card surfaces a vendor Redfish ConnectUri endpoint '
+        '(#009/#021)', (WidgetTester tester) async {
+      // A vendor publishing the canonical Redfish `ConnectUri` under an
+      // unregistered Oem.<Vendor>.KVM block used to hit the "no URI" fallback
+      // on both KVM views; the shared helper now resolves it like `Uri`.
+      final KvmConsole console = KvmConsole.fromManager(
+        <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC',
+          'Oem': <String, dynamic>{
+            'VendorX': <String, dynamic>{
+              'KVM': <String, dynamic>{
+                'ConnectUri': 'https://vendor.example/kvm',
+              },
+            },
+          },
+        },
+        managerId: 'BMC',
+      ).firstWhere((KvmConsole c) => c.type == KvmConsoleType.oem);
+      final KvmController controller = _StubController()
+        ..state = KvmUiState(consoles: <KvmConsole>[console]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.bySemanticsLabel('Connect URI: https://vendor.example/kvm'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('No console connect URI available. Open externally:'),
+        findsNothing,
+      );
+      expect(find.text('Open console'), findsOneWidget);
+
+      // 320 px no-overflow check.
+      tester.view.physicalSize = const Size(320, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
         'HTML5 console with connect URI shows Open console and navigates to '
         'viewer (#021)', (WidgetTester tester) async {
       final KvmController controller = _StubController()

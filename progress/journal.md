@@ -11080,3 +11080,22 @@
 - Next `build/rf-platform` slice must be re-verified by a fresh `rf-platform-check` PASS covering its new tip before this gate will merge it.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-19 — agent:redfish-automation — #009/#021
+
+**Done:**
+- FEATURE — OEM canonical `ConnectUri` alias gap in the shared `kvm_oem_uri.dart` generic fallback. It now recognizes the Redfish `ConnectUri` member (preferring `Uri`) so an unregistered vendor's `Oem.<Vendor>.KVM.ConnectUri` resolves on both the per-console card and the capability card instead of showing "no URI"; enablement still reads from the same block.
+- +10 pure/parity tests (new `kvm_oem_uri_test.dart`, 5 RED pre-fix) + 1 OEM-card widget test (320 px no-overflow); 2 outdated registry tests updated to the corrected behavior.
+- Verify all green: analyze 0; full suite 1330 passed / 1 skipped (baseline 1319 +11); DMTF emulator 85/85 (lib changed — §1.4 gate met); issues validate OK; git diff --check clean.
+
+**Decisions:**
+- `Uri` wins when both spellings are present, so no existing OEM payload is re-pointed; `ConnectUri` is an additive alias. Registered vendor parsers still take precedence and enrich the console (connect types / in-app HTML5) — the generic path only fills the no-parser case.
+- Pure model + platform-safe resolution: no dependency, no wire/request/payload/transport change, no production TLS weakening. Both issues stay OPEN (embedded HTML5 rendering / fullscreen / input forwarding remain externally blocked on platform WebView + BMC TLS validation).
+- Emulator re-run because `lib/` changed (§1.4); server stopped via script trap, test-only self-signed cert.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` (EP-M1 URI-scheme edges, RM-2 non-map payload tolerance, EP-S1 service launch edges, EP-U1 fullscreen scaffold, EP-T3 coverage gate) — genuine tested dependency-free increments only.
+- Never add a WebView/protocol dependency unattended; never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

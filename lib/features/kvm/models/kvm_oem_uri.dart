@@ -23,8 +23,9 @@ library;
 ///
 /// Search order (bounded to [maxDepth] levels): first a direct console-like key
 /// (`kvm` / `console` / `webconsole`, case-insensitive) whose map carries a
-/// `Uri` member, then a recursive walk of nested vendor blocks. A blank or
-/// non-string `Uri` is ignored, so it cannot shadow a later valid fallback.
+/// usable `Uri` or canonical Redfish `ConnectUri` member, then a recursive walk
+/// of nested vendor blocks. A blank or non-string member is ignored, so it
+/// cannot shadow a later valid fallback.
 ///
 /// Returning the whole block (not just the URI) lets both callers inspect the
 /// *same* console node for its enablement flags, so the URI and the enabled
@@ -54,10 +55,13 @@ Map<dynamic, dynamic>? _findBlock(dynamic node, int depth, int maxDepth) {
   return null;
 }
 
-/// Returns a usable, trimmed OEM console `Uri` found in [node], or `null`.
+/// Returns a usable, trimmed OEM console endpoint found in [node], or `null`.
 ///
-/// Delegates to [kvmOemConsoleBlock] so the URI always comes from the exact
-/// console block the enablement check inspects (issue #009).
+/// Recognizes both the short `Uri` and the canonical Redfish `ConnectUri`
+/// member (preferring `Uri` when both are present), so an unregistered vendor
+/// that publishes the schema-correct `ConnectUri` resolves identically on both
+/// KVM views. Delegates to [kvmOemConsoleBlock] so the URI always comes from
+/// the exact console block the enablement check inspects (issue #009).
 String? kvmOemConsoleUri(dynamic node, {int maxDepth = 3}) {
   final Map<dynamic, dynamic>? block =
       kvmOemConsoleBlock(node, maxDepth: maxDepth);
@@ -141,14 +145,31 @@ Map<dynamic, dynamic>? _consoleLikeBlock(
   return first;
 }
 
+/// Returns a usable console endpoint member from [map], or `null`.
+///
+/// Vendors publish the OEM console endpoint under two spellings: the short
+/// `Uri` (e.g. `Oem.OpenBMC.KVM.Uri`) and the canonical Redfish member
+/// `ConnectUri` (e.g. `Oem.<Vendor>.KVM.ConnectUri`, which the registered
+/// vendor-parser path already reads). The generic fallback previously only
+/// recognized `Uri`, so a vendor that used the schema-correct `ConnectUri`
+/// without a registered parser had no resolvable endpoint on either KVM view —
+/// the per-console card hid its URI row and the capability card showed no
+/// resolved URI. Accept both, preferring `Uri` when a block carries both so an
+/// existing OEM payload is never re-pointed (issue #009 / #021).
+///
+/// Keys and values are trimmed and keys matched case-insensitively, consistent
+/// with every other URI/key source in the KVM models. A blank or non-string
+/// value is ignored so it cannot shadow a later valid fallback.
 String? _uriFromMap(Map<dynamic, dynamic> map) {
+  String? connectUri;
   for (final dynamic entry in map.entries) {
-    if (entry.key.toString().toLowerCase() == 'uri') {
-      final dynamic value = entry.value;
-      if (value is! String) continue;
-      final String trimmed = value.trim();
-      if (trimmed.isNotEmpty) return trimmed;
-    }
+    final dynamic value = entry.value;
+    if (value is! String) continue;
+    final String trimmed = value.trim();
+    if (trimmed.isEmpty) continue;
+    final String key = entry.key.toString().trim().toLowerCase();
+    if (key == 'uri') return trimmed; // canonical OEM spelling wins
+    if (key == 'connecturi') connectUri ??= trimmed; // Redfish schema member
   }
-  return null;
+  return connectUri;
 }

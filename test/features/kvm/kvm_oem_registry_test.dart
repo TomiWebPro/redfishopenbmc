@@ -283,16 +283,22 @@ void main() {
               orElse: () => null,
             );
 
-    test('RED proof: without a registry the OEM console has no connect URI',
-        () {
+    test(
+        'without a registry the generic fallback resolves the canonical '
+        'vendor ConnectUri (#009/#021)', () {
       final KvmConsole? oem = oemOf(
         KvmConsole.fromManager(vendorManager(), managerId: 'BMC'),
       );
       expect(oem, isNotNull);
-      // Pre-wiring behaviour: strict detection sees the 'KVM' key but cannot
-      // parse the vendor-specific ConnectUri, so no launch URI is available.
-      expect(oem!.connectUri, isNull);
-      expect(oem.canLaunchInAppHtml5, isFalse);
+      // The generic OEM path now recognizes the canonical Redfish `ConnectUri`
+      // member (not just `Uri`), so an unregistered vendor's endpoint is no
+      // longer invisible on the per-console card. A registered parser is still
+      // preferred when one exists (see the GREEN test below) and enriches the
+      // console with connect types / in-app HTML5 eligibility.
+      expect(oem!.connectUri, 'https://bmc.example/kvm');
+      expect(oem.launchUri, 'https://bmc.example/kvm');
+      expect(oem.launchStrategy, KvmLaunchStrategy.secureBrowser);
+      expect(oem.canOpenConsole, isTrue);
     });
 
     test('GREEN: a registered vendor parser enriches the OEM console', () {
@@ -371,7 +377,10 @@ void main() {
         ),
       );
       expect(oem, isNotNull);
-      expect(oem!.connectUri, isNull);
+      // An unmatched registry falls back to the generic OEM path, which now
+      // resolves the canonical ConnectUri even without a matching vendor
+      // parser (previously it returned null here).
+      expect(oem!.connectUri, 'https://bmc.example/kvm');
     });
 
     test(
