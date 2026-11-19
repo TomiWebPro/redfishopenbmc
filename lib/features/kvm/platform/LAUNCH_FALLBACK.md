@@ -185,11 +185,30 @@ Invariants, enforced by tests:
    (`%20`) and non-C/Z escapes (`%C3%A9` e-acute, emoji) stay launchable, no
    valid target lost. Folded into the same shared gate so every HTTP(S)
    classifier and the launch-plan target reject it identically.
-   Covered by 58 targeted tests (malformed-authority parity +
+   **Encoded compatibility-confusable delimiter rejection:** a percent-encoded
+   non-ASCII code point whose Unicode NFKC normalisation is an ASCII structural
+   delimiter (gen-delims `:` `/` `?` `#` `[` `]` `@`, backslash, or the
+   domain-label dot) is a valid `%XX` escape with no raw forbidden character,
+   so every earlier rule misses it. `Uri.tryParse` keeps it encoded and reports
+   a "secure" HTTPS host, but a launcher applying IDNA/NFKC to an
+   internationalised host (as browsers do) resolves a *different* authority:
+   `%EF%BC%8F` (fullwidth solidus) becomes `/`, `%EF%BC%8E` (fullwidth full
+   stop) becomes `.`, `%EF%BC%9A` (fullwidth colon) becomes `:`, and the
+   FRACTION/DIVISION SLASH characters become `/`. Under a stale flag + test
+   opt-in that parser differential could grant in-app rendering and self-signed
+   acceptance on a spoofed/mismatched host. Only decoded code points that
+   normalise to a structural delimiter in the authority fail closed; encoded
+   non-delimiter non-ASCII (e-acute `%C3%A9`, euro `%E2%82%AC`, emoji), ASCII
+   escapes and confusables in the path/query stay launchable, no valid target
+   lost. Scoped to the authority (the TLS-sensitive part). Folded into the same
+   shared gate so every HTTP(S) classifier and the launch-plan target reject
+   it identically.
+   Covered by 61 targeted tests (scheme/host/malformed-authority parity +
    control-character + raw-space + Unicode-whitespace/invisible +
    raw-backslash + RFC-3986 unwise-char + malformed-percent-encoding +
    raw non-ASCII authority + encoded authority-delimiter + encoded C0/DEL
-   control-octet + encoded Unicode separator/invisible rejection) in
+   control-octet + encoded Unicode separator/invisible +
+   encoded compatibility-confusable delimiter rejection) in
    `launch_plan_test.dart`.
 
 ## What remains gated (not done here)

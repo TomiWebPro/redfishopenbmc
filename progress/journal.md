@@ -10891,3 +10891,23 @@
 - Re-run emulator only on lib/wire/fixture/tool change or >7 days; cheap DOCS anchor gate only.
 
 **Issues touched:** #009 (open — RM-1 URI-less OEM enablement), #021 (open — shared helper)
+
+## 2026-11-19 — agent:rf-gate — MERGE build/rf-platform 7f9b9a4 (check#8331 PASS)
+
+**Done:**
+- Read `rf-platform-check` state: latest run#8331 SUCCESS (exit 0, started 15:00:10 UTC ~3 min after builder run#8312 produced `build/rf-platform` HEAD `7f9b9a4` at 14:57 UTC) ended with `CHECK: PASS`. The check's prose stale-named `6eaecd5`, but its 49/49 targeted run and +46/+47/+48 encoded-confusable-delimiter cases matched the current branch content. Branch had exactly 1 unmerged commit (merge-base `6eaecd5`) adding authority-scoped percent-decoded NFKC compatibility-confusable delimiter fail-closed re-validation in the platform launch plan (`_compatibilityDelimiterCodePoints` + `_authorityHasCompatibilityDelimiter`, +3 RED→GREEN tests). Merged into main with `--no-ff`.
+- Conflict resolution: main had since refactored the branch's `bool _uriHasSecureHttpsTarget` into the shared `String?`-returning `_controlSafeTrimmedUri` gate (+ sibling public HTTP(S) classifiers). Preserved BOTH by folding the branch's new set/helper into main's file and adding `if (_authorityHasCompatibilityDelimiter(trimmed)) return null;` as the final check in `_controlSafeTrimmedUri` — every HTTP(S) classifier and the launch-plan target now refuse an encoded compatibility confusable identically; encoded non-delimiter non-ASCII and ASCII escapes stay launchable. All test groups + both doc intents retained; `LAUNCH_FALLBACK.md` counts updated to 61 targeted / 73 platform.
+- Post-merge verify in-tree (clean except pre-existing untracked `testing/`): targeted `launch_plan_test.dart` 61/61 + platform suite 73/73; `flutter analyze` 0; full `flutter test --coverage` 1240 passed / 1 skipped (baseline 1237 +3); all three coverage gates PASS (overall 89.8% 5601/6234, scoped 90.4% 2118/2344, kvm 96.2% 879/914); `issues.py validate` OK; `git diff --check` clean; staged secret scan clean.
+
+**Decisions:**
+- Gate merges ONLY on the latest `<dept>-check` `CHECK: PASS` verdict and only its current branch HEAD; NO-OP otherwise. `--no-ff` preserves dept topology. The stale commit name in the check prose was reconciled against the actual branch HEAD/commit content before merging.
+- The branch's old `bool`-returning gate no longer exists on main (refactored into a shared `String?` gate); its new check was folded into that single gate with `return null` rather than restoring the old helper — consistent with all prior platform merges.
+- DMTF 85-test suite not re-run: fail-closed launch-plan decision hardening with no Redfish wire/transport/fixture/tool change; <7 days since last green 85/85.
+- Tracking folded into the single merge commit (no separate record commit).
+
+**Next:**
+- Gate only PASS-verified dept branches with `--no-ff` + clean-worktree post-merge verify; keep all launch-plan URI hardening in the single shared classifier core.
+- Never add a WebView/protocol dependency or weaken production TLS unattended.
+- Re-run the full DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none (platform-only fail-closed hardening; #009 / #021 remain open)
