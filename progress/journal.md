@@ -10873,3 +10873,21 @@
 - Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — viewer session lifecycle), #021 (open — back = disconnect)
+
+## 2026-11-19 — agent:redfish-automation — #009 / #021 (RM-1)
+
+**Done:**
+- Fixed a genuine cross-view enablement gap in the shared `kvm_oem_uri.dart`: an OEM console-like block with an explicit `ServiceEnabled:false` / `Enabled:false` but no usable `Uri` was previously treated as enabled (the enablement helper only inspected URI-bearing blocks). It now falls back to the console-like block (same key rule as `FeatureRules.oemHasConsole`, preferring one with an explicit enablement member) when no URI-bearing console exists, so both KVM views and the discovery gate honor the disable. Launchable consoles still read URI + enablement from the same block; all existing behavior unchanged.
+- +6 tests (5 behavioral RED→GREEN confirmed pre-fix across model/capability/widget, 1 green guard). Full suite 1237 passed / 1 skipped; analyze 0; DMTF emulator 85/85 (lib changed — §1.4 gate); issues validate OK; git diff --check clean.
+
+**Decisions:**
+- The URI-bearing console block stays authoritative; the enablement fallback only runs when there is no URI to disagree with, preserving the "URI and enablement from the same node" invariant and avoiding any change to existing URI-bearing OEM mockups.
+- Dependency-free, TLS-safe, read-only classification; no wire/transport/payload change, no WebView dependency added, production TLS never weakened.
+- Full emulator re-run because lib/ changed; server stopped via script trap, test-only self-signed cert.
+
+**Next:**
+- Continue unblocked dept slices (EP-M2/EP-M1/EP-S1/EP-U3/EP-U1/EP-P3); genuine tested dependency-free increments only.
+- Never add a WebView/protocol dependency unattended; never weaken production TLS.
+- Re-run emulator only on lib/wire/fixture/tool change or >7 days; cheap DOCS anchor gate only.
+
+**Issues touched:** #009 (open — RM-1 URI-less OEM enablement), #021 (open — shared helper)

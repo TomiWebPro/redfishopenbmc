@@ -159,6 +159,35 @@ void main() {
       );
     });
 
+    testWidgets(
+        'a URI-less BMC-disabled OEM console renders the disabled helper '
+        '(RM-1 / #009)', (WidgetTester tester) async {
+      // A BMC may disable its OEM KVM block without publishing a Uri. The
+      // capability must honour that explicit disable (like every standard
+      // console block) and show the "KVM disabled on BMC" helper rather than a
+      // Supported/Enabled card. RED pre-fix: kvmOemConsoleEnabled only looked
+      // at Uri-bearing blocks, so this capability was reported supported.
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC',
+          'Oem': <String, dynamic>{
+            'OpenBMC': <String, dynamic>{
+              'KVM': <String, dynamic>{'ServiceEnabled': false},
+            },
+          },
+        },
+        managerId: 'BMC',
+      );
+      expect(capability.supported, isFalse);
+      await tester.pumpWidget(
+        MaterialApp(home: KvmCapabilityCard(capability: capability)),
+      );
+      expect(find.text(kvmDisabledOnBmcNotice), findsOneWidget);
+      expect(find.bySemanticsLabel(kvmDisabledOnBmcNotice), findsOneWidget);
+      expect(find.text('Supported'), findsNothing);
+      expect(find.text('No console URI resolved. Source:'), findsOneWidget);
+    });
+
     testWidgets('a blank resolved URI shows the source notice, not a blank row',
         (WidgetTester tester) async {
       // A BMC can emit a whitespace-only ConnectUri. The card must take the

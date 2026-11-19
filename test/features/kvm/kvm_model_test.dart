@@ -1020,6 +1020,46 @@ void main() {
       expect(console.serviceEnabled, isTrue);
       expect(console.canOpenConsole, isTrue);
     });
+
+    // RED proof (RM-1 / #009): a URI-less OEM console block that explicitly
+    // reports ServiceEnabled:false is a disabled console exactly like a
+    // standard block carrying the same flag. kvmOemConsoleEnabled previously
+    // read enablement only from a Uri-bearing block, so a URI-less disabled
+    // OEM console was wrongly reported enabled on the console card.
+    test('a URI-less OEM console with ServiceEnabled:false is disabled (#009)',
+        () {
+      final KvmConsole console = oemConsoleFrom(<String, dynamic>{
+        'OpenBMC': <String, dynamic>{
+          'KVM': <String, dynamic>{'ServiceEnabled': false},
+        },
+      });
+      expect(console.serviceEnabled, isFalse);
+      expect(console.canOpenConsole, isFalse);
+      expect(console.launchStrategy, KvmLaunchStrategy.noUri);
+    });
+
+    test('a URI-less OEM console with legacy Enabled:false is disabled (#009)',
+        () {
+      final KvmConsole console = oemConsoleFrom(<String, dynamic>{
+        'OpenBMC': <String, dynamic>{
+          'KVM': <String, dynamic>{'Enabled': false},
+        },
+      });
+      expect(console.serviceEnabled, isFalse);
+      expect(console.canOpenConsole, isFalse);
+    });
+
+    // Guard: a URI-less OEM console with no enablement flag stays enabled,
+    // preserving all existing URI-less OEM mockups.
+    test('a URI-less OEM console with no enablement flag stays enabled (#009)',
+        () {
+      final KvmConsole console = oemConsoleFrom(<String, dynamic>{
+        'OpenBMC': <String, dynamic>{
+          'KVM': <String, dynamic>{'Description': 'placeholder'},
+        },
+      });
+      expect(console.serviceEnabled, isTrue);
+    });
   });
 
   group('KvmConsole malformed @odata.id tolerance (#009)', () {

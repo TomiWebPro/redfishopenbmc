@@ -1404,6 +1404,46 @@ void main() {
       expect(capability.supported, isTrue);
       expect(capability.serviceEnabled, isTrue);
     });
+
+    // RED proof (RM-1 / #009): a URI-less OEM console that explicitly disables
+    // itself must not make the capability card report supported/enabled, just
+    // as a URI-bearing disabled OEM console does not. kvmOemConsoleEnabled
+    // previously read enablement only from a Uri-bearing block.
+    test(
+        'a URI-less OEM console with ServiceEnabled:false is neither '
+        'supported nor enabled (#009)', () {
+      final KvmCapability capability = capabilityFrom(<String, dynamic>{
+        'OpenBMC': <String, dynamic>{
+          'KVM': <String, dynamic>{'ServiceEnabled': false},
+        },
+      });
+      expect(capability.supported, isFalse);
+      expect(capability.serviceEnabled, isFalse);
+    });
+
+    // Cross-view agreement: for the same manager body the console view and the
+    // capability view must agree that a URI-less BMC-disabled OEM console is
+    // disabled (issue #009).
+    test(
+        'both KVM views agree a URI-less disabled OEM console is disabled '
+        '(#009)', () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{
+            'KVM': <String, dynamic>{'Enabled': false},
+          },
+        },
+      };
+      final KvmCapability capability =
+          KvmCapability.fromManager(body, managerId: 'BMC');
+      final KvmConsole console =
+          KvmConsole.fromManager(body, managerId: 'BMC').single;
+      expect(capability.supported, isFalse);
+      expect(capability.serviceEnabled, isFalse);
+      expect(console.serviceEnabled, isFalse);
+      expect(console.canOpenConsole, isFalse);
+    });
   });
 
   group('KvmCapability connectTypes Oem marker dedup (#009)', () {

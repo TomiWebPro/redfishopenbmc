@@ -78,11 +78,67 @@ String? kvmOemConsoleUri(dynamic node, {int maxDepth = 3}) {
 /// Read-only: inspects JSON members only, never opens a connection and never
 /// changes transport security.
 bool kvmOemConsoleEnabled(dynamic node, {int maxDepth = 3}) {
+  // The URI-bearing block stays authoritative so the URI and its enablement
+  // always come from the same console node (the invariant above). But a BMC
+  // may publish a console-like block that explicitly disables itself without
+  // a usable `Uri` (e.g. an OEM KVM placeholder with `ServiceEnabled: false`).
+  // kvmOemConsoleBlock cannot see that block because it filters on `Uri`, so
+  // without this fallback the disable flag was silently ignored and a
+  // BMC-disabled OEM console was wrongly reported supported + enabled on both
+  // KVM views — breaking the #009 "KVM disabled on BMC" contract that every
+  // standard console block honors. When no URI-bearing console exists there
+  // is no URI to disagree with, so fall back to the console-like block picked
+  // by the same key rule FeatureRules.oemHasConsole uses and read its flags.
   final Map<dynamic, dynamic>? block =
-      kvmOemConsoleBlock(node, maxDepth: maxDepth);
+      kvmOemConsoleBlock(node, maxDepth: maxDepth) ??
+          _consoleLikeBlock(node, 0, maxDepth);
   if (block == null) return true;
   if (block['ServiceEnabled'] == true || block['Enabled'] == true) return true;
   return !block.containsKey('ServiceEnabled') && !block.containsKey('Enabled');
+}
+
+/// Returns the first console-like map in [node] (a key containing `kvm` or
+/// `console`, matching `FeatureRules.oemHasConsole`), bounded to [maxDepth],
+/// regardless of whether it carries a usable `Uri`.
+///
+/// Used only as the enablement fallback in [kvmOemConsoleEnabled] when no
+/// URI-bearing console block exists: it lets an explicit `ServiceEnabled:
+/// false` / `Enabled: false` on a URI-less OEM console be honored. Prefers a
+/// console-like block that actually carries an enablement member so vendor
+/// metadata with no such flag cannot mask the real console's explicit state;
+/// otherwise the first console-like block is used, keeping detection aligned
+/// with `FeatureRules.oemHasConsole`.
+Map<dynamic, dynamic>? _consoleLikeBlock(
+    dynamic node, int depth, int maxDepth) {
+  if (depth > maxDepth || node is! Map<dynamic, dynamic>) return null;
+
+  Map<dynamic, dynamic>? first;
+  for (final dynamic entry in node.entries) {
+    final String key = entry.key.toString().toLowerCase();
+    if ((key.contains('kvm') ||
+            key.contains('console') ||
+            key.contains('webconsole')) &&
+        entry.value is Map<dynamic, dynamic>) {
+      final Map<dynamic, dynamic> block = entry.value as Map<dynamic, dynamic>;
+      if (block.containsKey('ServiceEnabled') || block.containsKey('Enabled')) {
+        return block;
+      }
+      first ??= block;
+    }
+  }
+  // Prefer a nested console-like block that carries an explicit enablement
+  // member over one that does not, so a flag-less metadata block cannot mask a
+  // real console's explicit disabled state in a multi-vendor `Oem` payload.
+  for (final dynamic value in node.values) {
+    final Map<dynamic, dynamic>? block =
+        _consoleLikeBlock(value, depth + 1, maxDepth);
+    if (block == null) continue;
+    if (block.containsKey('ServiceEnabled') || block.containsKey('Enabled')) {
+      return block;
+    }
+    first ??= block;
+  }
+  return first;
 }
 
 String? _uriFromMap(Map<dynamic, dynamic> map) {
