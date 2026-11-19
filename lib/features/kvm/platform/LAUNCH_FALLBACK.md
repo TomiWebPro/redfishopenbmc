@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 40 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (51 across the platform
+consume; today it locks the fallback behaviour with 46 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (57 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -119,10 +119,28 @@ Invariants, enforced by tests:
    backslash (either hex case) in the authority fails closed; the rule is
    scoped so encoded delimiters in the path/query and valid pct-encoded
    non-delimiter host bytes (`bmc%C3%A9.example`) stay launchable, no valid
-   target lost. Covered by 26 targeted tests (malformed-authority parity +
+   target lost.
+   **Encoded control-octet rejection:** a percent-encoded C0 (0x00-0x1F) or DEL
+   (0x7F) octet is a *valid* `%XX` escape (so the malformed-percent rule misses
+   it) with no raw forbidden char, yet `Uri.tryParse` keeps it encoded and
+   reports a "secure" HTTPS host: `%00` truncates the host, `%0D%0A` enables
+   header injection. Every encoded C0/DEL octet fails closed; other escapes
+   stay launchable.
+   **Encoded Unicode separator/invisible rejection:** a percent-encoded
+   multi-byte UTF-8 character that decodes to a Unicode `Separator` (Z) or
+   `Other` (C) code point is likewise a valid `%XX` escape with no raw
+   non-ASCII, kept encoded by `Uri.tryParse` while reporting a "secure" host.
+   A decode-first launcher turns `%C2%A0` (NBSP, Zs) into an invisible
+   separator in the host, or `%E2%80%8B` (zero-width space, Cf) / `%C2%85`
+   (NEL, Cc) into an invisible control — a parser-differential / host-spoofing
+   vector. Every encoded non-ASCII C/Z code point fails closed; ASCII escapes
+   (`%20`) and non-C/Z escapes (`%C3%A9` e-acute, emoji) stay launchable, no
+   valid target lost. Covered by 37 targeted tests across the defense-in-depth
+   re-validation groups (scheme/host/malformed-authority parity +
    control-character + raw-space + Unicode-whitespace/invisible +
    raw-backslash + RFC-3986 unwise-char + malformed-percent-encoding +
-   raw non-ASCII authority + encoded authority-delimiter rejection).
+   raw non-ASCII authority + encoded authority-delimiter + encoded
+   control-octet + encoded Unicode separator/invisible rejection).
 
 ## What remains gated (not done here)
 

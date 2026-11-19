@@ -15,6 +15,8 @@
 /// fallback still works unchanged. See `LAUNCH_FALLBACK.md`.
 library;
 
+import 'dart:convert';
+
 import 'webview_policy.dart';
 
 /// An immutable, concrete plan for handing a console to a renderer or fallback.
@@ -158,6 +160,20 @@ class KvmConsoleLaunchPlan {
 /// spoofed/malformed host. Every pct-encoded 0x00-0x1F or 0x7F octet fails
 /// closed (either hex case), while non-control escapes (`%20`, `%2F`, UTF-8
 /// bytes, ...) stay launchable — no valid target is lost.
+///
+/// A percent-encoded multi-byte UTF-8 character that decodes to a Unicode
+/// `Separator` (Z) or `Other` (C) code point is rejected for the same reason:
+/// it is a valid `%XX` escape (so the malformed-percent rule misses it), is not
+/// a single-byte C0/DEL octet (so the encoded-control rule misses it), and has
+/// no raw non-ASCII (so the raw-authority rule misses it), yet `Uri.tryParse`
+/// keeps it encoded and reports a "secure" HTTPS host. A decode-first launcher
+/// turns e.g. `%C2%A0` (NBSP, Zs) into an invisible separator in the host, or
+/// `%E2%80%8B` (zero-width space, Cf) / `%C2%85` (NEL, Cc) into an invisible
+/// control — a parser-differential / host-spoofing vector that under a stale
+/// flag + test opt-in could reach in-app rendering and self-signed acceptance.
+/// Only decoded non-ASCII C/Z code points are rejected (ASCII escapes such as
+/// `%20` and non-C/Z escapes such as `%C3%A9` stay launchable), so no valid
+/// target is lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -172,6 +188,12 @@ final RegExp _malformedPercentEncoding = RegExp(r'%(?![0-9A-Fa-f]{2})');
 /// is a classic host-truncation / injection vector (see below).
 final RegExp _encodedControlOctet =
     RegExp(r'%(?:0[0-9A-Fa-f]|1[0-9A-Fa-f]|7[Ff])');
+
+/// Unicode `Separator` (Z) and `Other` (C) categories — the same principled
+/// category rule used for raw characters in [_rawUriForbiddenChars], applied
+/// here to the *percent-decoded* content (non-ASCII only; see
+/// [_hasEncodedUnicodeControlOrSeparator]).
+final RegExp _unicodeOtherOrSeparator = RegExp(r'[\p{C}\p{Z}]', unicode: true);
 
 /// Matches any non-ASCII code unit. RFC 3986 URIs are ASCII-only: a raw
 /// non-ASCII character must be pct-encoded (or punycode-encoded in a host).
@@ -239,6 +261,65 @@ bool _authorityHasEncodedDelimiter(String uri) {
   return _encodedAuthorityDelimiter.hasMatch(authority);
 }
 
+/// Returns the numeric value of a single ASCII hex digit, or `null`.
+int? _hexDigit(String char) {
+  final int code = char.codeUnitAt(0);
+  if (code >= 0x30 && code <= 0x39) return code - 0x30; // '0'-'9'
+  if (code >= 0x41 && code <= 0x46) return code - 0x41 + 10; // 'A'-'F'
+  if (code >= 0x61 && code <= 0x66) return code - 0x61 + 10; // 'a'-'f'
+  return null;
+}
+
+/// Returns `true` when [uri] carries a percent-encoded multi-byte UTF-8
+/// character that decodes to a Unicode `Separator` (Z) or `Other` (C) code
+/// point.
+///
+/// Such an escape is a *valid* `%XX` sequence (so the malformed-percent rule
+/// does not catch it), is not a single-byte C0/DEL octet (so
+/// [_encodedControlOctet] does not catch it), and contains no raw non-ASCII
+/// character (so the raw-authority rule does not catch it). `Uri.tryParse`
+/// keeps it encoded and still reports an HTTPS URI with a non-empty host, so a
+/// purely syntactic re-check calls it "secure" — yet a launcher that
+/// percent-decodes first turns e.g. `%C2%A0` (NBSP, Zs) into an invisible
+/// separator in the host, or `%E2%80%8B` (zero-width space, Cf) / `%C2%85`
+/// (NEL, Cc) into an invisible control: a parser-differential / host-spoofing
+/// vector. Under a stale secure flag + test opt-in that could reach in-app
+/// rendering and self-signed acceptance on a malformed/spoofed host.
+///
+/// Only decoded **non-ASCII** code points are inspected: ASCII escapes are
+/// handled by earlier rules (C0/DEL by [_encodedControlOctet]; `%20` is the
+/// correct encoding of a space and must stay launchable). Encoded non-C/Z
+/// characters (e.g. `%C3%A9` e-acute, a Letter; emoji, a Symbol) stay
+/// launchable — stricter than the model, never more permissive, no valid
+/// target lost.
+bool _hasEncodedUnicodeControlOrSeparator(String uri) {
+  final List<int> bytes = <int>[];
+  for (int i = 0; i < uri.length; i++) {
+    final String char = uri[i];
+    if (char == '%' && i + 2 < uri.length) {
+      final int? hi = _hexDigit(uri[i + 1]);
+      final int? lo = _hexDigit(uri[i + 2]);
+      if (hi != null && lo != null) {
+        bytes.add((hi << 4) | lo);
+        i += 2;
+        continue;
+      }
+    }
+    // A raw character here is ASCII (raw non-ASCII/forbidden chars were
+    // rejected by earlier rules); keep its byte value so a percent-encoded
+    // UTF-8 sequence is decoded in the correct byte context.
+    bytes.add(char.codeUnitAt(0));
+  }
+  final String decoded = utf8.decode(bytes, allowMalformed: true);
+  for (final int rune in decoded.runes) {
+    if (rune < 0x80) continue; // ASCII handled by earlier rules
+    if (_unicodeOtherOrSeparator.hasMatch(String.fromCharCodes(<int>[rune]))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool _uriHasSecureHttpsTarget(String? uri) {
   if (uri == null) return false;
   final String trimmed = uri.trim();
@@ -268,6 +349,12 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // is scoped to the authority, so encoded delimiters in the path/query and
   // valid pct-encoded non-delimiter bytes in a host stay launchable.
   if (_authorityHasEncodedDelimiter(trimmed)) return false;
+  // Reject a percent-encoded multi-byte UTF-8 character that decodes to a
+  // Unicode Separator/Other code point (NBSP, zero-width space, NEL, ...): a
+  // decode-first launcher could see an invisible/control character in the
+  // host, yet Uri.tryParse keeps it encoded and reports a "secure" HTTPS host.
+  // ASCII escapes (incl. %20) and non-C/Z escapes stay launchable.
+  if (_hasEncodedUnicodeControlOrSeparator(trimmed)) return false;
   final Uri? parsed = Uri.tryParse(trimmed);
   return parsed != null && parsed.scheme == 'https' && parsed.host.isNotEmpty;
 }

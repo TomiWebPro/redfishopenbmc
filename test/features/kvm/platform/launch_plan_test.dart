@@ -950,4 +950,91 @@ void main() {
       }
     });
   });
+
+  group(
+      'planConsoleLaunch — defense in depth: encoded Unicode separator/invisible rejection',
+      () {
+    test(
+        'a percent-encoded Unicode separator/invisible fails closed with a stale flag',
+        () {
+      // A percent-encoded multi-byte UTF-8 character that decodes to a Unicode
+      // Separator (Z) or Other (C) code point is still a *valid* %XX escape
+      // (so the malformed-percent rule does not catch it), is not a single-byte
+      // C0/DEL octet (so the encoded-control-octet rule does not catch it), and
+      // contains no raw non-ASCII (so the raw-authority rule does not catch
+      // it). `Uri.tryParse` keeps it encoded and still reports an HTTPS URI
+      // with a non-empty host, so a purely syntactic re-check calls these
+      // "secure" — yet a launcher that percent-decodes first turns e.g. %C2%A0
+      // (NBSP, Zs) into an invisible separator in the host, and %E2%80%8B
+      // (zero-width space, Cf) / %C2%85 (NEL, Cc) into an invisible control:
+      // classic parser-differential / host-spoofing vectors. Under a stale
+      // secure flag + test opt-in any could reach in-app rendering and
+      // self-signed acceptance on a malformed/spoofed host, so every such
+      // escaped character must fail closed.
+      for (final String uri in <String>[
+        'https://bmc%C2%A0.example/console', // NBSP (Zs) in host
+        'https://bmc.example/con%E2%80%8Bsol', // zero-width space (Cf) in path
+        'https://bmc%C2%85.example/console', // NEL (Cc) in host
+        'https://bmc.example/con%E2%80%A8sol', // line separator (Zl) in path
+        'https://bmc%E3%80%80.example/console', // ideographic space (Zs) in host
+        'https://bmc.example/con%EF%BB%BFsol', // BOM (Cf) in path
+        'https://user%E2%80%8B@bmc.example/console', // ZWSP (Cf) in userinfo
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('an encoded Unicode separator never reaches in-app under a strict opt-in',
+        () {
+      // Even without granting self-signed acceptance, a URI carrying an encoded
+      // invisible/control character must not be rendered in-app by an
+      // enabled+strict opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc%C2%A0.example/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('encoded non-C/Z characters and ASCII escapes stay launchable', () {
+      // Guard against over-rejection: only decoded non-ASCII code points in
+      // the Unicode Separator/Other categories are rejected. Encoded letters
+      // (%C3%A9 e-acute, a Letter), encoded emoji (%F0%9F%98%80, Symbol) and
+      // ASCII escapes such as %20 (space) stay launchable via the
+      // external-browser fallback — no TLS weakening, no valid target lost.
+      for (final String uri in <String>[
+        'https://bmc.example/caf%C3%A9', // %C3%A9 = e-acute (Letter)
+        'https://bmc.example/%F0%9F%98%80', // emoji (Symbol)
+        'https://bmc.example/console%20one', // %20 = ASCII space (exempt)
+        'https://bmc.example/console%2Fone', // %2F = ASCII slash
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }
