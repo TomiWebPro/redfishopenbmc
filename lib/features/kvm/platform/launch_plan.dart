@@ -165,8 +165,24 @@ bool isControlSafeConsoleUri(String? uri) =>
 /// (`[` `]` `&` `=` ...) are unaffected. Shared by every HTTP(S) transport
 /// classifier so HTTPS/HTTP classification and the launch-plan decision layer
 /// apply identical hardening.
+///
+/// A malformed percent-encoding is rejected for the same reason: RFC 3986
+/// requires `pct-encoded = "%" HEXDIG HEXDIG`, but `Uri.tryParse` silently
+/// percent-encodes a bare or malformed `%` into the host rather than rejecting
+/// it — e.g. `https://bmc.example%/console` yields host `bmc.example%25` and
+/// `https://bmc.example%ZZ/console` yields `bmc.example%25zz`, both still
+/// passing a purely syntactic re-check (a bare `%` is not in the forbidden
+/// char class, because valid `%XX` escapes must remain launchable). Under a
+/// stale secure flag + test opt-in that parser differential could grant in-app
+/// rendering and self-signed acceptance on a malformed/spoofed host. Every
+/// `%` not followed by exactly two hex digits fails closed, while valid `%XX`
+/// (either hex case) stays launchable — no valid target is lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
+
+/// Matches a `%` that does not begin a valid `%XX` escape (RFC 3986
+/// `pct-encoded = "%" HEXDIG HEXDIG`). Valid escapes contain no bare `%`.
+final RegExp _malformedPercentEncoding = RegExp(r'%(?![0-9A-Fa-f]{2})');
 
 /// Trims [uri] and returns it only when it is non-blank and contains no raw
 /// control/separator/invisible code point, or `null` otherwise. Shared by every
@@ -183,6 +199,10 @@ String? _controlSafeTrimmedUri(String? uri) {
   // of them and stay launchable, as do legal gen/sub-delims. An embedded raw
   // one is not removed by `String.trim()`.
   if (_rawUriForbiddenChars.hasMatch(trimmed)) return null;
+  // Reject a bare/malformed `%` that Uri.tryParse would silently encode rather
+  // than reject (RFC 3986 requires "%" HEXDIG HEXDIG). Valid `%XX` escapes (any
+  // hex case) contain no bare `%` and stay launchable.
+  if (_malformedPercentEncoding.hasMatch(trimmed)) return null;
   return trimmed;
 }
 

@@ -801,4 +801,78 @@ void main() {
       }
     });
   });
+
+  group('planConsoleLaunch — defense in depth: malformed percent-encoding rejection', () {
+    test('a raw percent that is not a valid %XX escape fails closed', () {
+      // `Uri.tryParse` silently percent-encodes a malformed `%` (one not
+      // followed by exactly two hex digits) into the host instead of rejecting
+      // it: `https://bmc.example%/console` -> host `bmc.example%25`, and
+      // `...%ZZ` -> host `bmc.example%25zz`. None of these contain a raw
+      // forbidden char (a bare `%` is not in the forbidden set, since valid
+      // `%XX` escapes must stay launchable), so a purely syntactic re-check
+      // calls them "secure". Under a stale secure flag + test opt-in they
+      // would reach in-app rendering and self-signed acceptance on a malformed
+      // host. A `%` must always begin a valid `%XX` escape (RFC 3986
+      // `pct-encoded = "%" HEXDIG HEXDIG`), so every malformed occurrence fails
+      // closed — stricter than the model, never more permissive.
+      for (final String uri in <String>[
+        'https://bmc.example%/console', // bare percent before path
+        'https://bmc.example%ZZ/console', // non-hex after percent
+        'https://bmc.example%2/console', // only one hex digit
+        'https://bmc.exa%mple/console', // malformed percent in host
+        'https://bmc.example/console%', // trailing bare percent
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('a malformed percent URI never reaches in-app under a strict opt-in', () {
+      // Even without granting self-signed acceptance, a malformed escape must
+      // not be rendered in-app by an enabled+strict opt-in.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc.example%ZZ/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('valid %XX escapes (uppercase and lowercase hex) stay launchable', () {
+      // Guard against over-rejection: correctly formed percent escapes are the
+      // only legal way to carry reserved/unsafe bytes in a URI and must remain
+      // launchable via the external-browser fallback (no TLS weakening, no
+      // valid target lost). Both hex cases and multiple escapes are accepted.
+      for (final String uri in <String>[
+        'https://bmc.example/console%2fone', // lowercase hex
+        'https://bmc.example/console%2FONE', // uppercase hex
+        'https://bmc.example/console%41%42', // multiple escapes
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }
