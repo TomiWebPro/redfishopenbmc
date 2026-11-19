@@ -6,6 +6,7 @@ import 'package:redfishopenbmc/features/kvm/kvm_providers.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_service.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
 import 'package:redfishopenbmc/features/kvm/views/kvm_console_viewer_page.dart';
+import 'package:redfishopenbmc/features/kvm/views/kvm_transport_notice.dart';
 import 'package:redfishopenbmc/features/kvm/views/kvm_view.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/redfish/models/connection_profile.dart';
@@ -821,6 +822,85 @@ void main() {
       expect(find.text('Copy connect info'), findsOneWidget);
       expect(find.text('Open console'), findsNothing);
     });
+  });
+
+  group('KvmView — console-card transport warning (#009/#021)', () {
+    KvmConsole console({required String uri}) => KvmConsole(
+          type: KvmConsoleType.remote,
+          managerId: 'BMC',
+          connectTypesSupported: const <String>['HTML5'],
+          serviceEnabled: true,
+          connectUri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/BMC',
+        );
+
+    Future<void> pumpCard(
+      WidgetTester tester,
+      KvmConsole value, {
+      double? width,
+    }) async {
+      if (width != null) {
+        tester.view.physicalSize = Size(width, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+      }
+      final KvmController controller = _StubController()
+        ..state = KvmUiState(consoles: <KvmConsole>[value]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+        'a plaintext-HTTP console card shows the shared unencrypted-transport '
+        'warning with a merged announcement (#021)', (tester) async {
+      await pumpCard(tester, console(uri: 'http://bmc.example.com/kvm'));
+
+      // The announcement IS the visible text (single excludeSemantics node),
+      // and it is the exact same sentence the capability card uses.
+      expect(find.bySemanticsLabel(kvmInsecureTransportNotice), findsOneWidget,
+          reason: 'a11y: the insecure-transport warning must be announced');
+      expect(find.text(kvmInsecureTransportNotice), findsOneWidget);
+      expect(find.byIcon(Icons.lock_open_outlined), findsOneWidget);
+      // The warning is guidance, not a hidden action: an insecure HTML5
+      // console stays openable so its URI remains usable externally.
+      expect(find.text('Open console'), findsOneWidget);
+      expect(
+        find.textContaining('In-app HTML5 console path available'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('a secure HTTPS console card shows no transport warning (#021)',
+        (tester) async {
+      await pumpCard(tester, console(uri: 'https://bmc.example.com/kvm'));
+
+      expect(find.bySemanticsLabel(kvmInsecureTransportNotice), findsNothing);
+      expect(find.text(kvmInsecureTransportNotice), findsNothing);
+      expect(find.byIcon(Icons.lock_open_outlined), findsNothing);
+    });
+
+    for (final double width in <double>[320, 800, 1300]) {
+      testWidgets(
+          'plaintext-HTTP warning card renders without overflow at '
+          '${width.toInt()} px', (tester) async {
+        await pumpCard(
+          tester,
+          console(uri: 'http://bmc.example.com/kvm'),
+          width: width,
+        );
+        expect(tester.takeException(), isNull,
+            reason: 'the transport warning must not overflow at $width px');
+        expect(find.text(kvmInsecureTransportNotice), findsOneWidget);
+      });
+    }
   });
 
   group('KvmView — responsive layout (UI-3)', () {

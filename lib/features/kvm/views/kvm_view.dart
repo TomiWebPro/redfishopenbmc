@@ -8,6 +8,7 @@ import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
 import 'package:redfishopenbmc/features/kvm/views/kvm_capability_card.dart';
 import 'package:redfishopenbmc/features/kvm/views/kvm_console_viewer_page.dart';
+import 'package:redfishopenbmc/features/kvm/views/kvm_transport_notice.dart';
 import 'package:redfishopenbmc/features/systems/providers/system_manager.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
@@ -467,6 +468,37 @@ class _ConsoleCard extends StatelessWidget {
                     SelectableText(
                       console.sourceManagerUri,
                       style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            // #009 / #021: the per-console card is the operator's first launch
+            // decision surface, so a plaintext-HTTP endpoint must carry the
+            // SAME unencrypted-transport warning the capability card and the
+            // viewer already show. Without it an operator could tap "Open
+            // console" for an insecure HTML5 console without ever being told
+            // that console video and injected input would travel in the clear.
+            // Display-only: no URL is opened and no transport is weakened.
+            if (console.usesInsecureHttpLaunchUri) ...<Widget>[
+              const SizedBox(height: 8),
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                label: kvmInsecureTransportNotice,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(Icons.lock_open_outlined,
+                        size: 18, color: Theme.of(context).colorScheme.error),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        kvmInsecureTransportNotice,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                      ),
                     ),
                   ],
                 ),

@@ -10498,3 +10498,18 @@
 - Re-run all gates on the next PASS; cleanly SKIP if verdict not PASS or branch has no new commits.
 
 **Issues touched:** none (gate merge + tracking only)
+
+## 2026-11-19 — agent:redfish-automation — #009
+
+**Done:**
+- FEATURE #009/#021 (smallest open issue ID #009) — genuine, dependency-free, TLS-safe cross-view transport-safety fix. `KvmView._ConsoleCard` was the only KVM surface with no plaintext-HTTP warning (the capability card and viewer both warn), so it now renders an error-styled lock-open unencrypted-HTTP notice with a single merged Semantics node whenever `console.usesInsecureHttpLaunchUri`. The warning sentence was extracted from the capability card's private duplicate into one shared exported `kvmInsecureTransportNotice` (`lib/features/kvm/views/kvm_transport_notice.dart`) used by both cards, so they cannot drift. +5 RED→GREEN widget tests (1 behavioral confirmed RED pre-fix); baseline analyze 0 / HEAD re-measure 1126 passed / 1 skipped → verify analyze 0 / 1131 passed / 1 skipped; DMTF emulator 85/85 (lib changed — §1.4 gate met); coverage gates PASS overall 89.6% / scoped 90.4% / kvm 94.9%; issues validate OK; git diff --check clean. Issue stays OPEN (WebView/TLS-blocked rendering items remain).
+
+**Decisions:**
+- Placed the warning in the console card (not just the capability card) because it is the operator's first launch-decision surface — an insecure HTML5 console still offers "Open console", so it is the surface most in need of the safety signal. Kept the exact same sentence as the capability card via one shared presentation constant; the viewer keeps its own more detailed `kvmLaunchStatusText(insecureHtml5)` copy (intentionally distinct). Display-only: no URL opened, no WebView/protocol dependency, no production TLS weakening. Full emulator re-run (85/85) because `lib/` changed.
+
+**Next:**
+- #009/#021 remaining boxes are externally blocked on platform WebView + BMC TLS/self-signed validation — next run must find another genuine, testable, dependency-free increment (e.g. epic-triage/split the WebView-blocked rendering work, or RU-2 disabled-helper / session-note copy consistency across both KVM views), never verification-only churn; never weaken TLS.
+- #021 (P2) in-app HTML5 rendering only when a platform WebView target is available unattended.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — console-card transport safety), #021 (open — plaintext-HTTP warning parity)

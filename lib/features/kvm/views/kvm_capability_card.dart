@@ -15,13 +15,7 @@ library;
 import 'package:flutter/material.dart';
 
 import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
-
-/// The single visible + announced string for the plaintext-HTTP resolved-URI
-/// warning (UI-2: the row uses `excludeSemantics`, so this is both the text a
-/// sighted operator reads and the label a screen reader announces).
-const String _insecureUriNotice =
-    'Unencrypted HTTP console URI. Configure the BMC console to use HTTPS '
-    'before opening it in a browser.';
+import 'package:redfishopenbmc/features/kvm/views/kvm_transport_notice.dart';
 
 /// A single per-manager remote-KVM capability summary card (issue #009).
 class KvmCapabilityCard extends StatelessWidget {
@@ -188,7 +182,7 @@ class KvmCapabilityCard extends StatelessWidget {
               Semantics(
                 container: true,
                 excludeSemantics: true,
-                label: _insecureUriNotice,
+                label: kvmInsecureTransportNotice,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
@@ -197,7 +191,7 @@ class KvmCapabilityCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _insecureUriNotice,
+                        kvmInsecureTransportNotice,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: scheme.error,
                         ),
