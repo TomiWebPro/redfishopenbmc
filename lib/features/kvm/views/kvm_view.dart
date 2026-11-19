@@ -300,7 +300,12 @@ class _ConsoleCard extends StatelessWidget {
     // treated as no URI: the card hides its URI row / launch button and the
     // clipboard target falls back to the manager URI (issue #009).
     final String? launchUri = console.launchUri;
-    final String targetUri = launchUri ?? console.sourceManagerUri;
+    // #009/#021: the clipboard target comes from the fail-closed launch plan
+    // (via clipboardTargetUri), matching the in-app viewer. A control-char /
+    // spoofed-authority URI stays visible in the SelectableText above but is
+    // never placed on the clipboard by this explicit copy action — it degrades
+    // to the safe manager source instead of risking injection when pasted.
+    final String targetUri = console.clipboardTargetUri;
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(

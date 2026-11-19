@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_controller.dart';
@@ -1055,6 +1056,61 @@ void main() {
       expect(find.text('Copy connect info'), findsOneWidget);
       // Not a plaintext-HTTP console, so no unencrypted-transport warning.
       expect(find.text(kvmInsecureTransportNotice), findsNothing);
+    });
+
+    testWidgets(
+        'the card copy action fails closed for a control-char URI — the '
+        'clipboard gets the manager source, not the injection-bearing target '
+        '(#009/#021)', (tester) async {
+      // The viewer takes its copy target from the fail-closed launch plan, so a
+      // CRLF-bearing HTTPS URI is never placed on the clipboard. The card must
+      // agree: its "Copy connect info" action copies the safe manager source
+      // rather than the raw control-char endpoint (which risks header/clipboard
+      // injection when pasted). Fail closed, not hidden: the raw URI stays
+      // visible in the card, only the explicit copy action is hardened.
+      final List<Object?> copied = <Object?>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add(call.arguments['text']);
+          }
+          return null;
+        },
+      );
+      addTearDown(() => TestDefaultBinaryMessengerBinding
+          .instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null));
+
+      // Wrap KvmView in a Scaffold so the copy action's confirmation SnackBar
+      // has a descendant Scaffold to present into.
+      final KvmController controller = _StubController()
+        ..state = KvmUiState(consoles: <KvmConsole>[
+          console(uri: 'https://bmc.example/kvm\r\nX-Injected: 1')
+        ]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: KvmView(systemId: 'bmc1')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The endpoint stays visible/selectable and the copy affordance remains
+      // available (fail closed, not hidden).
+      expect(find.text('Copy connect info'), findsOneWidget);
+      await tester.tap(find.text('Copy connect info'));
+      await tester.pumpAndSettle();
+
+      expect(copied, hasLength(1));
+      expect(copied.single, '/redfish/v1/Managers/BMC');
+      expect(copied.single, isNot(contains('X-Injected')));
     });
 
     for (final double width in <double>[320, 800, 1300]) {

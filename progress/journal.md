@@ -10704,3 +10704,18 @@
 - Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
 
 **Issues touched:** #009 (open — RU-2 session/disabled a11y notices), #021 (open — viewer session-persistence notice)
+
+## 2026-11-19 — agent:redfish-automation — #009/#021
+
+**Done:**
+- FEATURE #009 (smallest open ID) / #021 — genuine cross-surface clipboard-safety fix. The 08:38 fail-closed target change made the in-app viewer take its copy target from `console.launchPlan.targetUri`, but the per-console card's "Copy connect info" action still copied the raw `console.launchUri`; a CRLF/NUL/raw-space/backslash/malformed-% `ConnectUri` that the fail-closed plan refused as a clipboard target was still placed on the clipboard by the card — a header/clipboard-injection risk and a disagreement between the two surfaces. Added the pure `KvmConsole.clipboardTargetUri` (`launchPlan.targetUri ?? sourceManagerUri`) single source of truth and switched the card's copy action to it; the raw endpoint stays visible/selectable (fail closed, not hidden) and valid/percent-encoded targets copy byte-for-byte as before. +3 RED→GREEN tests (1 behavioral widget test tapping "Copy connect info" with a platform-channel clipboard mock — confirmed RED pre-fix `Expected: '/redfish/v1/Managers/BMC' / Actual: 'https://bmc.example/kvm\r\nX-Injected: 1'`; 2 pure model tests — control-char URIs → manager source, guard for valid/plaintext/no-URI/encoded). Baseline analyze 0 / 1185 passed / 1 skipped → verify analyze 0 / 1188 passed / 1 skipped; DMTF emulator 85/85 (lib changed — §1.4 gate met); issues validate OK; git diff --check clean. Issues stay OPEN (remaining work tracked as dept slices in `queues/*.md`).
+
+**Decisions:**
+- Reused the already fail-closed `launchPlan.targetUri` as the authoritative clipboard value rather than adding a parallel sanitizer, so the card and viewer can never disagree about what is safe to copy; a `null` plan target (control-unsafe URI) degrades to the manager source, preserving every valid/encoded target. Kept the raw endpoint visible on the card per the established "fail closed, not hidden" design — only the explicit clipboard action is hardened. Scope kept to `lib/features/kvm/models/kvm_models.dart` + `lib/features/kvm/views/kvm_view.dart` + model/widget tests; no dependency, no wire/transport change, no production TLS weakening. Untracked `testing/` harness dir and pre-existing stash left untouched.
+
+**Next:**
+- Continue unblocked dept slices in `queues/*.md` for #009/#021 (EP-M2/RM-1/RM-2 model, EP-S1 service, EP-P3 platform, EP-U3 UI, EP-T4 tooling) — genuine tested dependency-free increments only; never verification-only churn.
+- Do NOT add a WebView/url_launcher dependency unattended (EP-P2/EP-T2/EP-U2 deferred on manual per-target validation); never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full EMULATOR re-run only on lib/wire/fixture/test_integration/tool change or >7 days.
+
+**Issues touched:** #009 (open — cross-surface clipboard safety), #021 (open — fail-closed card copy target)

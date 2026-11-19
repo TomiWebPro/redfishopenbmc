@@ -1090,6 +1090,49 @@ void main() {
       expect(plan.targetUri, 'http://bmc.example/console');
     });
 
+    test(
+        'clipboardTargetUri fails closed to the manager source for a '
+        'control-char URI (#009/#021)', () {
+      // The card's "Copy connect info" action must agree with the viewer: a
+      // CRLF-bearing URI that the fail-closed launch plan refuses as a target
+      // must never be placed on the clipboard (header/clipboard injection risk
+      // when pasted). The raw endpoint stays visible; only the copy target
+      // degrades to the safe manager source.
+      for (final String uri in <String>[
+        'https://bmc.example/kvm\r\nX-Injected: 1',
+        'https://bmc.example/kvm\u0000evil',
+        'https://bmc.exa mple/kvm',
+        'https://bmc.example/kvm\\@evil.com',
+        'https://bmc.example/kvm%/console',
+      ]) {
+        final KvmConsole console = make(uri: uri);
+        expect(console.launchPlan.targetUri, isNull, reason: uri);
+        expect(console.clipboardTargetUri, '/redfish/v1/Managers/BMC',
+            reason: uri);
+      }
+    });
+
+    test('clipboardTargetUri copies a valid URI byte-for-byte (guard)', () {
+      // No regression for valid/control-safe targets: the trimmed endpoint is
+      // copied, and a URI-less console still copies the manager source.
+      expect(
+        make(uri: '  https://bmc.example/console  ').clipboardTargetUri,
+        'https://bmc.example/console',
+      );
+      expect(make().clipboardTargetUri, '/redfish/v1/Managers/BMC');
+      // A plaintext HTTP (copy-only) endpoint keeps its trimmed URI.
+      expect(
+        make(uri: '  http://bmc.example/console\n').clipboardTargetUri,
+        'http://bmc.example/console',
+      );
+      // Properly percent-encoded targets contain no raw forbidden chars and
+      // remain copyable.
+      expect(
+        make(uri: 'https://bmc.example/console%20one').clipboardTargetUri,
+        'https://bmc.example/console%20one',
+      );
+    });
+
     test('production can never render in-app or accept self-signed', () {
       // Even a fully-qualified, enabled, HTTPS HTML5 console stays on the
       // external-browser fallback under the production default policy, and no

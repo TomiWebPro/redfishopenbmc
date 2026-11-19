@@ -379,6 +379,25 @@ class KvmConsole {
         isEnabled: serviceEnabled,
       );
 
+  /// The fail-closed URI the "copy connect info" affordance may place on the
+  /// clipboard, falling back to [sourceManagerUri] when the launch plan has no
+  /// usable target (issues #009 / #021).
+  ///
+  /// This is the single source of truth for the console card's clipboard
+  /// target and matches the in-app viewer, which takes its own copy target from
+  /// the same [launchPlan]. Under the production policy [launchPlan] hands back
+  /// a `null` target for a control-character / spoofed-authority URI (CRLF,
+  /// NUL, raw space, raw backslash, malformed `%`, …) that `Uri.tryParse` would
+  /// otherwise silently percent-encode into a host — placing such a value on
+  /// the clipboard risks header/clipboard injection when pasted. Without this
+  /// gate the card copied its raw [launchUri] directly while the viewer
+  /// refused the same target, so the two surfaces disagreed about clipboard
+  /// safety. The raw endpoint stays visible on the card ("fail closed, not
+  /// hidden"); only the explicit copy action degrades to the safe manager URI.
+  /// Valid, control-safe URIs (including properly percent-encoded ones) are
+  /// copied byte-for-byte as before, so no operator capability is lost.
+  String get clipboardTargetUri => launchPlan.targetUri ?? sourceManagerUri;
+
   /// Builds the list of [KvmConsole]s detected in a Redfish [managerBody].
   ///
   /// [managerId] is the manager's `Id` (used for display). Each standard
