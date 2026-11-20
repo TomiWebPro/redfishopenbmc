@@ -11397,3 +11397,20 @@
 - Cheap DOCS anchor re-verify only; full emulator re-run on lib/wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (RU-2 notice single-source guard)
+
+**Done:**
+- RU-2 cross-surface notice single-source guard. Added `test/tool/notice_single_source_guard_test.dart` (6 tests): a dependency-free, comment/string-aware evaluator parses the six canonical `const String` notices from `kvm_transport_notice.dart` at test time (incl. multi-line adjacent literals) and fails closed if any other product KVM view hardcodes a notice literal or redefines a canonical constant name — pinning the cross-surface "visible text == announced Semantics label" wording contract against copy drift.
+- RED→GREEN: 2 RED proofs (planted hardcoded notice copy + redefinition in a temp scan root → flagged) and 2 GREEN proofs (identifier reference + comments/`https://` clean), real-repo view scan clean. Analyze 0 / 1445 passed / 1 skipped (baseline 1439 +6); issues validate OK; diff --check clean; no dependency bump.
+
+**Decisions:**
+- FUTUREWORK focus slices (RS-5, EP-S2, EP-U6, RU-2 core) were already implemented and tested in prior runs — verified in-tree before choosing work; this pins the remaining RU-2 single-source invariant rather than re-landing finished work or emitting verification-only churn.
+- Test-only guard: no `lib/`, wire, fixture or tool change, no production TLS weakening; DMTF emulator skipped (<7 days since last green 85/85). CI runs the guard via `flutter test --coverage`.
+- RU-2 stays open: the mechanical invariant is pinned, but the full merged-Semantics surface audit remains as a future slice.
+
+**Next:**
+- Full RU-2 merged-Semantics audit if a genuine divergence remains; then EP-T4 fixture/CI guard, EP-T3 coverage gate — genuine tested increments only.
+- No WebView/url_launcher dependency unattended; never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
