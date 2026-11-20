@@ -1,0 +1,44 @@
+{
+  "@odata.id": "/redfish/v1/Managers/bmc",
+  "@odata.type": "#Manager.v1_19_0.Manager",
+  "Id": "bmc",
+  "Name": "BMC",
+  "ManagerType": "BMC",
+  "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+  },
+  "GraphicalConsole": {
+    "ServiceEnabled": true,
+    "ConnectTypesSupported": [
+      "KVMIP",
+      "HTML5"
+    ],
+    "MaxConcurrentSessions": 2,
+    "ConnectUri": "https://bmc.example/kvm"
+  },
+  "SerialConsole": {
+    "ServiceEnabled": false,
+    "ConnectTypesSupported": [
+      "SSH",
+      "Telnet"
+    ],
+    "MaxConcurrentSessions": 1,
+    "ConnectUri": "ssh://bmc.example"
+  },
+  "RemoteConsole": {
+    "ServiceEnabled": true,
+    "ConnectTypesSupported": [
+      "HTML5"
+    ],
+    "ConnectUri": "https://bmc.example/remote"
+  },
+  "Oem": {
+    "OpenBMC": {
+      "KVM": {
+        "ServiceEnabled": true,
+        "Uri": "https://bmc.example/oem-kvm"
+      }
+    }
+  }
+}

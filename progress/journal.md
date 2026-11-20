@@ -11509,3 +11509,19 @@
 - Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none — gate-only merge; both #009/#021 stay open.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-T10 canonical OpenBMC console fixture)
+
+**Done:**
+- EP-T10 (head of `queues/tooling.md`). Added `test/fixtures/redfish/openbmc_console_manager.json` — a committed, valid Redfish `Manager.v1_19_0` BMC with HTML5-over-HTTPS GraphicalConsole (ServiceEnabled true, [KVMIP, HTML5], MaxConcurrentSessions 2), a disabled SSH/Telnet SerialConsole, an HTML5 RemoteConsole, and `Oem.OpenBMC.KVM.Uri` — so KVM selection/guidance tests no longer depend only on ad-hoc in-temp mockups.
+- Added `test/features/kvm/kvm_openbmc_fixture_test.dart` (10 tests) driving both shared factories from the fixture: 4 consoles enumerated in order; graphical console launch-safe (`inAppHtml5` classification, production `externalBrowser` plan, self-signed false); disabled-serial + remote-HTML5 + OEM-secure-browser paths; capability support/aggregation/resolved-URI and cross-view agreement; mutation-sensitivity (removing graphical ConnectUri flips both views to the remote fallback).
+- RED→GREEN proof: temporarily changed the fixture's graphical ConnectUri to plaintext HTTP → 3 drive tests failed; restored byte-clean (SHA unchanged) → 10/10 GREEN. Analyze 0 / 1492 passed / 1 skipped (baseline 1482 +10); issues validate OK; diff --check clean.
+
+**Decisions:**
+- Test-only fixture + model-drive work — no `lib/`, wire, dependency, or production TLS change; no URL opened, no issue closed. DMTF emulator skipped (<7 days since last green 85/85, no lib/emulator-fixture/tool change); CI runs the file via `flutter test --coverage`.
+- Both #009/#021 stay open; their substantive acceptance (embedded HTML5 rendering, fullscreen, input forwarding, WebView dependency) is human-gated on platform WebView + BMC TLS validation — do NOT do unattended, never weaken production TLS.
+
+**Next:**
+- EP-U7 (full merged-Semantics audit), EP-P7 (human-gate doc invariant guard) — genuine tested increments only, never verification-only churn.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
