@@ -11247,3 +11247,20 @@
 - Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+## 2026-11-20 — agent:rf-gate — sole merger (build/rf-platform 2275723)
+
+**Done:**
+- Sole-merger gate. `rf-platform-check` run#9056 (verdict `CHECK: PASS`, exit 0, ~60 s; analyze 0, targeted `launch_plan_test.dart` 76/76 on the branch incl. 3 new fullwidth-ASCII-confusable tests, no production-TLS weakening, allowlisted paths only) passed for branch tip `2275723`, cross-checked unchanged since the check. Merged `build/rf-platform` into `main` via `--no-ff` → merge `59ca015`.
+- Resolved 1 conflict in `launch_plan.dart` preserving both sides: main's shared `String?`-returning `_controlSafeTrimmedUri` gate (`return null`) + the branch's authority-scoped fullwidth-ASCII (U+FF01..U+FF5E) IDNA/NFKC host-confusable rejection and helper rename to `_authorityHasAsciiCompatibilityConfusable`; `launch_plan_test.dart` auto-merged with all 3 new tests.
+- Post-merge verify: `flutter analyze` 0; full `flutter test --coverage` 1393 passed / 1 skipped (+3 merged tests); three coverage gates PASS overall 90.0% / scoped 90.4% / kvm 96.6%; `python3 issues/issues.py validate` OK; `git diff --check` clean.
+
+**Decisions:**
+- DMTF emulator suite skipped: merged change is a dependency-free, channel-free fail-closed decision helper in `launch_plan.dart` with no wire/transport/fixture/tool change, and <7 days since the last green 85/85 run.
+- No dependency added, no production TLS weakened; authority-scoped only so encoded confusables in path/query and encoded non-ASCII folding to non-ASCII (e-acute/euro/emoji) stay launchable; no valid target lost.
+
+**Next:**
+- Gate only PASS-verified dept branches with `--no-ff`; cross-check verdict vs current branch tip before merging.
+- Keep new launch-plan checks folded into the single shared fail-closed classifier core as `return null`.
+- Re-run 85/85 DMTF emulator on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
