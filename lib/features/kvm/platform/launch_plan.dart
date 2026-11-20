@@ -476,7 +476,8 @@ bool _hasEncodedUnicodeControlOrSeparator(String uri) {
 /// do) turns them into the ASCII delimiter, while [Uri.tryParse] keeps the
 /// percent-encoded form in the host — a parser-differential host-spoofing
 /// vector. Checked on the percent-decoded code points (see
-/// [_authorityHasCompatibilityDelimiter]).
+/// [_authorityHasAsciiCompatibilityConfusable], which also rejects the fullwidth
+/// ASCII look-alike block).
 ///
 /// The set is the complete family of non-ASCII code points that a launcher
 /// applying IDNA/NFKC to an internationalised host can turn into an ASCII
@@ -561,19 +562,26 @@ const Set<int> _compatibilityDelimiterCodePoints = <int>{
 };
 
 /// Returns `true` when the raw authority carries a percent-encoded non-ASCII
-/// code point that NFKC-normalises to an ASCII structural delimiter.
+/// code point that a launcher applying IDNA/NFKC resolves to an ASCII
+/// character: either a structural delimiter ([_compatibilityDelimiterCodePoints])
+/// or a fullwidth ASCII look-alike (the block U+FF01..U+FF5E).
 ///
 /// `Uri.tryParse` keeps such an escape encoded and reports an HTTPS URI with a
 /// non-empty host, so a purely syntactic re-check calls it "secure". A launcher
 /// applying IDNA/NFKC to the host (as browsers do) resolves a *different*
 /// authority — e.g. `%EF%BC%8F` (fullwidth solidus) becomes `/`, `%EF%BC%8E`
-/// (fullwidth full stop) becomes `.`. Under a stale secure flag + test opt-in
-/// that parser differential could grant in-app rendering and self-signed
-/// acceptance on a spoofed/mismatched host. This is the percent-encoded
-/// analogue of the raw non-ASCII authority rule. Scoped to the authority (the
-/// TLS-sensitive part) so encoded confusables in the path/query and encoded
-/// non-delimiter non-ASCII (e-acute, euro, emoji) stay launchable.
-bool _authorityHasCompatibilityDelimiter(String uri) {
+/// (fullwidth full stop) becomes `.`, and `%EF%BD%82%EF%BD%8D%EF%BD%83.example`
+/// (fullwidth "bmc") becomes `bmc.example`. Under a stale secure flag + test
+/// opt-in that parser differential could grant in-app rendering and self-signed
+/// acceptance on a spoofed/mismatched host. Every member of the fullwidth ASCII
+/// block NFKC-normalises to a plain ASCII letter, digit or punctuation
+/// look-alike, so it can forge any ASCII host; a real host is written in ASCII
+/// (or punycode), never with fullwidth look-alikes, so no valid target is lost.
+/// This is the percent-encoded analogue of the raw non-ASCII authority rule.
+/// Scoped to the authority (the TLS-sensitive part) so encoded confusables in
+/// the path/query and encoded non-ASCII that folds to non-ASCII (e-acute, euro,
+/// emoji) stay launchable.
+bool _authorityHasAsciiCompatibilityConfusable(String uri) {
   final String? authority = _authorityOf(uri);
   if (authority == null) return false;
   final List<int> bytes = <int>[];
@@ -596,6 +604,10 @@ bool _authorityHasCompatibilityDelimiter(String uri) {
   final String decoded = utf8.decode(bytes, allowMalformed: true);
   for (final int rune in decoded.runes) {
     if (_compatibilityDelimiterCodePoints.contains(rune)) return true;
+    // Fullwidth ASCII forms (U+FF01..U+FF5E) all NFKC-normalise to a plain
+    // ASCII look-alike, so a decode+IDNA launcher resolves a different ASCII
+    // host than Uri.tryParse reports — a host-spoofing parser differential.
+    if (rune >= 0xFF01 && rune <= 0xFF5E) return true;
   }
   return false;
 }
@@ -703,13 +715,14 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // host, yet Uri.tryParse keeps it encoded and reports a "secure" HTTPS host.
   // ASCII escapes (incl. %20) and non-C/Z escapes stay launchable.
   if (_hasEncodedUnicodeControlOrSeparator(trimmed)) return false;
-  // Reject a percent-encoded non-ASCII code point that NFKC-normalises to an
-  // ASCII structural delimiter (fullwidth solidus/colon/dot/@/[ ]/...): a
-  // launcher applying IDNA/NFKC resolves a different authority than
-  // Uri.tryParse reports, which under a stale flag + test opt-in could reach
-  // in-app rendering and self-signed acceptance on a spoofed host. ASCII
-  // escapes and encoded non-delimiter non-ASCII stay launchable.
-  if (_authorityHasCompatibilityDelimiter(trimmed)) return false;
+  // Reject a percent-encoded non-ASCII code point that IDNA/NFKC folds to an
+  // ASCII character: a structural delimiter (fullwidth solidus/colon/dot/@/
+  // [ ]/...) or a fullwidth ASCII letter/digit/punctuation look-alike. A launcher
+  // applying IDNA/NFKC resolves a different authority than Uri.tryParse
+  // reports, which under a stale flag + test opt-in could reach in-app rendering
+  // and self-signed acceptance on a spoofed host. ASCII escapes and encoded
+  // non-ASCII that folds to non-ASCII (e-acute, euro, emoji) stay launchable.
+  if (_authorityHasAsciiCompatibilityConfusable(trimmed)) return false;
   // Reject a percent-encoded octet sequence in the authority that is not
   // well-formed UTF-8 (lone C1 byte, overlong form, truncated sequence): a
   // decode-first launcher could see different/invisible bytes in the host than
