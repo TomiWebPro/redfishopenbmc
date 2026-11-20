@@ -14,7 +14,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
       churn. The blocked in-app embed / WebView adapter (EP-U2) stays human-gated and is NOT re-split.
       No code touched. -->
 
-- [ ] EP-U9 Fullscreen + input-forwarding disclosure a11y contract for #009/#021: pin that
+- [x] EP-U9 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 EP-U9 KVM viewer cross-path disclosure a11y contract + RED→GREEN tests`, analyze 0 / 1646 passed / 1 skipped). Fullscreen + input-forwarding disclosure a11y contract for #009/#021: pin that
       `KvmConsoleViewerPage` discloses the keyboard/mouse-forwarding and fullscreen/back = disconnect
       guidance as a single merged `excludeSemantics` node whose visible `Text` equals the announced
       label, consistently on the secure-HTTPS, external-client and no-URI viewer paths, with no
@@ -164,6 +164,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
               `lib/features/kvm/views/**`.
 
 ## Log
+- 2026-11-20 16:00 — EP-U9 LANDED (agent:redfish-automation, FEATURE #009/#021): added `test/features/kvm/kvm_viewer_disclosure_contract_test.dart` (13 tests) — the cross-path × cross-width a11y contract for `KvmConsoleViewerPage`: the active-session / fullscreen-back = disconnect notice and the session-persistence notice each render as ONE merged `excludeSemantics` node with visible `Text` == announced label, exactly once each with no third/duplicate disconnect disclosure, on the secure-HTTPS, external-client VNC and URI-less viewer paths at 320/800/1300 px with no overflow. Audited all three paths first: no genuine divergence (the disclosures are unconditional and already single-sourced), so a regression guard against dropped/duplicated/split/one-path-only rendering — not copy churn. The keyboard/mouse input-forwarding half stays human-gated on platform WebView + BMC TLS validation; no false "keys are forwarded" string manufactured. RED proof: temporarily split the merged `label: sessionNotice` from its visible `Text` → 10/13 guard tests failed (`+3 -10`); restored byte-clean (SHA `f088a86d…` unchanged, 0 probe occurrences, empty lib diff), backup shredded → 13/13 GREEN. Test-only: no lib/view, dependency, wire or TLS change; no URL opened. analyze 0 / 1646 passed / 1 skipped (baseline 1633 +13); issues validate OK; diff --check clean.
 - 2026-11-20 04:06 — RU-2 single-source guard LANDED (agent:redfish-automation, FEATURE #009/#021): added `test/tool/notice_single_source_guard_test.dart` (6 tests) that parses the six canonical notices from `kvm_transport_notice.dart` at test time and fails closed if any other product KVM view hardcodes a notice literal (cross-surface screen-reader copy drift) or redefines a canonical constant name. 2 RED + 2 GREEN proofs, real-repo view scan clean; analyze 0 / 1445 passed / 1 skipped. Test-only; no lib/TLS/dependency change. RU-2 stays open: the mechanical single-source invariant is now pinned, the full merged-Semantics surface audit (both notices on both surfaces) remains.
 
 

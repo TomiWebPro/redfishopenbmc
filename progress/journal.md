@@ -11846,3 +11846,16 @@
 - Gate only PASS-verified branches; cross-check verdict ↔ tip every run. Keep launch-plan hardening in the single shared fail-closed classifier core. Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none — gate-only merge; both #009/#021 stay open.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-U9)
+
+**Done:**
+- FEATURE — EP-U9 KVM viewer cross-path disclosure a11y contract. Added `test/features/kvm/kvm_viewer_disclosure_contract_test.dart` (13 tests): the active-session / fullscreen-back = disconnect notice (`kvmSessionActiveNotice`) and session-persistence notice (`kvmSessionPersistenceNotice`) each render as ONE merged `excludeSemantics` node with visible `Text` == announced label, exactly once each with no third/duplicate disconnect disclosure, on all three viewer paths (secure-HTTPS graphical, external-client VNC/RFB, URI-less) at 320/800/1300 px with no overflow. Audited first — no genuine divergence (disclosures already unconditional + single-sourced); this is a regression guard against a future dropped/duplicated/split/one-path-only rendering. The input-forwarding half stays human-gated on platform WebView + BMC TLS validation; no false "keys are forwarded" copy manufactured. Targeted 13/13, RED proof 10/13 failed on a temporary label/visible split → restored byte-clean (SHA `f088a86d…`, 0 probes, empty lib diff) → 13/13 GREEN. `flutter analyze` 0; full `flutter test` 1646 passed / 1 skipped (baseline 1633 +13); issues validate OK; diff --check clean.
+
+**Decisions:**
+- Kept the commit scoped to one new test file: reverted an unrelated `dart format` churn in `launch_plan_test.dart` from the concurrent rf-gate merge. Pre-existing untracked `testing/` and stash@{0} left untouched. Test-only — no lib/view, dependency, wire, fixture or TLS change; no URL opened, no human approval. Skipped the full emulator re-run (<7 days since last green 85/85, no lib/wire/fixture/tool change). No issue closed (both remain human-gated).
+
+**Next:**
+- Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard — all unblocked slices are now landed; never timestamp/copy churn. Cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only when platform WebView + BMC TLS human validation evidence arrives.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
