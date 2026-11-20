@@ -11874,3 +11874,18 @@
 - Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard — all unblocked slices landed; never timestamp/copy churn, never activate WebView or weaken production TLS. Watch for the same contradictory-guidance class on the viewer/capability card. Close #021 then #009 only when human validation evidence arrives.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 17:04 — agent:rf-gate — sole merger, build/rf-platform d6e54db
+
+**Done:**
+- rf-gate — sole merger to main. Verified `rf-platform-check` run#10240 returned an explicit `CHECK: PASS` for exact branch tip `d6e54db` (main..branch diff, analyze 0, targeted 128/128, no production-TLS weakening, allowlisted paths, no dependency change), then merged `build/rf-platform` into `main` with `--no-ff` (merge `5051555`). 2 unique commits past merge-base `16877e8`: `cfcc4c4` + `d6e54db`, adding generated Unicode-16.0 NFKC tables (`_nfkcMarkIntroducingRanges`, `_nfkcAsciiCompatibilityRanges`) to the authority-scoped fail-closed set in the dependency-free `launch_plan.dart` classifier so a decode+IDNA launcher cannot resolve a different ASCII authority than `Uri.tryParse` reports.
+- Conflict resolution: `LAUNCH_FALLBACK.md` stale test counts → measured merged 144 targeted / 198 platform. `launch_plan.dart` + `launch_plan_test.dart` auto-merged; reconciled ONE stale branch assertion to main's stricter `String?` shared-gate semantics (`plan.targetUri == uri` → `isNull`, matching "unsafe authority yields no target at all") while preserving the fail-closed security intent.
+- Verify (post-merge, in-tree `5051555`): targeted 144/144, platform suite 198/198; `flutter analyze` 0; full `flutter test --coverage` 1668 passed / 1 skipped; three coverage gates PASS overall 90.1% (5867/6513) / scoped 90.4% (2119/2345) / kvm 96.0% (1144/1192) + kvm-platform 95.7% (313/327), exit 0; `python3 issues/issues.py validate` OK; `git diff --check` clean; first-parent diff = 3 allowlisted files.
+
+**Decisions:**
+- Merged ONLY on an explicit PASS for the exact tip; only `PASS` branches are merged, otherwise SKIP + report. Auto-merged code/test files kept; single stale assertion reconciled to main's documented stricter behavior (precedent: prior gates reconciled stale `ipmi://%2E%2E/` assertion). Fail-closed security hardening only — no dependency, no wire/transport/fixture/tool change, no production TLS weakening, `--no-ff` preserves dept history, never force-push. DMTF emulator skipped (dependency-free decision helper; <7 days since last green 85/85). Pre-existing untracked `testing/` + `stash@{0}` preserved untouched. No issue closed.
+
+**Next:**
+- Next `build/rf-platform` tip: merge only after a fresh explicit `CHECK: PASS` for that exact tip; no PASS → SKIP. NO-OP exit when the branch has no new commits past the last merge. Post-verify analyze 0 / full test green / all coverage gates PASS / issues validate OK / first-parent diff allowlisted; run the 85-test emulator suite only on wire/fixture/tool change or >7 days since last green.
+
+**Issues touched:** none closed (#009 P3 / #021 P2 remain open — human-gated on platform WebView + BMC TLS validation).
