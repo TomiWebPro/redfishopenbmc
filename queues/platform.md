@@ -12,7 +12,7 @@ platform validation evidence.
      the doc↔code final-route contract without activating the gate. Pure test-only, dependency-free,
      no WebView import, no production TLS change; distinct from EP-P4/P5/P6/P7. -->
 
-- [ ] EP-P8 Decision-doc ↔ production-route consistency guard: add a pure-Dart test under
+- [x] EP-P8 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 EP-P8 decision-doc↔production-route consistency guard + RED→GREEN tests`, analyze 0 / 1536 passed / 1 skipped) — Decision-doc ↔ production-route consistency guard: add a pure-Dart test under
       `test/features/kvm/platform/` that derives the final route from `KvmWebViewPolicy.productionDefault`
       over the documented signal combos in `LAUNCH_FALLBACK.md` (secure HTTPS → `externalBrowser`,
       plaintext HTTP / no URI / disabled / control-unsafe → `copyOnly`, NEVER `inAppWebView`, never

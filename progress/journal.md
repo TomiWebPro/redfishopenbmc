@@ -11619,3 +11619,18 @@
 - Land one of the new head-first dept slices with a genuine RED→GREEN test: RM-6 (model session-limit cross-view), RS-7 (service per-member hostile-body tolerance), EP-P8 (platform doc↔route guard) or EP-U8 (ui open-affordance gating). Keep the guard green for any new `lib/features/kvm/**` file. Never activate WebView, grant human approval, or weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-P8)
+
+**Done:**
+- EP-P8 (head of the unlanded `queues/platform.md` slices). Added `test/features/kvm/platform/decision_doc_route_guard_test.dart` (8 tests): a pure-Dart, dependency-free guard that parses the 8 rows of the `Decision contract` route table in `lib/features/kvm/platform/LAUNCH_FALLBACK.md` and, per documented signal combination, recomputes the real plan via `planConsoleLaunch`, failing closed if any `Route` or `acceptSelfSigned` cell drifts from code. Also fails closed if the table loses a known row, if any flag-off row documents an in-app route, or if `WEBVIEW_TLS_MATRIX.md` / `LAUNCH_FALLBACK.md` stop recording the same flag-off final route (external-browser + copy, never in-app).
+- RED→GREEN: 4 in-test mutations (flip a route cell, flip a self-signed cell, delete a row, erase the matrix final-route phrase) + a real-file RED proof (temporarily flipping the flag-off HTTPS route cell in the doc failed 2 tests naming the violation; restored byte-clean, SHA unchanged → 8/8 GREEN).
+
+**Decisions:**
+- Test-only, dependency-free, TLS-safe: no product `lib/`, wire/transport, fixture or dependency change; no URL opened, no human approval granted, no issue closed, no production TLS weakening. This is a genuine doc↔code consistency guard (nothing previously pinned the decision table against `planConsoleLaunch`), not timestamp/copy churn; distinct from EP-P5/P6/P7. DMTF emulator skipped (test-only, <7 days since last green 85/85). No UI churn (both issues' UI acceptance is human-gated).
+- Verify: targeted `decision_doc_route_guard_test.dart` 8/8; `flutter analyze` 0; full `flutter test` 1536 passed / 1 skipped (baseline 1528 +8); issues validate OK; `git diff --check` clean.
+
+**Next:**
+- Land RM-6 (model session-limit cross-view agreement), RS-7 (service per-member hostile-body tolerance) or EP-U8 (ui open-affordance gating) with a genuine RED→GREEN test. Keep the EP-P8 doc↔code guard green. Never activate WebView, grant human approval, or weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
