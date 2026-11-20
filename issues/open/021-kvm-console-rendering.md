@@ -187,6 +187,8 @@ estimated_tokens: 18000
 
 In-app WebView rendering + dependency acceptance remain deferred on manual per-target validation evidence.
 
+- 2026-11-20 20:28 UTC (run, agent:redfish-automation) — Partial progress (cross-feature backgrounded lifecycle parity guard, shared with #009; dependency-free, TLS-safe, test-only). Added `test/features/kvm/kvm_lifecycle_parity_test.dart` (4 tests) pinning that the KVM session's `isKvmAppBackgrounded` agrees with the sensors polling rule's `isSensorAppBackgrounded` (#007) on every `AppLifecycleState` (explicit list + runtime `values` sweep), that both pin the documented backgrounded semantics (paused/hidden/detached), and that both source predicates enumerate the same lifecycle members (source-level mirror guard). The KVM rule documents that it mirrors the sensors rule but nothing enforced it — a drift would desync operator-visible behaviour across the two screens. Audit found no live divergence — regression guard, not churn. RED proof: `hidden`→`inactive` in `isKvmAppBackgrounded` → all 4 failed (`+0 -4`); restored byte-clean (SHA `631889f0…` unchanged), backup shredded → 4/4 GREEN. analyze 0; full test green; issues validate OK; diff --check clean; deps unchanged; emulator skipped (test-only, <7 days since last green 85/85). No lib/wire/dependency/WebView import, no URL opened, no human approval, no production TLS weakening. Issue stays OPEN (VNC/RFB/HTML5 embedded rendering, fullscreen input forwarding and dependency acceptance remain externally blocked on platform WebView + BMC self-signed/TLS validation).
+
 ## References
 
 - `lib/features/kvm/kvm_view.dart:177-188`

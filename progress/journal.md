@@ -11999,3 +11999,18 @@
 - Re-audit EP-S2 / EP-T4 / EP-U4 for a genuinely different untested contract before adding any guard — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (cross-feature lifecycle parity guard)
+
+**Done:**
+- FEATURE — cross-feature backgrounded lifecycle parity guard (test-only, dependency-free, TLS-safe). `isKvmAppBackgrounded` (KVM console session, #009/#021) explicitly documents that it "mirrors the sensors polling rule so the two screens agree on what 'backgrounded' means", but no invariant pinned that the two independent predicates (`isKvmAppBackgrounded` and `isSensorAppBackgrounded`, #007) still agree. Added `test/features/kvm/kvm_lifecycle_parity_test.dart` (4 tests): parity over an explicit 5-state list + a runtime sweep of `AppLifecycleState.values`; both predicates pin the documented contract (paused/hidden/detached backgrounded, resumed/inactive visible); and a source-level check that both predicates enumerate the same `AppLifecycleState` members so a one-sided edit fails closed.
+- RED→GREEN: temporarily changed `isKvmAppBackgrounded`'s `hidden` state to `inactive` → all 4 tests failed (`+0 -4`, each invariant detected the drift); restored byte-clean (SHA `631889f0…` unchanged, empty lib diff), temp backup shredded → 4/4 GREEN.
+- Verify: targeted 4/4; `flutter analyze` 0; full `flutter test` (final count in tracking); issues validate OK; `git diff --check` clean; deps unchanged. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Audit found no live divergence (both predicates currently list paused/hidden/detached) — this is a regression guard protecting an operator-visible cross-screen consistency contract, not churn. Test-only: no product `lib/`, wire/transport/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. Pre-existing untracked `testing/` + `stash@{0}` preserved untouched; no force-push, no history rewrite. No issue closed (both #009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Re-audit head-first unblocked dept slices (EP-S2 / EP-T4 / EP-U4) for a genuinely different untested contract before adding any guard — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
