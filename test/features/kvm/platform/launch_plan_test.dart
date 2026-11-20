@@ -2094,4 +2094,92 @@ void main() {
       }
     });
   });
+
+  group(
+      'planConsoleLaunch — defense in depth: fullwidth ASCII host confusable rejection',
+      () {
+    test(
+        'a percent-encoded fullwidth ASCII host fails closed with a stale flag',
+        () {
+      // The compatibility-confusable rule covers code points that NFKC-normalise
+      // to an ASCII *structural delimiter*, but a launcher applying IDNA/NFKC to
+      // an internationalised host also folds fullwidth letters, digits and
+      // punctuation to plain ASCII look-alikes. `Uri.tryParse` keeps each escape
+      // encoded and reports a non-empty HTTPS host, so a purely syntactic
+      // re-check calls these "secure" — yet a decode+IDNA launcher resolves a
+      // DIFFERENT ASCII authority:
+      //   `%EF%BD%82%EF%BD%8D%EF%BD%83.example` (fullwidth "bmc") -> bmc.example
+      //   `bmc%EF%BC%91%EF%BC%92.example` (fullwidth "12") -> bmc12.example
+      // Under a stale secure flag + test opt-in that parser differential could
+      // grant in-app rendering and self-signed acceptance on a spoofed host.
+      // A real ASCII host is written in ASCII (or punycode), never fullwidth
+      // look-alikes, so rejecting them loses no valid target.
+      for (final String uri in <String>[
+        'https://%EF%BD%82%EF%BD%8D%EF%BD%83.example/console', // ｂｍｃ -> bmc
+        'https://bmc%EF%BC%91%EF%BC%92.example/console', // fullwidth 1 2
+        'https://bmc%EF%BD%81%EF%BD%82.example/console', // fullwidth a b
+        'https://%EF%BC%A2.example/console', // fullwidth capital B
+        'https://%ef%bd%82.example/console', // lowercase hex
+        'https://%EF%BC%81evil.example/console', // fullwidth ! -> sub-delim
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test(
+        'a fullwidth-ASCII confusable never reaches in-app under a strict opt-in',
+        () {
+      // Even without granting self-signed acceptance, a host relying on a
+      // fullwidth ASCII look-alike must not be rendered in-app by an
+      // enabled+strict opt-in (no TLS weakening, no host-confusion render).
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://%EF%BD%82%EF%BD%8D%EF%BD%83.example/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('fullwidth ASCII confusables outside the authority stay launchable',
+        () {
+      // Guard against over-rejection: the rule is scoped to the authority (the
+      // TLS-sensitive part). A fullwidth look-alike in the path/query cannot
+      // change which host is contacted, so it stays launchable via the
+      // external-browser fallback. Percent-encoded non-ASCII that NFKC-folds
+      // to a non-ASCII character (e-acute) is a legitimate encoded IDN host and
+      // stays launchable too — no valid target lost, no TLS weakening.
+      for (final String uri in <String>[
+        'https://bmc.example/console%EF%BD%82one', // fullwidth b in path
+        'https://bmc.example/?q=%EF%BC%91', // fullwidth 1 in query
+        'https://bmc.example/caf%C3%A9', // e-acute in path (NFKC stays non-ASCII)
+        'https://bmc%C3%A9.example/console', // encoded e-acute in authority
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }
