@@ -11831,3 +11831,18 @@
 - EP-U9 (rf-ui) fullscreen/input-forwarding disclosure a11y audit across the three viewer paths; fix only a genuine divergence with RED→GREEN widget tests. Never activate WebView, grant human approval, or weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — build/rf-platform 16877e8 (merge 784b983)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#10174 returned an explicit `CHECK: PASS` (exit 0, 51.0 s; started 15:37:34 UTC ~1 min after the branch tip commit at 15:36 UTC) for branch tip `16877e8` (tip cross-checked unchanged immediately before merge; report names the mathematical-alphanumeric work; analyze 0, targeted `launch_plan_test.dart` 122/122 on the branch incl. 3 new mathematical-alphanumeric cases, no production-TLS weakening, allowlisted paths only — `lib/features/kvm/platform/**` + `test/**`, no dependency changes). Merged `build/rf-platform` → `main` with `--no-ff` (merge `784b983`, two parents). One unique commit past merge-base `9418626` (already in main via merge `9e37637`): `16877e8` adds authority-scoped fail-closed rejection of Unicode Mathematical Alphanumeric Symbols (U+1D400..U+1D7FF) in the dependency-free launch-plan classifier — styled Latin letters/digits NFKC-fold to plain ASCII, so `Uri.tryParse` keeps such an escape encoded and reports a non-empty HTTPS host while a decode+IDNA launcher resolves a DIFFERENT ASCII authority; ordinary pct-encoded UTF-8 host bytes, punycode and path/query escapes stay launchable.
+- Two conflicts resolved: `LAUNCH_FALLBACK.md` stale test-count prose (branch 122/133, main 132/182) → measured merged counts 138 targeted / 187 platform; `launch_plan_test.dart` SEMANTIC conflict — the branch's new fail-closed test asserted old `targetUri == uri` passthrough, but main has since moved to a stricter shared `String?` fail-closed gate yielding `targetUri == null` (spoofed URI not offered for copy), so the stale assertion was aligned to `isNull` (test-only fix, matching main's sibling confusable tests; security intent preserved/strengthened). `launch_plan.dart` auto-merged with `_isMathematicalAlphanumericSymbol` folded into the shared gate.
+- Post-merge verify in-tree at `784b983`: `flutter analyze` 0; full `flutter test --coverage` 1633 passed / 1 skipped (baseline 1630 +3); four coverage gates PASS overall 90.1% (5852/6498) / scoped 90.4% (2119/2345) / kvm 95.9% (1129/1177) / kvm-platform 95.6% (301/315); targeted 138/138; `python3 issues/issues.py validate` OK; `git diff --check` clean; first-parent diff = 3 allowlisted files; DMTF emulator 85/85 PASS (product `lib/` changed — emulator gate met).
+
+**Decisions:**
+- Merged only on an explicit PASS for the exact tip; verdict ↔ tip cross-checked. Fail-closed security hardening only — no dependency, no wire/transport/fixture/tool change, no production TLS weakening, `--no-ff` keeps dept history, never force-push. The one test change aligns a stale branch assertion to main's stricter current behavior (no security relaxation). Pre-existing untracked `testing/` left untouched. No secrets committed or logged to repo files.
+
+**Next:**
+- Gate only PASS-verified branches; cross-check verdict ↔ tip every run. Keep launch-plan hardening in the single shared fail-closed classifier core. Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none — gate-only merge; both #009/#021 stay open.
