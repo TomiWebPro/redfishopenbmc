@@ -1643,4 +1643,223 @@ void main() {
       expect(consoles.single.type, KvmConsoleType.graphical);
     });
   });
+
+  // RM-5 (rf-model closeout for the still-open #009/#021 epic): a property
+  // test over a matrix of manager payload shapes. The per-console card
+  // (KvmConsole.fromManager) and the per-manager capability card
+  // (KvmCapability.fromManager) read the SAME manager body, so for every shape
+  // — including malformed and hostile ones — they MUST agree on the fields
+  // both surfaces surface to the operator: manager identity, the control-safe
+  // manager-source fallback, service enablement and normalized connect types.
+  // Every prior divergence was fixed one at a time (enablement, non-map
+  // payloads, source identity, connect-type dedup); this pins the WHOLE
+  // contract so a future edit cannot silently desynchronise the two views.
+  // Pure model work: no wire/transport/TLS change, no URL opened, no dependency.
+  group('RM-5 cross-view agreement property (#009/#021)', () {
+    final List<Map<String, dynamic>> payloads = <Map<String, dynamic>>[
+      // No console blocks at all.
+      <String, dynamic>{},
+      // Canonical enabled graphical console.
+      <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['KVMIP', 'HTML5'],
+          'ConnectUri': 'https://bmc.example/kvm',
+          'MaxConcurrentSessions': 4,
+        },
+      },
+      // BMC-disabled graphical console that still carries a copyable HTTPS URI.
+      <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+          'ConnectUri': 'https://bmc.example/kvm',
+        },
+      },
+      // Mixed standard blocks with different transports / enablement spellings.
+      <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+        },
+        'SerialConsole': <String, dynamic>{
+          'Enabled': true,
+          'ConnectTypesSupported': <dynamic>['SSH', 'Telnet'],
+          'ConnectUri': 'ssh://bmc.example',
+        },
+        'RemoteConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+          'ConnectUri': 'vnc://bmc.example:5900',
+        },
+      },
+      // Serial-only enabled console (guards the enablement aggregation).
+      <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'SerialConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['SSH'],
+          'ConnectUri': 'ssh://bmc.example',
+        },
+      },
+      // Generic OEM console with the short Uri spelling, enabled.
+      <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'Oem': <String, dynamic>{
+          'OpenBMC': <String, dynamic>{
+            'KVM': <String, dynamic>{
+              'Uri': 'https://bmc.example/kvm',
+              'ServiceEnabled': true,
+            },
+          },
+        },
+      },
+      // Generic OEM console with the canonical ConnectUri spelling, disabled.
+      <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'Oem': <String, dynamic>{
+          'Vendor': <String, dynamic>{
+            'KVM': <String, dynamic>{
+              'ConnectUri': 'https://bmc.example/kvm',
+              'ServiceEnabled': false,
+            },
+          },
+        },
+      },
+      // Padded / blank / non-string @odata.id — both views must fall back alike.
+      <String, dynamic>{
+        '@odata.id': '  /redfish/v1/Managers/BMC  ',
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+        },
+      },
+      <String, dynamic>{
+        '@odata.id': '   ',
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+        },
+      },
+      <String, dynamic>{
+        '@odata.id': 42,
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+        },
+      },
+      // Hostile @odata.id values — the two control-safe source getters must
+      // sanitize them to the exact same fallback path.
+      for (final String hostile in <String>[
+        '/redfish/v1/Managers/BMC\r\nX-Injected: 1',
+        '/redfish/v1/Managers/BMC\u0000evil',
+        '/redfish/v1/Managers/\u2028BMC',
+        '/redfish/v1/Managers/BMC\u00a0evil',
+        '/redfish/v1/Managers/BMC%ZZ',
+      ])
+        <String, dynamic>{
+          '@odata.id': hostile,
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+          },
+        },
+      // Non-map console values — both views fail closed (no console emitted).
+      <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'GraphicalConsole': 'not-a-map',
+        'SerialConsole': 42,
+        'Oem': <String, dynamic>{
+          'Vendor': <String, dynamic>{'KVM': 'bad'},
+        },
+      },
+      // Duplicate / blank / non-string connect types — dedup identically.
+      <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>[
+            'KVMIP',
+            ' kvmip ',
+            '',
+            '  ',
+            42,
+            'HTML5',
+            true,
+            'HTML5',
+          ],
+        },
+      },
+      // Integer-valued JSON number emitted as a double (MaxConcurrentSessions).
+      <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+          'MaxConcurrentSessions': 4.0,
+        },
+      },
+      // Unknown enablement (flag omitted) — neither view claims enabled.
+      <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'GraphicalConsole': <String, dynamic>{
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+          'ConnectUri': 'https://bmc.example/kvm',
+        },
+      },
+    ];
+
+    for (int i = 0; i < payloads.length; i++) {
+      final Map<String, dynamic> body = payloads[i];
+      test('payload #$i: console and capability models agree', () {
+        final List<KvmConsole> consoles =
+            KvmConsole.fromManager(body, managerId: 'BMC');
+        final KvmCapability capability =
+            KvmCapability.fromManager(body, managerId: 'BMC');
+
+        // Identity: every console belongs to this manager, and both models
+        // report the same manager id for the body.
+        expect(capability.managerId, 'BMC');
+        for (final KvmConsole console in consoles) {
+          expect(console.managerId, 'BMC');
+          expect(console.managerId, capability.managerId);
+        }
+
+        // Control-safe source identity: the per-console clipboard fallback and
+        // the capability card's source notice must derive the exact same
+        // sanitized manager URI from the same (possibly hostile) @odata.id.
+        for (final KvmConsole console in consoles) {
+          expect(console.safeManagerUri, capability.safeManagerUri,
+              reason:
+                  'hostile @odata.id must sanitize identically on both views');
+        }
+
+        // Enablement agreement: the capability card is service-enabled iff at
+        // least one per-console card is enabled (OEM included on both sides).
+        expect(
+          capability.serviceEnabled,
+          consoles.any((KvmConsole c) => c.serviceEnabled),
+          reason: 'capability.serviceEnabled must agree with the consoles',
+        );
+
+        // Normalized connect types: every type an ENABLED console advertises
+        // must appear (case-insensitively) in the capability aggregate. The
+        // synthetic 'Oem' display marker is not a Redfish connect type.
+        final Set<String> capTypes = capability.connectTypes
+            .map((String t) => t.trim().toUpperCase())
+            .toSet();
+        for (final KvmConsole console in consoles) {
+          if (!console.serviceEnabled) continue;
+          for (final String type in console.connectTypesSupported) {
+            if (type.trim().toUpperCase() == 'OEM') continue;
+            expect(capTypes.contains(type.trim().toUpperCase()), isTrue,
+                reason: 'enabled console type "$type" missing from capability');
+          }
+        }
+      });
+    }
+  });
 }

@@ -11463,3 +11463,18 @@
 
 **Issues touched:** none — gate-only merge; both #009/#021 stay open.
 
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (RM-5 cross-view agreement property test)
+
+**Done:**
+- RM-5 (head of `queues/model.md`). Appended an 18-test property group to `test/features/kvm/kvm_model_test.dart`: a matrix of 18 manager payload shapes parsed through both `KvmConsole.fromManager` and `KvmCapability.fromManager`, pinning manager identity, identical control-safe `safeManagerUri` (incl. CRLF/NUL/NBSP/U+2028/malformed-% @odata.id), service-enablement agreement, and enabled-console connect-type subset of the capability aggregate (case-insensitive, `Oem` marker excluded). No divergence found — the surfaces already agree; the group is a regression guard against future drift.
+- RED→GREEN proof: temporarily returning the raw `sourceManagerUri` from `KvmCapability.safeManagerUri` made the 5 hostile-source payloads fail; file restored byte-clean (0 `TEMP WEAKEN`, empty lib diff) → all 18 GREEN. Analyze 0 / 1476 passed / 1 skipped (baseline 1457 +18, +1 from a concurrent gate chore commit); issues validate OK; diff --check clean.
+
+**Decisions:**
+- Pure-model test-only work — no `lib/`, wire/payload change, dependency, or production TLS weakening; no URL opened, no issue closed. DMTF emulator skipped (<7 days since the last green 85/85, no lib/fixture/tool change); CI runs the group via `flutter test --coverage`.
+- Both #009/#021 remain open; their substantive acceptance (embedded HTML5 rendering, fullscreen, input forwarding, WebView dependency) is human-gated on platform WebView + BMC TLS validation — do NOT do unattended, never weaken production TLS.
+
+**Next:**
+- RS-6 (service manager-set identity/cardinality), EP-U7 (full merged-Semantics audit), EP-P7 (human-gate doc invariant guard) — genuine tested increments only, never verification-only churn.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
