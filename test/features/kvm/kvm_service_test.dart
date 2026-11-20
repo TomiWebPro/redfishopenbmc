@@ -1369,4 +1369,192 @@ void main() {
       expect(malformed!.supported, isFalse);
     });
   });
+
+  group(
+      'KvmService.pickPrimary launch-path selection contract (EP-S3, '
+      '#009/#021)', () {
+    KvmConsole console(
+      KvmConsoleType type, {
+      required String id,
+      required bool enabled,
+      String? uri,
+      bool html5 = false,
+    }) =>
+        KvmConsole(
+          type: type,
+          managerId: id,
+          serviceEnabled: enabled,
+          connectTypesSupported:
+              html5 ? const <String>['HTML5'] : const <String>[],
+          connectUri: uri,
+          sourceManagerUri: '/redfish/v1/Managers/$id',
+        );
+
+    // One representative console per launch-strategy tier.
+    KvmConsole secureGraphical(String id) => console(
+          KvmConsoleType.graphical,
+          id: id,
+          enabled: true,
+          uri: 'https://bmc.example/$id/kvm',
+        );
+    KvmConsole secureRemote(String id) => console(
+          KvmConsoleType.remote,
+          id: id,
+          enabled: true,
+          uri: 'https://bmc.example/$id/kvm',
+        );
+    KvmConsole plaintextGraphical(String id) => console(
+          KvmConsoleType.graphical,
+          id: id,
+          enabled: true,
+          uri: 'http://bmc.example/$id/kvm',
+        );
+    KvmConsole externalSerial(String id) => console(
+          KvmConsoleType.serial,
+          id: id,
+          enabled: true,
+          uri: 'ssh://bmc.example/$id',
+        );
+    KvmConsole uriLessGraphical(String id) => console(
+          KvmConsoleType.graphical,
+          id: id,
+          enabled: true,
+        );
+    KvmConsole disabledGraphical(String id) => console(
+          KvmConsoleType.graphical,
+          id: id,
+          enabled: false,
+          uri: 'https://bmc.example/$id/kvm',
+        );
+    KvmConsole disabledSerial(String id) => console(
+          KvmConsoleType.serial,
+          id: id,
+          enabled: false,
+        );
+
+    test(
+        'the Primary badge never lands on an unopenable console while any '
+        'openable console exists (EP-S3)', () {
+      // A matrix of mixed lists where at least one member is openable.
+      final List<List<KvmConsole>> lists = <List<KvmConsole>>[
+        <KvmConsole>[disabledGraphical('d'), externalSerial('e')],
+        <KvmConsole>[uriLessGraphical('u'), externalSerial('e')],
+        <KvmConsole>[disabledSerial('d'), secureRemote('s')],
+        <KvmConsole>[
+          disabledGraphical('d'),
+          uriLessGraphical('u'),
+          externalSerial('e'),
+        ],
+        <KvmConsole>[disabledSerial('d'), plaintextGraphical('p')],
+      ];
+      for (final List<KvmConsole> list in lists) {
+        final KvmConsole? primary = KvmService.pickPrimary(list);
+        expect(primary, isNotNull, reason: 'list has an openable console');
+        expect(
+          primary!.canOpenConsole,
+          isTrue,
+          reason: 'an unopenable console must not be badged Primary while an '
+              'openable one is available: ${list.map((c) => c.managerId)}',
+        );
+      }
+    });
+
+    test(
+        'tier order is secure-graphical > secure-any > openable-graphical > '
+        'openable-any > graphical > first (EP-S3)', () {
+      final List<({List<KvmConsole> list, String expected})> cases =
+          <({List<KvmConsole> list, String expected})>[
+        (
+          list: <KvmConsole>[
+            plaintextGraphical('plain'),
+            secureGraphical('secure-g'),
+          ],
+          expected: 'secure-g',
+        ),
+        (
+          list: <KvmConsole>[secureRemote('secure-r'), secureGraphical('g')],
+          expected: 'g',
+        ),
+        (
+          list: <KvmConsole>[externalSerial('ext'), secureRemote('secure-r')],
+          expected: 'secure-r',
+        ),
+        (
+          // A secure non-graphical outranks an openable plaintext graphical:
+          // the external-browser route prefers a safe TLS target.
+          list: <KvmConsole>[
+            secureRemote('secure-r'),
+            plaintextGraphical('plain'),
+          ],
+          expected: 'secure-r',
+        ),
+        (
+          list: <KvmConsole>[
+            disabledGraphical('disabled-secure'),
+            plaintextGraphical('plain'),
+          ],
+          expected: 'plain',
+        ),
+        (
+          list: <KvmConsole>[
+            uriLessGraphical('uri-less'),
+            externalSerial('ext'),
+          ],
+          expected: 'ext',
+        ),
+        (
+          // No openable console: fall back to the first graphical.
+          list: <KvmConsole>[disabledSerial('d'), uriLessGraphical('uri-less')],
+          expected: 'uri-less',
+        ),
+        (
+          // No openable, no graphical: fall back to the first overall.
+          list: <KvmConsole>[disabledSerial('d')],
+          expected: 'd',
+        ),
+      ];
+      for (final ({List<KvmConsole> list, String expected}) c in cases) {
+        expect(
+          KvmService.pickPrimary(c.list)?.managerId,
+          c.expected,
+          reason: 'tier order for ${c.list.map((e) => e.managerId)}',
+        );
+      }
+    });
+
+    test(
+        'a control-unsafe HTTPS graphical is not treated as a secure primary '
+        '(EP-S3)', () {
+      // A CRLF-bearing authority is NOT a secure target; the fail-closed
+      // classifier must not badge it Primary over a genuinely openable console.
+      final KvmConsole spoofed = console(
+        KvmConsoleType.graphical,
+        id: 'spoofed',
+        enabled: true,
+        uri: 'https://bmc.exa\r\nmple/kvm',
+      );
+      expect(spoofed.hasSecureLaunchUri, isFalse);
+      expect(spoofed.canOpenConsole, isFalse);
+      final KvmConsole external = externalSerial('ext');
+      expect(KvmService.pickPrimary(<KvmConsole>[spoofed, external]),
+          same(external));
+    });
+
+    test(
+        'pickPrimary is deterministic and order-stable for a fixed list '
+        '(EP-S3)', () {
+      final List<KvmConsole> list = <KvmConsole>[
+        externalSerial('ext'),
+        secureRemote('secure-r'),
+        plaintextGraphical('plain'),
+        secureGraphical('secure-g'),
+      ];
+      final KvmConsole? first = KvmService.pickPrimary(list);
+      expect(first?.managerId, 'secure-g');
+      expect(KvmService.pickPrimary(list), same(first));
+      // Selection must not mutate or reorder the source list.
+      expect(list.map((KvmConsole c) => c.managerId).toList(),
+          <String>['ext', 'secure-r', 'plain', 'secure-g']);
+    });
+  });
 }

@@ -11741,3 +11741,18 @@
 - Gate only PASS-verified branches; cross-check verdict ↔ tip every run. Keep launch-plan hardening in the single shared fail-closed classifier core. Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none — gate-only merge; both #009/#021 stay open.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-S3)
+
+**Done:**
+- EP-S3 (head of the unlanded `queues/service.md` slices, the 13:04 re-scope of EP-S1's launch-selection edge portion). Added a 4-test group to `test/features/kvm/kvm_service_test.dart` pinning the `KvmService.pickPrimary` Primary-badge contract: the Primary badge never lands on an unopenable console while any openable one exists; table-driven tier order secure-graphical > secure-any > openable-graphical > openable-any > graphical > first (8 cases); a CRLF-bearing HTTPS authority is not treated as a secure primary; and determinism + no source-list mutation. Audited selection — no genuine divergence (already fails closed, agrees with `canOpenConsole`) → regression guard against tier-order drift, not churn.
+- RED→GREEN: temporarily removed `if (!console.canOpenConsole) continue;` from `pickPrimary` → 3 of 4 EP-S3 tests failed (`+1 -3`: `Expected: plain / Actual: disabled-s`, openable-matrix case, spoofed-primary case); restored byte-clean (SHA `bfbe6546…` unchanged, 0 probe occurrences), backup shredded → 4/4 GREEN.
+
+**Decisions:**
+- Test-only, dependency-free, TLS-safe: no product `lib/` change (final `git diff --stat -- lib/` EMPTY), no wire/transport/fixture/dependency change, no URL opened, no human approval granted, no issue closed, no production TLS weakening. Genuine previously-unpinned selection contract (nothing failed closed on a tier-order/openability regression), distinct from RS-6 (set identity), RS-7 (hostile-body tolerance) and EP-S2 (secure-primary spot test). DMTF emulator skipped (test-only, <7 days since last green 85/85).
+- Verify: targeted EP-S3 4/4; targeted full service suite 55/55; `flutter analyze` 0; full `flutter test` 1610 passed / 1 skipped (baseline 1606 +4); issues validate OK; `git diff --check` clean. Pre-existing untracked `testing/` + stash preserved; no force-push.
+
+**Next:**
+- Audit next head-first unblocked dept slices EP-M1 (model URI-scheme edges) then RS-2 (service transient-failure follow-ups) for a genuine tested gap; also re-audit 320 px card headers for the non-wrapping-chip overflow class EP-U8 fixed. Never activate WebView, grant human approval, or weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
