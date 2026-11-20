@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 123 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (173 across the platform
+consume; today it locks the fallback behaviour with 126 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (176 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -126,6 +126,19 @@ Invariants, enforced by tests:
    Unicode-whitespace/invisible + raw-backslash + RFC-3986 unwise-char
    rejection) in `launch_plan_test.dart`, plus classifier-agreement tests in
    `kvm_model_test.dart` and `kvm_capability_test.dart`.
+   **Encoded unwise character rejection:** the same eight unwise chars in their
+   percent-encoded form (`%22` `%3C` `%3E` `%5E` `%60` `%7B` `%7C` `%7D`, either
+   hex case) escape the raw rule (no literal forbidden char), the encoded-delim
+   rule (they are not gen-delims), the unreserved/sub-delim rules, and the
+   control/C-Z rules. `Uri.tryParse` keeps them encoded and reports a non-empty
+   HTTPS host, so a purely syntactic re-check calls it "secure", while a
+   decode-first launcher sees a forbidden/non-canonical host code point and may
+   reject or resolve a different authority — under a stale flag + test opt-in
+   that parser differential could reach in-app rendering and self-signed
+   acceptance on a malformed/spoofed host. Every encoded unwise char in the
+   authority fails closed (including userinfo and leading/trailing positions);
+   the rule is scoped so the same escapes in the path/query and valid pct-encoded
+   UTF-8 host bytes stay launchable, no valid target lost.
    **Malformed percent-encoding rejection:** RFC 3986 requires
    `pct-encoded = "%" HEXDIG HEXDIG`, but `Uri.tryParse` silently encodes a bare
    or malformed `%` into the host rather than rejecting it (`...%` ->
@@ -387,8 +400,9 @@ Invariants, enforced by tests:
    groups (scheme/host/malformed-authority parity + control-character +
    raw-space + Unicode-whitespace/invisible + raw-backslash + RFC-3986
    unwise-char + malformed-percent-encoding + raw non-ASCII authority + encoded
-   authority-delimiter + encoded control-octet + encoded Unicode
-   separator/invisible + encoded compatibility-confusable delimiter + extended
+   authority-delimiter + encoded control-octet + encoded unwise-char +
+   encoded Unicode separator/invisible + encoded compatibility-confusable
+   delimiter + extended
    compatibility-confusable delimiter + IDNA dot-confusable rejection +
    IDNA middle-dot confusable rejection + NFKC-to-ASCII compatibility
    letter/digit rejection + NFKC vulgar-fraction confusable rejection +
