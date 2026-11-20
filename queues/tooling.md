@@ -5,6 +5,26 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 04:56 UTC: closes out the FUTUREWORK-named "EP-T4 fixture/CI guard"
+     next slice, re-scoped to be unblocked. EP-T4's webview/url_launcher dependency-guard half is
+     already covered by EP-P5 + EP-T6 guards, so this splits only the genuine remaining piece — a
+     canonical OpenBMC console fixture + fixture-drive tests — so selection/guidance tests stop
+     relying on ad-hoc in-temp mockups. Pure test/fixture work, no lib/, no dependency, no network. -->
+
+- [ ] EP-T10 Canonical OpenBMC console fixture + fixture-drive tests (closeout of the FUTUREWORK
+      "EP-T4 fixture/CI guard" slice): add one repo fixture under `test/fixtures/redfish/` — an
+      OpenBMC `Managers/{id}` payload with `GraphicalConsole` (HTML5 over HTTPS, `ServiceEnabled:
+      true`, `ConnectTypesSupported: [KVMIP, HTML5]`, `MaxConcurrentSessions`), `Oem.OpenBMC.KVM.Uri`
+      and a `RemoteConsole` — plus pure fixture-parse/drive tests asserting it is valid Redfish and
+      yields the expected `KvmConsole` / `KvmCapability` selection and launch guidance through the
+      shared factories. Do NOT re-add the dependency guard (EP-P5/EP-T6 already cover it). No live
+      BMC, no dependency, no `lib/` change, production TLS untouched; keep all existing mockups green.
+      Dept: rf-tooling
+      Verify: `flutter test test/features/kvm/ && flutter analyze` (0 issues), fixture-parse tests
+              green + RED→GREEN proof (temporarily corrupt the fixture shape → parse fails); writes
+              limited to `test/fixtures/**`, `test/**`, `.github/workflows/**`; never `lib/`, no
+              dependency bump.
+
 <!-- rf-ideate split 2026-11-20 00:52 UTC: splits the tooling/guard half of the remaining
      cross-surface "control-safe manager source" portion of the open #009/#021 epic, mirroring
      EP-P5 / EP-T6 / LA-1. A machine-checkable invariant so no surface can reintroduce the raw

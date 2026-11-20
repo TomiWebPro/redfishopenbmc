@@ -4,6 +4,27 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 04:56 UTC: splits the still-open cross-view-agreement remainder of
+     the #009/#021 epic into one unblocked, dependency-free, TLS-safe pure-model invariant slice.
+     Every prior divergence (RM-1 enablement, RM-2/RM-3 non-map payloads, RM-4/CB-1 source identity,
+     EP-M1/M2 classifier parity) was fixed one at a time; this pins the WHOLE console↔capability
+     agreement contract over the payload matrix so a future edit cannot silently desynchronise the
+     three KVM surfaces. Distinct from EP-M1/M2 and RM-1/RM-2 (all narrower single fixes). -->
+
+- [ ] RM-5 Cross-view agreement property test for manager console payload normalization: over a
+      generated matrix of Manager payload shapes — standard GraphicalConsole/SerialConsole blocks,
+      OEM blocks (Uri / ConnectUri, registered + generic), enabled/disabled flags, padded/blank/
+      non-string @odata.id, non-map console values, duplicate/blank ConnectTypes — assert
+      `KvmConsole.fromManager` and `KvmCapability.fromManager` ALWAYS agree for the same manager on
+      enablement (`supported`/`serviceEnabled`), normalized connect types, control-safe source
+      identity, and launch classification (`launchStrategy`/`canOpenConsole`). Fix the FIRST real
+      divergence found via RED→GREEN pure-model tests; do not manufacture churn where the surfaces
+      already agree. Read-only model work, no wire shape change, no transport/TLS change.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof for at least one fixed divergence; writes limited to
+              `lib/features/kvm/models/**` + the two named test files; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-20 00:52 UTC: splits the remaining cross-surface "control-safe manager
      source" portion of the open #009/#021 epic. CB-1 added `KvmConsole.safeManagerUri` for the CARD
      clipboard path, but `KvmCapability` still has no equivalent, so the capability card has no

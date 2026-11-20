@@ -6,6 +6,27 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 04:56 UTC: splits the human-gated WebView closeout (EP-P4) into the
+     one machine-checkable, unattended-doable piece that was never carved out — a guard pinning the
+     RECORDED decision docs and the no-WebView production default. It pins the human gate's contract
+     WITHOUT activating it: no dependency, no WebView import, no production TLS change. Distinct
+     from EP-P4 (human-written per-target evidence) and EP-P6 (runtime route invariant). -->
+
+- [ ] EP-P7 Human-gate documentation invariant guard (pins the human-gated decision without
+      activating it): add a pure-Dart test under `test/features/kvm/platform/` that fails closed if
+      `WEBVIEW_TLS_MATRIX.md` / `LAUNCH_FALLBACK.md` no longer record (a) the resolved no-embedded-
+      WebView decision (external-browser + copy final route) and (b) an explicit human-approval gate
+      listing the per-target (Linux/desktop/mobile) evidence required BEFORE any `webview_flutter` /
+      `url_launcher` dependency or test-only TLS opt-in — add the missing checklist/approval section
+      if absent — and assert `KvmWebViewPolicy.productionDefault` keeps the WebView flag OFF. No
+      human approval is granted, no dependency, no WebView import, no production TLS behaviour
+      change; the external-browser + copy fallback stays byte-for-byte.
+      Dept: rf-platform
+      Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues), with RED→GREEN
+              proof (temporarily neuter one doc assertion); `git diff --exit-code -- pubspec.yaml pubspec.lock`
+              (no dependency bump); writes limited to `lib/features/kvm/platform/**` (incl. the two
+              decision docs); no production TLS behaviour change.
+
 <!-- rf-ideate split 2026-11-20 00:52 UTC: splits the last unguarded invariant of the resolved
      no-embedded-WebView final route (external-browser + copy) into a machine-checkable property
      test. EP-P5 guards the import surface; this guards the DECISION surface so a future edit

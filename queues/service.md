@@ -5,6 +5,29 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 04:56 UTC: splits the still-open service-manager-walk remainder of
+     the #009/#021 epic into one unblocked, dependency-free, TLS-safe invariant slice. RS-4 (member
+     dedup) and EP-S2 (secure-primary preference) each fixed one divergence; this pins the whole
+     manager-set/identity/cardinality contract across BOTH fetch methods so the KVM surfaces cannot
+     disagree about how many managers exist or which console is primary. Distinct from RS-5
+     (source-identity normalization) and EP-S1 (launch-strategy edge cases). -->
+
+- [ ] RS-6 Manager-set identity + cardinality invariant in the shared manager walk: over a matrix
+      of `/redfish/v1/Managers` payloads (0/1/many managers, duplicate + whitespace-padded +
+      plain-string member links, blank/non-string members, mixed graphical/serial consoles, a
+      no-URI OEM console), assert `KvmService.fetchConsoles()` and `fetchCapabilities()` always
+      yield the SAME set of physical managers — exactly one console and one capability card per
+      manager, with matching `managerId` — and that `fetchPrimaryConsole()`/`pickPrimary` returns a
+      member of that set, deterministically, never a console the fail-closed launch plan would
+      refuse. Fix the first real divergence found with RED→GREEN service tests over an in-temp
+      minimal mockup (no committed fixture); do not change the wire shape or the RS-2 skip
+      semantics. Dependency-free, no production TLS behaviour change.
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_service_test.dart && flutter analyze` (0 issues),
+              with RED→GREEN proof; emulator 85/85 only if `lib/` wire changes; writes limited to
+              `lib/features/kvm/kvm_service.dart` + service tests under `test/features/kvm/`;
+              `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-20 00:52 UTC: splits the service half of the remaining cross-surface
      "control-safe manager source" portion of the open #009/#021 epic. `KvmConsole.fromManager`
      trims/normalizes the `@odata.id` via `_uriString`, but `KvmService.fetchCapability` keys its

@@ -5,6 +5,27 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 04:56 UTC: closes out the FUTUREWORK-named "RU-2 full merged-
+     Semantics audit" next slice. RU-2's two canonical notices are already mechanically pinned by
+     `notice_single_source_guard_test.dart` (constants) and EP-T9's launch-status guard, but the
+     RENDERING contract — each notice present exactly where it belongs, once, merged, visible ==
+     announced — was never audited across all four KVM surfaces. Display-only, dependency-free,
+     TLS-safe; distinct from RU-2 (constant single-source) and EP-U5/U6 (single-surface fixes). -->
+
+- [ ] EP-U7 RU-2 full merged-Semantics surface audit (closeout of the FUTUREWORK "RU-2 full merged-
+      Semantics audit" slice): audit EVERY KVM surface — the gated list `KvmView`, per-console
+      `_ConsoleCard`, `KvmCapabilityCard`, and `KvmConsoleViewerPage` — for the two shared notices
+      `kvmSessionPersistenceNotice` and `kvmDisabledOnBmcNotice`. Each must appear exactly where it
+      belongs as one merged `excludeSemantics` node with visible text == announced label, never
+      duplicated or stale. Fix the FIRST real divergence found via RED→GREEN widget tests; do not
+      manufacture copy churn where a surface already announces the shared constant correctly.
+      320/800/1300 px no-overflow on every audited surface. No WebView import, no dependency, no TLS
+      change, no URL opened.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_capability_card_test.dart && flutter analyze`
+              (0 issues), RED→GREEN widget proof for any fixed divergence; merged a11y + 320/800/
+              1300 no-overflow; writes limited to `lib/features/kvm/views/**`; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-20 00:52 UTC: splits the UI half of the remaining cross-surface
      "control-safe manager source" portion of the open #009/#021 epic. Three surfaces still
      interpolate the raw BMC-supplied `sourceManagerUri` directly into visible Text + merged
