@@ -11634,3 +11634,19 @@
 - Land RM-6 (model session-limit cross-view agreement), RS-7 (service per-member hostile-body tolerance) or EP-U8 (ui open-affordance gating) with a genuine RED→GREEN test. Keep the EP-P8 doc↔code guard green. Never activate WebView, grant human approval, or weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — build/rf-platform 601e8a8 (merge ea61c7b)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#9811 returned an explicit `CHECK: PASS` (exit 0, 52.3 s) for branch tip `601e8a8`, cross-checked as the current `build/rf-platform` tip (check started 10:19:55 UTC, after the tip commit 10:18:42 UTC; report names both unique commits' content). Merged `build/rf-platform` → `main` with `--no-ff` (merge `ea61c7b`). Two unique commits past merge-base `14bf890`: `f41f665` (percent-encoded RFC 3986 sub-delim authority fail-closed) + `601e8a8` (percent-encoded Unicode combining-mark / NFC-recomposition authority fail-closed) — parser-differential host-spoofing vectors under a stale secure flag + test opt-in, now refused by the single shared fail-closed gate, authority-scoped only, no valid target lost.
+- Post-merge verify in-tree at `ea61c7b`: `flutter analyze` 0; full `flutter test --coverage` 1542 passed / 1 skipped (baseline 1536 +6 merged tests; parent 117 → merged 123 targeted, no tests lost); coverage gates PASS overall 90.2% (5803/6436) / scoped 90.4% (2119/2345) / kvm 96.9% (1080/1115) / kvm-platform 99.6% (255/256); `python3 issues/issues.py validate` OK; `git diff --cached --check` clean; staged-diff secret scan clean; first-parent diff = 3 allowlisted files; targeted `launch_plan_test.dart` 123/123, platform suite 173/173.
+
+**Decisions:**
+- Merged only on an explicit PASS for the exact tip. Two merge conflicts resolved: `launch_plan.dart` — kept main's shared `String?`-returning `_controlSafeTrimmedUri` structure and folded both new checks in as `return null`; `LAUNCH_FALLBACK.md` stale counts → measured 123 targeted / 173 platform. `launch_plan_test.dart` auto-merged; reconciled the 2 new fail-closed tests' stale `targetUri == uri` assertions to the merged stricter behavior (`isNull`) while preserving the security intent.
+- Fail-closed security hardening only — no dependency, no wire/transport/fixture/tool change, no production TLS weakening, `--no-ff` keeps dept history, never force-push. DMTF emulator skipped (dependency-free decision helper, no wire/transport/fixture/tool change; <7 days since last green 85/85). Pre-existing untracked `testing/` left untouched.
+
+**Next:**
+- Gate only PASS-verified branches; cross-check verdict ↔ tip every run. Keep launch-plan hardening in the single shared fail-closed classifier core.
+- Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none — gate-only merge; both #009/#021 stay open.
