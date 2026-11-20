@@ -12,6 +12,7 @@
 library;
 
 import 'package:redfishopenbmc/features/kvm/models/kvm_manager_source.dart';
+import 'package:redfishopenbmc/features/kvm/models/kvm_oem_registry.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart'
     show kvmOemConsoleEnabled, kvmOemConsoleUri;
 import 'package:redfishopenbmc/features/kvm/models/kvm_session_limit.dart';
@@ -211,6 +212,7 @@ class KvmCapability {
     Map<String, dynamic> body, {
     required String managerId,
     String? sourceManagerUri,
+    KvmOemRegistry? oemRegistry,
   }) {
     final Map<String, dynamic>? graphical =
         _consoleBlock(body, 'GraphicalConsole');
@@ -222,14 +224,29 @@ class KvmCapability {
     // card while its per-console card is enabled and launchable (issue #009).
     final Map<String, dynamic>? remote = _consoleBlock(body, 'RemoteConsole');
 
-    final bool oemConsole = FeatureRules.oemHasConsole(body['Oem']);
+    // RM-7 (issue #009/#021): consult a registered vendor parser FIRST, exactly
+    // as `KvmConsole.fromManager` does, so the capability card and the console
+    // card agree about an OEM console that only a custom parser can discover
+    // (a vendor block whose key is not console-like, or whose URI member is not
+    // the generic `Uri` / `ConnectUri`). Without the registry here, the console
+    // card surfaced a launchable endpoint while this card reported "not
+    // supported / no URI" for the same manager — a genuine cross-view break.
+    final dynamic oemRaw = body['Oem'];
+    final Map<String, dynamic>? oem =
+        oemRaw is Map<String, dynamic> ? oemRaw : null;
+    final KvmOemConsoleInfo? parsedOem =
+        (oemRegistry == null || oem == null) ? null : oemRegistry.parse(oem);
+    final bool oemConsole =
+        parsedOem != null || FeatureRules.oemHasConsole(oemRaw);
     // The OEM path was the one console source that ignored enablement: any
     // console-like Oem key made the capability supported + enabled. Read the
     // OEM console block's own flags with the shared helper (the same block the
     // URI is resolved from) so an explicitly disabled OEM console is not
     // advertised as usable, while an OEM block that omits the flag stays
-    // enabled. Mirrors `KvmConsole.fromManager` (issue #009).
-    final bool oemEnabled = kvmOemConsoleEnabled(body['Oem']);
+    // enabled. A registered parser's own enablement is authoritative when one
+    // matches, mirroring `KvmConsole.fromManager` (issue #009).
+    final bool oemEnabled =
+        parsedOem?.serviceEnabled ?? kvmOemConsoleEnabled(oemRaw);
     final bool graphicalEnabled = _blockEnabled(graphical);
     final bool serialEnabled = _blockEnabled(serial);
     final bool remoteEnabled = _blockEnabled(remote);
@@ -265,7 +282,7 @@ class KvmCapability {
           remoteEnabled ||
           (oemConsole && oemEnabled),
       maxSessions: maxSessions,
-      uri: resolveLaunchUri(body),
+      uri: resolveLaunchUri(body, oemRegistry: oemRegistry),
       // RS-5: resolve the source through the SAME shared normalizer the
       // console card uses — a padded value is trimmed, a blank / non-string
       // override falls through to the body `@odata.id`, and both fall back to
@@ -297,7 +314,10 @@ class KvmCapability {
   ///
   /// Resolution is read-only: it exposes a URI string to the caller and never
   /// opens a connection or changes transport security (issues #009 / #021).
-  static String? resolveLaunchUri(Map<String, dynamic> body) {
+  static String? resolveLaunchUri(
+    Map<String, dynamic> body, {
+    KvmOemRegistry? oemRegistry,
+  }) {
     // A `ConnectUri` is the endpoint a console client actually connects to,
     // so it outranks a Redfish `@odata.id` resource link (which is a JSON API
     // path, not a browser-launchable console URL).
@@ -308,9 +328,20 @@ class KvmCapability {
         _consoleBlock(body, 'GraphicalConsole');
     final String? odata =
         graphical == null ? null : _nonEmptyString(graphical['@odata.id']);
-    // Shared with KvmConsole.fromManager so the per-console and per-manager
-    // cards resolve the same OEM endpoint for the same manager (issue #009).
-    final String? oemUri = kvmOemConsoleUri(body['Oem']);
+    // RM-7 (issue #009/#021): a registered vendor parser is authoritative for
+    // the OEM endpoint exactly as it is in `KvmConsole.fromManager` (the parsed
+    // URI is normalized by the same `_nonEmptyString` trim/blank rules there).
+    // The generic resolver stays the fallback for unregistered vendors. Keeping
+    // this in the OEM branch preserves the standard ConnectUri / graphical-link
+    // precedence so a registry can never re-point a standard console endpoint.
+    final dynamic oemRaw = body['Oem'];
+    final Map<String, dynamic>? oem =
+        oemRaw is Map<String, dynamic> ? oemRaw : null;
+    final KvmOemConsoleInfo? parsedOem =
+        (oemRegistry == null || oem == null) ? null : oemRegistry.parse(oem);
+    final String? oemUri =
+        (parsedOem == null ? null : _nonEmptyString(parsedOem.connectUri)) ??
+            kvmOemConsoleUri(oemRaw);
     if (odata != null) {
       // A graphical console that explicitly reports itself disabled cannot be
       // opened (its KvmConsole.launchStrategy is `disabled` and canOpenConsole

@@ -11771,3 +11771,17 @@
 - Gate only PASS-verified branches; cross-check verdict ↔ tip every run. Keep launch-plan hardening in the single shared fail-closed classifier core. Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none — gate-only merge; both #009/#021 stay open.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (RM-7)
+
+**Done:**
+- RM-7 (head of the unlanded `queues/model.md` slices, the 13:04 rf-ideate re-scope of EP-M1). Fixed a genuine cross-view divergence: `KvmConsole.fromManager` honors a registered `KvmOemRegistry` vendor parser, but `KvmCapability.fromManager` had no registry param and used only generic OEM detection — a vendor whose console key is not console-like (`Oem.AMI.Mgmt.EmbeddedUrl`) surfaced a launchable HTTPS console on the per-console card while the capability card showed "not supported / no URI" for the same manager. Added optional `oemRegistry` to `KvmCapability.fromManager` + `resolveLaunchUri` (registry-authoritative OEM detection/enablement/URI, generic fallback, standard ConnectUri/graphical-link precedence unchanged) and +4 RED→GREEN tests in `test/features/kvm/kvm_oem_registry_test.dart`.
+- RED→GREEN: temporarily replaced the parsed OEM URI with generic-only resolution → the 2 core agreement tests failed (`+21 -2`, `Expected: 'https://custom.example/kvm' / Actual: <null>`); restored byte-clean (SHA `652a5038…` unchanged, 0 probe occurrences) → 24/24 GREEN. DMTF emulator 85/85 (product lib changed — gate met).
+
+**Decisions:**
+- Genuine previously-unpinned cross-view divergence (not churn): the two KVM views previously disagreed about whether a registry-only vendor console is launchable. Fix is confined to `lib/features/kvm/models/**` + the named OEM-registry test; no wire/transport/fixture/dependency change, no URL opened, no human approval granted, no production TLS weakening. No issue closed. Targeted 24/24; related suites 355/355; `flutter analyze` 0; full `flutter test` 1617 passed / 1 skipped (baseline 1613 +4); DMTF emulator 85/85; issues validate OK; `git diff --check` clean. One transient `power_view_test.dart` full-run flake re-isolated 26/26 GREEN, clean full re-run. Pre-existing untracked `testing/` + stash preserved; no force-push.
+
+**Next:**
+- Audit RS-2 (transient per-member 5xx/timeout service failures) then the newer guard slices EP-T12/EP-P9/EP-U9 for a genuine RED→GREEN gap; never activate WebView, grant human approval, or weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

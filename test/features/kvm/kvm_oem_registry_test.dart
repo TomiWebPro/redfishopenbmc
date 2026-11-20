@@ -81,6 +81,41 @@ class _AmiKvmParser extends KvmOemConsoleParser {
   }
 }
 
+/// A vendor parser whose console block key (`Mgmt`) is NOT console-like and
+/// whose URI member (`EmbeddedUrl`) is NOT one the generic OEM resolver
+/// recognizes (`Uri` / `ConnectUri`). A registry is therefore the ONLY way
+/// either KVM view can discover this endpoint — the exact RM-7 cross-view
+/// agreement gap: `KvmConsole.fromManager` honors the registry but
+/// `KvmCapability.fromManager` historically did not.
+class _EmbeddedUrlVendorParser extends KvmOemConsoleParser {
+  const _EmbeddedUrlVendorParser({
+    this.uri = 'https://custom.example/kvm',
+    this.types = const <String>['HTML5'],
+    this.enabled = true,
+  });
+
+  @override
+  String get vendorKey => 'AMI';
+
+  final String? uri;
+  final List<String> types;
+  final bool enabled;
+
+  @override
+  KvmOemConsoleInfo? parse(Map<String, dynamic> block) {
+    final dynamic mgmt = block['Mgmt'];
+    if (mgmt is! Map<String, dynamic>) return null;
+    final dynamic url = mgmt['EmbeddedUrl'];
+    if (url is! String || url.trim().isEmpty) return null;
+    return KvmOemConsoleInfo(
+      vendor: vendorKey,
+      connectUri: uri,
+      connectTypesSupported: types,
+      serviceEnabled: enabled,
+    );
+  }
+}
+
 void main() {
   group('KvmOemConsoleInfo', () {
     test('has sensible defaults', () {
@@ -418,6 +453,160 @@ void main() {
       );
       expect(consoles, hasLength(1));
       expect(consoles.single.type, KvmConsoleType.graphical);
+    });
+  });
+
+  // RM-7 (issue #009/#021): cross-view URI-scheme + OEM-registry agreement.
+  // A vendor that needs a custom parser (console-like key absent, non-generic
+  // URI member) must surface the SAME launchable endpoint / classification on
+  // the per-console card and the per-manager capability card. Historically the
+  // registry was honored only by KvmConsole.fromManager, so the capability
+  // card showed "not supported / no URI" for a console the operator could open.
+  group('RM-7 cross-view OEM-registry agreement', () {
+    Map<String, dynamic> embeddedVendorManager() => <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC',
+          'Oem': <String, dynamic>{
+            'AMI': <String, dynamic>{
+              'Mgmt': <String, dynamic>{
+                'EmbeddedUrl': 'https://trigger.example/kvm',
+              },
+            },
+          },
+        };
+
+    KvmConsole? oemOf(List<KvmConsole> consoles) =>
+        consoles.cast<KvmConsole?>().firstWhere(
+              (KvmConsole? c) => c?.type == KvmConsoleType.oem,
+              orElse: () => null,
+            );
+
+    test(
+        'registered vendor-only console: capability resolves the same URI '
+        'and is supported/enabled (#009/#021)', () {
+      final KvmOemRegistry registry = KvmOemRegistry(
+        parsers: const <KvmOemConsoleParser>[_EmbeddedUrlVendorParser()],
+      );
+      final KvmConsole? console = oemOf(
+        KvmConsole.fromManager(
+          embeddedVendorManager(),
+          managerId: 'BMC',
+          oemRegistry: registry,
+        ),
+      );
+      expect(console, isNotNull);
+      final KvmCapability capability = KvmCapability.fromManager(
+        embeddedVendorManager(),
+        managerId: 'BMC',
+        oemRegistry: registry,
+      );
+      expect(capability.supported, isTrue);
+      expect(capability.serviceEnabled, isTrue);
+      expect(console!.canOpenConsole, isTrue);
+      expect(capability.launchUri, console.launchUri);
+      expect(capability.launchUri, 'https://custom.example/kvm');
+    });
+
+    test(
+        'registry-only OEM URI classification agrees across both views over '
+        'a scheme matrix (#009/#021)', () {
+      const List<(String, List<String>, String)> shapes =
+          <(String, List<String>, String)>[
+        ('https://secure.example/kvm', <String>['HTML5'], 'secure-html5'),
+        ('http://plain.example/kvm', <String>['HTML5'], 'plaintext-html5'),
+        ('vnc://external.example:5900', <String>['VNC'], 'external-vnc'),
+        ('  https://padded.example/kvm  ', <String>['HTML5'], 'padded-secure'),
+        (
+          'https://bad.example\r\nX-Injected: 1',
+          <String>['HTML5'],
+          'control-unsafe'
+        ),
+        ('   ', <String>['HTML5'], 'blank'),
+      ];
+      for (final (String uri, List<String> types, String label) in shapes) {
+        final KvmOemRegistry registry = KvmOemRegistry(
+          parsers: <KvmOemConsoleParser>[
+            _EmbeddedUrlVendorParser(uri: uri, types: types),
+          ],
+        );
+        final Map<String, dynamic> body = embeddedVendorManager();
+        final KvmConsole? console = oemOf(
+          KvmConsole.fromManager(
+            body,
+            managerId: 'BMC',
+            oemRegistry: registry,
+          ),
+        );
+        final KvmCapability capability = KvmCapability.fromManager(
+          body,
+          managerId: 'BMC',
+          oemRegistry: registry,
+        );
+        expect(capability.launchUri, console?.launchUri, reason: label);
+        expect(capability.hasUri, console?.launchUri != null, reason: label);
+        expect(
+            capability.hasSecureLaunchUri, console?.hasSecureLaunchUri ?? false,
+            reason: '$label secure');
+        expect(capability.hasHttpLaunchUri, console?.hasHttpLaunchUri ?? false,
+            reason: '$label http');
+        expect(capability.usesInsecureHttpLaunchUri,
+            console?.usesInsecureHttpLaunchUri ?? false,
+            reason: '$label plaintext');
+        expect(capability.requiresExternalConsoleClient,
+            console?.requiresExternalConsoleClient ?? false,
+            reason: '$label external');
+        expect(capability.externalClientProtocolLabel,
+            console?.externalClientProtocolLabel,
+            reason: '$label protocol-label');
+      }
+    });
+
+    test(
+        'a registry parser that reports the OEM console disabled is not '
+        'advertised as supported on either view (#009/#021)', () {
+      final KvmOemRegistry registry = KvmOemRegistry(
+        parsers: const <KvmOemConsoleParser>[
+          _EmbeddedUrlVendorParser(enabled: false),
+        ],
+      );
+      final KvmConsole? console = oemOf(
+        KvmConsole.fromManager(
+          embeddedVendorManager(),
+          managerId: 'BMC',
+          oemRegistry: registry,
+        ),
+      );
+      expect(console, isNotNull);
+      expect(console!.canOpenConsole, isFalse);
+      final KvmCapability capability = KvmCapability.fromManager(
+        embeddedVendorManager(),
+        managerId: 'BMC',
+        oemRegistry: registry,
+      );
+      expect(capability.supported, isFalse);
+      expect(capability.serviceEnabled, isFalse);
+    });
+
+    test(
+        'a standard console ConnectUri still wins over a registry OEM URI '
+        '(no precedence regression, #009/#021)', () {
+      final KvmOemRegistry registry = KvmOemRegistry(
+        parsers: const <KvmOemConsoleParser>[_EmbeddedUrlVendorParser()],
+      );
+      final Map<String, dynamic> body = <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <String>['KVMIP'],
+          'ConnectUri': 'https://standard.example/kvm',
+        },
+        'Oem': embeddedVendorManager()['Oem'],
+      };
+      final KvmCapability capability = KvmCapability.fromManager(
+        body,
+        managerId: 'BMC',
+        oemRegistry: registry,
+      );
+      expect(capability.launchUri, 'https://standard.example/kvm');
     });
   });
 }
