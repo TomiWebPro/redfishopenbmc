@@ -2421,4 +2421,113 @@ void main() {
       }
     });
   });
+
+  group(
+      'planConsoleLaunch — defense in depth: signed and overflow port rejection',
+      () {
+    // Uri.tryParse reports a *negative* port (e.g. :-1) as an HTTPS URI with a
+    // non-empty host, and silently ignores a signed port (e.g. :+443 reports
+    // the default port). Browser/WebView (WHATWG URL) parsers reject a signed
+    // or negative port outright — a parser differential that under a stale flag
+    // + test opt-in could grant in-app rendering and self-signed acceptance on
+    // a malformed authority. A real BMC console port is canonical digits only.
+    test('a signed or negative port fails closed with a stale flag', () {
+      for (final String uri in <String>[
+        'https://bmc.example:-1/console', // negative port (Uri.port == -1)
+        'https://bmc.example:+443/console', // signed port (Uri ignores it)
+        'https://bmc.example:-443/console',
+        'https://user:pass@bmc.example:-1/console', // with userinfo
+        'https://[::1]:-1/console', // IPv6 literal host
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test(
+        'a signed or negative port never reaches in-app under a strict opt-in or the production default',
+        () {
+      const String uri = 'https://bmc.example:-1/console';
+
+      final KvmConsoleLaunchPlan strict = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: uri,
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+      expect(strict.isInApp, isFalse);
+      expect(strict.acceptSelfSigned, isFalse);
+
+      final KvmConsoleLaunchPlan production = planConsoleLaunch(
+        policy: KvmWebViewPolicy.productionDefault,
+        uri: uri,
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+      expect(production.route, KvmConsoleRenderRoute.copyOnly);
+      expect(production.isInApp, isFalse);
+      expect(production.acceptSelfSigned, isFalse);
+    });
+
+    test('an overflow port fails closed without throwing', () {
+      // Uri.tryParse accepts an arbitrarily long decimal port, but reading
+      // Uri.port throws FormatException when the value overflows a 64-bit int.
+      // A malformed launch URI must fail closed, never crash the caller.
+      for (final String uri in <String>[
+        'https://bmc.example:99999999999999999999/console',
+        'https://bmc.example:18446744073709551616/console', // 2^64
+        'https://user:pass@bmc.example:99999999999999999999/console',
+        'https://[::1]:99999999999999999999/console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('canonical ports stay launchable (no over-rejection)', () {
+      // Guard against over-rejection: an empty port, canonical digits, the
+      // 16-bit maximum, and leading-zero ports (which WHATWG URL also parses
+      // as the same in-range value) must all keep working.
+      for (final String uri in <String>[
+        'https://bmc.example:/console', // empty port -> default
+        'https://bmc.example:0/console',
+        'https://bmc.example:443/console',
+        'https://bmc.example:000443/console', // leading zeros -> 443
+        'https://bmc.example:65535/console', // max valid port
+        'https://user:pass@bmc.example:8443/console',
+        'https://[::1]:8443/console', // IPv6 literal
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.inAppWebView, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+  });
 }

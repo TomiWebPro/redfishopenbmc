@@ -343,6 +343,19 @@ class KvmConsoleLaunchPlan {
 /// always 0..65535, so rejecting larger values loses no valid target; an absent
 /// or empty port (default), an in-range port, userinfo and IPv6 hosts stay
 /// launchable.
+///
+/// A non-canonical port token (signed, negative, or so large that reading
+/// `Uri.port` overflows) is rejected for the same reason, from the RAW authority
+/// before `Uri.port` is ever read: [Uri.tryParse] accepts `:-1` (reporting a
+/// negative port), silently ignores the sign in `:+443`, and accepts a
+/// 20-digit port whose `Uri.port` getter then THROWS [FormatException], while a
+/// WHATWG parser rejects signed/negative ports and ports above the 16-bit
+/// maximum. Under a stale secure flag + test opt-in that differential could
+/// grant in-app self-signed acceptance on a malformed/mismatched authority or
+/// crash the caller. A real BMC console port is canonical ASCII digits in
+/// 0..65535, so rejecting anything else loses no valid target; absent/empty
+/// ports, leading zeros, userinfo and IPv6 hosts stay launchable. The parsed
+/// port is also range-checked with a guarded read as defense in depth.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -954,6 +967,61 @@ bool _hasEmptyDnsLabel(String host) {
   return false;
 }
 
+/// Returns `true` when [uri]'s raw authority carries a port token that is not
+/// a canonical decimal 0..65535 value.
+///
+/// [Uri.tryParse] is lax about ports in two ways that create parser
+/// differentials with browser / WebView (WHATWG URL) parsers:
+///
+///  * it accepts a SIGNED port — `https://bmc.example:-1/` reports a negative
+///    `Uri.port`, and `https://bmc.example:+443/` silently ignores the sign and
+///    reports the default port — while a WHATWG parser rejects a signed port
+///    outright;
+///  * it accepts an arbitrarily long decimal port whose `Uri.port` getter then
+///    THROWS [FormatException] on integer overflow (e.g. a 20-digit port),
+///    while a WHATWG parser rejects a port above the 16-bit maximum.
+///
+/// A purely syntactic re-check that reads `Uri.port` therefore either grants
+/// in-app rendering and self-signed acceptance on a malformed/spoofed
+/// authority (negative/signed) or CRASHES the caller (overflow) under a stale
+/// secure flag + test opt-in. This inspects the *raw* authority so an overflow
+/// is rejected before `Uri.port` is ever read. A real BMC console port is
+/// canonical ASCII digits in 0..65535, so rejecting anything else loses no
+/// valid target: absent/empty ports, leading zeros (which WHATWG also parses
+/// to the same in-range value), userinfo and IPv6 literal hosts stay launchable.
+bool _hasNonCanonicalPort(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  // A launcher splits authority on the LAST '@'; userinfo may contain ':', so
+  // strip it before looking for the host's port separator.
+  final int at = authority.lastIndexOf('@');
+  final String hostPort = at >= 0 ? authority.substring(at + 1) : authority;
+  final String port;
+  if (hostPort.startsWith('[')) {
+    // IPv6 literal: an explicit port follows the closing bracket and ':'.
+    final int close = hostPort.indexOf(']');
+    if (close < 0 || close + 1 >= hostPort.length || hostPort[close + 1] != ':') {
+      return false; // malformed/no port — Uri parse fails closed below.
+    }
+    port = hostPort.substring(close + 2);
+  } else {
+    final int colon = hostPort.lastIndexOf(':');
+    if (colon < 0) return false; // no explicit port.
+    port = hostPort.substring(colon + 1);
+  }
+  if (port.isEmpty) return false; // empty port -> default, allowed.
+  // Port must be canonical ASCII digits only: reject signs, whitespace, etc.
+  if (!_isAllDigits(port)) return true;
+  // Leading zeros are harmless (WHATWG parses them to the same value), but
+  // more than five significant digits is > 65535 — and checking the digit
+  // count avoids an int-overflow exception on arbitrarily long input.
+  final String significant = port.replaceFirst(RegExp(r'^0+'), '');
+  if (significant.isEmpty) return false; // all zeros -> port 0.
+  if (significant.length > 5) return true;
+  final int? value = int.tryParse(significant);
+  return value == null || value > 65535;
+}
+
 bool _uriHasSecureHttpsTarget(String? uri) {
   if (uri == null) return false;
   final String trimmed = uri.trim();
@@ -1036,19 +1104,33 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // in-app rendering and self-signed acceptance on a malformed/spoofed host.
   // Valid pct-encoded UTF-8 (e-acute, euro, emoji) stays launchable.
   if (_authorityHasMalformedUtf8(trimmed)) return false;
+  // Reject a non-canonical port (signed, negative, overflow or > 65535) from
+  // the RAW authority BEFORE reading Uri.port: Uri.tryParse accepts a signed
+  // port (which a WHATWG parser rejects) and an arbitrarily long port whose
+  // Uri.port getter throws FormatException on overflow. A stale secure flag +
+  // test opt-in could otherwise grant in-app self-signed acceptance on a
+  // malformed/mismatched authority or crash the caller. Valid 0..65535 ports
+  // (including leading zeros) stay launchable.
+  if (_hasNonCanonicalPort(trimmed)) return false;
   final Uri? parsed = Uri.tryParse(trimmed);
   if (parsed == null || parsed.scheme != 'https' || parsed.host.isEmpty) {
     return false;
   }
-  // Reject an out-of-range port: Uri.tryParse accepts any non-negative decimal
-  // port and still reports an HTTPS URI with a non-empty host, so a purely
-  // syntactic re-check calls it "secure", while browser/WebView (WHATWG URL)
-  // parsers reject a port above the 16-bit maximum (or wrap it to a different
-  // service). Under a stale secure flag + test opt-in that parser differential
-  // could grant in-app rendering and self-signed acceptance on a
-  // malformed/mismatched authority. A real BMC console port is 0..65535, so no
-  // valid target is lost; absent/empty (default) and in-range ports stay valid.
-  if (parsed.hasPort && parsed.port > 65535) return false;
+  // Reject an out-of-range port in the parsed URI as well (defense in depth):
+  // Uri.tryParse reports any non-negative decimal port as an HTTPS URI with a
+  // non-empty host, so a purely syntactic re-check calls it "secure", while
+  // browser/WebView (WHATWG URL) parsers reject a port above the 16-bit maximum
+  // (or wrap it to a different service). Reading Uri.port is guarded against
+  // FormatException so a malformed/overflow port fails closed, never crashes.
+  if (parsed.hasPort) {
+    int port;
+    try {
+      port = parsed.port;
+    } on FormatException {
+      return false;
+    }
+    if (port < 0 || port > 65535) return false;
+  }
   // Reject a non-canonical numeric host (hex / decimal integer / abbreviated
   // / leading-zero IP forms): a launcher resolves such a host to a different
   // address than Uri.tryParse reports, so under a stale secure flag + test

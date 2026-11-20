@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 94 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (105 across the platform
+consume; today it locks the fallback behaviour with 98 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (109 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -292,6 +292,22 @@ Invariants, enforced by tests:
    An explicit port above 65535 fails closed; absent/empty (default) and
    in-range ports, userinfo and IPv6 hosts stay launchable — no real BMC target
    is lost.
+   **Non-canonical / signed / overflow port rejection:** `Uri.tryParse` also
+   accepts a signed port (`:-1` reports a negative `Uri.port`; `:+443` silently
+   ignores the sign and reports the default port) and an arbitrarily long
+   decimal port whose `Uri.port` getter THROWS `FormatException` on integer
+   overflow, while all still report an HTTPS URI with a non-empty host — so a
+   purely syntactic re-check calls them "secure". Browser/WebView (WHATWG URL)
+   parsers reject signed/negative ports and ports above 16 bits. Under a stale
+   secure flag + test opt-in that parser differential could grant in-app
+   rendering and self-signed acceptance on a malformed/mismatched authority,
+   or crash the caller on overflow. The raw authority's port token is therefore
+   validated as canonical ASCII digits in 0..65535 BEFORE `Uri.port` is read,
+   and the parsed port is range-checked with a guarded read as defense in depth
+   (never throwing). A real BMC console port is canonical digits, so rejecting
+   signed/negative/overflow values loses no valid target: absent/empty ports,
+   leading zeros (WHATWG parses them to the same value), userinfo and IPv6
+   hosts stay launchable.
    Covered by targeted tests across the defense-in-depth re-validation
    groups (scheme/host/malformed-authority parity + control-character +
    raw-space + Unicode-whitespace/invisible + raw-backslash + RFC-3986
@@ -305,7 +321,8 @@ Invariants, enforced by tests:
    double-encoded authority-delimiter rejection + encoded authority-dot
    rejection + malformed-UTF-8 authority rejection + encoded ASCII space
    rejection + encoded unreserved-ASCII rejection + non-canonical numeric-host
-   rejection + empty DNS-label rejection + out-of-range port rejection).
+   rejection + empty DNS-label rejection + out-of-range port rejection + signed
+   and overflow port rejection).
 
 ## What remains gated (not done here)
 
