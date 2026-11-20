@@ -11494,3 +11494,18 @@
 - EP-U7 (full merged-Semantics audit), EP-P7 (human-gate doc invariant guard), EP-T10 (canonical OpenBMC console fixture) — genuine tested increments only, never verification-only churn.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — build/rf-platform 188a6b1 (merge 46d8804)
+
+**Done:**
+- Sole-merger gate: verified `rf-platform-check` run#9534 returned an explicit `CHECK: PASS` for branch tip `188a6b1` (the current `build/rf-platform` tip, cross-checked unchanged post-check), then merged `build/rf-platform` → `main` with `--no-ff` (merge `46d8804`). The single unique commit adds a fail-closed rejection of out-of-range console ports (>65535) in the launch-plan authority classifier: `Uri.tryParse` reports a non-empty HTTPS host even for `https://bmc.example:99999/console`, so a purely syntactic re-check calls it "secure" while WHATWG/browser launchers reject a >65535 port or wrap it to a different service — a parser differential that under a stale flag + test opt-in could grant in-app rendering + self-signed acceptance on a mismatched authority.
+- Post-merge verify (in-tree at `46d8804`): `flutter analyze` 0; full `flutter test --coverage` 1482 passed / 1 skipped (baseline 1479 +3 merged tests); three coverage gates PASS overall 90.1% / scoped 90.4% / kvm 96.8%; `python3 issues/issues.py validate` OK; `git diff --check` clean; first-parent diff = 3 allowlisted files; targeted `launch_plan_test.dart` 110/110.
+
+**Decisions:**
+- Merged only on an explicit PASS for the exact tip; cross-checked the tip unchanged before merging. Resolved the one `LAUNCH_FALLBACK.md` count conflict with measured merged values (110 targeted / 144 platform); Dart files auto-merged with the new fail-closed port check + 3 RED→GREEN tests intact. Preserved main's shared fail-closed classifier core; no production TLS weakening; `--no-ff` keeps dept history; never force-push. DMTF emulator skipped (dependency-free decision helper, no wire/transport/fixture/tool change; <7 days since last green 85/85).
+
+**Next:**
+- Gate only PASS-verified branches; keep launch-plan hardening in the single shared fail-closed classifier core; cross-check verdict ↔ tip every run.
+- Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none — gate-only merge; both #009/#021 stay open.
