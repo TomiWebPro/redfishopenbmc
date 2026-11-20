@@ -2880,4 +2880,83 @@ void main() {
       }
     });
   });
+
+  group('planConsoleLaunch — defense in depth: IPv6 authority rejection', () {
+    test('an IPv4-mapped or IPvFuture IPv6 host fails closed with a stale flag',
+        () {
+      // The non-canonical numeric-host rule skips hosts containing ':', so
+      // Uri.tryParse reports these as non-empty HTTPS hosts while a browser /
+      // WebView (WHATWG URL) resolves ::ffff:a.b.c.d to an embedded IPv4
+      // address or rejects IPvFuture [v...] outright. Under a stale secure flag
+      // + test opt-in that parser differential could grant in-app rendering and
+      // self-signed acceptance on a malformed/mismatched authority. No real
+      // remote BMC uses a mapped or IPvFuture literal, so each fails closed.
+      // Dotted and hex embedded-IPv4 spellings are covered.
+      for (final String uri in <String>[
+        'https://[::ffff:127.0.0.1]/console', // mapped loopback (dotted quad)
+        'https://[::ffff:7f00:1]/console', // mapped loopback (hex groups)
+        'https://[::ffff:192.168.1.1]/console', // mapped private (dotted quad)
+        'https://[::ffff:c0a8:101]/console', // mapped private (hex groups)
+        'https://[v1.bmc.example]/console', // IPvFuture (unsupported by WHATWG)
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('a mapped/IPvFuture IPv6 host never reaches in-app under any policy',
+        () {
+      for (final KvmWebViewPolicy policy in <KvmWebViewPolicy>[
+        KvmWebViewPolicy.testOptIn,
+        KvmWebViewPolicy.productionDefault,
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: policy,
+          uri: 'https://[::ffff:127.0.0.1]/console',
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: policy.toString());
+        expect(plan.acceptSelfSigned, isFalse, reason: policy.toString());
+      }
+    });
+
+    test('legitimate IPv6 hosts stay launchable (no over-rejection)', () {
+      // Link-local, unique-local, global-unicast/documentation and plain
+      // loopback IPv6 literals are real/test-profile BMC targets and must keep
+      // working; a valid port and userinfo are unaffected. The rule targets
+      // only IPv4-mapped and IPvFuture forms, so no valid target is lost.
+      for (final String uri in <String>[
+        'https://[fe80::1]/console', // link-local
+        'https://[fd00::1]/console', // unique-local
+        'https://[2001:db8::1]/console', // global/documentation
+        'https://[2001:db8::1]:8443/console', // with explicit port
+        'https://user@[fd00::1]/console', // with userinfo
+        'https://[::1]/console', // plain loopback: real test-profile target
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }

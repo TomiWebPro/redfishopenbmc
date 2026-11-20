@@ -403,6 +403,19 @@ class KvmConsoleLaunchPlan {
 /// 0..65535, so rejecting anything else loses no valid target; absent/empty
 /// ports, leading zeros, userinfo and IPv6 hosts stay launchable. The parsed
 /// port is also range-checked with a guarded read as defense in depth.
+///
+/// An IPv4-mapped / IPvFuture IPv6 literal is rejected for the same reason: the
+/// non-canonical numeric-host rule above skips hosts containing ':', so
+/// [Uri.tryParse] reports these as opaque, non-empty HTTPS hosts and a purely
+/// syntactic re-check calls them "secure". A browser / WebView (WHATWG URL)
+/// resolves `::ffff:a.b.c.d` to an embedded IPv4 address and rejects IPvFuture
+/// (`[v...]`) outright, so the two parsers disagree on the authority. Under a
+/// stale secure flag + test opt-in that differential could grant in-app
+/// rendering and self-signed acceptance on a malformed/mismatched host. No
+/// real remote BMC uses a mapped or IPvFuture literal, so they fail closed;
+/// plain IPv6 loopback (`::1`, a real test-profile target) and legitimate IPv6
+/// (link-local, unique-local, global unicast), including a canonical
+/// port/userinfo, stay launchable — no valid target lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -1202,6 +1215,106 @@ bool _hasNonCanonicalPort(String uri) {
   return value == null || value > 65535;
 }
 
+/// Expands an IPv6 literal [host] (brackets already stripped by
+/// [Uri.tryParse]) into eight 16-bit groups, unfolding a `::` run and a
+/// trailing dotted-quad IPv4 tail. Returns `null` when [host] is not a
+/// well-formed IPv6 literal.
+///
+/// This is used only to *positively identify* loopback/mapped/unspecified
+/// forms; a `null` result is left to the ordinary parser checks (never treated
+/// as a spoof), so the rule can never reject more than intended.
+List<int>? _expandIpv6Groups(String host) {
+  String text = host;
+  // A trailing dotted-quad (IPv4-mapped/embedded form) becomes two groups.
+  final int lastColon = text.lastIndexOf(':');
+  if (lastColon >= 0) {
+    final String tail = text.substring(lastColon + 1);
+    if (tail.contains('.')) {
+      final List<String> octets = tail.split('.');
+      if (octets.length != 4) return null;
+      final List<int> values = <int>[];
+      for (final String octet in octets) {
+        // Loose parse (leading zeros allowed) is intentional: a non-canonical
+        // embedded quad is not a real BMC target and is rejected as a spoof.
+        if (octet.isEmpty || octet.length > 3) return null;
+        final int? value = int.tryParse(octet);
+        if (value == null || value < 0 || value > 255) return null;
+        values.add(value);
+      }
+      final String hi = ((values[0] << 8) | values[1]).toRadixString(16);
+      final String lo = ((values[2] << 8) | values[3]).toRadixString(16);
+      text = '${text.substring(0, lastColon + 1)}$hi:$lo';
+    }
+  }
+  final int compressed = text.indexOf('::');
+  final List<String> left;
+  final List<String> right;
+  if (compressed >= 0) {
+    left = text.substring(0, compressed).split(':');
+    right = text.substring(compressed + 2).split(':');
+    if (left.isNotEmpty && left.last.isEmpty) left.removeLast();
+    if (right.isNotEmpty && right.first.isEmpty) right.removeAt(0);
+  } else {
+    left = text.split(':');
+    right = <String>[];
+  }
+  int? parseGroup(String token) {
+    if (token.isEmpty) return null;
+    final int? value = int.tryParse(token, radix: 16);
+    if (value == null || value < 0 || value > 0xFFFF) return null;
+    return value;
+  }
+
+  final List<int> groups = <int>[];
+  for (final String token in left) {
+    final int? value = parseGroup(token);
+    if (value == null) return null;
+    groups.add(value);
+  }
+  final int missing = 8 - left.length - right.length;
+  if (missing < 0) return null;
+  for (int i = 0; i < missing; i++) {
+    groups.add(0);
+  }
+  for (final String token in right) {
+    final int? value = parseGroup(token);
+    if (value == null) return null;
+    groups.add(value);
+  }
+  return groups.length == 8 ? groups : null;
+}
+
+/// Returns `true` when [host] (the host reported by [Uri.tryParse]) is an IPv6
+/// literal that a browser / WebView (WHATWG URL) treats differently from the
+/// opaque host string [Uri.tryParse] reports: an IPv4-mapped address
+/// (`::ffff:a.b.c.d`, which a launcher resolves to an embedded IPv4 address
+/// while [Uri.tryParse] reports an opaque host) or an IPvFuture (`[v...]`)
+/// literal, which WHATWG rejects outright while [Uri.tryParse] accepts it.
+/// Under a stale secure flag + test opt-in that parser differential could
+/// grant in-app rendering and self-signed acceptance on a malformed/mismatched
+/// authority. No real remote BMC uses a mapped or IPvFuture literal, so they
+/// fail closed; plain IPv6 loopback (`::1`) is deliberately kept launchable —
+/// it is a real target for the test-only opt-in and both parsers agree on the
+/// address. Legitimate IPv6 (link-local, unique-local, global unicast) stays
+/// launchable.
+bool _hasSpoofedIpv6Host(String host) {
+  // [Uri.tryParse] strips the brackets of a valid IPv6 literal but retains
+  // them for an IPvFuture literal, which browsers/WebViews reject outright.
+  if (host.startsWith('[')) return true;
+  if (!host.contains(':')) return false; // not an IPv6 literal.
+  final List<int>? groups = _expandIpv6Groups(host);
+  if (groups == null) return false; // leave malformed input to parser checks.
+  // IPv4-mapped ::ffff:a.b.c.d: the first five groups are zero and the sixth
+  // is 0xffff (the embedded quad has already been expanded to two groups).
+  // Plain IPv6 loopback (::1) is deliberately NOT rejected: it is a real
+  // target for the test-only opt-in and both parsers agree on the address.
+  if (groups[5] != 0xFFFF) return false;
+  for (int i = 0; i < 5; i++) {
+    if (groups[i] != 0) return false;
+  }
+  return true;
+}
+
 bool _uriHasSecureHttpsTarget(String? uri) {
   if (uri == null) return false;
   final String trimmed = uri.trim();
@@ -1350,6 +1463,15 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // loopback/internal) host. Canonical IPv4/IPv6/DNS hosts (incl. a real
   // trailing-dot FQDN) stay launchable — no valid target lost.
   if (_isNonCanonicalNumericHost(parsed.host)) return false;
+  // Reject IPv4-mapped / IPvFuture IPv6 literals: the non-canonical-numeric
+  // rule above skips hosts containing ':', so these opaque strings would
+  // otherwise pass a purely syntactic re-check, while a browser/WebView
+  // resolves ::ffff:a.b.c.d to an embedded IPv4 address or rejects IPvFuture
+  // [v...] outright. Under a stale secure flag + test opt-in that differential
+  // could grant in-app rendering and self-signed acceptance on a malformed/
+  // mismatched host. Plain ::1 loopback (a test-profile target) and real BMC
+  // IPv6 addresses stay launchable — no valid target lost.
+  if (_hasSpoofedIpv6Host(parsed.host)) return false;
   // Degenerate, label-less authority: a host made only of dots ('.', '..',
   // '%2E%2E' decoded by Uri to '..') is not a real BMC host. `Uri.tryParse`
   // still reports it as a non-empty HTTPS host, so without this check a stale
