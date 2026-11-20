@@ -401,6 +401,18 @@ String? externalClientConsoleProtocol(String? uri) {
 /// literally, so rejecting them loses no valid target; the rule is scoped to
 /// the authority so encoded unreserved text in the path/query and legitimate
 /// percent-encoded non-ASCII UTF-8 host bytes (`%C3%A9`) stay launchable.
+///
+/// A non-canonical numeric host is rejected for the same reason: legacy /
+/// WHATWG URL parsers (browsers, WebViews) resolve `0x7f000001`, `2130706433`,
+/// `127.1` and `0177.0.0.1` to IP literals (often loopback / internal), while
+/// [Uri.tryParse] reports them as opaque DNS names with a non-empty host. A
+/// purely syntactic re-check therefore calls such a target "secure", yet the
+/// launcher contacts a DIFFERENT address than the authority Uri reported — an
+/// SSRF-style parser-differential / host-spoofing vector that under a stale
+/// secure flag + test opt-in could grant in-app rendering and self-signed
+/// acceptance on a mismatched host. Only canonical dotted-quad IPv4 (four
+/// 0-255 octets, no leading zeros), IPv6 literals and ordinary DNS names stay
+/// launchable, so no real BMC target is lost (see [_isNonCanonicalNumericHost]).
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -885,6 +897,70 @@ bool _authorityHasMalformedUtf8(String uri) {
   }
 }
 
+/// Returns `true` only when [value] is a non-empty run of ASCII digits.
+bool _isAllDigits(String value) {
+  if (value.isEmpty) return false;
+  for (int i = 0; i < value.length; i++) {
+    final int code = value.codeUnitAt(i);
+    if (code < 0x30 || code > 0x39) return false; // '0'..'9'
+  }
+  return true;
+}
+
+/// Returns `true` only when [value] is a canonical dotted-quad IPv4 octet:
+/// 1-3 ASCII digits, value 0-255, and no leading zero (except "0" itself).
+bool _isCanonicalIpv4Octet(String value) {
+  if (!_isAllDigits(value) || value.length > 3) return false;
+  if (value.length > 1 && value.startsWith('0')) return false;
+  final int? octet = int.tryParse(value);
+  return octet != null && octet <= 255;
+}
+
+/// Returns `true` when [host] (the host reported by [Uri.tryParse]) is a
+/// non-canonical numeric IP-literal form that a launcher resolves to a
+/// DIFFERENT address than [Uri.tryParse] reports.
+///
+/// Legacy / WHATWG URL parsers accept several numeric spellings of an IP
+/// address that Dart's [Uri] treats as opaque DNS names:
+///
+///  * hex forms `0x7f000001` / `0x7f.1` -> 127.0.0.1;
+///  * a bare decimal integer `2130706433` / `0` -> 127.0.0.1 / 0.0.0.0;
+///  * abbreviated dotted forms `127.1` / `127.0.1` -> 127.0.0.1;
+///  * leading-zero ("octal") forms `0177.0.0.1` -> 127.0.0.1.
+///
+/// A launcher (browser / WebView) may therefore contact a loopback or internal
+/// address while the syntactic re-check saw a non-empty HTTPS host. Under a
+/// stale secure flag + test opt-in that differential could grant in-app
+/// rendering and self-signed acceptance on a mismatched/spoofed host.
+///
+/// Only unambiguous forms are kept: IPv6 literals (contain ':'), ordinary DNS
+/// names (letters / punycode), and canonical dotted-quad IPv4 (four 0-255
+/// octets, no leading zeros). Percent-encoded digit hosts are already rejected
+/// by the encoded-unreserved rule, so the raw [Uri]-reported host is safe to
+/// inspect here. Stricter than the model, never more permissive.
+bool _isNonCanonicalNumericHost(String host) {
+  if (host.isEmpty || host.contains(':')) return false; // IPv6: keep.
+  final List<String> labels = host.split('.');
+  // Hex IP forms: any 0x-prefixed label. A real host never uses 0x labels.
+  for (final String label in labels) {
+    if (label.length > 2 &&
+        label.startsWith('0') &&
+        (label[1] == 'x' || label[1] == 'X')) {
+      return true;
+    }
+  }
+  // All-digit hosts are read as IP literals by legacy parsers. Only a
+  // canonical dotted-quad IPv4 is unambiguous; integers, abbreviated and
+  // leading-zero/octal forms all fail closed.
+  if (labels.every(_isAllDigits)) {
+    if (labels.length == 4 && labels.every(_isCanonicalIpv4Octet)) {
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+
 /// Trims [uri] and returns it only when it is non-blank and contains no raw
 /// control/separator/invisible code point, or `null` otherwise. Shared by every
 /// HTTP(S) transport classifier so HTTPS and HTTP classification apply
@@ -1025,6 +1101,13 @@ bool _isHttpUriWithSchemes(String? uri, Set<String> schemes) {
       parsed.host.isEmpty) {
     return false;
   }
+  // Reject a non-canonical numeric host (hex / decimal integer / abbreviated
+  // / leading-zero IP forms): a launcher resolves such a host to a different
+  // address than Uri.tryParse reports, so under a stale secure flag + test
+  // opt-in it could grant in-app rendering and self-signed acceptance on a
+  // mismatched (often loopback/internal) host. Canonical IPv4/IPv6/DNS hosts
+  // stay launchable — no valid target lost.
+  if (_isNonCanonicalNumericHost(parsed.host)) return false;
   // Degenerate, label-less authority: a host made only of dots ('.', '..',
   // '%2E%2E' decoded by Uri to '..') is not a real BMC host. `Uri.tryParse`
   // still reports it as a non-empty HTTPS host, so without this check a stale
