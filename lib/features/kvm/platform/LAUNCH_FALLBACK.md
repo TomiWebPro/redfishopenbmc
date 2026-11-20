@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 131 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (142 across the platform
+consume; today it locks the fallback behaviour with 134 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (145 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -24,7 +24,7 @@ suite).
 | flag off + HTTPS HTML5 enabled | `externalBrowser` | trimmed HTTPS URI | `false` |
 | flag off + plaintext HTTP | `copyOnly` | original URI (for copy) | `false` |
 | flag off + no URI | `copyOnly` | `null` | `false` |
-| flag off + blank URI / inconsistent "secure" flag | `copyOnly` (fail closed) | raw value | `false` |
+| flag off + blank URI / inconsistent "secure" flag | `copyOnly` (fail closed) | `null` for blank, raw value otherwise | `false` |
 | test opt-in + HTTPS HTML5 enabled | `inAppWebView` | trimmed HTTPS URI | `true` (test-only) |
 | opt-in but strict TLS | `inAppWebView` | trimmed HTTPS URI | `false` |
 | opt-in + plaintext / disabled / non-HTML5 | never in-app | original URI | `false` |
@@ -38,8 +38,11 @@ Invariants, enforced by tests:
 2. **Self-signed acceptance is gated on the final route being in-app** AND the
    test-only opt-in AND HTTPS. External-browser and copy-only fallbacks can
    never set it — production TLS is never weakened (issue #021).
-3. **Fail closed.** A blank/missing URI degrades to `copyOnly` rather than
-   handing a launcher a null/whitespace target; URIs are trimmed.
+3. **Fail closed.** A blank/missing URI degrades to `copyOnly` with a `null`
+   target — a whitespace-only string is "no usable target" and is never handed
+   to a launcher/copy action, under any policy (including the test-only opt-in).
+   A non-blank URI that merely fails the secure check keeps its raw copy target;
+   URIs are trimmed for every launchable route.
 4. **Scheme + host re-validation (defense in depth).** `hasSecureUri` alone is
    never trusted for a TLS-sensitive decision: the raw URI string must also be
    an HTTPS URL with a non-empty host (mirroring `hasSecureLaunchUri`).
@@ -484,6 +487,12 @@ Invariants, enforced by tests:
    Hangul filler authority rejection (U+115F/U+1160/U+3164/U+FFA0 — category
    `Lo`, NFKC non-ASCII, silently dropped by UTS-46 IDNA so a launcher contacts
    a different authority)).
+   **Blank-URI target normalization:** a whitespace-only URI is "no usable
+   target" (`KvmConsoleLaunchPlan.targetUri`) — the copy-only fallback must
+   surface `null`, never a whitespace string, under any policy (including the
+   test-only opt-in). A non-blank URI that merely fails the secure check keeps
+   its raw copy target, so the flag-off external-browser + copy path still
+   works unchanged.
 
 ## What remains gated (not done here)
 

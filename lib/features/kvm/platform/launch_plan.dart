@@ -1805,8 +1805,11 @@ bool _uriHasSecureHttpsTarget(String? uri) {
 ///     effective signal.
 ///  3. Self-signed acceptance is granted only for an in-app route under the
 ///     test-only opt-in on HTTPS — never for a fallback.
-///  4. A missing/blank URI fails closed to copy-only so a launcher is never
-///     handed a null/whitespace target; the URI is trimmed for every other route.
+///  4. A missing/blank URI fails closed to copy-only and yields a `null`
+///     target, so a launcher/copy action is never handed a whitespace string
+///     (a blank URI is "no usable target"); the URI is trimmed for every other
+///     route. A non-blank URI that merely fails the secure check keeps its raw
+///     value on the copy-only fallback.
 KvmConsoleLaunchPlan planConsoleLaunch({
   required KvmWebViewPolicy policy,
   required String? uri,
@@ -1842,9 +1845,18 @@ KvmConsoleLaunchPlan planConsoleLaunch({
       safeRoute == KvmConsoleRenderRoute.inAppWebView &&
           policy.mayAcceptSelfSigned(hasSecureUri: effectiveSecure);
 
+  // A blank/whitespace-only URI is "no usable target" (see
+  // KvmConsoleLaunchPlan.targetUri) — never surface it as a target for a
+  // launcher/copy action, even on the copy-only fallback. A non-blank URI
+  // that merely fails the secure check keeps its raw value on the copy path
+  // so the flag-off external-browser + copy fallback still works unchanged.
+  final String? safeTarget = trimmed == null
+      ? null
+      : (safeRoute == KvmConsoleRenderRoute.copyOnly ? uri : trimmed);
+
   return KvmConsoleLaunchPlan._(
     route: safeRoute,
-    targetUri: safeRoute == KvmConsoleRenderRoute.copyOnly ? uri : trimmed,
+    targetUri: safeTarget,
     acceptSelfSigned: acceptSelfSigned,
   );
 }
