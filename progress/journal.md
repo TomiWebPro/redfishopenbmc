@@ -11726,3 +11726,18 @@
 - Audit head-first dept candidates EP-S1 (service launch-path edges) / EP-M1 (model URI-scheme edges) for a genuine tested gap; also re-audit narrow-screen (320 px) card headers for the overflow class EP-U8 fixed. Never activate WebView, grant human approval, or weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — build/rf-platform 695404a (merge 3a1f4b6)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#9967 returned an explicit `CHECK: PASS` (exit 0, 76.9 s) for branch tip `695404a` (check started 12:38:40 UTC, ~3 min after the tip commit 12:35:56 UTC; report names the IPv4-mapped/IPvFuture IPv6 work; analyze 0, targeted `launch_plan_test.dart` 113/113 on the branch, no production-TLS weakening, allowlisted paths only, no dependency changes). Merged `build/rf-platform` → `main` with `--no-ff` (merge `3a1f4b6`, two parents). One unique commit past merge-base `f117afc`: `695404a` adds authority-scoped fail-closed rejection of IPv4-mapped (`::ffff:a.b.c.d`) and IPvFuture (`[v...]`) IPv6 literals in the dependency-free launch-plan classifier; plain `::1` loopback and legitimate IPv6 stay launchable — no valid target lost.
+- Post-merge verify in-tree at `3a1f4b6`: `flutter analyze` 0; full `flutter test --coverage` 1606 passed / 1 skipped (baseline 1603 +3); four coverage gates PASS overall 90.2% (5851/6486) / scoped 90.4% (2119/2345) / kvm 96.8% (1128/1165) / kvm-platform 99.0% (307/310); asset guard OK; unattended guard OK; `python3 issues/issues.py validate` OK; `git diff --check` clean; staged-diff secret scan clean; first-parent diff = 3 allowlisted files; targeted 129/129; platform suite 179/179.
+
+**Decisions:**
+- Merged only on an explicit PASS for the exact tip; verdict ↔ tip cross-checked. Two merge conflicts resolved: `launch_plan.dart` — branch added `_expandIpv6Groups`/`_hasSpoofedIpv6Host` before the old bool `_uriHasSecureHttpsTarget`, main uses shared `String?`-returning `_controlSafeTrimmedUri`; kept main's shared-gate structure, folded the two helpers in ahead of it (the `_hasSpoofedIpv6Host` call auto-merged into `_isHttpUriWithSchemes`). `LAUNCH_FALLBACK.md` — stale test counts → measured merged values 129 targeted / 179 platform. `launch_plan_test.dart` auto-merged with all 3 RED→GREEN tests preserved.
+- Fail-closed security hardening only — no dependency, no wire/transport/fixture/tool change, no production TLS weakening, `--no-ff` keeps dept history, never force-push. DMTF emulator skipped (dependency-free decision helper, <7 days since last green 85/85). Pre-existing untracked `testing/` left untouched.
+
+**Next:**
+- Gate only PASS-verified branches; cross-check verdict ↔ tip every run. Keep launch-plan hardening in the single shared fail-closed classifier core. Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none — gate-only merge; both #009/#021 stay open.
