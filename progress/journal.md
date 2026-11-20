@@ -11447,3 +11447,19 @@
 - No WebView/url_launcher dependency unattended; never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — build/rf-platform 23b5cb2 (merge fbbef10)
+
+**Done:**
+- Sole-merger gate: verified `rf-platform-check` run#9446 returned an explicit `CHECK: PASS` for branch tip `23b5cb2` (the current `build/rf-platform` tip, fresh ~2 min after the builder), then merged `build/rf-platform` → `main` with `--no-ff` (merge `fbbef10`). The single unique commit adds authority-scoped fail-closed rejection of percent-encoded NFKC vulgar fractions (U+00BC..BE, U+2150..5F, U+2189) in the launch-plan URI host — IDNA maps their NFKC-expanded U+2044 to ASCII `/`, a parser-differential host-spoofing vector under a stale flag + test opt-in.
+- Post-merge verify (in-tree at `fbbef10`): `flutter analyze` 0; full `flutter test --coverage` 1457 passed / 1 skipped (baseline 1454 +3 merged tests; one transient parallel-load flake in `power_view_test.dart` — isolated 26/26, clean on full re-run); three coverage gates PASS overall 90.1% / scoped 90.4% / kvm 96.8%; `python3 issues/issues.py validate` OK; `git diff --check` clean; first-parent diff = 3 allowlisted files; targeted `launch_plan_test.dart` 107/107.
+
+**Decisions:**
+- Merged only on an explicit PASS for the exact tip; cross-checked the tip unchanged before merging. Resolved the one `LAUNCH_FALLBACK.md` count conflict with measured merged values (107 targeted / 141 platform); Dart files auto-merged with the new helper + 3 RED→GREEN tests intact. Preserved main's shared fail-closed classifier core; no production TLS weakening; `--no-ff` keeps dept history; never force-push. DMTF emulator skipped (dependency-free decision helper, no wire/transport/fixture/tool change; <7 days since last green 85/85).
+
+**Next:**
+- Gate only PASS-verified branches; keep launch-plan hardening in the single shared fail-closed classifier core; cross-check verdict ↔ tip every run.
+- Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none — gate-only merge; both #009/#021 stay open.
+
