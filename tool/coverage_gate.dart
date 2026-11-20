@@ -4,7 +4,8 @@
 /// Parses an lcov `lcov.info` file, aggregates line coverage overall and for a
 /// configurable set of high-value source scopes (`lib/redfish/`,
 /// `lib/features/power/`, `lib/features/sensors/`), plus the remote-KVM feature
-/// scope (`lib/features/kvm/`), and enforces thresholds.
+/// scope (`lib/features/kvm/`) and its security-critical decision-layer
+/// sub-scope (`lib/features/kvm/platform/`), and enforces thresholds.
 ///
 /// The parsing/gating logic is pure Dart with no I/O so it can be unit-tested;
 /// [main] is a thin CLI wrapper that reads a file and sets the process exit
@@ -137,6 +138,18 @@ const List<String> kKvmScopePrefixes = <String>[
   'lib/features/kvm/',
 ];
 
+/// Source prefixes identifying the KVM platform decision layer (EP-T3).
+///
+/// `lib/features/kvm/platform/**` holds the security-critical, dependency-free
+/// fail-closed URI/port classifier and the WebView-policy decision. It is the
+/// most spoof-sensitive code in the KVM feature, so it gets its OWN gate rather
+/// than being allowed to hide behind the wide `kKvmScopePrefixes` aggregate:
+/// once new adapter files land there, a whole uncovered file can no longer be
+/// diluted by the many already-well-covered model/view files in the KVM scope.
+const List<String> kKvmPlatformScopePrefixes = <String>[
+  'lib/features/kvm/platform/',
+];
+
 /// Minimum line coverage required for the remote-KVM feature (#009).
 const double kKvmThreshold = 0.75;
 
@@ -220,16 +233,39 @@ GateResult evaluateKvmGate(
   );
 }
 
-/// Evaluates every enforced gate: the #010 overall + scoped gates followed by
-/// the #009 remote-KVM gate.
+/// Evaluates the KVM platform decision-layer (#009/#021 / EP-T3) gate.
 ///
-/// The CLI/CI use this so all three thresholds are enforced in one report; the
+/// Returns a single [GateResult] named `'kvm-platform'` so CI artifacts can
+/// identify it separately from the wide `'kvm'` aggregate. It reuses #009's
+/// 75% threshold and [CoverageSummary.scope]'s path normalization, but scopes
+/// only [kKvmPlatformScopePrefixes] so the fail-closed classifier cannot be
+/// masked by unrelated KVM model/view coverage.
+GateResult evaluateKvmPlatformGate(
+  CoverageSummary summary, {
+  double threshold = kKvmThreshold,
+  Iterable<String> prefixes = kKvmPlatformScopePrefixes,
+}) {
+  final CoverageSummary scoped = summary.scope(prefixes);
+  return GateResult(
+    'kvm-platform',
+    scoped.totalLinesHit,
+    scoped.totalLinesFound,
+    threshold,
+  );
+}
+
+/// Evaluates every enforced gate: the #010 overall + scoped gates, the #009
+/// remote-KVM aggregate gate, and the #009/#021 KVM platform decision-layer
+/// gate (EP-T3).
+///
+/// The CLI/CI use this so all four thresholds are enforced in one report; the
 /// narrower [evaluateGates] remains available for callers that only need the
 /// #010 gates (and preserves its two-result contract).
 CoverageGateReport evaluateAllGates(CoverageSummary summary) {
   return CoverageGateReport(<GateResult>[
     ...evaluateGates(summary).results,
     evaluateKvmGate(summary),
+    evaluateKvmPlatformGate(summary),
   ]);
 }
 

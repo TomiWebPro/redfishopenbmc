@@ -4,7 +4,8 @@ name: verify
 # every push/PR. Runs the same three checks the runbook requires before a push:
 # a clean analyzer, a fully green test suite with lcov, and the coverage gates
 # enforced by tool/coverage_gate.dart (overall >=75%, redfish+power+sensors
-# >=80%, and remote-KVM >=75%; text output here, --json available for CI).
+# >=80%, remote-KVM >=75%, and the KVM decision layer >=75%; text output here,
+# --json available for CI).
 
 on:
   push:

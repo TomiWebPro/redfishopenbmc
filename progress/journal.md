@@ -11588,3 +11588,18 @@
 - Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none — gate-only merge; both #009/#021 stay open.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-T3)
+
+**Done:**
+- EP-T3 (head of the unlanded `queues/tooling.md` slices). Added a dedicated KVM decision-layer coverage gate to `tool/coverage_gate.dart`: `kKvmPlatformScopePrefixes` (`lib/features/kvm/platform/`) + pure `evaluateKvmPlatformGate()` (`GateResult` named `'kvm-platform'`, 75% threshold, reuses `CoverageSummary.scope()` normalization), folded into `evaluateAllGates()` as a 4th enforced gate so the security-critical fail-closed URI/port classifier can no longer be diluted by the wide `lib/features/kvm/` aggregate. Updated the four-gate description in `DEVELOPMENT.md`, `MULTI_DEPT.md` and the `.github/workflows/verify.yml` comment.
+- Added 6 tests to `test/tool/coverage_gate_test.dart` (22→29): platform-only 75% scoping, a fully-covered KVM aggregate cannot mask a 0% platform adapter, custom threshold/prefix, absolute+Windows paths, empty-scope fails closed, and the 4-gate `evaluateAllGates`/CI-JSON shape. RED proof: temporarily scoping the gate to all of `lib/features/kvm/` failed 6 tests (`linesFound Expected: <100> / Actual: <400>`; masked adapter passed at 75% instead of failing); restored byte-clean (SHA `f93a2e14…` unchanged) → 29/29 GREEN.
+
+**Decisions:**
+- Tool/test-only, dependency-free, TLS-safe: no product `lib/`, wire/fixture change, no URL opened, no human approval granted, no issue closed, no production TLS weakening. This is a genuine honesty increment (a new enforced gate over the spoof-sensitive decision layer), not timestamp/churn. Two concurrent rf-gate merges (`901db9d` + `a936eee`) landed mid-run; left intact and reflected in the final test count. DMTF emulator skipped (tool/test-only, <7 days since last green 85/85).
+- Verify: targeted `coverage_gate_test.dart` 29/29; `flutter analyze` 0; full `flutter test` 1519 passed / 1 skipped (baseline 1510 +6 mine +3 concurrent merge); fresh `flutter test --coverage` → gate CLI PASS overall 90.1% / scoped 90.4% / kvm 96.8% / kvm-platform 99.6%, exit 0; issues validate OK; `git diff --check` clean.
+
+**Next:**
+- EP-M1 (rf-model) URI-scheme edges or EP-S1 (rf-service) launch-path edges with a genuine RED→GREEN test. Keep the kvm-platform gate green for any new decision-layer adapter. Never activate WebView, grant human approval, or weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

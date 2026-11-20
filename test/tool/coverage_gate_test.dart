@@ -225,42 +225,154 @@ void main() {
       expect(gate.passed, isTrue);
     });
 
-    test('evaluateAllGates enforces the #010 gates plus the #009 KVM gate', () {
+    test(
+        'evaluateAllGates enforces #010, the #009 KVM gate and the platform gate',
+        () {
       final CoverageSummary summary = parseLcov([
         record('lib/redfish/a.dart', 100, 90),
         record('lib/features/power/b.dart', 100, 90),
         record('lib/features/sensors/c.dart', 100, 90),
         record('lib/features/kvm/kvm_service.dart', 100, 90),
+        record('lib/features/kvm/platform/launch_plan.dart', 100, 90),
         record('lib/other/d.dart', 100, 90),
       ].join('\n'));
 
       final CoverageGateReport report = evaluateAllGates(summary);
 
-      expect(report.results, hasLength(3));
+      expect(report.results, hasLength(4));
       expect(
         report.results.map((GateResult g) => g.name),
-        <String>['overall', 'redfish + power + sensors', 'kvm'],
+        <String>['overall', 'redfish + power + sensors', 'kvm', 'kvm-platform'],
       );
       expect(report.failures, isEmpty);
       expect(report.passed, isTrue);
     });
 
-    test('evaluateAllGates fails when only the KVM gate is below threshold',
+    test(
+        'evaluateAllGates fails when only the KVM aggregate is below threshold',
         () {
       final CoverageSummary summary = parseLcov([
         record('lib/redfish/a.dart', 100, 90),
         record('lib/features/power/b.dart', 100, 90),
         record('lib/features/sensors/c.dart', 100, 90),
         record('lib/features/kvm/kvm_service.dart', 100, 50),
+        record('lib/features/kvm/platform/launch_plan.dart', 100, 90),
         record('lib/other/d.dart', 100, 90),
       ].join('\n'));
 
       final CoverageGateReport report = evaluateAllGates(summary);
 
-      expect(report.results, hasLength(3));
+      expect(report.results, hasLength(4));
       expect(report.failures, hasLength(1));
       expect(report.failures.single.name, 'kvm');
       expect(report.passed, isFalse);
+    });
+
+    test(
+        'evaluateAllGates fails when only the platform gate is below threshold',
+        () {
+      final CoverageSummary summary = parseLcov([
+        record('lib/redfish/a.dart', 100, 90),
+        record('lib/features/power/b.dart', 100, 90),
+        record('lib/features/sensors/c.dart', 100, 90),
+        // Heavy, fully-covered non-platform KVM code keeps the wide aggregate
+        // at (300 + 50) / 400 = 87.5% — only the dedicated gate fails closed.
+        record('lib/features/kvm/kvm_service.dart', 300, 300),
+        record('lib/features/kvm/platform/launch_plan.dart', 100, 50),
+        record('lib/other/d.dart', 100, 90),
+      ].join('\n'));
+
+      final CoverageGateReport report = evaluateAllGates(summary);
+
+      expect(report.results, hasLength(4));
+      expect(report.failures, hasLength(1));
+      expect(report.failures.single.name, 'kvm-platform');
+      expect(report.passed, isFalse);
+    });
+  });
+
+  group('KVM platform decision-layer gate (#009/#021 / EP-T3)', () {
+    test('evaluateKvmPlatformGate scopes only platform/** at 75%', () {
+      final CoverageSummary summary = parseLcov([
+        record('lib/features/kvm/platform/launch_plan.dart', 100, 75),
+        record('lib/features/kvm/platform/webview_policy.dart', 100, 75),
+        record('lib/features/kvm/kvm_service.dart', 100, 0),
+        record('lib/features/kvm/models/kvm_models.dart', 100, 0),
+      ].join('\n'));
+
+      final GateResult gate = evaluateKvmPlatformGate(summary);
+
+      expect(gate.name, 'kvm-platform');
+      expect(gate.threshold, kKvmThreshold);
+      expect(gate.threshold, 0.75);
+      // Platform union = (75 + 75) / 200 = 75% — exactly at threshold => pass.
+      expect(gate.linesFound, 200);
+      expect(gate.linesHit, 150);
+      expect(gate.passed, isTrue);
+    });
+
+    test('a well-covered KVM aggregate cannot mask an uncovered platform file',
+        () {
+      final CoverageSummary summary = parseLcov([
+        // Everything outside platform/** is fully covered.
+        record('lib/features/kvm/kvm_service.dart', 100, 100),
+        record('lib/features/kvm/models/kvm_models.dart', 100, 100),
+        record('lib/features/kvm/views/kvm_view.dart', 100, 100),
+        // One brand-new platform adapter is entirely uncovered.
+        record('lib/features/kvm/platform/new_adapter.dart', 100, 0),
+      ].join('\n'));
+
+      // The wide aggregate passes (300/400 = 75%)...
+      expect(evaluateKvmGate(summary).passed, isTrue);
+      // ...but the dedicated decision-layer gate fails closed (0/100 = 0%).
+      final GateResult platform = evaluateKvmPlatformGate(summary);
+      expect(platform.linesFound, 100);
+      expect(platform.linesHit, 0);
+      expect(platform.passed, isFalse);
+    });
+
+    test('evaluateKvmPlatformGate honours a custom threshold and prefix set',
+        () {
+      final CoverageSummary summary = parseLcov([
+        record('pkg/platform/a.dart', 10, 9),
+        record('pkg/model/b.dart', 10, 0),
+      ].join('\n'));
+
+      final GateResult gate = evaluateKvmPlatformGate(
+        summary,
+        threshold: 0.9,
+        prefixes: const <String>['pkg/platform/'],
+      );
+
+      expect(gate.linesFound, 10);
+      expect(gate.threshold, 0.9);
+      expect(gate.passed, isTrue); // 90% meets the custom 90% threshold
+    });
+
+    test('evaluateKvmPlatformGate matches absolute and Windows paths', () {
+      final CoverageSummary summary = parseLcov([
+        record('/home/me/app/lib/features/kvm/platform/a.dart', 10, 8),
+        record(r'lib\features\kvm\platform\sub\b.dart', 10, 8),
+      ].join('\n'));
+
+      final GateResult gate = evaluateKvmPlatformGate(summary);
+
+      expect(gate.linesFound, 20);
+      expect(gate.linesHit, 16);
+      expect(gate.passed, isTrue);
+    });
+
+    test(
+        'an empty platform scope fails closed (missing/renamed decision layer)',
+        () {
+      final CoverageSummary summary = parseLcov([
+        record('lib/features/kvm/kvm_service.dart', 100, 100),
+      ].join('\n'));
+
+      final GateResult gate = evaluateKvmPlatformGate(summary);
+
+      expect(gate.linesFound, 0);
+      expect(gate.passed, isFalse);
     });
   });
 
@@ -299,13 +411,15 @@ void main() {
       expect(results.every((dynamic r) => r['passed'] as bool), isTrue);
     });
 
-    test('the CLI report (evaluateAllGates) serializes the KVM gate for CI',
+    test(
+        'the CLI report (evaluateAllGates) serializes the platform gate for CI',
         () {
       final CoverageGateReport report = evaluateAllGates(parseLcov([
         record('lib/redfish/a.dart', 100, 90),
         record('lib/features/power/b.dart', 100, 90),
         record('lib/features/sensors/c.dart', 100, 90),
         record('lib/features/kvm/kvm_service.dart', 100, 90),
+        record('lib/features/kvm/platform/launch_plan.dart', 100, 90),
       ].join('\n')));
 
       final Map<String, dynamic> decoded =
@@ -313,12 +427,12 @@ void main() {
 
       expect(decoded['passed'], isTrue);
       final List<dynamic> results = decoded['results'] as List<dynamic>;
-      expect(results, hasLength(3));
+      expect(results, hasLength(4));
       expect(
         results.map((dynamic r) => r['name'] as String),
-        contains('kvm'),
+        <String>['overall', 'redfish + power + sensors', 'kvm', 'kvm-platform'],
       );
-      expect(results.last['name'], 'kvm');
+      expect(results.last['name'], 'kvm-platform');
       expect(results.last['threshold'], 0.75);
     });
 

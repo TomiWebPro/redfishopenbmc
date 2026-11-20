@@ -80,9 +80,12 @@ omitted; `--json` may appear before or after the path.
 
 Thresholds: **≥75% overall** line coverage, **≥80%** on the high-value
 scopes `lib/redfish/`, `lib/features/power/`, `lib/features/sensors/` (the #010
-gates, overridable in code via `evaluateGates`), and **≥75%** on the remote-KVM
+gates, overridable in code via `evaluateGates`), **≥75%** on the remote-KVM
 feature scope `lib/features/kvm/` (the #009 gate, overridable via
-`evaluateKvmGate`). The CLI/`evaluateAllGates` enforce all three together.
+`evaluateKvmGate`), and **≥75%** on the security-critical KVM decision layer
+`lib/features/kvm/platform/` (the EP-T3 gate, overridable via
+`evaluateKvmPlatformGate`). The latter has its own gate so a newly-uncovered
+classifier/adapter file cannot be diluted by the wide KVM aggregate. The CLI/`evaluateAllGates` enforce all four together.
 Exit code `0` = all gates pass, `1` = a gate failed, `2` = input error
 (missing lcov file or unknown flag). `coverage/lcov.info` is `.gitignore`'d
 and never committed.

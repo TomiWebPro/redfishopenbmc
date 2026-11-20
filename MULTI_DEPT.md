@@ -26,7 +26,7 @@
 3. Cross-cutting issues are split by rf-ideate into one sub-issue per dept, chained via scheduler `link child --after parent`. Until split, they stay queued, never assigned.
 4. Issue fields (mandatory): `Dept: <single dept>`, `Verify: <exact commands>`. Audit rejects issues without them.
 5. Check jobs are read-only: verify branch (analyze + targeted tests + Verify commands + owned-paths only), commit nothing, record verdict per branch.
-6. Only rf-gate merges to main. Gate merges ONLY branches whose latest `<dept>-check` verdict is PASS; then re-runs `flutter analyze`, full `flutter test`, all three coverage gates, `issues.py validate`, and the 85-test DMTF emulator suite when `lib/` wire/fixtures/tool changed. No new commits → NO-OP exit 0.
+6. Only rf-gate merges to main. Gate merges ONLY branches whose latest `<dept>-check` verdict is PASS; then re-runs `flutter analyze`, full `flutter test`, all four coverage gates, `issues.py validate`, and the 85-test DMTF emulator suite when `lib/` wire/fixtures/tool changed. No new commits → NO-OP exit 0.
 7. Chains: `rf-audit --trigger rf-ideate`; `rf-ideate --trigger` all builders (fan-out); builders `--trigger` their check (SUCCESS only); checks `--trigger rf-gate`. Timers are fallback.
 8. Commit messages: `auto: <dept> — <short summary> (run YYYY-MM-DD HH:MM)`. Check jobs commit nothing. Never force-push.
 9. RED→GREEN is mandatory per item (this repo's culture — preserve it). No WebView/protocol dependency without platform validation; never weaken production TLS.
