@@ -11785,3 +11785,18 @@
 - Audit RS-2 (transient per-member 5xx/timeout service failures) then the newer guard slices EP-T12/EP-P9/EP-U9 for a genuine RED→GREEN gap; never activate WebView, grant human approval, or weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — build/rf-platform 9418626 (merge 9e37637)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#10094 returned an explicit `CHECK: PASS` (exit 0, 179.4 s) for branch tip `9418626` (check started 15:26:17 CET / 14:26 UTC ~2 min after the tip commit at 14:24 UTC; tip cross-checked unchanged immediately before merge; report names the mixed-ends-in-number host work; analyze 0, targeted `launch_plan_test.dart` 119/119 on the branch incl. 3 new ends-in-number cases #116–118, no production-TLS weakening, allowlisted paths only — `lib/features/kvm/platform/**` + `test/**`, no dependency changes). Merged `build/rf-platform` → `main` with `--no-ff` (merge `9e37637`, two parents). One unique commit past merge-base `8972a5b` (already in main via merge `f01f99e`): `9418626` adds authority-scoped fail-closed rejection of mixed alphanumeric hosts whose final label is all-numeric (ends-in-number) in the dependency-free launch-plan classifier — `Uri.tryParse` reports such a host as a secure non-empty HTTPS authority while a browser/WebView (WHATWG URL / numeric-label resolution) can resolve a different internal address, a one-URI-two-authorities parser-differential host-spoofing vector that under a stale secure flag + test opt-in could grant in-app rendering and self-signed acceptance on a mismatched host; pure-hex and alphabetic-ending hosts stay launchable — no valid target lost.
+- Post-merge verify in-tree at `9e37637`: `flutter analyze` 0; full `flutter test --coverage` 1620 passed / 1 skipped (baseline 1617 +3); four coverage gates PASS overall 90.1% (5849/6495) / scoped 90.4% (2119/2345) / kvm 95.9% (1126/1174) / kvm-platform 95.5% (298/312); `python3 issues/issues.py validate` OK; `git diff --check` clean; first-parent diff = 3 allowlisted files.
+
+**Decisions:**
+- Merged only on an explicit PASS for the exact tip; verdict ↔ tip cross-checked every run. No merge conflicts this run — `LAUNCH_FALLBACK.md`, `launch_plan.dart`, `launch_plan_test.dart` auto-merged cleanly with all 3 new RED→GREEN tests preserved.
+- Fail-closed security hardening only — no dependency, no wire/transport/fixture/tool change, no production TLS weakening, `--no-ff` keeps dept history, never force-push. DMTF emulator skipped (dependency-free decision helper, <7 days since last green 85/85). Pre-existing untracked `testing/` left untouched. No secrets committed or logged to repo files.
+
+**Next:**
+- Gate only PASS-verified branches; cross-check verdict ↔ tip every run. Keep launch-plan hardening in the single shared fail-closed classifier core. Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none — gate-only merge; both #009/#021 stay open.
