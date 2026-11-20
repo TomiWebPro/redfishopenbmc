@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 147 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (201 across the platform
+consume; today it locks the fallback behaviour with 150 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (204 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
