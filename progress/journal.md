@@ -11361,3 +11361,19 @@
 - EP-P6 (rf-platform): production-policy final-route invariant property test (WebView flag OFF → never in-app, never self-signed, every target control-safe).
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — sole merger (build/rf-platform 4fe08db)
+
+- Verdict: `rf-platform-check` run#9287 explicit `CHECK: PASS` (exit 0, started 04:14:39 UTC, ~62.6 s) for branch HEAD `4fe08db`; tip cross-checked unchanged post-check (exactly 1 unmerged commit past merge-base `ae93bdf`, already in main via `93806d0`).
+- Merged `build/rf-platform` `4fe08db` into `main` with `--no-ff` (merge `66e6adb`). Closes the parser-differential numeric-host host-spoofing gap in the dependency-free `launch_plan.dart`: legacy/WHATWG parsers resolve `0x7f000001` / `2130706433` / `127.1` / `0177.0.0.1` to IP literals while `Uri.tryParse` reports an opaque HTTPS host; under a stale flag + test opt-in a spoofed host could reach in-app rendering + self-signed acceptance. Added `_isAllDigits` / `_isCanonicalIpv4Octet` / `_isNonCanonicalNumericHost`, folded into the shared gate as a fail-closed `return false`; canonical IPv4/IPv6/DNS hosts stay launchable.
+- Conflicts: `launch_plan.dart` (branch helper block predated main's `String?` shared gate) resolved keeping main's structure + folding in the three helpers; the call site auto-merged into `_isHttpUriWithSchemes`. `LAUNCH_FALLBACK.md` counts corrected to 101 targeted / 132 platform with the branch's numeric-host rationale kept. `launch_plan_test.dart` auto-merged with all 3 RED→GREEN tests.
+- Verification: analyze 0; full `flutter test --coverage` 1436 passed / 1 skipped (baseline 1433 +3); coverage gates PASS overall 90.1% / scoped 90.4% / kvm 96.8%; issues validate OK; diff --check clean; secret scan clean; first-parent diff = 3 allowlisted files. DMTF emulator skipped (no wire/fixture/tool change).
+
+**Decisions:**
+- Merged only because run#9287 explicitly PASSED for the exact tip; never merge on a stale/absent verdict.
+- `--no-ff` preserves dept-branch history; single shared fail-closed classifier core kept; no production TLS weakening; never force-push.
+
+**Next:**
+- Gate only PASS-verified branches; re-run DMTF 85/85 on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none closed (#009 / #021 remain open).
