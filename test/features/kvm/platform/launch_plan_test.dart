@@ -3764,4 +3764,56 @@ void main() {
     });
   },
 );
+
+  group('planConsoleLaunch — blank/unusable URI never yields a target', () {
+    // KvmConsoleLaunchPlan documents targetUri as null "when there is no
+    // usable target". A whitespace-only URI fails closed to the copy-only
+    // route, so the copy path must not surface a whitespace string as a
+    // target: a launcher/copy action must never be handed a blank target,
+    // under any policy (including the test-only opt-in).
+    const List<String> blankUris = <String>[
+      '   ',
+      '\t',
+      ' \t\r\n ',
+    ];
+
+    for (final KvmWebViewPolicy policy in <KvmWebViewPolicy>[
+      KvmWebViewPolicy.productionDefault,
+      KvmWebViewPolicy.testOptIn,
+    ]) {
+      test('blank URI yields a null target under ${policy.tlsMode}', () {
+        for (final String uri in blankUris) {
+          final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+            policy: policy,
+            uri: uri,
+            hasSecureUri: true,
+            isHtml5: true,
+            isEnabled: true,
+          );
+
+          expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+          expect(plan.targetUri, isNull, reason: uri);
+          expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        }
+      });
+    }
+
+    test('a real insecure URI still keeps its copy target', () {
+      // Regression guard: only an unusable/blank target is normalised away;
+      // a non-blank URI that merely fails the secure check is still handed
+      // to the copy path unchanged so the flag-off fallback keeps working.
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.productionDefault,
+        uri: 'http://bmc.example/console',
+        hasSecureUri: false,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.route, KvmConsoleRenderRoute.copyOnly);
+      expect(plan.targetUri, 'http://bmc.example/console');
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+  },
+);
 }

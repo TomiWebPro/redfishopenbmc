@@ -528,6 +528,12 @@ Invariants, enforced by tests:
    Hangul filler authority rejection (U+115F/U+1160/U+3164/U+FFA0 — category
    `Lo`, NFKC non-ASCII, silently dropped by UTS-46 IDNA so a launcher contacts
    a different authority)).
+   **Blank-URI target normalization:** a whitespace-only URI is "no usable
+   target" (`KvmConsoleLaunchPlan.targetUri`) — the copy-only fallback must
+   surface `null`, never a whitespace string, under any policy (including the
+   test-only opt-in). A non-blank URI that merely fails the secure check keeps
+   its raw copy target, so the flag-off external-browser + copy path still
+   works unchanged.
 
 ## What remains gated (not done here)
 
