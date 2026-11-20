@@ -270,9 +270,14 @@ Invariants, enforced by tests:
    non-empty HTTPS host. A launcher can therefore contact a DIFFERENT address
    than the authority Uri reported. Under a stale secure flag + test opt-in
    that SSRF-style parser differential could grant in-app rendering and
-   self-signed acceptance on a mismatched/spoofed host. Only canonical
-   dotted-quad IPv4 (four 0-255 octets, no leading zeros), IPv6 literals and
-   ordinary DNS/punycode hosts stay launchable — no real BMC target lost.
+   self-signed acceptance on a mismatched/spoofed host. The same numeric
+   spellings with a single trailing dot (`2130706433.`, `0x7f000001.`) are
+   rejected too: the WHATWG "ends in a number" check skips one trailing dot
+   and still resolves them as IP literals, while `Uri.tryParse` reports an
+   opaque DNS host. Only canonical dotted-quad IPv4 (four 0-255 octets, no
+   leading zeros), IPv6 literals and ordinary DNS/punycode hosts — including
+   a real absolute-FQDN trailing dot such as `bmc.example.` — stay launchable,
+   no real BMC target lost.
    **Empty DNS-label rejection:** a leading dot (`.bmc.example`), consecutive
    dots (`bmc..example`) or a double trailing dot (`bmc.example..`) leaves an
    empty DNS label. `Uri.tryParse` reports such a host as non-empty HTTPS, but
@@ -321,8 +326,9 @@ Invariants, enforced by tests:
    double-encoded authority-delimiter rejection + encoded authority-dot
    rejection + malformed-UTF-8 authority rejection + encoded ASCII space
    rejection + encoded unreserved-ASCII rejection + non-canonical numeric-host
-   rejection + empty DNS-label rejection + out-of-range port rejection + signed
-   and overflow port rejection).
+   rejection (incl. trailing-dot absolute-FQDN numeric spellings) + empty
+   DNS-label rejection + out-of-range port rejection + signed and overflow
+   port rejection).
 
 ## What remains gated (not done here)
 

@@ -2162,6 +2162,91 @@ void main() {
     });
   });
 
+  group(
+      'planConsoleLaunch — defense in depth: trailing-dot numeric-host rejection',
+      () {
+    test('a numeric host with a single trailing dot fails closed with a stale flag',
+        () {
+      // One trailing dot is normally the legitimate absolute-FQDN form, but a
+      // WHATWG/browser parser's "ends in a number" check skips a single trailing
+      // dot and then resolves these numeric spellings to an IP literal (often
+      // loopback/internal), while Dart's `Uri.tryParse` reports them as opaque
+      // DNS names with a non-empty host. Under a stale secure flag + test opt-in
+      // that parser differential could grant in-app rendering and self-signed
+      // acceptance on a host that resolves somewhere DIFFERENT from the
+      // authority Uri reported. A real BMC host is never a trailing-dot numeric
+      // spelling, so rejecting these loses no valid target.
+      for (final String uri in <String>[
+        'https://2130706433./console', // bare decimal integer + trailing dot
+        'https://0x7f000001./console', // hex integer + trailing dot
+        'https://0X7F000001./console', // uppercase hex + trailing dot
+        'https://127.1./console', // abbreviated dotted + trailing dot
+        'https://127.0.1./console', // 3-part abbreviated + trailing dot
+        'https://0177.0.0.1./console', // leading-zero (octal) + trailing dot
+        'https://0./console', // single-digit integer + trailing dot
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test(
+        'a trailing-dot numeric host never reaches in-app under a strict opt-in',
+        () {
+      for (final String uri in <String>[
+        'https://2130706433./console',
+        'https://0x7f000001./console',
+        'https://127.1./console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: const KvmWebViewPolicy(enabled: true),
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test(
+        'absolute-FQDN and canonical hosts with one trailing dot stay launchable',
+        () {
+      // Guard against over-rejection: exactly one trailing dot on a real DNS
+      // name or canonical dotted-quad IPv4 is the absolute-FQDN form and must
+      // stay on the external-browser fallback unchanged.
+      for (final String uri in <String>[
+        'https://bmc.example./console', // absolute FQDN
+        'https://bmc./console', // single-label absolute FQDN
+        'https://192.168.1.10./console', // canonical IPv4 + trailing dot
+        'https://xn--bmc-esab.example./console', // punycode absolute FQDN
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
+
   group('planConsoleLaunch — defense in depth: empty DNS-label rejection', () {
     test('a host with an empty DNS label fails closed with a stale flag', () {
       // A leading dot (`.bmc.example`), consecutive dots (`bmc..example`) or a

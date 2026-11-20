@@ -317,6 +317,10 @@ class KvmConsoleLaunchPlan {
 /// acceptance on a mismatched host. Only canonical dotted-quad IPv4 (four
 /// 0-255 octets, no leading zeros), IPv6 literals and ordinary DNS names stay
 /// launchable, so no real BMC target is lost (see [_isNonCanonicalNumericHost]).
+/// The same numeric spellings with one trailing dot (`2130706433.`,
+/// `0x7f000001.`) are rejected too: a WHATWG "ends in a number" check skips a
+/// single trailing dot and still resolves them as IP literals, while a real
+/// trailing-dot DNS name (`bmc.example.`) and canonical IPv4 stay launchable.
 ///
 /// A host with an empty DNS label is rejected for the same reason: a leading
 /// dot (`.bmc.example`), consecutive dots (`bmc..example`) or a double trailing
@@ -906,7 +910,10 @@ bool _isCanonicalIpv4Octet(String value) {
 ///  * hex forms `0x7f000001` / `0x7f.1` -> 127.0.0.1;
 ///  * a bare decimal integer `2130706433` / `0` -> 127.0.0.1 / 0.0.0.0;
 ///  * abbreviated dotted forms `127.1` / `127.0.1` -> 127.0.0.1;
-///  * leading-zero ("octal") forms `0177.0.0.1` -> 127.0.0.1.
+///  * leading-zero ("octal") forms `0177.0.0.1` -> 127.0.0.1;
+///  * the same forms with a single trailing dot (absolute-FQDN form), e.g.
+///    `2130706433.` / `0x7f000001.` — the WHATWG "ends in a number" check
+///    skips one trailing dot before classifying the host as an IP literal.
 ///
 /// A launcher (browser / WebView) may therefore contact a loopback or internal
 /// address while the syntactic re-check saw a non-empty HTTPS host. Under a
@@ -920,7 +927,17 @@ bool _isCanonicalIpv4Octet(String value) {
 /// inspect here. Stricter than the model, never more permissive.
 bool _isNonCanonicalNumericHost(String host) {
   if (host.isEmpty || host.contains(':')) return false; // IPv6: keep.
-  final List<String> labels = host.split('.');
+  // A browser/WebView (WHATWG URL) "ends in a number" check skips exactly one
+  // trailing dot, so a numeric host written in absolute-FQDN form
+  // (`https://2130706433./` -> 127.0.0.1) is still resolved as an IP literal
+  // while `Uri.tryParse` reports it as an opaque DNS host. Strip one trailing
+  // dot (the absolute-FQDN root label) before the numeric checks. A real
+  // trailing-dot DNS name (e.g. `bmc.example.`) is unaffected because none of
+  // these numeric checks fire for a non-numeric host.
+  final String core =
+      host.endsWith('.') ? host.substring(0, host.length - 1) : host;
+  if (core.isEmpty) return false; // degenerate all-dot host: handled separately.
+  final List<String> labels = core.split('.');
   // Hex IP forms: any 0x-prefixed label. A real host never uses 0x labels.
   for (final String label in labels) {
     if (label.length > 2 &&
@@ -1132,11 +1149,12 @@ bool _uriHasSecureHttpsTarget(String? uri) {
     if (port < 0 || port > 65535) return false;
   }
   // Reject a non-canonical numeric host (hex / decimal integer / abbreviated
-  // / leading-zero IP forms): a launcher resolves such a host to a different
-  // address than Uri.tryParse reports, so under a stale secure flag + test
-  // opt-in it could grant in-app rendering and self-signed acceptance on a
-  // mismatched (often loopback/internal) host. Canonical IPv4/IPv6/DNS hosts
-  // stay launchable — no valid target lost.
+  // / leading-zero IP forms, including their single-trailing-dot absolute-FQDN
+  // spellings): a launcher resolves such a host to a different address than
+  // Uri.tryParse reports, so under a stale secure flag + test opt-in it could
+  // grant in-app rendering and self-signed acceptance on a mismatched (often
+  // loopback/internal) host. Canonical IPv4/IPv6/DNS hosts (incl. a real
+  // trailing-dot FQDN) stay launchable — no valid target lost.
   if (_isNonCanonicalNumericHost(parsed.host)) return false;
   // Degenerate, label-less authority: a host made only of dots ('.', '..',
   // '%2E%2E' decoded by Uri to '..') is not a real BMC host. `Uri.tryParse`
