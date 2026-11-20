@@ -5,6 +5,29 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 17:10 UTC: splits the machine-checkable half of the still-open
+     fullscreen/input-forwarding rendering acceptance of #009/#021 into one unblocked, display-only,
+     dependency-free, TLS-safe dept slice. EP-U9 pinned the two implemented disclosures, but nothing
+     pins that NO viewer surface manufactures an "input is being forwarded" / "embedded console
+     live" claim while the production flag-off route is external-browser + copy — the forbidden copy
+     that would be a false operator assurance and a human-gate bypass. Audit first; fix only a genuine
+     divergence via RED→GREEN; no copy churn. The blocked in-app embed/WebView adapter (EP-U2) stays
+     human-gated and is NOT re-split. No code touched. -->
+
+- [ ] EP-U10 Flag-off viewer never claims live embedded rendering or input forwarding: audit every
+      `KvmConsoleViewerPage` path (secure-HTTPS, external-client VNC/RFB/serial, no-URI) and assert
+      its visible `Text` + merged `excludeSemantics` labels never assert that keyboard/mouse are
+      being forwarded or that an in-app console is live while the platform flag is off — only the
+      established status/disclosure + external-open/copy guidance is shown, with visible text ==
+      announced label and no duplicate/stale copy. Fix the FIRST genuine divergence via RED→GREEN
+      widget tests; do not manufacture copy churn where a surface already fails closed. 320/800/1300
+      px no-overflow on every audited path. No WebView/url_launcher import in the product build, no
+      URL opened, no dependency, no TLS change.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_viewer_disclosure_contract_test.dart && flutter analyze`
+              (0 issues), RED→GREEN widget proof for any fixed divergence; merged a11y + 320/800/1300
+              no-overflow; writes limited to `lib/features/kvm/views/**`; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-20 13:04 UTC: re-scopes the still-open fullscreen + input-forwarding
       disclosure portion of the #009 rendering epic (EP-U1 scaffold) as one unblocked, display-only,
       dependency-free, TLS-safe dept slice. EP-U4 wired session lifecycle, EP-U5/U7/U8 pinned launch

@@ -6,6 +6,27 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 17:10 UTC: splits the remaining production-opt-in seam of the blocked
+     WebView/TLS closeout (#009/#021) into one unblocked, test-only dept slice. EP-P5 guards product
+     imports/channels and EP-P6/P7/P8 the policy/doc route, but nothing fails closed if production
+     code starts selecting `KvmWebViewPolicy.testOptIn` (or an opt-in with in-app/self-signed enabled)
+     instead of `productionDefault`. Audit first; fix only a genuine divergence via RED→GREEN; no
+     churn. The human-gated WebView adapter / TLS validation (EP-P1/P2/P4) stays human-gated and is
+     NOT re-split. No code touched. -->
+
+- [ ] EP-P10 Production-opt-in-policy construction guard: add a test-only, dependency-free guard that
+      scans product `lib/features/kvm/**.dart` (comment/string-aware) and fails closed if any file
+      constructs or references `KvmWebViewPolicy.testOptIn`, or builds a `KvmWebViewPolicy` with the
+      in-app-WebView or self-signed-accepting flags enabled, so only `productionDefault` (flag OFF,
+      strict TLS, self-signed refused) can ever reach `planConsoleLaunch` in production; legitimate
+      opt-in construction confined to `test/` stays clean. RED→GREEN proof by planting an opt-in
+      construction in a temp product file (opt-in → violation; productionDefault → clean) plus the
+      real-repo invariant. No dependency, no WebView/protocol import, no production TLS weakening.
+      Dept: rf-platform
+      Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues), RED→GREEN
+              guard proof (opt-in → violation; productionDefault → clean); writes limited to
+              `lib/features/kvm/platform/**` + `test/features/kvm/platform/**`; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-20 13:04 UTC: splits the remaining machine-checkable cross-layer seam of
       the human-gated WebView closeout (#009/#021) into one unblocked, test-only dept slice. EP-P5 pins
       product imports, EP-P6 the production-route invariants, EP-P7 the human-gate docs and EP-P8

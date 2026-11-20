@@ -4,6 +4,28 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 17:10 UTC: splits the remaining OEM-extensibility robustness seam
+     of the #009 epic (vendor parser hook) into one unblocked, pure-model, dependency-free, TLS-safe
+     dept slice. `KvmOemRegistry.parse` calls a registered `KvmOemConsoleParser.parse` with no
+     exception isolation, so a throwing/third-party vendor parser propagates into BOTH
+     `KvmConsole.fromManager` and `KvmCapability.fromManager` and can blank/crash the KVM screen;
+     RM-1..RM-7 and EP-M1/M2 pinned classification/agreement but not parser fault isolation. Audit
+     first; fix only a genuine divergence via RED→GREEN; no churn. The blocked rendering/dependency/
+     TLS acceptance (EP-U2/EP-P2/EP-T2/EP-P4) stays human-gated and is NOT re-split. No code touched. -->
+
+- [ ] EP-M3 Vendor-parser exception isolation across both KVM model factories: pin that a
+      registered `KvmOemConsoleParser` which throws (or returns a malformed block) is treated as
+      "not a console" and skipped, so `KvmConsole.fromManager` / `KvmCapability.fromManager` fall
+      back to strict generic OEM detection and never throw; a healthy parser still enriches both
+      views byte-for-byte and the first-match registration order is unchanged. Audit first; fix the
+      FIRST genuine divergence via RED→GREEN pure-model tests; do not manufacture churn where a
+      parser already fails closed. No new helper owned by another dept (request via
+      `_lib-requests.md` if unavoidable). Read-only model work; no wire/transport/TLS change.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_oem_registry_test.dart test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+              (0 issues), RED→GREEN proof for any fixed divergence; writes limited to
+              `lib/features/kvm/models/**` + those three named test files; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-20 13:04 UTC: re-scopes the still-open model URI-scheme / OEM-registry
       remainder of the #009/#021 epic (FUTUREWORK head-first candidate EP-M1) as one unblocked,
       dependency-free, TLS-safe dept slice. RM-5/RM-6 pinned enablement/session/hostile-source

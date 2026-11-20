@@ -5,6 +5,26 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 17:10 UTC: makes the dept-split contract itself machine-checkable —
+     MULTI_DEPT.md hard rule 4 requires every issue/queue item to carry `Dept:` (single dept) and
+     `Verify:` (exact commands), but nothing fails closed when a future `queues/<dept>.md` item drops
+     one. Pure test/tool guard, dependency-free, never writes `lib/`; distinct from EP-T11 (URI-parse
+     single-source) and EP-T12 (guard-suite liveness). No code touched. -->
+
+- [ ] EP-T13 Queue-item Dept/Verify schema guard: add a pure-Dart, dependency-free guard under
+      `test/tool/` that parses every unchecked `- [ ]` item in `queues/*.md` and fails closed if an
+      item is missing a `Dept:` field, has more than one `Dept:`, uses a dept outside the fixed
+      MULTI_DEPT set (`rf-model`/`rf-ui`/`rf-service`/`rf-tooling`/`rf-platform`/`rf-audit`/`rf-ideate`/
+      `rf-check`/`rf-gate`), or has an empty/missing `Verify:` command. RED→GREEN proof by planting a
+      malformed item in a temp queue tree (bad/missing Dept or Verify → violation; valid → clean)
+      plus a real-queue invariant. No live-BMC, no dependency, no `lib/` change, production TLS
+      untouched; wire into CI only if the repo guard convention already covers `test/tool/` (no
+      second full-suite invocation).
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/ && flutter analyze` (0 issues), RED→GREEN guard proof
+              (malformed → violation; valid → clean); writes limited to `tool/**`, `test/tool/**`,
+              `.github/workflows/**`; never `lib/`, no dependency bump.
+
 <!-- rf-ideate split 2026-11-20 13:04 UTC: splits the guard-liveness remainder of the blocked/epic
       #009/#021 closeout into one unblocked, test-only dept slice. The repo now relies on a family of
       safety guard tests (RU-2/EP-T9 copy, EP-T11 URI-parse, EP-T8 source-display, EP-P5 imports,

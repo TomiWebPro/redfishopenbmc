@@ -5,6 +5,27 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 17:10 UTC: splits the remaining controller/state-machine seam of the
+     #009/#021 launch-and-selection epic into one unblocked, dependency-free, TLS-safe dept slice.
+     `KvmController.load()` drives the gated view's loading/error/primary state and is stubbed in
+     every widget test but never tested directly; EP-S1/S2/S3 pinned selection classification and
+     RS-* pinned manager-walk tolerance, not the async load state machine (in-flight guard, error
+     capture, primary clearing, re-load recovery). Audit first; fix only a genuine divergence via
+     RED→GREEN; no churn. The blocked in-app route (EP-S1) stays human-gated. No code touched. -->
+
+- [ ] EP-S4 KvmController.load async state-machine contract: add a dedicated controller test pinning
+      that `load()` sets `loading` while the fetch is in flight, clears a prior error, selects the
+      primary via `KvmService.pickPrimary` on success and clears it when the manager walk returns no
+      consoles, captures a `RedfishException` message (and a generic exception) into `KvmUiState.error`
+      with `loading == false` and primary cleared instead of throwing, and that a second `load()`
+      while already loading is a no-op (one fetch per cycle). Audit first; fix the FIRST genuine
+      divergence via RED→GREEN service tests; do not manufacture churn where the controller already
+      fails closed. No dependency, no wire/transport/TLS change, no URL opened.
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_controller_test.dart test/features/kvm/kvm_service_test.dart && flutter analyze`
+              (0 issues), RED→GREEN proof for any fixed divergence; writes limited to
+              `lib/features/kvm/kvm_controller.dart` + those named test files; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-20 13:04 UTC: re-scopes the still-open launch-selection edge portion of
       the #009/#021 epic (FUTUREWORK head-first candidate EP-S1) as one unblocked, dependency-free,
       TLS-safe dept slice. RS-6 pinned manager-set identity/cardinality, EP-S2 the secure-primary
