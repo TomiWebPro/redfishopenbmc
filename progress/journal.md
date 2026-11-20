@@ -11680,3 +11680,18 @@
 - EP-U8 (rf-ui) open-affordance gating across all three surfaces with merged-a11y widget tests; then EP-U7 full merged-Semantics notice audit. Never activate WebView, grant human approval, or weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — build/rf-platform f117afc (merge 22a37e4)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#9878 returned an explicit `CHECK: PASS` (exit 0, 61.0 s) for branch tip `f117afc` (check started 12:26:55 UTC, after the tip commit 12:25:17 UTC; report names `f117afc` one ahead of main; analyze 0, targeted `launch_plan_test.dart` 110/110 matching the documented count, no production-TLS weakening, allowlisted paths only, no dependency changes). Merged `build/rf-platform` → `main` with `--no-ff` (merge `22a37e4`, two parents). One unique commit past merge-base `601e8a8`: `f117afc` adds authority-scoped fail-closed rejection of the eight percent-encoded RFC 3986 "unwise" ASCII chars (`%22 %3C %3E %5E %60 %7B %7C %7D`, either hex case) — `Uri.tryParse` keeps them encoded and reports a non-empty HTTPS host while a decode-first launcher sees a forbidden/non-canonical host char and may resolve a different authority; a parser-differential host-spoofing vector now refused by the single shared gate, authority-scoped only, no valid target lost.
+- Post-merge verify in-tree at `22a37e4`: `flutter analyze` 0; full `flutter test --coverage` 1578 passed / 1 skipped (baseline 1575 +3 merged tests); four coverage gates PASS overall 90.2% (5809/6442) / scoped 90.4% (2119/2345) / kvm 96.9% (1086/1121) / kvm-platform 99.6% (261/262); `python3 issues/issues.py validate` OK; `git diff --check` clean; platform suite 176/176; targeted `launch_plan_test.dart` 126/126.
+
+**Decisions:**
+- Merged only on an explicit PASS for the exact tip; verdict ↔ tip cross-checked. Two merge conflicts resolved: `launch_plan.dart` — branch authored against old bool `_uriHasSecureHttpsTarget` (`return false`), main uses shared `String?`-returning `_controlSafeTrimmedUri`; kept main's shared-gate structure and folded in the new `_encodedUnwiseAscii` regex + `_authorityHasEncodedUnwiseAscii` helper + check as `return null`. `LAUNCH_FALLBACK.md` — kept main's fuller raw-unwise paragraph + coverage-guard sentence, appended the branch's encoded-unwise paragraph, measured merged counts 126 targeted / 176 platform. `launch_plan_test.dart` auto-merged with all 3 new RED→GREEN tests preserved.
+- Fail-closed security hardening only — no dependency, no wire/transport/fixture/tool change, no production TLS weakening, `--no-ff` keeps dept history, never force-push. DMTF emulator skipped (dependency-free decision helper, no wire/transport/fixture/tool change; <7 days since last green 85/85). Pre-existing untracked `testing/` left untouched.
+
+**Next:**
+- Gate only PASS-verified branches; cross-check verdict ↔ tip every run. Keep launch-plan hardening in the single shared fail-closed classifier core. Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none — gate-only merge; both #009/#021 stay open.
