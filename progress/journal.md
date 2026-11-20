@@ -11904,3 +11904,20 @@
 - Next head-first unblocked dept slice from the rf-ideate 17:10 split: EP-P10 (platform production-opt-in-policy construction guard), EP-S4 (service controller load state machine), EP-T13 (tooling queue-item Dept/Verify guard), EP-U10 (UI flag-off false-claim guard) — audit each for a genuine RED→GREEN gap before landing, never churn. Cheap DOCS anchor re-verify only; full emulator re-run on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only when platform WebView + BMC TLS human validation evidence arrives — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — build/rf-platform 98b52a9 (merge a792d14)
+
+**Done:**
+- rf-gate sole merger to main: merged `build/rf-platform` tip `98b52a9` into `main` with `--no-ff` (merge `a792d14`) ONLY after `rf-platform-check` run#10286 returned an explicit `CHECK: PASS` for that exact tip (started 17:24:23 UTC, after the tip's 17:22:42 UTC commit; analyze 0; targeted 131/131; no production-TLS weakening; allowlisted paths only; no dependency change).
+- Branch had one unique commit past merge-base `d6e54db`: IDNA-ignored Hangul fillers (U+115F/U+1160/U+3164/U+FFA0) added to the authority-scoped fail-closed classifier — a decode+IDNA launcher drops them, resolving a different authority than `Uri.tryParse` reports, which under a stale secure flag + test opt-in could grant in-app rendering + self-signed acceptance on a spoofed host. No valid target lost, no dependency, no TLS weakening.
+- Conflict resolution: kept main's shared `String?`-returning `_controlSafeTrimmedUri` gate (`return null`) while folding in the branch's IDNA-filler rationale; LAUNCH_FALLBACK.md stale counts reconciled to measured 147 targeted / 201 platform; all 3 RED→GREEN tests preserved.
+
+**Decisions:**
+- No behavior loosened — only authority-scoped fail-closed hardening in the dependency-free decision layer. Pre-existing untracked `testing/` + `stash@{0}` preserved untouched; no force-push, no history rewrite, no `git clean`. No issue closed (both #009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation).
+
+**Verify:** targeted 147/147, platform 201/201; `flutter analyze` 0; full `flutter test --coverage` 1676 passed / 1 skipped (baseline 1673 +3; one transient unrelated `power_view_test.dart` full-run flake isolated 26/26 GREEN, clean re-run); four coverage gates PASS overall 90.1% / scoped 90.4% / kvm 96.0% / kvm-platform 95.8%; issues validate OK; `git diff --check` clean; first-parent diff = 3 allowlisted files; secret scan clean. DMTF emulator skipped (no wire/fixture/tool change; <7 days since last green 85/85).
+
+**Next:**
+- Next `build/rf-platform` tip: merge only after a fresh explicit `CHECK: PASS` for that exact tip; no PASS → SKIP. NO-OP exit when the branch has no new commits past the last merge. Post-verify analyze 0 / full test green / all coverage gates PASS / issues validate OK / first-parent diff allowlisted; run the 85-test emulator suite only on wire/fixture/tool change or >7 days since last green.
+
+**Issues touched:** none closed (#009 P3 / #021 P2 remain open — human-gated on platform WebView + BMC TLS validation).
