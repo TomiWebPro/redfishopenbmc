@@ -6,6 +6,30 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 13:04 UTC: splits the remaining machine-checkable cross-layer seam of
+      the human-gated WebView closeout (#009/#021) into one unblocked, test-only dept slice. EP-P5 pins
+      product imports, EP-P6 the production-route invariants, EP-P7 the human-gate docs and EP-P8
+      doc↔route agreement; the platform launch-plan classifier and the model-side control-safe gate
+      are two separate authority implementations, and nothing pins that they FAIL CLOSED on the same
+      hostile-authority matrix. Test-only, dependency-free, no WebView import, no production TLS change;
+      distinct from EP-P4/P5/P6/P7/P8 and EP-P2 (deferred human gate). No code touched. -->
+
+- [ ] EP-P9 Cross-layer authority fail-closed agreement guard for #009/#021: add a pure-Dart test
+      under `test/features/kvm/platform/` that feeds one hostile-authority matrix (numeric/hex hosts,
+      IPv4-mapped/IPvFuture IPv6, percent-encoded unwise/sub-delim/combining-mark/confusable, empty DNS
+      label, signed/out-of-range port, CRLF/NUL/raw space, trailing-dot) through BOTH the platform
+      decision layer (`planConsoleLaunch` / the fail-closed authority classifier) and the model-side
+      control-safe gate, failing closed if either accepts an authority the other rejects, or if
+      `acceptSelfSigned` ever becomes true under `KvmWebViewPolicy.productionDefault`. Legitimate
+      canonical HTTPS targets must stay launchable on both. Prove RED by temporarily weakening one
+      guard in a local copy, then GREEN. No human approval granted, no dependency, no WebView import,
+      no production TLS behaviour change; the external-browser + copy fallback stays byte-for-byte.
+      Dept: rf-platform
+      Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues), RED→GREEN proof;
+              `git diff --exit-code -- pubspec.yaml pubspec.lock`; writes limited to
+              `lib/features/kvm/platform/**` + `test/features/kvm/platform/**`; no production TLS
+              behaviour change.
+
 <!-- rf-ideate split 2026-11-20 09:00 UTC: splits the last unguarded seam of the human-gated WebView
      closeout — EP-P7 pins that both decision DOCS record the no-WebView decision/human gate, EP-P6
      pins the production ROUTE invariants in code, but nothing pins the two AGREE. This slice checks

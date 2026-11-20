@@ -5,6 +5,29 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 13:04 UTC: splits the guard-liveness remainder of the blocked/epic
+      #009/#021 closeout into one unblocked, test-only dept slice. The repo now relies on a family of
+      safety guard tests (RU-2/EP-T9 copy, EP-T11 URI-parse, EP-T8 source-display, EP-P5 imports,
+      EP-P6/P7/P8 policy/doc, EP-T7 doctor, LA-1 assets, EP-T6 unattended) but nothing fails closed if
+      one of those guard files is later deleted, emptied or silently de-invoked from CI. Pure test/tool
+      work, dependency-free, never writes `lib/`; distinct from EP-T9/T11/T8/EP-P5. No code touched. -->
+
+- [ ] EP-T12 KVM invariant-guard suite liveness/completeness guard for #009/#021: add a pure-Dart
+      guard under `test/tool/` that enumerates the established KVM safety guard test files (at least:
+      `notice_single_source_guard_test.dart`, `launch_status_single_source_guard_test.dart`,
+      `uri_parse_single_source_guard_test.dart`, `manager_source_display_guard_test.dart`,
+      `product_import_policy_test.dart`, `production_route_invariant_test.dart`,
+      `human_gate_doc_guard_test.dart`, `decision_doc_route_guard_test.dart`) and fails closed if any is
+      missing, empty of test cases, or no longer reachable by the standard `flutter test --coverage`
+      run / `.github/workflows/verify.yml` — so a future edit cannot silently delete or disable a
+      guard. RED→GREEN proof by removing/emptying one guard in a temp scan root (violation + nonzero
+      exit; intact suite → clean). No live-BMC, no dependency, no `lib/` change, production TLS
+      untouched; do not add a second full-suite CI invocation.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/ && flutter analyze` (0 issues), RED→GREEN guard proof (empty/
+              missing guard → violation; intact → clean); writes limited to `tool/**`, `test/tool/**`,
+              `.github/workflows/**`; never `lib/`, no dependency bump.
+
 <!-- rf-ideate split 2026-11-20 09:00 UTC: splits the still-open cross-surface classifier-parity
      remainder of #009/#021 into a machine-checkable guard. EP-M1/M2 fixed degenerate hosts once and
      RM-5 pinned agreement, but nothing mechanically prevents a future product file from reintroducing

@@ -4,6 +4,29 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 13:04 UTC: re-scopes the still-open model URI-scheme / OEM-registry
+      remainder of the #009/#021 epic (FUTUREWORK head-first candidate EP-M1) as one unblocked,
+      dependency-free, TLS-safe dept slice. RM-5/RM-6 pinned enablement/session/hostile-source
+      agreement and EP-M1/M2 classifier parity already landed; nothing pins that a registered custom
+      `KvmOemConsoleParser` and generic vendor `Oem.*.KVM.{Uri,ConnectUri}` scheme classification agree
+      across BOTH models and never bypass the shared control-safe gate. Audit first; fix only a genuine
+      divergence via RED→GREEN; no churn. The genuinely blocked rendering/dependency/TLS acceptance
+      (EP-U2 / EP-P2 / EP-T2 / EP-P4) stays human-gated and is NOT re-split here. No code touched. -->
+
+- [ ] RM-7 Cross-view URI-scheme + OEM-registry agreement property for #009/#021: over a matrix of
+      console URI schemes (secure HTTPS, plaintext HTTP, external-client VNC/RFB/KVMIP + serial, blank,
+      control-unsafe) and OEM console shapes (registered `KvmOemConsoleParser` custom vendor, generic
+      `Oem.<Vendor>.KVM.Uri` / `ConnectUri`, enabled/disabled, no-URI), assert `KvmConsole.fromManager`
+      and `KvmCapability.fromManager` ALWAYS agree on external-vs-HTTPS classification, protocol label
+      and launch strategy, and that both route the URI through the shared control-safe gates. Fix the
+      FIRST real divergence via RED→GREEN pure-model tests; do not manufacture churn where the two
+      models already agree. No new helper owned by another dept (request via `_lib-requests.md` if
+      unavoidable). Read-only model work; no transport/wire/TLS change, no dependency.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart test/features/kvm/kvm_oem_registry_test.dart && flutter analyze`
+              (0 issues), RED→GREEN proof for any fixed divergence; writes limited to
+              `lib/features/kvm/models/**` + those three named test files; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-20 09:00 UTC: splits the still-open hostile/numeric-payload remainder of
      the #009/#021 model surface. RM-5 pinned enablement + connect-type cross-view agreement; RM-2
      extracted `kvmSessionLimit` with helper-only tests — but no test pins that BOTH models resolve

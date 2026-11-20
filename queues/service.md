@@ -5,6 +5,30 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 13:04 UTC: re-scopes the still-open launch-selection edge portion of
+      the #009/#021 epic (FUTUREWORK head-first candidate EP-S1) as one unblocked, dependency-free,
+      TLS-safe dept slice. RS-6 pinned manager-set identity/cardinality, EP-S2 the secure-primary
+      preference, RS-7 per-member hostile-body tolerance; nothing pins the full SELECTION edge matrix
+      (all-disabled / mixed transport / primary tie / no-URI / control-unsafe / flag-off fallback)
+      as a single launch-safe invariant agreeing with `KvmConsole.canOpenConsole`. Audit first; fix
+      only a genuine divergence via RED→GREEN; no churn. No wire/transport/TLS change, no dependency.
+      No code touched. -->
+
+- [ ] EP-S3 Launch-path selection edge matrix for #009/#021: over a matrix of manager/console shapes
+      (all-disabled, mixed secure-HTTPS + plaintext-HTTP + external-client + serial, primary ties,
+      no-URI OEM, control-unsafe authority, flag-off fallback) assert `KvmService.pickPrimary` /
+      `fetchPrimaryConsole` deterministically pick the single launch-safe secure-HTTPS external-open
+      primary — never a disabled, plaintext-HTTP or external-client-only console when a secure one
+      exists — and that every primary agrees with `KvmConsole.canOpenConsole`. Consume
+      `canOpenConsole` + `kvmLaunchStatusText` as the single source of truth. Fix the FIRST real
+      divergence found via RED→GREEN service tests (RS-6 already pins set identity); do not
+      manufacture churn where selection already fails closed. No new dependency, no wire/TLS change.
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_service_test.dart && flutter analyze` (0 issues),
+              RED→GREEN proof for any fixed divergence; emulator 85/85 only if `lib/` wire changes;
+              writes limited to `lib/features/kvm/kvm_service.dart` + service tests under
+              `test/features/kvm/`; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-20 09:00 UTC: splits RS-2's still-open manager-walk robustness remainder
      (per-member hostile-body tolerance) into an unblocked service invariant slice. RS-4 (dedup) and
      RS-6 (set identity/cardinality) pin happy-path/dedup behaviour; no test pins that a single hostile
