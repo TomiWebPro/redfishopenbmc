@@ -313,50 +313,51 @@ class _ConsoleCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Semantics(
-                    // UI-2: the header (title + Enabled/Disabled chip) announces
-                    // as ONE merged node, the same pattern as the
-                    // SystemCard/InfoCard/chassis/sensor/firmware card headers.
-                    // The chips' status text and the title become a single
-                    // concise summary instead of two separate announcements.
-                    container: true,
-                    excludeSemantics: true,
-                    label: '${console.type.label}, '
-                        '${console.serviceEnabled ? 'enabled' : 'disabled'}',
-                    child: Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            console.type.label,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                        if (isPrimary)
-                          const Padding(
-                            padding: EdgeInsets.only(right: 8),
-                            child: Chip(
-                              label: Text('Primary'),
-                              visualDensity: VisualDensity.compact,
-                            ),
-                          ),
-                        if (console.serviceEnabled)
-                          const Chip(
-                            label: Text('Enabled'),
-                            visualDensity: VisualDensity.compact,
-                          )
-                        else
-                          const Chip(
-                            label: Text('Disabled'),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                      ],
-                    ),
+            // EP-U8 / #009 / #021: the header (title + Primary badge +
+            // Enabled/Disabled chip) previously sat in one non-wrapping Row. At
+            // 320 px a primary console carrying BOTH "Primary" and "Enabled"
+            // beside a long type label ("Graphical Console") overflowed by 17 px
+            // — a genuine narrow-screen defect. Flow the title and chips in a
+            // Wrap so they reflow to a second line when space is tight, while the
+            // single merged excludeSemantics announcement stays byte-identical
+            // (a11y visible == announced is unchanged). Display-only layout:
+            // no affordance, transport or TLS change.
+            Semantics(
+              // UI-2: the header (title + Enabled/Disabled chip) announces
+              // as ONE merged node, the same pattern as the
+              // SystemCard/InfoCard/chassis/sensor/firmware card headers.
+              // The chips' status text and the title become a single
+              // concise summary instead of two separate announcements.
+              container: true,
+              excludeSemantics: true,
+              label: '${console.type.label}, '
+                  '${console.serviceEnabled ? 'enabled' : 'disabled'}',
+              child: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
+                children: <Widget>[
+                  Text(
+                    console.type.label,
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                ),
-              ],
+                  if (isPrimary)
+                    const Chip(
+                      label: Text('Primary'),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  if (console.serviceEnabled)
+                    const Chip(
+                      label: Text('Enabled'),
+                      visualDensity: VisualDensity.compact,
+                    )
+                  else
+                    const Chip(
+                      label: Text('Disabled'),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 4),
             // UI-2: the manager line announces as ONE self-describing node

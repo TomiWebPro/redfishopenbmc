@@ -11695,3 +11695,19 @@
 - Gate only PASS-verified branches; cross-check verdict ↔ tip every run. Keep launch-plan hardening in the single shared fail-closed classifier core. Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none — gate-only merge; both #009/#021 stay open.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-U8)
+
+**Done:**
+- EP-U8 (head of the unlanded `queues/ui.md` slices, first in the prior run's Next). Added `test/features/kvm/kvm_open_affordance_gating_test.dart` (12 tests): 8-shape matrix pinning the gated card's "Open console" affordance (text + merged a11y label) present IFF `canOpenConsole`, with "Copy connect info" always present (fail closed, not hidden); two-console 320/800/1300 px test (affordance only on the openable card); viewer tests (copy + disconnect only, never a launch/render button; control-char target → no copy affordance); display-only capability-card test.
+- Genuine divergence found + FIXED: at 320 px a primary console header ("Graphical Console" + "Primary" + "Enabled") overflowed by 17 px in a non-wrapping `Row`. Reflowed `lib/features/kvm/views/kvm_view.dart` card header to a `Wrap` (title + chips); single merged `excludeSemantics` announcement unchanged.
+- RED→GREEN: (1) defect — pre-fix `Expected: null / Actual: FlutterError: <RenderFlex overflowed by 17 pixels on the right.>` at 320 px; post-fix 12/12 GREEN. (2) gating guard — temporarily `if (true) // EPU8-RED-PROBE` failed 5 tests (`+4 -5`, all non-openable cases + two-console width); restored byte-clean (SHA `b58bf2f1…` unchanged, 0 probe occurrences), backup shredded → 12/12 GREEN.
+
+**Decisions:**
+- Display-only, dependency-free, TLS-safe: no affordance/transport/wire change, no URL opened, no human approval granted, no issue closed, no production TLS weakening. Genuine narrow-screen overflow fix + cross-surface invariant pin, not timestamp/copy churn. DMTF emulator skipped (layout widget only, <7 days since last green 85/85).
+- Verify: targeted 12/12; `flutter analyze` 0 (fixed 2 `prefer_const_constructors` infos); full `flutter test` 1590 passed / 1 skipped (baseline 1578 +12); issues validate OK; `git diff --check` clean. Pre-existing untracked `testing/` + stash preserved; no force-push.
+
+**Next:**
+- EP-U7 (rf-ui) full merged-Semantics notice surface audit; re-audit other 320 px card headers for the same non-wrapping-chip overflow class. Never activate WebView, grant human approval, or weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

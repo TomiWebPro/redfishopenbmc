@@ -12,7 +12,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
      across all surfaces. Display-only, dependency-free, TLS-safe; distinct from EP-U1/U2 (scaffold/
      embed) and EP-U5 (copy parity). -->
 
-- [ ] EP-U8 Open-affordance gating invariant across all KVM surfaces: add merged-a11y widget tests
+- [x] EP-U8 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 EP-U8 open-affordance gating invariant + 320px primary-header overflow fix + RED→GREEN widget tests`). Open-affordance gating invariant across all KVM surfaces: add merged-a11y widget tests
       asserting the actionable "Open console"/launch affordance is present ONLY for a console with
       `canOpenConsole == true` (control-safe, enabled, launchable target) and is absent/disabled for
       no-URI, disabled, plaintext-HTTP and control-unsafe consoles on the gated list card, the
