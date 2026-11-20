@@ -11542,3 +11542,18 @@
 - EP-T4 (rf-tooling) or RS-5 (rf-service) as the next genuine tested increment; land EP-U7 only on a real a11y divergence. Never activate WebView, grant human approval, or weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — build/rf-platform fa2121d (merge 12ca641)
+
+**Done:**
+- Sole-merger gate: verified `rf-platform-check` run#9612 returned an explicit `CHECK: PASS` for branch tip `fa2121d` (the current `build/rf-platform` tip, cross-checked unchanged post-check), then merged `build/rf-platform` → `main` with `--no-ff` (merge `12ca641`). The single unique commit adds fail-closed rejection of non-canonical ports (signed, negative, overflow, >65535) in the launch-plan authority classifier: `Uri.tryParse` accepts `:-1` / a 20-digit port whose `Uri.port` getter throws `FormatException` while still reporting a non-empty HTTPS host, so a purely syntactic re-check can grant in-app self-signed acceptance or crash under a stale flag + test opt-in. Added raw-authority `_hasNonCanonicalPort` folded into the shared `_isHttpUriWithSchemes` gate + a guarded `Uri.port` read with explicit range check as defense in depth.
+- Post-merge verify (in-tree at `12ca641`): `flutter analyze` 0; full `flutter test --coverage` 1504 passed / 1 skipped (baseline 1500 +4 merged tests); three coverage gates PASS overall 90.1% / scoped 90.4% / kvm 96.8%; `python3 issues/issues.py validate` OK; `git diff --cached --check` clean; first-parent diff = 3 allowlisted files; targeted `launch_plan_test.dart` 114/114, platform suite 156/156.
+
+**Decisions:**
+- Merged only on an explicit PASS for the exact tip; cross-checked the tip unchanged before merging. Resolved the `launch_plan.dart` conflict by keeping main's shared-gate structure and folding the branch's raw-port helper + check in; resolved the `LAUNCH_FALLBACK.md` count conflict with measured merged values (114 targeted / 156 platform); Dart test file auto-merged with all 4 RED→GREEN tests intact. No production TLS weakening; `--no-ff` keeps dept history; never force-push. DMTF emulator skipped (dependency-free decision helper, no wire/transport/fixture/tool change; <7 days since last green 85/85).
+
+**Next:**
+- Gate only PASS-verified branches; keep launch-plan hardening in the single shared fail-closed classifier core; cross-check verdict ↔ tip every run.
+- Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none — gate-only merge; both #009/#021 stay open.
