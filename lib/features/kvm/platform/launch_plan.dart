@@ -889,7 +889,10 @@ bool _hasEncodedUnicodeControlOrSeparator(String uri) {
 }
 
 /// Returns `true` when the raw authority carries a percent-encoded Unicode
-/// `Mark` (category M) code point.
+/// `Mark` (category M) code point, or a non-mark compatibility code point
+/// whose NFKC normalisation introduces a combining mark
+/// ([_nfkcMarkIntroducingRanges]) — both recompose with a preceding base into
+/// a different host under a decode+IDNA launcher.
 ///
 /// A percent-encoded combining mark is a *valid* `%XX` escape (so the
 /// malformed-percent and encoded-control rules miss it), is not a C0/DEL octet
@@ -937,6 +940,77 @@ bool _authorityHasEncodedCombiningMark(String uri) {
     if (_unicodeMark.hasMatch(String.fromCharCodes(<int>[rune]))) {
       return true;
     }
+    // Compatibility/spacing code points that are NOT category M themselves
+    // but whose NFKC normalisation INTRODUCES a combining mark (e.g. U+00B4
+    // ACUTE ACCENT -> SPACE + U+0301, U+FF9E HALFWIDTH VOICED SOUND MARK ->
+    // U+3099). They evade the category-M check above and the "entirely ASCII
+    // NFKC" compatibility rule, yet a decode+IDNA launcher recomposes them
+    // with a preceding base letter into a DIFFERENT host — the same spoofing
+    // vector a directly encoded mark closes. Rejected here so no such form
+    // can reach in-app self-signed acceptance on a mismatched authority.
+    if (_isNfkcMarkIntroducing(rune)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Flat `[start, end, ...]` inclusive range pairs of every non-ASCII code
+/// point that is NOT itself a Unicode `Mark` (category M) but whose Unicode
+/// 16.0.0 NFKC normalisation INTRODUCES at least one combining mark.
+///
+/// Generated from Unicode 16.0.0 data: 143 code points in 54 ranges. Members
+/// include the spacing diacritics (U+00A8/U+00AF/U+00B4/U+00B8, U+02D8..U+02DD,
+/// U+0384/U+0385, the Greek tonos/dasia forms U+1FBD..U+1FFE), the double low
+/// line / overline punctuation (U+2017/U+203E), the halfwidth voiced sound
+/// marks (U+309B/U+309C/U+FF9E/U+FF9F), the Indic/Hebrew base+mark
+/// compositions (U+0958..U+095F, U+FB1D..U+FB4E, U+FC5B..U+FD3D) and the
+/// musical-symbol compositions (U+1D15E..U+1D164, U+1D1BB..U+1D1C0).
+///
+/// These are invisible to every other authority rule: they are not category
+/// C/Z (so the encoded-separator rule misses them), not category M (so the
+/// direct combining-mark rule misses them), and their NFKC includes a
+/// non-ASCII mark so it is not "entirely ASCII" (the compatibility rule
+/// misses them). A decode+IDNA launcher recomposes the introduced mark with a
+/// preceding base letter into a different precomposed character, resolving a
+/// DIFFERENT host than [Uri.tryParse] reports, which under a stale secure flag
+/// + test opt-in could grant in-app rendering and self-signed acceptance on a
+/// spoofed host. No real BMC host uses a spacing diacritic, a halfwidth sound
+/// mark, a compatibility base+mark composition or a musical symbol (hosts are
+/// ASCII or punycode), so rejecting the whole set loses no valid target —
+/// pct-encoded UTF-8 that NFKC-folds to a stable non-ASCII character
+/// (e-acute, euro, emoji) is deliberately absent and stays launchable.
+const List<int> _nfkcMarkIntroducingRanges = <int>[
+  0x00A8, 0x00A8, 0x00AF, 0x00AF, 0x00B4, 0x00B4,
+  0x00B8, 0x00B8, 0x02D8, 0x02DD, 0x037A, 0x037A,
+  0x0384, 0x0385, 0x0958, 0x095F, 0x09DC, 0x09DD,
+  0x09DF, 0x09DF, 0x0A33, 0x0A33, 0x0A36, 0x0A36,
+  0x0A59, 0x0A5B, 0x0A5E, 0x0A5E, 0x0B5C, 0x0B5D,
+  0x0E33, 0x0E33, 0x0EB3, 0x0EB3, 0x0F43, 0x0F43,
+  0x0F4D, 0x0F4D, 0x0F52, 0x0F52, 0x0F57, 0x0F57,
+  0x0F5C, 0x0F5C, 0x0F69, 0x0F69, 0x1FBD, 0x1FBD,
+  0x1FBF, 0x1FC1, 0x1FCD, 0x1FCF, 0x1FDD, 0x1FDF,
+  0x1FED, 0x1FEE, 0x1FFD, 0x1FFE, 0x2017, 0x2017,
+  0x203E, 0x203E, 0x2ADC, 0x2ADC, 0x309B, 0x309C,
+  0xFB1D, 0xFB1D, 0xFB1F, 0xFB1F, 0xFB2A, 0xFB36,
+  0xFB38, 0xFB3C, 0xFB3E, 0xFB3E, 0xFB40, 0xFB41,
+  0xFB43, 0xFB44, 0xFB46, 0xFB4E, 0xFC5B, 0xFC63,
+  0xFC90, 0xFC90, 0xFCD9, 0xFCD9, 0xFCF2, 0xFCF4,
+  0xFD3C, 0xFD3D, 0xFE49, 0xFE4C, 0xFE70, 0xFE72,
+  0xFE74, 0xFE74, 0xFE76, 0xFE7F, 0xFF9E, 0xFF9F,
+  0xFFE3, 0xFFE3, 0x1D15E, 0x1D164, 0x1D1BB, 0x1D1C0,
+];
+
+/// Returns `true` when [rune] is a non-mark code point whose Unicode NFKC
+/// normalisation introduces a combining mark (see
+/// [_nfkcMarkIntroducingRanges]). Such a code point has the same host-spoofing
+/// recomposition effect as a directly encoded mark but evades the category-M
+/// rule, so it is rejected alongside real marks.
+bool _isNfkcMarkIntroducing(int rune) {
+  if (rune < 0xA8) return false;
+  for (int i = 0; i < _nfkcMarkIntroducingRanges.length; i += 2) {
+    if (rune < _nfkcMarkIntroducingRanges[i]) return false; // sorted
+    if (rune <= _nfkcMarkIntroducingRanges[i + 1]) return true;
   }
   return false;
 }
@@ -1090,6 +1164,68 @@ bool _isNfkcAsciiLetterOrDigit(int rune) {
 bool _isMathematicalAlphanumericSymbol(int rune) =>
     rune >= 0x1D400 && rune <= 0x1D7FF;
 
+/// Flat `[start, end, ...]` inclusive range pairs of every non-ASCII code point
+/// whose Unicode NFKC normalisation is entirely ASCII but that is not already
+/// covered by a dedicated rule above (the gen-delim/`U+2044` confusable set,
+/// the fullwidth block, [_isNfkcAsciiLetterOrDigit], the mathematical block or
+/// [_nfkcFractionSlashCodePoints]).
+///
+/// Generated from Unicode 16.0.0 data: 427 code points in 92 ranges. Each
+/// member NFKC-folds to plain ASCII, so a browser/WebView applying IDNA/NFKC
+/// resolves a DIFFERENT ASCII authority than [Uri.tryParse] reports (which
+/// keeps the percent-encoded escape verbatim in the host). Representative,
+/// Node-verified differentials: U+1FBF7 SEGMENTED DIGIT SEVEN ->
+/// `bmc7.example`, U+3251 CIRCLED NUMBER TWENTY ONE -> `bmc21.example`,
+/// U+FB01 LATIN SMALL LIGATURE FI -> `bmcfi.example`, U+02B0 MODIFIER LETTER
+/// SMALL H -> `bmch.example`. No real BMC host uses a compatibility character
+/// (hosts are ASCII or punycode), so rejecting the whole set loses no valid
+/// target — non-ASCII that NFKC-folds to non-ASCII (e-acute, euro, emoji) is
+/// deliberately absent and stays launchable.
+const List<int> _nfkcAsciiCompatibilityRanges = <int>[
+  0xAA, 0xAA, 0xBA, 0xBA, 0x132, 0x133, 0x1C7, 0x1CC,
+  0x1F1, 0x1F3, 0x2B0, 0x2B0, 0x2B2, 0x2B3, 0x2B7, 0x2B8,
+  0x2E1, 0x2E3, 0x37E, 0x37E, 0x1D2C, 0x1D2C, 0x1D2E, 0x1D2E,
+  0x1D30, 0x1D31, 0x1D33, 0x1D3A, 0x1D3C, 0x1D3C, 0x1D3E, 0x1D43,
+  0x1D47, 0x1D49, 0x1D4D, 0x1D4D, 0x1D4F, 0x1D50, 0x1D52, 0x1D52,
+  0x1D56, 0x1D58, 0x1D5B, 0x1D5B, 0x1D62, 0x1D65, 0x1D9C, 0x1D9C,
+  0x1DA0, 0x1DA0, 0x1DBB, 0x1DBB, 0x1FEF, 0x1FEF, 0x203C, 0x203C,
+  0x207A, 0x207A, 0x207C, 0x207F, 0x208A, 0x208A, 0x208C, 0x208E,
+  0x2090, 0x2093, 0x2095, 0x209C, 0x20A8, 0x20A8, 0x2102, 0x2102,
+  0x210A, 0x210E, 0x2110, 0x2113, 0x2115, 0x2116, 0x2119, 0x211D,
+  0x2120, 0x2122, 0x2124, 0x2124, 0x2128, 0x2128, 0x212C, 0x212D,
+  0x212F, 0x2131, 0x2133, 0x2134, 0x2139, 0x2139, 0x213B, 0x213B,
+  0x2145, 0x2149, 0x2474, 0x2487, 0x249C, 0x24B5, 0x2A75, 0x2A76,
+  0x2C7C, 0x2C7D, 0x3250, 0x325F, 0x32B1, 0x32BF, 0x32CC, 0x32CF,
+  0x3371, 0x337A, 0x3380, 0x3381, 0x3383, 0x338B, 0x338E, 0x3394,
+  0x3396, 0x339A, 0x339C, 0x33A6, 0x33A9, 0x33AD, 0x33B0, 0x33B1,
+  0x33B3, 0x33B5, 0x33B7, 0x33BB, 0x33BD, 0x33BF, 0x33C3, 0x33C5,
+  0x33C8, 0x33D7, 0x33D9, 0x33DD, 0x33FF, 0x33FF, 0xA7F2, 0xA7F4,
+  0xFB00, 0xFB06, 0xFB29, 0xFB29, 0xFE10, 0xFE10, 0xFE14, 0xFE15,
+  0xFE33, 0xFE38, 0xFE4D, 0xFE50, 0xFE54, 0xFE54, 0xFE57, 0xFE57,
+  0xFE59, 0xFE5C, 0xFE60, 0xFE66, 0xFE69, 0xFE6A, 0x107A5, 0x107A5,
+  0x1CCD6, 0x1CCF9, 0x1F101, 0x1F10A, 0x1F110, 0x1F129, 0x1F12B, 0x1F12E,
+  0x1F14A, 0x1F14F, 0x1F16A, 0x1F16C, 0x1F190, 0x1F190, 0x1FBF0, 0x1FBF9,
+];
+
+/// Returns `true` when [rune] is a non-ASCII compatibility character whose
+/// NFKC normalisation is plain ASCII but that no dedicated rule above covers.
+///
+/// This generalises the hand-maintained fullwidth / circled / Roman-numeral /
+/// mathematical / fraction families to the complete Unicode compatibility set:
+/// ligatures, modifier letters, ordinal indicators, letterlike symbols,
+/// circled numbers beyond 20, segmented digits and squared units. A launcher
+/// applying IDNA/NFKC resolves such a code point to a different ASCII host
+/// than [Uri.tryParse] reports, which under a stale flag + test opt-in could
+/// grant in-app rendering and self-signed acceptance on a spoofed host.
+bool _isNfkcAsciiCompatibility(int rune) {
+  if (rune < 0xAA) return false;
+  for (int i = 0; i < _nfkcAsciiCompatibilityRanges.length; i += 2) {
+    if (rune < _nfkcAsciiCompatibilityRanges[i]) return false; // sorted
+    if (rune <= _nfkcAsciiCompatibilityRanges[i + 1]) return true;
+  }
+  return false;
+}
+
 /// Vulgar fractions (Unicode category `No`) whose NFKC normalisation expands
 /// to a digit + U+2044 FRACTION SLASH + digit(s), e.g. U+00BD `1/2` ->
 /// `1` U+2044 `2`. IDNA/UTS-46 maps U+2044 to '/', so a decode+IDNA launcher
@@ -1183,6 +1319,13 @@ bool _authorityHasAsciiCompatibilityConfusable(String uri) {
     // a block none of the ranges above cover (see
     // [_isMathematicalAlphanumericSymbol]).
     if (_isMathematicalAlphanumericSymbol(rune)) return true;
+    // Every remaining non-ASCII compatibility character that NFKC-normalises
+    // to plain ASCII (ligatures, modifier letters, ordinal indicators,
+    // letterlike symbols, circled numbers > 20, segmented digits, squared
+    // units, ...) — a decode+IDNA launcher resolves a DIFFERENT ASCII
+    // authority than Uri.tryParse reports. Generated from Unicode 16.0.0 data
+    // so the hand-maintained ranges above cannot leave a family unchecked.
+    if (_isNfkcAsciiCompatibility(rune)) return true;
   }
   return false;
 }
