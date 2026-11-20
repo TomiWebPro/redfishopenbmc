@@ -2334,4 +2334,91 @@ void main() {
       }
     });
   });
+
+  group(
+      'planConsoleLaunch — defense in depth: out-of-range port rejection', () {
+    // Uri.tryParse accepts a port above the 16-bit TCP range (e.g. :99999) and
+    // still reports an HTTPS URI with a non-empty host, so a purely syntactic
+    // re-check calls it "secure". Browser/WebView (WHATWG URL) parsers reject an
+    // out-of-range port outright, or wrap it modulo 65536 to a different service
+    // — a parser differential that under a stale flag + test opt-in could grant
+    // in-app rendering and self-signed acceptance on a malformed/mismatched
+    // authority. A real BMC console port is always 0..65535.
+    test('an out-of-range port fails closed with a stale flag', () {
+      for (final String uri in <String>[
+        'https://bmc.example:65536/console', // just past the 16-bit max
+        'https://bmc.example:99999/console',
+        'https://bmc.example:70000/path?q=1#f',
+        'https://user:pass@bmc.example:99999/console', // with userinfo
+        'https://[::1]:99999/console', // IPv6 literal host
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test(
+        'an out-of-range port never reaches in-app under a strict opt-in or the production default',
+        () {
+      const String uri = 'https://bmc.example:99999/console';
+
+      final KvmConsoleLaunchPlan strict = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: uri,
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+      expect(strict.isInApp, isFalse);
+      expect(strict.acceptSelfSigned, isFalse);
+
+      final KvmConsoleLaunchPlan production = planConsoleLaunch(
+        policy: KvmWebViewPolicy.productionDefault,
+        uri: uri,
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+      expect(production.route, KvmConsoleRenderRoute.copyOnly);
+      expect(production.isInApp, isFalse);
+      expect(production.acceptSelfSigned, isFalse);
+    });
+
+    test('valid ports and port-less hosts stay launchable (no over-rejection)',
+        () {
+      // Guard against over-rejection: a default/absent port, a nonstandard but
+      // in-range port, the 16-bit maximum, userinfo, IPv6 and punycode hosts
+      // must all keep working.
+      for (final String uri in <String>[
+        'https://bmc.example/console', // default https port
+        'https://bmc.example:/console', // empty port -> default
+        'https://bmc.example:443/console',
+        'https://bmc.example:8443/console', // nonstandard but in range
+        'https://bmc.example:65535/console', // max valid port
+        'https://user:pass@bmc.example:8443/console',
+        'https://[::1]:8443/console', // IPv6 literal
+        'https://xn--bmc-esab.example/console', // punycode
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.inAppWebView, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+  });
 }
