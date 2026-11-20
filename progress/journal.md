@@ -11264,3 +11264,22 @@
 - Re-run 85/85 DMTF emulator on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (CB-1 control-safe clipboard fallback)
+
+**Done:**
+- FEATURE dept slice CB-1 (shared by the only two open issues). `KvmConsole.clipboardTargetUri` degraded to the raw BMC-supplied `sourceManagerUri` (`@odata.id`, trimmed only) when the fail-closed launch plan had no safe target — so a hostile `@odata.id` carrying CRLF/NUL/raw space/backslash/Unicode separator or a malformed/encoded-control `%` reintroduced the header/clipboard-injection risk the card's copy guard exists to block.
+- Added public `KvmConsole.safeManagerUri`: routes `sourceManagerUri` through the shared `isControlSafeConsoleUri` gate (same gate as the launch plan). Safe sources pass byte-for-byte (no valid target lost); unsafe sources are replaced by `/redfish/v1/Managers/<URI.encodeComponent(managerId)>` (blank id → `manager`), guaranteed control-safe. `clipboardTargetUri` now uses it.
+- Tests: 5 RED→GREEN model tests (compile-RED pre-fix; safe/unsafe sources, hostile-id pct-encoding, blank id) + 1 RED→GREEN widget test (card copy with hostile source → synthesized safe path, no CRLF/LF, 320 px no-overflow). Analyze 0; full suite 1399 passed / 1 skipped (baseline 1393 +6); DMTF emulator 85/85 (lib changed — §1.4 gate met); issues validate OK; `git diff --check` clean.
+
+**Decisions:**
+- Reused the shared `isControlSafeConsoleUri` gate rather than a bespoke check so the clipboard fallback and the launch-plan target can never drift; only the fallback path changed, so valid/percent-encoded sources are copied unchanged.
+- The synthesized fallback pct-encodes the BMC-supplied manager Id too — otherwise a hostile Id would reintroduce the control character the source check rejected.
+- Full emulator re-run because `lib/` changed (§1.4 gate met); no dependency, no wire/transport/fixture change, no production TLS weakening.
+
+**Next:**
+- Continue unblocked dept slices for #009/#021 (EP-S1 service launch edges, EP-U1 fullscreen scaffold, EP-M1 remaining URI-scheme edges) — genuine tested increments only.
+- Never add a WebView/url_launcher dependency unattended; never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full emulator re-run on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

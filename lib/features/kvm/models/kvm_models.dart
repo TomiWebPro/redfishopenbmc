@@ -360,8 +360,27 @@ class KvmConsole {
         isEnabled: serviceEnabled,
       );
 
+  /// A control-safe manager URI, suitable as a last-resort clipboard fallback.
+  ///
+  /// [sourceManagerUri] is a BMC-supplied `@odata.id`: [KvmConsole.fromManager]
+  /// only trims it, so a malformed/hostile BMC can still publish a value with
+  /// CRLF / NUL / raw space / backslash / Unicode separators or a malformed or
+  /// encoded-control `%` escape. Copying that verbatim would reintroduce the
+  /// exact header/clipboard-injection risk the launch plan's fail-closed target
+  /// gate exists to prevent (issues #009 / #021). Route it through the same
+  /// shared [isControlSafeConsoleUri] gate the launch plan uses: a safe source
+  /// is kept byte-for-byte (no valid target is lost), and an unsafe one is
+  /// replaced by a deterministic path synthesized from [managerId] with every
+  /// non-unreserved byte percent-encoded (via [Uri.encodeComponent]), so the
+  /// fallback can never carry the hostile code point back onto the clipboard.
+  String get safeManagerUri {
+    if (isControlSafeConsoleUri(sourceManagerUri)) return sourceManagerUri;
+    final String encodedId = Uri.encodeComponent(managerId.trim());
+    return '/redfish/v1/Managers/${encodedId.isEmpty ? 'manager' : encodedId}';
+  }
+
   /// The fail-closed URI the "copy connect info" affordance may place on the
-  /// clipboard, falling back to [sourceManagerUri] when the launch plan has no
+  /// clipboard, falling back to [safeManagerUri] when the launch plan has no
   /// usable target (issues #009 / #021).
   ///
   /// This is the single source of truth for the console card's clipboard
@@ -374,10 +393,11 @@ class KvmConsole {
   /// gate the card copied its raw [launchUri] directly while the viewer
   /// refused the same target, so the two surfaces disagreed about clipboard
   /// safety. The raw endpoint stays visible on the card ("fail closed, not
-  /// hidden"); only the explicit copy action degrades to the safe manager URI.
-  /// Valid, control-safe URIs (including properly percent-encoded ones) are
-  /// copied byte-for-byte as before, so no operator capability is lost.
-  String get clipboardTargetUri => launchPlan.targetUri ?? sourceManagerUri;
+  /// hidden"); only the explicit copy action degrades to a control-safe
+  /// [safeManagerUri]. Valid, control-safe URIs (including properly
+  /// percent-encoded ones) are copied byte-for-byte as before, so no operator
+  /// capability is lost.
+  String get clipboardTargetUri => launchPlan.targetUri ?? safeManagerUri;
 
   /// Builds the list of [KvmConsole]s detected in a Redfish [managerBody].
   ///

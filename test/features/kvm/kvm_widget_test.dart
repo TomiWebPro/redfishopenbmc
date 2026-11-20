@@ -1251,6 +1251,70 @@ void main() {
       expect(copied.single, isNot(contains('X-Injected')));
     });
 
+    testWidgets(
+        'the card copy action fails closed when the BMC manager source itself '
+        'is hostile — the clipboard gets a synthesized safe path, never the '
+        'injection-bearing @odata.id (#009/#021)', (tester) async {
+      // The launch-plan target nulls out for a CRLF-bearing console URI, so the
+      // card degrades to the manager source. That source is BMC-supplied and may
+      // itself carry CRLF/NUL; copying it verbatim would reintroduce the
+      // clipboard-injection risk on a surface that is otherwise fail-closed.
+      final List<Object?> copied = <Object?>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add(call.arguments['text']);
+          }
+          return null;
+        },
+      );
+      addTearDown(() => TestDefaultBinaryMessengerBinding
+          .instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null));
+
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final KvmController controller = _StubController()
+        ..state = const KvmUiState(consoles: <KvmConsole>[
+          KvmConsole(
+            type: KvmConsoleType.graphical,
+            managerId: 'BMC',
+            connectTypesSupported: <String>['HTML5'],
+            serviceEnabled: true,
+            connectUri: 'https://bmc.example/kvm\r\nX-Injected: 1',
+            sourceManagerUri: '/redfish/v1/Managers/BMC\r\nX: 1',
+          ),
+        ]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: KvmView(systemId: 'bmc1')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // No overflow at 320 px, and the copy affordance stays available.
+      expect(tester.takeException(), isNull);
+      expect(find.text('Copy connect info'), findsOneWidget);
+      await tester.tap(find.text('Copy connect info'));
+      await tester.pumpAndSettle();
+
+      expect(copied, hasLength(1));
+      expect(copied.single, '/redfish/v1/Managers/BMC');
+      expect(copied.single, isNot(contains('\r')));
+      expect(copied.single, isNot(contains('\n')));
+      expect(copied.single, isNot(contains('X:')));
+      expect(copied.single, isNot(contains('X-Injected')));
+    });
+
     for (final double width in <double>[320, 800, 1300]) {
       testWidgets(
           'plaintext-HTTP warning card renders without overflow at '

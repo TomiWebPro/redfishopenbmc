@@ -1200,6 +1200,103 @@ void main() {
     });
   });
 
+  group(
+      'KvmConsole clipboard fallback — control-safe manager source '
+      '(#009/#021)', () {
+    KvmConsole makeWithSource({
+      required String sourceManagerUri,
+      String managerId = 'BMC',
+      String? uri,
+    }) =>
+        KvmConsole(
+          type: KvmConsoleType.graphical,
+          managerId: managerId,
+          connectTypesSupported: const <String>['HTML5'],
+          serviceEnabled: true,
+          connectUri: uri,
+          sourceManagerUri: sourceManagerUri,
+        );
+
+    test('safeManagerUri keeps a control-safe BMC source unchanged', () {
+      expect(
+        makeWithSource(sourceManagerUri: '/redfish/v1/Managers/BMC')
+            .safeManagerUri,
+        '/redfish/v1/Managers/BMC',
+      );
+      expect(
+        makeWithSource(
+          sourceManagerUri: 'https://bmc.example/redfish/v1/Managers/BMC',
+        ).safeManagerUri,
+        'https://bmc.example/redfish/v1/Managers/BMC',
+      );
+      // A correctly percent-encoded path stays launchable/copyable.
+      expect(
+        makeWithSource(sourceManagerUri: '/redfish/v1/Managers/BMC%20one')
+            .safeManagerUri,
+        '/redfish/v1/Managers/BMC%20one',
+      );
+    });
+
+    test('safeManagerUri fails closed for a hostile BMC @odata.id', () {
+      // The manager source is BMC-supplied and only trimmed by `_uriString`.
+      // A hostile value carrying a control/separator/invisible code point or a
+      // malformed/encoded-control escape must never reach the clipboard — the
+      // same fail-closed gate the launch plan's target uses applies here.
+      for (final String source in <String>[
+        '/redfish/v1/Managers/BMC\r\nX-Injected: 1',
+        '/redfish/v1/Managers/BMC\u0000evil',
+        '/redfish/v1/Managers/BMC evil',
+        '/redfish/v1/Managers/BMC\\evil',
+        '/redfish/v1/Managers/BMC%',
+        '/redfish/v1/Managers/BMC%0Aevil',
+        '/redfish/v1/Managers/BMC\u200Bzero-width',
+        '/redfish/v1/Managers/BMC\u2028line-sep',
+        '   ', // blank — trimmed away, never a usable source
+      ]) {
+        expect(
+          makeWithSource(sourceManagerUri: source).safeManagerUri,
+          '/redfish/v1/Managers/BMC',
+          reason: source,
+        );
+      }
+    });
+
+    test('clipboardTargetUri never copies a hostile manager source', () {
+      // A control-char console URI has no safe launch target, so the card's
+      // copy action degrades to the manager source. That fallback must itself
+      // be control-safe (no CRLF/NUL header/clipboard injection when pasted).
+      const String hostileSource = '/redfish/v1/Managers/BMC\r\nX: 1';
+      final KvmConsole console = makeWithSource(
+        sourceManagerUri: hostileSource,
+        uri: 'https://bmc.example/kvm\r\nX-Injected: 1',
+      );
+      expect(console.launchPlan.targetUri, isNull);
+      expect(console.clipboardTargetUri, '/redfish/v1/Managers/BMC');
+      expect(console.clipboardTargetUri, isNot(contains('\r')));
+      expect(console.clipboardTargetUri, isNot(contains('\n')));
+    });
+
+    test('synthesized fallback pct-encodes a hostile manager Id', () {
+      // The fallback path is derived from the BMC-supplied manager Id, so that
+      // Id must be pct-encoded too — otherwise a hostile Id would reintroduce
+      // the very control character the source check rejected.
+      final KvmConsole console = makeWithSource(
+        sourceManagerUri: '/redfish/v1/Managers/BMC\r\nX: 1',
+        managerId: 'BMC\u0000Evil',
+      );
+      expect(console.safeManagerUri, '/redfish/v1/Managers/BMC%00Evil');
+      expect(console.clipboardTargetUri, '/redfish/v1/Managers/BMC%00Evil');
+    });
+
+    test('a blank manager Id still yields a safe non-empty fallback', () {
+      final KvmConsole console = makeWithSource(
+        sourceManagerUri: '/redfish/v1/Managers/BMC\r\nX: 1',
+        managerId: '   ',
+      );
+      expect(console.safeManagerUri, '/redfish/v1/Managers/manager');
+    });
+  });
+
   group('KvmConsole.launchPlan — fail-closed production decision (#009/#021)',
       () {
     KvmConsole make({
