@@ -2959,4 +2959,90 @@ void main() {
       }
     });
   });
+
+  group('planConsoleLaunch — defense in depth: IPv4-embedded IPv6 rejection', () {
+    test('a non-mapped IPv4-embedded IPv6 host fails closed with a stale flag',
+        () {
+      // The IPv4-mapped rule (groups[5] == 0xffff) only rejects ::ffff:a.b.c.d,
+      // but Uri.tryParse reports ANY dotted-quad-embedded IPv6 literal as an
+      // opaque, non-empty HTTPS host while a browser / WebView (WHATWG URL)
+      // resolves the embedded IPv4 address (or a different IPv6 literal). That
+      // is the same parser differential as the mapped form: one raw URI naming
+      // two authorities, which under a stale secure flag + test opt-in could
+      // grant in-app rendering and self-signed acceptance on a mismatched /
+      // internal host. No real remote BMC uses a dotted-quad-embedded IPv6
+      // literal, so each fails closed. Dotted mapped/translated forms are
+      // included here; the pure-hex mapped form is covered by the IPv6 group.
+      for (final String uri in <String>[
+        'https://[::192.168.1.1]/console', // IPv4-compatible private
+        'https://[::127.0.0.1]/console', // IPv4-compatible loopback
+        'https://[2001:db8::192.168.1.1]/console', // embedded in a real prefix
+        'https://[::ffff:0:192.168.1.1]/console', // translated mapped form
+        'https://[::ffff:127.0.0.1]:8443/console', // dotted mapped + port
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('an IPv4-embedded IPv6 host never reaches in-app under any policy', () {
+      for (final KvmWebViewPolicy policy in <KvmWebViewPolicy>[
+        KvmWebViewPolicy.testOptIn,
+        KvmWebViewPolicy.productionDefault,
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: policy,
+          uri: 'https://[::192.168.1.1]/console',
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: policy.toString());
+        expect(plan.acceptSelfSigned, isFalse, reason: policy.toString());
+      }
+    });
+
+    test('pure-hex IPv6 hosts stay launchable (no over-rejection)', () {
+      // A real IPv6 literal is written in pure hex groups (no dotted quad).
+      // The rule targets only embedded dotted-quad forms, so legitimate
+      // link-local / unique-local / global / loopback / pure-hex-mapped hosts
+      // and their valid ports/userinfo keep working.
+      for (final String uri in <String>[
+        'https://[fe80::1]/console',
+        'https://[fd00::1]/console',
+        'https://[2001:db8::1]/console',
+        'https://[2001:db8::1]:8443/console',
+        'https://user@[fd00::1]/console',
+        'https://[::1]/console',
+        'https://[::ffff:7f00:1]/console', // pure-hex mapped: still rejected
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        if (uri.contains('ffff:7f00:1')) {
+          expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+          expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        } else {
+          expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+          expect(plan.targetUri, uri, reason: uri);
+          expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        }
+      }
+    });
+  });
 }

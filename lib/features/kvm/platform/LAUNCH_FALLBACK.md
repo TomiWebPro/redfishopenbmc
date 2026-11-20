@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 113 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (124 across the platform
+consume; today it locks the fallback behaviour with 116 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (127 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -365,6 +365,19 @@ Invariants, enforced by tests:
    launchable — it is a real target for the test-only opt-in and both parsers
    agree on the address — as are link-local/unique-local/global-unicast IPv6
    with canonical ports/userinfo, so no valid target is lost.
+   **IPv4-embedded IPv6 rejection:** the IPv4-mapped rule only catches the
+   `groups[5] == 0xffff` special case, but `Uri.tryParse` reports ANY
+   dotted-quad-embedded IPv6 literal as an opaque, non-empty HTTPS host:
+   `::192.168.1.1` (IPv4-compatible), `::ffff:0:192.168.1.1` (translated) and
+   `2001:db8::192.168.1.1` (a real prefix followed by an embedded quad). A
+   browser/WebView (WHATWG URL) resolves the embedded IPv4 address (or a
+   different IPv6 literal), so one raw URI names two authorities; under a stale
+   flag + test opt-in that parser differential could grant in-app rendering and
+   self-signed acceptance on a mismatched/internal host. A real IPv6 literal is
+   written in pure hex groups, so every dotted form fails closed while pure-hex
+   loopback, link-local, unique-local, global-unicast and the pure-hex mapped
+   form (still caught by the groups check) stay launchable — no valid target
+   lost.
    Covered by targeted tests across the defense-in-depth re-validation
    groups (scheme/host/malformed-authority parity + control-character +
    raw-space + Unicode-whitespace/invisible + raw-backslash + RFC-3986
@@ -382,7 +395,8 @@ Invariants, enforced by tests:
    rejection + non-canonical numeric-host
    rejection (incl. trailing-dot absolute-FQDN numeric spellings) + empty
    DNS-label rejection + out-of-range port rejection + signed and overflow
-   port rejection + IPv4-mapped/IPvFuture IPv6 rejection).
+   port rejection + IPv4-mapped/IPvFuture IPv6 rejection + IPv4-embedded IPv6
+   rejection).
 
 ## What remains gated (not done here)
 
