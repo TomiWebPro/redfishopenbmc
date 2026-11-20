@@ -11315,3 +11315,18 @@
 - Continue other unblocked dept slices for #009/#021 — genuine tested increments only; no WebView/url_launcher dependency, never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-U6)
+
+- Done: EP-U6 control-safe manager-source display on all three KVM surfaces. The viewer's no-URI source row, the per-console card's "Open externally" source row and the capability card's "No console URI resolved" source row now interpolate `KvmConsole.safeManagerUri` / `KvmCapability.safeManagerUri` instead of the raw BMC `@odata.id`, so a hostile source (CRLF / fake header / NUL / separators) can no longer reach visible Text/SelectableText or the merged `excludeSemantics` label; a control-safe source stays byte-for-byte and the sanitized endpoint stays visible (fail closed, not hidden). +12 RED→GREEN widget tests (10 RED pre-fix; visible text == announced label; 320/800/1300 px no-overflow). Baseline analyze 0 / 1408 passed / 1 skipped → verify analyze 0 / 1420 passed / 1 skipped (+12); DMTF emulator 85/85 (lib changed — §1.4 gate met); issues validate OK; diff --check clean.
+
+**Decisions:**
+- Reused the shared fail-closed `safeManagerUri` getters (RM-4/CB-1) as the single source of truth for every display surface, so the clipboard guard and all three disclosures cannot drift on what counts as a safe source.
+- Kept writes limited to `lib/features/kvm/views/**` (rf-ui dept slice), display-only: no URL opened, no WebView/dependency, no wire/fixture change, no production TLS weakening.
+- Dropped the capability card's `?? 'unknown'` fallback: `safeManagerUri` is non-null and synthesizes a deterministic path for an absent source.
+
+**Next:**
+- EP-T8 (rf-tooling): control-safe manager-source display guard closing the CB-1 class across all surfaces, with RED→GREEN tests.
+- Continue other unblocked dept slices for #009/#021 — genuine tested increments only; no WebView/url_launcher dependency, never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

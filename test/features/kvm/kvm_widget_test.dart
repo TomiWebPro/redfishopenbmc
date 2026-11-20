@@ -1965,4 +1965,129 @@ void main() {
       }
     }
   });
+
+  group('control-safe manager source display (EP-U6 / #009/#021)', () {
+    // When a console has no usable connect URI, both the per-console card and
+    // the viewer disclose the BMC-supplied manager source. That @odata.id is
+    // untrusted, so every surface must render it through the shared fail-closed
+    // gate (KvmConsole.safeManagerUri) — never verbatim — so a hostile source
+    // cannot carry CRLF / NUL / a fake header onto the screen or a11y tree.
+    const String hostileSource = '/redfish/v1/Managers/BMC\r\nX-Injected: 1';
+    const String safeSource = '/redfish/v1/Managers/BMC';
+
+    // Cards render the disclosure as a label Text + a SelectableText value, so
+    // assert on either widget type rather than a single combined Text node.
+    Finder shownContaining(String fragment) =>
+        find.byWidgetPredicate((Widget w) {
+          if (w is Text) return (w.data ?? '').contains(fragment);
+          if (w is SelectableText) return w.data?.contains(fragment) ?? false;
+          return false;
+        });
+
+    KvmConsole consoleWithSource(String source) => KvmConsole(
+          type: KvmConsoleType.graphical,
+          managerId: 'BMC',
+          connectTypesSupported: const <String>['HTML5'],
+          serviceEnabled: true,
+          // No connectUri → the "no URI" manager-source disclosure renders.
+          sourceManagerUri: source,
+        );
+
+    Future<void> pumpCard(WidgetTester tester, KvmConsole console,
+        {required double width}) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final KvmController controller = _StubController()
+        ..state = KvmUiState(consoles: <KvmConsole>[console]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            systemHandleProvider('bmc1').overrideWithValue(_handle(kvm: true)),
+            kvmControllerProvider.overrideWith((ref, id) => controller),
+          ],
+          child: const MaterialApp(home: KvmView(systemId: 'bmc1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> pumpViewer(WidgetTester tester, KvmConsole console,
+        {required double width}) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(home: KvmConsoleViewerPage(console: console)),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    for (final double width in <double>[320, 800, 1300]) {
+      testWidgets(
+          'per-console card sanitizes a hostile manager source in '
+          'visible text + merged label at ${width.toInt()} px (EP-U6)',
+          (tester) async {
+        await pumpCard(tester, consoleWithSource(hostileSource), width: width);
+        const String expected =
+            'No console connect URI available. Open externally: $safeSource';
+        expect(find.text('No console connect URI available. Open externally:'),
+            findsOneWidget);
+        expect(shownContaining(safeSource), findsOneWidget,
+            reason: 'visible value must render the fail-closed source');
+        expect(find.bySemanticsLabel(expected), findsOneWidget,
+            reason: 'announced label must render the fail-closed source');
+        expect(shownContaining('X-Injected'), findsNothing,
+            reason: 'control-bearing source must not reach visible text');
+        expect(find.bySemanticsLabel(RegExp(r'X-Injected')), findsNothing,
+            reason: 'control-bearing source must not be announced');
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets(
+          'viewer sanitizes a hostile manager source in visible '
+          'text + merged label at ${width.toInt()} px (EP-U6)', (tester) async {
+        await pumpViewer(tester, consoleWithSource(hostileSource),
+            width: width);
+        const String expected =
+            'No direct console URI. Manager source: $safeSource';
+        expect(find.text(expected), findsOneWidget,
+            reason: 'visible text must render the fail-closed source');
+        expect(find.bySemanticsLabel(expected), findsOneWidget,
+            reason: 'announced label must render the fail-closed source');
+        expect(shownContaining('X-Injected'), findsNothing,
+            reason: 'control-bearing source must not reach visible text');
+        expect(find.bySemanticsLabel(RegExp(r'X-Injected')), findsNothing,
+            reason: 'control-bearing source must not be announced');
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    // A correctly percent-encoded source is control-safe: the fail-closed gate
+    // keeps it byte-for-byte, so no operator capability is lost.
+    const String safe = '/redfish/v1/Managers/BMC%20one';
+
+    testWidgets(
+        'a control-safe manager source stays byte-for-byte on the '
+        'per-console card (EP-U6)', (tester) async {
+      const String expected =
+          'No console connect URI available. Open externally: $safe';
+      await pumpCard(tester, consoleWithSource(safe), width: 800);
+      expect(shownContaining(safe), findsOneWidget);
+      expect(find.bySemanticsLabel(expected), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'a control-safe manager source stays byte-for-byte in the '
+        'viewer (EP-U6)', (tester) async {
+      const String expected = 'No direct console URI. Manager source: $safe';
+      await pumpViewer(tester, consoleWithSource(safe), width: 800);
+      expect(find.text(expected), findsOneWidget);
+      expect(find.bySemanticsLabel(expected), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

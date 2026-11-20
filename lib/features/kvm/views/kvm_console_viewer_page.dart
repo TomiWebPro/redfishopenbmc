@@ -201,10 +201,10 @@ class _KvmConsoleViewerPageState extends ConsumerState<KvmConsoleViewerPage> {
                         container: true,
                         excludeSemantics: true,
                         label:
-                            'No direct console URI. Manager source: ${console.sourceManagerUri}',
+                            'No direct console URI. Manager source: ${console.safeManagerUri}',
                         child: Text(
                           'No direct console URI. Manager source: '
-                          '${console.sourceManagerUri}',
+                          '${console.safeManagerUri}',
                           style: theme.textTheme.bodySmall,
                         ),
                       ),

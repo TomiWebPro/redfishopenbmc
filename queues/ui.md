@@ -14,7 +14,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
      distinct from EP-U5 (launch-status parity) and CB-1 (clipboard). Soft-depends on RM-4 for the
      capability getter but has a local-gate fallback, so it is never blocked. -->
 
-- [ ] EP-U6 Control-safe manager-source display on all three KVM surfaces: route the viewer's
+- [x] EP-U6 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 EP-U6 control-safe manager-source display on all three KVM surfaces + RED→GREEN widget tests`). Control-safe manager-source display on all three KVM surfaces: route the viewer's
       "No direct console URI. Manager source: …" row and the per-console / per-manager capability
       cards' manager-source rows through the shared control-safe source (`KvmConsole.safeManagerUri`,
       and `KvmCapability.safeManagerUri` if RM-4 has landed; otherwise use `isControlSafeConsoleUri`

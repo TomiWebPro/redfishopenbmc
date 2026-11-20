@@ -156,7 +156,7 @@ class KvmCapabilityCard extends StatelessWidget {
                 container: true,
                 excludeSemantics: true,
                 label: 'No console URI resolved. Source: '
-                    '${capability.sourceManagerUri ?? 'unknown'}',
+                    '${capability.safeManagerUri}',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
@@ -168,7 +168,7 @@ class KvmCapabilityCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     SelectableText(
-                      capability.sourceManagerUri ?? 'unknown',
+                      capability.safeManagerUri,
                       style: theme.textTheme.bodyMedium,
                     ),
                   ],

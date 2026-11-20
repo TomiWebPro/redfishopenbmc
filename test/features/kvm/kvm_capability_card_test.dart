@@ -765,4 +765,74 @@ void main() {
           contains('external VNC/RFB client'));
     });
   });
+
+  group(
+      'control-safe manager source display — capability card '
+      '(EP-U6 / #009/#021)', () {
+    // With no resolved URI the capability card discloses the BMC-supplied
+    // manager source. That @odata.id is untrusted, so the disclosure must be
+    // routed through KvmCapability.safeManagerUri — a hostile source can never
+    // carry CRLF / NUL / a fake header onto the screen or the a11y tree.
+    const String hostileSource = '/redfish/v1/Managers/BMC\r\nX-Injected: 1';
+    const String safeSource = '/redfish/v1/Managers/BMC';
+
+    Finder shownContaining(String fragment) =>
+        find.byWidgetPredicate((Widget w) {
+          if (w is Text) return (w.data ?? '').contains(fragment);
+          if (w is SelectableText) return w.data?.contains(fragment) ?? false;
+          return false;
+        });
+
+    KvmCapability capabilityWithSource(String source) => KvmCapability(
+          managerId: 'BMC',
+          supported: true,
+          connectTypes: const <String>['HTML5'],
+          serviceEnabled: true,
+          // No uri → the "No console URI resolved. Source:" row renders.
+          sourceManagerUri: source,
+        );
+
+    Future<void> pumpCard(WidgetTester tester, KvmCapability capability,
+        {required double width}) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(home: KvmCapabilityCard(capability: capability)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    for (final double width in <double>[320, 800, 1300]) {
+      testWidgets(
+          'capability card sanitizes a hostile manager source in '
+          'visible text + merged label at ${width.toInt()} px (EP-U6)',
+          (tester) async {
+        await pumpCard(tester, capabilityWithSource(hostileSource),
+            width: width);
+        const String expected = 'No console URI resolved. Source: $safeSource';
+        expect(find.text('No console URI resolved. Source:'), findsOneWidget);
+        expect(shownContaining(safeSource), findsOneWidget,
+            reason: 'visible value must render the fail-closed source');
+        expect(find.bySemanticsLabel(expected), findsOneWidget,
+            reason: 'announced label must render the fail-closed source');
+        expect(shownContaining('X-Injected'), findsNothing,
+            reason: 'control-bearing source must not reach visible text');
+        expect(find.bySemanticsLabel(RegExp(r'X-Injected')), findsNothing,
+            reason: 'control-bearing source must not be announced');
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets(
+        'a control-safe manager source stays byte-for-byte on the '
+        'capability card (EP-U6)', (tester) async {
+      const String safe = '/redfish/v1/Managers/BMC%20one';
+      const String expected = 'No console URI resolved. Source: $safe';
+      await pumpCard(tester, capabilityWithSource(safe), width: 800);
+      expect(shownContaining(safe), findsOneWidget);
+      expect(find.bySemanticsLabel(expected), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

@@ -463,7 +463,7 @@ class _ConsoleCard extends StatelessWidget {
                 container: true,
                 excludeSemantics: true,
                 label: 'No console connect URI available. Open externally: '
-                    '${console.sourceManagerUri}',
+                    '${console.safeManagerUri}',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
@@ -476,7 +476,7 @@ class _ConsoleCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     SelectableText(
-                      console.sourceManagerUri,
+                      console.safeManagerUri,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
