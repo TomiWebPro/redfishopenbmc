@@ -32,7 +32,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
      announced — was never audited across all four KVM surfaces. Display-only, dependency-free,
      TLS-safe; distinct from RU-2 (constant single-source) and EP-U5/U6 (single-surface fixes). -->
 
-- [ ] EP-U7 RU-2 full merged-Semantics surface audit (closeout of the FUTUREWORK "RU-2 full merged-
+- [x] EP-U7 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 EP-U7 RU-2 full merged-Semantics surface audit + RED→GREEN widget tests`, analyze 0 / 1603 passed / 1 skipped). RU-2 full merged-Semantics surface audit (closeout of the FUTUREWORK "RU-2 full merged-
       Semantics audit" slice): audit EVERY KVM surface — the gated list `KvmView`, per-console
       `_ConsoleCard`, `KvmCapabilityCard`, and `KvmConsoleViewerPage` — for the two shared notices
       `kvmSessionPersistenceNotice` and `kvmDisabledOnBmcNotice`. Each must appear exactly where it

@@ -11711,3 +11711,18 @@
 - EP-U7 (rf-ui) full merged-Semantics notice surface audit; re-audit other 320 px card headers for the same non-wrapping-chip overflow class. Never activate WebView, grant human approval, or weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-U7)
+
+**Done:**
+- EP-U7 (head of the unlanded `queues/ui.md` slices, first in the prior run's Next). Added `test/features/kvm/kvm_notice_surface_audit_test.dart` (13 widget tests) pinning the rendering contract of `kvmSessionPersistenceNotice` and `kvmDisabledOnBmcNotice` across all four KVM surfaces: session notice exactly once/merged on the gated list and viewer, disabled notice exactly once per disabled capability card and never on an enabled one/other surfaces, never duplicated across multiple consoles/cards, no overflow at 320/800/1300 px. Audited all four surfaces; no genuine divergence (all already correct) → regression guard, not copy churn.
+- RED→GREEN: temporarily changed the viewer session notice's merged `label` while the visible `Text` stayed the shared constant → 4 viewer tests failed (`+9 -4`); restored byte-clean (SHA `f088a86d…` unchanged, 0 probe occurrences), backup shredded → 13/13 GREEN.
+
+**Decisions:**
+- Test-only, dependency-free, TLS-safe: no product `lib/` change (final `git diff --stat -- lib/` EMPTY), no wire/transport/fixture/dependency change, no URL opened, no human approval granted, no issue closed, no production TLS weakening. Genuine rendering-contract guard (nothing previously failed closed on a dropped/duplicated/split notice), distinct from the constant single-source guard and per-surface spot tests. DMTF emulator skipped (test-only, <7 days since last green 85/85).
+- Verify: targeted 13/13; related widget/capability-card/affordance suites 117/117; `flutter analyze` 0; full `flutter test` 1603 passed / 1 skipped (baseline 1590 +13); issues validate OK; `git diff --check` clean. Pre-existing untracked `testing/` + stash preserved; no force-push.
+
+**Next:**
+- Audit head-first dept candidates EP-S1 (service launch-path edges) / EP-M1 (model URI-scheme edges) for a genuine tested gap; also re-audit narrow-screen (320 px) card headers for the overflow class EP-U8 fixed. Never activate WebView, grant human approval, or weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
