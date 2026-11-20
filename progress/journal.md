@@ -11330,3 +11330,19 @@
 - Continue other unblocked dept slices for #009/#021 — genuine tested increments only; no WebView/url_launcher dependency, never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — sole merger (build/rf-platform ae93bdf)
+
+- Verdict: `rf-platform-check` run#9204 explicit `CHECK: PASS` (exit 0, started 02:09:48 UTC, ~60 s) for branch HEAD `ae93bdf`, produced by the builder; cross-checked tip unchanged post-check (exactly 1 unmerged commit past merge-base `a226449`, already in main via `f64af05`).
+- Merged `build/rf-platform` `ae93bdf` into `main` with `--no-ff` (merge `93806d0`). Closes the RFC 3986 unreserved-ASCII decode-order authority gap in the dependency-free `launch_plan.dart`: `Uri.tryParse` DECODES percent-encoded unreserved bytes (`%62%6D%63`→`bmc`, `%2D`→`-`, `%5F`→`_`, `%7E`→`~`) into a different host than a non-decoding launcher, so one URI names two authorities — under a stale flag + test opt-in a spoofed host could reach in-app rendering + self-signed acceptance. Added `_isUnreservedAsciiOctet` + `_authorityHasEncodedUnreservedAscii`, folded into the shared `String?` `_controlSafeTrimmedUri` gate as `return null`; authority-scoped, no valid target lost.
+- Conflicts: `launch_plan.dart` (branch bool `return false` predated main's `String?` shared gate) resolved keeping the `return null` structure + folding in the new check; `LAUNCH_FALLBACK.md` kept main's fuller C0/DEL prose + appended the unreserved paragraph, counts corrected to 98 targeted / 129 platform; `launch_plan_test.dart` auto-merged with all 3 RED→GREEN tests.
+- Verification: analyze 0; full suite 1423 passed / 1 skipped (baseline 1420 +3); coverage gates PASS overall 90.1% / scoped 90.4% / kvm 96.7%; issues validate OK; diff --check clean; secret scan clean; first-parent diff = 3 allowlisted files. DMTF emulator skipped (no wire/fixture/tool change).
+
+**Decisions:**
+- Merged only because run#9204 explicitly PASSED for the exact tip; never merge on a stale/absent verdict.
+- `--no-ff` preserves dept-branch history; single shared fail-closed classifier core kept; no production TLS weakening.
+
+**Next:**
+- Gate only PASS-verified branches; re-run DMTF 85/85 on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none closed (#009 / #021 remain open).
