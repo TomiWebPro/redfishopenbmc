@@ -11859,3 +11859,18 @@
 - Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard — all unblocked slices are now landed; never timestamp/copy churn. Cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only when platform WebView + BMC TLS human validation evidence arrives.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-U3)
+
+**Done:**
+- FEATURE — EP-U3 launch-guidance consistency fix. Found and FIXED a genuine defect: an HTML5 console whose direct `ConnectUri` needs an external client (VNC/RFB/KVMIP/SSH/Telnet/IPMI) rendered BOTH the "HTML5 console — open via BMC web UI" hint AND the "requires an external client — copy the URI" notice on the same per-console card. `KvmConsole.showHtml5WebUiHint` now also requires `!requiresExternalConsoleClient`; doc comment records the contract. Added `test/features/kvm/kvm_webui_hint_external_client_test.dart` (16 tests: 7-scheme model loop + HTML5/VNC multi-type + 4 regressions + widget 320/800/1300 px with visible == announced merged semantics + secure-HTTPS widget regression). RED proof: new suite run against the actual pre-fix code → 11/16 failed (`+5 -11`); after the one-line model fix → 16/16 GREEN, backup shredded.
+- Verify: targeted 16/16; related KVM suites 377/377; `flutter analyze` 0; full `flutter test` 1662 passed / 1 skipped (baseline 1646 +16); DMTF emulator 85/85 (product lib changed — gate met); issues validate OK; `git diff --check` clean.
+
+**Decisions:**
+- Fix landed in the model getter (single source of truth driving the card) rather than the view — both guidance gates share the same fail-closed URI classifiers, so the invariant is pinned in one testable place. Display-only: no affordance/transport/dependency/TLS change, no WebView/protocol import, no URL opened, no human approval. Pre-existing untracked `testing/` + stash@{0} preserved; no force-push; no issue closed (both remain human-gated on platform WebView + BMC TLS validation).
+
+**Next:**
+- Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard — all unblocked slices landed; never timestamp/copy churn, never activate WebView or weaken production TLS. Watch for the same contradictory-guidance class on the viewer/capability card. Close #021 then #009 only when human validation evidence arrives.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

@@ -128,7 +128,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
      copy is final). EP-U2 is DEFERRED pending manual per-target validation evidence — do NOT pick it
      up unattended. New head-first, unblocked, dependency-free, TLS-safe UI slices of #009/#021. -->
 
-- [ ] EP-U3 Launch-guidance consistency for the final external-browser + copy route across the
+- [x] EP-U3 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 EP-U3 launch-guidance contradiction fix (external-client HTML5) + RED->GREEN tests`, analyze 0 / 1662 passed / 1 skipped, DMTF emulator 85/85). FIXED a genuine defect: `KvmConsole.showHtml5WebUiHint` now also requires `!requiresExternalConsoleClient` — an HTML5 console with a VNC/RFB/KVMIP/SSH/Telnet/IPMI `ConnectUri` no longer shows BOTH "open via BMC web UI" and the external-client notice. +16 RED→GREEN tests in `test/features/kvm/kvm_webui_hint_external_client_test.dart` (pre-fix real-code RED `+5 -11`). Note: fix landed in the model getter (single source of truth) rather than the view; no WebView/protocol import, no TLS change.) Launch-guidance consistency for the final external-browser + copy route across the
       viewer and capability card: one shared, tested guidance string so a secure-HTTPS console says
       "open via BMC web UI", a plaintext-HTTP console gets only the "configure HTTPS" warning, and an
       external-client console shows its protocol guidance — identical visible text == announced

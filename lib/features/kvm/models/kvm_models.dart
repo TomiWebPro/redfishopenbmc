@@ -200,10 +200,22 @@ class KvmConsole {
   /// keeps the hint for URI-less HTML5 consoles (opened from the BMC web UI —
   /// no direct insecure endpoint) and for secure HTTPS HTML5 consoles.
   ///
+  /// An HTML5 console whose direct [launchUri] needs an **external client**
+  /// (VNC/RFB, KVMIP, serial SSH/Telnet/IPMI) must also NOT get this hint: the
+  /// card already renders `kvmExternalClientNoticeFor(...)`, "copy the URI and
+  /// open it with a compatible client", so also advertising an ordinary "open
+  /// via BMC web UI" path gives two contradictory launch messages for the same
+  /// endpoint (EP-U3, issues #009 / #021). Both gates delegate to the same
+  /// shared fail-closed classifiers, so no surface can disagree about which
+  /// guidance applies.
+  ///
   /// Pure and widget-free so the rule is unit-testable; display-only, opens no
   /// URL and never changes transport security (production TLS is never
   /// weakened).
-  bool get showHtml5WebUiHint => supportsHtml5 && !usesInsecureHttpLaunchUri;
+  bool get showHtml5WebUiHint =>
+      supportsHtml5 &&
+      !usesInsecureHttpLaunchUri &&
+      !requiresExternalConsoleClient;
 
   /// The preferred URI for launching/opening this console.
   ///
