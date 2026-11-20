@@ -1799,6 +1799,99 @@ void main() {
   });
 
   group(
+      'planConsoleLaunch — defense in depth: encoded unwise-char authority rejection',
+      () {
+    test(
+        'a percent-encoded unwise char in the authority fails closed with a stale flag',
+        () {
+      // Raw RFC-3986 "unwise" ASCII chars (" < > ^ ` { | }) are rejected by the
+      // raw-forbidden-char rule, but a pct-encoded one escapes every earlier
+      // rule: it is not a gen-delim (so the encoded-delimiter rule misses it),
+      // not unreserved/sub-delim, not a C0 control, and is ASCII (so the
+      // encoded-C/Z rule skips it). `Uri.tryParse` keeps %XX encoded and reports
+      // a non-empty HTTPS host, so a purely syntactic re-check calls it "secure"
+      // — yet a launcher/browser that decodes the host first sees a forbidden /
+      // non-canonical character and may reject or resolve a different authority,
+      // a parser differential that under a stale secure flag + test opt-in could
+      // grant in-app rendering and self-signed acceptance on a malformed/spoofed
+      // host. A real BMC host never contains these chars, so every encoded form
+      // fails closed, including in userinfo and leading/trailing positions.
+      for (final String uri in <String>[
+        'https://bmc%22example/console', // %22  "
+        'https://bmc%3Cexample/console', // %3C  <
+        'https://bmc%3Eexample/console', // %3E  >
+        'https://bmc%5Eexample/console', // %5E  ^
+        'https://bmc%60example/console', // %60  `
+        'https://bmc%7Bexample/console', // %7B  {
+        'https://bmc%7Cexample/console', // %7C  |
+        'https://bmc%7Dexample/console', // %7D  }
+        'https://bmc%3cexample/console', // lowercase hex
+        'https://bmc%7cexample/console', // lowercase hex
+        'https://%3Cevil.com/console', // leading encoded unwise in host
+        'https://bmc.example%7C/console', // trailing encoded unwise in host
+        'https://user%3Cname@bmc.example/console', // in userinfo
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test(
+        'an encoded-unwise authority never reaches in-app under a strict opt-in',
+        () {
+      // Even without granting self-signed acceptance, a host whose authority
+      // relies on a pct-encoded unwise char must not be rendered in-app by an
+      // enabled+strict opt-in (no TLS weakening, no host-confusion render).
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://bmc%3Cexample/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('encoded unwise chars in path/query stay launchable (authority-scoped)',
+        () {
+      // Guard against over-rejection: the unwise chars are forbidden/non-canonical
+      // only in a host; in the path/query their %XX forms are legitimate and
+      // cannot affect which host is contacted. They must stay launchable via the
+      // external-browser fallback, as must valid pct-encoded UTF-8 host bytes —
+      // no valid target lost, no TLS weakening.
+      for (final String uri in <String>[
+        'https://bmc.example/console?q=%3Cscript%3E', // encoded < > in query
+        'https://bmc.example/a%7Cb', // encoded | in path
+        'https://bmc.example/console?q=%22quoted%22', // encoded " in query
+        'https://bmc%C3%A9.example/console', // valid pct-encoded host byte
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
+
+  group(
       'planConsoleLaunch — defense in depth: fullwidth ASCII host confusable rejection',
       () {
     test(

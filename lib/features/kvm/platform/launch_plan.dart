@@ -111,6 +111,23 @@ class KvmConsoleLaunchPlan {
 /// Rejecting them raw loses no valid target (their `%XX` forms stay
 /// launchable), and legal gen/sub-delims (`[` `]` `&` `=` ...) are unaffected.
 ///
+/// A percent-encoded RFC 3986 "unwise" ASCII character (`%22`, `%3C`, `%3E`,
+/// `%5E`, `%60`, `%7B`, `%7C`, `%7D`) is rejected for the same reason, closing
+/// the encoded-form of the raw-unwise rule: the raw forms are caught above, but
+/// a literal unwise char must be pct-encoded, and `Uri.tryParse` silently keeps
+/// such an escape encoded in the host while still reporting a non-empty HTTPS
+/// host. Several (`<`, `>`, `^`, `|`) are forbidden domain code points in
+/// WHATWG URL / IDNA host parsing, and none are valid in a real host, so a
+/// decode-first launcher can reject or resolve a *different* authority than
+/// [Uri.tryParse] reported — a parser differential that under a stale secure
+/// flag + test opt-in could grant in-app rendering and self-signed acceptance
+/// on a malformed/spoofed host. A real BMC host never contains these chars, so
+/// every encoded form fails closed (either hex case), including in userinfo and
+/// leading/trailing positions. The rule is scoped to the authority, so the same
+/// escapes in the path/query (where they cannot affect which host is contacted)
+/// and valid pct-encoded UTF-8 host bytes stay launchable — no valid target
+/// lost.
+///
 /// A malformed percent-encoding is rejected for the same reason: RFC 3986
 /// requires `pct-encoded = "%" HEXDIG HEXDIG`, but `Uri.tryParse` silently
 /// percent-encodes a bare or malformed `%` into the host rather than rejecting
@@ -573,6 +590,34 @@ bool _authorityHasEncodedSubDelimiter(String uri) {
   final String? authority = _authorityOf(uri);
   if (authority == null) return false;
   return _encodedSubDelimiter.hasMatch(authority);
+}
+
+/// Matches a percent-encoded RFC 3986 "unwise" ASCII character: `"` `<` `>`
+/// `^` `` ` `` `{` `|` `}`. Hex digits are case-insensitive.
+///
+/// These characters are in neither the `unreserved` nor the `reserved` set, so
+/// a literal occurrence must be percent-encoded (`%22`, `%3C`, ...) — but
+/// `Uri.tryParse` silently keeps such an escape encoded in the host while still
+/// reporting a non-empty HTTPS host. Several (`<`, `>`, `^`, `|`) are FORBIDDEN
+/// domain code points in WHATWG URL / IDNA host parsing, and none are valid in
+/// a real host, so a decode-first launcher can reject or resolve a *different*
+/// authority than `Uri.tryParse` reported — a parser differential that under a
+/// stale secure flag + test opt-in could grant in-app rendering and self-signed
+/// acceptance on a malformed/spoofed host. The raw forms are already rejected
+/// by [_rawUriForbiddenChars]; this closes the encoded-form gap. Scoped to the
+/// authority so the same escapes in the path/query (where they cannot affect
+/// which host is contacted) stay launchable.
+final RegExp _encodedUnwiseAscii =
+    RegExp(r'%(?:22|3C|3E|5E|60|7B|7C|7D)', caseSensitive: false);
+
+/// Returns `true` when the raw authority contains a percent-encoded RFC 3986
+/// "unwise" ASCII character, a parser-differential / forbidden-host vector
+/// (see [_encodedUnwiseAscii]). Scoped to the authority, so unwise escapes in
+/// the path/query and valid pct-encoded UTF-8 host bytes stay launchable.
+bool _authorityHasEncodedUnwiseAscii(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  return _encodedUnwiseAscii.hasMatch(authority);
 }
 
 /// Returns the numeric value of a single ASCII hex digit, or `null`.
@@ -1229,6 +1274,19 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // and valid pct-encoded UTF-8 host bytes stay launchable; raw sub-delims are
   // legal and stay launchable. No valid target is lost.
   if (_authorityHasEncodedSubDelimiter(trimmed)) return false;
+  // Reject a percent-encoded RFC 3986 "unwise" ASCII character (`"` `<` `>`
+  // `^` `` ` `` `{` `|` `}`) in the authority: the raw forms are already
+  // rejected, but a pct-encoded one escapes the encoded-delimiter, unreserved,
+  // sub-delim, control and C/Z rules. `Uri.tryParse` keeps it encoded while
+  // reporting a non-empty HTTPS host, so a purely syntactic re-check calls it
+  // "secure" — yet a launcher/browser that decodes the host first sees a
+  // forbidden/non-canonical host char and may reject or resolve a different
+  // authority. Under a stale secure flag + test opt-in that parser differential
+  // could grant in-app rendering and self-signed acceptance on a malformed/
+  // spoofed host. A real BMC host never contains these chars, so every encoded
+  // form fails closed; scoped to the authority so path/query escapes stay
+  // launchable — no valid target lost.
+  if (_authorityHasEncodedUnwiseAscii(trimmed)) return false;
   // Reject a percent-encoded multi-byte UTF-8 character that decodes to a
   // Unicode Separator/Other code point (NBSP, zero-width space, NEL, ...): a
   // decode-first launcher could see an invisible/control character in the
