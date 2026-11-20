@@ -290,6 +290,22 @@ class KvmConsoleLaunchPlan {
 /// the authority so encoded unreserved text in the path/query and legitimate
 /// percent-encoded non-ASCII UTF-8 host bytes (`%C3%A9`) stay launchable.
 ///
+/// A percent-encoded "vulgar fraction" (Unicode category `No`) is rejected for
+/// the same reason: its NFKC normalisation expands to a decimal digit, U+2044
+/// FRACTION SLASH and another digit (e.g. U+00BD `1/2` -> `1` + U+2044 + `2`),
+/// and IDNA/UTS-46 maps U+2044 to the ASCII `/` structural delimiter. A raw
+/// occurrence is already caught by the raw non-ASCII authority rule, but the
+/// percent-encoded form is not: [Uri.tryParse] keeps it verbatim in the host
+/// (`https://bmc%C2%BD.example/console` -> host `bmc%C2%BD.example`) and reports
+/// a non-empty HTTPS host, so a purely syntactic re-check calls it "secure",
+/// while a decode+IDNA launcher resolves a different authority (`bmc1/2...`).
+/// Under a stale secure flag + test opt-in that parser differential could grant
+/// in-app rendering and self-signed acceptance on a spoofed/mismatched host.
+/// These are the fraction code points whose NFKC expansion embeds U+2044; no
+/// real BMC host uses a vulgar fraction (hosts are ASCII or punycode), so
+/// rejecting them loses no valid target. Scoped to the authority — the same
+/// escape in path/query/fragment stays launchable.
+///
 /// A non-canonical numeric host is rejected for the same reason: legacy /
 /// WHATWG URL parsers (browsers, WebViews) resolve `0x7f000001`, `2130706433`,
 /// `127.1` and `0177.0.0.1` to IP literals (often loopback / internal), while
@@ -696,6 +712,39 @@ bool _isNfkcAsciiLetterOrDigit(int rune) {
   return false;
 }
 
+/// Vulgar fractions (Unicode category `No`) whose NFKC normalisation expands
+/// to a digit + U+2044 FRACTION SLASH + digit(s), e.g. U+00BD `1/2` ->
+/// `1` U+2044 `2`. IDNA/UTS-46 maps U+2044 to '/', so a decode+IDNA launcher
+/// resolves a different authority than [Uri.tryParse] reports (which keeps the
+/// percent-encoded form in the host). The single decoded code point is not in
+/// [_compatibilityDelimiterCodePoints] (which lists U+2044 directly, not the
+/// fractions that expand to it) and is not an NFKC ASCII letter/digit either,
+/// so this set closes that expansion gap. These are U+00BC..U+00BE, the Number
+/// Forms vulgar-fraction block U+2150..U+215F, and U+2189 (0/3). No real BMC
+/// host uses them, so rejecting them loses no valid target.
+const Set<int> _nfkcFractionSlashCodePoints = <int>{
+  0x00BC, // VULGAR FRACTION ONE QUARTER       -> '1/4'
+  0x00BD, // VULGAR FRACTION ONE HALF          -> '1/2'
+  0x00BE, // VULGAR FRACTION THREE QUARTERS    -> '3/4'
+  0x2150, // VULGAR FRACTION ONE SEVENTH       -> '1/7'
+  0x2151, // VULGAR FRACTION ONE NINTH         -> '1/9'
+  0x2152, // VULGAR FRACTION ONE TENTH         -> '1/10'
+  0x2153, // VULGAR FRACTION ONE THIRD         -> '1/3'
+  0x2154, // VULGAR FRACTION TWO THIRDS        -> '2/3'
+  0x2155, // VULGAR FRACTION ONE FIFTH         -> '1/5'
+  0x2156, // VULGAR FRACTION TWO FIFTHS        -> '2/5'
+  0x2157, // VULGAR FRACTION THREE FIFTHS      -> '3/5'
+  0x2158, // VULGAR FRACTION FOUR FIFTHS       -> '4/5'
+  0x2159, // VULGAR FRACTION ONE SIXTH         -> '1/6'
+  0x215A, // VULGAR FRACTION FIVE SIXTHS       -> '5/6'
+  0x215B, // VULGAR FRACTION ONE EIGHTH        -> '1/8'
+  0x215C, // VULGAR FRACTION THREE EIGHTHS     -> '3/8'
+  0x215D, // VULGAR FRACTION FIVE EIGHTHS      -> '5/8'
+  0x215E, // VULGAR FRACTION SEVEN EIGHTHS     -> '7/8'
+  0x215F, // FRACTION NUMERATOR ONE            -> '1/'
+  0x2189, // VULGAR FRACTION ZERO THIRDS       -> '0/3'
+};
+
 /// Returns `true` when the raw authority carries a percent-encoded non-ASCII
 /// code point that a launcher applying IDNA/NFKC resolves to an ASCII
 /// character: either a structural delimiter ([_compatibilityDelimiterCodePoints])
@@ -739,6 +788,10 @@ bool _authorityHasAsciiCompatibilityConfusable(String uri) {
   final String decoded = utf8.decode(bytes, allowMalformed: true);
   for (final int rune in decoded.runes) {
     if (_compatibilityDelimiterCodePoints.contains(rune)) return true;
+    // Vulgar fractions NFKC-expand to digit + U+2044 FRACTION SLASH + digit;
+    // IDNA maps U+2044 to '/', forging a structural delimiter that the single
+    // decoded code point does not reveal (see _nfkcFractionSlashCodePoints).
+    if (_nfkcFractionSlashCodePoints.contains(rune)) return true;
     // Fullwidth ASCII forms (U+FF01..U+FF5E) all NFKC-normalise to a plain
     // ASCII look-alike, so a decode+IDNA launcher resolves a different ASCII
     // host than Uri.tryParse reports — a host-spoofing parser differential.

@@ -2242,4 +2242,96 @@ void main() {
       }
     });
   });
+
+  group(
+      'planConsoleLaunch — defense in depth: NFKC vulgar-fraction confusable rejection',
+      () {
+    // A percent-encoded "vulgar fraction" (Unicode category No) NFKC-normalises
+    // to a decimal digit + U+2044 FRACTION SLASH + a digit (e.g. U+00BD `½` ->
+    // `1⁄2`). IDNA/UTS-46 maps U+2044 to the ASCII '/' structural delimiter, so
+    // a decode+IDNA launcher resolves a DIFFERENT authority than Uri.tryParse
+    // reports (which keeps the escape verbatim in the host). Under a stale
+    // secure flag + test opt-in that parser differential could grant in-app
+    // rendering and self-signed acceptance on a spoofed/mismatched host.
+    test(
+        'a percent-encoded vulgar fraction in the authority fails closed with a stale flag',
+        () {
+      for (final String uri in <String>[
+        'https://bmc%C2%BC.example/console', // U+00BC 1/4
+        'https://bmc%C2%BD.example/console', // U+00BD 1/2
+        'https://bmc%C2%BE.example/console', // U+00BE 3/4
+        'https://bmc%E2%85%93.example/console', // U+2153 1/3
+        'https://bmc%E2%86%89.example/console', // U+2189 0/3
+        'https://bmc%c2%bd.example/console', // lower-case hex escape
+        'https://user@bmc%C2%BD.example/console', // fraction in userinfo
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test(
+        'a vulgar-fraction host never reaches in-app under a strict opt-in or the production default',
+        () {
+      const String uri = 'https://bmc%C2%BD.example/console';
+
+      final KvmConsoleLaunchPlan strict = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: uri,
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+      expect(strict.isInApp, isFalse);
+      expect(strict.acceptSelfSigned, isFalse);
+
+      final KvmConsoleLaunchPlan production = planConsoleLaunch(
+        policy: KvmWebViewPolicy.productionDefault,
+        uri: uri,
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+      expect(production.route, KvmConsoleRenderRoute.copyOnly);
+      expect(production.isInApp, isFalse);
+      expect(production.acceptSelfSigned, isFalse);
+    });
+
+    test('legitimate hosts and fractions outside the authority stay launchable',
+        () {
+      // Guard against over-rejection: the rule is scoped to the authority, so
+      // the same escape in path/query/fragment is harmless, and genuinely valid
+      // hosts (ASCII, punycode, IPv6, properly encoded non-ASCII UTF-8) must
+      // keep working.
+      for (final String uri in <String>[
+        'https://bmc.example/console', // plain FQDN
+        'https://bmc.example/%C2%BD', // fraction in path
+        'https://bmc.example/console?q=%C2%BD', // fraction in query
+        'https://bmc.example/console#%C2%BD', // fraction in fragment
+        'https://xn--bmc-esab.example/console', // punycode
+        'https://bmc%C3%A9.example/console', // encoded e-acute (valid UTF-8)
+        'https://[::1]/console', // IPv6 literal
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.inAppWebView, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+  });
 }
