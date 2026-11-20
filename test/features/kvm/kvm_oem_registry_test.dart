@@ -58,6 +58,22 @@ class _BlankUriVendorParser extends KvmOemConsoleParser {
   }
 }
 
+/// A vendor parser that THROWS on any block — models a buggy or hostile
+/// third-party parser (bad cast / format error on a malformed vendor payload).
+/// EP-M3: the registry must isolate this fault so it never propagates into
+/// `KvmConsole.fromManager` / `KvmCapability.fromManager` and blanks the screen.
+class _ThrowingVendorParser extends KvmOemConsoleParser {
+  const _ThrowingVendorParser({this.vendorKey = 'AMI'});
+
+  @override
+  final String vendorKey;
+
+  @override
+  KvmOemConsoleInfo? parse(Map<String, dynamic> block) {
+    throw StateError('vendor parser fault for $vendorKey');
+  }
+}
+
 /// A realistic AMI parser: finds `Oem.AMI.KVM.ConnectUri`.
 class _AmiKvmParser extends KvmOemConsoleParser {
   const _AmiKvmParser();
@@ -607,6 +623,141 @@ void main() {
         oemRegistry: registry,
       );
       expect(capability.launchUri, 'https://standard.example/kvm');
+    });
+  });
+
+  // EP-M3 (issue #009 vendor extensibility): a registered parser is
+  // third-party code. It must never be able to throw out of the registry and
+  // blank/crash the gated KVM screen — a throwing/third-party parser is treated
+  // as "not a console" and skipped, so both factories fall back to the strict
+  // generic OEM path. A healthy parser still enriches both views byte-for-byte.
+  group('EP-M3 vendor-parser fault isolation', () {
+    Map<String, dynamic> consoleLikeManager() => <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC',
+          'Oem': <String, dynamic>{
+            'AMI': <String, dynamic>{
+              'KVM': <String, dynamic>{
+                'ConnectUri': 'https://bmc.example/kvm',
+              },
+            },
+          },
+        };
+
+    KvmConsole? oemOf(List<KvmConsole> consoles) =>
+        consoles.cast<KvmConsole?>().firstWhere(
+              (KvmConsole? c) => c?.type == KvmConsoleType.oem,
+              orElse: () => null,
+            );
+
+    test('a throwing parser is skipped by registry.parse (never throws)', () {
+      final KvmOemRegistry registry = KvmOemRegistry(
+        parsers: <KvmOemConsoleParser>[const _ThrowingVendorParser()],
+      );
+      expect(
+        () =>
+            registry.parse(consoleLikeManager()['Oem'] as Map<String, dynamic>),
+        returnsNormally,
+      );
+      expect(
+          registry.parse(consoleLikeManager()['Oem'] as Map<String, dynamic>),
+          isNull);
+    });
+
+    test(
+        'a throwing parser does not blank KvmConsole.fromManager; generic '
+        'OEM fallback still surfaces the console (#009)', () {
+      final KvmOemRegistry registry = KvmOemRegistry(
+        parsers: <KvmOemConsoleParser>[const _ThrowingVendorParser()],
+      );
+      final List<KvmConsole> consoles = KvmConsole.fromManager(
+        consoleLikeManager(),
+        managerId: 'BMC',
+        oemRegistry: registry,
+      );
+      final KvmConsole? oem = oemOf(consoles);
+      expect(oem, isNotNull);
+      expect(oem!.connectUri, 'https://bmc.example/kvm');
+      expect(oem.canOpenConsole, isTrue);
+    });
+
+    test(
+        'a throwing parser does not blank KvmCapability.fromManager; generic '
+        'OEM fallback still resolves the URI (#009)', () {
+      final KvmOemRegistry registry = KvmOemRegistry(
+        parsers: <KvmOemConsoleParser>[const _ThrowingVendorParser()],
+      );
+      final KvmCapability capability = KvmCapability.fromManager(
+        consoleLikeManager(),
+        managerId: 'BMC',
+        oemRegistry: registry,
+      );
+      expect(capability.supported, isTrue);
+      expect(capability.launchUri, 'https://bmc.example/kvm');
+      expect(capability.hasUri, isTrue);
+    });
+
+    test(
+        'a throwing first parser still lets a healthy later parser win '
+        '(registration order + fault isolation)', () {
+      const KvmOemConsoleInfo hpeInfo = KvmOemConsoleInfo(
+        vendor: 'HPE',
+        connectUri: 'https://hpe.example/kvm',
+        connectTypesSupported: <String>['HTML5'],
+        serviceEnabled: true,
+      );
+      final KvmOemRegistry registry = KvmOemRegistry(
+        parsers: <KvmOemConsoleParser>[
+          const _ThrowingVendorParser(vendorKey: 'AMI'),
+          const _StubParser('HPE', info: hpeInfo),
+        ],
+      );
+      final Map<String, dynamic> body = <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'Oem': <String, dynamic>{
+          'AMI': <String, dynamic>{
+            'KVM': <String, dynamic>{'ConnectUri': 'https://bmc.example/kvm'},
+          },
+          'HPE': <String, dynamic>{'KVM': <String, dynamic>{}},
+        },
+      };
+      expect(registry.parse(body['Oem'] as Map<String, dynamic>), hpeInfo);
+
+      final KvmConsole? console = oemOf(
+        KvmConsole.fromManager(body, managerId: 'BMC', oemRegistry: registry),
+      );
+      expect(console, isNotNull);
+      expect(console!.connectUri, 'https://hpe.example/kvm');
+      final KvmCapability capability = KvmCapability.fromManager(
+        body,
+        managerId: 'BMC',
+        oemRegistry: registry,
+      );
+      expect(capability.launchUri, console.launchUri);
+      expect(capability.launchUri, 'https://hpe.example/kvm');
+    });
+
+    test(
+        'a throwing parser never blanks a manager that also has a standard '
+        'console (#009)', () {
+      final KvmOemRegistry registry = KvmOemRegistry(
+        parsers: <KvmOemConsoleParser>[const _ThrowingVendorParser()],
+      );
+      final Map<String, dynamic> body = <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <String>['KVMIP'],
+          'ConnectUri': 'https://standard.example/kvm',
+        },
+        'Oem': consoleLikeManager()['Oem'],
+      };
+      final List<KvmConsole> consoles = KvmConsole.fromManager(
+        body,
+        managerId: 'BMC',
+        oemRegistry: registry,
+      );
+      expect(consoles.map((KvmConsole c) => c.type),
+          contains(KvmConsoleType.graphical));
     });
   });
 }

@@ -11889,3 +11889,18 @@
 - Next `build/rf-platform` tip: merge only after a fresh explicit `CHECK: PASS` for that exact tip; no PASS → SKIP. NO-OP exit when the branch has no new commits past the last merge. Post-verify analyze 0 / full test green / all coverage gates PASS / issues validate OK / first-parent diff allowlisted; run the 85-test emulator suite only on wire/fixture/tool change or >7 days since last green.
 
 **Issues touched:** none closed (#009 P3 / #021 P2 remain open — human-gated on platform WebView + BMC TLS validation).
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-M3)
+
+**Done:**
+- FEATURE — EP-M3 vendor-parser fault isolation. Found and FIXED a genuine robustness defect: `KvmOemRegistry.parse` invoked a registered third-party `KvmOemConsoleParser.parse` with no exception isolation, so a vendor parser throwing on a hostile/malformed `Oem.*` block propagated out of both `KvmConsole.fromManager` and `KvmCapability.fromManager` (and `resolveLaunchUri`), able to blank/crash the gated KVM screen. Wrapped the call in a comment-documented try/catch: any exception is treated as "not a console" and the next parser is tried, preserving first-match registration order, healthy-parser enrichment byte-for-byte and the strict generic-OEM fallback. Added a throwing-parser stub + 5 tests to `test/features/kvm/kvm_oem_registry_test.dart`.
+- RED→GREEN: 5 new tests against the ACTUAL pre-fix registry → all 5 failed (`+25 -5`: `Bad state: vendor parser fault for AMI` escaping from `kvm_oem_registry.dart:113` into both factories); after the try/catch → 30/30 GREEN.
+- Verify: targeted 30/30; related KVM model/capability/service suites 312/312; `flutter analyze` 0; full `flutter test` 1673 passed / 1 skipped (baseline 1668 +5; one transient unrelated `power_view_test.dart` full-run flake isolated 26/26 GREEN, clean full re-run); DMTF emulator 85/85 (product lib changed — gate met); issues validate OK; `git diff --check` clean; deps unchanged.
+
+**Decisions:**
+- Fix landed in the shared `KvmOemRegistry.parse` (single choke point used by both factories + `resolveLaunchUri`) rather than scattered try/catch in each caller — one fail-closed rule, no valid console lost, no new helper owned by another dept. Pure model: no wire/transport/dependency/TLS change, no WebView/protocol import, no URL opened, no human approval granted. Pre-existing untracked `testing/` + `stash@{0}` preserved untouched; no force-push; no issue closed (both remain human-gated on platform WebView + BMC TLS validation).
+
+**Next:**
+- Next head-first unblocked dept slice from the rf-ideate 17:10 split: EP-P10 (platform production-opt-in-policy construction guard), EP-S4 (service controller load state machine), EP-T13 (tooling queue-item Dept/Verify guard), EP-U10 (UI flag-off false-claim guard) — audit each for a genuine RED→GREEN gap before landing, never churn. Cheap DOCS anchor re-verify only; full emulator re-run on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only when platform WebView + BMC TLS human validation evidence arrives — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

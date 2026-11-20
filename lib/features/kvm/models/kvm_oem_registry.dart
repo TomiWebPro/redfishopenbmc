@@ -110,7 +110,23 @@ class KvmOemRegistry {
     for (final KvmOemConsoleParser parser in _parsers) {
       final Object? block = _findVendorBlock(oem, parser.vendorKey);
       if (block is! Map<String, dynamic>) continue;
-      final KvmOemConsoleInfo? info = parser.parse(block);
+
+      // Fault isolation (issue #009 EP-M3): a registered parser is extensible,
+      // third-party code and may throw on a hostile/malformed vendor block
+      // (bad cast, index/format error). Treat ANY exception as "this parser
+      // does not recognize a console here" and try the next one — it must never
+      // propagate into `KvmConsole.fromManager` / `KvmCapability.fromManager`
+      // (or `KvmCapability.resolveLaunchUri`) where it would blank/crash the
+      // gated KVM screen. No valid console is lost: a healthy parser returns
+      // normally and stays authoritative, first-match registration order is
+      // unchanged, and both factories still fall back to strict generic OEM
+      // detection when a parser throws.
+      KvmOemConsoleInfo? info;
+      try {
+        info = parser.parse(block);
+      } catch (_) {
+        continue;
+      }
       if (info != null) return info;
     }
     return null;

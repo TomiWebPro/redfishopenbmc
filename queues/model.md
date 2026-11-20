@@ -13,7 +13,7 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
      first; fix only a genuine divergence via RED→GREEN; no churn. The blocked rendering/dependency/
      TLS acceptance (EP-U2/EP-P2/EP-T2/EP-P4) stays human-gated and is NOT re-split. No code touched. -->
 
-- [ ] EP-M3 Vendor-parser exception isolation across both KVM model factories: pin that a
+- [x] EP-M3 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 EP-M3 vendor-parser fault isolation + RED→GREEN tests`, analyze 0 / 1673 passed / 1 skipped, DMTF emulator 85/85) — FIXED a genuine robustness defect: `KvmOemRegistry.parse` invoked a registered third-party `KvmOemConsoleParser.parse` with no exception isolation, so a throwing parser propagated out of both `KvmConsole.fromManager` and `KvmCapability.fromManager` (and `resolveLaunchUri`) and could blank/crash the gated KVM screen. Wrapped the call in a try/catch that treats any exception as "not a console" and tries the next parser, preserving first-match order + healthy-parser enrichment + generic fallback. +5 RED→GREEN tests in `kvm_oem_registry_test.dart` (all 5 failed `+25 -5` against pre-fix code, 30/30 GREEN after). Pure model, no wire/transport/dependency/TLS change. Original item: pin that a
       registered `KvmOemConsoleParser` which throws (or returns a malformed block) is treated as
       "not a console" and skipped, so `KvmConsole.fromManager` / `KvmCapability.fromManager` fall
       back to strict generic OEM detection and never throw; a healthy parser still enriches both
