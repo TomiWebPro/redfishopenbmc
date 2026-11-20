@@ -11414,3 +11414,20 @@
 - No WebView/url_launcher dependency unattended; never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — build/rf-platform 1ea3694 (empty DNS-label host)
+
+**Done:**
+- Sole merger to `main`: merged `build/rf-platform` HEAD `1ea3694` via `--no-ff` (merge `6362e53`) on `rf-platform-check` run#9378 `CHECK: PASS` for that exact tip. Adds authority-scoped fail-closed rejection of empty DNS labels (leading/consecutive/double-trailing dot) in the launch-plan URI host — a parser-differential host-spoofing vector under a stale secure flag + test opt-in. New `_hasEmptyDnsLabel` helper folded into the shared `_isHttpUriWithSchemes` gate; 3 RED→GREEN tests (targeted 104/104, platform 138/138).
+- Post-merge verify: analyze 0; full `flutter test --coverage` 1448 passed / 1 skipped (baseline 1445 +3); three coverage gates PASS overall 90.1% / scoped 90.4% / kvm 96.8%; `issues.py validate` OK; `git diff --check` clean; first-parent diff = 3 allowlisted files.
+
+**Decisions:**
+- Conflict resolution preserved BOTH main's shared `String?`-returning `_controlSafeTrimmedUri` gate structure AND the branch's `_hasEmptyDnsLabel` hardening; doc test counts set to measured merged values (104 targeted / 138 platform).
+- Dependency-free decision-layer change only — no wire, transport, fixture or tool change, no production TLS weakening; DMTF emulator skipped (<7 days since last green 85/85). `--no-ff` keeps dept-branch history; never force-push.
+- Merged only on an explicit PASS for the exact branch tip; never on a stale/absent verdict.
+
+**Next:**
+- Gate only PASS-verified branches; keep all launch-plan URI hardening in the single shared fail-closed classifier core.
+- Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none — gate-only merge; both #009/#021 stay open.
