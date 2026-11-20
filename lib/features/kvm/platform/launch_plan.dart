@@ -442,6 +442,19 @@ String? externalClientConsoleProtocol(String? uri) {
 /// real BMC host never has an empty label, so rejecting them loses no valid
 /// target: a single-label host, an absolute FQDN with exactly one trailing dot,
 /// canonical IPv4/IPv6 literals and punycode hosts stay launchable.
+///
+/// An out-of-range port (greater than the 16-bit TCP maximum, 65535) is rejected
+/// for the same reason: [Uri.tryParse] accepts any non-negative decimal port and
+/// reports an HTTPS URI with a non-empty host (e.g.
+/// `https://bmc.example:99999/console` -> host `bmc.example`, port `99999`), so a
+/// purely syntactic re-check calls it "secure". Browser / WebView (WHATWG URL)
+/// parsers reject an out-of-range port outright, and other launchers may wrap it
+/// modulo 65536 to a DIFFERENT service — a parser differential that under a
+/// stale secure flag + test opt-in could grant in-app rendering and self-signed
+/// acceptance on a malformed/mismatched authority. A real BMC console port is
+/// always 0..65535, so rejecting larger values loses no valid target; an absent
+/// or empty port (default), an in-range port, userinfo and IPv6 hosts stay
+/// launchable.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -1193,6 +1206,15 @@ bool _isHttpUriWithSchemes(String? uri, Set<String> schemes) {
       parsed.host.isEmpty) {
     return false;
   }
+  // Reject an out-of-range port: Uri.tryParse accepts any non-negative decimal
+  // port and still reports an HTTPS URI with a non-empty host, so a purely
+  // syntactic re-check calls it "secure", while browser/WebView (WHATWG URL)
+  // parsers reject a port above the 16-bit maximum (or wrap it to a different
+  // service). Under a stale secure flag + test opt-in that parser differential
+  // could grant in-app rendering and self-signed acceptance on a
+  // malformed/mismatched authority. A real BMC console port is 0..65535, so no
+  // valid target is lost; absent/empty (default) and in-range ports stay valid.
+  if (parsed.hasPort && parsed.port > 65535) return false;
   // Reject a non-canonical numeric host (hex / decimal integer / abbreviated
   // / leading-zero IP forms): a launcher resolves such a host to a different
   // address than Uri.tryParse reports, so under a stale secure flag + test
