@@ -5,6 +5,27 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 09:00 UTC: splits RS-2's still-open manager-walk robustness remainder
+     (per-member hostile-body tolerance) into an unblocked service invariant slice. RS-4 (dedup) and
+     RS-6 (set identity/cardinality) pin happy-path/dedup behaviour; no test pins that a single hostile
+     Manager body or Members entry fails closed PER manager without blanking the whole gated screen.
+     In-temp mockup only, no committed fixture, no wire-shape change, dependency-free, TLS-safe;
+     distinct from RS-2 (transient HTTP failures) and RS-4/RS-6. -->
+
+- [ ] RS-7 Manager-walk per-member hostile-body tolerance invariant: `KvmService.fetchConsoles()` /
+      `fetchCapabilities()` must fail CLOSED per manager — a `/redfish/v1/Managers` `Members` array
+      containing non-string / blank / hostile links, and a Manager body that decodes to a non-map or
+      has a malformed GraphicalConsole / SerialConsole / Oem, must yield a stable result (skip only
+      the offending manager) without throwing or blanking the whole gated KVM screen; the RS-2 skip
+      semantics and the wire shape stay unchanged. Add RED→GREEN service tests over an in-temp minimal
+      mockup (no committed fixture); if a fixture is needed request via rf-tooling. Dependency-free,
+      no production TLS behaviour change.
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_service_test.dart && flutter analyze` (0 issues),
+              with RED→GREEN proof; emulator 85/85 only if `lib/` wire changes; writes limited to
+              `lib/features/kvm/kvm_service.dart` + service tests under `test/features/kvm/`;
+              `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-20 04:56 UTC: splits the still-open service-manager-walk remainder of
      the #009/#021 epic into one unblocked, dependency-free, TLS-safe invariant slice. RS-4 (member
      dedup) and EP-S2 (secure-primary preference) each fixed one divergence; this pins the whole

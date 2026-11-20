@@ -4,6 +4,26 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 09:00 UTC: splits the still-open hostile/numeric-payload remainder of
+     the #009/#021 model surface. RM-5 pinned enablement + connect-type cross-view agreement; RM-2
+     extracted `kvmSessionLimit` with helper-only tests — but no test pins that BOTH models resolve
+     `maxConcurrentSessions` identically over a hostile numeric matrix. Pure model, dependency-free,
+     TLS-safe; distinct from RM-1..RM-5 (all narrower/different contracts). -->
+
+- [ ] RM-6 Session-limit cross-view agreement property test: over a generated matrix of
+      `MaxConcurrentSessions` shapes (integer, integral double `4.0`, numeric string, padded string,
+      fractional / non-finite / `>2^53` double, negative, blank, bool/list/map, absent) in both
+      GraphicalConsole and capability aggregation, assert `KvmConsole.fromManager` and
+      `KvmCapability.fromManager` ALWAYS report the SAME resolved `maxConcurrentSessions`, and that
+      the single-session eviction contract still holds. Fix the FIRST real divergence via RED→GREEN
+      pure-model tests; do not manufacture churn where the two models already agree. No new helper
+      owned by another dept (request via `_lib-requests.md` if unavoidable). Read-only, no wire /
+      transport / TLS change.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart test/features/kvm/kvm_session_limit_test.dart && flutter analyze`
+              (0 issues), RED→GREEN proof for any fixed divergence; writes limited to
+              `lib/features/kvm/models/**` + those three named test files; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-20 04:56 UTC: splits the still-open cross-view-agreement remainder of
      the #009/#021 epic into one unblocked, dependency-free, TLS-safe pure-model invariant slice.
      Every prior divergence (RM-1 enablement, RM-2/RM-3 non-map payloads, RM-4/CB-1 source identity,

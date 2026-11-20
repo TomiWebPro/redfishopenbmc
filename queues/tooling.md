@@ -5,6 +5,28 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 09:00 UTC: splits the still-open cross-surface classifier-parity
+     remainder of #009/#021 into a machine-checkable guard. EP-M1/M2 fixed degenerate hosts once and
+     RM-5 pinned agreement, but nothing mechanically prevents a future product file from reintroducing
+     a raw `Uri.parse`/`Uri.tryParse` on a BMC-supplied console/source value outside the shared
+     fail-closed helpers, bypassing every control-safe gate. Pure test-only guard, dependency-free,
+     never writes `lib/`; distinct from EP-P5 (import policy) and the copy-string single-source guards. -->
+
+- [ ] EP-T11 Fail-closed URI-parse single-source guard: add a pure-Dart, comment/string-aware guard
+      under `test/tool/` that scans product `lib/features/kvm/**.dart` and fails closed if any file
+      OUTSIDE the designated shared helper files (`platform/launch_plan.dart`, `models/kvm_oem_uri.dart`,
+      `models/kvm_manager_source.dart`, `models/kvm_session_limit.dart`, `platform/webview_policy.dart`)
+      calls `Uri.parse` / `Uri.tryParse` on a BMC-supplied console/source value, or defines a private
+      duplicate of the shared control-safe / classifier helpers — so a future ad-hoc parse cannot
+      bypass the fail-closed gates. RED→GREEN proof by planting a raw parse in a temp product-style
+      file (raw → violation + nonzero exit; shared-helper call → clean). No live-BMC, no dependency,
+      no `lib/` change, production TLS untouched; wire into `.github/workflows/verify.yml` only if the
+      repo guard convention already covers `test/tool/` (no second full-suite invocation).
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/ && flutter analyze` (0 issues), RED→GREEN guard proof (raw parse
+              → violation; gated call → clean); writes limited to `tool/**`, `test/tool/**`,
+              `.github/workflows/**`; never `lib/`, no dependency bump.
+
 <!-- rf-ideate split 2026-11-20 04:56 UTC: closes out the FUTUREWORK-named "EP-T4 fixture/CI guard"
      next slice, re-scoped to be unblocked. EP-T4's webview/url_launcher dependency-guard half is
      already covered by EP-P5 + EP-T6 guards, so this splits only the genuine remaining piece — a

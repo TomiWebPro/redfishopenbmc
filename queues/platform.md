@@ -6,6 +6,25 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 09:00 UTC: splits the last unguarded seam of the human-gated WebView
+     closeout — EP-P7 pins that both decision DOCS record the no-WebView decision/human gate, EP-P6
+     pins the production ROUTE invariants in code, but nothing pins the two AGREE. This slice checks
+     the doc↔code final-route contract without activating the gate. Pure test-only, dependency-free,
+     no WebView import, no production TLS change; distinct from EP-P4/P5/P6/P7. -->
+
+- [ ] EP-P8 Decision-doc ↔ production-route consistency guard: add a pure-Dart test under
+      `test/features/kvm/platform/` that derives the final route from `KvmWebViewPolicy.productionDefault`
+      over the documented signal combos in `LAUNCH_FALLBACK.md` (secure HTTPS → `externalBrowser`,
+      plaintext HTTP / no URI / disabled / control-unsafe → `copyOnly`, NEVER `inAppWebView`, never
+      self-signed) and fails closed if the doc's route table no longer matches the code, or if
+      `WEBVIEW_TLS_MATRIX.md` and `LAUNCH_FALLBACK.md` disagree on the recorded final route. No human
+      approval granted, no dependency, no WebView import, no production TLS behaviour change.
+      Dept: rf-platform
+      Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues), RED→GREEN proof
+              (temporarily flip one doc route cell); `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              writes limited to `lib/features/kvm/platform/**` + `test/features/kvm/platform/**`; no
+              production TLS behaviour change.
+
 <!-- rf-ideate split 2026-11-20 04:56 UTC: splits the human-gated WebView closeout (EP-P4) into the
      one machine-checkable, unattended-doable piece that was never carved out — a guard pinning the
      RECORDED decision docs and the no-WebView production default. It pins the human gate's contract

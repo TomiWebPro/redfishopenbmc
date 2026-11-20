@@ -5,6 +5,26 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 09:00 UTC: splits the machine-checkable half of the still-open
+     launch-button/fullscreen portion of the #009 rendering epic (externally blocked on WebView).
+     EP-U5 pinned launch-status COPY parity, EP-U6 pinned safe-source display, but nothing pins that
+     the actionable "Open console" AFFORDANCE itself is gated on the single `canOpenConsole` source
+     across all surfaces. Display-only, dependency-free, TLS-safe; distinct from EP-U1/U2 (scaffold/
+     embed) and EP-U5 (copy parity). -->
+
+- [ ] EP-U8 Open-affordance gating invariant across all KVM surfaces: add merged-a11y widget tests
+      asserting the actionable "Open console"/launch affordance is present ONLY for a console with
+      `canOpenConsole == true` (control-safe, enabled, launchable target) and is absent/disabled for
+      no-URI, disabled, plaintext-HTTP and control-unsafe consoles on the gated list card, the
+      capability card and the viewer — with no URL opened and visible text == announced label. Fix
+      the FIRST real divergence via RED→GREEN widget tests; do not manufacture churn where a surface
+      already gates correctly. 320/800/1300 px no-overflow on every audited surface. No WebView /
+      url_launcher import in the product build, no dependency, no TLS change.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_capability_card_test.dart && flutter analyze`
+              (0 issues), RED→GREEN widget proof for any fixed divergence; merged a11y + 320/800/1300
+              no-overflow; writes limited to `lib/features/kvm/views/**`; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-20 04:56 UTC: closes out the FUTUREWORK-named "RU-2 full merged-
      Semantics audit" next slice. RU-2's two canonical notices are already mechanically pinned by
      `notice_single_source_guard_test.dart` (constants) and EP-T9's launch-status guard, but the
