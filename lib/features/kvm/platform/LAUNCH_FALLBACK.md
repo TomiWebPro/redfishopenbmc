@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 114 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (156 across the platform
+consume; today it locks the fallback behaviour with 123 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (173 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -189,6 +189,19 @@ Invariants, enforced by tests:
    characters literally, so each fails closed in the authority; encoded
    unreserved text in the path/query and legitimate percent-encoded non-ASCII
    UTF-8 host bytes (`%C3%A9`) stay launchable, no valid target lost.
+   **Encoded sub-delimiter rejection:** RFC 3986 sub-delims (`!` `$` `&` `'` `(` `)`
+   `*` `+` `,` `;` `=`) are legal unescaped in a `reg-name`, so a `%XX` form in
+   the authority is non-canonical and creates a decode-order host-spoofing
+   differential: `Uri.tryParse` keeps it encoded in the host
+   (`bmc.example%21evil.com`) while a launcher that decodes host bytes before
+   DNS/IDNA resolves a DIFFERENT host (`bmc.example!evil.com`) — one raw URI
+   naming two hosts. `Uri.tryParse` still reports a non-empty HTTPS host, so a
+   purely syntactic re-check calls it "secure" — under a stale flag + test opt-in
+   that differential could grant in-app rendering and self-signed acceptance on
+   a mismatched/spoofed authority. A real BMC host writes these characters
+   literally, so each encoded form fails closed in the authority; encoded
+   sub-delims in the path/query, percent-encoded UTF-8 host bytes (`%C3%A9`) and
+   a raw sub-delim literal (no differential) stay launchable, no valid target lost.
    **Encoded Unicode separator/invisible rejection:** a percent-encoded
    multi-byte UTF-8 character that decodes to a Unicode `Separator` (Z) or
    `Other` (C) code point is likewise a valid `%XX` escape with no raw
@@ -270,6 +283,19 @@ Invariants, enforced by tests:
    points whose NFKC expansion embeds U+2044 (U+00BC..U+00BE, U+2150..U+215F,
    U+2189) fail closed in the authority; no real BMC host uses them, and the
    same escape in path/query/fragment stays launchable — no valid target lost.
+   **Encoded combining-mark rejection:** a percent-encoded Unicode `Mark`
+   (category M) is a valid `%XX` escape that every earlier rule misses, yet
+   `Uri.tryParse` keeps it encoded and reports a non-empty HTTPS host. A
+   launcher applying NFC/IDNA to the host (as browsers do) recomposes a base
+   letter + mark into a DIFFERENT precomposed character:
+   `https://bmc%CC%81.example/` decodes to `bmc` + U+0301 COMBINING ACUTE,
+   whose NFC form is `bmc` + U+00E9 — a DIFFERENT authority than `Uri.tryParse`
+   reported. Under a stale flag + test opt-in that parser differential could
+   grant in-app rendering and self-signed acceptance on a mismatched/spoofed
+   host. A real BMC host is ASCII/punycode and never writes a combining mark,
+   so every encoded mark fails closed in the authority; precomposed UTF-8 host
+   bytes (e-acute, a Letter), emoji and marks in the path/query stay
+   launchable — no valid target lost.
    **Degenerate dot-host rejection:** `Uri.tryParse` reports a label-less host
    made only of dots (`https://./console`, `https://../console`) as an HTTPS
    URI with a non-empty host, so the bare scheme+host re-check calls it
@@ -366,10 +392,11 @@ Invariants, enforced by tests:
    compatibility-confusable delimiter + IDNA dot-confusable rejection +
    IDNA middle-dot confusable rejection + NFKC-to-ASCII compatibility
    letter/digit rejection + NFKC vulgar-fraction confusable rejection +
-   degenerate dot-host rejection +
+   encoded combining-mark rejection + degenerate dot-host rejection +
    double-encoded authority-delimiter rejection + encoded authority-dot
    rejection + malformed-UTF-8 authority rejection + encoded ASCII space
-   rejection + encoded unreserved-ASCII rejection + non-canonical numeric-host
+   rejection + encoded unreserved-ASCII rejection + encoded sub-delimiter
+   rejection + non-canonical numeric-host
    rejection (incl. trailing-dot absolute-FQDN numeric spellings) + empty
    DNS-label rejection + out-of-range port rejection + signed and overflow
    port rejection).

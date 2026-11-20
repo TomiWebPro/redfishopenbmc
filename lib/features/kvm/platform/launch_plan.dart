@@ -402,6 +402,19 @@ String? externalClientConsoleProtocol(String? uri) {
 /// the authority so encoded unreserved text in the path/query and legitimate
 /// percent-encoded non-ASCII UTF-8 host bytes (`%C3%A9`) stay launchable.
 ///
+/// A percent-encoded RFC 3986 sub-delim (`!` `$` `&` `'` `(` `)` `*` `+` `,`
+/// `;` `=`) is rejected for the same decode-order reason. Sub-delims are legal
+/// unescaped in a `reg-name`, so an encoded one is non-canonical: [Uri.tryParse]
+/// keeps it encoded in the host (`bmc.example%21evil.com`) while a launcher
+/// that decodes host bytes before DNS/IDNA resolves a DIFFERENT host
+/// (`bmc.example!evil.com`) — one raw URI naming two hosts. Under a stale
+/// secure flag + test opt-in that differential could grant in-app rendering and
+/// self-signed acceptance on a mismatched authority. A real BMC host writes
+/// these characters literally, so rejecting the encoded form loses no valid
+/// target; the rule is scoped to the authority so encoded sub-delims in the
+/// path/query and percent-encoded UTF-8 host bytes stay launchable, and a raw
+/// sub-delim (no decode-order differential) stays launchable.
+///
 /// A percent-encoded "vulgar fraction" (Unicode category `No`) is rejected for
 /// the same reason: its NFKC normalisation expands to a decimal digit, U+2044
 /// FRACTION SLASH and another digit (e.g. U+00BD `1/2` -> `1` + U+2044 + `2`),
@@ -417,6 +430,19 @@ String? externalClientConsoleProtocol(String? uri) {
 /// real BMC host uses a vulgar fraction (hosts are ASCII or punycode), so
 /// rejecting them loses no valid target. Scoped to the authority — the same
 /// escape in path/query/fragment stays launchable.
+///
+/// A percent-encoded Unicode *combining mark* (category M) is rejected for the
+/// same reason: it is a valid `%XX` escape that every earlier rule misses, yet
+/// [Uri.tryParse] keeps it encoded and reports a non-empty HTTPS host. A
+/// launcher applying NFC/IDNA to the host (as browsers do) recomposes a base
+/// letter + mark into a DIFFERENT precomposed character — `https://bmc%CC%81.example/`
+/// decodes to `bmc` + U+0301 COMBINING ACUTE whose NFC form is `bmc` + U+00E9,
+/// resolving a different authority than `Uri.tryParse` reported. Under a stale
+/// secure flag + test opt-in that parser differential could grant in-app
+/// rendering and self-signed acceptance on a mismatched/spoofed host. A real
+/// BMC host is ASCII/punycode and never writes a combining mark, so rejecting
+/// one loses no valid target; precomposed UTF-8 host bytes (e-acute, a Letter),
+/// emoji and marks in the path/query stay launchable. Scoped to the authority.
 ///
 /// A non-canonical numeric host is rejected for the same reason: legacy /
 /// WHATWG URL parsers (browsers, WebViews) resolve `0x7f000001`, `2130706433`,
@@ -492,6 +518,14 @@ final RegExp _encodedControlOctet =
 /// here to the *percent-decoded* content (non-ASCII only; see
 /// [_hasEncodedUnicodeControlOrSeparator]).
 final RegExp _unicodeOtherOrSeparator = RegExp(r'[\p{C}\p{Z}]', unicode: true);
+
+/// Unicode `Mark` (M) category — combining marks that NFC-normalise together
+/// with a preceding base character into a DIFFERENT precomposed character
+/// (e.g. `e` + U+0301 COMBINING ACUTE -> U+00E9 `é`). A launcher applying
+/// NFC/IDNA to an internationalised host (as browsers do) therefore resolves a
+/// different authority than [Uri.tryParse], which keeps the percent-encoded
+/// form in the host — a parser-differential / host-spoofing vector.
+final RegExp _unicodeMark = RegExp(r'\p{M}', unicode: true);
 
 /// Matches any non-ASCII code unit. RFC 3986 URIs are ASCII-only: a raw
 /// non-ASCII character must be pct-encoded (or punycode-encoded in a host).
@@ -626,6 +660,33 @@ bool _authorityHasEncodedSpace(String uri) {
   return _encodedAsciiSpace.hasMatch(authority);
 }
 
+/// Matches a percent-encoded RFC 3986 sub-delim (`!` `$` `&` `'` `(` `)` `*` `+`
+/// `,` `;` `=`). Hex digits are case-insensitive.
+///
+/// Sub-delims are legal unescaped in a `reg-name`, so a literal form always
+/// exists and percent-encoding one is non-canonical. `Uri.tryParse` keeps such
+/// an escape encoded in the host (`bmc.example%21evil.com`) while a
+/// launcher that percent-decodes host bytes before DNS/IDNA resolution sees a
+/// DIFFERENT host (`bmc.example!evil.com`) — one raw URI naming two hosts.
+final RegExp _encodedSubDelimiter =
+    RegExp(r'%(?:21|24|26|27|28|29|2A|2B|2C|3B|3D)', caseSensitive: false);
+
+/// Returns `true` when the raw authority contains a percent-encoded RFC 3986
+/// sub-delimiter, a decode-order host-spoofing vector (see
+/// [_encodedSubDelimiter]).
+///
+/// Scoped to the authority so percent-encoded sub-delims in the path/query
+/// (their correct encoding) and legitimate percent-encoded UTF-8 host bytes
+/// (e-acute, euro, emoji) stay launchable. Stricter than the model, never more
+/// permissive; a real BMC host writes these characters literally, so no valid
+/// target is lost. Raw (unencoded) sub-delims are legal in a host and create no
+/// decode-order differential, so they stay launchable.
+bool _authorityHasEncodedSubDelimiter(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  return _encodedSubDelimiter.hasMatch(authority);
+}
+
 /// Returns the numeric value of a single ASCII hex digit, or `null`.
 int? _hexDigit(String char) {
   final int code = char.codeUnitAt(0);
@@ -720,6 +781,59 @@ bool _hasEncodedUnicodeControlOrSeparator(String uri) {
   for (final int rune in decoded.runes) {
     if (rune < 0x80) continue; // ASCII handled by earlier rules
     if (_unicodeOtherOrSeparator.hasMatch(String.fromCharCodes(<int>[rune]))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Returns `true` when the raw authority carries a percent-encoded Unicode
+/// `Mark` (category M) code point.
+///
+/// A percent-encoded combining mark is a *valid* `%XX` escape (so the
+/// malformed-percent and encoded-control rules miss it), is not a C0/DEL octet
+/// (so [_encodedControlOctet] misses it), is not a Separator/Other (so
+/// [_hasEncodedUnicodeControlOrSeparator] misses it), and has no raw non-ASCII
+/// (so the raw-authority rule misses it), yet [Uri.tryParse] keeps it encoded
+/// and reports a non-empty HTTPS host, so a purely syntactic re-check calls it
+/// "secure". A launcher applying NFC/IDNA to the host (as browsers do)
+/// recomposes a base letter + combining mark into a different precomposed
+/// character — e.g. `https://bmc%CC%81.example/` decodes to `bmc\u{0301}.example`
+/// whose NFC form is `bmc\u{00E9}.example` — resolving a DIFFERENT authority
+/// than [Uri.tryParse] reported. Under a stale secure flag + test opt-in that
+/// parser differential could grant in-app rendering and self-signed acceptance
+/// on a mismatched/spoofed host.
+///
+/// Only **non-ASCII** marks are inspected: ASCII has no combining marks, and a
+/// raw non-ASCII authority is rejected earlier. Scoped to the authority so
+/// marks in the path/query (which cannot forge a host) stay launchable, and
+/// precomposed UTF-8 host bytes (e-acute, a Letter) and other non-mark escapes
+/// (emoji, a Symbol) stay launchable — stricter than the model, never more
+/// permissive, no valid target lost.
+bool _authorityHasEncodedCombiningMark(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  final List<int> bytes = <int>[];
+  for (int i = 0; i < authority.length; i++) {
+    final String char = authority[i];
+    if (char == '%' && i + 2 < authority.length) {
+      final int? hi = _hexDigit(authority[i + 1]);
+      final int? lo = _hexDigit(authority[i + 2]);
+      if (hi != null && lo != null) {
+        bytes.add((hi << 4) | lo);
+        i += 2;
+        continue;
+      }
+    }
+    // Raw characters here are ASCII (raw non-ASCII/forbidden chars were
+    // rejected by earlier rules); keep the byte so an encoded multi-byte mark
+    // is decoded in the correct UTF-8 byte context.
+    bytes.add(char.codeUnitAt(0));
+  }
+  final String decoded = utf8.decode(bytes, allowMalformed: true);
+  for (final int rune in decoded.runes) {
+    if (rune < 0x80) continue; // ASCII has no combining marks
+    if (_unicodeMark.hasMatch(String.fromCharCodes(<int>[rune]))) {
       return true;
     }
   }
@@ -1048,7 +1162,9 @@ bool _isNonCanonicalNumericHost(String host) {
   // these numeric checks fire for a non-numeric host.
   final String core =
       host.endsWith('.') ? host.substring(0, host.length - 1) : host;
-  if (core.isEmpty) return false; // degenerate all-dot host: handled separately.
+  if (core.isEmpty) {
+    return false; // degenerate all-dot host: handled separately.
+  }
   final List<String> labels = core.split('.');
   // Hex IP forms: any 0x-prefixed label. A real host never uses 0x labels.
   for (final String label in labels) {
@@ -1237,6 +1353,19 @@ String? _controlSafeTrimmedUri(String? uri) {
   // other checks) so every classifier and the launch-plan target reject it
   // identically.
   if (_authorityHasEncodedUnreservedAscii(trimmed)) return null;
+  // Reject a percent-encoded RFC 3986 sub-delim (`!` `$` `&` `'` `(` `)` `*` `+`
+  // `,` `;` `=`) in the authority: these are legal unescaped in a reg-name, so
+  // encoding one is non-canonical, and Uri.tryParse keeps it encoded in the host
+  // (`bmc.example%21evil.com`) while a launcher that decodes host bytes before
+  // DNS/IDNA resolves a DIFFERENT host (`bmc.example!evil.com`) — one raw URI
+  // naming two hosts. Under a stale secure flag + test opt-in that differential
+  // could grant in-app rendering and self-signed acceptance on a mismatched
+  // authority. Scoped to the authority, so encoded sub-delims in the path/query
+  // and valid pct-encoded UTF-8 host bytes stay launchable; raw sub-delims are
+  // legal and stay launchable. No valid target is lost. Folded into this single
+  // shared gate (returns `null`, like the other checks) so every classifier and
+  // the launch-plan target reject it identically.
+  if (_authorityHasEncodedSubDelimiter(trimmed)) return null;
   // Reject a percent-encoded multi-byte UTF-8 character that decodes to a
   // Unicode Separator/Other code point (NBSP, zero-width space, NEL, ...): a
   // decode-first launcher could see an invisible/control character in the
@@ -1245,6 +1374,15 @@ String? _controlSafeTrimmedUri(String? uri) {
   // this single shared gate (returning `null`, like the other checks) so every
   // HTTP(S) classifier and the launch-plan target reject it identically.
   if (_hasEncodedUnicodeControlOrSeparator(trimmed)) return null;
+  // Reject a percent-encoded Unicode combining mark in the authority: a
+  // launcher applying NFC/IDNA recomposes a base letter + mark into a different
+  // precomposed character, resolving a different host than Uri.tryParse reports,
+  // which under a stale secure flag + test opt-in could reach in-app rendering
+  // and self-signed acceptance on a mismatched/spoofed host. Precomposed UTF-8
+  // host bytes (e-acute) and marks in the path/query stay launchable. Folded into
+  // this single shared gate (returning `null`, like the other checks) so every
+  // HTTP(S) classifier and the launch-plan target reject it identically.
+  if (_authorityHasEncodedCombiningMark(trimmed)) return null;
   // Reject a percent-encoded non-ASCII code point that IDNA/NFKC folds to an
   // ASCII character: a structural delimiter (fullwidth solidus/colon/dot/@/
   // [ ]/...) or a fullwidth ASCII letter/digit/punctuation look-alike. A launcher
