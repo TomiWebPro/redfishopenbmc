@@ -527,7 +527,11 @@ Invariants, enforced by tests:
    base into a different host under a decode+IDNA launcher) + IDNA-ignored
    Hangul filler authority rejection (U+115F/U+1160/U+3164/U+FFA0 — category
    `Lo`, NFKC non-ASCII, silently dropped by UTS-46 IDNA so a launcher contacts
-   a different authority)).
+   a different authority) + NFKC superscript-letter authority rejection (U+2071
+   SUPERSCRIPT LATIN SMALL LETTER I — category `Lm`, NFKC-normalises to ASCII
+   `i`, sitting between the U+2070 digit and the U+2074..U+2079 superscript
+   digits the digit family otherwise covers; a decode+IDNA launcher resolves a
+   different ASCII authority, so every escape form fails closed)).
    **Blank-URI target normalization:** a whitespace-only URI is "no usable
    target" (`KvmConsoleLaunchPlan.targetUri`) — the copy-only fallback must
    surface `null`, never a whitespace string, under any policy (including the

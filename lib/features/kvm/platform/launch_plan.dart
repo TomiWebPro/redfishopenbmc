@@ -407,7 +407,12 @@ String? externalClientConsoleProtocol(String? uri) {
 /// compatibility characters to plain ASCII — U+212A KELVIN SIGN -> `K`, U+017F
 /// LATIN SMALL LETTER LONG S -> `s`, the circled Latin letters U+24B6..U+24E9
 /// -> A-Z/a-z, and the Roman numerals U+2160..U+217F -> ASCII letter sequences.
-/// `Uri.tryParse` keeps each escape encoded and reports a non-empty HTTPS host,
+/// U+2071 SUPERSCRIPT LATIN SMALL LETTER I -> `i` is included too: it is a
+/// modifier letter (category Lm, so the C/Z and combining-mark rules miss it)
+/// that sits between the U+2070 digit and the U+2074..U+2079 superscript digits
+/// the digit family otherwise covers, so an enumeration that lists only those
+/// digits silently leaves it out. `Uri.tryParse` keeps each escape encoded and
+/// reports a non-empty HTTPS host,
 /// so a purely syntactic re-check calls it "secure" — yet a launcher applying
 /// IDNA/NFKC resolves a *different* ASCII authority. Under a stale secure flag
 /// + test opt-in that parser differential could grant in-app rendering and
@@ -1132,6 +1137,9 @@ const Set<int> _compatibilityDelimiterCodePoints = <int>{
 ///    (the two IDNA2003 case-folding specials that map to ASCII);
 ///  * circled digits U+2460..U+2473, U+24EA/U+24FF -> ASCII digit sequences;
 ///  * superscript/subscript digits (U+00B2/03/09, U+2070/74..79, U+2080..89);
+///  * U+2071 SUPERSCRIPT LATIN SMALL LETTER I -> 'i' (a modifier letter, so the
+///    C/Z and mark rules miss it, sitting between the U+2070 digit and the
+///    U+2074..U+2079 digits that otherwise cover this superscript block);
 ///  * circled Latin letters U+24B6..U+24E9 -> A-Z / a-z;
 ///  * Roman numerals U+2160..U+217F -> ASCII letter sequences (e.g. 'I','IV');
 ///  * squared / negative-circled / negative-squared Latin capitals
@@ -1145,6 +1153,7 @@ bool _isNfkcAsciiLetterOrDigit(int rune) {
   if (rune == 0x017F || rune == 0x212A) return true; // LONG S -> s, KELVIN -> K
   if (rune == 0x00B2 || rune == 0x00B3 || rune == 0x00B9) return true; // 2,3,1
   if (rune == 0x2070 || (rune >= 0x2074 && rune <= 0x2079)) return true;
+  if (rune == 0x2071) return true; // SUPERSCRIPT LATIN SMALL LETTER I -> i
   if (rune >= 0x2080 && rune <= 0x2089) return true; // subscript 0-9
   if (rune >= 0x2460 && rune <= 0x2473) return true; // circled 1-20
   if (rune == 0x24EA || rune == 0x24FF) return true; // circled/negative 0
@@ -1855,10 +1864,11 @@ String? _controlSafeTrimmedUri(String? uri) {
   // reports, which under a stale flag + test opt-in could reach in-app rendering
   // and self-signed acceptance on a spoofed host. This also covers the
   // Mathematical Alphanumeric Symbols block (styled Latin letters/digits that
-  // fold to plain ASCII, outside every set above), and the four IDNA-ignored
-  // Hangul fillers that IDNA drops from the host entirely. ASCII escapes and
-  // encoded non-ASCII that folds to non-ASCII (e-acute, euro, emoji) stay
-  // launchable.
+  // fold to plain ASCII, outside every set above), the four IDNA-ignored Hangul
+  // fillers that IDNA drops from the host entirely, and U+2071 SUPERSCRIPT
+  // LATIN SMALL LETTER I (a modifier letter that NFKC-folds to ASCII `i`). ASCII
+  // escapes and encoded non-ASCII that folds to non-ASCII (e-acute, euro, emoji)
+  // stay launchable.
   // Folded into this single shared gate (returning `null`, like the other checks)
   // so every HTTP(S) classifier and the launch-plan target reject it identically.
   if (_authorityHasAsciiCompatibilityConfusable(trimmed)) return null;

@@ -3816,4 +3816,71 @@ void main() {
     });
   },
 );
+
+  group('planConsoleLaunch — NFKC superscript-letter authority fails closed', () {
+    // U+2071 SUPERSCRIPT LATIN SMALL LETTER I (category Lm) NFKC-normalises to
+    // ASCII 'i', so a decode+IDNA launcher resolves
+    // `https://bmc%E2%81%B1.example/console` as `bmci.example` — a DIFFERENT
+    // authority than Uri.tryParse reports (`bmc%E2%81%B1.example`). It evades
+    // every earlier confusable rule: it is outside the fullwidth block, is not
+    // in the delimiter/fraction/mark/C-Z sets, and the neighbouring
+    // superscript-digit rule covers U+2070/U+2074..U+2079 but NOT U+2071.
+    // Under a stale secure flag + test opt-in that parser differential could
+    // grant in-app rendering and self-signed acceptance on a spoofed host.
+    const List<String> superscriptIUris = <String>[
+      'https://bmc%E2%81%B1.example/console', // U+2071, uppercase hex
+      'https://bmc%e2%81%b1.example/console', // lowercase hex
+      'https://u%E2%81%B1@bmc.example/console', // in userinfo
+    ];
+
+    test('an NFKC superscript-letter authority never reaches in-app', () {
+      for (final String uri in superscriptIUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+      }
+    });
+
+    test('an NFKC superscript-letter authority stays off under production', () {
+      for (final String uri in superscriptIUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('legitimate percent-encoded UTF-8 host bytes stay launchable', () {
+      // Regression guard: e-acute NFKC-folds to non-ASCII (it is a real letter,
+      // not a compatibility look-alike), so it must remain renderable — this
+      // rule must reject only code points that fold to plain ASCII.
+      const String uri = 'https://bmc%C3%A9.example/console';
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.testOptIn,
+        uri: uri,
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isTrue, reason: uri);
+      expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      expect(plan.targetUri, uri);
+    });
+  },
+);
 }
