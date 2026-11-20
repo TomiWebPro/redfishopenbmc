@@ -528,6 +528,20 @@ String? externalClientConsoleProtocol(String? uri) {
 /// plain IPv6 loopback (`::1`, a real test-profile target) and legitimate IPv6
 /// (link-local, unique-local, global unicast), including a canonical
 /// port/userinfo, stay launchable — no valid target lost.
+///
+/// A dotted-quad embedded in an IPv6 literal is rejected for the same reason,
+/// generalising the IPv4-mapped rule: the mapped check only catches the
+/// `groups[5] == 0xffff` special case, but [Uri.tryParse] reports ANY
+/// dotted-quad-embedded IPv6 literal (IPv4-compatible `::a.b.c.d`, translated
+/// `::ffff:0:a.b.c.d`, or a global/unique-local prefix followed by an embedded
+/// quad) as an opaque, non-empty HTTPS host, while a browser/WebView (WHATWG
+/// URL) resolves the embedded IPv4 address or a different IPv6 literal — one
+/// raw URI naming two authorities. Under a stale secure flag + test opt-in that
+/// parser differential could grant in-app rendering and self-signed acceptance
+/// on a mismatched/internal host. A real IPv6 literal is written in pure hex
+/// groups (no dots), so every dotted form fails closed while pure-hex loopback,
+/// link-local, unique-local, global-unicast and mapped literals (the latter
+/// still caught by the groups check) stay launchable — no valid target lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -1398,22 +1412,36 @@ List<int>? _expandIpv6Groups(String host) {
 
 /// Returns `true` when [host] (the host reported by [Uri.tryParse]) is an IPv6
 /// literal that a browser / WebView (WHATWG URL) treats differently from the
-/// opaque host string [Uri.tryParse] reports: an IPv4-mapped address
-/// (`::ffff:a.b.c.d`, which a launcher resolves to an embedded IPv4 address
-/// while [Uri.tryParse] reports an opaque host) or an IPvFuture (`[v...]`)
-/// literal, which WHATWG rejects outright while [Uri.tryParse] accepts it.
-/// Under a stale secure flag + test opt-in that parser differential could
-/// grant in-app rendering and self-signed acceptance on a malformed/mismatched
-/// authority. No real remote BMC uses a mapped or IPvFuture literal, so they
-/// fail closed; plain IPv6 loopback (`::1`) is deliberately kept launchable —
-/// it is a real target for the test-only opt-in and both parsers agree on the
-/// address. Legitimate IPv6 (link-local, unique-local, global unicast) stays
-/// launchable.
+/// opaque host string [Uri.tryParse] reports: any IPv4-embedded dotted-quad
+/// literal (`::a.b.c.d` IPv4-compatible, `::ffff:0:a.b.c.d` translated, or a
+/// real prefix followed by an embedded quad — all of which a launcher resolves
+/// to an embedded IPv4 address / different IPv6 literal while [Uri.tryParse]
+/// reports an opaque host), the IPv4-mapped hex form (`::ffff:7f00:1`, detected
+/// via its groups), or an IPvFuture (`[v...]`) literal, which WHATWG rejects
+/// outright while [Uri.tryParse] accepts it. Under a stale secure flag + test
+/// opt-in that parser differential could grant in-app rendering and self-signed
+/// acceptance on a malformed/mismatched authority. No real remote BMC uses an
+/// embedded-quad, mapped or IPvFuture literal, so they fail closed; a real IPv6
+/// literal is written in pure hex groups, so plain IPv6 loopback (`::1`,
+/// deliberately kept for the test-only opt-in) and legitimate link-local,
+/// unique-local and global-unicast IPv6 stay launchable.
 bool _hasSpoofedIpv6Host(String host) {
   // [Uri.tryParse] strips the brackets of a valid IPv6 literal but retains
   // them for an IPvFuture literal, which browsers/WebViews reject outright.
   if (host.startsWith('[')) return true;
   if (!host.contains(':')) return false; // not an IPv6 literal.
+  // A dotted-quad embedded anywhere in an IPv6 literal (IPv4-compatible
+  // `::a.b.c.d`, translated `::ffff:0:a.b.c.d`, or a global/unique-local
+  // prefix followed by an embedded quad) is reported by [Uri.tryParse] as an
+  // opaque, non-empty HTTPS host, but a browser/WebView (WHATWG URL) resolves
+  // the embedded IPv4 address (or a different IPv6 literal) — one raw URI
+  // naming two authorities. This is the same parser differential as the
+  // IPv4-mapped form below, which is only a special case (groups[5] == 0xffff)
+  // of the broader dotted-quad family; a bare `groups[5]` check misses every
+  // non-mapped embedded quad. A real IPv6 literal is written in pure hex
+  // groups (no dots), so rejecting every dotted form loses no valid target;
+  // pure-hex mapped/loopback/link-local/global literals stay launchable.
+  if (host.contains('.')) return true;
   final List<int>? groups = _expandIpv6Groups(host);
   if (groups == null) return false; // leave malformed input to parser checks.
   // IPv4-mapped ::ffff:a.b.c.d: the first five groups are zero and the sixth
@@ -1635,13 +1663,14 @@ bool _isHttpUriWithSchemes(String? uri, Set<String> schemes) {
   // loopback/internal) host. Canonical IPv4/IPv6/DNS hosts (incl. a real
   // trailing-dot FQDN) stay launchable — no valid target lost.
   if (_isNonCanonicalNumericHost(parsed.host)) return false;
-  // Reject IPv4-mapped / IPvFuture IPv6 literals: the non-canonical-numeric
-  // rule above skips hosts containing ':', so these opaque strings would
-  // otherwise pass a purely syntactic re-check, while a browser/WebView
-  // resolves ::ffff:a.b.c.d to an embedded IPv4 address or rejects IPvFuture
-  // [v...] outright. Under a stale secure flag + test opt-in that differential
-  // could grant in-app rendering and self-signed acceptance on a malformed/
-  // mismatched host. Plain ::1 loopback (a test-profile target) and real BMC
+  // Reject IPv4-embedded / IPv4-mapped / IPvFuture IPv6 literals: the
+  // non-canonical-numeric rule above skips hosts containing ':', so these
+  // opaque strings would otherwise pass a purely syntactic re-check, while a
+  // browser/WebView resolves a dotted-quad-embedded literal to an embedded IPv4
+  // address (::ffff:a.b.c.d, ::a.b.c.d, ...) or rejects IPvFuture [v...]
+  // outright. Under a stale secure flag + test opt-in that differential could
+  // grant in-app rendering and self-signed acceptance on a malformed/
+  // mismatched host. Pure-hex loopback ::1 (a test-profile target) and real BMC
   // IPv6 addresses stay launchable — no valid target lost.
   if (_hasSpoofedIpv6Host(parsed.host)) return false;
   // Degenerate, label-less authority: a host made only of dots ('.', '..',
