@@ -11,7 +11,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      one. Pure test/tool guard, dependency-free, never writes `lib/`; distinct from EP-T11 (URI-parse
      single-source) and EP-T12 (guard-suite liveness). No code touched. -->
 
-- [ ] EP-T13 Queue-item Dept/Verify schema guard: add a pure-Dart, dependency-free guard under
+- [x] EP-T13 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 EP-T13 queue-item Dept/Verify schema guard + RED→GREEN tests`, analyze 0 / 1712 passed / 1 skipped) — Queue-item Dept/Verify schema guard: add a pure-Dart, dependency-free guard under
       `test/tool/` that parses every unchecked `- [ ]` item in `queues/*.md` and fails closed if an
       item is missing a `Dept:` field, has more than one `Dept:`, uses a dept outside the fixed
       MULTI_DEPT set (`rf-model`/`rf-ui`/`rf-service`/`rf-tooling`/`rf-platform`/`rf-audit`/`rf-ideate`/
@@ -209,6 +209,8 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
               writes limited to `tool/**` + `test/tool/**`.
 
 ## Log
+
+- 2026-11-20 19:13 UTC — EP-T13 LANDED (agent:redfish-automation, FEATURE #009/#021): added `test/tool/queue_item_schema_guard_test.dart` (13 tests), a comment-aware, dependency-free pure-Dart guard that parses every unchecked `- [ ]` item in `queues/*.md` and fails closed on a missing/duplicate/out-of-set `Dept:` or a missing/empty `Verify:` command. HTML comments are blanked (prose like "mandatory Dept:/Verify: fields" in the platform.md footer cannot cause a false positive); all 20 real unchecked items are schema-clean. Temp-root RED→GREEN (missing/duplicate/bad Dept + empty Verify → violation, valid → clean) + real-file RED proof (planted a malformed item in `queues/tooling.md` → real-repo invariant failed naming the offender `BAD_DEPT`/`EMPTY_VERIFY`, `+12 -1`; restored byte-clean SHA `342bc595…` unchanged, 0 probe artifacts, empty queues diff → 13/13 GREEN). analyze 0; full `flutter test` 1712 passed / 1 skipped (baseline 1699 +13); issues validate OK; diff --check clean; deps unchanged. Test-only — no `lib/`, wire/fixture/tool-runtime or TLS change; guard runs via `flutter test --coverage` (no second verify.yml invocation); DMTF emulator skipped (<7 days since last green 85/85).
 
 - 2026-11-20 15:17 UTC — EP-T12 LANDED (agent:redfish-automation, FEATURE #009/#021): added `test/tool/guard_suite_liveness_test.dart` (6 tests), a pure-Dart "who guards the guards" guard enumerating the 8 established KVM safety guard files and failing closed if any is missing, emptied, stripped of live `test(...)`/`testWidgets(...)` cases (comment/string/raw-string-aware), or unreachable from verify.yml's `flutter test --coverage`. Temp-root RED→GREEN (missing/emptied/test-less/unreachable all violation, intact clean) + real-file RED proof (emptied `notice_single_source_guard_test.dart` → `NO_TEST_CASES`, restored byte-clean SHA `b3c0e0b5…`, backup shredded) → 6/6 GREEN. analyze 0; full `flutter test` 1630 passed / 1 skipped (one transient power_view flake re-isolated 26/26 GREEN, clean rerun); issues validate OK; diff --check clean. Test-only — no `lib/`, dependency, wire/fixture/tool-runtime or TLS change; DMTF emulator skipped (<7 days since last green 85/85).
 

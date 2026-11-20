@@ -11960,3 +11960,18 @@
 - **Verify (clean isolated worktree at `47068df`; shared tree held a concurrent agent's untracked WIP `production_optin_construction_guard_test.dart` + pre-existing `testing/`, both untouched):** `flutter analyze` 0; targeted `launch_plan_test.dart` 150/150; platform suite 204/204; full `flutter test --coverage` 1687 passed / 1 skipped; four coverage gates PASS overall 90.1% (5873/6516) / scoped 90.4% (2119/2345) / kvm 96.2% (1150/1195) / kvm-platform 95.8% (316/330), exit 0; `python3 issues/issues.py validate` OK; `git diff --check` clean.
 - **Decisions:** no production-TLS weakening (only blank→null target + `acceptSelfSigned isFalse` assertions); no wire/transport/fixture/tool change (net lib diff is zero — the decision-helper behavior already lives in main), so the 85-test DMTF emulator suite was skipped (<7 days since last green 85/85). No issue closed (both #009/#021 remain human-gated on platform WebView + BMC TLS validation). No force-push; pre-existing untracked dirs preserved.
 - **NEXT:** sole-merger gate done for this PASS verdict. Watch for the next `rf-platform-check` PASS on a new branch tip; continue merging only PASS-verified branches. Full emulator only on a real lib-wire/fixture/tool change or >7 days since last green.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-T13)
+
+**Done:**
+- FEATURE — EP-T13 queue-item Dept/Verify schema guard (head of `queues/tooling.md`). Added `test/tool/queue_item_schema_guard_test.dart` (13 tests), a comment-aware, dependency-free pure-Dart guard that parses every unchecked `- [ ]` item in `queues/*.md` and fails closed on a missing/duplicate/out-of-set `Dept:` (fixed 9-dept MULTI_DEPT set) or a missing/empty `Verify:` command. HTML comments are blanked (newlines kept) so queue prose like "mandatory Dept:/Verify: fields" cannot false-positive. Audited first: all 20 real unchecked items are schema-clean — a regression guard against future dept-split contract rot, not churn.
+- RED→GREEN: temp-root tree (each malformation → violation, valid → clean); real-file — appended a malformed item to `queues/tooling.md` → real-repo invariant failed naming the offender (`BAD_DEPT`/`EMPTY_VERIFY`, `+12 -1`); restored byte-clean (SHA `342bc595…` unchanged, 0 probes, empty queues diff), backup shredded → 13/13 GREEN.
+- Verify: analyze 0; full `flutter test` 1712 passed / 1 skipped (baseline 1699 +13); issues validate OK; `git diff --check` clean; deps unchanged. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Test-only, dependency-free, TLS-safe: no product `lib/`, wire/transport/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. Guard runs via the existing whole-tree `flutter test --coverage` — no second CI invocation. No issue closed (both #009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation). Pre-existing untracked `testing/` + `stash@{0}` untouched; no force-push, no history rewrite.
+
+**Next:**
+- EP-U10 (UI flag-off false-claim guard), then re-audit remaining dept queues for a genuinely different untested contract before adding any guard — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
