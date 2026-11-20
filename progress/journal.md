@@ -11283,3 +11283,20 @@
 - Cheap DOCS anchor re-verify only; full emulator re-run on lib/wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — sole merger (build/rf-platform a226449)
+
+- Verdict: `rf-platform-check` run#9124 PASS (exit 0, ~58 s) for branch HEAD `a226449`, produced by builder run#9115; cross-checked tip unchanged post-check (exactly 1 unmerged commit past merge-base `2275723`).
+- Merged `build/rf-platform` `a226449` into `main` with `--no-ff` (merge `f64af05`). Branch extends the authority-scoped NFKC/IDNA fail-closed confusable set in the dependency-free `launch_plan.dart` to compatibility characters NFKC-folds to ASCII letters/digits (KELVIN SIGN, LONG S, circled/squared Latin+digits, Roman numerals, super/subscript digits) — parser-differential host-spoofing vectors a decode+IDNA launcher resolves to a different authority while `Uri.tryParse` reports "secure". Each fails closed, authority-scoped; no valid target lost, no dependency, no production TLS weakening.
+- Conflict: `LAUNCH_FALLBACK.md` test-count prose only — resolved with measured merged counts 95 targeted / 121 platform. `launch_plan.dart` + tests auto-merged with all 3 RED→GREEN tests preserved.
+- Verification: analyze 0; full suite 1402 passed / 1 skipped (baseline 1399 +3); coverage gates PASS overall 90.0% / scoped 90.4% / kvm 96.6%; issues validate OK; diff --check clean; secret scan clean; first-parent diff = 3 files. DMTF emulator skipped (no wire/fixture/tool change).
+
+**Decisions:**
+- Merged only because run#9124 explicitly PASSED for the exact tip; never merge on a stale/absent verdict.
+- `--no-ff` preserves the dept-branch history; no production TLS weakening, no dependency, no wire/transport/fixture/tool change.
+
+**Next:**
+- Gate only PASS-verified branches; keep URI hardening in the shared fail-closed classifier core; never weaken production TLS.
+- DMTF 85/85 on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none closed (#009 / #021 remain open).
