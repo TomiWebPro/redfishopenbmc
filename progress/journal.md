@@ -11300,3 +11300,18 @@
 - DMTF 85/85 on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none closed (#009 / #021 remain open).
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (RM-4)
+
+- Done: RM-4 capability-side control-safe manager-source getter. Added `KvmCapability.safeManagerUri` mirroring `KvmConsole.safeManagerUri`, so the per-manager capability card now has a model-side single source of truth for a control-safe source. A control-safe BMC `@odata.id` passes byte-for-byte through the shared `isControlSafeConsoleUri` gate; an unsafe/null source degrades to `/redfish/v1/Managers/<pct-encoded managerId>` (blank → `manager`). Raw `sourceManagerUri` field unchanged (no wire shape change). +6 RED→GREEN pure-model tests (compile-RED pre-fix); analyze 0 / 1408 passed / 1 skipped (baseline 1402 +6); DMTF emulator 85/85 (lib changed — §1.4 gate met); issues validate OK; diff --check clean.
+
+**Decisions:**
+- Reused the shared `isControlSafeConsoleUri` gate (same one the launch-plan target and `KvmConsole` use) so the two KVM models can never drift on what counts as a safe source.
+- Kept this run to the rf-model dept slice (writes limited to `lib/features/kvm/models/**`); the three-surface display consumer is the separate rf-ui slice EP-U6, deferred to respect the one-workstream / multi-dept boundary.
+- No dependency, no wire/transport/fixture change, no production TLS weakening.
+
+**Next:**
+- EP-U6 (rf-ui): route the viewer + both cards' manager-source rows through `KvmConsole.safeManagerUri` / `KvmCapability.safeManagerUri`, with RED→GREEN widget tests (hostile `@odata.id` renders no raw control code point; 320/800/1300 no-overflow).
+- Continue other unblocked dept slices for #009/#021 — genuine tested increments only; no WebView/url_launcher dependency, never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

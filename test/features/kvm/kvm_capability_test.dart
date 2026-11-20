@@ -1880,4 +1880,123 @@ void main() {
       expect(FeatureRules.kvmType(<Map<String, dynamic>>[manager]), isNull);
     });
   });
+
+  group(
+      'KvmCapability clipboard fallback — control-safe manager source '
+      '(#009/#021 RM-4)', () {
+    KvmCapability makeWithSource({
+      required String? sourceManagerUri,
+      String managerId = 'BMC',
+    }) =>
+        KvmCapability(
+          managerId: managerId,
+          supported: true,
+          connectTypes: const <String>['HTML5'],
+          serviceEnabled: true,
+          sourceManagerUri: sourceManagerUri,
+        );
+
+    test('safeManagerUri keeps a control-safe BMC source unchanged', () {
+      expect(
+        makeWithSource(sourceManagerUri: '/redfish/v1/Managers/BMC')
+            .safeManagerUri,
+        '/redfish/v1/Managers/BMC',
+      );
+      expect(
+        makeWithSource(
+          sourceManagerUri: 'https://bmc.example/redfish/v1/Managers/BMC',
+        ).safeManagerUri,
+        'https://bmc.example/redfish/v1/Managers/BMC',
+      );
+      // A correctly percent-encoded path stays safe (byte-for-byte).
+      expect(
+        makeWithSource(sourceManagerUri: '/redfish/v1/Managers/BMC%20one')
+            .safeManagerUri,
+        '/redfish/v1/Managers/BMC%20one',
+      );
+    });
+
+    test('safeManagerUri fails closed for a hostile BMC @odata.id', () {
+      // The source is BMC-supplied. A hostile value carrying a control /
+      // separator / invisible code point or a malformed / encoded-control `%`
+      // escape must never reach a display or clipboard — the same fail-closed
+      // gate the launch plan's target and KvmConsole use applies here.
+      for (final String source in <String>[
+        '/redfish/v1/Managers/BMC\r\nX-Injected: 1',
+        '/redfish/v1/Managers/BMC\u0000evil',
+        '/redfish/v1/Managers/BMC evil',
+        '/redfish/v1/Managers/BMC\\evil',
+        '/redfish/v1/Managers/BMC%',
+        '/redfish/v1/Managers/BMC%0Aevil',
+        '/redfish/v1/Managers/BMC\u200Bzero-width',
+        '/redfish/v1/Managers/BMC\u2028line-sep',
+        '   ', // blank — never a usable source
+      ]) {
+        expect(
+          makeWithSource(sourceManagerUri: source).safeManagerUri,
+          '/redfish/v1/Managers/BMC',
+          reason: source,
+        );
+      }
+    });
+
+    test('safeManagerUri fails closed for a null source', () {
+      // Directly constructed capabilities (widget-test fixtures) may have no
+      // source at all — degrade to the deterministic manager path.
+      expect(
+        makeWithSource(sourceManagerUri: null).safeManagerUri,
+        '/redfish/v1/Managers/BMC',
+      );
+    });
+
+    test('synthesized fallback pct-encodes a hostile manager Id', () {
+      final KvmCapability capability = makeWithSource(
+        sourceManagerUri: '/redfish/v1/Managers/BMC\r\nX: 1',
+        managerId: 'BMC\u0000Evil',
+      );
+      expect(capability.safeManagerUri, '/redfish/v1/Managers/BMC%00Evil');
+    });
+
+    test('a blank manager Id still yields a safe non-empty fallback', () {
+      final KvmCapability capability = makeWithSource(
+        sourceManagerUri: '/redfish/v1/Managers/BMC\r\nX: 1',
+        managerId: '   ',
+      );
+      expect(capability.safeManagerUri, '/redfish/v1/Managers/manager');
+    });
+
+    test('capability and console agree on the safe manager source', () {
+      // The same manager, same hostile source: both KVM views must produce the
+      // identical control-safe fallback (single shared gate, issues #009/#021).
+      const String hostileSource = '/redfish/v1/Managers/BMC\r\nX: 1';
+      const String managerId = 'BMC';
+      final KvmCapability capability = makeWithSource(
+        sourceManagerUri: hostileSource,
+        managerId: managerId,
+      );
+      const KvmConsole console = KvmConsole(
+        type: KvmConsoleType.graphical,
+        managerId: managerId,
+        connectTypesSupported: <String>['HTML5'],
+        serviceEnabled: true,
+        sourceManagerUri: hostileSource,
+      );
+      expect(capability.safeManagerUri, console.safeManagerUri);
+      expect(capability.safeManagerUri, isNot(contains('\r')));
+      expect(capability.safeManagerUri, isNot(contains('\n')));
+
+      // A safe source passes byte-for-byte on both surfaces too.
+      const String safeSource = '/redfish/v1/Managers/BMC%20one';
+      expect(
+        makeWithSource(sourceManagerUri: safeSource).safeManagerUri,
+        const KvmConsole(
+          type: KvmConsoleType.graphical,
+          managerId: managerId,
+          connectTypesSupported: <String>['HTML5'],
+          serviceEnabled: true,
+          sourceManagerUri: safeSource,
+        ).safeManagerUri,
+      );
+    });
+  });
 }

@@ -10,7 +10,7 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
      model-side single source of truth for a control-safe source display. Pure model, dependency-free,
      TLS-safe; distinct from EP-M1 / RM-2 (still open) and from CB-1 (already landed on KvmConsole). -->
 
-- [ ] RM-4 Control-safe manager-source getter on `KvmCapability` (model half of the cross-surface
+- [x] RM-4 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 RM-4 capability-side control-safe manager-source getter + RED→GREEN tests`, analyze 0 / 1408 passed / 1 skipped). Control-safe manager-source getter on `KvmCapability` (model half of the cross-surface
       source-display split): mirror `KvmConsole.safeManagerUri` — route the BMC-supplied
       `sourceManagerUri` (a `@odata.id`) through the shared `isControlSafeConsoleUri` gate. A
       control-safe source passes byte-for-byte (no valid source lost); a control-unsafe one

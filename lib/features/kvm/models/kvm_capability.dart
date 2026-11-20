@@ -83,6 +83,28 @@ class KvmCapability {
   /// The `@odata.id` of the manager resource this capability was read from.
   final String? sourceManagerUri;
 
+  /// A control-safe manager URI, suitable as a last-resort source disclosure /
+  /// clipboard fallback on the capability card (issues #009 / #021, RM-4).
+  ///
+  /// Mirrors `KvmConsole.safeManagerUri`: [sourceManagerUri] is a BMC-supplied
+  /// `@odata.id`, so a hostile BMC can publish CRLF / NUL / raw space / backslash
+  /// / Unicode separators or a malformed or encoded-control `%` escape. Rendering
+  /// or copying that verbatim would reintroduce the exact header/clipboard-
+  /// injection risk the launch plan's fail-closed target gate exists to prevent.
+  /// Route it through the same shared [isControlSafeConsoleUri] gate the launch
+  /// plan and the per-console card use: a safe source is kept byte-for-byte (no
+  /// valid source is lost), an unsafe or absent one is replaced by a
+  /// deterministic path synthesized from [managerId] with every non-unreserved
+  /// byte percent-encoded (via [Uri.encodeComponent]), so the fallback can never
+  /// carry the hostile code point back to the operator. Keeping this getter on
+  /// both models means the capability card and the console card can never drift
+  /// on what counts as a safe manager source.
+  String get safeManagerUri {
+    if (isControlSafeConsoleUri(sourceManagerUri)) return sourceManagerUri!;
+    final String encodedId = Uri.encodeComponent(managerId.trim());
+    return '/redfish/v1/Managers/${encodedId.isEmpty ? 'manager' : encodedId}';
+  }
+
   /// Authoritative `KVMIP` detection from the graphical console — the same
   /// source [supported] keys off — when built via [fromManager].
   ///
