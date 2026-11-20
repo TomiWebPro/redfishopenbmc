@@ -2069,4 +2069,96 @@ void main() {
       }
     });
   });
+
+  group(
+      'planConsoleLaunch — defense in depth: non-canonical numeric-host rejection',
+      () {
+    test('a non-canonical numeric IP host fails closed with a stale flag', () {
+      // A legacy/WHATWG URL parser (browser / WebView) resolves these numeric
+      // host forms to an IP literal (often loopback/internal), while Dart's
+      // `Uri.tryParse` reports them as opaque DNS names with a non-empty host.
+      // Under a stale secure flag + test opt-in that parser differential could
+      // grant in-app rendering and self-signed acceptance on a host that
+      // resolves somewhere DIFFERENT from the authority Uri reported. A real
+      // BMC host is a DNS name or a canonical dotted-quad/IPv6 literal, so
+      // rejecting these loses no valid target.
+      for (final String uri in <String>[
+        'https://0x7f000001/console', // hex integer -> 127.0.0.1
+        'https://0X7F000001/console', // uppercase hex prefix/digits
+        'https://0x7f.1/console', // mixed hex IP form
+        'https://2130706433/console', // bare decimal integer -> 127.0.0.1
+        'https://0/console', // single-digit integer -> 0.0.0.0
+        'https://127.1/console', // abbreviated dotted decimal -> 127.0.0.1
+        'https://127.0.1/console', // 3-part abbreviated form
+        'https://0177.0.0.1/console', // leading-zero (octal) -> 127.0.0.1
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test(
+        'a non-canonical numeric host never reaches in-app under a strict opt-in',
+        () {
+      // Even without granting self-signed acceptance, a numeric host that a
+      // launcher resolves differently must not be rendered in-app by an
+      // enabled+strict opt-in (no host-confusion render, no TLS weakening).
+      for (final String uri in <String>[
+        'https://0x7f000001/console',
+        'https://2130706433/console',
+        'https://127.1/console',
+        'https://0177.0.0.1/console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: const KvmWebViewPolicy(enabled: true),
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('canonical IP and DNS hosts stay launchable (no over-rejection)', () {
+      // Guard against over-rejection: a canonical dotted-quad IPv4, an IPv6
+      // literal, and ordinary DNS names/punycode are legitimate BMC targets and
+      // must still route to the external-browser fallback unchanged.
+      for (final String uri in <String>[
+        'https://192.168.1.10/console', // canonical dotted-quad IPv4
+        'https://10.0.0.1/console',
+        'https://127.0.0.1/console',
+        'https://0.0.0.0/console',
+        'https://[::1]/console', // IPv6 literal
+        'https://[fe80::1]/console',
+        'https://bmc.example/console', // FQDN
+        'https://bmc/console', // single-label DNS name
+        'https://bmc2.example.com/console', // letters + digits in a label
+        'https://xn--bmc-esab.example/console', // punycode host
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }
