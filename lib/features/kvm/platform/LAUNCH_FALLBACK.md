@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 85 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (96 across the platform
+consume; today it locks the fallback behaviour with 88 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (99 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -259,6 +259,14 @@ Invariants, enforced by tests:
    self-signed acceptance on a mismatched/spoofed host. Only canonical
    dotted-quad IPv4 (four 0-255 octets, no leading zeros), IPv6 literals and
    ordinary DNS/punycode hosts stay launchable — no real BMC target lost.
+   **Empty DNS-label rejection:** a leading dot (`.bmc.example`), consecutive
+   dots (`bmc..example`) or a double trailing dot (`bmc.example..`) leaves an
+   empty DNS label. `Uri.tryParse` reports such a host as non-empty HTTPS, but
+   a launcher may collapse the empty label / treat the leading dot as a
+   relative reference and contact a DIFFERENT authority — a parser differential
+   that under a stale flag + test opt-in could grant in-app rendering and
+   self-signed acceptance on a spoofed host. Exactly one trailing dot (absolute
+   FQDN), single-label, IPv4/IPv6 and punycode hosts stay launchable.
    Covered by targeted tests across the defense-in-depth re-validation
    groups (scheme/host/malformed-authority parity + control-character +
    raw-space + Unicode-whitespace/invisible + raw-backslash + RFC-3986
@@ -271,7 +279,7 @@ Invariants, enforced by tests:
    double-encoded authority-delimiter rejection + encoded authority-dot
    rejection + malformed-UTF-8 authority rejection + encoded ASCII space
    rejection + encoded unreserved-ASCII rejection + non-canonical numeric-host
-   rejection).
+   rejection + empty DNS-label rejection).
 
 ## What remains gated (not done here)
 
