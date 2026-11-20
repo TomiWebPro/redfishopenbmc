@@ -11431,3 +11431,19 @@
 - Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none — gate-only merge; both #009/#021 stay open.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-T9 launch-status single-source guard)
+
+**Done:**
+- EP-T9 launch-status single-source guard. Added `test/tool/launch_status_single_source_guard_test.dart` (6 tests): a dependency-free, comment/string-aware pure-Dart guard that derives the seven long `kvmLaunchStatusText` launch-status messages FROM `kvm_models.dart` at test time (multi-line adjacent literals + `${externalProtocol}` interpolation pieces become distinctive fingerprints; the RU-2 notice-authority file excluded as another copy authority), asserts all 7 `case KvmLaunchStrategy.` branches + ≥12 fingerprints remain, and fails closed if any other product `lib/features/kvm/**.dart` hardcodes one of those a11y launch-status fragments (card↔viewer copy drift) or redefines the shared function. Also pins both launch surfaces call `kvmLaunchStatusText`.
+- RED→GREEN: 2 RED proofs (planted hardcoded launch-status copy → `hardcodes ...` violation; redefinition outside authority → `redefines ...` violation), identifier reference + comments/`https://` GREEN, real-repo product scan clean. Analyze 0 / 1454 passed / 1 skipped (baseline 1448 + 6); issues validate OK; diff --check clean.
+
+**Decisions:**
+- FUTUREWORK focus slices (RS-5, EP-S2, EP-U6, RU-2 core, EP-T8, EP-P6, EP-M2, RM-1) were verified already landed in-tree; the platform WebView/TLS acceptance is human-gated. Genuine remaining invariant gap was the seven long launch-status a11y strings — the RU-2 guard pins only the six shorter notice constants, so this complements rather than duplicates it. Test-only; no `lib/`, dependency, wire/fixture/product-tool change, no production TLS weakening.
+- The real-repo scan initially flagged one launch-status phrase shared verbatim with the RU-2 notice authority (`kvmExternalClientNotice`); excluded that copy-authority file (not a launch surface) → clean. DMTF emulator skipped (<7 days since last green 85/85). CI runs the guard via `flutter test --coverage`.
+
+**Next:**
+- RU-2 full merged-Semantics surface audit if a genuine divergence remains; then EP-T4 fixture/CI guard, EP-T3 coverage gate — genuine tested increments only.
+- No WebView/url_launcher dependency unattended; never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
