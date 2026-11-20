@@ -11228,3 +11228,22 @@
 - Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-T7)
+
+**Done:**
+- FEATURE — EP-T7 head slice (`queues/tooling.md`), shared by #009/#021: added `tool/emulator_doctor.dart`, a dependency-free, check-only prerequisite doctor for the DMTF emulator suite. Fails closed with actionable diagnostics when `docker` / `curl` / `jq` / `redfishtool` are missing on PATH or when the pinned repo-relative fixture `test/fixtures/redfish/dmtf_mockup` is absent (never a container-internal DSP2043 path). `--check` never starts containers, network or credential use; `tool/emulator/run_tests.sh` remains the standard suite and `testing/run_emulator_harness.sh` is optional.
+- +18 tests in `test/tool/emulator_doctor_test.dart` (pure injected evaluation + PATH scanning + CLI parsing + real-repo fixture). 4 assertions RED pre-fix by neutering the evaluator (`Expected: length <1>/<4> / Actual: []`) → GREEN 18/18. Real-repo `--check` names missing `redfishtool`, exit 1.
+- Verify: analyze 0; full suite 1390 passed / 1 skipped (baseline 1372 +18); issues validate OK; `git diff --check` clean. DMTF emulator skipped (no lib/wire/fixture change, <7 days).
+
+**Decisions:**
+- Kept the doctor check-only and I/O-injectable: no container/network/credential use in the unattended scheduler, and the fixture is always the repo-relative path from `run_tests.sh`.
+- `redfishtool` is genuinely absent in this environment, so an actionable nonzero report is the correct `--check` result, not a reason to relax the prerequisite set.
+- No `lib/`, dependency, wire/transport change and no production TLS weakening; both issues stay OPEN (in-app WebView rendering + dependency acceptance deferred on platform WebView + BMC TLS validation).
+
+**Next:**
+- Continue unblocked dept slices (EP-S1 service launch edges, EP-U1 fullscreen scaffold, EP-M1 URI-scheme edges) — genuine tested increments only.
+- Never add a WebView/url_launcher dependency unattended; never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full emulator re-run only on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

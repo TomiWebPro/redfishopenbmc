@@ -150,6 +150,29 @@ mirrored in `.github/workflows/verify.yml`. Live-BMC testing stays an explicit
 human opt-in: pass `--dart-define=REDFISH_EMULATOR_URL=...` via
 `tool/emulator/run_tests.sh`; never enable it in the scheduler.
 
+### Emulator prerequisite doctor (EP-T7)
+
+`tool/emulator_doctor.dart` is a dependency-free, **check-only** pre-flight doctor
+for the DMTF emulator integration suite. It never starts a container, opens a
+network connection or uses credentials, so it is safe in the unattended
+scheduler:
+
+```bash
+dart run tool/emulator_doctor.dart --check        # optional trailing [repo-root]
+```
+
+It fails closed (exit 1, one actionable diagnostic per problem) when any of
+`docker`, `curl`, `jq`, `redfishtool` is missing from PATH, or when the pinned
+mockup fixture `test/fixtures/redfish/dmtf_mockup` is absent. The fixture is
+always addressed by that repo-relative path — never a hardcoded
+container-internal DSP2043 path. Exit codes: `0` = all prerequisites present,
+`1` = one or more missing, `2` = CLI input error. Unit-tested in
+`test/tool/emulator_doctor_test.dart`.
+
+**`tool/emulator/run_tests.sh` remains the standard integration suite.**
+`testing/run_emulator_harness.sh` is an optional convenience wrapper, not a
+replacement. The doctor only checks prerequisites; it does not run the suite.
+
 ## Progress tracking contract
 
 ### `progress/journal.md` — daily (append, never overwrite)

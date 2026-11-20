@@ -5,7 +5,7 @@ status: open
 priority: P2
 type: bug
 created: 2026-08-30
-updated: 2026-11-19
+updated: 2026-11-20
 closed: null
 assignee: unassigned
 labels: [kvm, console, unimplemented]
@@ -56,6 +56,8 @@ estimated_tokens: 18000
 - OEM: OpenBMC often exposes HTML5 KVM via Oem; handle gracefully.
 
 ## Progress Log
+
+- 2026-11-20 00:02 UTC (run, agent:redfish-automation) — Partial progress (EP-T7 dept slice from `queues/tooling.md`, shared with #009; dependency-free, TLS-safe, check-only tooling). Added `tool/emulator_doctor.dart` + `test/tool/emulator_doctor_test.dart`: a pure-Dart prerequisite doctor that fails closed with an actionable diagnostic when any of `docker` / `curl` / `jq` / `redfishtool` is missing from PATH, or when the pinned mockup fixture `test/fixtures/redfish/dmtf_mockup` is absent — repo-relative only, never a container-internal DSP2043 path. `--check` never starts a container, opens a network connection or uses credentials; `tool/emulator/run_tests.sh` stays the standard suite, `testing/run_emulator_harness.sh` is optional (documented in `DEVELOPMENT.md`). 4 assertions RED pre-fix (neutered evaluator → `Expected: length <1>/<4> / Actual: []`) → GREEN 18/18; real-repo `--check` names missing `redfishtool`, exit 1 (correct here). Baseline analyze 0 / 1372 passed / 1 skipped → verify analyze 0 / 1390 passed / 1 skipped (+18); issues validate OK; `git diff --check` clean. No `lib/`, dependency, wire/transport/fixture change; no production TLS weakening. In-app WebView rendering + dependency acceptance remain deferred on platform WebView + BMC TLS validation.
 
 - 2026-11-19 22:49 UTC (run, agent:redfish-automation) — Partial progress (EP-U5 dept slice from `queues/ui.md`, shared with #009; dependency-free, TLS-safe, display-only widget change). The per-console card (`KvmView._ConsoleCard`) now shows the same actionable "enable KVM on BMC" launch status as the viewer for a BMC-disabled console — both derive from the single `kvmLaunchStatusText(launchStrategy)` source of truth, rendered as one merged `excludeSemantics` node (visible text == announced label), error-styled, gated only on the disabled strategy. Previously the card gave a disabled console only a bare "Disabled" chip with no actionable next step. "Open console" stays gated on `canOpenConsole` (false for disabled), URI stays visible/copyable; no URL opened, no TLS weakening. The `insecureHttp` path was already covered on the card by the distinct, documented `kvmInsecureTransportNotice` and was left unchanged (no copy churn). +1 RED→GREEN widget test (no overflow at 320/800/1300 px), RED proof confirmed pre-fix; baseline analyze 0 / 1349 passed / 1 skipped → verify analyze 0 / 1350 passed / 1 skipped; DMTF emulator 85/85 (lib changed); issues validate OK. In-app WebView rendering + dependency acceptance remain externally blocked on platform WebView + BMC TLS validation; no dependency added, production TLS never weakened.
 

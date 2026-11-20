@@ -10,7 +10,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      quota itself was transient; baselines are green). Mirrors EP-T6 / LA-1: pure tooling, no
      lib/, no dependency, no product TLS change. -->
 
-- [ ] EP-T7 Emulator prerequisite doctor (closeout of FUTUREWORK "[!] Environment quota blocking
+- [x] EP-T7 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 EP-T7 emulator prerequisite doctor + RED→GREEN tests`) — Emulator prerequisite doctor (closeout of FUTUREWORK "[!] Environment quota blocking
       verification"): add a pure-Dart `tool/emulator_doctor.dart` (CLI + tests) that fails closed
       with a precise, actionable diagnostic when a required prerequisite is absent — `docker`,
       `curl`, `jq`, `redfishtool` on PATH, and the pinned local DMTF mockup fixture
