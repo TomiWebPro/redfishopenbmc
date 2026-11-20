@@ -11800,3 +11800,19 @@
 - Gate only PASS-verified branches; cross-check verdict ↔ tip every run. Keep launch-plan hardening in the single shared fail-closed classifier core. Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none — gate-only merge; both #009/#021 stay open.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-P9)
+
+**Done:**
+- EP-P9 (head of `queues/platform.md`, the next unblocked slice after RS-2 audited clean; named in FUTUREWORK `Current focus`). Added `test/features/kvm/platform/cross_layer_authority_agreement_test.dart` (4 tests): a 12-shape hostile-authority matrix fail-closed on BOTH the platform classifier/`planConsoleLaunch` and the model layer (`KvmConsole.hasSecureLaunchUri` / `launchPlan` / `canOpenConsole`) with field-for-field agreement under a stale/lying `hasSecureUri` signal; a 5-shape legitimate-HTTPS matrix staying secure + external-browser on both; and a 25-form full-URI-family agreement property. No divergence found (shared fail-closed core) → regression guard, not churn.
+- RED→GREEN: temporarily weakened `isSecureHttpsConsoleUri` to a bare `Uri.tryParse` HTTPS/host check → hostile-authority test failed (`Expected: false / Actual: true`, raw-space HTTPS host accepted); restored byte-clean (SHA `1fbda667…` unchanged, 0 probe occurrences), backup shredded → 4/4 GREEN.
+
+**Decisions:**
+- Test-only, dependency-free, TLS-safe: no product `lib/` change (final `git diff --stat -- lib/` EMPTY), no wire/transport/fixture/dependency change, no URL opened, no human approval granted, no issue closed, no production TLS weakening. Genuine previously-unpinned cross-layer invariant (two separate decision call sites sharing one core), distinct from EP-P6 (platform route alone) and EP-P8 (doc↔route). DMTF emulator skipped (test-only, <7 days since last green 85/85).
+- Verify: targeted 4/4; related platform + model suites 471/471; `flutter analyze` 0; full `flutter test` 1624 passed / 1 skipped (baseline 1617 +3 concurrent rf-gate merge 9418626 +4 mine); issues validate OK; `git diff --check` clean. Pre-existing untracked `testing/` + stash preserved; no force-push.
+- UI skipped (§5): EP-P9 has no widget surface; both issues' UI acceptance is human-gated (platform WebView + BMC TLS validation) — no manufactured UI churn.
+
+**Next:**
+- Audit EP-U9 (fullscreen/input-forwarding disclosure a11y) then EP-T12 (guard-suite liveness) for a genuine RED→GREEN gap; RS-2 already implemented + tested. Never activate WebView, grant human approval, or weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
