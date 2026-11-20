@@ -11603,3 +11603,19 @@
 - EP-M1 (rf-model) URI-scheme edges or EP-S1 (rf-service) launch-path edges with a genuine RED→GREEN test. Keep the kvm-platform gate green for any new decision-layer adapter. Never activate WebView, grant human approval, or weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-T11)
+
+**Done:**
+- EP-T11 (head of the unlanded `queues/tooling.md` slices, added by rf-ideate 09:00). Added `test/tool/uri_parse_single_source_guard_test.dart` (9 tests): a pure-Dart, comment/string-literal-stripping guard that scans every product `lib/features/kvm/**.dart` and fails closed if any file OUTSIDE the five designated shared helper files (`launch_plan.dart`, `kvm_oem_uri.dart`, `kvm_manager_source.dart`, `kvm_session_limit.dart`, `webview_policy.dart`) calls `Uri.parse`/`Uri.tryParse` (code, not comments/doc strings) or defines one of 12 distinctive private shared control-safe/classifier helpers — so a future ad-hoc parse or duplicated helper cannot bypass the fail-closed gates. Seven unit cases plus a temp-root RED→GREEN proof and the real-repo invariant.
+- Real-file RED proof: temporarily appending a raw `Uri.parse(...)` line to `lib/features/kvm/models/kvm_models.dart` failed the real-repo invariant with the offender named; restored byte-clean (SHA `a3308faf…` unchanged), 0 TEMP occurrences → 9/9 GREEN. Only `launch_plan.dart` (allowlisted) has real `Uri.tryParse` code calls.
+
+**Decisions:**
+- Test/tool-only, dependency-free, TLS-safe: no product `lib/`, wire/fixture, dependency or TLS change; no URL opened, no human approval granted, no issue closed. Guard runs via the existing `flutter test --coverage` — no second full-suite invocation added to verify.yml. DMTF emulator skipped (test-only, <7 days since last green 85/85).
+- A whole-tree `dart format` reformatted two unrelated files (`launch_plan.dart` + its test) into an analyzer lint; both restored byte-clean from HEAD (they were clean at preflight) and are excluded from this run.
+- Verify: targeted `uri_parse_single_source_guard_test.dart` 9/9; `flutter analyze` 0; full `flutter test` 1528 passed / 1 skipped (baseline 1519 +9); issues validate OK; `git diff --check` clean.
+
+**Next:**
+- Land one of the new head-first dept slices with a genuine RED→GREEN test: RM-6 (model session-limit cross-view), RS-7 (service per-member hostile-body tolerance), EP-P8 (platform doc↔route guard) or EP-U8 (ui open-affordance gating). Keep the guard green for any new `lib/features/kvm/**` file. Never activate WebView, grant human approval, or weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
