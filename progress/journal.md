@@ -11756,3 +11756,18 @@
 - Audit next head-first unblocked dept slices EP-M1 (model URI-scheme edges) then RS-2 (service transient-failure follow-ups) for a genuine tested gap; also re-audit 320 px card headers for the non-wrapping-chip overflow class EP-U8 fixed. Never activate WebView, grant human approval, or weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — build/rf-platform 8972a5b (merge f01f99e)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#10013 returned an explicit `CHECK: PASS` (exit 0, 75.8 s) for branch tip `8972a5b` (check started 13:15:38 UTC ~1.5 min after the tip commit at 13:14 UTC; tip cross-checked unchanged immediately before merge; report names the IPv4-embedded IPv6 work; analyze 0, targeted `launch_plan_test.dart` 116/116 on the branch, no production-TLS weakening, allowlisted paths only, no dependency changes). Merged `build/rf-platform` → `main` with `--no-ff` (merge `f01f99e`, two parents). One unique commit past merge-base `695404a`: `8972a5b` adds authority-scoped fail-closed rejection of ANY dotted-quad-embedded IPv6 literal in the dependency-free launch-plan classifier (IPv4-compatible `::a.b.c.d`, translated and prefixed forms); pure-hex IPv6 (loopback/link-local/unique-local/global-unicast + mapped form) stays launchable — no valid target lost.
+- Post-merge verify in-tree at `f01f99e`: `flutter analyze` 0; full `flutter test --coverage` 1613 passed / 1 skipped (baseline 1610 +3); four coverage gates PASS overall 90.0% (5841/6487) / scoped 90.4% (2119/2345) / kvm 95.9% (1118/1166) / kvm-platform 95.5% (297/311); `python3 issues/issues.py validate` OK; `git diff --check` clean; first-parent diff = 3 allowlisted files; targeted `launch_plan_test.dart` 132/132.
+
+**Decisions:**
+- Merged only on an explicit PASS for the exact tip; verdict ↔ tip cross-checked. One merge conflict resolved: `LAUNCH_FALLBACK.md` — stale test-count prose on both sides (branch from older base 116/127 vs main 129/179) → measured merged values 132 targeted / 182 platform; the new IPv4-embedded rejection rationale + coverage-group label auto-merged. `launch_plan.dart` + `launch_plan_test.dart` auto-merged cleanly with all 3 RED→GREEN tests preserved.
+- Fail-closed security hardening only — no dependency, no wire/transport/fixture/tool change, no production TLS weakening, `--no-ff` keeps dept history, never force-push. DMTF emulator skipped (dependency-free decision helper, <7 days since last green 85/85). Pre-existing untracked `testing/` left untouched.
+
+**Next:**
+- Gate only PASS-verified branches; cross-check verdict ↔ tip every run. Keep launch-plan hardening in the single shared fail-closed classifier core. Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none — gate-only merge; both #009/#021 stay open.
