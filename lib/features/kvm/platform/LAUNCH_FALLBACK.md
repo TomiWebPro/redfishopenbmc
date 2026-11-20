@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 125 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (136 across the platform
+consume; today it locks the fallback behaviour with 131 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (142 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -444,6 +444,19 @@ Invariants, enforced by tests:
    spacing diacritic, halfwidth sound mark or compatibility composition, so
    no valid target is lost — pct-encoded UTF-8 that NFKC-folds to a stable
    non-ASCII character (e-acute, euro, emoji) stays launchable.
+   **IDNA-ignored Hangul filler rejection:** the four Hangul filler code points
+   (U+115F CHOSEONG, U+1160 JUNGSEONG, U+3164 HANGUL, U+FFA0 HALFWIDTH HANGUL
+   FILLER) are Unicode category `Lo` — not Separator/Other, not a combining
+   mark — and NFKC-normalise to non-ASCII, so they evade every confusable rule
+   above. UTS-46 IDNA nevertheless maps each to NOTHING: a decode+IDNA launcher
+   resolves `https://bmc%E3%85%A4.example/console` as `bmc.example`, a DIFFERENT
+   authority than `Uri.tryParse` reports (`bmc%E3%85%A4.example`). Under a stale
+   secure flag + test opt-in that parser differential could grant in-app
+   rendering and self-signed acceptance on a mismatched/spoofed host. All four
+   fail closed (either hex case, including in userinfo/leading/trailing
+   positions); ordinary pct-encoded UTF-8 host bytes (e-acute, euro, emoji),
+   punycode hosts and the same escapes in the path/query stay launchable — no
+   valid target lost.
    Covered by targeted tests across the defense-in-depth re-validation
    groups (scheme/host/malformed-authority parity + control-character +
    raw-space + Unicode-whitespace/invisible + raw-backslash + RFC-3986
@@ -467,7 +480,10 @@ Invariants, enforced by tests:
    rejection + NFKC mark-introducing authority rejection (spacing diacritics,
    halfwidth sound marks and base+mark compositions that are not category M
    yet NFKC-decompose to a combining mark, so they recompose with a preceding
-   base into a different host under a decode+IDNA launcher)).
+   base into a different host under a decode+IDNA launcher) + IDNA-ignored
+   Hangul filler authority rejection (U+115F/U+1160/U+3164/U+FFA0 — category
+   `Lo`, NFKC non-ASCII, silently dropped by UTS-46 IDNA so a launcher contacts
+   a different authority)).
 
 ## What remains gated (not done here)
 
