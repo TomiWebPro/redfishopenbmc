@@ -413,6 +413,19 @@ String? externalClientConsoleProtocol(String? uri) {
 /// acceptance on a mismatched host. Only canonical dotted-quad IPv4 (four
 /// 0-255 octets, no leading zeros), IPv6 literals and ordinary DNS names stay
 /// launchable, so no real BMC target is lost (see [_isNonCanonicalNumericHost]).
+///
+/// A host with an empty DNS label is rejected for the same reason: a leading
+/// dot (`.bmc.example`), consecutive dots (`bmc..example`) or a double trailing
+/// dot (`bmc.example..`) leaves an empty label between/around DNS labels.
+/// [Uri.tryParse] reports such a string as a non-empty HTTPS host, so a purely
+/// syntactic re-check calls it "secure" — yet a launcher may collapse the empty
+/// label, reject the malformed name, or read the leading dot as a relative /
+/// traversal reference, contacting a DIFFERENT authority than Uri reported.
+/// Under a stale secure flag + test opt-in that parser differential could grant
+/// in-app rendering and self-signed acceptance on a mismatched/spoofed host. A
+/// real BMC host never has an empty label, so rejecting them loses no valid
+/// target: a single-label host, an absolute FQDN with exactly one trailing dot,
+/// canonical IPv4/IPv6 literals and punycode hosts stay launchable.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -961,6 +974,32 @@ bool _isNonCanonicalNumericHost(String host) {
   return false;
 }
 
+/// Returns `true` when [host] (the host reported by [Uri.tryParse]) contains an
+/// empty DNS label: a leading dot (`.bmc.example`), consecutive dots
+/// (`bmc..example`) or more than one trailing dot (`bmc.example..`).
+///
+/// Such a host is not a real BMC target, and a launcher may normalise/collapse
+/// the empty label (or treat a leading dot as a relative/traversal reference)
+/// so it contacts a DIFFERENT authority than [Uri.tryParse] reported — a
+/// parser-differential / host-spoofing vector that under a stale secure flag +
+/// test opt-in could grant in-app rendering and self-signed acceptance on a
+/// mismatched host. Exactly one trailing dot is the legitimate absolute-FQDN
+/// form and is kept; IPv6 literals (which contain ':') are unaffected. The
+/// degenerate all-dot host is rejected separately; an empty core here is left
+/// to that rule. Stricter than the model, never more permissive — a real BMC
+/// host never has an empty label, so no valid target is lost.
+bool _hasEmptyDnsLabel(String host) {
+  if (host.isEmpty || host.contains(':')) return false; // IPv6: keep.
+  // Strip exactly one trailing dot (the absolute-FQDN root label).
+  final String core =
+      host.endsWith('.') ? host.substring(0, host.length - 1) : host;
+  if (core.isEmpty) return false; // degenerate all-dot host: handled below.
+  for (final String label in core.split('.')) {
+    if (label.isEmpty) return true;
+  }
+  return false;
+}
+
 /// Trims [uri] and returns it only when it is non-blank and contains no raw
 /// control/separator/invisible code point, or `null` otherwise. Shared by every
 /// HTTP(S) transport classifier so HTTPS and HTTP classification apply
@@ -1116,6 +1155,13 @@ bool _isHttpUriWithSchemes(String? uri, Set<String> schemes) {
   // FQDN trailing dot) or an IPv6 literal contains non-dot characters and is
   // unaffected — stricter than the model, never more permissive.
   if (_hasDegenerateAuthorityHost(parsed)) return false;
+  // Reject a host with an empty DNS label (leading dot, consecutive dots or a
+  // double trailing dot): a launcher may normalise/collapse the empty label and
+  // contact a different authority than Uri.tryParse reported, which under a
+  // stale secure flag + test opt-in could grant in-app rendering and self-signed
+  // acceptance on a mismatched/spoofed host. An absolute FQDN with exactly one
+  // trailing dot and IPv6 literals stay launchable — no valid target lost.
+  if (_hasEmptyDnsLabel(parsed.host)) return false;
   return true;
 }
 

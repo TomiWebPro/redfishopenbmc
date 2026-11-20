@@ -2458,4 +2458,85 @@ void main() {
       }
     });
   });
+
+  group('planConsoleLaunch — defense in depth: empty DNS-label rejection', () {
+    test('a host with an empty DNS label fails closed with a stale flag', () {
+      // A leading dot (`.bmc.example`), consecutive dots (`bmc..example`) or a
+      // double trailing dot (`bmc.example..`) leaves an empty DNS label. Such
+      // a host is not a real BMC target, and a launcher may normalise/collapse
+      // the empty label (or treat it as a relative/traversal reference) so it
+      // contacts a DIFFERENT authority than Uri.tryParse reported. Under a
+      // stale secure flag + test opt-in that parser differential could grant
+      // in-app rendering and self-signed acceptance on a spoofed host. A real
+      // BMC host never has an empty label, so rejecting these loses nothing.
+      for (final String uri in <String>[
+        'https://.bmc.example/console', // leading empty label
+        'https://..bmc.example/console', // double leading dot
+        'https://bmc..example/console', // consecutive dots / empty label
+        'https://bmc.example../console', // double trailing dot
+        'https://.bmc/console', // leading dot on a single label
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('an empty-label host never reaches in-app under a strict opt-in', () {
+      // Even without granting self-signed acceptance, a host with an empty
+      // label must not be rendered in-app by an enabled+strict opt-in (no
+      // host-confusion render, no TLS weakening).
+      for (final String uri in <String>[
+        'https://.bmc.example/console',
+        'https://bmc..example/console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: const KvmWebViewPolicy(enabled: true),
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('single trailing dot and other valid hosts stay launchable', () {
+      // Guard against over-rejection: exactly one trailing dot is the legitimate
+      // absolute-FQDN form and must stay launchable, as must single-label hosts,
+      // canonical IPv4/IPv6 literals, punycode and userinfo authorities — none
+      // contain an empty DNS label.
+      for (final String uri in <String>[
+        'https://bmc.example/console', // plain FQDN
+        'https://bmc.example./console', // absolute FQDN: single trailing dot
+        'https://bmc/console', // single-label DNS name
+        'https://192.168.1.10/console', // canonical dotted-quad IPv4
+        'https://[::1]/console', // IPv6 literal
+        'https://xn--bmc-esab.example/console', // punycode host
+        'https://user@bmc.example/console', // userinfo, no empty label
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }
