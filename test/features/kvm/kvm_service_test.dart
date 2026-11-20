@@ -1169,4 +1169,204 @@ void main() {
       }
     });
   });
+
+  group('KvmService manager-walk per-member hostile-body tolerance (RS-7)', () {
+    late Directory fixtureDir;
+    late MockRedfishServer server;
+
+    // An in-temp minimal mockup (no committed fixture) with two healthy
+    // managers (one secure-HTTPS graphical, one SSH serial) alongside:
+    //  * MgrNonMap   — a manager URI whose JSON body is a LIST, not an object;
+    //  * MgrMalformed— an object whose GraphicalConsole/SerialConsole/Oem
+    //                  blocks are all non-map scalars/lists;
+    //  * hostile Members entries (blank / numeric / non-string / missing-link
+    //    objects / padded duplicates) that must never blank the gated screen.
+    // Both fetch methods must stay populated from the healthy managers and
+    // skip ONLY the offending member (RS-2 skip semantics unchanged).
+    setUpAll(() async {
+      fixtureDir = await Directory.systemTemp.createTemp('kvm_rs7_fixture_');
+      final Directory managersDir = Directory('${fixtureDir.path}/Managers')
+        ..createSync(recursive: true);
+      File('${managersDir.path}/index.json').writeAsStringSync(
+        jsonEncode(<String, dynamic>{
+          'Members': <dynamic>[
+            <String, dynamic>{'@odata.id': '/redfish/v1/Managers/MgrGraph'},
+            <String, dynamic>{'@odata.id': '/redfish/v1/Managers/MgrNonMap'},
+            <String, dynamic>{'@odata.id': '/redfish/v1/Managers/MgrMalformed'},
+            '/redfish/v1/Managers/MgrSerial',
+            // Hostile / non-member entries that _memberUri must ignore.
+            <String, dynamic>{'@odata.id': '   '},
+            <String, dynamic>{'@odata.id': 42},
+            <String, dynamic>{'NoOdata': 'not-a-link'},
+            12345,
+            '',
+            // Padded duplicate of a healthy manager — trimmed + deduped.
+            '  /redfish/v1/Managers/MgrGraph  ',
+          ],
+        }),
+      );
+
+      // A healthy, launch-safe graphical console (the expected primary).
+      Directory('${managersDir.path}/MgrGraph').createSync(recursive: true);
+      File('${managersDir.path}/MgrGraph/index.json').writeAsStringSync(
+        jsonEncode(<String, dynamic>{
+          'Id': 'MgrGraph',
+          '@odata.id': '/redfish/v1/Managers/MgrGraph',
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <String>['KVMIP', 'HTML5'],
+            'ConnectUri': 'https://bmc.example/console',
+          },
+        }),
+      );
+
+      // A non-map manager body: a JSON list, which RedfishClient.getJson wraps
+      // into {'value': [...]} rather than throwing a TypeError.
+      Directory('${managersDir.path}/MgrNonMap').createSync(recursive: true);
+      File('${managersDir.path}/MgrNonMap/index.json')
+          .writeAsStringSync(jsonEncode(<dynamic>[1, 2, 3]));
+
+      // An object with all-malformed console blocks: no usable console may be
+      // emitted, but the manager must not throw or blank the other cards.
+      Directory('${managersDir.path}/MgrMalformed').createSync(recursive: true);
+      File('${managersDir.path}/MgrMalformed/index.json').writeAsStringSync(
+        jsonEncode(<String, dynamic>{
+          'Id': 'MgrMalformed',
+          '@odata.id': '/redfish/v1/Managers/MgrMalformed',
+          'GraphicalConsole': 'not-a-map',
+          'SerialConsole': <dynamic>[1, 2],
+          'RemoteConsole': 42,
+          'Oem': 'garbage',
+        }),
+      );
+
+      // A healthy serial-only manager (proves non-graphical survivors too).
+      Directory('${managersDir.path}/MgrSerial').createSync(recursive: true);
+      File('${managersDir.path}/MgrSerial/index.json').writeAsStringSync(
+        jsonEncode(<String, dynamic>{
+          'Id': 'MgrSerial',
+          '@odata.id': '/redfish/v1/Managers/MgrSerial',
+          'SerialConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <String>['SSH'],
+            'ConnectUri': 'ssh://bmc.example/serial',
+          },
+        }),
+      );
+
+      server = await MockRedfishServer(fixturesDir: fixtureDir.path).start();
+    });
+
+    tearDownAll(() async {
+      await server.close();
+      fixtureDir.deleteSync(recursive: true);
+    });
+
+    KvmService newService() => KvmService(
+          client: server.buildClient(),
+          systemId: 'bmc1',
+        );
+
+    test(
+        'hostile members + non-map/malformed bodies do not blank the screen '
+        '(RS-7)', () async {
+      final List<KvmConsole> consoles = await newService().fetchConsoles();
+
+      expect(consoles, isNotEmpty);
+      expect(
+        consoles.map((KvmConsole c) => c.managerId).toSet(),
+        <String>{'MgrGraph', 'MgrSerial'},
+        reason: 'only the two healthy managers may emit console cards',
+      );
+    });
+
+    test('malformed console blocks are skipped per-manager, not fatal (RS-7)',
+        () async {
+      final List<KvmConsole> consoles = await newService().fetchConsoles();
+
+      expect(
+        consoles.where((KvmConsole c) => c.managerId == 'MgrMalformed'),
+        isEmpty,
+      );
+      expect(
+        consoles.where((KvmConsole c) => c.managerId == 'MgrNonMap'),
+        isEmpty,
+      );
+      expect(
+        consoles.where((KvmConsole c) => c.managerId == 'MgrGraph'),
+        hasLength(1),
+      );
+      expect(
+        consoles.where((KvmConsole c) => c.managerId == 'MgrSerial'),
+        hasLength(1),
+      );
+    });
+
+    test('both KVM views stay populated and agree on healthy managers (RS-7)',
+        () async {
+      final KvmService svc = newService();
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+
+      final Set<String> consoleManagers =
+          consoles.map((KvmConsole c) => c.managerId).toSet();
+      final Set<String> capabilityManagers =
+          capabilities.map((KvmCapability c) => c.managerId).toSet();
+      expect(consoleManagers, <String>{'MgrGraph', 'MgrSerial'});
+      expect(
+        capabilityManagers,
+        containsAll(<String>[
+          'MgrGraph',
+          'MgrSerial',
+          'MgrNonMap',
+          'MgrMalformed',
+        ]),
+      );
+      // One capability per walked manager (even a body-less/malformed one),
+      // and each healthy console manager also has a capability (RS-6 contract).
+      expect(capabilities, hasLength(4));
+      for (final String managerId in consoleManagers) {
+        expect(capabilityManagers, contains(managerId));
+      }
+    });
+
+    test(
+        'primary is deterministic and launch-safe despite hostile managers '
+        '(RS-7)', () async {
+      final KvmService svc = newService();
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+      final KvmConsole? primary = await svc.fetchPrimaryConsole();
+
+      expect(primary, isNotNull);
+      expect(
+        KvmService.pickPrimary(consoles)?.managerId,
+        primary!.managerId,
+        reason: 'both primary entry points must agree deterministically',
+      );
+      expect(primary.managerId, 'MgrGraph');
+      expect(primary.canOpenConsole, isTrue);
+      expect(primary.launchPlan.route, KvmConsoleRenderRoute.externalBrowser);
+      expect(primary.launchPlan.isInApp, isFalse);
+      expect(primary.launchPlan.acceptSelfSigned, isFalse);
+      expect(primary.launchPlan.targetUri, 'https://bmc.example/console');
+    });
+
+    test(
+        'fetchCapability resolves survivors; hostile managers never throw '
+        '(RS-7)', () async {
+      final KvmService svc = newService();
+
+      expect((await svc.fetchCapability('MgrGraph'))!.supported, isTrue);
+      expect((await svc.fetchCapability('MgrSerial'))!.supported, isFalse);
+      // A malformed/non-map manager still yields a stable (unsupported)
+      // capability from its member-URI id — never an exception that blanks UI.
+      final KvmCapability? nonMap = await svc.fetchCapability('MgrNonMap');
+      final KvmCapability? malformed =
+          await svc.fetchCapability('MgrMalformed');
+      expect(nonMap, isNotNull);
+      expect(nonMap!.supported, isFalse);
+      expect(malformed, isNotNull);
+      expect(malformed!.supported, isFalse);
+    });
+  });
 }

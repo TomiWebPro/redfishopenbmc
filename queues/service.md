@@ -12,7 +12,7 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
      In-temp mockup only, no committed fixture, no wire-shape change, dependency-free, TLS-safe;
      distinct from RS-2 (transient HTTP failures) and RS-4/RS-6. -->
 
-- [ ] RS-7 Manager-walk per-member hostile-body tolerance invariant: `KvmService.fetchConsoles()` /
+- [x] RS-7 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 RS-7 manager-walk per-member hostile-body tolerance + RED→GREEN tests`, analyze 0 / 1575 passed / 1 skipped) — 5-test group in `test/features/kvm/kvm_service_test.dart` over an in-temp mockup (secure graphical + SSH serial survivors; a non-map LIST body wrapped by `getJson`; an all-malformed-console-block object; hostile/blank/numeric/padded `Members` entries) pinning that both views stay populated from healthy managers, malformed/non-map bodies skip per-manager without blanking the screen, primary stays deterministic + launch-safe, and `fetchCapability` resolves survivors. No divergence found — already tolerant; regression guard against future drift. RED proof: temporarily rejecting wrapped non-map / string console blocks in `_fetchManagerBodies` failed all 5 RS-7 tests (`+0 -5`); restored byte-clean (SHA `bfbe6546…` unchanged, 0 probe occurrences) → 5/5 GREEN. No `lib/`, dependency, wire/fixture/TLS change. Manager-walk per-member hostile-body tolerance invariant: `KvmService.fetchConsoles()` /
       `fetchCapabilities()` must fail CLOSED per manager — a `/redfish/v1/Managers` `Members` array
       containing non-string / blank / hostile links, and a Manager body that decodes to a non-map or
       has a malformed GraphicalConsole / SerialConsole / Oem, must yield a stable result (skip only

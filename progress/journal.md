@@ -11665,3 +11665,18 @@
 - RS-7 (rf-service) manager-walk per-member hostile-body tolerance with RED→GREEN service tests; then EP-U8 (rf-ui) open-affordance gating if no service gap. Never activate WebView, grant human approval, or weaken production TLS. Push this run's single commit (the 3 ahead commits go with it).
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (RS-7)
+
+**Done:**
+- RS-7 (head of the unlanded `queues/service.md` slices, first in the prior run's Next). Added a 5-test group to `test/features/kvm/kvm_service_test.dart` over an in-temp minimal mockup (no committed fixture): two healthy managers (secure graphical + SSH serial) plus a non-map LIST manager body (wrapped by `getJson` as `{'value': [...]}`), an all-malformed-console-block object (string/list/scalar GraphicalConsole/SerialConsole/RemoteConsole/Oem), and hostile `Members` entries (blank/numeric/non-string/missing-link/padded duplicates). Pins that both `fetchConsoles()`/`fetchCapabilities()` stay populated from healthy managers, malformed/non-map bodies skip per-manager without blanking the gated screen, primary stays deterministic + launch-safe (external-browser / no self-signed / exact target), and `fetchCapability` resolves survivors. No divergence found — the service + shared factories already tolerate these shapes; regression guard against future drift.
+- RED→GREEN proof: temporarily rejecting wrapped non-map bodies / string console blocks in `KvmService._fetchManagerBodies` failed all 5 RS-7 tests (`+0 -5`) with a screen-blanking `RedfishException`; restored byte-clean (SHA `bfbe6546…` unchanged, 0 probe occurrences) → 5/5 GREEN. Embedded-CRLF member link probed and found tolerated (404-skipped); probe removed before final.
+
+**Decisions:**
+- Test-only, dependency-free, TLS-safe: no product `lib/`, wire/payload/fixture/tool change; no URL opened, no human approval granted, no issue closed, no production TLS weakening. No manufactured churn — pins a real drift seam (per-member hostile-body tolerance across BOTH KVM views) not covered by RS-2/RS-4/RS-5/RS-6. DMTF emulator skipped (test-only, <7 days since last green 85/85). No manufactured UI churn (both issues' UI acceptance is human-gated).
+- Verify: targeted full service suite 51/51; `flutter analyze` 0; full `flutter test` 1575 passed / 1 skipped (baseline 1570 +5); issues validate OK; `git diff --check` clean. No force-push; pre-existing untracked `testing/` + stash preserved.
+
+**Next:**
+- EP-U8 (rf-ui) open-affordance gating across all three surfaces with merged-a11y widget tests; then EP-U7 full merged-Semantics notice audit. Never activate WebView, grant human approval, or weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
