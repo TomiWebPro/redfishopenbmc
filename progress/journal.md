@@ -11936,3 +11936,18 @@
 - Next head-first slices EP-P10 / EP-T13 / EP-U10 — audit each for a genuine RED→GREEN gap before landing, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-P10)
+
+**Done:**
+- FEATURE — EP-P10 production opt-in construction guard (head of `queues/platform.md`). Added `test/features/kvm/platform/production_optin_construction_guard_test.dart` (12 tests), a comment/string-aware pure-Dart guard that scans every product `lib/features/kvm/**.dart` (policy definition file excluded) and fails closed on any `KvmWebViewPolicy.testOptIn` / `KvmWebViewTlsMode.testOptInSelfSigned` reference or any `KvmWebViewPolicy(...)` construction with `enabled: true` / self-signed TLS, plus a real-repo pin that every production `planConsoleLaunch` call passes only `KvmWebViewPolicy.productionDefault`. Audited first: no live divergence (product already uses only `productionDefault`) — a regression guard against a production bypass of the human WebView/TLS gate.
+- RED→GREEN: temp-root (opt-in reference / enabled ctor → violation; productionDefault / comments / string-literals → clean); real file — planted a `KvmWebViewPolicy.testOptIn` ref under `lib/features/kvm/views/` → real-repo invariant failed with named offender (`+10 -1`); removed → 12/12 GREEN, 0 artifacts.
+
+**Decisions:**
+- Test-only, dependency-free, TLS-safe: no product `lib/`, wire/transport/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. No issue closed (both remain human-gated on platform WebView + BMC TLS validation). Two concurrent PASS-verified rf-gate commits (`38020f1` +3 tests, merge `47068df`) landed mid-run and were included in final verify; pre-existing untracked `testing/` + `stash@{0}` untouched; no force-push.
+- Verify: targeted 12/12; `flutter analyze` 0; full `flutter test` 1699 passed / 1 skipped (baseline 1684 at `cbe91fb` +12 mine +3 concurrent); issues validate OK; `git diff --check` clean; deps unchanged. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Next:**
+- EP-T13 (tooling queue-item Dept/Verify guard), EP-U10 (UI flag-off false-claim guard), EP-M2/RM-1 (model) — audit each for a genuine RED→GREEN gap before landing, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
