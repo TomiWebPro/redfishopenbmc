@@ -3132,4 +3132,92 @@ void main() {
       });
     },
   );
+
+  group(
+    'planConsoleLaunch — defense in depth: mathematical alphanumeric rejection',
+    () {
+      test(
+          'a percent-encoded mathematical alphanumeric host fails closed with a stale flag',
+          () {
+        // Unicode's Mathematical Alphanumeric Symbols block (U+1D400..U+1D7FF)
+        // holds styled (bold/italic/script/fraktur/double-struck/monospace)
+        // Latin letters and digits that NFKC-normalise to plain ASCII
+        // (e.g. U+1D400 MATHEMATICAL BOLD CAPITAL A -> 'A', U+1D7CE MATHEMATICAL
+        // BOLD DIGIT ZERO -> '0'). None are Unicode Separator/Other or marks,
+        // and none NFKC-fold to a delimiter or are in the fullwidth/circled/
+        // Roman-numeral sets the existing confusable rule knows, so every
+        // existing rule misses them: Uri.tryParse keeps the escape encoded and
+        // reports a non-empty HTTPS host, while a decode+IDNA launcher resolves
+        // a DIFFERENT ASCII authority. Under a stale secure flag + test opt-in
+        // that parser differential could grant in-app rendering and self-signed
+        // acceptance on a spoofed host, so each must fail closed.
+        for (final String uri in <String>[
+          'https://%F0%9D%90%80.example/console', // U+1D400 bold A -> A
+          'https://bmc%F0%9D%90%82c.example/console', // U+1D402 bold C -> C
+          'https://%F0%9D%9F%8E.example/console', // U+1D7CE bold 0 -> 0
+          'https://%f0%9d%90%9a.example/console', // U+1D41A bold a, lowercase hex
+          'https://%F0%9D%9F%98.example/console', // U+1D7D8 double-struck 0
+          'https://%F0%9D%9A%A8.example/console', // U+1D6A8 bold Greek alpha
+        ]) {
+          final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+            policy: KvmWebViewPolicy.testOptIn,
+            uri: uri,
+            hasSecureUri: true,
+            isHtml5: true,
+            isEnabled: true,
+          );
+
+          expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+          expect(plan.targetUri, uri, reason: uri);
+          expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        }
+      });
+
+      test('a mathematical alphanumeric host never reaches in-app under any policy',
+          () {
+        for (final KvmWebViewPolicy policy in <KvmWebViewPolicy>[
+          KvmWebViewPolicy.testOptIn,
+          KvmWebViewPolicy.productionDefault,
+        ]) {
+          final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+            policy: policy,
+            uri: 'https://bmc%F0%9D%90%82c.example/console',
+            hasSecureUri: true,
+            isHtml5: true,
+            isEnabled: true,
+          );
+
+          expect(plan.isInApp, isFalse, reason: policy.toString());
+          expect(plan.acceptSelfSigned, isFalse, reason: policy.toString());
+        }
+      });
+
+      test('legitimate UTF-8 hosts and path escapes stay launchable', () {
+        // The rule targets only the Mathematical Alphanumeric Symbols block in
+        // the authority. Legitimate pct-encoded UTF-8 host text (e-acute, a
+        // Letter; euro, a Symbol), punycode hosts, and the same styled-code-point
+        // escapes in the path/query (which cannot forge a host) all keep working.
+        for (final String uri in <String>[
+          'https://bmc.example/console',
+          'https://%C3%A9.example/console', // pct-encoded e-acute host
+          'https://%E2%82%AC.example/console', // pct-encoded euro host
+          'https://xn--fsqu00a.example/console', // punycode host
+          'https://bmc.example/console?x=%F0%9D%90%80', // styled escape in query
+        ]) {
+          final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+            policy: KvmWebViewPolicy.productionDefault,
+            uri: uri,
+            hasSecureUri: true,
+            isHtml5: true,
+            isEnabled: true,
+          );
+
+          expect(plan.route, KvmConsoleRenderRoute.externalBrowser,
+              reason: uri);
+          expect(plan.targetUri, uri, reason: uri);
+          expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        }
+      });
+    },
+  );
 }

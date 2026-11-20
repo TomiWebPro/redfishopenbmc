@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 116 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (127 across the platform
+consume; today it locks the fallback behaviour with 122 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (133 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -238,6 +238,23 @@ Invariants, enforced by tests:
    could grant in-app rendering and self-signed acceptance on a spoofed host.
    Each fails closed in the authority; encoded forms in the path/query and
    non-ASCII that NFKC-folds to non-ASCII (e-acute, euro, emoji) stay launchable.
+   **Mathematical alphanumeric rejection:** the NFKC-to-ASCII rule above does
+   not cover Unicode's Mathematical Alphanumeric Symbols block (U+1D400..U+1D7FF),
+   whose characters are styled (bold/italic/script/fraktur/double-struck/
+   monospace) Latin letters and digits that NFKC-normalise to plain ASCII —
+   e.g. `%F0%9D%90%80` (U+1D400 MATHEMATICAL BOLD CAPITAL A) -> `A`,
+   `%F0%9D%90%82` (U+1D402 bold C) -> `C`, `%F0%9D%9F%8E` (U+1D7CE bold 0) ->
+   `0`. They are neither Unicode Separator/Other nor marks, fold to no
+   delimiter, and lie outside the fullwidth/circled/Roman-numeral ranges, so
+   every earlier rule misses them: `Uri.tryParse` keeps the escape encoded and
+   reports a non-empty HTTPS host, while a decode+IDNA launcher resolves a
+   *different* ASCII authority (`https://bmc%F0%9D%90%82c.example/console`
+   -> `bmcCc.example`). Under a stale secure flag + test opt-in that parser
+   differential could grant in-app rendering and self-signed acceptance on a
+   spoofed host. No real BMC host uses a mathematical style, so the whole block
+   fails closed in the authority; ordinary pct-encoded UTF-8 host bytes
+   (`%C3%A9`, `%E2%82%AC`), punycode hosts and these escapes in the path/query
+   stay launchable — no valid target lost.
    **NFKC vulgar-fraction confusable rejection:** a percent-encoded "vulgar
    fraction" (Unicode category `No`) NFKC-normalises to a decimal digit +
    U+2044 FRACTION SLASH + digit(s) (e.g. U+00BD `1/2` -> `1` + U+2044 + `2`),
@@ -399,7 +416,8 @@ Invariants, enforced by tests:
    delimiter + extended
    compatibility-confusable delimiter + IDNA dot-confusable rejection +
    IDNA middle-dot confusable rejection + NFKC-to-ASCII compatibility
-   letter/digit rejection + NFKC vulgar-fraction confusable rejection +
+   letter/digit rejection + mathematical alphanumeric rejection + NFKC
+   vulgar-fraction confusable rejection +
    encoded combining-mark rejection + degenerate dot-host rejection +
    double-encoded authority-delimiter rejection + encoded authority-dot
    rejection + malformed-UTF-8 authority rejection + encoded ASCII space

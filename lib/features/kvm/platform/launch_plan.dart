@@ -205,6 +205,21 @@ class KvmConsoleLaunchPlan {
 /// rejected; encoded non-delimiter non-ASCII (e-acute, euro, emoji) and
 /// confusables in the path/query stay launchable, so no valid target is lost.
 ///
+/// A percent-encoded Unicode "Mathematical Alphanumeric Symbols" code point
+/// (U+1D400..U+1D7FF) is rejected for the same reason: these are styled Latin
+/// letters/digits that NFKC-normalise to plain ASCII (e.g. U+1D400 MATHEMATICAL
+/// BOLD CAPITAL A -> 'A', U+1D7CE MATHEMATICAL BOLD DIGIT ZERO -> '0'), yet they
+/// are neither Separator/Other nor marks, fold to no delimiter, and lie outside
+/// the fullwidth/circled/Roman-numeral sets the confusable rule already knows,
+/// so every earlier rule misses them. [Uri.tryParse] keeps the escape encoded
+/// and reports a non-empty HTTPS host, so a purely syntactic re-check calls it
+/// "secure" while a decode+IDNA launcher resolves a DIFFERENT ASCII authority.
+/// Under a stale secure flag + test opt-in that parser differential could grant
+/// in-app rendering and self-signed acceptance on a spoofed host. No real BMC
+/// host uses a mathematical style, so the whole block fails closed; ordinary
+/// pct-encoded UTF-8 host bytes and these escapes in the path/query stay
+/// launchable — no valid target lost.
+///
 /// A degenerate, label-less authority is rejected for the same reason:
 /// `Uri.tryParse` reports a host made only of dots (`https://./console`,
 /// `https://../console`) as an HTTPS URI with a NON-EMPTY host, so the bare
@@ -942,6 +957,27 @@ bool _isNfkcAsciiLetterOrDigit(int rune) {
   return false;
 }
 
+/// Returns `true` when [rune] lies in the Unicode "Mathematical Alphanumeric
+/// Symbols" block (U+1D400..U+1D7FF).
+///
+/// Every character in this block is a styled (bold, italic, script, fraktur,
+/// double-struck, sans-serif, monospace) Latin letter, Greek letter or digit
+/// whose Unicode compatibility decomposition is a plain code point. The Latin
+/// and digit styles NFKC-fold straight to ASCII (e.g. U+1D400 MATHEMATICAL BOLD
+/// CAPITAL A -> 'A', U+1D41A MATHEMATICAL BOLD SMALL A -> 'a', U+1D7CE
+/// MATHEMATICAL BOLD DIGIT ZERO -> '0'), so a decode+IDNA launcher resolves a
+/// DIFFERENT ASCII authority than [Uri.tryParse] reports, which keeps such an
+/// escape percent-encoded in the host. None are Unicode Separator/Other or
+/// marks, none NFKC-fold to a structural delimiter, and none fall in the
+/// fullwidth / circled / Roman-numeral ranges covered by
+/// [_isNfkcAsciiLetterOrDigit] — so every existing confusable rule misses them.
+/// Under a stale secure flag + test opt-in that parser differential could grant
+/// in-app rendering and self-signed acceptance on a spoofed host. No real BMC
+/// host uses a mathematical style, so rejecting the whole block loses no valid
+/// target (ordinary pct-encoded UTF-8 host bytes stay launchable).
+bool _isMathematicalAlphanumericSymbol(int rune) =>
+    rune >= 0x1D400 && rune <= 0x1D7FF;
+
 /// Vulgar fractions (Unicode category `No`) whose NFKC normalisation expands
 /// to a digit + U+2044 FRACTION SLASH + digit(s), e.g. U+00BD `1/2` ->
 /// `1` U+2044 `2`. IDNA/UTS-46 maps U+2044 to '/', so a decode+IDNA launcher
@@ -1030,6 +1066,11 @@ bool _authorityHasAsciiCompatibilityConfusable(String uri) {
     // Roman numerals) NFKC-normalise to an ASCII letter/digit too — the same
     // decode+IDNA host-spoofing differential, outside the fullwidth block.
     if (_isNfkcAsciiLetterOrDigit(rune)) return true;
+    // Mathematical Alphanumeric Symbols (U+1D400..U+1D7FF) are styled Latin
+    // letters/digits that NFKC-fold to plain ASCII — the same differential, in
+    // a block none of the ranges above cover (see
+    // [_isMathematicalAlphanumericSymbol]).
+    if (_isMathematicalAlphanumericSymbol(rune)) return true;
   }
   return false;
 }
@@ -1473,7 +1514,9 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // [ ]/...) or a fullwidth ASCII letter/digit/punctuation look-alike. A launcher
   // applying IDNA/NFKC resolves a different authority than Uri.tryParse
   // reports, which under a stale flag + test opt-in could reach in-app rendering
-  // and self-signed acceptance on a spoofed host. ASCII escapes and encoded
+  // and self-signed acceptance on a spoofed host. This also covers the
+  // Mathematical Alphanumeric Symbols block (styled Latin letters/digits that
+  // fold to plain ASCII, outside every set above). ASCII escapes and encoded
   // non-ASCII that folds to non-ASCII (e-acute, euro, emoji) stay launchable.
   if (_authorityHasAsciiCompatibilityConfusable(trimmed)) return false;
   // Reject a percent-encoded octet sequence in the authority that is not
