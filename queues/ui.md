@@ -14,7 +14,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
      divergence via RED→GREEN; no copy churn. The blocked in-app embed/WebView adapter (EP-U2) stays
      human-gated and is NOT re-split. No code touched. -->
 
-- [ ] EP-U10 Flag-off viewer never claims live embedded rendering or input forwarding: audit every
+- [x] EP-U10 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 EP-U10 flag-off viewer false-claim firewall + RED->GREEN widget tests`, analyze 0 / 1719 passed / 1 skipped). Flag-off viewer never claims live embedded rendering or input forwarding: audit every
       `KvmConsoleViewerPage` path (secure-HTTPS, external-client VNC/RFB/serial, no-URI) and assert
       its visible `Text` + merged `excludeSemantics` labels never assert that keyboard/mouse are
       being forwarded or that an in-app console is live while the platform flag is off — only the

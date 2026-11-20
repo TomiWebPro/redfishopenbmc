@@ -11984,3 +11984,18 @@
 - **Verify (in-tree at merge `0616b34`; shared tree held a concurrent `redfish-automation` run's untracked WIP `kvm_viewer_flagoff_false_claim_guard_test.dart` + modified `kvm_console_viewer_page.dart` + pre-existing untracked `testing/`, all untouched):** `flutter analyze` 0; targeted `launch_plan_test.dart` 153/153, platform suite 219/219; full `flutter test --coverage` 1715 passed / 1 skipped (one transient unrelated `power_view_test.dart` full-run flake GREEN 3/3 isolated + clean full re-run); four coverage gates PASS overall 90.1% (5874/6517) / scoped 90.4% (2119/2345) / kvm 96.2% (1151/1196) / kvm-platform 95.8% (317/331), exit 0; `python3 issues/issues.py validate` OK; `git diff --check` clean; staged-diff secret scan clean.
 - **Decisions:** no production-TLS weakening (sole production change rejects MORE authorities; `isTrue` only on a legitimate UTF-8 host under the pre-existing test-opt-in path); no wire/transport/fixture/tool change (dependency-free decision helper only), so the 85-test DMTF emulator suite was skipped (<7 days since last green 85/85). No issue closed (both #009/#021 remain human-gated on platform WebView + BMC TLS validation). No force-push; no history rewrite; untracked dirs preserved.
 - **NEXT:** sole-merger gate done for this PASS verdict. Watch for the next `rf-platform-check` PASS on a new branch tip; merge only PASS-verified branches. Full emulator only on a real lib-wire/fixture/tool change or >7 days since last green.
+
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-U10)
+
+**Done:**
+- FEATURE — EP-U10 flag-off viewer false-claim firewall (head of `queues/ui.md`). Added `test/features/kvm/kvm_viewer_flagoff_false_claim_guard_test.dart` (4 tests): an operator-assurance firewall harvesting every visible Text/SelectableText AND every Semantics label across 7 viewer paths (secure-HTTPS, secure-browser, VNC, SSH, no-URI, insecure-HTTP, BMC-disabled) at 320/800/1300 px, failing closed on any copy asserting input forwarding or a live/streaming in-app embedded console while the flag is off; plus `kvmLaunchStatusText` coverage (7 strategies × 3 protocols), merged-node status parity, and a no-screen-reader-only-label invariant. EP-U9 pinned what IS disclosed; this pins what must NEVER be claimed. Audit found no live divergence — a human-gate regression guard, not churn.
+
+**Decisions:**
+- Test-only, dependency-free, TLS-safe: no product `lib/`, wire/transport/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. RED proof: injected a false "forwarded to the live console" Text into the viewer → primary test failed (`+0 -1`); restored byte-clean (SHA `f088a86d…` unchanged), backup shredded → 4/4 GREEN. No issue closed (both #009 P3 / #021 P2 remain human-gated). Pre-existing untracked `testing/` + `stash@{0}` and concurrent rf-gate WIP untouched; no force-push, no history rewrite.
+- Verify: targeted 4/4; `flutter analyze` 0; full `flutter test` 1719 passed / 1 skipped (baseline 1715 incl. 1 transient `power_view_test.dart` flake isolated 26/26 GREEN +4 mine); issues validate OK; `git diff --check` clean; deps unchanged. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Next:**
+- Re-audit EP-S2 / EP-T4 / EP-U4 for a genuinely different untested contract before adding any guard — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
