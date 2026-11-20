@@ -5,6 +5,30 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 00:52 UTC: splits the service half of the remaining cross-surface
+     "control-safe manager source" portion of the open #009/#021 epic. `KvmConsole.fromManager`
+     trims/normalizes the `@odata.id` via `_uriString`, but `KvmService.fetchCapability` keys its
+     capability's `sourceManagerUri` straight from raw `ODataResource(manager.body).id` — so one
+     padded/blank `@odata.id` yields a clean source on the console card and a raw padded one on the
+     capability card for the same manager. Dependency-free, no wire-shape/TLS change; distinct from
+     EP-S1 / RS-2 (still open) and from RS-4 (duplicate Members, already landed). -->
+
+- [ ] RS-5 Console↔capability manager-source agreement in the shared manager walk: make the
+      `sourceManagerUri` set on `KvmService.fetchCapability` follow the same trim / blank-reject /
+      fallback contract `KvmConsole.fromManager` already applies to the same `@odata.id`, so the two
+      views cannot disagree about a manager's source identity. A whitespace-padded `@odata.id` must
+      not leak stray whitespace into the capability card while the console card shows it trimmed;
+      a blank/non-string value must use the same `/redfish/v1/Managers/<managerId>` fallback. Add
+      RED→GREEN service tests comparing `fetchCapability(id).sourceManagerUri` with the matching
+      `fetchConsoles()` console's normalized source over an in-temp mockup (no committed fixture).
+      Do not change the Redfish wire shape or the RS-2 skip semantics; model-only normalization,
+      no new helper owned by another dept (request via `_lib-requests.md` if unavoidable).
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_service_test.dart && flutter analyze` (0 issues),
+              with RED→GREEN proof; writes limited to `lib/features/kvm/kvm_service.dart` + service
+              tests under `test/features/kvm/`; emulator 85/85 only if `lib/` wire changes; no
+              dependency, no production TLS behaviour change.
+
 <!-- rf-ideate split 2026-11-19 20:47 UTC: carves an unblocked, dependency-free manager-walk
      robustness slice out of the #009/#021 epic (distinct from RS-2's transient-failure skip and
      EP-S2's safe-primary target). No wire/TLS change, no dependency. -->

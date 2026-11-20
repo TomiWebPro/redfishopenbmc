@@ -6,6 +6,28 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 00:52 UTC: splits the last unguarded invariant of the resolved
+     no-embedded-WebView final route (external-browser + copy) into a machine-checkable property
+     test. EP-P5 guards the import surface; this guards the DECISION surface so a future edit
+     cannot silently re-open an in-app/WebView route or grant self-signed TLS on a fallback.
+     Test-only, dependency-free, no production TLS change; distinct from EP-P4 (human-gated) and
+     EP-P2 (deferred WebView adapter — do NOT pick up unattended). -->
+
+- [ ] EP-P6 Production-policy final-route invariant test (closeout of the resolved no-WebView
+      decision): add a pure-Dart property-style test under `test/features/kvm/platform/` that, over
+      the cross-product of console signals (secure/insecure, html5/non-html5, enabled/disabled) ×
+      URI forms (valid HTTPS, plaintext HTTP, external-client scheme, blank, CRLF/NUL, raw space,
+      fullwidth confusable authority), asserts under the production policy (WebView flag OFF): the
+      route is NEVER `inAppWebView`, `acceptSelfSigned` is NEVER true, every non-null `targetUri`
+      is control-safe (`isControlSafeConsoleUri`), and any blank/control-unsafe URI degrades to
+      `copyOnly` with a null target. Prove RED by temporarily weakening one guard in a local copy,
+      then GREEN. This pins the human-gated decision mechanically without adding a dependency or
+      a WebView import; the external-browser + copy fallback stays byte-for-byte.
+      Dept: rf-platform
+      Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues), with RED→GREEN
+              proof; `git diff --exit-code -- pubspec.yaml pubspec.lock` (no dependency bump); no
+              production TLS behaviour change; writes limited to `test/features/kvm/platform/**`.
+
 <!-- rf-ideate split 2026-11-19 20:47 UTC: unblocks the unattended-doable half of the blocked
      EP-P4 WebView closeout. EP-P4 stays human-gated (per-target validation evidence); this is
      its machine-checkable guard clause, split out so a platform builder can land a genuine

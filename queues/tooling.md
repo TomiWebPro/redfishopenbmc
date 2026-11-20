@@ -5,6 +5,29 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 00:52 UTC: splits the tooling/guard half of the remaining
+     cross-surface "control-safe manager source" portion of the open #009/#021 epic, mirroring
+     EP-P5 / EP-T6 / LA-1. A machine-checkable invariant so no surface can reintroduce the raw
+     `@odata.id` clipboard/UI-injection class CB-1 closed on the card. Pure test-only guard,
+     dependency-free, never writes `lib/`. -->
+
+- [ ] EP-T8 Control-safe manager-source display guard (closeout of the CB-1 class across all
+      surfaces): add a pure-Dart guard test under `test/tool/` that scans product `lib/**.dart`
+      (comment/string/filename aware, like `product_import_policy_test.dart`) and fails closed if
+      a widget/controller interpolates a BMC-supplied `sourceManagerUri` (or an `@odata.id`-derived
+      source value) directly into a user-facing `Text` / `SelectableText` / `Semantics` label or a
+      `Clipboard.setData` payload without routing through the shared control-safe gate
+      (`isControlSafeConsoleUri` / a `safeManagerUri` getter / `clipboardTargetUri`). It must NOT flag
+      a value already routed through those gates, nor the test-only fixtures that pass literal safe
+      sources. RED→GREEN proof by temporarily planting a raw source interpolation into a temp
+      product-style file under a temp scan root. No live-BMC, no dependency, no `lib/` change,
+      production TLS untouched; wire into `.github/workflows/verify.yml` only if the repo guard
+      convention already covers `test/tool/` (do not add a second full-suite invocation).
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/ && flutter analyze` (0 issues), with RED→GREEN guard tests
+              (raw interpolation → violation + nonzero exit; gated value → clean); writes limited to
+              `tool/**`, `test/tool/**`, `.github/workflows/**`; never `lib/`, no dependency bump.
+
 <!-- rf-ideate split 2026-11-19 20:47 UTC: splits the last un-split FUTUREWORK "[!] Environment
      quota blocking verification (2026-11-08)" blocker — its harness-robustness portion (the
      quota itself was transient; baselines are green). Mirrors EP-T6 / LA-1: pure tooling, no

@@ -5,6 +5,30 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 00:52 UTC: splits the UI half of the remaining cross-surface
+     "control-safe manager source" portion of the open #009/#021 epic. Three surfaces still
+     interpolate the raw BMC-supplied `sourceManagerUri` directly into visible Text + merged
+     Semantics labels — the viewer's "No direct console URI. Manager source: …" and both cards'
+     manager-source rows — so a control-unsafe `@odata.id` can reach the screen/a11y tree even
+     though CB-1 already gated the CARD clipboard path. Display-only, dependency-free, TLS-safe;
+     distinct from EP-U5 (launch-status parity) and CB-1 (clipboard). Soft-depends on RM-4 for the
+     capability getter but has a local-gate fallback, so it is never blocked. -->
+
+- [ ] EP-U6 Control-safe manager-source display on all three KVM surfaces: route the viewer's
+      "No direct console URI. Manager source: …" row and the per-console / per-manager capability
+      cards' manager-source rows through the shared control-safe source (`KvmConsole.safeManagerUri`,
+      and `KvmCapability.safeManagerUri` if RM-4 has landed; otherwise use `isControlSafeConsoleUri`
+      locally without editing model paths). A control-unsafe source must not render raw CRLF / NUL /
+      separator / malformed-`%` code points in visible Text or the merged `excludeSemantics` label;
+      a control-safe source stays byte-for-byte. Keep visible text == announced label on every
+      surface, 320/800/1300 px no-overflow, and leave the raw endpoint visible-but-sanitized (fail
+      closed, not hidden). No WebView import, no dependency, no TLS change, no URL opened.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_capability_card_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN widget proof (a hostile `@odata.id` source renders no raw
+              control code point); merged a11y + 320/800/1300 no-overflow; writes limited to
+              `lib/features/kvm/views/**`; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-19 20:47 UTC: unblocked cross-surface guidance slice of the #009/#021
      final-route epic (external-browser + copy; EP-P1 resolved). Complements EP-U3 (external-client
      guidance) and EP-U4 (session ownership) without duplicating them. No WebView import, no

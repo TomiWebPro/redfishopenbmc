@@ -4,6 +4,26 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-20 00:52 UTC: splits the remaining cross-surface "control-safe manager
+     source" portion of the open #009/#021 epic. CB-1 added `KvmConsole.safeManagerUri` for the CARD
+     clipboard path, but `KvmCapability` still has no equivalent, so the capability card has no
+     model-side single source of truth for a control-safe source display. Pure model, dependency-free,
+     TLS-safe; distinct from EP-M1 / RM-2 (still open) and from CB-1 (already landed on KvmConsole). -->
+
+- [ ] RM-4 Control-safe manager-source getter on `KvmCapability` (model half of the cross-surface
+      source-display split): mirror `KvmConsole.safeManagerUri` — route the BMC-supplied
+      `sourceManagerUri` (a `@odata.id`) through the shared `isControlSafeConsoleUri` gate. A
+      control-safe source passes byte-for-byte (no valid source lost); a control-unsafe one
+      (CRLF / NUL / raw space / backslash / Unicode separator / malformed-or-encoded control) degrades
+      to a deterministic pct-encoded `/redfish/v1/Managers/<managerId>` path, blank/null id → `manager`.
+      Keep the raw `sourceManagerUri` field itself unchanged (read-only model, no wire shape change);
+      RED→GREEN pure-model tests covering safe/unsafe/null sources + hostile-id encoding + the
+      capability↔console agreement for the same manager. No dependency, no transport/TLS change.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_capability_test.dart && flutter analyze` (0 issues),
+              with RED→GREEN proof (compile-RED: getter absent pre-fix); writes limited to
+              `lib/features/kvm/models/**`; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-19 20:47 UTC: splits the still-open non-map-payload remainder of
      RM-2 (its session-limit portion LANDED 18:01) into a fresh, unblocked, dependency-free
      model slice of #009/#021. No transport/TLS change, no dependency. -->
