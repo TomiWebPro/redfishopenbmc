@@ -3696,4 +3696,72 @@ void main() {
     });
   },
 );
+
+  group('planConsoleLaunch — IDNA-ignored Hangul filler authority fails closed', () {
+    // U+115F HANGUL CHOSEONG FILLER, U+1160 HANGUL JUNGSEONG FILLER,
+    // U+3164 HANGUL FILLER and U+FFA0 HALFWIDTH HANGUL FILLER are category Lo
+    // (not C/Z, not a combining mark) and NFKC-normalise to non-ASCII, so they
+    // evade every earlier confusable rule. UTS-46 IDNA nevertheless maps each
+    // to NOTHING: a decode+IDNA launcher resolves
+    // `https://bmc%E3%85%A4.example/` as `bmc.example`, a DIFFERENT authority
+    // than Uri.tryParse reports (`bmc%E3%85%A4.example`). Under a stale secure
+    // flag + test opt-in that parser differential could grant in-app rendering
+    // and self-signed acceptance on a mismatched/spoofed host.
+    const List<String> fillerUris = <String>[
+      'https://bmc%E1%85%9F.example/console', // U+115F CHOSEONG FILLER
+      'https://bmc%E1%85%A0.example/console', // U+1160 JUNGSEONG FILLER
+      'https://bmc%E3%85%A4.example/console', // U+3164 HANGUL FILLER
+      'https://bmc%EF%BE%A0.example/console', // U+FFA0 HALFWIDTH HANGUL FILLER
+    ];
+
+    test('an IDNA-ignored filler authority never reaches in-app', () {
+      for (final String uri in fillerUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+      }
+    });
+
+    test('an IDNA-ignored filler authority stays off under production', () {
+      for (final String uri in fillerUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('lowercase hex escapes are rejected too', () {
+      for (final String uri in <String>[
+        'https://bmc%e3%85%a4.example/console',
+        'https://bmc%ef%be%a0.example/console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  },
+);
 }

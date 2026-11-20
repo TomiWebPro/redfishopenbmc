@@ -571,6 +571,19 @@ String? externalClientConsoleProtocol(String? uri) {
 /// groups (no dots), so every dotted form fails closed while pure-hex loopback,
 /// link-local, unique-local, global-unicast and mapped literals (the latter
 /// still caught by the groups check) stay launchable — no valid target lost.
+///
+/// An IDNA-ignored Hangul filler is rejected for the same reason: U+115F,
+/// U+1160, U+3164 and U+FFA0 are Unicode category `Lo` (not Separator/Other,
+/// not a combining mark) and NFKC-normalise to non-ASCII, so every confusable
+/// rule above misses them. UTS-46 IDNA nevertheless maps each to NOTHING, so a
+/// decode+IDNA launcher silently DROPS it from the host: `bmc%E3%85%A4.example`
+/// resolves as `bmc.example`, a DIFFERENT authority than [Uri.tryParse] reports
+/// (`bmc%E3%85%A4.example`). Under a stale secure flag + test opt-in that
+/// parser differential could grant in-app rendering and self-signed acceptance
+/// on a mismatched/spoofed host. No real BMC host uses a Hangul filler, so the
+/// four fail closed; ordinary pct-encoded UTF-8 host bytes (e-acute, euro,
+/// emoji), punycode hosts and the same escapes in the path/query stay
+/// launchable — no valid target lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -1259,6 +1272,37 @@ const Set<int> _nfkcFractionSlashCodePoints = <int>{
   0x2189, // VULGAR FRACTION ZERO THIRDS       -> '0/3'
 };
 
+/// Non-ASCII code points that UTS-46 IDNA maps to NOTHING (silently drops from
+/// a hostname) but that evade every other authority rule: all four are Unicode
+/// category `Lo` (so the C/Z and mark rules miss them), NFKC-normalise to
+/// non-ASCII (so the NFKC-to-ASCII compatibility rule misses them), and are
+/// outside the fullwidth/circled/Roman/mathematical/fraction families.
+///
+///  * U+115F HANGUL CHOSEONG FILLER
+///  * U+1160 HANGUL JUNGSEONG FILLER
+///  * U+3164 HANGUL FILLER
+///  * U+FFA0 HALFWIDTH HANGUL FILLER (NFKC -> U+1160)
+///
+/// A browser/WebView applying IDNA to an internationalised host drops these,
+/// resolving `bmc<E3 85 A4>.example` as `bmc.example` while [Uri.tryParse]
+/// keeps the percent-encoded escape in a non-empty HTTPS host. One raw URI
+/// therefore names two authorities; under a stale secure flag + test opt-in
+/// that parser differential could grant in-app rendering and self-signed
+/// acceptance on a mismatched/spoofed host. No real BMC host uses a Hangul
+/// filler, so rejecting them loses no valid target.
+const Set<int> _idnaIgnoredHangulFillers = <int>{
+  0x115F, // HANGUL CHOSEONG FILLER
+  0x1160, // HANGUL JUNGSEONG FILLER
+  0x3164, // HANGUL FILLER
+  0xFFA0, // HALFWIDTH HANGUL FILLER
+};
+
+/// Returns `true` when [rune] is a code point that IDNA silently drops from a
+/// hostname while [Uri.tryParse] keeps it percent-encoded (see
+/// [_idnaIgnoredHangulFillers]).
+bool _isIdnaIgnoredHangulFiller(int rune) =>
+    _idnaIgnoredHangulFillers.contains(rune);
+
 /// Returns `true` when the raw authority carries a percent-encoded non-ASCII
 /// code point that a launcher applying IDNA/NFKC resolves to an ASCII
 /// character: either a structural delimiter ([_compatibilityDelimiterCodePoints])
@@ -1279,6 +1323,12 @@ const Set<int> _nfkcFractionSlashCodePoints = <int>{
 /// Scoped to the authority (the TLS-sensitive part) so encoded confusables in
 /// the path/query and encoded non-ASCII that folds to non-ASCII (e-acute, euro,
 /// emoji) stay launchable.
+///
+/// This also rejects the four UTS-46 IDNA-ignored Hangul fillers
+/// ([_idnaIgnoredHangulFillers]): IDNA drops them from the host entirely, so a
+/// decode+IDNA launcher contacts a different authority than [Uri.tryParse]
+/// reported — the same parser-differential spoofing class as a delimiter or
+/// fullwidth confusable, even though their NFKC is not ASCII.
 bool _authorityHasAsciiCompatibilityConfusable(String uri) {
   final String? authority = _authorityOf(uri);
   if (authority == null) return false;
@@ -1301,6 +1351,9 @@ bool _authorityHasAsciiCompatibilityConfusable(String uri) {
   }
   final String decoded = utf8.decode(bytes, allowMalformed: true);
   for (final int rune in decoded.runes) {
+    // UTS-46 IDNA silently drops these Hangul fillers, so a decode+IDNA
+    // launcher resolves a DIFFERENT ASCII authority than Uri.tryParse reports.
+    if (_isIdnaIgnoredHangulFiller(rune)) return true;
     if (_compatibilityDelimiterCodePoints.contains(rune)) return true;
     // Vulgar fractions NFKC-expand to digit + U+2044 FRACTION SLASH + digit;
     // IDNA maps U+2044 to '/', forging a structural delimiter that the single
@@ -1802,8 +1855,10 @@ String? _controlSafeTrimmedUri(String? uri) {
   // reports, which under a stale flag + test opt-in could reach in-app rendering
   // and self-signed acceptance on a spoofed host. This also covers the
   // Mathematical Alphanumeric Symbols block (styled Latin letters/digits that
-  // fold to plain ASCII, outside every set above). ASCII escapes and encoded
-  // non-ASCII that folds to non-ASCII (e-acute, euro, emoji) stay launchable.
+  // fold to plain ASCII, outside every set above), and the four IDNA-ignored
+  // Hangul fillers that IDNA drops from the host entirely. ASCII escapes and
+  // encoded non-ASCII that folds to non-ASCII (e-acute, euro, emoji) stay
+  // launchable.
   // Folded into this single shared gate (returning `null`, like the other checks)
   // so every HTTP(S) classifier and the launch-plan target reject it identically.
   if (_authorityHasAsciiCompatibilityConfusable(trimmed)) return null;
