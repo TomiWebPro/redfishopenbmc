@@ -11650,3 +11650,18 @@
 - Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none — gate-only merge; both #009/#021 stay open.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (RM-6)
+
+**Done:**
+- RM-6 (head of the unlanded `queues/model.md` slices, first in FUTUREWORK Next). Appended a 28-test property group to `test/features/kvm/kvm_model_test.dart`: a 26-shape hostile `MaxConcurrentSessions` numeric matrix (int/zero/integral-double/exponent/numeric+padded strings/fractional/non-finite/>2^53/negative/blank/bool/list/map/null/absent) parsed through both `KvmConsole.fromManager` and `KvmCapability.fromManager`, asserting identical resolved `maxConcurrentSessions`/`maxSessions` + spec-expected values; a single-session-encoding test (1 / 1.0 / '1' / padded all resolve to exactly 1 — the eviction precondition); and a disable-preference aggregation-agrees-with-openable-console case. No divergence found (both share `kvmSessionLimit`); regression guard against future drift.
+- RED→GREEN proof: temporarily bypassing the shared helper in `KvmConsole._fromBlock` with an int-only cast failed 10 RM-6 tests incl. cross-view agreement (`+18 -10`); restored byte-clean (SHA `a3308faf…` unchanged, 0 probe occurrences) → 28/28 GREEN. No `lib/` diff.
+
+**Decisions:**
+- Test-only, dependency-free, TLS-safe: no product `lib/`, wire/payload/fixture or dependency change; no URL opened, no human approval granted, no issue closed, no production TLS weakening. Genuine property guard against a real drift seam (the last cross-view field RM-5 did not pin), not timestamp/copy churn. DMTF emulator skipped (test-only, <7 days since last green 85/85). No manufactured UI churn (both issues' UI acceptance is human-gated).
+- Verify: targeted model+capability+session-limit suites 263/263; `flutter analyze` 0; full `flutter test` 1570 passed / 1 skipped (baseline 1542 +28); issues validate OK; `git diff --check` clean. Preserved the pre-existing untracked `testing/`, stash and 3 unpushed commits; no force-push.
+
+**Next:**
+- RS-7 (rf-service) manager-walk per-member hostile-body tolerance with RED→GREEN service tests; then EP-U8 (rf-ui) open-affordance gating if no service gap. Never activate WebView, grant human approval, or weaken production TLS. Push this run's single commit (the 3 ahead commits go with it).
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

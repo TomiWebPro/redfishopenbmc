@@ -1862,4 +1862,133 @@ void main() {
       });
     }
   });
+
+  // RM-6 (rf-model closeout for the still-open #009/#021 epic): the per-console
+  // card (KvmConsole.maxConcurrentSessions) and the per-manager capability card
+  // (KvmCapability.maxSessions) both surface the BMC `MaxConcurrentSessions`
+  // field. Both already route the raw value through the shared `kvmSessionLimit`
+  // parser, but nothing pinned that the two MODELS resolve the SAME value over a
+  // hostile numeric matrix, nor that the single-session value (1) — the exact
+  // precondition KvmSessionController.connect keys on to record an eviction —
+  // survives every accepted encoding identically. RM-5 pinned the other
+  // console↔capability fields; this pins the session-limit field. Pure model
+  // property guard: no wire/transport/TLS change, no URL opened, no dependency.
+  group('RM-6 session-limit cross-view agreement property (#009/#021)', () {
+    // Sentinel: omit the JSON key entirely (absent field) vs. present-with-null.
+    const Object absent = Object();
+
+    // (raw BMC value, spec-expected resolved limit) pairs. Expected values pin
+    // the shared kvmSessionLimit contract so a future edit to that helper
+    // cannot silently desynchronise the two models from the documented result.
+    final List<({Object? value, int? expected})> shapes =
+        <({Object? value, int? expected})>[
+      (value: 4, expected: 4), // canonical int
+      (value: 0, expected: 0), // spec minimum (zero) is a valid limit
+      (value: 4.0, expected: 4), // integral JSON number decoded as double
+      (value: 2.0e1, expected: 20), // integral exponent form
+      (value: '4', expected: 4), // numeric string
+      (value: '  4  ', expected: 4), // padded numeric string
+      (value: '4.0', expected: 4), // integral-double string
+      (value: 1, expected: 1), // single-session int (drives eviction)
+      (value: 1.0, expected: 1), // single-session double
+      (value: '1', expected: 1), // single-session string
+      (value: 2.5, expected: null), // fractional double is out of spec
+      (value: double.nan, expected: null),
+      (value: double.infinity, expected: null),
+      (value: double.negativeInfinity, expected: null),
+      (value: 9007199254740994.0, expected: null), // > 2^53 loses low bits
+      (value: -1, expected: null), // negative int (spec minimum is 0)
+      (value: -1.0, expected: null),
+      (value: '-5', expected: null), // negative numeric string
+      (value: '', expected: null), // blank string
+      (value: '   ', expected: null), // whitespace-only string
+      (value: 'abc', expected: null), // non-numeric string
+      (value: true, expected: null), // wrong type: bool
+      (value: <int>[4], expected: null), // wrong type: list
+      (value: <String, dynamic>{'v': 4}, expected: null), // wrong type: map
+      (value: null, expected: null), // present-but-null
+      (value: absent, expected: null), // field omitted entirely
+    ];
+
+    Map<String, dynamic> bodyWith(Object? limit) => <String, dynamic>{
+          '@odata.id': '/redfish/v1/Managers/BMC',
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <dynamic>['KVMIP', 'HTML5'],
+            'ConnectUri': 'https://bmc.example/kvm',
+            if (!identical(limit, absent)) 'MaxConcurrentSessions': limit,
+          },
+        };
+
+    for (final shape in shapes) {
+      test('limit=${shape.value}: console and capability resolve identically',
+          () {
+        final Map<String, dynamic> body = bodyWith(shape.value);
+        final List<KvmConsole> consoles =
+            KvmConsole.fromManager(body, managerId: 'BMC');
+        final KvmCapability capability =
+            KvmCapability.fromManager(body, managerId: 'BMC');
+
+        expect(consoles, hasLength(1));
+        expect(consoles.single.type, KvmConsoleType.graphical);
+        expect(consoles.single.maxConcurrentSessions, shape.expected,
+            reason: 'console limit for ${shape.value}');
+        expect(capability.maxSessions, shape.expected,
+            reason: 'capability limit for ${shape.value}');
+        expect(consoles.single.maxConcurrentSessions, capability.maxSessions,
+            reason: 'cross-view session-limit agreement for ${shape.value}');
+      });
+    }
+
+    test('single-session limit (1) survives every accepted encoding', () {
+      // KvmSessionController.connect logs an eviction only when a newly
+      // connected console reports exactly 1. Both models must feed that exact
+      // value for every encoding the shared parser accepts; otherwise one card
+      // could show "Max sessions: 1" while the launch path sees a different
+      // number and skips the eviction notice.
+      for (final Object? value in <Object?>[1, 1.0, '1', '  1  ']) {
+        final Map<String, dynamic> body = bodyWith(value);
+        final KvmConsole console =
+            KvmConsole.fromManager(body, managerId: 'BMC').single;
+        final KvmCapability capability =
+            KvmCapability.fromManager(body, managerId: 'BMC');
+        expect(console.maxConcurrentSessions, 1, reason: 'console for $value');
+        expect(capability.maxSessions, 1, reason: 'capability for $value');
+        expect(console.maxConcurrentSessions, capability.maxSessions,
+            reason: 'eviction precondition for $value');
+      }
+    });
+
+    test('capability aggregation agrees with the openable console limit', () {
+      // When graphical is explicitly disabled with one limit and serial is
+      // enabled with another, the capability card must report the OPENABLE
+      // console's limit (the disable-preference contract already unit-tested in
+      // kvm_capability_test.dart) — and that value must still be the same one
+      // the per-console card for that enabled console shows. Hostile numeric
+      // encodings must not break the agreement.
+      final Map<String, dynamic> body = <String, dynamic>{
+        '@odata.id': '/redfish/v1/Managers/BMC',
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          'ConnectUri': 'https://bmc.example/kvm',
+          'MaxConcurrentSessions': 4,
+        },
+        'SerialConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['SSH'],
+          'ConnectUri': 'ssh://bmc.example',
+          'MaxConcurrentSessions': '  2  ',
+        },
+      };
+      final List<KvmConsole> consoles =
+          KvmConsole.fromManager(body, managerId: 'BMC');
+      final KvmCapability capability =
+          KvmCapability.fromManager(body, managerId: 'BMC');
+      final KvmConsole openable =
+          consoles.firstWhere((KvmConsole c) => c.serviceEnabled);
+      expect(openable.maxConcurrentSessions, 2);
+      expect(capability.maxSessions, 2);
+      expect(openable.maxConcurrentSessions, capability.maxSessions);
+    });
+  });
 }
