@@ -11478,3 +11478,19 @@
 - RS-6 (service manager-set identity/cardinality), EP-U7 (full merged-Semantics audit), EP-P7 (human-gate doc invariant guard) — genuine tested increments only, never verification-only churn.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (RS-6 manager-set identity/cardinality invariant)
+
+**Done:**
+- RS-6 (head of `queues/service.md`). Appended a 3-test group to `test/features/kvm/kvm_service_test.dart` over an in-temp minimal mockup (no committed fixture): four physical managers each exposing one console block (enabled secure-HTTPS graphical; SSH serial; no-URI OEM KVM; disabled graphical), with duplicate + whitespace-padded + plain-string member links and blank/non-string members. Pins (1) identical manager-id sets from `fetchConsoles()` and `fetchCapabilities()`, (2) exactly one console + one capability card per manager, (3) `fetchPrimaryConsole()` == `pickPrimary(fetchConsoles())` deterministically, is in that set, and is launch-safe (`route == externalBrowser`, no in-app WebView, no self-signed, exact trimmed target). Both fetch methods already share the deduped manager walk, so no lib change was needed.
+- RED→GREEN proof: temporarily changed `KvmService.pickPrimary` to `return consoles.first;`, so the primary test failed `Expected: MgrGraph / Actual: MgrDisabled` (first member is disabled); restored via `git checkout -- lib/features/kvm/kvm_service.dart` (hash byte-identical, empty lib diff, 0 `TEMP WEAKEN`) → all 3 GREEN. Analyze 0 / 1479 passed / 1 skipped (baseline 1476 +3); issues validate OK; diff --check clean.
+
+**Decisions:**
+- Test-only service-contract guard — no `lib/`, wire/payload, dependency, or production TLS change; no URL opened, no issue closed. DMTF emulator skipped (<7 days since last green 85/85, no lib/fixture/tool change); CI runs the group via `flutter test --coverage`.
+- Both #009/#021 stay open; their substantive acceptance (embedded HTML5 rendering, fullscreen, input forwarding, WebView dependency) is human-gated on platform WebView + BMC TLS validation — do NOT do unattended, never weaken production TLS.
+
+**Next:**
+- EP-U7 (full merged-Semantics audit), EP-P7 (human-gate doc invariant guard), EP-T10 (canonical OpenBMC console fixture) — genuine tested increments only, never verification-only churn.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

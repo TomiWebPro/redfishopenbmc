@@ -12,7 +12,7 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
      disagree about how many managers exist or which console is primary. Distinct from RS-5
      (source-identity normalization) and EP-S1 (launch-strategy edge cases). -->
 
-- [ ] RS-6 Manager-set identity + cardinality invariant in the shared manager walk: over a matrix
+- [x] RS-6 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 RS-6 manager-set identity/cardinality invariant + RED→GREEN tests`, analyze 0 / 1479 passed / 1 skipped) — 3-test group in `test/features/kvm/kvm_service_test.dart` over an in-temp 4-manager mockup (duplicate/padded/plain-string members, blank/non-string members, secure graphical + SSH serial + no-URI OEM + disabled graphical) pinning identical `fetchConsoles()`/`fetchCapabilities()` manager-id sets, exactly one console + one capability per manager, and a deterministic launch-safe primary (`externalBrowser`, no in-app/self-signed, exact target). RED proof: temporarily `pickPrimary → consoles.first` → `Expected: MgrGraph / Actual: MgrDisabled`; lib restored byte-clean. No `lib/`, dependency, wire/TLS change. Manager-set identity + cardinality invariant in the shared manager walk: over a matrix
       of `/redfish/v1/Managers` payloads (0/1/many managers, duplicate + whitespace-padded +
       plain-string member links, blank/non-string members, mixed graphical/serial consoles, a
       no-URI OEM console), assert `KvmService.fetchConsoles()` and `fetchCapabilities()` always

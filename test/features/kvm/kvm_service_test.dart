@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_service.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
+import 'package:redfishopenbmc/features/kvm/platform/webview_policy.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
 import 'package:redfishopenbmc/redfish/models/system_features.dart';
 
@@ -864,6 +865,181 @@ void main() {
         <String>{'BMC', 'BMC2'},
       );
       expect((await svc.fetchCapability('BMC'))!.supported, isTrue);
+    });
+  });
+
+  group('KvmService manager-set identity + cardinality (RS-6)', () {
+    late Directory fixtureDir;
+    late MockRedfishServer server;
+
+    // One physical manager per console shape so each manager must yield
+    // exactly one console card AND one capability card. The Members collection
+    // deliberately repeats MgrGraph (verbatim + padded + plain-string),
+    // carries one padded plain-string link, and includes blank/non-string
+    // entries that must be ignored. Both fetch methods walk the same deduped
+    // manager set, so their managerId sets must be byte-for-byte identical.
+    const Set<String> expectedManagers = <String>{
+      'MgrGraph',
+      'MgrSerial',
+      'MgrOemNoUri',
+      'MgrDisabled',
+    };
+
+    setUpAll(() async {
+      fixtureDir = await Directory.systemTemp.createTemp('kvm_rs6_fixture_');
+      final Directory managersDir = Directory('${fixtureDir.path}/Managers')
+        ..createSync(recursive: true);
+      File('${managersDir.path}/index.json').writeAsStringSync(
+        jsonEncode(<String, dynamic>{
+          'Members': <dynamic>[
+            // The first manager is deliberately NOT the secure graphical one,
+            // so a naive "return consoles.first" primary would be wrong.
+            <String, dynamic>{'@odata.id': '/redfish/v1/Managers/MgrDisabled'},
+            <String, dynamic>{'@odata.id': '/redfish/v1/Managers/MgrOemNoUri'},
+            '  /redfish/v1/Managers/MgrSerial  ',
+            <String, dynamic>{'@odata.id': '/redfish/v1/Managers/MgrGraph'},
+            '/redfish/v1/Managers/MgrGraph', // exact duplicate (string form)
+            <String, dynamic>{
+              '@odata.id': '  /redfish/v1/Managers/MgrGraph  ',
+            }, // padded duplicate
+            <String, dynamic>{'@odata.id': '   '},
+            <String, dynamic>{'@odata.id': 42},
+            '   ',
+          ],
+        }),
+      );
+
+      // Each body exposes exactly ONE console block (no Oem console on the
+      // graphical/serial managers) so per-manager console cardinality is 1.
+      final Map<String, Map<String, dynamic>> bodies =
+          <String, Map<String, dynamic>>{
+        'MgrGraph': <String, dynamic>{
+          'Id': 'MgrGraph',
+          '@odata.id': '/redfish/v1/Managers/MgrGraph',
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <String>['KVMIP', 'HTML5'],
+            'ConnectUri': 'https://bmc.example/console',
+          },
+        },
+        'MgrSerial': <String, dynamic>{
+          'Id': 'MgrSerial',
+          '@odata.id': '/redfish/v1/Managers/MgrSerial',
+          'SerialConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <String>['SSH'],
+            'ConnectUri': 'ssh://bmc.example/serial',
+          },
+        },
+        'MgrOemNoUri': <String, dynamic>{
+          'Id': 'MgrOemNoUri',
+          '@odata.id': '/redfish/v1/Managers/MgrOemNoUri',
+          'Oem': <String, dynamic>{
+            'OpenBMC': <String, dynamic>{
+              'KVM': <String, dynamic>{'ServiceEnabled': true},
+            },
+          },
+        },
+        'MgrDisabled': <String, dynamic>{
+          'Id': 'MgrDisabled',
+          '@odata.id': '/redfish/v1/Managers/MgrDisabled',
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': false,
+            'ConnectTypesSupported': <String>['KVMIP'],
+            'ConnectUri': 'https://bmc.example/disabled',
+          },
+        },
+      };
+      for (final MapEntry<String, Map<String, dynamic>> entry
+          in bodies.entries) {
+        final Directory managerDir =
+            Directory('${managersDir.path}/${entry.key}')
+              ..createSync(recursive: true);
+        File('${managerDir.path}/index.json')
+            .writeAsStringSync(jsonEncode(entry.value));
+      }
+      server = await MockRedfishServer(fixturesDir: fixtureDir.path).start();
+    });
+
+    tearDownAll(() async {
+      await server.close();
+      fixtureDir.deleteSync(recursive: true);
+    });
+
+    test('both fetch methods see the same physical manager set (RS-6)',
+        () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+
+      expect(
+        consoles.map((KvmConsole c) => c.managerId).toSet(),
+        expectedManagers,
+      );
+      expect(
+        capabilities.map((KvmCapability c) => c.managerId).toSet(),
+        expectedManagers,
+      );
+    });
+
+    test('each manager yields exactly one console and one capability (RS-6)',
+        () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+
+      expect(consoles, hasLength(expectedManagers.length));
+      expect(capabilities, hasLength(expectedManagers.length));
+      for (final String managerId in expectedManagers) {
+        expect(
+          consoles.where((KvmConsole c) => c.managerId == managerId),
+          hasLength(1),
+          reason: 'exactly one console card for $managerId',
+        );
+        expect(
+          capabilities.where((KvmCapability c) => c.managerId == managerId),
+          hasLength(1),
+          reason: 'exactly one capability card for $managerId',
+        );
+      }
+    });
+
+    test('primary is deterministic, in the set and launch-safe (RS-6)',
+        () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+      final KvmConsole? primary = await svc.fetchPrimaryConsole();
+
+      expect(primary, isNotNull);
+      expect(
+        KvmService.pickPrimary(consoles)?.managerId,
+        primary!.managerId,
+        reason: 'both primary entry points must agree deterministically',
+      );
+      expect(expectedManagers, contains(primary.managerId));
+      // MgrGraph is the only enabled secure-HTTPS graphical console, so the
+      // primary must be it — never the first (disabled) manager in the list.
+      expect(primary.managerId, 'MgrGraph');
+      expect(primary.canOpenConsole, isTrue);
+      // The final production route must be the safe external-browser + copy
+      // path: never in-app WebView, never self-signed, with the exact target
+      // the fail-closed launch plan accepts (not a refused console).
+      expect(primary.launchPlan.route, KvmConsoleRenderRoute.externalBrowser);
+      expect(primary.launchPlan.isInApp, isFalse);
+      expect(primary.launchPlan.acceptSelfSigned, isFalse);
+      expect(primary.launchPlan.targetUri, 'https://bmc.example/console');
     });
   });
 }
