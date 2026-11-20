@@ -11,8 +11,9 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      `@odata.id` clipboard/UI-injection class CB-1 closed on the card. Pure test-only guard,
      dependency-free, never writes `lib/`. -->
 
-- [ ] EP-T8 Control-safe manager-source display guard (closeout of the CB-1 class across all
-      surfaces): add a pure-Dart guard test under `test/tool/` that scans product `lib/**.dart`
+- [x] EP-T8 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 EP-T8 control-safe manager-source display guard + RED→GREEN tests`; analyze 0 / 1433 passed / 1 skipped) — Control-safe manager-source display guard (closeout of the CB-1 class across all
+      surfaces): added `test/tool/manager_source_display_guard_test.dart` (10 tests), a pure-Dart guard
+      that scans every product `lib/**.dart` that scans product `lib/**.dart`
       (comment/string/filename aware, like `product_import_policy_test.dart`) and fails closed if
       a widget/controller interpolates a BMC-supplied `sourceManagerUri` (or an `@odata.id`-derived
       source value) directly into a user-facing `Text` / `SelectableText` / `Semantics` label or a

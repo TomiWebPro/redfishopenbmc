@@ -11346,3 +11346,18 @@
 - Gate only PASS-verified branches; re-run DMTF 85/85 on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none closed (#009 / #021 remain open).
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-T8)
+
+- Done: EP-T8 control-safe manager-source display guard — added the test-only pure-Dart guard `test/tool/manager_source_display_guard_test.dart` (10 tests) that machine-checks the CB-1 invariant: no product `lib/**.dart` may interpolate a raw BMC `@odata.id`-derived `sourceManagerUri` into a `Text` / `SelectableText` / `Semantics` label or hand it straight to a `Clipboard.setData` / `ClipboardData` payload without routing through `safeManagerUri` / `clipboardTargetUri` / `isControlSafeConsoleUri`. Comment/string-aware state machine keeps doc mentions and `https://` URLs clean; filename is never immunity. 8 assertions confirmed RED by planting raw-source sinks in a temp scan root → all 10 GREEN; analyze 0 / 1433 passed / 1 skipped (baseline 1423 +10); issues validate OK; diff --check clean. No `lib/`, dependency, wire/fixture change, no production TLS weakening.
+
+**Decisions:**
+- Kept the evaluator entirely in the test file (its raw-source tokens must never appear in product `lib/`, which is exactly what it scans), mirroring `product_import_policy_test.dart`.
+- CI already runs `test/tool/` via `flutter test --coverage`; no second full-suite workflow invocation added, honoring the queue's "do not add a second full-suite invocation" note.
+- Skipped the full DMTF emulator re-run: test-only guard, no `lib/` / wire / fixture / tool change, <7 days since the last green 85/85.
+
+**Next:**
+- RS-5 (rf-service): align `fetchCapability`'s `sourceManagerUri` with the console side's trim/blank-reject/fallback contract, with RED→GREEN service tests.
+- EP-P6 (rf-platform): production-policy final-route invariant property test (WebView flag OFF → never in-app, never self-signed, every target control-safe).
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
