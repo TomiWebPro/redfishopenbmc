@@ -126,6 +126,21 @@ Invariants, enforced by tests:
    reports a "secure" HTTPS host: `%00` truncates the host, `%0D%0A` enables
    header injection. Every encoded C0/DEL octet fails closed; other escapes
    stay launchable.
+   **Encoded unreserved-ASCII rejection:** RFC 3986 unreserved characters
+   (`ALPHA / DIGIT / "-" / "." / "_" / "~"`) never need percent-encoding, so a
+   `%XX` form in the authority is non-canonical and creates a decode-order
+   host-spoofing differential: `Uri.tryParse` DECODES these escapes into a
+   *different* host string (`%62%6D%63` -> `bmc`, `%2D` -> `-`, `%5F` -> `_`,
+   `%7E` -> `~`), while a launcher that does not percent-decode the host
+   resolves a different authority — one raw URI naming two hosts. The `%2E`
+   (dot) case is already rejected by a dedicated rule; this closes the rest of
+   the unreserved set. `Uri.tryParse` still reports a non-empty HTTPS host, so
+   a purely syntactic re-check calls it "secure" — under a stale flag + test
+   opt-in that differential could grant in-app rendering and self-signed
+   acceptance on a mismatched/spoofed host. A real BMC host writes these
+   characters literally, so each fails closed in the authority; encoded
+   unreserved text in the path/query and legitimate percent-encoded non-ASCII
+   UTF-8 host bytes (`%C3%A9`) stay launchable, no valid target lost.
    **Encoded Unicode separator/invisible rejection:** a percent-encoded
    multi-byte UTF-8 character that decodes to a Unicode `Separator` (Z) or
    `Other` (C) code point is likewise a valid `%XX` escape with no raw
@@ -242,7 +257,9 @@ Invariants, enforced by tests:
    compatibility-confusable delimiter + IDNA dot-confusable rejection +
    IDNA middle-dot confusable rejection + NFKC-to-ASCII compatibility
    letter/digit rejection + degenerate dot-host rejection +
-   double-encoded authority-delimiter rejection).
+   double-encoded authority-delimiter rejection + encoded authority-dot
+   rejection + malformed-UTF-8 authority rejection + encoded ASCII space
+   rejection + encoded unreserved-ASCII rejection).
 
 ## What remains gated (not done here)
 

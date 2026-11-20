@@ -271,6 +271,24 @@ class KvmConsoleLaunchPlan {
 /// ASCII (or punycode), never with compatibility look-alikes, so rejecting them
 /// loses no valid target; encoded non-ASCII that NFKC-folds to non-ASCII
 /// (e-acute, euro, emoji) stays launchable. Scoped to the authority.
+///
+/// A percent-encoded RFC 3986 *unreserved* ASCII character (ALPHA / DIGIT /
+/// `-` / `.` / `_` / `~`) is rejected for the same reason: these characters
+/// are unreserved, so they never need percent-encoding and a literal form
+/// always exists. Writing one as `%XX` in the authority is non-canonical and
+/// creates a decode-order differential: `Uri.tryParse` DECODES such an escape
+/// into a *different* host string (`%62%6D%63` -> `bmc`, `%2D` -> `-`,
+/// `%5F` -> `_`, `%7E` -> `~`) while a launcher that does not percent-decode
+/// the host resolves a different authority — one raw URI naming two hosts.
+/// (`%2E`, the domain-label dot, is already rejected by a dedicated rule;
+/// this closes the rest of the unreserved set.) `Uri.tryParse` still reports
+/// a non-empty HTTPS host after decoding, so a purely syntactic re-check
+/// calls it "secure"; under a stale secure flag + test opt-in that parser
+/// differential could grant in-app rendering and self-signed acceptance on a
+/// mismatched/spoofed host. A real BMC host writes these characters
+/// literally, so rejecting them loses no valid target; the rule is scoped to
+/// the authority so encoded unreserved text in the path/query and legitimate
+/// percent-encoded non-ASCII UTF-8 host bytes (`%C3%A9`) stay launchable.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -432,6 +450,47 @@ int? _hexDigit(String char) {
   if (code >= 0x41 && code <= 0x46) return code - 0x41 + 10; // 'A'-'F'
   if (code >= 0x61 && code <= 0x66) return code - 0x61 + 10; // 'a'-'f'
   return null;
+}
+
+/// Returns `true` when [byte] is an RFC 3986 unreserved ASCII octet:
+/// `ALPHA / DIGIT / "-" / "." / "_" / "~"`.
+///
+/// These are the ASCII bytes that `Uri.tryParse` DECODES from `%XX` in a host
+/// (reserved/sub-delim escapes stay encoded), so percent-encoding one in the
+/// authority is a non-canonical decode-order host-spoofing vector (see the
+/// module header).
+bool _isUnreservedAsciiOctet(int byte) {
+  if (byte >= 0x30 && byte <= 0x39) return true; // '0'-'9'
+  if (byte >= 0x41 && byte <= 0x5A) return true; // 'A'-'Z'
+  if (byte >= 0x61 && byte <= 0x7A) return true; // 'a'-'z'
+  return byte == 0x2D || // '-'
+      byte == 0x2E || // '.'
+      byte == 0x5F || // '_'
+      byte == 0x7E; // '~'
+}
+
+/// Returns `true` when the raw authority contains a percent-encoded RFC 3986
+/// unreserved ASCII character (ALPHA / DIGIT / `-` / `.` / `_` / `~`).
+///
+/// Such an escape is non-canonical (a literal form always exists) and is
+/// decoded by `Uri.tryParse` into a different host string than a launcher that
+/// does not percent-decode — a decode-order host-spoofing differential. The
+/// check runs on the raw authority and is scoped to it, so encoded unreserved
+/// text in the path/query and legitimate percent-encoded non-ASCII host bytes
+/// (e-acute, euro, emoji) stay launchable. Stricter than the model, never more
+/// permissive. The `%2E` (dot) case is also caught here (and by a dedicated
+/// rule); the redundant check is harmless.
+bool _authorityHasEncodedUnreservedAscii(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  for (int i = 0; i + 2 < authority.length; i++) {
+    if (authority[i] != '%') continue;
+    final int? hi = _hexDigit(authority[i + 1]);
+    final int? lo = _hexDigit(authority[i + 2]);
+    if (hi == null || lo == null) continue; // malformed `%` handled elsewhere
+    if (_isUnreservedAsciiOctet((hi << 4) | lo)) return true;
+  }
+  return false;
 }
 
 /// Returns `true` when [uri] carries a percent-encoded multi-byte UTF-8
@@ -764,6 +823,17 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // Scoped to the authority, so `%20` in the path/query (its correct encoding)
   // and valid pct-encoded UTF-8 host bytes stay launchable.
   if (_authorityHasEncodedSpace(trimmed)) return false;
+  // Reject a percent-encoded RFC 3986 unreserved ASCII character (ALPHA /
+  // DIGIT / `-` / `.` / `_` / `~`) in the authority: unreserved characters
+  // never need encoding, and Uri.tryParse DECODES them into a different host
+  // string (`%62%6D%63` -> `bmc`) while a non-decoding launcher resolves a
+  // different authority — a decode-order host-spoofing differential that under
+  // a stale secure flag + test opt-in could grant in-app rendering and
+  // self-signed acceptance on a mismatched host. The `%2E` dot case is already
+  // rejected above; this closes the rest. Scoped to the authority, so encoded
+  // unreserved text in path/query and valid pct-encoded UTF-8 host bytes stay
+  // launchable.
+  if (_authorityHasEncodedUnreservedAscii(trimmed)) return false;
   // Reject a percent-encoded multi-byte UTF-8 character that decodes to a
   // Unicode Separator/Other code point (NBSP, zero-width space, NEL, ...): a
   // decode-first launcher could see an invisible/control character in the
