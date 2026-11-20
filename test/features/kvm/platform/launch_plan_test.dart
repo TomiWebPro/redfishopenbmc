@@ -1885,4 +1885,98 @@ void main() {
       }
     });
   });
+
+  group(
+      'planConsoleLaunch — defense in depth: NFKC-to-ASCII confusable rejection',
+      () {
+    test(
+        'a percent-encoded NFKC-to-ASCII letter host fails closed with a stale flag',
+        () {
+      // The fullwidth-ASCII rule covers the U+FF01..U+FF5E block and the
+      // explicit delimiters, but a launcher applying IDNA/NFKC to an
+      // internationalised host ALSO folds other compatibility characters to
+      // plain ASCII letters/digits. `Uri.tryParse` keeps each escape encoded
+      // and reports a non-empty HTTPS host, so a purely syntactic re-check
+      // calls these "secure" — yet a decode+IDNA launcher resolves a DIFFERENT
+      // ASCII authority:
+      //   `%E2%84%AA` (U+212A KELVIN SIGN)        -> K
+      //   `%C5%BF`    (U+017F LATIN SMALL LONG S) -> s
+      //   `%E2%92%B6` (U+24B6 CIRCLED LATIN A)    -> A
+      //   `%E2%91%A0` (U+2460 CIRCLED DIGIT ONE)  -> 1
+      //   `%E2%85%A0` (U+2160 ROMAN NUMERAL ONE)  -> I
+      // Under a stale secure flag + test opt-in that parser differential could
+      // grant in-app rendering and self-signed acceptance on a spoofed host.
+      // A real ASCII host is written in ASCII (or punycode), never with these
+      // compatibility look-alikes, so rejecting them loses no valid target.
+      for (final String uri in <String>[
+        'https://%E2%84%AA.example/console', // KELVIN SIGN -> K
+        'https://bmc%C5%BF.example/console', // LONG S -> s
+        'https://%E2%92%B6.example/console', // CIRCLED LATIN CAPITAL A -> A
+        'https://bmc%E2%93%90.example/console', // CIRCLED LATIN SMALL A -> a
+        'https://%E2%91%A0.example/console', // CIRCLED DIGIT ONE -> 1
+        'https://bmc%E2%81%B0.example/console', // SUPERSCRIPT ZERO -> 0
+        'https://bmc%E2%85%A0.example/console', // ROMAN NUMERAL ONE -> I
+        'https://bmc%E2%85%B0.example/console', // SMALL ROMAN NUMERAL ONE -> i
+        'https://bmc%F0%9F%84%B0.example/console', // SQUARED LATIN CAP A -> A
+        'https://%e2%84%aa.example/console', // lowercase hex
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test(
+        'an NFKC-to-ASCII confusable never reaches in-app under a strict opt-in',
+        () {
+      // Even without granting self-signed acceptance, a host relying on a
+      // compatibility look-alike must not be rendered in-app by an
+      // enabled+strict opt-in (no TLS weakening, no host-confusion render).
+      final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+        policy: const KvmWebViewPolicy(enabled: true),
+        uri: 'https://%E2%84%AA.example/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+
+      expect(plan.isInApp, isFalse);
+      expect(plan.acceptSelfSigned, isFalse);
+    });
+
+    test('NFKC confusables outside the authority stay launchable', () {
+      // Guard against over-rejection: the rule is scoped to the authority (the
+      // TLS-sensitive part). A compatibility look-alike in the path/query
+      // cannot change which host is contacted, so it stays launchable via the
+      // external-browser fallback. Percent-encoded non-ASCII that NFKC-folds
+      // to a non-ASCII character (e-acute) is a legitimate encoded IDN host and
+      // stays launchable too — no valid target lost, no TLS weakening.
+      for (final String uri in <String>[
+        'https://bmc.example/console%E2%84%AA', // Kelvin sign in path
+        'https://bmc.example/?q=%E2%85%A0', // Roman numeral in query
+        'https://bmc.example/caf%C3%A9', // e-acute in path (NFKC stays non-ASCII)
+        'https://bmc%C3%A9.example/console', // encoded e-acute in authority
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }

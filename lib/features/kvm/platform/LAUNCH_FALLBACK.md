@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 67 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (78 across the platform
+consume; today it locks the fallback behaviour with 79 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (90 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -184,6 +184,19 @@ Invariants, enforced by tests:
    rendering and self-signed acceptance on a spoofed/mismatched host. Both fail
    closed in the authority; encoded forms in the path/query and punycode ASCII
    hosts stay launchable, no valid target lost.
+   **NFKC-to-ASCII compatibility letter/digit rejection:** the fullwidth-ASCII
+   rule covers only U+FF01..U+FF5E, but a launcher applying IDNA/NFKC also folds
+   other compatibility characters to plain ASCII: U+212A KELVIN SIGN -> `K`,
+   U+017F LONG S -> `s`, circled Latin letters U+24B6..U+24E9 -> A-Z/a-z,
+   circled digits U+2460..U+2473 -> ASCII digits, superscript/subscript digits,
+   Roman numerals U+2160..U+217F -> ASCII letters and the squared/negative
+   circled/squared Latin capitals U+1F130..U+1F189 -> A-Z. `Uri.tryParse` keeps
+   each escape encoded and reports a non-empty HTTPS host, so a purely syntactic
+   re-check calls it "secure" while a decode+IDNA launcher resolves a *different*
+   ASCII authority. Under a stale flag + test opt-in that parser differential
+   could grant in-app rendering and self-signed acceptance on a spoofed host.
+   Each fails closed in the authority; encoded forms in the path/query and
+   non-ASCII that NFKC-folds to non-ASCII (e-acute, euro, emoji) stay launchable.
    **Degenerate dot-host rejection:** `Uri.tryParse` reports a label-less host
    made only of dots (`https://./console`, `https://../console`) as an HTTPS
    URI with a non-empty host, so the bare scheme+host re-check calls it
@@ -227,7 +240,8 @@ Invariants, enforced by tests:
    authority-delimiter + encoded control-octet + encoded Unicode
    separator/invisible + encoded compatibility-confusable delimiter + extended
    compatibility-confusable delimiter + IDNA dot-confusable rejection +
-   IDNA middle-dot confusable rejection + degenerate dot-host rejection +
+   IDNA middle-dot confusable rejection + NFKC-to-ASCII compatibility
+   letter/digit rejection + degenerate dot-host rejection +
    double-encoded authority-delimiter rejection).
 
 ## What remains gated (not done here)

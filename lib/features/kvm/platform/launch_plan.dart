@@ -256,6 +256,21 @@ class KvmConsoleLaunchPlan {
 /// leading/trailing positions); scope is the authority so `%20` in the
 /// path/query — the correct encoding of a space and harmless to which host is
 /// contacted — stays launchable, losing no valid target.
+///
+/// A percent-encoded compatibility character that NFKC-normalises to an ASCII
+/// letter or digit is rejected for the same reason: the fullwidth-ASCII rule
+/// covers only the U+FF01..U+FF5E block, but IDNA/NFKC also folds other
+/// compatibility characters to plain ASCII — U+212A KELVIN SIGN -> `K`, U+017F
+/// LATIN SMALL LETTER LONG S -> `s`, the circled Latin letters U+24B6..U+24E9
+/// -> A-Z/a-z, and the Roman numerals U+2160..U+217F -> ASCII letter sequences.
+/// `Uri.tryParse` keeps each escape encoded and reports a non-empty HTTPS host,
+/// so a purely syntactic re-check calls it "secure" — yet a launcher applying
+/// IDNA/NFKC resolves a *different* ASCII authority. Under a stale secure flag
+/// + test opt-in that parser differential could grant in-app rendering and
+/// self-signed acceptance on a spoofed host. A real ASCII host is written in
+/// ASCII (or punycode), never with compatibility look-alikes, so rejecting them
+/// loses no valid target; encoded non-ASCII that NFKC-folds to non-ASCII
+/// (e-acute, euro, emoji) stays launchable. Scoped to the authority.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -561,6 +576,42 @@ const Set<int> _compatibilityDelimiterCodePoints = <int>{
   0x33D8, // SQUARE PM                  -> 'p.m.'
 };
 
+/// Returns `true` when [rune] is a non-ASCII compatibility character that
+/// NFKC-normalises to an ASCII letter or digit (outside the fullwidth block).
+///
+/// The fullwidth ASCII block and [_compatibilityDelimiterCodePoints] cover the
+/// common IDNA confusables, but IDNA/NFKC also folds these compatibility
+/// characters to plain ASCII, so a decode+IDNA launcher resolves a different
+/// authority than [Uri.tryParse] reports:
+///
+///  * U+017F LATIN SMALL LETTER LONG S -> 's' and U+212A KELVIN SIGN -> 'K'
+///    (the two IDNA2003 case-folding specials that map to ASCII);
+///  * circled digits U+2460..U+2473, U+24EA/U+24FF -> ASCII digit sequences;
+///  * superscript/subscript digits (U+00B2/03/09, U+2070/74..79, U+2080..89);
+///  * circled Latin letters U+24B6..U+24E9 -> A-Z / a-z;
+///  * Roman numerals U+2160..U+217F -> ASCII letter sequences (e.g. 'I','IV');
+///  * squared / negative-circled / negative-squared Latin capitals
+///    (U+1F130..U+1F149, U+1F150..U+1F169, U+1F170..U+1F189) -> A-Z.
+///
+/// None of these are Unicode Separator/Other (so the encoded C/Z rule misses
+/// them) and none NFKC-fold to a delimiter (so the delimiter set misses them).
+/// Range checks avoid a hand-maintained const set and are exact: every member
+/// of each listed range NFKC-normalises to ASCII.
+bool _isNfkcAsciiLetterOrDigit(int rune) {
+  if (rune == 0x017F || rune == 0x212A) return true; // LONG S -> s, KELVIN -> K
+  if (rune == 0x00B2 || rune == 0x00B3 || rune == 0x00B9) return true; // 2,3,1
+  if (rune == 0x2070 || (rune >= 0x2074 && rune <= 0x2079)) return true;
+  if (rune >= 0x2080 && rune <= 0x2089) return true; // subscript 0-9
+  if (rune >= 0x2460 && rune <= 0x2473) return true; // circled 1-20
+  if (rune == 0x24EA || rune == 0x24FF) return true; // circled/negative 0
+  if (rune >= 0x24B6 && rune <= 0x24E9) return true; // circled Latin A-Z/a-z
+  if (rune >= 0x2160 && rune <= 0x217F) return true; // Roman numerals
+  if (rune >= 0x1F130 && rune <= 0x1F149) return true; // squared Latin A-Z
+  if (rune >= 0x1F150 && rune <= 0x1F169) return true; // neg-circled A-Z
+  if (rune >= 0x1F170 && rune <= 0x1F189) return true; // neg-squared A-Z
+  return false;
+}
+
 /// Returns `true` when the raw authority carries a percent-encoded non-ASCII
 /// code point that a launcher applying IDNA/NFKC resolves to an ASCII
 /// character: either a structural delimiter ([_compatibilityDelimiterCodePoints])
@@ -608,6 +659,10 @@ bool _authorityHasAsciiCompatibilityConfusable(String uri) {
     // ASCII look-alike, so a decode+IDNA launcher resolves a different ASCII
     // host than Uri.tryParse reports — a host-spoofing parser differential.
     if (rune >= 0xFF01 && rune <= 0xFF5E) return true;
+    // Other compatibility characters (Kelvin sign, long s, circled letters,
+    // Roman numerals) NFKC-normalise to an ASCII letter/digit too — the same
+    // decode+IDNA host-spoofing differential, outside the fullwidth block.
+    if (_isNfkcAsciiLetterOrDigit(rune)) return true;
   }
   return false;
 }
