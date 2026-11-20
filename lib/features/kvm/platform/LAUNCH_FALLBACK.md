@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 98 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (109 across the platform
+consume; today it locks the fallback behaviour with 104 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (115 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -141,6 +141,19 @@ Invariants, enforced by tests:
    characters literally, so each fails closed in the authority; encoded
    unreserved text in the path/query and legitimate percent-encoded non-ASCII
    UTF-8 host bytes (`%C3%A9`) stay launchable, no valid target lost.
+   **Encoded sub-delimiter rejection:** RFC 3986 sub-delims (`!` `$` `&` `'` `(` `)`
+   `*` `+` `,` `;` `=`) are legal unescaped in a `reg-name`, so a `%XX` form in
+   the authority is non-canonical and creates a decode-order host-spoofing
+   differential: `Uri.tryParse` keeps it encoded in the host
+   (`bmc.example%21evil.com`) while a launcher that decodes host bytes before
+   DNS/IDNA resolves a DIFFERENT host (`bmc.example!evil.com`) — one raw URI
+   naming two hosts. `Uri.tryParse` still reports a non-empty HTTPS host, so a
+   purely syntactic re-check calls it "secure" — under a stale flag + test opt-in
+   that differential could grant in-app rendering and self-signed acceptance on
+   a mismatched/spoofed authority. A real BMC host writes these characters
+   literally, so each encoded form fails closed in the authority; encoded
+   sub-delims in the path/query, percent-encoded UTF-8 host bytes (`%C3%A9`) and
+   a raw sub-delim literal (no differential) stay launchable, no valid target lost.
    **Encoded Unicode separator/invisible rejection:** a percent-encoded
    multi-byte UTF-8 character that decodes to a Unicode `Separator` (Z) or
    `Other` (C) code point is likewise a valid `%XX` escape with no raw
@@ -325,7 +338,8 @@ Invariants, enforced by tests:
    degenerate dot-host rejection +
    double-encoded authority-delimiter rejection + encoded authority-dot
    rejection + malformed-UTF-8 authority rejection + encoded ASCII space
-   rejection + encoded unreserved-ASCII rejection + non-canonical numeric-host
+   rejection + encoded unreserved-ASCII rejection + encoded sub-delimiter
+   rejection + non-canonical numeric-host
    rejection (incl. trailing-dot absolute-FQDN numeric spellings) + empty
    DNS-label rejection + out-of-range port rejection + signed and overflow
    port rejection).

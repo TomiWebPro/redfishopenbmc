@@ -2165,7 +2165,8 @@ void main() {
   group(
       'planConsoleLaunch — defense in depth: trailing-dot numeric-host rejection',
       () {
-    test('a numeric host with a single trailing dot fails closed with a stale flag',
+    test(
+        'a numeric host with a single trailing dot fails closed with a stale flag',
         () {
       // One trailing dot is normally the legitimate absolute-FQDN form, but a
       // WHATWG/browser parser's "ends in a number" check skips a single trailing
@@ -2420,8 +2421,8 @@ void main() {
     });
   });
 
-  group(
-      'planConsoleLaunch — defense in depth: out-of-range port rejection', () {
+  group('planConsoleLaunch — defense in depth: out-of-range port rejection',
+      () {
     // Uri.tryParse accepts a port above the 16-bit TCP range (e.g. :99999) and
     // still reports an HTTPS URI with a non-empty host, so a purely syntactic
     // re-check calls it "secure". Browser/WebView (WHATWG URL) parsers reject an
@@ -2612,6 +2613,91 @@ void main() {
 
         expect(plan.route, KvmConsoleRenderRoute.inAppWebView, reason: uri);
         expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+  });
+
+  group(
+      'planConsoleLaunch — defense in depth: encoded sub-delimiter authority rejection',
+      () {
+    test(
+        'a percent-encoded sub-delimiter in the authority fails closed with a stale flag',
+        () {
+      // RFC 3986 sub-delims (! $ & ' ( ) * + , ; =) are legal unescaped in a
+      // reg-name, so a literal form always exists and pct-encoding one is
+      // non-canonical. Uri.tryParse keeps %21 in the host (bmc.example%21evil.com)
+      // while a decode-first launcher resolves bmc.example!evil.com — one raw
+      // URI naming two different hosts. Under a stale secure flag + test opt-in
+      // that differential could grant in-app rendering and self-signed
+      // acceptance on a mismatched authority. Both hex cases are covered.
+      for (final String uri in <String>[
+        'https://bmc.example%21evil.com/console', // %21 '!'
+        'https://bmc.example%24evil.com/console', // %24 '$'
+        'https://bmc.example%26evil.com/console', // %26 '&'
+        'https://bmc.example%27evil.com/console', // %27 "'"
+        'https://bmc.example%28evil%29.com/console', // %28/%29 '(' ')'
+        'https://bmc.example%2Aevil.com/console', // %2A '*'
+        'https://bmc.example%2Bevil.com/console', // %2B '+'
+        'https://bmc.example%2cevil.com/console', // lowercase %2c ','
+        'https://bmc.example%3Bevil.com/console', // %3B ';'
+        'https://bmc.example%3Devil.com/console', // %3D '='
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('an encoded sub-delimiter never reaches in-app under any policy', () {
+      for (final KvmWebViewPolicy policy in <KvmWebViewPolicy>[
+        KvmWebViewPolicy.testOptIn,
+        KvmWebViewPolicy.productionDefault,
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: policy,
+          uri: 'https://bmc.example%21evil.com/console',
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: policy.toString());
+        expect(plan.acceptSelfSigned, isFalse, reason: policy.toString());
+      }
+    });
+
+    test(
+        'encoded sub-delims in path/query and UTF-8 host bytes stay launchable',
+        () {
+      // Guard against over-rejection: the rule is scoped to the authority.
+      // Sub-delims percent-encoded in the path/query (their correct encoding),
+      // a literal sub-delim in the host (no decode-order differential), and
+      // legitimate percent-encoded UTF-8 host bytes (e-acute) stay launchable.
+      for (final String uri in <String>[
+        'https://bmc.example/console%21one', // %21 in path
+        'https://bmc.example/console?q=%26%3D', // sub-delims in query
+        'https://bmc.example!evil/console', // raw sub-delim literal (no differential)
+        'https://bmc%C3%A9.example/console', // UTF-8 e-acute host byte
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
       }
     });
   });

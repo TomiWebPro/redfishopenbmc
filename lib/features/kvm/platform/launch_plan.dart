@@ -290,6 +290,19 @@ class KvmConsoleLaunchPlan {
 /// the authority so encoded unreserved text in the path/query and legitimate
 /// percent-encoded non-ASCII UTF-8 host bytes (`%C3%A9`) stay launchable.
 ///
+/// A percent-encoded RFC 3986 sub-delim (`!` `$` `&` `'` `(` `)` `*` `+` `,`
+/// `;` `=`) is rejected for the same decode-order reason. Sub-delims are legal
+/// unescaped in a `reg-name`, so an encoded one is non-canonical: [Uri.tryParse]
+/// keeps it encoded in the host (`bmc.example%21evil.com`) while a launcher
+/// that decodes host bytes before DNS/IDNA resolves a DIFFERENT host
+/// (`bmc.example!evil.com`) — one raw URI naming two hosts. Under a stale
+/// secure flag + test opt-in that differential could grant in-app rendering and
+/// self-signed acceptance on a mismatched authority. A real BMC host writes
+/// these characters literally, so rejecting the encoded form loses no valid
+/// target; the rule is scoped to the authority so encoded sub-delims in the
+/// path/query and percent-encoded UTF-8 host bytes stay launchable, and a raw
+/// sub-delim (no decode-order differential) stays launchable.
+///
 /// A percent-encoded "vulgar fraction" (Unicode category `No`) is rejected for
 /// the same reason: its NFKC normalisation expands to a decimal digit, U+2044
 /// FRACTION SLASH and another digit (e.g. U+00BD `1/2` -> `1` + U+2044 + `2`),
@@ -512,6 +525,33 @@ bool _authorityHasEncodedSpace(String uri) {
   final String? authority = _authorityOf(uri);
   if (authority == null) return false;
   return _encodedAsciiSpace.hasMatch(authority);
+}
+
+/// Matches a percent-encoded RFC 3986 sub-delim (`!` `$` `&` `'` `(` `)` `*` `+`
+/// `,` `;` `=`). Hex digits are case-insensitive.
+///
+/// Sub-delims are legal unescaped in a `reg-name`, so a literal form always
+/// exists and percent-encoding one is non-canonical. `Uri.tryParse` keeps such
+/// an escape encoded in the host (`bmc.example%21evil.com`) while a
+/// launcher that percent-decodes host bytes before DNS/IDNA resolution sees a
+/// DIFFERENT host (`bmc.example!evil.com`) — one raw URI naming two hosts.
+final RegExp _encodedSubDelimiter =
+    RegExp(r'%(?:21|24|26|27|28|29|2A|2B|2C|3B|3D)', caseSensitive: false);
+
+/// Returns `true` when the raw authority contains a percent-encoded RFC 3986
+/// sub-delimiter, a decode-order host-spoofing vector (see
+/// [_encodedSubDelimiter]).
+///
+/// Scoped to the authority so percent-encoded sub-delims in the path/query
+/// (their correct encoding) and legitimate percent-encoded UTF-8 host bytes
+/// (e-acute, euro, emoji) stay launchable. Stricter than the model, never more
+/// permissive; a real BMC host writes these characters literally, so no valid
+/// target is lost. Raw (unencoded) sub-delims are legal in a host and create no
+/// decode-order differential, so they stay launchable.
+bool _authorityHasEncodedSubDelimiter(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  return _encodedSubDelimiter.hasMatch(authority);
 }
 
 /// Returns the numeric value of a single ASCII hex digit, or `null`.
@@ -936,7 +976,9 @@ bool _isNonCanonicalNumericHost(String host) {
   // these numeric checks fire for a non-numeric host.
   final String core =
       host.endsWith('.') ? host.substring(0, host.length - 1) : host;
-  if (core.isEmpty) return false; // degenerate all-dot host: handled separately.
+  if (core.isEmpty) {
+    return false; // degenerate all-dot host: handled separately.
+  }
   final List<String> labels = core.split('.');
   // Hex IP forms: any 0x-prefixed label. A real host never uses 0x labels.
   for (final String label in labels) {
@@ -1017,7 +1059,9 @@ bool _hasNonCanonicalPort(String uri) {
   if (hostPort.startsWith('[')) {
     // IPv6 literal: an explicit port follows the closing bracket and ':'.
     final int close = hostPort.indexOf(']');
-    if (close < 0 || close + 1 >= hostPort.length || hostPort[close + 1] != ':') {
+    if (close < 0 ||
+        close + 1 >= hostPort.length ||
+        hostPort[close + 1] != ':') {
       return false; // malformed/no port — Uri parse fails closed below.
     }
     port = hostPort.substring(close + 2);
@@ -1100,6 +1144,17 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // unreserved text in path/query and valid pct-encoded UTF-8 host bytes stay
   // launchable.
   if (_authorityHasEncodedUnreservedAscii(trimmed)) return false;
+  // Reject a percent-encoded RFC 3986 sub-delim (`!` `$` `&` `'` `(` `)` `*` `+`
+  // `,` `;` `=`) in the authority: these are legal unescaped in a reg-name, so
+  // encoding one is non-canonical, and Uri.tryParse keeps it encoded in the host
+  // (`bmc.example%21evil.com`) while a launcher that decodes host bytes before
+  // DNS/IDNA resolves a DIFFERENT host (`bmc.example!evil.com`) — one raw URI
+  // naming two hosts. Under a stale secure flag + test opt-in that differential
+  // could grant in-app rendering and self-signed acceptance on a mismatched
+  // authority. Scoped to the authority, so encoded sub-delims in the path/query
+  // and valid pct-encoded UTF-8 host bytes stay launchable; raw sub-delims are
+  // legal and stay launchable. No valid target is lost.
+  if (_authorityHasEncodedSubDelimiter(trimmed)) return false;
   // Reject a percent-encoded multi-byte UTF-8 character that decodes to a
   // Unicode Separator/Other code point (NBSP, zero-width space, NEL, ...): a
   // decode-first launcher could see an invisible/control character in the
