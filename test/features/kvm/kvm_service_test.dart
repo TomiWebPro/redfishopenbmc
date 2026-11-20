@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:redfishopenbmc/features/kvm/kvm_service.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_capability.dart';
+import 'package:redfishopenbmc/features/kvm/models/kvm_manager_source.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_models.dart';
 import 'package:redfishopenbmc/features/kvm/platform/webview_policy.dart';
 import 'package:redfishopenbmc/redfish/models/redfish_exception.dart';
@@ -1040,6 +1041,132 @@ void main() {
       expect(primary.launchPlan.isInApp, isFalse);
       expect(primary.launchPlan.acceptSelfSigned, isFalse);
       expect(primary.launchPlan.targetUri, 'https://bmc.example/console');
+    });
+  });
+
+  group('shared manager source normalizer (RS-5)', () {
+    test('trims a padded @odata.id and rejects blank/non-string values', () {
+      expect(
+        kvmManagerSourceTrimmed('  /redfish/v1/Managers/BMC  '),
+        '/redfish/v1/Managers/BMC',
+      );
+      expect(kvmManagerSourceTrimmed('   '), isNull);
+      expect(kvmManagerSourceTrimmed(42), isNull);
+      expect(kvmManagerSourceTrimmed(null), isNull);
+    });
+
+    test('falls back to the manager-id path on blank/non-string sources', () {
+      expect(
+        kvmManagerSourceUri('  /redfish/v1/Managers/BMC  ', 'BMC'),
+        '/redfish/v1/Managers/BMC',
+      );
+      expect(kvmManagerSourceUri('   ', 'BMC'), '/redfish/v1/Managers/BMC');
+      expect(kvmManagerSourceUri(42, 'BMC'), '/redfish/v1/Managers/BMC');
+    });
+
+    test('a usable override wins; a blank one falls through to the body', () {
+      expect(
+        kvmManagerSourceUri(
+          '  /override  ',
+          'BMC',
+          '/redfish/v1/Managers/BODY',
+        ),
+        '/override',
+      );
+      expect(
+        kvmManagerSourceUri('   ', 'BMC', '  /redfish/v1/Managers/BODY  '),
+        '/redfish/v1/Managers/BODY',
+      );
+      expect(
+        kvmManagerSourceUri(null, 'BMC', '   '),
+        '/redfish/v1/Managers/BMC',
+      );
+    });
+  });
+
+  group('KvmService console↔capability source agreement (RS-5)', () {
+    late MockRedfishServer server;
+
+    setUpAll(() async {
+      // One manager with a whitespace-padded @odata.id and one with a
+      // whitespace-only @odata.id, both without `Id` (identity falls back to
+      // the member-URI last segment). Both KVM views read the SAME @odata.id,
+      // so their normalized source identity must be byte-identical.
+      server = await MockRedfishServer(
+        fixturesDir: 'test/fixtures/redfish/kvm_blank_odata_id_mockup',
+      ).start();
+    });
+
+    tearDownAll(() async {
+      await server.close();
+    });
+
+    KvmService newService() => KvmService(
+          client: server.buildClient(),
+          systemId: 'bmc1',
+        );
+
+    test('padded @odata.id yields one trimmed source on both views', () async {
+      final KvmService svc = newService();
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+
+      final KvmConsole console =
+          consoles.firstWhere((KvmConsole c) => c.managerId == 'PADDED');
+      final KvmCapability capability = capabilities.firstWhere(
+        (KvmCapability c) => c.managerId == 'PADDED',
+      );
+
+      // Exact expected value pins the trim — a raw padded value would fail.
+      expect(console.sourceManagerUri, '/redfish/v1/Managers/PADDED');
+      expect(capability.sourceManagerUri, '/redfish/v1/Managers/PADDED');
+      expect(capability.sourceManagerUri, console.sourceManagerUri);
+      expect(capability.safeManagerUri, console.safeManagerUri);
+    });
+
+    test('blank @odata.id uses the same manager-id fallback on both views',
+        () async {
+      final KvmService svc = newService();
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+
+      final KvmConsole console =
+          consoles.firstWhere((KvmConsole c) => c.managerId == 'BLANK');
+      final KvmCapability capability = capabilities.firstWhere(
+        (KvmCapability c) => c.managerId == 'BLANK',
+      );
+
+      expect(console.sourceManagerUri, '/redfish/v1/Managers/BLANK');
+      expect(capability.sourceManagerUri, '/redfish/v1/Managers/BLANK');
+      expect(capability.sourceManagerUri, console.sourceManagerUri);
+      expect(capability.safeManagerUri, console.safeManagerUri);
+    });
+
+    test('fetchCapability(id) agrees with every console source (RS-5)',
+        () async {
+      final KvmService svc = newService();
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+
+      expect(capabilities, isNotEmpty);
+      for (final KvmCapability capability in capabilities) {
+        final KvmCapability? byId =
+            await svc.fetchCapability(capability.managerId);
+        expect(
+          byId,
+          isNotNull,
+          reason: 'fetchCapability must resolve ${capability.managerId}',
+        );
+        expect(byId!.sourceManagerUri, capability.sourceManagerUri);
+
+        final Iterable<KvmConsole> matching = consoles.where(
+          (KvmConsole c) => c.managerId == capability.managerId,
+        );
+        expect(matching, isNotEmpty);
+        for (final KvmConsole console in matching) {
+          expect(console.sourceManagerUri, capability.sourceManagerUri);
+        }
+      }
     });
   });
 }

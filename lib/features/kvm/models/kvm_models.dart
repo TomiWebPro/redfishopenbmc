@@ -6,6 +6,7 @@
 /// [KvmConsole] so the UI can list them uniformly.
 library;
 
+import 'package:redfishopenbmc/features/kvm/models/kvm_manager_source.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_registry.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart'
     show kvmOemConsoleEnabled, kvmOemConsoleUri;
@@ -421,8 +422,11 @@ class KvmConsole {
     // A bare cast would throw a TypeError here and blank every console on the
     // KVM screen, so normalize it like every other URI source and fall back to
     // the URI derived from the manager id (issue #009).
-    final String sourceManagerUri = _uriString(managerBody['@odata.id']) ??
-        '/redfish/v1/Managers/$managerId';
+    // RS-5: resolve the source through the SAME shared normalizer the
+    // capability card uses, so a padded @odata.id is trimmed and a blank /
+    // non-string one falls back identically on both KVM views.
+    final String sourceManagerUri =
+        kvmManagerSourceUri(managerBody['@odata.id'], managerId);
 
     final List<KvmConsole> consoles = <KvmConsole>[];
 

@@ -11557,3 +11557,19 @@
 - Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none — gate-only merge; both #009/#021 stay open.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (RS-5)
+
+**Done:**
+- RS-5 (head of the unlanded `queues/service.md` slices). Added new `lib/features/kvm/models/kvm_manager_source.dart` — a single shared pure normalizer (`kvmManagerSourceTrimmed` / `kvmManagerSourceUri`) for the BMC-supplied manager `@odata.id`, exported from the `kvm.dart` barrel. Both `KvmConsole.fromManager` and `KvmCapability.fromManager` now call it instead of their duplicated private trim/fallback helpers, so a padded source is trimmed, a blank/non-string one falls back to `/redfish/v1/Managers/<id>`, and the capability override wins but cannot let a malformed value shadow the body — the two KVM views converge on one source identity. Behavior-preserving (no wire change, RS-2 skip semantics unchanged).
+- Added 6 RED→GREEN tests to `test/features/kvm/kvm_service_test.dart`: 3 pure-helper + 3 service-level over the existing padded/blank-`@odata.id` fixture (exact trimmed source values, `safeManagerUri` agreement, cross-view and `fetchCapability(id)` agreement). RED proof: temporarily returning the raw untrimmed string failed 5 tests (`Expected: '/redfish/v1/Managers/PADDED' / Actual: '  /redfish/v1/Managers/PADDED  '`); restored byte-clean (SHA `3ade1b21…` unchanged) → all GREEN.
+
+**Decisions:**
+- Dependency-free, TLS-safe model-normalization refactor + tests: no wire/transport/fixture/tool change, no URL opened, no human approval granted, no issue closed, no production TLS weakening. DMTF emulator skipped (pure behavior-preserving model normalization, <7 days since last green 85/85); CI runs the touched tests via `flutter test --coverage`.
+- Audited EP-U7 previously (four KVM notice surfaces already render both shared constants merged, visible == announced — no genuine a11y divergence), so no UI churn added.
+- Verify: targeted `kvm_service_test.dart` 46/46; `flutter analyze` 0; full `flutter test` 1510 passed / 1 skipped (baseline 1504 +6); issues validate OK; `git diff --check` clean.
+
+**Next:**
+- EP-T3 (rf-tooling) coverage-gate scope for the new normalizer, or EP-M1 / EP-S1 genuine leftover edges, with RED→GREEN tests. Never activate WebView, grant human approval, or weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

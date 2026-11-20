@@ -36,7 +36,7 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
      capability card for the same manager. Dependency-free, no wire-shape/TLS change; distinct from
      EP-S1 / RS-2 (still open) and from RS-4 (duplicate Members, already landed). -->
 
-- [ ] RS-5 Console↔capability manager-source agreement in the shared manager walk: make the
+- [x] RS-5 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 RS-5 console↔capability manager-source agreement + RED→GREEN tests`, analyze 0 / 1510 passed / 1 skipped) — extracted shared `kvmManagerSource*` normalizer in new `lib/features/kvm/models/kvm_manager_source.dart` (exported from `kvm.dart` barrel), used by both `KvmConsole.fromManager` and `KvmCapability.fromManager`, replacing duplicated private trim/fallback helpers so both KVM views converge on one source identity; +6 RED→GREEN tests in `test/features/kvm/kvm_service_test.dart` (RED proof: neutering the trim failed 5 tests, restored byte-clean). No lib wire/transport change, no dependency, no production TLS weakening; emulator skipped (<7 days, pure model normalization). Console↔capability manager-source agreement in the shared manager walk: make the
       `sourceManagerUri` set on `KvmService.fetchCapability` follow the same trim / blank-reject /
       fallback contract `KvmConsole.fromManager` already applies to the same `@odata.id`, so the two
       views cannot disagree about a manager's source identity. A whitespace-padded `@odata.id` must

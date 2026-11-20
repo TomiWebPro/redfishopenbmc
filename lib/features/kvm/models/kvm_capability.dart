@@ -11,6 +11,7 @@
 /// #009 / #021).
 library;
 
+import 'package:redfishopenbmc/features/kvm/models/kvm_manager_source.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart'
     show kvmOemConsoleEnabled, kvmOemConsoleUri;
 import 'package:redfishopenbmc/features/kvm/models/kvm_session_limit.dart';
@@ -265,13 +266,14 @@ class KvmCapability {
           (oemConsole && oemEnabled),
       maxSessions: maxSessions,
       uri: resolveLaunchUri(body),
-      // Normalize both the explicit override and the body `@odata.id`: a
-      // non-string / blank value from a malformed BMC payload would otherwise
-      // throw a TypeError (bare cast) or render a blank source notice. Mirrors
-      // KvmConsole.fromManager so both KVM views agree (issue #009).
-      sourceManagerUri: _nonEmptyString(sourceManagerUri) ??
-          _nonEmptyString(body['@odata.id']) ??
-          '/redfish/v1/Managers/$managerId',
+      // RS-5: resolve the source through the SAME shared normalizer the
+      // console card uses — a padded value is trimmed, a blank / non-string
+      // override falls through to the body `@odata.id`, and both fall back to
+      // the manager-id path. The explicit override still wins when usable, so
+      // both KVM views always agree on a manager's source identity (issue
+      // #009).
+      sourceManagerUri:
+          kvmManagerSourceUri(sourceManagerUri, managerId, body['@odata.id']),
       graphicalKvmIp: kvmIp,
     );
   }
