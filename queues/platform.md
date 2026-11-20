@@ -13,7 +13,7 @@ platform validation evidence.
      Test-only, dependency-free, no production TLS change; distinct from EP-P4 (human-gated) and
      EP-P2 (deferred WebView adapter — do NOT pick up unattended). -->
 
-- [ ] EP-P6 Production-policy final-route invariant test (closeout of the resolved no-WebView
+- [x] EP-P6 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 EP-P6 production-policy final-route invariant test + RED→GREEN tests`) — Production-policy final-route invariant test (closeout of the resolved no-WebView
       decision): add a pure-Dart property-style test under `test/features/kvm/platform/` that, over
       the cross-product of console signals (secure/insecure, html5/non-html5, enabled/disabled) ×
       URI forms (valid HTTPS, plaintext HTTP, external-client scheme, blank, CRLF/NUL, raw space,

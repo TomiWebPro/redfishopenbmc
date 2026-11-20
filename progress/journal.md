@@ -11377,3 +11377,23 @@
 - Gate only PASS-verified branches; re-run DMTF 85/85 on any wire/fixture/tool change or >7 days.
 
 **Issues touched:** none closed (#009 / #021 remain open).
+
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-P6 production-policy invariant)
+
+**Done:**
+- EP-P6 final-route invariant property test. Added `test/features/kvm/platform/production_route_invariant_test.dart` (3 tests): a pure-Dart cross-product (8 signal combos × 12 URI forms = 96 cases) that, under `KvmWebViewPolicy.productionDefault` (WebView flag OFF), pins the four machine-checkable invariants of the human-gated no-WebView decision — route NEVER `inAppWebView`, `acceptSelfSigned` NEVER true, every non-null `targetUri` control-safe + trimmed, and blank/control-unsafe URIs always degrade to `copyOnly` with a null target even under a stale/lying `hasSecureUri` signal.
+- RED→GREEN: 2 tests failed when the flag-off guard in `webview_policy.dart` was temporarily weakened (`Expected: not inAppWebView / Actual: inAppWebView`); file restored byte-clean → all 3 GREEN. Analyze 0 / 1439 passed / 1 skipped (re-baseline 1436 +3 on post-gate HEAD `4aad49a`); issues validate OK; diff --check clean; no dependency bump.
+
+**Decisions:**
+- Test-only decision-surface guard complementing EP-P5's import-surface guard; pins the human-gated decision mechanically without a WebView import, dependency or production change.
+- A concurrent `rf-gate` run#9291 merged `build/rf-platform` `4fe08db` (numeric-host fail-closed, PASS check#9287) into main mid-run (HEAD `2d872d2` → `4aad49a`, +3 tests). My untracked test was secured in `/tmp` so it was never swept into the gate's merge commit; no merge resolution/commit was attempted by this run, and all verification was re-run on the post-gate HEAD.
+- RS-5's model contract was already satisfied in commit `555eff40`, so EP-P6 was the genuine next unblocked slice (not verification-only churn). No production TLS weakening.
+- DMTF emulator skipped (test-only, no lib/wire/fixture/tool change, <7 days since last green 85/85).
+
+**Next:**
+- RS-5 (rf-service) console↔capability agreement test over an in-temp mockup; then EP-S2 safe-primary selection, EP-M2 external-client classifier parity — genuine tested increments only.
+- No WebView/url_launcher dependency unattended; never weaken production TLS.
+- Cheap DOCS anchor re-verify only; full emulator re-run on lib/wire/fixture/tool change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
