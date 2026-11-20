@@ -2701,4 +2701,90 @@ void main() {
       }
     });
   });
+
+  group(
+      'planConsoleLaunch — defense in depth: encoded combining-mark authority rejection',
+      () {
+    test(
+        'a percent-encoded combining mark in the authority fails closed with a stale flag',
+        () {
+      // A percent-encoded Unicode Mark (category M) is kept encoded by
+      // Uri.tryParse, which still reports a "secure" HTTPS host. But a
+      // launcher applying NFC/IDNA to the host (as browsers do) recomposes a
+      // base letter + combining mark into a DIFFERENT precomposed character
+      // (e.g. "e" + U+0301 -> U+00E9), resolving a different authority — one
+      // raw URI naming two hosts. Under a stale secure flag + test opt-in that
+      // parser differential could grant in-app rendering and self-signed
+      // acceptance on a mismatched/spoofed host. Marks are non-canonical in a
+      // real BMC authority (hosts are ASCII/punycode), so each fails closed.
+      // Both hex cases and marks in userinfo / between labels are covered.
+      for (final String uri in <String>[
+        'https://bmc%CC%81.example/console', // U+0301 COMBINING ACUTE, upper hex
+        'https://bmc%cc%81.example/console', // U+0301, lower hex
+        'https://bmc%CC%80.example/console', // U+0300 COMBINING GRAVE
+        'https://bmc%CC%88.example/console', // U+0308 COMBINING DIAERESIS
+        'https://bmc%CC%A7.example/console', // U+0327 COMBINING CEDILLA
+        'https://bmc%E0%A4%BC.example/console', // U+093C DEVANAGARI NUKTA (3-byte Mn)
+        'https://bmc.example%CC%81evil.com/console', // mark between labels
+        'https://user%CC%81@bmc.example/console', // mark in userinfo
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('an encoded combining mark never reaches in-app under any policy', () {
+      for (final KvmWebViewPolicy policy in <KvmWebViewPolicy>[
+        KvmWebViewPolicy.testOptIn,
+        KvmWebViewPolicy.productionDefault,
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: policy,
+          uri: 'https://bmc%CC%81.example/console',
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: policy.toString());
+        expect(plan.acceptSelfSigned, isFalse, reason: policy.toString());
+      }
+    });
+
+    test(
+        'precomposed UTF-8 host bytes and marks in path/query stay launchable',
+        () {
+      // Guard against over-rejection: a precomposed e-acute (a Letter, not a
+      // Mark) and an emoji (a Symbol) encoded in the authority stay launchable,
+      // and marks in the path/query (the wrong place to forge a host) are
+      // unaffected — the rule is scoped to the authority.
+      for (final String uri in <String>[
+        'https://bmc%C3%A9.example/console', // precomposed e-acute (Letter)
+        'https://bmc%F0%9F%98%80.example/console', // emoji (Symbol)
+        'https://bmc.example/console?q=a%CC%81', // mark in query
+        'https://bmc.example/caf%C3%A9%CC%81', // mark in path
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  });
 }

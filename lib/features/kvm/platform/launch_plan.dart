@@ -319,6 +319,19 @@ class KvmConsoleLaunchPlan {
 /// rejecting them loses no valid target. Scoped to the authority — the same
 /// escape in path/query/fragment stays launchable.
 ///
+/// A percent-encoded Unicode *combining mark* (category M) is rejected for the
+/// same reason: it is a valid `%XX` escape that every earlier rule misses, yet
+/// [Uri.tryParse] keeps it encoded and reports a non-empty HTTPS host. A
+/// launcher applying NFC/IDNA to the host (as browsers do) recomposes a base
+/// letter + mark into a DIFFERENT precomposed character — `https://bmc%CC%81.example/`
+/// decodes to `bmc` + U+0301 COMBINING ACUTE whose NFC form is `bmc` + U+00E9,
+/// resolving a different authority than `Uri.tryParse` reported. Under a stale
+/// secure flag + test opt-in that parser differential could grant in-app
+/// rendering and self-signed acceptance on a mismatched/spoofed host. A real
+/// BMC host is ASCII/punycode and never writes a combining mark, so rejecting
+/// one loses no valid target; precomposed UTF-8 host bytes (e-acute, a Letter),
+/// emoji and marks in the path/query stay launchable. Scoped to the authority.
+///
 /// A non-canonical numeric host is rejected for the same reason: legacy /
 /// WHATWG URL parsers (browsers, WebViews) resolve `0x7f000001`, `2130706433`,
 /// `127.1` and `0177.0.0.1` to IP literals (often loopback / internal), while
@@ -393,6 +406,14 @@ final RegExp _encodedControlOctet =
 /// here to the *percent-decoded* content (non-ASCII only; see
 /// [_hasEncodedUnicodeControlOrSeparator]).
 final RegExp _unicodeOtherOrSeparator = RegExp(r'[\p{C}\p{Z}]', unicode: true);
+
+/// Unicode `Mark` (M) category — combining marks that NFC-normalise together
+/// with a preceding base character into a DIFFERENT precomposed character
+/// (e.g. `e` + U+0301 COMBINING ACUTE -> U+00E9 `é`). A launcher applying
+/// NFC/IDNA to an internationalised host (as browsers do) therefore resolves a
+/// different authority than [Uri.tryParse], which keeps the percent-encoded
+/// form in the host — a parser-differential / host-spoofing vector.
+final RegExp _unicodeMark = RegExp(r'\p{M}', unicode: true);
 
 /// Matches any non-ASCII code unit. RFC 3986 URIs are ASCII-only: a raw
 /// non-ASCII character must be pct-encoded (or punycode-encoded in a host).
@@ -648,6 +669,59 @@ bool _hasEncodedUnicodeControlOrSeparator(String uri) {
   for (final int rune in decoded.runes) {
     if (rune < 0x80) continue; // ASCII handled by earlier rules
     if (_unicodeOtherOrSeparator.hasMatch(String.fromCharCodes(<int>[rune]))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Returns `true` when the raw authority carries a percent-encoded Unicode
+/// `Mark` (category M) code point.
+///
+/// A percent-encoded combining mark is a *valid* `%XX` escape (so the
+/// malformed-percent and encoded-control rules miss it), is not a C0/DEL octet
+/// (so [_encodedControlOctet] misses it), is not a Separator/Other (so
+/// [_hasEncodedUnicodeControlOrSeparator] misses it), and has no raw non-ASCII
+/// (so the raw-authority rule misses it), yet [Uri.tryParse] keeps it encoded
+/// and reports a non-empty HTTPS host, so a purely syntactic re-check calls it
+/// "secure". A launcher applying NFC/IDNA to the host (as browsers do)
+/// recomposes a base letter + combining mark into a different precomposed
+/// character — e.g. `https://bmc%CC%81.example/` decodes to `bmc\u{0301}.example`
+/// whose NFC form is `bmc\u{00E9}.example` — resolving a DIFFERENT authority
+/// than [Uri.tryParse] reported. Under a stale secure flag + test opt-in that
+/// parser differential could grant in-app rendering and self-signed acceptance
+/// on a mismatched/spoofed host.
+///
+/// Only **non-ASCII** marks are inspected: ASCII has no combining marks, and a
+/// raw non-ASCII authority is rejected earlier. Scoped to the authority so
+/// marks in the path/query (which cannot forge a host) stay launchable, and
+/// precomposed UTF-8 host bytes (e-acute, a Letter) and other non-mark escapes
+/// (emoji, a Symbol) stay launchable — stricter than the model, never more
+/// permissive, no valid target lost.
+bool _authorityHasEncodedCombiningMark(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  final List<int> bytes = <int>[];
+  for (int i = 0; i < authority.length; i++) {
+    final String char = authority[i];
+    if (char == '%' && i + 2 < authority.length) {
+      final int? hi = _hexDigit(authority[i + 1]);
+      final int? lo = _hexDigit(authority[i + 2]);
+      if (hi != null && lo != null) {
+        bytes.add((hi << 4) | lo);
+        i += 2;
+        continue;
+      }
+    }
+    // Raw characters here are ASCII (raw non-ASCII/forbidden chars were
+    // rejected by earlier rules); keep the byte so an encoded multi-byte mark
+    // is decoded in the correct UTF-8 byte context.
+    bytes.add(char.codeUnitAt(0));
+  }
+  final String decoded = utf8.decode(bytes, allowMalformed: true);
+  for (final int rune in decoded.runes) {
+    if (rune < 0x80) continue; // ASCII has no combining marks
+    if (_unicodeMark.hasMatch(String.fromCharCodes(<int>[rune]))) {
       return true;
     }
   }
@@ -1161,6 +1235,13 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // host, yet Uri.tryParse keeps it encoded and reports a "secure" HTTPS host.
   // ASCII escapes (incl. %20) and non-C/Z escapes stay launchable.
   if (_hasEncodedUnicodeControlOrSeparator(trimmed)) return false;
+  // Reject a percent-encoded Unicode combining mark in the authority: a
+  // launcher applying NFC/IDNA recomposes a base letter + mark into a different
+  // precomposed character, resolving a different host than Uri.tryParse reports,
+  // which under a stale secure flag + test opt-in could reach in-app rendering
+  // and self-signed acceptance on a mismatched/spoofed host. Precomposed UTF-8
+  // host bytes (e-acute) and marks in the path/query stay launchable.
+  if (_authorityHasEncodedCombiningMark(trimmed)) return false;
   // Reject a percent-encoded non-ASCII code point that IDNA/NFKC folds to an
   // ASCII character: a structural delimiter (fullwidth solidus/colon/dot/@/
   // [ ]/...) or a fullwidth ASCII letter/digit/punctuation look-alike. A launcher

@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 104 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (115 across the platform
+consume; today it locks the fallback behaviour with 107 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (118 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -239,6 +239,19 @@ Invariants, enforced by tests:
    points whose NFKC expansion embeds U+2044 (U+00BC..U+00BE, U+2150..U+215F,
    U+2189) fail closed in the authority; no real BMC host uses them, and the
    same escape in path/query/fragment stays launchable — no valid target lost.
+   **Encoded combining-mark rejection:** a percent-encoded Unicode `Mark`
+   (category M) is a valid `%XX` escape that every earlier rule misses, yet
+   `Uri.tryParse` keeps it encoded and reports a non-empty HTTPS host. A
+   launcher applying NFC/IDNA to the host (as browsers do) recomposes a base
+   letter + mark into a DIFFERENT precomposed character:
+   `https://bmc%CC%81.example/` decodes to `bmc` + U+0301 COMBINING ACUTE,
+   whose NFC form is `bmc` + U+00E9 — a DIFFERENT authority than `Uri.tryParse`
+   reported. Under a stale flag + test opt-in that parser differential could
+   grant in-app rendering and self-signed acceptance on a mismatched/spoofed
+   host. A real BMC host is ASCII/punycode and never writes a combining mark,
+   so every encoded mark fails closed in the authority; precomposed UTF-8 host
+   bytes (e-acute, a Letter), emoji and marks in the path/query stay
+   launchable — no valid target lost.
    **Degenerate dot-host rejection:** `Uri.tryParse` reports a label-less host
    made only of dots (`https://./console`, `https://../console`) as an HTTPS
    URI with a non-empty host, so the bare scheme+host re-check calls it
@@ -335,7 +348,7 @@ Invariants, enforced by tests:
    compatibility-confusable delimiter + IDNA dot-confusable rejection +
    IDNA middle-dot confusable rejection + NFKC-to-ASCII compatibility
    letter/digit rejection + NFKC vulgar-fraction confusable rejection +
-   degenerate dot-host rejection +
+   encoded combining-mark rejection + degenerate dot-host rejection +
    double-encoded authority-delimiter rejection + encoded authority-dot
    rejection + malformed-UTF-8 authority rejection + encoded ASCII space
    rejection + encoded unreserved-ASCII rejection + encoded sub-delimiter
