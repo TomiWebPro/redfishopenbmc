@@ -361,6 +361,18 @@ Invariants, enforced by tests:
    leading zeros), IPv6 literals and ordinary DNS/punycode hosts — including
    a real absolute-FQDN trailing dot such as `bmc.example.` — stay launchable,
    no real BMC target lost.
+   **Mixed ends-in-number host rejection:** the all-digit numeric-host rule
+   misses a mixed host whose final label is numeric, because a WHATWG "ends in
+   a number" check inspects only the LAST label: `https://bmc.2130706433/`
+   and `https://bmc.127.1/` are resolved as IPv4 literals (or rejected outright
+   when an earlier label is non-numeric) by a browser/WebView, while
+   `Uri.tryParse` reports them as opaque, non-empty HTTPS hosts. Under a stale
+   secure flag + test opt-in that parser differential could grant in-app
+   rendering and self-signed acceptance on a mismatched/internal host. A real
+   BMC host (or any browser-resolvable host) has an alphabetic/punycode final
+   label, so a purely numeric last label fails closed; canonical dotted-quad
+   IPv4, real trailing-dot FQDNs, IPv6 literals, punycode hosts and final
+   labels that merely end in digits stay launchable — no valid target lost.
    **Empty DNS-label rejection:** a leading dot (`.bmc.example`), consecutive
    dots (`bmc..example`) or a double trailing dot (`bmc.example..`) leaves an
    empty DNS label. `Uri.tryParse` reports such a host as non-empty HTTPS, but
@@ -437,7 +449,8 @@ Invariants, enforced by tests:
    rejection + malformed-UTF-8 authority rejection + encoded ASCII space
    rejection + encoded unreserved-ASCII rejection + encoded sub-delimiter
    rejection + non-canonical numeric-host
-   rejection (incl. trailing-dot absolute-FQDN numeric spellings) + empty
+   rejection (incl. trailing-dot absolute-FQDN numeric spellings) + mixed
+   ends-in-number host rejection + empty
    DNS-label rejection + out-of-range port rejection + signed and overflow
    port rejection + IPv4-mapped/IPvFuture IPv6 rejection + IPv4-embedded IPv6
    rejection).

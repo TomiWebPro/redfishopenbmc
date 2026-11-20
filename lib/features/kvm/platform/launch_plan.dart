@@ -477,6 +477,20 @@ String? externalClientConsoleProtocol(String? uri) {
 /// single trailing dot and still resolves them as IP literals, while a real
 /// trailing-dot DNS name (`bmc.example.`) and canonical IPv4 stay launchable.
 ///
+/// A MIXED host whose final label is numeric is rejected for the same reason,
+/// generalising the all-digit rule: a WHATWG "ends in a number" check inspects
+/// only the LAST label, so `https://bmc.2130706433/console` and
+/// `https://bmc.127.1/console` are resolved as IPv4 literals (or rejected
+/// outright when an earlier label is non-numeric) by a browser/WebView, while
+/// [Uri.tryParse] reports them as opaque, non-empty HTTPS hosts. The all-digit
+/// rule misses every such mixed host. Under a stale secure flag + test opt-in
+/// that parser differential could grant in-app rendering and self-signed
+/// acceptance on a mismatched/internal host. A real BMC host has an
+/// alphabetic/punycode final label (a numeric TLD is not a browser-resolvable
+/// target), so rejecting a purely numeric last label loses no valid target:
+/// canonical dotted-quad IPv4, real trailing-dot FQDNs, IPv6 literals,
+/// punycode hosts and final labels that merely end in digits stay launchable.
+///
 /// A host with an empty DNS label is rejected for the same reason: a leading
 /// dot (`.bmc.example`), consecutive dots (`bmc..example`) or a double trailing
 /// dot (`bmc.example..`) leaves an empty label between/around DNS labels.
@@ -1255,6 +1269,19 @@ bool _isNonCanonicalNumericHost(String host) {
     }
     return true;
   }
+  // WHATWG URL's "ends in a number" check inspects ONLY the last label: a host
+  // whose final label is all decimal digits is resolved as an IPv4 literal (or
+  // rejected outright when an earlier label is non-numeric) by a launcher,
+  // while Uri.tryParse reports the mixed host as an opaque, non-empty HTTPS
+  // host — a parser differential that the all-digit rule above misses. Under a
+  // stale secure flag + test opt-in that could grant in-app rendering and
+  // self-signed acceptance on a mismatched/internal host. A real BMC host
+  // (or any browser-resolvable host) has an alphabetic/punycode final label, so
+  // rejecting a purely numeric last label loses no valid target. The core has
+  // already had one trailing dot stripped, so `labels.last` is the true final
+  // label. Canonical IPv4 returned above; IPv6 (`':'`) and empty labels are
+  // handled elsewhere.
+  if (_isAllDigits(labels.last)) return true;
   return false;
 }
 

@@ -3345,4 +3345,91 @@ void main() {
       }
     });
   });
+
+  group(
+    'planConsoleLaunch — defense in depth: ends-in-number host rejection',
+    () {
+      test(
+          'a mixed host ending in a numeric label fails closed with a stale flag',
+          () {
+        // WHATWG URL's "ends in a number" check inspects ONLY the last label:
+        // `bmc.2130706433` is resolved as an IPv4 literal by browsers/WebViews
+        // (or rejected outright when an earlier label is non-numeric), while
+        // Uri.tryParse reports it as an opaque, non-empty HTTPS host. The
+        // existing all-digit numeric-host rule misses every mixed host. Under a
+        // stale secure flag + test opt-in that parser differential could grant
+        // in-app rendering and self-signed acceptance on a mismatched/internal
+        // host, so each must fail closed.
+        for (final String uri in <String>[
+          'https://bmc.2130706433/console', // decimal integer as last label
+          'https://bmc.127.1/console', // abbreviated dotted tail
+          'https://bmc.example.1/console', // single numeric last label
+          'https://router.0/console', // numeric zero last label
+          'https://bmc.example.0177.0.0.1/console', // leading-zero tail
+          'https://bmc.2130706433.:8443/console', // trailing-dot numeric tail
+        ]) {
+          final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+            policy: KvmWebViewPolicy.testOptIn,
+            uri: uri,
+            hasSecureUri: true,
+            isHtml5: true,
+            isEnabled: true,
+          );
+
+          expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+          expect(plan.targetUri, uri, reason: uri);
+          expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        }
+      });
+
+      test('an ends-in-number host never reaches in-app under any policy', () {
+        for (final KvmWebViewPolicy policy in <KvmWebViewPolicy>[
+          KvmWebViewPolicy.testOptIn,
+          KvmWebViewPolicy.productionDefault,
+        ]) {
+          final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+            policy: policy,
+            uri: 'https://bmc.2130706433/console',
+            hasSecureUri: true,
+            isHtml5: true,
+            isEnabled: true,
+          );
+
+          expect(plan.isInApp, isFalse, reason: policy.toString());
+          expect(plan.acceptSelfSigned, isFalse, reason: policy.toString());
+        }
+      });
+
+      test('legitimate hosts stay launchable (no over-rejection)', () {
+        // The rule targets only a purely numeric LAST label. A real BMC host
+        // has an alphabetic/punycode final label; numeric leading labels, a
+        // canonical dotted-quad IPv4, a real trailing-dot FQDN, an IPv6 literal
+        // and a final label that merely ends in digits (not purely numeric) all
+        // keep working.
+        for (final String uri in <String>[
+          'https://bmc.example/console',
+          'https://bmc123/console', // single alphabetic-ending label
+          'https://123.bmc.example/console', // numeric FIRST label is fine
+          'https://bmc.example./console', // absolute FQDN (alpha TLD)
+          'https://192.168.1.1/console', // canonical dotted-quad IPv4
+          'https://foo.123bar/console', // last label ends in digits, not numeric
+          'https://[::1]/console', // IPv6 literal
+          'https://xn--fsqu00a.example/console', // punycode host
+        ]) {
+          final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+            policy: KvmWebViewPolicy.productionDefault,
+            uri: uri,
+            hasSecureUri: true,
+            isHtml5: true,
+            isEnabled: true,
+          );
+
+          expect(plan.route, KvmConsoleRenderRoute.externalBrowser,
+              reason: uri);
+          expect(plan.targetUri, uri, reason: uri);
+          expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        }
+      });
+    },
+  );
 }
