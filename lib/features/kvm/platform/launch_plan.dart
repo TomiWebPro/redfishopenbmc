@@ -205,6 +205,17 @@ class KvmConsoleLaunchPlan {
 /// rejected; encoded non-delimiter non-ASCII (e-acute, euro, emoji) and
 /// confusables in the path/query stay launchable, so no valid target is lost.
 ///
+/// The same confusable rule also rejects a non-ASCII code point whose NFKC
+/// normalisation *introduces* a delimiter rather than being one: U+013F/U+0140
+/// (L/l WITH MIDDLE DOT -> U+00B7 -> '.'), the SQUARE "M OVER S" style units
+/// (U+33A7/33A8/33AE/33AF/33C6/33DE/33DF -> U+2215 -> '/'), and U+FE12
+/// (vertical ideographic full stop -> U+3002 -> '.'). Each is a valid `%XX`
+/// escape that is neither Separator/Other nor a mark and whose NFKC stays
+/// non-ASCII, so the NFKC-to-ASCII table misses it too, yet a decode+IDNA
+/// launcher resolves a different authority than [Uri.tryParse] reports. This
+/// is the delimiter analogue of the NFKC-mark-introducing rule; real BMC hosts
+/// are ASCII/punycode, so no valid target is lost.
+///
 /// A percent-encoded Unicode "Mathematical Alphanumeric Symbols" code point
 /// (U+1D400..U+1D7FF) is rejected for the same reason: these are styled Latin
 /// letters/digits that NFKC-normalise to plain ASCII (e.g. U+1D400 MATHEMATICAL
@@ -1013,6 +1024,52 @@ const Set<int> _compatibilityDelimiterCodePoints = <int>{
   0x33D8, // SQUARE PM                  -> 'p.m.'
 };
 
+/// Non-ASCII code points whose NFKC normalisation is NOT plain ASCII but
+/// *introduces* a code point from [_compatibilityDelimiterCodePoints] — a
+/// structural delimiter confusable.
+///
+/// This is the delimiter analogue of [_nfkcMarkIntroducingRanges]: the decoded
+/// code point itself is not a delimiter, is not a Unicode Separator/Other or a
+/// mark, and its NFKC stays non-ASCII (so the complete NFKC-to-ASCII table in
+/// [_isNfkcAsciiCompatibility] does not match it), yet a launcher applying
+/// IDNA/NFKC resolves a DIFFERENT authority than [Uri.tryParse] reports, which
+/// keeps the percent-encoded escape verbatim in a non-empty HTTPS host. The
+/// complete family (Unicode 16.0.0) is:
+///
+///  * U+013F / U+0140 LATIN [CAPITAL/SMALL] LETTER L WITH MIDDLE DOT — NFKC
+///    introduces U+00B7 MIDDLE DOT, which nameprep/IDNA2003 maps to the
+///    domain-label dot '.';
+///  * the SQUARE units U+33A7/33A8/33AE/33AF/33C6/33DE/33DF ("M OVER S",
+///    "RAD OVER S", "C OVER KG", ...), whose NFKC embeds U+2215 DIVISION
+///    SLASH, which IDNA maps to '/';
+///  * U+FE12 PRESENTATION FORM FOR VERTICAL IDEOGRAPHIC FULL STOP — NFKC
+///    introduces U+3002 IDEOGRAPHIC FULL STOP, which IDNA maps to '.'.
+///
+/// (Vulgar fractions also introduce U+2044 FRACTION SLASH, but those are
+/// already rejected by [_nfkcFractionSlashCodePoints].) No real BMC host uses
+/// any of these compatibility characters (hosts are ASCII or punycode), so
+/// rejecting them loses no valid target — ordinary pct-encoded UTF-8 that
+/// NFKC-folds to a stable non-ASCII character (e-acute, euro, emoji) stays
+/// launchable.
+const Set<int> _nfkcDelimiterIntroducingCodePoints = <int>{
+  0x013F, // LATIN CAPITAL LETTER L WITH MIDDLE DOT  -> 'L' + U+00B7 ('.')
+  0x0140, // LATIN SMALL LETTER L WITH MIDDLE DOT    -> 'l' + U+00B7 ('.')
+  0x33A7, // SQUARE M OVER S                         -> 'm' + U+2215 + 's'
+  0x33A8, // SQUARE M OVER S SQUARED                 -> 'm' + U+2215 + 's2'
+  0x33AE, // SQUARE RAD OVER S                       -> 'rad' + U+2215 + 's'
+  0x33AF, // SQUARE RAD OVER S SQUARED               -> 'rad' + U+2215 + 's2'
+  0x33C6, // SQUARE C OVER KG                        -> 'C' + U+2215 + 'kg'
+  0x33DE, // SQUARE V OVER M                         -> 'V' + U+2215 + 'm'
+  0x33DF, // SQUARE A OVER M                         -> 'A' + U+2215 + 'm'
+  0xFE12, // PRESENTATION FORM FOR VERTICAL IDEOGRAPHIC FULL STOP -> U+3002
+};
+
+/// Returns `true` when [rune] NFKC-normalises to a string introducing a
+/// structural delimiter confusable (see
+/// [_nfkcDelimiterIntroducingCodePoints]).
+bool _isNfkcDelimiterIntroducing(int rune) =>
+    _nfkcDelimiterIntroducingCodePoints.contains(rune);
+
 /// Returns `true` when [rune] is a non-ASCII compatibility character that
 /// NFKC-normalises to an ASCII letter or digit (outside the fullwidth block).
 ///
@@ -1252,6 +1309,13 @@ bool _authorityHasAsciiCompatibilityConfusable(String uri) {
     // launcher resolves a DIFFERENT ASCII authority than Uri.tryParse reports.
     if (_isIdnaIgnoredHangulFiller(rune)) return true;
     if (_compatibilityDelimiterCodePoints.contains(rune)) return true;
+    // NFKC can also *introduce* a delimiter from a code point that is not
+    // itself a delimiter (L WITH MIDDLE DOT -> U+00B7, SQUARE "M OVER S" units
+    // -> U+2215, vertical ideographic full stop -> U+3002): the decoded rune
+    // is non-ASCII and NFKC-non-ASCII, so every check above misses it, but a
+    // decode+IDNA launcher still resolves a DIFFERENT authority. See
+    // [_nfkcDelimiterIntroducingCodePoints].
+    if (_isNfkcDelimiterIntroducing(rune)) return true;
     // Vulgar fractions NFKC-expand to digit + U+2044 FRACTION SLASH + digit;
     // IDNA maps U+2044 to '/', forging a structural delimiter that the single
     // decoded code point does not reveal (see _nfkcFractionSlashCodePoints).
@@ -1723,9 +1787,11 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // Mathematical Alphanumeric Symbols block (styled Latin letters/digits that
   // fold to plain ASCII, outside every set above), the four IDNA-ignored Hangul
   // fillers that IDNA drops from the host entirely, and U+2071 SUPERSCRIPT
-  // LATIN SMALL LETTER I (a modifier letter that NFKC-folds to ASCII `i`). ASCII
-  // escapes and encoded non-ASCII that folds to non-ASCII (e-acute, euro, emoji)
-  // stay launchable.
+  // LATIN SMALL LETTER I (a modifier letter that NFKC-folds to ASCII `i`), and
+  // the NFKC-delimiter-introducing families (L WITH MIDDLE DOT, SQUARE "M OVER
+  // S" units, vertical ideographic full stop) whose NFKC introduces U+00B7 /
+  // U+2215 / U+3002. ASCII escapes and encoded non-ASCII that folds to
+  // non-ASCII (e-acute, euro, emoji) stay launchable.
   if (_authorityHasAsciiCompatibilityConfusable(trimmed)) return false;
   // Reject a percent-encoded octet sequence in the authority that is not
   // well-formed UTF-8 (lone C1 byte, overlong form, truncated sequence): a
