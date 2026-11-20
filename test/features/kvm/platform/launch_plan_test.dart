@@ -3220,4 +3220,100 @@ void main() {
       });
     },
   );
+
+  group(
+    'planConsoleLaunch — defense in depth: NFKC-to-ASCII compatibility rejection',
+    () {
+      test(
+          'a percent-encoded NFKC-to-ASCII compatibility host fails closed with a stale flag',
+          () {
+        // Each escape is a NON-ASCII compatibility character whose Unicode
+        // NFKC normalisation is plain ASCII, yet it lies outside the hand-
+        // maintained fullwidth / circled 1-20 / Roman-numeral / math / vulgar-
+        // fraction ranges the earlier confusable rules know. Uri.tryParse keeps
+        // the escape encoded (non-empty HTTPS host), so a syntactic re-check
+        // calls it "secure", while a browser/WebView applying IDNA/NFKC resolves
+        // a DIFFERENT ASCII authority:
+        //   %F0%9F%AF%B7 U+1FBF7 SEGMENTED DIGIT SEVEN   -> bmc7.example
+        //   %E3%89%91    U+3251  CIRCLED NUMBER TWENTY ONE -> bmc21.example
+        //   %EF%AC%81    U+FB01  LATIN SMALL LIGATURE FI    -> bmcfi.example
+        //   %CA%B0       U+02B0  MODIFIER LETTER SMALL H    -> bmch.example
+        //   %C2%AA       U+00AA  FEMININE ORDINAL INDICATOR -> bmca.example
+        //   %E2%84%82    U+2102  DOUBLE-STRUCK CAPITAL C    -> bmcc.example
+        // Under a stale secure flag + test opt-in that parser differential
+        // could grant in-app rendering and self-signed acceptance on a
+        // spoofed/mismatched host, so each must fail closed.
+        for (final String uri in <String>[
+          'https://bmc%F0%9F%AF%B7.example/console',
+          'https://bmc%E3%89%91.example/console',
+          'https://bmc%EF%AC%81.example/console',
+          'https://bmc%CA%B0.example/console',
+          'https://bmc%C2%AA.example/console',
+          'https://bmc%E2%84%82.example/console',
+          'https://bmc%f0%9f%af%b7.example/console', // lowercase hex
+          'https://%C2%AA.example/console', // leading label
+        ]) {
+          final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+            policy: KvmWebViewPolicy.testOptIn,
+            uri: uri,
+            hasSecureUri: true,
+            isHtml5: true,
+            isEnabled: true,
+          );
+
+          expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+          expect(plan.targetUri, uri, reason: uri);
+          expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        }
+      });
+
+      test('an NFKC-to-ASCII compatibility host never reaches in-app under any policy',
+          () {
+        for (final KvmWebViewPolicy policy in <KvmWebViewPolicy>[
+          KvmWebViewPolicy.testOptIn,
+          KvmWebViewPolicy.productionDefault,
+        ]) {
+          final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+            policy: policy,
+            uri: 'https://bmc%F0%9F%AF%B7.example/console',
+            hasSecureUri: true,
+            isHtml5: true,
+            isEnabled: true,
+          );
+
+          expect(plan.isInApp, isFalse, reason: policy.toString());
+          expect(plan.acceptSelfSigned, isFalse, reason: policy.toString());
+        }
+      });
+
+      test('legitimate UTF-8 hosts, punycode and path escapes stay launchable', () {
+        // The rule targets only compatibility code points that NFKC-fold to
+        // ASCII in the authority. Legitimate pct-encoded UTF-8 host text that
+        // folds to NON-ASCII (e-acute, euro, emoji), punycode hosts, and the
+        // same escapes in the path/query (which cannot forge a host) keep
+        // working — no valid target is lost.
+        for (final String uri in <String>[
+          'https://bmc.example/console',
+          'https://%C3%A9.example/console', // pct-encoded e-acute host
+          'https://%E2%82%AC.example/console', // pct-encoded euro host
+          'https://%F0%9F%98%80.example/console', // pct-encoded emoji host
+          'https://xn--fsqu00a.example/console', // punycode host
+          'https://bmc.example/console?x=%F0%9F%AF%B7', // escape in query
+        ]) {
+          final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+            policy: KvmWebViewPolicy.productionDefault,
+            uri: uri,
+            hasSecureUri: true,
+            isHtml5: true,
+            isEnabled: true,
+          );
+
+          expect(plan.route, KvmConsoleRenderRoute.externalBrowser,
+              reason: uri);
+          expect(plan.targetUri, uri, reason: uri);
+          expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        }
+      });
+    },
+  );
 }

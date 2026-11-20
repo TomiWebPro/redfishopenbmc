@@ -978,6 +978,68 @@ bool _isNfkcAsciiLetterOrDigit(int rune) {
 bool _isMathematicalAlphanumericSymbol(int rune) =>
     rune >= 0x1D400 && rune <= 0x1D7FF;
 
+/// Flat `[start, end, ...]` inclusive range pairs of every non-ASCII code point
+/// whose Unicode NFKC normalisation is entirely ASCII but that is not already
+/// covered by a dedicated rule above (the gen-delim/`U+2044` confusable set,
+/// the fullwidth block, [_isNfkcAsciiLetterOrDigit], the mathematical block or
+/// [_nfkcFractionSlashCodePoints]).
+///
+/// Generated from Unicode 16.0.0 data: 427 code points in 92 ranges. Each
+/// member NFKC-folds to plain ASCII, so a browser/WebView applying IDNA/NFKC
+/// resolves a DIFFERENT ASCII authority than [Uri.tryParse] reports (which
+/// keeps the percent-encoded escape verbatim in the host). Representative,
+/// Node-verified differentials: U+1FBF7 SEGMENTED DIGIT SEVEN ->
+/// `bmc7.example`, U+3251 CIRCLED NUMBER TWENTY ONE -> `bmc21.example`,
+/// U+FB01 LATIN SMALL LIGATURE FI -> `bmcfi.example`, U+02B0 MODIFIER LETTER
+/// SMALL H -> `bmch.example`. No real BMC host uses a compatibility character
+/// (hosts are ASCII or punycode), so rejecting the whole set loses no valid
+/// target — non-ASCII that NFKC-folds to non-ASCII (e-acute, euro, emoji) is
+/// deliberately absent and stays launchable.
+const List<int> _nfkcAsciiCompatibilityRanges = <int>[
+  0xAA, 0xAA, 0xBA, 0xBA, 0x132, 0x133, 0x1C7, 0x1CC,
+  0x1F1, 0x1F3, 0x2B0, 0x2B0, 0x2B2, 0x2B3, 0x2B7, 0x2B8,
+  0x2E1, 0x2E3, 0x37E, 0x37E, 0x1D2C, 0x1D2C, 0x1D2E, 0x1D2E,
+  0x1D30, 0x1D31, 0x1D33, 0x1D3A, 0x1D3C, 0x1D3C, 0x1D3E, 0x1D43,
+  0x1D47, 0x1D49, 0x1D4D, 0x1D4D, 0x1D4F, 0x1D50, 0x1D52, 0x1D52,
+  0x1D56, 0x1D58, 0x1D5B, 0x1D5B, 0x1D62, 0x1D65, 0x1D9C, 0x1D9C,
+  0x1DA0, 0x1DA0, 0x1DBB, 0x1DBB, 0x1FEF, 0x1FEF, 0x203C, 0x203C,
+  0x207A, 0x207A, 0x207C, 0x207F, 0x208A, 0x208A, 0x208C, 0x208E,
+  0x2090, 0x2093, 0x2095, 0x209C, 0x20A8, 0x20A8, 0x2102, 0x2102,
+  0x210A, 0x210E, 0x2110, 0x2113, 0x2115, 0x2116, 0x2119, 0x211D,
+  0x2120, 0x2122, 0x2124, 0x2124, 0x2128, 0x2128, 0x212C, 0x212D,
+  0x212F, 0x2131, 0x2133, 0x2134, 0x2139, 0x2139, 0x213B, 0x213B,
+  0x2145, 0x2149, 0x2474, 0x2487, 0x249C, 0x24B5, 0x2A75, 0x2A76,
+  0x2C7C, 0x2C7D, 0x3250, 0x325F, 0x32B1, 0x32BF, 0x32CC, 0x32CF,
+  0x3371, 0x337A, 0x3380, 0x3381, 0x3383, 0x338B, 0x338E, 0x3394,
+  0x3396, 0x339A, 0x339C, 0x33A6, 0x33A9, 0x33AD, 0x33B0, 0x33B1,
+  0x33B3, 0x33B5, 0x33B7, 0x33BB, 0x33BD, 0x33BF, 0x33C3, 0x33C5,
+  0x33C8, 0x33D7, 0x33D9, 0x33DD, 0x33FF, 0x33FF, 0xA7F2, 0xA7F4,
+  0xFB00, 0xFB06, 0xFB29, 0xFB29, 0xFE10, 0xFE10, 0xFE14, 0xFE15,
+  0xFE33, 0xFE38, 0xFE4D, 0xFE50, 0xFE54, 0xFE54, 0xFE57, 0xFE57,
+  0xFE59, 0xFE5C, 0xFE60, 0xFE66, 0xFE69, 0xFE6A, 0x107A5, 0x107A5,
+  0x1CCD6, 0x1CCF9, 0x1F101, 0x1F10A, 0x1F110, 0x1F129, 0x1F12B, 0x1F12E,
+  0x1F14A, 0x1F14F, 0x1F16A, 0x1F16C, 0x1F190, 0x1F190, 0x1FBF0, 0x1FBF9,
+];
+
+/// Returns `true` when [rune] is a non-ASCII compatibility character whose
+/// NFKC normalisation is plain ASCII but that no dedicated rule above covers.
+///
+/// This generalises the hand-maintained fullwidth / circled / Roman-numeral /
+/// mathematical / fraction families to the complete Unicode compatibility set:
+/// ligatures, modifier letters, ordinal indicators, letterlike symbols,
+/// circled numbers beyond 20, segmented digits and squared units. A launcher
+/// applying IDNA/NFKC resolves such a code point to a different ASCII host
+/// than [Uri.tryParse] reports, which under a stale flag + test opt-in could
+/// grant in-app rendering and self-signed acceptance on a spoofed host.
+bool _isNfkcAsciiCompatibility(int rune) {
+  if (rune < 0xAA) return false;
+  for (int i = 0; i < _nfkcAsciiCompatibilityRanges.length; i += 2) {
+    if (rune < _nfkcAsciiCompatibilityRanges[i]) return false; // sorted
+    if (rune <= _nfkcAsciiCompatibilityRanges[i + 1]) return true;
+  }
+  return false;
+}
+
 /// Vulgar fractions (Unicode category `No`) whose NFKC normalisation expands
 /// to a digit + U+2044 FRACTION SLASH + digit(s), e.g. U+00BD `1/2` ->
 /// `1` U+2044 `2`. IDNA/UTS-46 maps U+2044 to '/', so a decode+IDNA launcher
@@ -1071,6 +1133,13 @@ bool _authorityHasAsciiCompatibilityConfusable(String uri) {
     // a block none of the ranges above cover (see
     // [_isMathematicalAlphanumericSymbol]).
     if (_isMathematicalAlphanumericSymbol(rune)) return true;
+    // Every remaining non-ASCII compatibility character that NFKC-normalises
+    // to plain ASCII (ligatures, modifier letters, ordinal indicators,
+    // letterlike symbols, circled numbers > 20, segmented digits, squared
+    // units, ...) — a decode+IDNA launcher resolves a DIFFERENT ASCII
+    // authority than Uri.tryParse reports. Generated from Unicode 16.0.0 data
+    // so the hand-maintained ranges above cannot leave a family unchecked.
+    if (_isNfkcAsciiCompatibility(rune)) return true;
   }
   return false;
 }

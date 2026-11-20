@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 122 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (133 across the platform
+consume; today it locks the fallback behaviour with 125 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (136 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -255,6 +255,24 @@ Invariants, enforced by tests:
    fails closed in the authority; ordinary pct-encoded UTF-8 host bytes
    (`%C3%A9`, `%E2%82%AC`), punycode hosts and these escapes in the path/query
    stay launchable — no valid target lost.
+   **Complete NFKC-to-ASCII compatibility rejection:** the per-family rules
+   above enumerate only the common confusable ranges (fullwidth, circled 1-20,
+   Roman numerals, mathematical, vulgar fractions), leaving every *other*
+   non-ASCII compatibility character whose Unicode NFKC normalisation is plain
+   ASCII unchecked. A launcher applying IDNA/NFKC resolves each to a *different*
+   ASCII authority than `Uri.tryParse` reports (which keeps the escape encoded
+   in a non-empty HTTPS host): Node-verified examples include
+   `%F0%9F%AF%B7` (U+1FBF7 SEGMENTED DIGIT SEVEN) -> `bmc7.example`,
+   `%E3%89%91` (U+3251 CIRCLED NUMBER TWENTY ONE) -> `bmc21.example`,
+   `%EF%AC%81` (U+FB01 LIGATURE FI) -> `bmcfi.example`, `%CA%B0` (U+02B0
+   MODIFIER LETTER SMALL H) -> `bmch.example` and `%C2%AA` (FEMININE ORDINAL) ->
+   `bmca.example`. Under a stale secure flag + test opt-in that differential
+   could grant in-app rendering and self-signed acceptance on a spoofed host.
+   A `const` range table generated from Unicode 16.0.0 data closes the whole
+   class (427 code points in 92 ranges): every such escape fails closed in the
+   authority, while non-ASCII that NFKC-folds to non-ASCII (e-acute, euro,
+   emoji), punycode hosts and the same escapes in the path/query stay launchable
+   — no valid target lost.
    **NFKC vulgar-fraction confusable rejection:** a percent-encoded "vulgar
    fraction" (Unicode category `No`) NFKC-normalises to a decimal digit +
    U+2044 FRACTION SLASH + digit(s) (e.g. U+00BD `1/2` -> `1` + U+2044 + `2`),
