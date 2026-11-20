@@ -13,7 +13,7 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
      capture, primary clearing, re-load recovery). Audit first; fix only a genuine divergence via
      RED→GREEN; no churn. The blocked in-app route (EP-S1) stays human-gated. No code touched. -->
 
-- [ ] EP-S4 KvmController.load async state-machine contract: add a dedicated controller test pinning
+- [x] EP-S4 LANDED 2026-11-20 (run 2026-11-20 18:00 UTC; analyze 0 / 1684 passed / 1 skipped; 8-test gated controller state-machine contract + RED proof, no lib change): KvmController.load async state-machine contract: add a dedicated controller test pinning
       that `load()` sets `loading` while the fetch is in flight, clears a prior error, selects the
       primary via `KvmService.pickPrimary` on success and clears it when the manager walk returns no
       consoles, captures a `RedfishException` message (and a generic exception) into `KvmUiState.error`

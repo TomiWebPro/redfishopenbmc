@@ -11921,3 +11921,18 @@
 - Next `build/rf-platform` tip: merge only after a fresh explicit `CHECK: PASS` for that exact tip; no PASS → SKIP. NO-OP exit when the branch has no new commits past the last merge. Post-verify analyze 0 / full test green / all coverage gates PASS / issues validate OK / first-parent diff allowlisted; run the 85-test emulator suite only on wire/fixture/tool change or >7 days since last green.
 
 **Issues touched:** none closed (#009 P3 / #021 P2 remain open — human-gated on platform WebView + BMC TLS validation).
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-S4)
+
+**Done:**
+- FEATURE — EP-S4 KvmController.load async state-machine contract for #009/#021. Added `test/features/kvm/kvm_controller_test.dart` (8 tests + gated fake service) pinning the full load contract (in-flight loading, primary via pickPrimary, empty-walk clearing, stale-error clearing, RedfishException + generic error capture with loading false and primary cleared, one-fetch-per-cycle in-flight guard, re-load recovery). Genuine coverage gap — the state machine driving the gated KVM screen had no direct tests.
+- RED→GREEN: temporarily removed the in-flight guard → 2 tests failed (`+6 -2`); restored byte-clean (SHA unchanged, 0 probes), backup shredded → 8/8 GREEN.
+- Verify: analyze 0; full `flutter test` 1684 passed / 1 skipped (baseline 1676 +8); issues validate OK; diff --check clean; deps unchanged; emulator skipped (test-only, <7 days since green 85/85).
+
+**Decisions:**
+- Test-only guard, no lib change: audit found the current controller already satisfies every contract item, so no production change was warranted — a regression guard for an untested, operator-visible state machine is the genuine increment, not churn. No WebView/protocol import, no URL opened, no human approval, no production TLS weakening. Pre-existing untracked `testing/` + `stash@{0}` untouched; no force-push; no issue closed (both human-gated on platform WebView + BMC TLS validation).
+
+**Next:**
+- Next head-first slices EP-P10 / EP-T13 / EP-U10 — audit each for a genuine RED→GREEN gap before landing, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
