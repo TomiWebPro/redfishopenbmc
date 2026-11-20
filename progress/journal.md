@@ -11816,3 +11816,18 @@
 - Audit EP-U9 (fullscreen/input-forwarding disclosure a11y) then EP-T12 (guard-suite liveness) for a genuine RED→GREEN gap; RS-2 already implemented + tested. Never activate WebView, grant human approval, or weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-T12)
+
+**Done:**
+- EP-T12 (head of the unlanded `queues/tooling.md` slices, second of the two head-first slices named in the prior run's Next). Added `test/tool/guard_suite_liveness_test.dart` (6 tests), a dependency-free pure-Dart "who guards the guards" guard: enumerates the 8 established KVM safety guard files and fails closed if any is missing, emptied, stripped of all live `test(...)`/`testWidgets(...)` cases (comment/string-aware, raw-string-aware lexer), or no longer reachable from verify.yml's whole-tree `flutter test --coverage`.
+- RED→GREEN: (1) temp scan root — missing/emptied/test-less/unreachable each produced violations, intact → clean; (2) real file — temporarily emptied `notice_single_source_guard_test.dart` → real-repo invariant failed `NO_TEST_CASES`; restored byte-clean (SHA `b3c0e0b5…` unchanged), backup shredded → 6/6 GREEN.
+
+**Decisions:**
+- Test-only, dependency-free, TLS-safe: no product `lib/` change, no wire/transport/fixture/dependency change, no URL opened, no human approval granted, no issue closed, no production TLS weakening. Genuine previously-unpinned liveness invariant (the guard family had no guard against a guard being silently deleted/disabled), distinct from the per-guard guards it watches. DMTF emulator skipped (test-only, <7 days since last green 85/85).
+- Verify: targeted 6/6; `flutter analyze` 0 (fixed 2 `curly_braces` infos); full `flutter test` 1630 passed / 1 skipped (baseline 1624 +6; one transient `power_view_test.dart` full-run flake re-isolated 26/26 GREEN, clean full re-run); issues validate OK; `git diff --check` clean. Pre-existing untracked `testing/` + stash preserved; no force-push.
+
+**Next:**
+- EP-U9 (rf-ui) fullscreen/input-forwarding disclosure a11y audit across the three viewer paths; fix only a genuine divergence with RED→GREEN widget tests. Never activate WebView, grant human approval, or weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
