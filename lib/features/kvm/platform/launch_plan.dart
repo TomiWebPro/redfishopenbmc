@@ -777,7 +777,10 @@ bool _hasEncodedUnicodeControlOrSeparator(String uri) {
 }
 
 /// Returns `true` when the raw authority carries a percent-encoded Unicode
-/// `Mark` (category M) code point.
+/// `Mark` (category M) code point, or a non-mark compatibility code point
+/// whose NFKC normalisation introduces a combining mark
+/// ([_nfkcMarkIntroducingRanges]) — both recompose with a preceding base into
+/// a different host under a decode+IDNA launcher.
 ///
 /// A percent-encoded combining mark is a *valid* `%XX` escape (so the
 /// malformed-percent and encoded-control rules miss it), is not a C0/DEL octet
@@ -825,6 +828,77 @@ bool _authorityHasEncodedCombiningMark(String uri) {
     if (_unicodeMark.hasMatch(String.fromCharCodes(<int>[rune]))) {
       return true;
     }
+    // Compatibility/spacing code points that are NOT category M themselves
+    // but whose NFKC normalisation INTRODUCES a combining mark (e.g. U+00B4
+    // ACUTE ACCENT -> SPACE + U+0301, U+FF9E HALFWIDTH VOICED SOUND MARK ->
+    // U+3099). They evade the category-M check above and the "entirely ASCII
+    // NFKC" compatibility rule, yet a decode+IDNA launcher recomposes them
+    // with a preceding base letter into a DIFFERENT host — the same spoofing
+    // vector a directly encoded mark closes. Rejected here so no such form
+    // can reach in-app self-signed acceptance on a mismatched authority.
+    if (_isNfkcMarkIntroducing(rune)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Flat `[start, end, ...]` inclusive range pairs of every non-ASCII code
+/// point that is NOT itself a Unicode `Mark` (category M) but whose Unicode
+/// 16.0.0 NFKC normalisation INTRODUCES at least one combining mark.
+///
+/// Generated from Unicode 16.0.0 data: 143 code points in 54 ranges. Members
+/// include the spacing diacritics (U+00A8/U+00AF/U+00B4/U+00B8, U+02D8..U+02DD,
+/// U+0384/U+0385, the Greek tonos/dasia forms U+1FBD..U+1FFE), the double low
+/// line / overline punctuation (U+2017/U+203E), the halfwidth voiced sound
+/// marks (U+309B/U+309C/U+FF9E/U+FF9F), the Indic/Hebrew base+mark
+/// compositions (U+0958..U+095F, U+FB1D..U+FB4E, U+FC5B..U+FD3D) and the
+/// musical-symbol compositions (U+1D15E..U+1D164, U+1D1BB..U+1D1C0).
+///
+/// These are invisible to every other authority rule: they are not category
+/// C/Z (so the encoded-separator rule misses them), not category M (so the
+/// direct combining-mark rule misses them), and their NFKC includes a
+/// non-ASCII mark so it is not "entirely ASCII" (the compatibility rule
+/// misses them). A decode+IDNA launcher recomposes the introduced mark with a
+/// preceding base letter into a different precomposed character, resolving a
+/// DIFFERENT host than [Uri.tryParse] reports, which under a stale secure flag
+/// + test opt-in could grant in-app rendering and self-signed acceptance on a
+/// spoofed host. No real BMC host uses a spacing diacritic, a halfwidth sound
+/// mark, a compatibility base+mark composition or a musical symbol (hosts are
+/// ASCII or punycode), so rejecting the whole set loses no valid target —
+/// pct-encoded UTF-8 that NFKC-folds to a stable non-ASCII character
+/// (e-acute, euro, emoji) is deliberately absent and stays launchable.
+const List<int> _nfkcMarkIntroducingRanges = <int>[
+  0x00A8, 0x00A8, 0x00AF, 0x00AF, 0x00B4, 0x00B4,
+  0x00B8, 0x00B8, 0x02D8, 0x02DD, 0x037A, 0x037A,
+  0x0384, 0x0385, 0x0958, 0x095F, 0x09DC, 0x09DD,
+  0x09DF, 0x09DF, 0x0A33, 0x0A33, 0x0A36, 0x0A36,
+  0x0A59, 0x0A5B, 0x0A5E, 0x0A5E, 0x0B5C, 0x0B5D,
+  0x0E33, 0x0E33, 0x0EB3, 0x0EB3, 0x0F43, 0x0F43,
+  0x0F4D, 0x0F4D, 0x0F52, 0x0F52, 0x0F57, 0x0F57,
+  0x0F5C, 0x0F5C, 0x0F69, 0x0F69, 0x1FBD, 0x1FBD,
+  0x1FBF, 0x1FC1, 0x1FCD, 0x1FCF, 0x1FDD, 0x1FDF,
+  0x1FED, 0x1FEE, 0x1FFD, 0x1FFE, 0x2017, 0x2017,
+  0x203E, 0x203E, 0x2ADC, 0x2ADC, 0x309B, 0x309C,
+  0xFB1D, 0xFB1D, 0xFB1F, 0xFB1F, 0xFB2A, 0xFB36,
+  0xFB38, 0xFB3C, 0xFB3E, 0xFB3E, 0xFB40, 0xFB41,
+  0xFB43, 0xFB44, 0xFB46, 0xFB4E, 0xFC5B, 0xFC63,
+  0xFC90, 0xFC90, 0xFCD9, 0xFCD9, 0xFCF2, 0xFCF4,
+  0xFD3C, 0xFD3D, 0xFE49, 0xFE4C, 0xFE70, 0xFE72,
+  0xFE74, 0xFE74, 0xFE76, 0xFE7F, 0xFF9E, 0xFF9F,
+  0xFFE3, 0xFFE3, 0x1D15E, 0x1D164, 0x1D1BB, 0x1D1C0,
+];
+
+/// Returns `true` when [rune] is a non-mark code point whose Unicode NFKC
+/// normalisation introduces a combining mark (see
+/// [_nfkcMarkIntroducingRanges]). Such a code point has the same host-spoofing
+/// recomposition effect as a directly encoded mark but evades the category-M
+/// rule, so it is rejected alongside real marks.
+bool _isNfkcMarkIntroducing(int rune) {
+  if (rune < 0xA8) return false;
+  for (int i = 0; i < _nfkcMarkIntroducingRanges.length; i += 2) {
+    if (rune < _nfkcMarkIntroducingRanges[i]) return false; // sorted
+    if (rune <= _nfkcMarkIntroducingRanges[i + 1]) return true;
   }
   return false;
 }

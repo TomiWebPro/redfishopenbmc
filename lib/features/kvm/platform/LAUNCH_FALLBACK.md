@@ -425,6 +425,25 @@ Invariants, enforced by tests:
    loopback, link-local, unique-local, global-unicast and the pure-hex mapped
    form (still caught by the groups check) stay launchable — no valid target
    lost.
+   **NFKC mark-introducing authority rejection:** the encoded-combining-mark
+   rule rejects code points in Unicode category M, but a family of
+   compatibility/spacing code points are NOT marks themselves while their
+   NFKC normalisation introduces one — spacing diacritics (U+00B4 ACUTE
+   ACCENT -> SPACE + U+0301, U+02D8..U+02DD, U+0384/U+0385, the Greek tonos/
+   dasia forms), the halfwidth voiced sound marks (U+FF9E/U+FF9F, U+309B/
+   U+309C), Indic/Hebrew base+mark compositions (U+0958..U+095F, U+FB1D..U+FB4E)
+   and musical-symbol compositions (U+1D15E..U+1D164). They are invisible to
+   the C/Z rule (not category C/Z), the category-M rule (not a mark), and the
+   NFKC-to-ASCII rule (their NFKC is not entirely ASCII), so `Uri.tryParse`
+   reports a non-empty HTTPS host that passes a purely syntactic re-check. A
+   decode+IDNA launcher recomposes the introduced mark with a preceding base
+   letter into a DIFFERENT precomposed character, resolving a different
+   authority; under a stale secure flag + test opt-in that differential could
+   grant in-app rendering and self-signed acceptance on a spoofed host. All
+   143 such code points (Unicode 16.0.0) fail closed. No real BMC host uses a
+   spacing diacritic, halfwidth sound mark or compatibility composition, so
+   no valid target is lost — pct-encoded UTF-8 that NFKC-folds to a stable
+   non-ASCII character (e-acute, euro, emoji) stays launchable.
    Covered by targeted tests across the defense-in-depth re-validation
    groups (scheme/host/malformed-authority parity + control-character +
    raw-space + Unicode-whitespace/invisible + raw-backslash + RFC-3986
@@ -445,7 +464,10 @@ Invariants, enforced by tests:
    ends-in-number host rejection + empty
    DNS-label rejection + out-of-range port rejection + signed and overflow
    port rejection + IPv4-mapped/IPvFuture IPv6 rejection + IPv4-embedded IPv6
-   rejection).
+   rejection + NFKC mark-introducing authority rejection (spacing diacritics,
+   halfwidth sound marks and base+mark compositions that are not category M
+   yet NFKC-decompose to a combining mark, so they recompose with a preceding
+   base into a different host under a decode+IDNA launcher)).
 
 ## What remains gated (not done here)
 

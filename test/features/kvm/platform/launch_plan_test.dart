@@ -3316,4 +3316,80 @@ void main() {
       });
     },
   );
+
+  group(
+      'planConsoleLaunch — defense in depth: NFKC mark-introducing authority rejection',
+      () {
+    // Non-mark code points whose Unicode NFKC normalisation INTRODUCES a
+    // combining mark (spacing diacritics, halfwidth sound marks, Indic
+    // base+mark compositions, musical symbols, ...). They are not category M
+    // (so the encoded-combining-mark rule misses them) and their NFKC is not
+    // entirely ASCII (so the compatibility-to-ASCII rule misses them), yet a
+    // decode+IDNA launcher recomposes them with a preceding base letter into a
+    // DIFFERENT host. The URI reports a non-empty HTTPS host, so under a stale
+    // secure flag + test opt-in they could reach in-app rendering and
+    // self-signed acceptance on a spoofed authority.
+    const List<String> markIntroducingUris = <String>[
+      'https://bmce%C2%B4.example/console', // U+00B4 ACUTE ACCENT (Sk)
+      'https://bmce%CB%98.example/console', // U+02D8 BREVE (Sk)
+      'https://bmce%CE%84.example/console', // U+0384 GREEK TONOS (Sk)
+      'https://bmce%EF%BE%9E.example/console', // U+FF9E HALFWIDTH VOICED MARK
+      'https://bmce%E0%A5%98.example/console', // U+0958 DEVANAGARI QA (Lo)
+      'https://bmce%F0%9D%85%9E.example/console', // U+1D15E MUSICAL SYMBOL
+      'https://bmce%E2%80%97.example/console', // U+2017 DOUBLE LOW LINE (Po)
+    ];
+
+    test('an NFKC mark-introducing authority never reaches in-app', () {
+      for (final String uri in markIntroducingUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+      }
+    });
+
+    test('an NFKC mark-introducing authority stays off under production', () {
+      for (final String uri in markIntroducingUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('legitimate non-ASCII hosts that fold to non-ASCII stay launchable', () {
+      // No valid target is lost: pct-encoded UTF-8 host text whose NFKC does
+      // NOT introduce a combining mark (e-acute, euro, emoji) keeps working.
+      for (final String uri in <String>[
+        'https://bmc%C3%A9.example/console', // e-acute
+        'https://bmc%E2%82%AC.example/console', // euro
+        'https://bmc%F0%9F%98%80.example/console', // emoji
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+  },
+);
 }
