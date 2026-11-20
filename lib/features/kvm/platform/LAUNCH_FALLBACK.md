@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 104 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (138 across the platform
+consume; today it locks the fallback behaviour with 107 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (141 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -256,6 +256,20 @@ Invariants, enforced by tests:
    could grant in-app rendering and self-signed acceptance on a spoofed host.
    Each fails closed in the authority; encoded forms in the path/query and
    non-ASCII that NFKC-folds to non-ASCII (e-acute, euro, emoji) stay launchable.
+   **NFKC vulgar-fraction confusable rejection:** a percent-encoded "vulgar
+   fraction" (Unicode category `No`) NFKC-normalises to a decimal digit +
+   U+2044 FRACTION SLASH + digit(s) (e.g. U+00BD `1/2` -> `1` + U+2044 + `2`),
+   and IDNA/UTS-46 maps U+2044 to the ASCII `/` structural delimiter. A raw
+   non-ASCII authority is already rejected, but the percent-encoded form is
+   not: `Uri.tryParse` keeps it verbatim in the host
+   (`https://bmc%C2%BD.example/console` -> host `bmc%C2%BD.example`), so a
+   purely syntactic re-check calls it "secure", while a decode+IDNA launcher
+   resolves a *different* authority (`bmc1/2.example`). Under a stale flag +
+   test opt-in that parser differential could grant in-app rendering and
+   self-signed acceptance on a spoofed/mismatched host. The fraction code
+   points whose NFKC expansion embeds U+2044 (U+00BC..U+00BE, U+2150..U+215F,
+   U+2189) fail closed in the authority; no real BMC host uses them, and the
+   same escape in path/query/fragment stays launchable — no valid target lost.
    **Degenerate dot-host rejection:** `Uri.tryParse` reports a label-less host
    made only of dots (`https://./console`, `https://../console`) as an HTTPS
    URI with a non-empty host, so the bare scheme+host re-check calls it
@@ -319,7 +333,8 @@ Invariants, enforced by tests:
    separator/invisible + encoded compatibility-confusable delimiter + extended
    compatibility-confusable delimiter + IDNA dot-confusable rejection +
    IDNA middle-dot confusable rejection + NFKC-to-ASCII compatibility
-   letter/digit rejection + degenerate dot-host rejection +
+   letter/digit rejection + NFKC vulgar-fraction confusable rejection +
+   degenerate dot-host rejection +
    double-encoded authority-delimiter rejection + encoded authority-dot
    rejection + malformed-UTF-8 authority rejection + encoded ASCII space
    rejection + encoded unreserved-ASCII rejection + non-canonical numeric-host
