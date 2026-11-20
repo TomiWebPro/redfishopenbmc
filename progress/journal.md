@@ -11525,3 +11525,20 @@
 - EP-U7 (full merged-Semantics audit), EP-P7 (human-gate doc invariant guard) — genuine tested increments only, never verification-only churn.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:redfish-automation — #009/#021 (EP-P7 human-gate doc invariant guard)
+
+**Done:**
+- EP-P7 (head of `queues/platform.md`). Added a `## Human approval gate` section to `lib/features/kvm/platform/WEBVIEW_TLS_MATRIX.md`: a human-only checklist requiring per-target evidence (Linux/desktop, mobile Android/iOS, other desktop) before any `webview_flutter` / `url_launcher` dependency bump or test-only TLS opt-in, with a blank sign-off. The flag-off external-browser + copy route and strict production TLS are unchanged.
+- Added `test/features/kvm/platform/human_gate_doc_guard_test.dart` (8 tests): a pure-Dart guard that fails closed if either decision doc loses the no-WebView / external-browser + copy decision or the human gate section / its per-target evidence markers, and pins `productionDefault` (flag OFF, strict TLS, no self-signed) across all signal combos; only `testOptIn` may accept self-signed on HTTPS.
+- RED→GREEN: 3 in-test RED assertions + a real-file RED run (gate heading replaced → 3 failures), restored byte-clean (SHA `27801b15…`) → 8/8 GREEN. Baseline analyze 0 / 1492 passed / 1 skipped → verify analyze 0 / 1500 passed / 1 skipped; platform suite 152; issues validate OK; diff --check clean.
+
+**Decisions:**
+- Documentation + test-only slice — no product Dart, wire, dependency, fixture or emulator change; no URL opened, no human approval granted, no issue closed, no production TLS weakening. DMTF emulator skipped (<7 days since last green 85/85, no wire/fixture/tool change); CI runs the guard via `flutter test --coverage`.
+- Audited EP-U7 first: all four KVM surfaces already render `kvmSessionPersistenceNotice` / `kvmDisabledOnBmcNotice` once, merged with `excludeSemantics`, visible == announced — no genuine divergence, so no churn added.
+- Both #009/#021 stay open; substantive acceptance (embedded HTML5 rendering, fullscreen, input forwarding, WebView dependency) remains human-gated on platform WebView + BMC TLS validation — do NOT do unattended.
+
+**Next:**
+- EP-T4 (rf-tooling) or RS-5 (rf-service) as the next genuine tested increment; land EP-U7 only on a real a11y divergence. Never activate WebView, grant human approval, or weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

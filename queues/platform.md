@@ -12,7 +12,7 @@ platform validation evidence.
      WITHOUT activating it: no dependency, no WebView import, no production TLS change. Distinct
      from EP-P4 (human-written per-target evidence) and EP-P6 (runtime route invariant). -->
 
-- [ ] EP-P7 Human-gate documentation invariant guard (pins the human-gated decision without
+- [x] EP-P7 LANDED 2026-11-20 (run `auto: FEATURE #009/#021 EP-P7 human-gate documentation invariant guard + RED→GREEN tests`, analyze 0 / 1500 passed / 1 skipped) — Human-gate documentation invariant guard (pins the human-gated decision without
       activating it): add a pure-Dart test under `test/features/kvm/platform/` that fails closed if
       `WEBVIEW_TLS_MATRIX.md` / `LAUNCH_FALLBACK.md` no longer record (a) the resolved no-embedded-
       WebView decision (external-browser + copy final route) and (b) an explicit human-approval gate

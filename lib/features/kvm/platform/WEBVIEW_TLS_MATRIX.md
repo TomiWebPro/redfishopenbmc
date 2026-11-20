@@ -81,3 +81,36 @@ transport change):
   with recorded per-target validation evidence (render an HTTPS console, verify
   cert rejection by default, verify test-only self-signed acceptance, verify no
   plaintext downgrade, verify the flag-off fallback). No evidence → no flag flip.
+
+## Human approval gate (before any flag flip, dependency bump or TLS opt-in)
+
+This document is a **documentation-only** spike. It does **not** grant approval
+to embed a WebView, add a rendering dependency, or accept a self-signed BMC
+certificate on any production profile. Nothing here flips the flag:
+`KvmWebViewPolicy.productionDefault` keeps `enabled == false` and TLS strict,
+and the guard test `test/features/kvm/platform/human_gate_doc_guard_test.dart`
+fails closed if this recorded gate disappears.
+
+Before **any** `webview_flutter` / `url_launcher` dependency bump or test-only
+TLS opt-in, a human maintainer MUST check every applicable evidence box below
+for every target being enabled, record the date and target, and update that
+target's row in the support matrix from "requires validation" to
+"validated (date, reviewer)". Until then the final route remains
+external-browser + copy with the flag OFF and production TLS strict.
+
+Required human validation evidence (all applicable boxes, per target):
+
+- [ ] **Linux / desktop** — render an HTTPS BMC console in-app, confirm the OS
+      trust store rejects an untrusted cert by default, and confirm the flag-off
+      external browser + copy fallback still works.
+- [ ] **Mobile (Android / iOS)** — confirm `onReceivedSslError` / ATS rejects a
+      self-signed cert by default (never `proceed()`), verify any test-only TLS
+      opt-in is gated to a test profile only, and verify no plaintext HTTP
+      downgrade.
+- [ ] **Other desktop (macOS / Windows)** — confirm the WKWebView / alternative
+      implementation rejects invalid certs by default and needs no blanket TLS
+      bypass.
+
+The boxes record required evidence only — this run checks none of them and
+grants no approval. Sign-off (human, leave blank until actually validated):
+_pending — no target validated as of 2026-11-20._
