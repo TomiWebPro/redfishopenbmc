@@ -11573,3 +11573,18 @@
 - EP-T3 (rf-tooling) coverage-gate scope for the new normalizer, or EP-M1 / EP-S1 genuine leftover edges, with RED→GREEN tests. Never activate WebView, grant human approval, or weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-20 — agent:rf-gate — build/rf-platform 14bf890 (merge 901db9d)
+
+**Done:**
+- Sole-merger gate: verified `rf-platform-check` run#9688 returned an explicit `CHECK: PASS` for branch tip `14bf890` (the current `build/rf-platform` tip, cross-checked unchanged post-check), then merged `build/rf-platform` → `main` with `--no-ff` (merge `901db9d`). The single unique commit adds fail-closed rejection of trailing-dot numeric hosts in the dependency-free launch-plan authority classifier: `Uri.tryParse` reports `https://2130706433./` / `https://0x7f000001./` as a non-empty HTTPS DNS host, but the WHATWG "ends in a number" check skips one trailing dot and a browser/WebView still resolves them to IP literals (127.0.0.1), so a purely syntactic re-check under a stale secure flag + test opt-in could grant in-app rendering + self-signed acceptance on a loopback/internal host. `_isNonCanonicalNumericHost` now strips one trailing absolute-FQDN root dot before the hex/decimal/abbreviated/leading-zero numeric checks; a real trailing-dot DNS name (`bmc.example.`) and canonical IPv4/IPv6 stay launchable.
+- Post-merge verify in-tree at `901db9d`: `flutter analyze` 0; full `flutter test --coverage` 1513 passed / 1 skipped; three coverage gates PASS overall 90.1% (5780/6413) / scoped 90.4% (2119/2345) / kvm 96.8% (1057/1092); `python3 issues/issues.py validate` OK; `git diff --cached --check` clean; first-parent diff = 3 allowlisted files; targeted `launch_plan_test.dart` 117/117, platform suite 159/159.
+
+**Decisions:**
+- Merged only on an explicit PASS for the exact tip; cross-checked the tip unchanged before merging. Auto-merged cleanly (no conflicts). Fail-closed security hardening only — no dependency, no wire/transport/fixture/tool change, no production TLS weakening, `--no-ff` keeps dept history, never force-push. DMTF emulator skipped (dependency-free decision helper, no wire/transport/fixture/tool change; <7 days since last green 85/85). Concurrent `redfish-automation` job WIP in the shared worktree (`tool/coverage_gate.dart` 4th kvm-platform gate + its test + `DEVELOPMENT.md`) was left unstaged/untouched.
+
+**Next:**
+- Gate only PASS-verified branches; keep launch-plan hardening in the single shared fail-closed classifier core; cross-check verdict ↔ tip every run.
+- Re-run the 85/85 DMTF emulator suite on any wire/fixture/tool change or >7 days.
+
+**Issues touched:** none — gate-only merge; both #009/#021 stay open.
