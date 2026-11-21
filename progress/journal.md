@@ -12643,3 +12643,18 @@
 - No gate action until `rf-platform` produces + re-verifies a new commit past `372cd34`. Routine FEATURE work continues per FUTUREWORK `Current focus`. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended; never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-S7)
+
+**Done:**
+- FEATURE (lib+test): fixed the confirmed EP-S7 capability-summary↔primary launch-URI divergence. An enabled serial SSH `ConnectUri` preceding a secure-HTTPS `RemoteConsole` made the capability card resolve `ssh://bmc.example/serial` while `KvmService.pickPrimary` badged/opened `https://bmc.example/remote`. Added a security-first pass in `KvmCapability._standardConnectUri` (shared `isSecureHttpsConsoleUri` classifier) so a control-safe secure-HTTPS URI wins across non-disabled blocks before the original graphical→serial→remote fallback; the capability card now agrees with the Primary badge. Added `test/features/kvm/kvm_capability_primary_uri_agreement_test.dart` (6 tests) with real-file RED 3/6 → GREEN 6/6.
+- Verify: analyze 0; targeted capability/service/model 270/270; full `flutter test --concurrency=4` 1949 passed / 1 skipped (baseline 1943 +6); issues validate OK; diff --check clean.
+
+**Decisions:**
+- Authoritative launch target = pickPrimary's security-first secure-HTTPS preference (the external-browser + copy route never recommends an external-client/plaintext console when a secure one exists). Reused the shared classifier so the fix cannot drift from `KvmConsole.hasSecureLaunchUri` / the fail-closed launch plan. No dependency, no wire/TLS change, no WebView/protocol import, no URL opened, no production TLS weakening.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; the fix changes no approval and grants no navigation.
+
+**Next:**
+- Push the single run commit; leave pre-existing stashes untouched. EP-M5 (hostile ConnectTypesSupported normalization) remains audit-first — re-audit before adding any guard, RED→GREEN only on a genuine divergence, never churn; cheap DOCS anchor gate only. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

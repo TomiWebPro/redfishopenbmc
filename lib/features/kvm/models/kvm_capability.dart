@@ -298,11 +298,14 @@ class KvmCapability {
   /// Resolves the console URI for a Redfish manager [body].
   ///
   /// Preference order:
-  ///  1. a standard console block's `ConnectUri` (graphical → serial → remote),
-  ///     preferring a block that is not explicitly disabled — the actual,
-  ///     launchable console endpoint already read by `KvmConsole.fromManager`;
-  ///     kept in sync so the capability card never recommends a disabled
-  ///     console's URI over an enabled one (issue #009);
+  ///  1. a standard console block's `ConnectUri` — first a control-safe
+  ///     secure-HTTPS endpoint across all non-disabled blocks (EP-S7, matching
+  ///     `KvmService.pickPrimary`'s security-first "Primary" preference), then
+  ///     graphical → serial → remote preferring a block that is not explicitly
+  ///     disabled — the actual, launchable console endpoint already read by
+  ///     `KvmConsole.fromManager`; kept in sync so the capability card never
+  ///     recommends a disabled console's URI over an enabled one, nor an
+  ///     external-client URI over an openable secure one (issues #009 / #021);
   ///  2. `GraphicalConsole.@odata.id` (the standard graphical console link,
   ///     retained for managers that expose only a Redfish resource link) — but
   ///     when that graphical console is explicitly disabled and an OEM console
@@ -372,6 +375,20 @@ class KvmCapability {
   /// and keeps its URI (most BMC mockups omit it), and when every URI-bearing
   /// block is disabled the URI is still surfaced as the best available choice
   /// — this only changes which URI wins when a launchable one exists.
+  ///
+  /// EP-S7 (issue #009/#021): the capability card exposes an Open affordance on
+  /// its resolved URI, so it must agree with `KvmService.pickPrimary` — the
+  /// console badged "Primary" and opened by the external-browser + copy route.
+  /// pickPrimary prefers a control-safe secure-HTTPS console over an
+  /// external-client (e.g. serial SSH) or plaintext console. Mirror that
+  /// security-first preference across ALL non-disabled blocks BEFORE the
+  /// block-order pass, so an enabled serial SSH `ConnectUri` can no longer
+  /// shadow a secure-HTTPS remote console (the two surfaces previously
+  /// disagreed on the launch target for such a manager). Uses the SAME
+  /// [isSecureHttpsConsoleUri] classifier as `KvmConsole.hasSecureLaunchUri`
+  /// and the fail-closed launch plan, so a malformed / control-bearing target
+  /// never counts as secure. When no secure block exists the original
+  /// graphical -> serial -> remote preference is preserved unchanged.
   static String? _standardConnectUri(Map<String, dynamic> body) {
     const List<String> names = <String>[
       'GraphicalConsole',
@@ -379,6 +396,13 @@ class KvmCapability {
       'RemoteConsole',
     ];
 
+    // Security-first pass (EP-S7): the target pickPrimary would badge Primary.
+    for (final String name in names) {
+      final Map<String, dynamic>? block = _consoleBlock(body, name);
+      if (block == null || _explicitlyDisabled(block)) continue;
+      final String? uri = _nonEmptyString(block['ConnectUri']);
+      if (uri != null && isSecureHttpsConsoleUri(uri)) return uri;
+    }
     // First pass: prefer a block that is not explicitly disabled.
     for (final String name in names) {
       final Map<String, dynamic>? block = _consoleBlock(body, name);
