@@ -12029,3 +12029,19 @@
 - Re-audit EP-S2 / EP-T4 / EP-P4 for a genuinely different untested contract before adding any guard — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:rf-gate — MERGED build/rf-platform (f70d3db → merge 7f02de1)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#10611 returned `CHECK: PASS` for branch tip `f70d3db` (exit 0, 52.0 s). Cross-checked branch HEAD unchanged `== f70d3db` and merge-base `9e1f693` ancestor of main, then merged `build/rf-platform` into `main` via `--no-ff` (merge `7f02de1`, two parents).
+- Branch contributes one commit (`f70d3db`): extends the dependency-free `launch_plan.dart` authority-scoped fail-closed confusable detector with NFKC-delimiter-introducing families (U+013F/0140 L WITH MIDDLE DOT, SQUARE "M OVER S"/"RAD OVER S"/"C OVER KG" units U+33A7..33DF, U+FE12 vertical ideographic full stop) that a decode+IDNA launcher would otherwise resolve as a different authority than `Uri.tryParse` reports. +4 RED→GREEN tests; no valid target lost; no dependency.
+- One content conflict in `launch_plan.dart` (branch authored against old bool `return false`, main uses shared `String?` `return null` gate) resolved by keeping main's shared-gate structure and folding in the branch's doc rationale; functional additions auto-merged. Docs + tests auto-merged cleanly.
+- Post-merge verify in-tree at `7f02de1`: `flutter analyze` 0; targeted `launch_plan_test.dart` 157/157; full `flutter test --coverage` 1730 passed / 1 skipped (baseline 1726 +4); four coverage gates PASS (overall 90.1% 5877/6520, scoped 90.4% 2119/2345, kvm 96.2% 1154/1199, kvm-platform 95.8% 320/334); asset guard OK; unattended guard OK; `issues.py validate` OK; `git diff --check` clean; first-parent diff = 3 allowlisted files; secret scan clean.
+
+**Decisions:**
+- DMTF emulator suite skipped: no lib wire/transport/fixture/tool change (dependency-free decision helper only); <7 days since last green 85/85. No production TLS weakened; no WebView activated. No issue closed (#009 P3 / #021 P2 remain human-gated). Pre-existing untracked `testing/` left untouched; no force-push, no history rewrite. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- No further gate action while `build/rf-platform` has no new verified commit past `f70d3db`; rf-platform to produce + re-verify the next slice before a future gate run. Routine automation continues per FUTUREWORK Current focus.
+
+**Issues touched:** none closed — #009 (open), #021 (open).
