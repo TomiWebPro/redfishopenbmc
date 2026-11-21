@@ -8,8 +8,9 @@
 // test pins the *detailed* acceptance checklist (CSP / mixed-content,
 // fullscreen, input forwarding, no-native-bridge, no-local-file-access,
 // no-device-permissions, no-sensitive-data-at-rest (WebView cache/storage +
-// background snapshot), flag-off fallback, human sign-off) so a future edit
-// cannot silently erase the evidence boxes that gate that decision.
+// background snapshot), no-referrer/URL-token-leak (Referrer-Policy), flag-off
+// fallback, human sign-off) so a future edit cannot silently erase the evidence
+// boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -51,6 +52,9 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
   (name: 'mixed-content', marker: 'mixed-content'),
+  (name: 'no-referrer-leak', marker: 'referrer'),
+  (name: 'strict-referrer-policy', marker: 'no-referrer'),
+  (name: 'no-referrer-token-leak', marker: 'session token'),
   (name: 'fullscreen', marker: 'fullscreen'),
   (name: 'keyboard-input', marker: 'keyboard'),
   (name: 'pointer-input', marker: 'pointer'),
@@ -139,6 +143,19 @@ void main() {
           .join('\n');
       final String neutered = matrixWithSection(realMatrix, withoutCsp);
       expect(missingEvidenceMarkers(neutered), contains('csp'));
+    });
+
+    test('RED: dropping the no-referrer/token-leak box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutReferrer = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains('referrer'))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutReferrer);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-referrer-leak'));
+      expect(missing, contains('strict-referrer-policy'));
+      expect(missing, contains('no-referrer-token-leak'));
     });
 
     test('RED: dropping the hostname-verification box fails closed', () {
