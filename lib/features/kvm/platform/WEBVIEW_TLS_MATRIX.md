@@ -85,3 +85,41 @@ transport change):
   with recorded per-target validation evidence (render an HTTPS console, verify
   cert rejection by default, verify test-only self-signed acceptance, verify no
   plaintext downgrade, verify the flag-off fallback). No evidence → no flag flip.
+
+## Validation evidence — detailed acceptance criteria
+
+The RP-2 gate above is the *rule*; this section is the concrete, per-target
+**acceptance checklist** that must be satisfied and recorded BEFORE any
+`webview_flutter` / `url_launcher` dependency, embedded WebView or test-only TLS
+opt-in is enabled on a real profile. It complements (does not grant) the human
+approval gate: **this run checks none of these boxes and grants no approval.**
+Production stays on `KvmWebViewPolicy.productionDefault` (flag OFF, strict TLS)
+and the external-browser + copy fallback stays byte-for-byte.
+
+Every applicable box below must be ticked, with a date and reviewer recorded,
+for each target being enabled; an unticked box means "not validated" and the
+flag stays off for that target.
+
+* [ ] **WebView availability (per target)** — an embedded WebView can actually
+      render an HTTPS BMC console on the target, with the plugin/platform impl
+      version pinned. No OS/engine target here has this evidence yet.
+* [ ] **TLS trust, no production weakening** — an untrusted / self-signed BMC
+      cert is rejected by default via the platform trust store; any acceptance
+      is a reversible, test-profile-only opt-in that never touches production
+      TLS. No blanket `proceed()` / `badCertificateCallback => true` on a
+      production profile.
+* [ ] **CSP / mixed content** — the BMC console's HTTP response headers and
+      page content are inspected for `Content-Security-Policy` frame rules and
+      mixed-content (HTTPS page loading HTTP subresources); a console that is
+      blocked by CSP framing or mixed-content must not be silently downgraded.
+* [ ] **Fullscreen** — the console can enter/exit fullscreen without leaving the
+      app or losing the secure context.
+* [ ] **Keyboard / pointer input forwarding** — keyboard and mouse input are
+      forwarded to the remote console and cannot leak to the host page or trigger
+      navigation to a different origin.
+* [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
+      browser + copy path still works unchanged and no in-app render occurs.
+
+Sign-off (human; leave blank until actually validated):
+_pending — no target validated as of 2026-11-21. No approval is granted by this
+document spike._
