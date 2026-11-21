@@ -12524,3 +12524,20 @@
 - Push this single commit with the two unpushed rf-platform commits. Re-audit `queues/*.md` for a genuinely different untested contract before adding any further guard — all 09:53-slice candidates are landed, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended; full emulator only on lib-wire/fixture/tool-runtime change or >7 days.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:rf-gate — MERGED build/rf-platform (check#10905 PASS) — RP-1/EP-P4 validation-evidence acceptance checklist
+
+**Done:**
+- `rf-platform-check` run#10905 verdict `CHECK: PASS` for branch tip `807125c` (exit 0, 44.3 s, started 13:42 UTC after the 13:40 UTC tip commit; tip unchanged before merge; merge-base `277734f` already in main). Merged `build/rf-platform` into `main` with `--no-ff` as `36d7e67`.
+- Branch adds the EP-P4/RP-1 detailed per-target validation-evidence acceptance checklist to `WEBVIEW_TLS_MATRIX.md` (CSP/mixed-content, WebView availability, TLS trust/test-profile-only opt-in, fullscreen, keyboard/pointer forwarding, flag-off fallback, human sign-off) + `test/features/kvm/platform/validation_evidence_checklist_guard_test.dart` (6 tests). Doc + test only; no production code, no dependency, no human approval granted.
+- One conflict in `WEBVIEW_TLS_MATRIX.md`: main's EP-P7 "Human approval gate" section and the branch's EP-P4 "Validation evidence — detailed acceptance criteria" section were both appended at EOF. Kept BOTH verbatim; both doc-guard suites re-ran green (14/14) before committing.
+- Verify at `36d7e67`: `flutter analyze` 0; full `flutter test --coverage --concurrency=2` 1908 passed / 1 skipped (baseline 1902 +6); coverage gates PASS overall 90.5% (6046/6679) / scoped 90.4% (2119/2345) / kvm 97.4% (1323/1358) / kvm-platform 97.0% (452/466); `issues.py validate` OK; first-parent diff --check clean; secret scan clean; first-parent diff = 2 allowlisted files.
+
+**Decisions:**
+- PASS-only merge per sole-merger contract; never force-push, no history rewrite, no `git clean`, no file deletion. Three pre-existing stashes untouched. DMTF 85-test suite skipped (no lib wire/transport/fixture/tool change — doc + test only; <7 days since last green 85/85). Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; the checklist records evidence requirements and grants no approval.
+
+**Next:**
+- Push the merge commit `36d7e67` (+ branch commit `807125c`) to `origin/main` via the sole merger. Re-audit `queues/*.md` for a genuinely different untested contract before any further guard — never churn. Full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
