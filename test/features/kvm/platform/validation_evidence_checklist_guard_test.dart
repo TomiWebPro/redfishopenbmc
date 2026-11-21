@@ -44,6 +44,9 @@ const List<({String name, String marker})> evidenceChecks =
   ),
   (name: 'no-cross-origin-nav', marker: 'same origin'),
   (name: 'no-nav-downgrade', marker: 'plaintext / non-https scheme'),
+  (name: 'no-arbitrary-scheme-nav', marker: 'non-http(s) scheme'),
+  (name: 'no-deep-link-nav', marker: 'deep-link'),
+  (name: 'no-script-url-nav', marker: 'javascript:'),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
   (name: 'mixed-content', marker: 'mixed-content'),
@@ -157,6 +160,18 @@ void main() {
       final String neutered = matrixWithSection(realMatrix, withoutOrigin);
       expect(missingEvidenceMarkers(neutered),
           contains('origin-navigation-confinement'));
+    });
+
+    test('RED: dropping the no-arbitrary-scheme/deep-link box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutScheme = section
+          .split('\n')
+          .where((String line) =>
+              !line.toLowerCase().contains('non-http(s) scheme'))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutScheme);
+      expect(missingEvidenceMarkers(neutered),
+          contains('no-arbitrary-scheme-nav'));
     });
 
     test('RED: dropping the no-native-bridge box fails closed', () {
