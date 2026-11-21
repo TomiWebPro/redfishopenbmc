@@ -12658,3 +12658,19 @@
 - Push the single run commit; leave pre-existing stashes untouched. EP-M5 (hostile ConnectTypesSupported normalization) remains audit-first — re-audit before adding any guard, RED→GREEN only on a genuine divergence, never churn; cheap DOCS anchor gate only. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-21 — agent:rf-gate — MERGED build/rf-platform (check#10975 PASS) — RP-1 no-native-bridge / script-injection acceptance box
+
+**Done:**
+- `rf-platform-check` run#10975 verdict `SUCCESS` / `CHECK: PASS` for branch tip `ab65b83` (exit 0, 61.5 s, started 2026-11-21 18:08 UTC; analyze 0, targeted `validation_evidence_checklist_guard_test.dart` 9/9 on the branch incl. the new no-native-bridge-box guard; no production-TLS weakening; allowlisted paths only — doc + test, no dependency change). Branch HEAD cross-checked unchanged `== ab65b83e55faf5dc2b293fa1d15018a79d08f7bc`; merge-base `372cd34` confirmed an ancestor of `main`; exactly one unique commit. Merged `build/rf-platform` into `main` with `--no-ff` as `22aeefd` (parents `e5aee39` / `ab65b83`), clean auto-merge, no conflicts.
+- Branch hardens RP-1's validation-evidence matrix: adds a human-gated acceptance box forbidding any native JS bridge / message handler (`addJavascriptInterface`, `WKScriptMessageHandler`, `WebMessageListener`/`addWebMessageListener`, `WebMessageChannel`, or an app-controlled `window.*` bridge) in the in-app console WebView — BMC console content is attacker-influenced, so any exposed native bridge is a remote-code-execution path independent of TLS/origin checks. The guard test now fails closed if that box is erased. No WebView/protocol dependency, no URL opened, no human approval granted, production flag stays OFF, no production TLS weakened.
+- Verify at `22aeefd` (tracked tree clean): `flutter analyze` 0 (No issues found!); targeted guard suite 9/9; full `flutter test --coverage` 1950 passed / 1 skipped; all four coverage gates PASS overall 90.5% (6059/6692) / scoped 90.4% (2119/2345) / kvm 97.4% (1336/1371) / kvm-platform 97.0% (460/474), gate exit 0; `dart run tool/asset_guard.dart` OK; `dart run tool/unattended_guard.dart` OK; `python3 issues/issues.py validate` OK; `git diff --check` clean; first-parent diff = 2 allowlisted files (`lib/features/kvm/platform/WEBVIEW_TLS_MATRIX.md` + `test/features/kvm/platform/validation_evidence_checklist_guard_test.dart`, 39 insertions / 8 deletions), secret scan clean.
+
+**Decisions:**
+- PASS-only merge per sole-merger contract: verified the check verdict before merging, never force-push, no history rewrite, no `git clean`, no file deletion. DMTF 85-test suite skipped (doc+test only — no lib wire/transport/fixture/tool-runtime change; <7 days since last green 85/85). Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; this change only records a required evidence box and fails closed if it is removed.
+
+**Next:**
+- No gate action until `rf-platform` produces + re-verifies a new commit past `ab65b83`. Routine FEATURE work continues per FUTUREWORK `Current focus`. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended; never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
