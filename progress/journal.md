@@ -12609,3 +12609,20 @@
 - No gate action until `rf-platform` produces + re-verifies a new commit past `9f06e33`. Routine FEATURE work continues per FUTUREWORK `Current focus`. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended; never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-S6)
+
+**Done:**
+- FEATURE — EP-S6 service-level capability↔primary agreement guard. Added `test/features/kvm/kvm_service_capability_primary_agreement_test.dart` (3 tests): `fetchCapability(id)` and `fetchPrimaryConsole()`/`pickPrimary` agree for ONE multi-block manager (disabled Graphical + SSH Serial w/o endpoint + secure-HTTPS Remote → same URI/session limit, both openable+secure), padded lookup keeps the agreement (RS-9), and an all-disabled manager is reported unusable on both surfaces.
+- Audit confirmed the gap (no existing test pinned this cross-method per-manager seam; RS-6 uses one block per manager). Real-file RED proof: `_standardConnectUri` re-included the disabled Graphical → exactly the two URI-agreement tests failed (`+1 -2`); source restored byte-clean (SHA `652a5038…`, empty lib diff), 600-perm backup shredded → 3/3 GREEN.
+- Verify: analyze 0; full `flutter test` 1941 passed / 1 skipped (baseline 1938 +3); named service+capability suites 176/176; queue-schema guard 13/13; issues validate OK; diff --check clean; deps unchanged.
+- DISCOVERED (probe-confirmed, NOT fixed): genuine latent divergence when an enabled serial SSH block WITH a ConnectUri precedes a secure-HTTPS remote — capability summary resolves the serial SSH URI (block order) while primary picks the secure remote (security-first). Recorded as EP-S7 in `queues/service.md` for a deliberate future fix.
+
+**Decisions:**
+- Test-only guard (empty lib diff); no dependency, no wire/fixture/tool-runtime change, no WebView/protocol import, no URL opened, no production TLS weakening. Emulator skipped (<7 days since last green 85/85). No force-push, history rewrite, `git clean`, or file deletion; three pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — in-app WebView rendering + BMC TLS validation remain human-gated; do NOT do unattended, never weaken production TLS. EP-S7's authoritative-rule decision is a broader behaviour change deliberately not attempted in a guard-only run.
+
+**Next:**
+- Push this single commit (carried with the unpushed `rf-gate` record `c432587`). Decide EP-S7's authoritative URI preference and fix both surfaces together in a deliberate run; EP-M5 is audit-first (already largely covered — never churn). Close #021 then #009 only on human WebView + BMC TLS validation evidence; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

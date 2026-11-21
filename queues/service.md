@@ -5,6 +5,26 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- Discovered 2026-11-21 17:11 UTC during the EP-S6 audit. NOT fixed unattended — the authoritative
+     preference (block-order vs security-first) is a broader behaviour change touching the shared
+     launch-plan decision layer / LAUNCH_FALLBACK.md and needs a deliberate decision. GENUINE latent
+     divergence, confirmed by probe: a single manager with an ENABLED serial SSH block whose ConnectUri
+     precedes a secure-HTTPS remote block — KvmCapability.resolveLaunchUri / _standardConnectUri walks
+     Graphical -> Serial -> Remote (first non-disabled block with a URI) so the capability SUMMARY
+     resolves `ssh://…/serial`, while KvmService.pickPrimary's security-first tier picks the remote
+     `https://…/remote`. The capability card is an operator launch-decision surface (it exposes an
+     Open affordance on its resolved URI), so the two surfaces disagree on the launch target.
+     Probe output: `cap.uri=ssh://bmc.example/serial primary.target=https://bmc.example/remote`.
+     A future run should decide the authoritative rule and fix BOTH surfaces together with tests. -->
+- [ ] EP-S7 Resolve capability-summary vs primary URI divergence when a serial/external-client
+      ConnectUri precedes a secure-HTTPS console (discovered, genuine): decide whether
+      `KvmCapability.resolveLaunchUri` should apply `pickPrimary`'s security-first/openable
+      preference, then make the capability summary and the primary agree on one launch target with
+      RED→GREEN tests. Broader behaviour change — do NOT fold into a guard-only run.
+      Dept: rf-service
+      Verify: targeted service + capability + launch_plan suites, full suite, RED→GREEN; no production
+              TLS weakening; emulator only on lib wire change.
+
 <!-- rf-ideate split 2026-11-21 14:10 UTC: splits a residual cross-method agreement seam of the blocked
      #009/#021 manager walk into one unblocked, service-level, dependency-free, TLS-safe dept slice.
      RS-4..RS-9 and EP-S3/S5 pin member dedup, source identity, cardinality, collisions, hostile
@@ -18,7 +38,7 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
      Audit first; RED→GREEN only on a genuine divergence; no churn. Human-gated WebView/TLS
      rendering stays gated and is NOT re-split. No code touched. -->
 
-- [ ] EP-S6 Service-level capability↔primary agreement for one manager: over an in-temp mockup with
+- [x] EP-S6 LANDED 2026-11-21 (run `auto: FEATURE #009/#021 EP-S6 service-level capability↔primary agreement guard + RED→GREEN tests`, test-only) — added `test/features/kvm/kvm_service_capability_primary_agreement_test.dart` (3 tests): `fetchCapability(id)` ↔ `fetchPrimaryConsole()`/`pickPrimary` agree for one multi-block manager (disabled Graphical + SSH Serial w/o endpoint + secure-HTTPS Remote → same URI/session limit, both openable+secure), padded lookup keeps the agreement (RS-9), and an all-disabled manager is reported unusable on both. Audit: no existing test pinned this cross-method seam (RS-6 uses one block per manager). Real-file RED proof: `_standardConnectUri` first pass re-included the disabled Graphical → exactly the two URI-agreement tests failed (`+1 -2`, summary resolved the disabled URI while the primary stayed on secure remote); source restored byte-clean (SHA `652a5038…` unchanged, empty lib diff), 600-perm backup shredded → 3/3 GREEN. Test-only, no dependency/wire/TLS change. DISCOVERED during audit → EP-S7 above (not fixed). Originally: Service-level capability↔primary agreement for one manager: over an in-temp mockup with
       one manager exposing several console blocks (explicitly-disabled Graphical + secure-HTTPS
       Remote + serial SSH, then a variant with no openable block), pin that `fetchCapability(id)`
       and `fetchPrimaryConsole()` / `pickPrimary` agree for that manager on enablement, the resolved
