@@ -12828,3 +12828,18 @@
 - Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. EP-T20 WIP awaits the automation agent's recovery from `stash@{0}: rf-gate-premerge-1795299078`. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-T20)
+
+**Done:**
+- FEATURE (test/tool-only): EP-T20 guard-suite liveness registry completeness for #009/#021. Added 179 lines / 3 tests to `test/tool/guard_suite_liveness_test.dart`: canonicalGuardFiles 34→37 (+ the three audited live safety guards `kvm_lifecycle_parity_test.dart`, `kvm_notice_surface_audit_test.dart`, `platform/webview_policy_test.dart`), pinned `epT20AddedGuards` (length 4 incl. the EP-M6 OEM shadow guard), pinned `epT12InitialGuards` (8), `allDesignatedGuards` union, pairwise-disjointness pin assertions, a pin test and a NEW registry-completeness invariant (canonical set must equal the union of designated guards in BOTH directions — a guard added directly with no pinned designation fails closed), plus a temp-root RED→GREEN. Real-file RED: dropped `webview_policy_test.dart` from canonicalGuardFiles → exactly 2 EP-T20 tests failed (`+19 -2`, both named the guard); restored byte-clean (SHA `db7bae1a…`), backups shredded → 21/21 GREEN.
+- Concurrency: a rf-gate PASS-verified merge (`e1e17a7`, check#11058) swept the uncommitted WIP into `stash@{0}: rf-gate-premerge-1795299078` mid-run; recovered byte-identically via `git stash apply`, stash and the gate's own tracking entries preserved. Verify: analyze 0; targeted 21/21; full `flutter test --concurrency=4` 1989 passed / 1 skipped (baseline 1986 +3); issues validate OK; diff --check clean; lib diff empty.
+
+**Decisions:**
+- Genuine confirmed "who guards the guards" registry gap — not churn. Pure test/tool, no `lib/`, no wire/TLS/fixture change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. The registry-completeness invariant is the novel part: it fails closed on BOTH a dropped designated guard and an unpinned direct addition.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. UI skipped (§5): no widget surface changed; no manufactured churn.
+
+**Next:**
+- Push the single commit + the concurrent gate merge; leave the five stashes untouched. RM-12 / RS-10 / EP-U16 are audit-first — RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 are deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

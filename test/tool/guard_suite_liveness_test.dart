@@ -58,6 +58,19 @@
 // (disjoint from EP-T14/EP-T15/EP-T16/EP-T17/EP-T18) makes the extension itself
 // fail closed against a future silent drop.
 //
+// EP-T20 (epic #009/#021) closes a CONFIRMED "who guards the guards" registry
+// gap: EP-T19 pinned canonicalGuardFiles to 34, but EP-M6 later added
+// `kvm_oem_uri_shadow_agreement_test.dart` DIRECTLY to the set with no pinned
+// epoch subset, and three genuine safety guards audited live and reachable from
+// the whole-tree CI run (`kvm_lifecycle_parity_test.dart`,
+// `kvm_notice_surface_audit_test.dart`, `platform/webview_policy_test.dart`)
+// were absent from the set entirely — so dropping / emptying / test-stripping
+// / CI-de-invoking any of them stayed GREEN. EP-T20 adds a pinned `epT20AddedGuards`
+// subset (disjoint from EP-T14/15/16/17/18/19), AND a registry-completeness
+// invariant requiring canonicalGuardFiles to equal the union of the EP-T12
+// initial set and every pinned epoch subset in BOTH directions, so no guard can
+// be silently dropped or sit unpinned in a future run.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -114,7 +127,25 @@ const List<String> canonicalGuardFiles = <String>[
   'test/features/kvm/kvm_three_surface_launch_target_agreement_test.dart',
   // EP-M6 extension: OEM-console URI shadow agreement across both views.
   'test/features/kvm/kvm_oem_uri_shadow_agreement_test.dart',
+  // EP-T20 extension: post-EP-T19 safety guards audited live + reachable.
+  'test/features/kvm/kvm_lifecycle_parity_test.dart',
+  'test/features/kvm/kvm_notice_surface_audit_test.dart',
+  'test/features/kvm/platform/webview_policy_test.dart',
 ];
+
+/// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
+/// the EP-T20 registry-completeness invariant can account for every entry in
+/// [canonicalGuardFiles] without treating the initial set as unpinned churn.
+const Set<String> epT12InitialGuards = <String>{
+  'test/tool/notice_single_source_guard_test.dart',
+  'test/tool/launch_status_single_source_guard_test.dart',
+  'test/tool/uri_parse_single_source_guard_test.dart',
+  'test/tool/manager_source_display_guard_test.dart',
+  'test/features/kvm/platform/product_import_policy_test.dart',
+  'test/features/kvm/platform/production_route_invariant_test.dart',
+  'test/features/kvm/platform/human_gate_doc_guard_test.dart',
+  'test/features/kvm/platform/decision_doc_route_guard_test.dart',
+};
 
 /// The subset of [canonicalGuardFiles] added by EP-T14. Pinned separately so a
 /// future edit cannot silence a liveness violation by dropping a newer guard
@@ -176,6 +207,33 @@ const Set<String> epT19AddedGuards = <String>{
   'test/features/kvm/kvm_capability_security_tristate_agreement_test.dart',
   'test/features/kvm/platform/navigation_launch_route_agreement_test.dart',
   'test/features/kvm/kvm_three_surface_launch_target_agreement_test.dart',
+};
+
+/// The subset of [canonicalGuardFiles] added/audited by EP-T20. Pinned
+/// separately so a future edit cannot silence a liveness violation by dropping
+/// one of these newer guards back out of the canonical set. Note the EP-M6 OEM
+/// shadow guard was added directly to the list earlier; it is designated here
+/// so the registry-completeness invariant can account for it.
+const Set<String> epT20AddedGuards = <String>{
+  'test/features/kvm/kvm_oem_uri_shadow_agreement_test.dart',
+  'test/features/kvm/kvm_lifecycle_parity_test.dart',
+  'test/features/kvm/kvm_notice_surface_audit_test.dart',
+  'test/features/kvm/platform/webview_policy_test.dart',
+};
+
+/// Every epoch-designated guard: the EP-T12 initial set plus every pinned
+/// epT*AddedGuards extension. EP-T20 requires this to equal
+/// [canonicalGuardFiles] in both directions, so a guard added directly to the
+/// registry without a pinned designation fails closed (issue #009/#021).
+const Set<String> allDesignatedGuards = <String>{
+  ...epT12InitialGuards,
+  ...epT14AddedGuards,
+  ...epT15AddedGuards,
+  ...epT16AddedGuards,
+  ...epT17AddedGuards,
+  ...epT18AddedGuards,
+  ...epT19AddedGuards,
+  ...epT20AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -472,6 +530,65 @@ void main() {
       expect(epT19AddedGuards.intersection(epT16AddedGuards), isEmpty);
       expect(epT19AddedGuards.intersection(epT17AddedGuards), isEmpty);
       expect(epT19AddedGuards.intersection(epT18AddedGuards), isEmpty);
+    });
+
+    test('EP-T20: every post-EP-T19 guard is in the canonical liveness set',
+        () {
+      expect(epT20AddedGuards, isNotEmpty);
+      expect(epT20AddedGuards.length, 4);
+      for (final String path in epT20AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T20 guard dropped from canonical set: $path',
+        );
+      }
+      // All seven extension subsets + the initial set must stay pairwise
+      // distinct — no guard may be counted toward more than one epoch.
+      expect(epT20AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT20AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT20AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT20AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT20AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT20AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT20AddedGuards.intersection(epT19AddedGuards), isEmpty);
+    });
+
+    test('EP-T20: canonical registry is exactly the union of designated guards',
+        () {
+      // (a) Every designated guard must remain in the canonical set — a guard
+      // dropped from canonicalGuardFiles fails closed here.
+      for (final String path in allDesignatedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'designated guard dropped from canonical set: $path',
+        );
+      }
+      // (b) Every canonical entry must be epoch-designated — a guard added
+      // directly to canonicalGuardFiles with no pinned set fails closed here.
+      for (final String path in canonicalGuardFiles) {
+        expect(
+          allDesignatedGuards,
+          contains(path),
+          reason: 'unpinned guard added to canonical set: $path',
+        );
+      }
+      expect(allDesignatedGuards.length, canonicalGuardFiles.length);
+      // The epoch sets themselves must stay pairwise disjoint so a single
+      // guard cannot satisfy the completeness invariant twice.
+      expect(epT12InitialGuards.length, 8);
+      expect(
+        allDesignatedGuards.length,
+        epT12InitialGuards.length +
+            epT14AddedGuards.length +
+            epT15AddedGuards.length +
+            epT16AddedGuards.length +
+            epT17AddedGuards.length +
+            epT18AddedGuards.length +
+            epT19AddedGuards.length +
+            epT20AddedGuards.length,
+      );
     });
   });
 
@@ -854,6 +971,68 @@ void main() {
       // Pick a path from the EP-T19 extension specifically, so this proves the
       // NEW entries are evaluated and not just the EP-T12/14/15/16/17/18 sets.
       final String addedGuard = epT19AddedGuards.first;
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        // RED 1: the newly-added safety guard is deleted → MISSING.
+        File(p(addedGuard)).deleteSync();
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'MISSING: $addedGuard'),
+          isTrue,
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 2: emptied → EMPTY.
+        File(p(addedGuard)).writeAsStringSync('  \n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'EMPTY: $addedGuard'),
+          isTrue,
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 3: keeps prose but loses every test case → NO_TEST_CASES.
+        File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+          isTrue,
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // GREEN again once the guard is restored.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test('EP-T20: newly-added post-EP-T19 guards are liveness-checked', () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_t20_guard_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      // Pick a path from the EP-T20 extension specifically, so this proves the
+      // NEW entries are evaluated and not just the EP-T12/14/15/16/17/18/19 sets.
+      final String addedGuard = epT20AddedGuards.first;
       final String verifyLine = '  run: flutter test --coverage\n';
       try {
         for (final String path in canonicalGuardFiles) {

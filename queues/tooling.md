@@ -19,7 +19,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      EP-T12/14/15/16/17/18/19. Human-gated WebView/TLS rendering stays gated and is NOT re-split.
      No code touched. -->
 
-- [ ] EP-T20 Guard-suite liveness: pin the post-EP-T19 safety guards and add a canonical-registry
+- [x] EP-T20 LANDED 2026-11-21 (run `auto: FEATURE #009/#021 EP-T20 guard-suite liveness registry completeness + RED->GREEN tests`, analyze 0 / 1989 passed / 1 skipped) — Guard-suite liveness: pin the post-EP-T19 safety guards and add a canonical-registry
       completeness invariant so no designated guard can be silently dropped. Concretely: (a) add a
       pinned `epT20AddedGuards ⊆ canonicalGuardFiles` set (disjoint from epT14/15/16/17/18/19) covering
       the guards added/live since EP-T19 — `kvm_oem_uri_shadow_agreement_test.dart` (EP-M6) plus the
@@ -36,6 +36,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
               with RED→GREEN proof (missing/emptied/test-less/CI-de-invoked → violation; intact → clean);
               writes limited to `test/tool/guard_suite_liveness_test.dart`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
               no lib/, no production TLS change, no dependency, no WebView/protocol import.
+      **LANDED** 2026-11-21: extended `canonicalGuardFiles` 34→37 with `kvm_lifecycle_parity_test.dart`, `kvm_notice_surface_audit_test.dart` and `platform/webview_policy_test.dart` (live cases 4/7/17, reachable from verify.yml whole-tree coverage); added pinned `epT20AddedGuards` (length 4, incl. the EP-M6 `kvm_oem_uri_shadow_agreement_test.dart`, disjoint from epT12Initial/epT14/15/16/17/18/19), pinned `epT12InitialGuards` (8), `allDesignatedGuards` union, pairwise-disjointness + pin test, and a NEW registry-completeness invariant (canonical set == union of designated guards in BOTH directions — a guard added directly with no pinned designation now fails closed) + temp-root RED→GREEN. Real-file RED: dropped `webview_policy_test.dart` from canonicalGuardFiles → exactly the 2 EP-T20 tests failed (`+19 -2`, both named the guard); restored byte-clean (SHA `db7bae1a…`, empty lib diff), 600-perm backups shredded → 21/21 GREEN. Test/tool-only (empty lib diff), deps unchanged; emulator skipped.
 
 <!-- rf-automation 2026-11-21 20:57 UTC: closes a CONFIRMED liveness gap in the "who guards the
      guards" suite of the blocked #009/#021 epic (same pattern as EP-T14/T15/T16/T17/T18). EP-T18 pinned
