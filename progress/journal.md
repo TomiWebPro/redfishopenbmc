@@ -12090,3 +12090,18 @@
 - Re-audit EP-S2 / EP-T4 / EP-P4 for a genuinely different untested contract before adding any guard — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:rf-gate — MERGED build/rf-platform (c592f97 → merge cbdf523)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#10654 returned `CHECK: PASS` for branch tip `c592f97` (exit 0, 55.1 s, started 2026-11-21 01:33:49 UTC, ~1.7 min after the builder authored `c592f97` at 01:32:03 UTC). Cross-checked branch HEAD unchanged `== c592f97` and merge-base `ef17bbf` ancestor of main, then merged `build/rf-platform` into `main` via `--no-ff` (merge `cbdf523`, two parents); all three files auto-merged cleanly with no conflicts.
+- Branch contributes one commit (`c592f97`): tightens `_isNonCanonicalNumericHost` in the dependency-free `launch_plan.dart` decision layer from `label.length > 2` to `>= 2` so a bare `0x`/`0X` hex prefix (incl. trailing-dot `0x.`) fails closed — the WHATWG IPv4 number parser strips the prefix and parses empty hex digits as 0, resolving `https://0x/` to `0.0.0.0` while `Uri.tryParse` reports the opaque host `0x`; under a stale secure flag + test opt-in that parser differential could grant in-app self-signed acceptance on the unspecified address. Plus doc rationale + 3 RED→GREEN tests. No valid target lost, no dependency, no production TLS weakened.
+- Post-merge verify in-tree at `cbdf523` (clean apart from pre-existing untracked `testing/` + `stash@{0}`): `flutter analyze` 0; full `flutter test --coverage` 1744 passed / 1 skipped (baseline 1741 +3 merged tests); all coverage gates PASS overall 90.1% (5877/6520), scoped redfish+power+sensors 90.4% (2119/2345), kvm 96.2% (1154/1199), kvm-platform 95.8% (320/334), gate exit 0; `issues.py validate` OK; `git diff --check` clean; first-parent diff = 3 allowlisted files; targeted 147/147 on branch.
+
+**Decisions:**
+- DMTF emulator suite skipped: no lib wire/transport/fixture/tool change (dependency-free decision-table logic only); <7 days since last green 85/85. No production TLS weakened; no WebView activated. No issue closed (#009 P3 / #021 P2 remain human-gated). Pre-existing untracked `testing/` + `stash@{0}` left untouched; no force-push, no history rewrite. `dart format` diffs are pre-existing across main (formatter-version style) — left untouched to avoid unrelated churn. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- No further gate action while `build/rf-platform` has no new verified commit past `c592f97`; rf-platform to produce + re-verify the next slice before a future gate run. Routine automation continues per FUTUREWORK Current focus.
+
+**Issues touched:** none closed — #009 (open), #021 (open).
