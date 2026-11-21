@@ -12292,3 +12292,19 @@
 - No gate action until rf-platform produces + re-verifies a new commit past `e712ab1`. Routine automation continues per FUTUREWORK `Current focus`. Close #021 then #009 only on human platform-WebView + BMC-TLS validation evidence — do NOT do unattended; never weaken production TLS.
 
 **Issues touched:** none (merge of platform hardening tracked in FUTUREWORK.md + progress/; #009/#021 stay open, human-gated).
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-T15 guard-suite liveness extension)
+
+**Done:**
+- Extended `canonicalGuardFiles` in `test/tool/guard_suite_liveness_test.dart` from 15 to 21 with the six post-EP-T14 behavioral regression guards (`kvm_capability_kvmip_fallback_test.dart`, `kvm_manager_source_precedence_test.dart`, `kvm_oem_multi_vendor_enablement_test.dart`, `kvm_controller_dispose_guard_test.dart`, `kvm_service_manager_identity_test.dart`, `kvm_card_cross_surface_agreement_test.dart`). Each was verified checked in with live `test(`/`testWidgets(` cases (9/13/5/3/2/2) and reachable from verify.yml's whole-tree `flutter test --coverage`; the real-repo invariant now checks all six.
+- Added a pinned `epT15AddedGuards ⊆ canonicalGuardFiles` set (disjoint from `epT14AddedGuards`), a pin test, and a temp-root RED→GREEN proving a newly-added guard is liveness-checked (missing / emptied / test-less → violation, intact → clean). Confirmed liveness gap: previously, deleting/emptying/test-stripping one of those six guards would stay GREEN.
+- Real-file RED proof: temporarily dropped `kvm_capability_kvmip_fallback_test.dart` from `canonicalGuardFiles` → both new EP-T15 tests failed (`+8 -2`, naming the dropped guard); restored byte-clean (SHA `33176741…` unchanged), 600-perm backup shredded → 10/10 GREEN.
+- Verify: targeted 10/10; `dart format` clean; `flutter analyze` 0; full `flutter test` 1808 passed / 1 skipped (baseline 1806 +2); issues validate OK; `git diff --check` clean; deps unchanged; lib diff empty. Emulator skipped (test/tool-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Test/tool-only: no product `lib/` change, wire/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. No issue closed (#009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation). Pre-existing stashes (`rf-gate-premerge-1795230500`, `automation-preflight-1793045959`) preserved untouched; no force-push, no history rewrite, no stash dropped. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Land the next unlanded dept slice on a genuine RED→GREEN gap (RM-8 model aggregation agreement, RS-8 service manager-Id collision determinism, or EP-U12 ui clipboard-target agreement) — re-audit `queues/*.md` first, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool-runtime change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

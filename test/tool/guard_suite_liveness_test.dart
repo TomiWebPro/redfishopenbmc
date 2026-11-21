@@ -15,6 +15,15 @@
 // de-invoking it from CI) would stay GREEN. A dedicated test pins the extension
 // itself so a future edit cannot quietly drop a guard back out of the set.
 //
+// EP-T15 (epic #009/#021) extends the set once more with the six behavioral
+// regression guards that landed AFTER EP-T14 (direct-construction KVMIP
+// fallback, manager-source precedence, multi-vendor enablement, controller
+// dispose-after-async-gap, service manager-identity and card cross-surface
+// agreement). All six are live, checked-in test files reachable from the
+// whole-tree CI run, but none was liveness-checked: deleting / emptying /
+// test-stripping one of them would stay GREEN. A dedicated pinned subset makes
+// the extension itself fail closed against a future silent drop.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -45,6 +54,13 @@ const List<String> canonicalGuardFiles = <String>[
   'test/features/kvm/kvm_viewer_disclosure_contract_test.dart',
   'test/features/kvm/kvm_providers_test.dart',
   'test/features/kvm/kvm_session_audit_invariants_test.dart',
+  // EP-T15 extension: behavioral regression guards that landed after EP-T14.
+  'test/features/kvm/kvm_capability_kvmip_fallback_test.dart',
+  'test/features/kvm/kvm_manager_source_precedence_test.dart',
+  'test/features/kvm/kvm_oem_multi_vendor_enablement_test.dart',
+  'test/features/kvm/kvm_controller_dispose_guard_test.dart',
+  'test/features/kvm/kvm_service_manager_identity_test.dart',
+  'test/features/kvm/kvm_card_cross_surface_agreement_test.dart',
 ];
 
 /// The subset of [canonicalGuardFiles] added by EP-T14. Pinned separately so a
@@ -58,6 +74,18 @@ const Set<String> epT14AddedGuards = <String>{
   'test/features/kvm/kvm_viewer_disclosure_contract_test.dart',
   'test/features/kvm/kvm_providers_test.dart',
   'test/features/kvm/kvm_session_audit_invariants_test.dart',
+};
+
+/// The subset of [canonicalGuardFiles] added by EP-T15. Pinned separately so a
+/// future edit cannot silence a liveness violation by dropping one of the newer
+/// behavioral regression guards back out of the canonical set (issue #009/#021).
+const Set<String> epT15AddedGuards = <String>{
+  'test/features/kvm/kvm_capability_kvmip_fallback_test.dart',
+  'test/features/kvm/kvm_manager_source_precedence_test.dart',
+  'test/features/kvm/kvm_oem_multi_vendor_enablement_test.dart',
+  'test/features/kvm/kvm_controller_dispose_guard_test.dart',
+  'test/features/kvm/kvm_service_manager_identity_test.dart',
+  'test/features/kvm/kvm_card_cross_surface_agreement_test.dart',
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -257,6 +285,23 @@ void main() {
         );
       }
     });
+
+    test('EP-T15: every post-EP-T14 guard is in the canonical liveness set',
+        () {
+      // Pins the extension itself: dropping a newer behavioral guard out of the
+      // set to silence an otherwise-failing liveness run is detected here.
+      expect(epT15AddedGuards, isNotEmpty);
+      for (final String path in epT15AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T15 guard dropped from canonical set: $path',
+        );
+      }
+      // The two extension subsets must stay distinct — no guard may be counted
+      // toward both EP-T14 and EP-T15 liveness coverage.
+      expect(epT15AddedGuards.intersection(epT14AddedGuards), isEmpty);
+    });
   });
 
   group('EP-T12 RED→GREEN guard proof (temporary scan root)', () {
@@ -373,6 +418,68 @@ void main() {
 
         // GREEN again once the guard is restored.
         File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test('EP-T15: newly-added behavioral guards are liveness-checked', () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_t15_guard_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      // Pick a path from the EP-T15 extension specifically, so this proves the
+      // NEW entries are evaluated and not just the EP-T12/EP-T14 sets.
+      final String addedGuard = epT15AddedGuards.first;
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        // RED 1: the newly-added behavioral guard is deleted → MISSING.
+        File(p(addedGuard)).deleteSync();
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'MISSING: $addedGuard'),
+          isTrue,
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 2: emptied → EMPTY.
+        File(p(addedGuard)).writeAsStringSync('  \n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'EMPTY: $addedGuard'),
+          isTrue,
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 3: keeps prose but loses every test case → NO_TEST_CASES.
+        File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+          isTrue,
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // GREEN again once the guard is restored.
         expect(
           evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
           isEmpty,
