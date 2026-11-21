@@ -12075,3 +12075,18 @@
 - Re-audit EP-S2 / EP-T4 / EP-P4 for a genuinely different untested contract before adding any guard — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (KVM provider wiring / capability error-degradation guard)
+
+**Done:**
+- Landed `test/features/kvm/kvm_providers_test.dart` (4 tests, test-only) exercising the REAL `kvmServiceProvider` / `kvmCapabilitiesProvider` bodies that every other KVM widget test overrides: binds a `KvmService` from the live handle (client/features/systemId), still returns a not-connected service for an unknown/no-handle system, degrades a not-connected `RedfishException` to an empty capability list, and swallows a non-Redfish failure too. Pins the documented "capability cards are a supplementary summary" error-degradation contract so the console list stays the single source of the surfaced error.
+- Audited the FUTUREWORK head-first dept slices first (EP-S2 covered by EP-S3 `pickPrimary` tier-order group; EP-T4 largely landed by existing guards; EP-P4 human-gated) — found a genuinely different untested seam, no churn. RED proof: removed the `try/catch` in `kvmCapabilitiesProvider` → both degradation tests failed (`+2 -2`); source restored byte-clean (SHA `76c3872c…` unchanged, empty lib diff), 600-permission backup shredded.
+- Verify: targeted 4/4; `dart format --output=none --set-exit-if-changed` clean; `flutter analyze` 0; full `flutter test` 1741 passed / 1 skipped (baseline 1737 +4); `issues.py validate` OK; `git diff --check` clean; deps unchanged. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Test-only: no product `lib/`, wire/transport/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. No issue closed (both #009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation). Pre-existing untracked `testing/` + `stash@{0}` preserved untouched; no force-push, no history rewrite. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Re-audit EP-S2 / EP-T4 / EP-P4 for a genuinely different untested contract before adding any guard — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
