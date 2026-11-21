@@ -12674,3 +12674,18 @@
 - No gate action until `rf-platform` produces + re-verifies a new commit past `ab65b83`. Routine FEATURE work continues per FUTUREWORK `Current focus`. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended; never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-T18)
+
+**Done:**
+- FEATURE (test/tool-only): EP-T18 guard-suite liveness extension for the post-EP-T17 safety guards of #009/#021. Added the three guards that landed after EP-T17 — `kvm_service_capability_primary_agreement_test.dart` (EP-S6, 3 cases), `kvm_viewer_uri_surface_agreement_test.dart` (EP-U14, 16 cases), `kvm_capability_primary_uri_agreement_test.dart` (EP-S7, 6 cases) — to `canonicalGuardFiles` (28→31), plus pinned `epT18AddedGuards` (length 3, disjoint from EP-T14/15/16/17), pairwise-disjointness assertions, a pin test and a temp-root RED→GREEN. Real-file RED proof: dropped the capability↔primary URI guard from the canonical list → EP-T18 pin failed (`+14 -1`); restored byte-clean (SHA `07ce792c6ef51cd951c4baad6feada066a8919f71c8e8ae62538133d3a89cab0` unchanged), backup shredded → 16/16 GREEN.
+- Verify: analyze 0; targeted guard suite 16/16; full `flutter test --concurrency=4` 1952 passed / 1 skipped (baseline 1950 +2); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Confirmed liveness gap, not churn: all three guards were live, checked in, and reachable from the whole-tree CI run but not liveness-checked, so deleting/emptying/test-stripping one would stay GREEN. Pure test/tool, no `lib/`, no wire/TLS/fixture change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; the guard only fails closed, grants no approval and no navigation.
+
+**Next:**
+- Push the single run commit; leave pre-existing stashes untouched. Audit dept-head candidates EP-M10 / EP-S8 / EP-U15 / EP-P11 before adding any further guard — RED→GREEN only on a genuine divergence, never churn; cheap DOCS anchor gate only. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

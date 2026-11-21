@@ -16,7 +16,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      Pure test/tool, dependency-free, never writes `lib/`; distinct from EP-T12/14/15/16/17. No code
      touched. -->
 
-- [ ] EP-T18 Guard-suite liveness extension for the post-EP-T17 safety guards: add the three guard files
+- [x] EP-T18 LANDED 2026-11-21 (run `auto: FEATURE #009/#021 EP-T18 guard-suite liveness extension for the post-EP-T17 safety guards`, analyze 0 / 1952 passed / 1 skipped) — add the three guard files
       that landed after EP-T17 — `kvm_service_capability_primary_agreement_test.dart`,
       `kvm_viewer_uri_surface_agreement_test.dart` and `kvm_capability_primary_uri_agreement_test.dart` —
       to `canonicalGuardFiles` in `test/tool/guard_suite_liveness_test.dart` so each is liveness-checked
