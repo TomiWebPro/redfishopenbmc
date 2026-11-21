@@ -5,6 +5,29 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 05:49 UTC: closes a confirmed liveness gap in the "who guards the
+     guards" suite of the blocked #009/#021 epic. EP-T14 extended `canonicalGuardFiles` to the seven
+     safety guards that existed at 01:55, but six behavioral regression guards landed AFTER it and are
+     not liveness-checked, so a future deletion / emptying / test-stripping / CI-de-invocation of one of
+     them would stay GREEN. Pure test/tool, dependency-free, never writes `lib/`; distinct from EP-T12
+     (initial set) and EP-T14 (01:55 set). No code touched. -->
+
+- [ ] EP-T15 Guard-suite liveness extension for the post-EP-T14 regression guards: add the established
+      guards that landed after EP-T14 — `kvm_capability_kvmip_fallback_test.dart`,
+      `kvm_manager_source_precedence_test.dart`, `kvm_oem_multi_vendor_enablement_test.dart`,
+      `kvm_controller_dispose_guard_test.dart`, `kvm_service_manager_identity_test.dart`,
+      `kvm_card_cross_surface_agreement_test.dart` — to `canonicalGuardFiles` in
+      `test/tool/guard_suite_liveness_test.dart` so each is liveness-checked (missing / emptied /
+      stripped-of-tests / unreachable ⇒ violation), keeping the real-repo invariant green; update any
+      pinned count assertion to match. Verify each added file has live `test(` / `testWidgets(` cases and
+      is reachable from the whole-tree `flutter test --coverage` before adding; RED→GREEN proof by
+      emptying a temp-scan guard. No churn.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues), with
+              RED→GREEN proof (missing/emptied/test-less → violation; intact → clean); writes limited to
+              `test/tool/guard_suite_liveness_test.dart`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              no `lib/`, no production TLS change.
+
 <!-- rf-ideate split 2026-11-21 01:45 UTC: closes a confirmed liveness gap in the "who guards the
      guards" suite of the blocked #009/#021 epic. `test/tool/guard_suite_liveness_test.dart` (EP-T12)
      enumerates exactly 8 canonical guard files, but several safety guards landed AFTER EP-T12 and

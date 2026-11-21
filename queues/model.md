@@ -4,6 +4,31 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 05:49 UTC: splits the last unguarded internal-consistency seam of the
+     blocked #009/#021 capability aggregation into one unblocked, pure-model, dependency-free, TLS-safe
+     dept slice. EP-M4/RM-1..RM-7 and the per-helper tests (unknown-enablement limit / types / URI /
+     graphical-@odata.id fallback) each pin one aggregation helper in isolation, but nothing pins that
+     the THREE enabled-preference helpers (`resolveLaunchUri` via `_standardConnectUri`,
+     `_aggregateConnectTypes`, `_aggregateMaxSessions`) all select the SAME winning block for ONE mixed
+     payload, nor the exact tri-state resolution (flag-absent "unknown" keeps priority like enabled vs
+     an explicit `ServiceEnabled:false` / `Enabled:false` block being deprioritized, with the all-disabled
+     fallback) and contradictory-flag (`ServiceEnabled:false` + `Enabled:true`) handling. Audit first;
+     RED→GREEN only on a genuine divergence; no churn. Human-gated WebView/TLS rendering stays gated and
+     is NOT re-split. No code touched. -->
+
+- [ ] RM-8 KvmCapability enabled-block aggregation agreement across URI / connect-types / session-limit:
+      feed `KvmCapability.fromManager` one matrix of manager bodies mixing flag-absent ("unknown"),
+      explicitly-enabled and explicitly-disabled Graphical / Serial / Remote blocks (plus contradictory
+      `ServiceEnabled` / `Enabled` flags) and pin that `resolveLaunchUri`, `connectTypes` and `maxSessions`
+      all prefer the same non-disabled winning block with a consistent all-disabled fallback, and that
+      `KvmConsole.fromManager` agrees for the same manager. Read-only model work; no transport/TLS
+      change, no dependency.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_capability_test.dart test/features/kvm/kvm_model_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof only on a genuine divergence; writes limited to
+              `lib/features/kvm/models/**` + those two named test files;
+              `git diff --exit-code -- pubspec.yaml pubspec.lock`; no wire/TLS change.
+
 <!-- rf-ideate split 2026-11-21 01:45 UTC: splits the remaining cross-view console-source parity seam
      of the blocked #009/#021 epic (RemoteConsole + explicit-disable parity) into one unblocked,
      pure-model, dependency-free, TLS-safe dept slice. EP-M1/M2 and RM-1..RM-7 pinned OEM enablement,

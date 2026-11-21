@@ -5,6 +5,27 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 05:49 UTC: splits the remaining manager-ID uniqueness seam of the blocked
+     #009/#021 manager walk into one unblocked, service-level, dependency-free, TLS-safe dept slice.
+     RS-4/5/6/7 and EP-S5 pin member-URI dedup, source identity, cardinality, hostile bodies and the
+     hostile-`Id` precedence, but RS-4 dedups by MEMBER URI — two DISTINCT member URIs whose bodies carry
+     the SAME `Id` are not collapsed, and nothing pins that `fetchCapability(id)` deterministically
+     resolves one stable capability while `fetchConsoles()` / `fetchCapabilities()` still surface every
+     physical manager. A padded or blank `Id` must never become a fetchable key. Audit first; RED→GREEN
+     only on a genuine divergence; no churn. No code touched. -->
+
+- [ ] RS-8 Manager-Id collision determinism in `fetchCapability(id)`: over an in-temp mockup with two
+      distinct member URIs whose bodies report the same trimmed `Id` (plus a manager with a blank /
+      whitespace `Id`), pin that `fetchConsoles()` / `fetchCapabilities()` surface every physical manager
+      without throwing or blanking the screen, that `fetchCapability(id)` deterministically returns ONE
+      stable capability (never a differing manager's), and that a blank `Id` is never a resolvable key.
+      Audit first; RED→GREEN only on a genuine divergence; no wire/TLS change, no dependency.
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_service_test.dart && flutter analyze` (0 issues), with
+              RED→GREEN proof; writes limited to `lib/features/kvm/kvm_service.dart` + service tests under
+              `test/features/kvm/`; emulator 85/85 only if `lib/` wire changes;
+              `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-21 01:45 UTC: splits the remaining manager-identity seam of the blocked
      #009/#021 epic into one unblocked, service-level, dependency-free, TLS-safe dept slice.
      RS-4/5/6/7 pinned member dedup, console↔capability source agreement, per-manager cardinality and

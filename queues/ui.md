@@ -5,6 +5,28 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 05:49 UTC: splits the remaining cross-surface clipboard-safety seam of
+     the blocked #009/#021 epic into one unblocked, widget-level, dependency-free, TLS-safe dept slice.
+     CB-1 pinned the card's `clipboardTargetUri` fallback and EP-U8 pinned that the viewer hides the copy
+     affordance for a control-unsafe target, but nothing pins that BOTH surfaces, when they DO offer copy,
+     place the SAME fail-closed target on the clipboard over one hostile-authority matrix (CRLF / NUL /
+     raw space / malformed-% `@odata.id` and a control-unsafe `ConnectUri`), with visible text == announced
+     label and no overflow. Audit first; fix only a genuine divergence via RED→GREEN; no churn. Human-gated
+     WebView/TLS rendering stays gated and is NOT re-split. -->
+
+- [ ] EP-U12 Cross-surface clipboard-target agreement under hostile authorities: pin that the per-console
+      card's "Copy connect info" and the viewer's copy action derive the SAME fail-closed target from the
+      shared `clipboardTargetUri` / `launchPlan.targetUri` single sources over a hostile-authority matrix,
+      never copying a raw control-bearing `@odata.id` or `ConnectUri`, with each copy affordance present
+      iff a safe target exists, merged `excludeSemantics` visible text == announced label and 320/800/1300
+      px no-overflow. Display-only; no transport/dependency/TLS change; audit first, RED→GREEN on a genuine
+      divergence, no churn.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_capability_card_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof + 320 px no-overflow; writes limited to
+              `lib/features/kvm/views/**`; no WebView/protocol import, no production TLS weakening;
+              `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-21 01:45 UTC: splits the display-only consumer half of the remaining
      cross-view console-source parity seam of the blocked #009/#021 epic (paired with EP-M4 in
      `queues/model.md`) into one unblocked, widget-level, dependency-free, TLS-safe dept slice. EP-U6/9/10
