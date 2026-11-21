@@ -7,8 +7,8 @@
 // test-only TLS opt-in is HUMAN-gated on recorded per-target evidence. This
 // test pins the *detailed* acceptance checklist (CSP / mixed-content,
 // fullscreen, input forwarding, no-native-bridge, no-local-file-access,
-// flag-off fallback, human sign-off) so a future edit cannot silently erase the
-// evidence boxes that gate that decision.
+// no-device-permissions, flag-off fallback, human sign-off) so a future edit
+// cannot silently erase the evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -55,6 +55,13 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'no-local-file-access',
     marker: 'local file / content-provider access'
   ),
+  (
+    name: 'no-device-permissions',
+    marker: 'device-capability / permission access'
+  ),
+  (name: 'no-geolocation', marker: 'geolocation'),
+  (name: 'no-camera-mic', marker: 'camera / microphone'),
+  (name: 'permissions-deny-by-default', marker: 'denied by default'),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -172,6 +179,19 @@ void main() {
       final String neutered = matrixWithSection(realMatrix, withoutFileAccess);
       expect(
           missingEvidenceMarkers(neutered), contains('no-local-file-access'));
+    });
+
+    test('RED: dropping the no-device-permissions box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutPermissions = section
+          .split('\n')
+          .where((String line) => !line
+              .toLowerCase()
+              .contains('device-capability / permission access'))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutPermissions);
+      expect(
+          missingEvidenceMarkers(neutered), contains('no-device-permissions'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
