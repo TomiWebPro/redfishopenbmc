@@ -170,6 +170,25 @@ flag stays off for that target.
       navigation targets must be credential-free; the initial credentialed
       console load is a separate path and is unaffected. Verified per target
       before the flag is flipped.
+* [ ] **No arbitrary-scheme / deep-link navigation** — the embedded WebView must
+      never follow a top-level navigation to any non-HTTP(S) scheme, including
+      `javascript:`, `data:`, `blob:`, `intent:`, `market:`, `tel:`, `mailto:`
+      and any custom app deep-link scheme. Console content is served by the BMC
+      and is therefore attacker-influenced (a compromised/spoofed BMC, or script
+      running in the page): an attacker-chosen link or `window.open` using
+      `intent:` / a custom scheme can hand off to and launch another installed
+      app (or the OS dialer/mailer), while a `javascript:` or `data:` URL can
+      execute or inject script inside the trusted console frame — an app-launch
+      / script-injection abuse surface wholly independent of TLS, hostname and
+      same-origin checks. The WebView navigation callback must allow only
+      same-origin HTTPS navigations in-app (see the origin-confinement box) and
+      hand every other scheme to the external secure browser or block it; no
+      scheme may be passed through to another app, the OS, or the page's script
+      context. The pure decision layer already fails closed here
+      (`allowsInAppNavigation` rejects any URI whose scheme is not HTTPS), but
+      the per-target WebView navigation callback must still be inspected to
+      confirm no scheme is passed through. Verified per target before the flag
+      is flipped.
 * [ ] **CSP / mixed content** — the BMC console's HTTP response headers and
       page content are inspected for `Content-Security-Policy` frame rules and
       mixed-content (HTTPS page loading HTTP subresources); a console that is

@@ -5246,6 +5246,34 @@ void main() {
       }
     });
 
+    // RP-1: a navigation to a non-HTTP(S) scheme — script/data URLs, app deep
+    // links (intent:/market:/custom) and OS schemes (tel:/mailto:) — must fail
+    // closed. The WebView's navigation callback may only follow same-origin
+    // HTTPS in-app and hand every other scheme to the external browser; passing
+    // such a target to another app, the OS, or the page's script context is an
+    // app-launch / script-injection abuse surface. The fail-closed secure-target
+    // validator already rejects every non-HTTPS scheme; this characterization
+    // test pins that invariant behind the WEBVIEW_TLS_MATRIX.md no-arbitrary-
+    // scheme / deep-link acceptance box.
+    test('a non-HTTP(S) scheme / deep-link target fails closed', () {
+      for (final String target in <String>[
+        'javascript:alert(1)',
+        'data:text/html,<script>alert(1)</script>',
+        'blob:https://bmc.example:8443/uuid',
+        'intent://bmc.example/#Intent;scheme=https;end',
+        'market://details?id=com.example',
+        'tel:+15551234567',
+        'mailto:admin@bmc.example',
+        'myapp://open?url=https://bmc.example:8443/console',
+      ]) {
+        expect(
+          allowsInAppNavigation(consoleUri: console, targetUri: target),
+          isFalse,
+          reason: target,
+        );
+      }
+    });
+
     test('a relative, blank or invisible target fails closed', () {
       for (final String? target in <String?>[
         null,
