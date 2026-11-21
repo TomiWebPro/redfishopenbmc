@@ -12456,3 +12456,20 @@
 - No gate action until `rf-platform` produces + re-verifies a new commit past `f9f425d`. Routine automation continues per FUTUREWORK `Current focus` (smallest open #021 then #009, both human-gated). A future run may restore `stash@{0}` EP-T16 liveness extension if still wanted. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
 
 **Issues touched:** none closed (#009 / #021 remain open, human-gated).
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-T16 guard-suite liveness extension)
+
+**Done:**
+- Confirmed a real liveness gap: the three post-EP-T15 widget guards (`kvm_clipboard_cross_surface_agreement_test.dart`, `kvm_view_reload_indicator_test.dart`, `kvm_view_stale_error_banner_test.dart`, live cases 3/2/3, reachable from verify.yml whole-tree `flutter test --coverage`) were not in `canonicalGuardFiles` — deleting/emptying/test-stripping one would stay GREEN.
+- Extended `canonicalGuardFiles` 21→24 in `test/tool/guard_suite_liveness_test.dart`; added pinned `epT16AddedGuards ⊆ canonicalGuardFiles` (disjoint from EP-T14/EP-T15) + pairwise-disjointness assertions + pin test + temp-root RED→GREEN proof. Checked off EP-T16 in `queues/tooling.md` with a Log entry.
+- Real-file RED proof: dropped `kvm_view_stale_error_banner_test.dart` from the canonical list → both new EP-T16 tests failed (`+11 -1`, pin test named the guard); restored byte-clean (SHA `c66f8ebc…`), 600-perm backups shredded → 12/12 GREEN. A concurrent rf-gate merge swept WIP into `stash@{0}`; recovered via `git stash apply` (stash left untouched), awaited rf-gate exit before the full test.
+- Verify: targeted 12/12; `dart format` clean; `flutter analyze` 0; full `flutter test` 1863 passed / 1 skipped (baseline 1861 +2); `issues.py validate` OK; `git diff --check` clean; deps unchanged; lib diff empty; secret scan clean.
+
+**Decisions:**
+- Confirmed liveness-gap fix (not churn) — test/tool-only, dependency-free, TLS-safe. Per §5 no manufactured UI churn. Emulator skipped (test/tool-only, <7 days since last green 85/85). No force-push, history rewrite, `git clean`, or file deletion; pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; do NOT do unattended, never weaken production TLS.
+
+**Next:**
+- Push this run's commit together with the unpushed rf-ideate/rf-gate commits. Re-audit remaining 09:53-slice candidates (RM-9 / RS-9 / EP-U13) for a genuine RED→GREEN gap before landing anything, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
