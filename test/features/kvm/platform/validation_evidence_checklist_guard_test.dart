@@ -6,8 +6,9 @@
 // byte-for-byte. Flipping the flag, adding a rendering dependency or enabling a
 // test-only TLS opt-in is HUMAN-gated on recorded per-target evidence. This
 // test pins the *detailed* acceptance checklist (CSP / mixed-content,
-// fullscreen, input forwarding, flag-off fallback, human sign-off) so a future
-// edit cannot silently erase the evidence boxes that gate that decision.
+// fullscreen, input forwarding, no-native-bridge, flag-off fallback, human
+// sign-off) so a future edit cannot silently erase the evidence boxes that gate
+// that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -37,7 +38,10 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'webview-availability', marker: 'webview availability'),
   (name: 'no-production-tls-weakening', marker: 'no production weakening'),
   (name: 'hostname-verification', marker: 'hostname verification'),
-  (name: 'origin-navigation-confinement', marker: 'origin / navigation confinement'),
+  (
+    name: 'origin-navigation-confinement',
+    marker: 'origin / navigation confinement'
+  ),
   (name: 'no-cross-origin-nav', marker: 'same origin'),
   (name: 'no-nav-downgrade', marker: 'plaintext / non-https scheme'),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
@@ -46,6 +50,7 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'fullscreen', marker: 'fullscreen'),
   (name: 'keyboard-input', marker: 'keyboard'),
   (name: 'pointer-input', marker: 'pointer'),
+  (name: 'no-native-js-bridge', marker: 'native bridge'),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -94,7 +99,8 @@ void main() {
       expect(rawEvidenceSection(realMatrix), isNotEmpty);
     });
 
-    test('real matrix records every required evidence box + human sign-off', () {
+    test('real matrix records every required evidence box + human sign-off',
+        () {
       expect(missingEvidenceMarkers(realMatrix), isEmpty);
     });
 
@@ -110,7 +116,8 @@ void main() {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutCsp = section
           .split('\n')
-          .where((String line) => !line.toLowerCase().contains('content-security-policy'))
+          .where((String line) =>
+              !line.toLowerCase().contains('content-security-policy'))
           .join('\n');
       final String neutered = matrixWithSection(realMatrix, withoutCsp);
       expect(missingEvidenceMarkers(neutered), contains('csp'));
@@ -120,13 +127,16 @@ void main() {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutHostname = section
           .split('\n')
-          .where((String line) => !line.toLowerCase().contains('hostname verification'))
+          .where((String line) =>
+              !line.toLowerCase().contains('hostname verification'))
           .join('\n');
       final String neutered = matrixWithSection(realMatrix, withoutHostname);
-      expect(missingEvidenceMarkers(neutered), contains('hostname-verification'));
+      expect(
+          missingEvidenceMarkers(neutered), contains('hostname-verification'));
     });
 
-    test('RED: dropping the origin/navigation-confinement box fails closed', () {
+    test('RED: dropping the origin/navigation-confinement box fails closed',
+        () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutOrigin = section
           .split('\n')
@@ -136,6 +146,16 @@ void main() {
       final String neutered = matrixWithSection(realMatrix, withoutOrigin);
       expect(missingEvidenceMarkers(neutered),
           contains('origin-navigation-confinement'));
+    });
+
+    test('RED: dropping the no-native-bridge box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutBridge = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains('native bridge'))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutBridge);
+      expect(missingEvidenceMarkers(neutered), contains('no-native-js-bridge'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

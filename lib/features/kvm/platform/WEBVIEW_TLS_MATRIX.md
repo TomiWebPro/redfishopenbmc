@@ -179,6 +179,17 @@ flag stays off for that target.
 * [ ] **Keyboard / pointer input forwarding** — keyboard and mouse input are
       forwarded to the remote console and cannot leak to the host page or trigger
       navigation to a different origin.
+* [ ] **No native bridge / script-injection surface** — the embedded WebView must
+      not inject any native JavaScript bridge or message handler
+      (`addJavascriptInterface`, `WKScriptMessageHandler`,
+      `WebMessageListener`/`addWebMessageListener`, `WebMessageChannel`, ...) into
+      the remote BMC console page, and must expose no app-controlled `window.*`
+      bridge object to it. Console content is served by the BMC and is therefore
+      attacker-influenced (a compromised/spoofed BMC, or script running in the
+      page): any exposed native bridge is a remote-code-execution path from that
+      content into the host app, independent of TLS/origin checks. The console
+      must run with **no injected interfaces**. Verified per target (inspect the
+      WebView controller construction) before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
