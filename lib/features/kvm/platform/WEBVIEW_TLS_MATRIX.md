@@ -157,6 +157,23 @@ flag stays off for that target.
       content into the host app, independent of TLS/origin checks. The console
       must run with **no injected interfaces**. Verified per target (inspect the
       WebView controller construction) before the flag is flipped.
+* [ ] **No local file / content-provider access** — the embedded WebView must not
+      enable local file or content access: no
+      `setAllowFileAccess(true)` / `setAllowContentAccess(true)` /
+      `setAllowFileAccessFromFileURLs(true)` /
+      `setAllowUniversalAccessFromFileURLs(true)` on Android `WebSettings`, no
+      WKWebView `loadFileURL` / local file loading or file-read entitlement on
+      iOS/macOS, and no load of or navigation to a `file://` / `content://` URL
+      (whether by the initial load, a redirect, a link or script). Console
+      content is served by the BMC and is attacker-influenced (a compromised or
+      spoofed BMC, or script running in the page): with local/content access a
+      console script could read app-private data or local files and exfiltrate
+      them — a data-theft / remote-code-execution-class surface that is wholly
+      independent of TLS, hostname and origin checks. The console WebView runs
+      with local file and content access **disabled**, and file-scheme
+      navigation is blocked, on every target. Verified per target (inspect the
+      WebView controller construction and scheme-navigation callback) before the
+      flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

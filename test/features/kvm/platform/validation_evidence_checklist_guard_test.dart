@@ -6,9 +6,9 @@
 // byte-for-byte. Flipping the flag, adding a rendering dependency or enabling a
 // test-only TLS opt-in is HUMAN-gated on recorded per-target evidence. This
 // test pins the *detailed* acceptance checklist (CSP / mixed-content,
-// fullscreen, input forwarding, no-native-bridge, flag-off fallback, human
-// sign-off) so a future edit cannot silently erase the evidence boxes that gate
-// that decision.
+// fullscreen, input forwarding, no-native-bridge, no-local-file-access,
+// flag-off fallback, human sign-off) so a future edit cannot silently erase the
+// evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -51,6 +51,10 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'keyboard-input', marker: 'keyboard'),
   (name: 'pointer-input', marker: 'pointer'),
   (name: 'no-native-js-bridge', marker: 'native bridge'),
+  (
+    name: 'no-local-file-access',
+    marker: 'local file / content-provider access'
+  ),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -156,6 +160,18 @@ void main() {
           .join('\n');
       final String neutered = matrixWithSection(realMatrix, withoutBridge);
       expect(missingEvidenceMarkers(neutered), contains('no-native-js-bridge'));
+    });
+
+    test('RED: dropping the no-local-file-access box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutFileAccess = section
+          .split('\n')
+          .where((String line) =>
+              !line.toLowerCase().contains('local file / content-provider'))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutFileAccess);
+      expect(
+          missingEvidenceMarkers(neutered), contains('no-local-file-access'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
