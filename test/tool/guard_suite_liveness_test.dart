@@ -7,6 +7,14 @@
 // This pure-Dart guard enumerates the established guard files and fails closed
 // on any such drift, so a future edit cannot silently disable a safety net.
 //
+// EP-T14 (epic #009/#021) extends this canonical set with the safety guards that
+// landed AFTER EP-T12 (queue-item schema, production-opt-in construction,
+// cross-layer authority agreement, flag-off false-claim, viewer disclosure,
+// real-provider wiring and session audit/identity invariants). Without this
+// extension, deleting / emptying / test-stripping one of those newer guards (or
+// de-invoking it from CI) would stay GREEN. A dedicated test pins the extension
+// itself so a future edit cannot quietly drop a guard back out of the set.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -20,6 +28,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// forward-slash paths for cross-platform stability. This is the minimum set
 /// named by EP-T12; adding a new guard to this list is cheap and intentional.
 const List<String> canonicalGuardFiles = <String>[
+  // EP-T12 initial set.
   'test/tool/notice_single_source_guard_test.dart',
   'test/tool/launch_status_single_source_guard_test.dart',
   'test/tool/uri_parse_single_source_guard_test.dart',
@@ -28,7 +37,28 @@ const List<String> canonicalGuardFiles = <String>[
   'test/features/kvm/platform/production_route_invariant_test.dart',
   'test/features/kvm/platform/human_gate_doc_guard_test.dart',
   'test/features/kvm/platform/decision_doc_route_guard_test.dart',
+  // EP-T14 extension: safety guards that landed after EP-T12.
+  'test/tool/queue_item_schema_guard_test.dart',
+  'test/features/kvm/platform/production_optin_construction_guard_test.dart',
+  'test/features/kvm/platform/cross_layer_authority_agreement_test.dart',
+  'test/features/kvm/kvm_viewer_flagoff_false_claim_guard_test.dart',
+  'test/features/kvm/kvm_viewer_disclosure_contract_test.dart',
+  'test/features/kvm/kvm_providers_test.dart',
+  'test/features/kvm/kvm_session_audit_invariants_test.dart',
 ];
+
+/// The subset of [canonicalGuardFiles] added by EP-T14. Pinned separately so a
+/// future edit cannot silence a liveness violation by dropping a newer guard
+/// back out of the canonical set (issue #009/#021).
+const Set<String> epT14AddedGuards = <String>{
+  'test/tool/queue_item_schema_guard_test.dart',
+  'test/features/kvm/platform/production_optin_construction_guard_test.dart',
+  'test/features/kvm/platform/cross_layer_authority_agreement_test.dart',
+  'test/features/kvm/kvm_viewer_flagoff_false_claim_guard_test.dart',
+  'test/features/kvm/kvm_viewer_disclosure_contract_test.dart',
+  'test/features/kvm/kvm_providers_test.dart',
+  'test/features/kvm/kvm_session_audit_invariants_test.dart',
+};
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
 String normalizePath(String path) =>
@@ -213,6 +243,20 @@ void main() {
       );
       expect(RegExp(r'\btest\s*\(').hasMatch(inString), isFalse);
     });
+
+    test('EP-T14: every post-EP-T12 guard is in the canonical liveness set',
+        () {
+      // Pins the extension itself: dropping a newer guard out of the set to
+      // silence an otherwise-failing liveness run is detected here.
+      expect(epT14AddedGuards, isNotEmpty);
+      for (final String path in epT14AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T14 guard dropped from canonical set: $path',
+        );
+      }
+    });
   });
 
   group('EP-T12 RED→GREEN guard proof (temporary scan root)', () {
@@ -274,6 +318,61 @@ void main() {
 
         // GREEN again once the CI invocation is restored.
         verify.writeAsStringSync('  run: flutter test --coverage\n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test('EP-T14: a newly-added guard is liveness-checked (missing/emptied)',
+        () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_t14_guard_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      // Pick a path from the EP-T14 extension specifically, so this proves the
+      // NEW entries are evaluated and not just the EP-T12 initial set.
+      final String addedGuard = epT14AddedGuards.first;
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        // Populate every canonical guard with a live synthetic case.
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        // RED 1: the newly-added guard is deleted → MISSING.
+        File(p(addedGuard)).deleteSync();
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'MISSING: $addedGuard'),
+          isTrue,
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 2: the newly-added guard keeps prose but loses every test case.
+        File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+          isTrue,
+        );
+
+        // GREEN again once the guard is restored.
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
         expect(
           evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
           isEmpty,

@@ -12105,3 +12105,19 @@
 - No further gate action while `build/rf-platform` has no new verified commit past `c592f97`; rf-platform to produce + re-verify the next slice before a future gate run. Routine automation continues per FUTUREWORK Current focus.
 
 **Issues touched:** none closed — #009 (open), #021 (open).
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-T14 guard-suite liveness extension)
+
+**Done:**
+- Landed EP-T14: extended `canonicalGuardFiles` in `test/tool/guard_suite_liveness_test.dart` from the 8 EP-T12 guards to 15 by adding the 7 safety guards that landed afterwards (queue-item schema, production-opt-in construction, cross-layer authority agreement, flag-off false-claim, viewer disclosure, real-provider wiring, session audit/identity invariants). Each verified present with live `test(...)` cases and reachable from verify.yml's whole-tree `flutter test --coverage` before adding.
+- Added an `epT14AddedGuards ⊆ canonicalGuardFiles` containment pin so a future edit cannot drop a newer guard out of the liveness set, plus a temp-root RED→GREEN proof exercising a newly-added path. Confirmed liveness gap (objective, not churn): without it, deleting/emptying/test-stripping/CI-de-invoking one of those guards would stay GREEN. Audited the other 3 fresh slices first — EP-M4/EP-S5 already exhaustively guarded (no divergence), EP-U11 is a distinct second workstream (deferred).
+- RED proof: temporarily wrote `void main() {}` to `kvm_providers_test.dart` → real-repo invariant failed `NO_TEST_CASES` (`+7 -1`); restored byte-clean (SHA `9460cc09…` unchanged), 600-perm backup shredded → 8/8 GREEN.
+- Verify: targeted 8/8; `dart format --output=none --set-exit-if-changed` clean; `flutter analyze` 0; full `flutter test` 1746 passed / 1 skipped (baseline 1744 +2); `issues.py validate` OK; `git diff --check` clean; deps unchanged; lib diff empty. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Test-only: no product `lib/`, wire/transport/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. No issue closed (both #009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation). `main` was ahead 1 (unpushed rf-ideate queue-split commit `2ee4a95`) — preserved, pushed forward with this run's single commit; no force-push, no history rewrite. Pre-existing untracked `testing/` + `stash@{0}` preserved untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Land EP-U11 (RemoteConsole/disabled card cross-surface rendering guard) or re-audit EP-M4/EP-S5 for a genuinely different untested contract — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
