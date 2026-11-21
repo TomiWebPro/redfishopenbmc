@@ -5,6 +5,28 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 01:45 UTC: splits the display-only consumer half of the remaining
+     cross-view console-source parity seam of the blocked #009/#021 epic (paired with EP-M4 in
+     `queues/model.md`) into one unblocked, widget-level, dependency-free, TLS-safe dept slice. EP-U6/9/10
+     and RU-2 pinned safe-source display and the two viewer disclosures, but nothing pins that the
+     capability card's "KVM supported"/"KVM not supported" + "Service enabled" chips and disabled
+     helper agree with the per-console card's affordance/URI row for a manager exposing ONLY a
+     RemoteConsole or one whose console is BMC-disabled. Audit first; fix only a genuine divergence
+     via RED→GREEN; no churn. Human-gated WebView/TLS rendering stays gated and is NOT re-split. -->
+
+- [ ] EP-U11 RemoteConsole-only / disabled-manager card cross-surface rendering guard (display-only
+      consumer of EP-M4): build both KVM cards for a manager exposing only an enabled RemoteConsole
+      and for one whose console is BMC-disabled, and pin that the capability card's support/enabled
+      chips + disabled helper agree with the per-console card's launch affordance / URI row for the
+      SAME manager — never "KVM not supported"/disabled helper on a card whose peer surfaces an
+      enabled, launchable console. All merged `excludeSemantics` nodes keep visible text == announced
+      label, 320/800/1300 px no-overflow. Display-only; no transport, dependency or TLS change; audit
+      first, RED→GREEN on a genuine divergence, no churn.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_capability_card_test.dart test/features/kvm/kvm_widget_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof + 320 px no-overflow; writes limited to
+              `lib/features/kvm/views/**`; no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-20 17:10 UTC: splits the machine-checkable half of the still-open
      fullscreen/input-forwarding rendering acceptance of #009/#021 into one unblocked, display-only,
      dependency-free, TLS-safe dept slice. EP-U9 pinned the two implemented disclosures, but nothing

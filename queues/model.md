@@ -4,6 +4,30 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 01:45 UTC: splits the remaining cross-view console-source parity seam
+     of the blocked #009/#021 epic (RemoteConsole + explicit-disable parity) into one unblocked,
+     pure-model, dependency-free, TLS-safe dept slice. EP-M1/M2 and RM-1..RM-7 pinned OEM enablement,
+     session-limit, connect-type, source-identity and parser-fault isolation, but a manager exposing
+     only a `RemoteConsole` (no Graphical/Serial/OEM), or one whose standard console block is
+     explicitly `ServiceEnabled:false` / legacy `Enabled:false`, has no dedicated cross-view test
+     proving that BOTH `KvmConsole.fromManager` and `KvmCapability.fromManager` detect, enable and
+     resolve its URI identically (graphical→serial→remote precedence included). Audit first; fix only
+     a genuine divergence via RED→GREEN; no churn. The human-gated WebView/TLS rendering stays gated
+     and is NOT re-split. No code touched. -->
+
+- [ ] EP-M4 RemoteConsole-only + explicit-disable cross-view detection/enablement/URI parity: feed
+      both `KvmConsole.fromManager` and `KvmCapability.fromManager` one matrix of manager bodies
+      (RemoteConsole-only enabled/disabled, Graphical+Remote precedence, explicitly disabled
+      SerialConsole / RemoteConsole, OEM-vs-standard disable) and pin that `supported` /
+      `serviceEnabled`, the resolved launch URI (graphical→serial→remote), aggregated connect types
+      and launch strategy agree across the two views; a BMC-disabled standard block must fail closed
+      on BOTH. Audit first, RED→GREEN only on a genuine divergence, no churn; read-only model work,
+      no transport/TLS change, no dependency.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof; writes limited to `lib/features/kvm/models/**`;
+              `git diff --exit-code -- pubspec.yaml pubspec.lock`; no wire/TLS change.
+
 <!-- rf-ideate split 2026-11-20 17:10 UTC: splits the remaining OEM-extensibility robustness seam
      of the #009 epic (vendor parser hook) into one unblocked, pure-model, dependency-free, TLS-safe
      dept slice. `KvmOemRegistry.parse` calls a registered `KvmOemConsoleParser.parse` with no

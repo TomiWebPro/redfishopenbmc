@@ -5,6 +5,28 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 01:45 UTC: splits the remaining manager-identity seam of the blocked
+     #009/#021 epic into one unblocked, service-level, dependency-free, TLS-safe dept slice.
+     RS-4/5/6/7 pinned member dedup, console↔capability source agreement, per-manager cardinality and
+     hostile manager BODIES, but none pins the manager-ID precedence itself: `KvmService._managerId`
+     keys a manager by body `Id` → `@odata.id` last segment → member-URI last segment (trim/dedup),
+     and that key drives `fetchCapability(managerId)`, the card identity and the downstream session /
+     eviction key. A padded/blank/numeric/bool `Id`, a CRLF/blank `@odata.id`, a missing-all-sources
+     manager or a member URI with a padded/percent-encoded last segment could desync the views under
+     an unstable key. Audit first; RED→GREEN only on a genuine divergence; no churn. No code touched. -->
+
+- [ ] EP-S5 KvmService manager-identity resolution contract (`_managerId` / `_memberUri`) under hostile
+      values: feed one in-temp mockup with a padded / blank / numeric / bool `Id`, a CRLF / whitespace
+      `@odata.id`, a member URI with a padded / percent-encoded last segment, and a manager missing all
+      three sources, and pin that `fetchConsoles()` / `fetchCapabilities()` / `fetchCapability(id)`
+      resolve one stable, trimmed, non-hostile manager id by the documented precedence, agree across
+      both surfaces, and never key a manager under a whitespace/control-bearing id. Audit first,
+      RED→GREEN only on a genuine divergence, no churn; no wire/TLS change, no dependency.
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_service_test.dart && flutter analyze` (0 issues),
+              with RED→GREEN proof; writes limited to `lib/features/kvm/kvm_service.dart` +
+              `test/features/kvm/kvm_service_test.dart`; no wire/TLS change.
+
 <!-- rf-ideate split 2026-11-20 17:10 UTC: splits the remaining controller/state-machine seam of the
      #009/#021 launch-and-selection epic into one unblocked, dependency-free, TLS-safe dept slice.
      `KvmController.load()` drives the gated view's loading/error/primary state and is stubbed in

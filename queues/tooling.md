@@ -5,6 +5,31 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 01:45 UTC: closes a confirmed liveness gap in the "who guards the
+     guards" suite of the blocked #009/#021 epic. `test/tool/guard_suite_liveness_test.dart` (EP-T12)
+     enumerates exactly 8 canonical guard files, but several safety guards landed AFTER EP-T12 and
+     are NOT in that set, so a future deletion / emptying / test-stripping / CI-de-invocation of one
+     of them would stay GREEN. Pure test/tool, dependency-free, never writes `lib/`; distinct from
+     EP-T12 (initial liveness set) and EP-T13 (queue-item schema). No code touched. -->
+
+- [ ] EP-T14 Extend the guard-suite liveness canonical set to the safety guards added after EP-T12:
+      add the established new guards — `test/tool/queue_item_schema_guard_test.dart`,
+      `test/features/kvm/platform/production_optin_construction_guard_test.dart`,
+      `test/features/kvm/platform/cross_layer_authority_agreement_test.dart`,
+      `test/features/kvm/kvm_viewer_flagoff_false_claim_guard_test.dart`,
+      `test/features/kvm/kvm_viewer_disclosure_contract_test.dart`,
+      `test/features/kvm/kvm_providers_test.dart`,
+      `test/features/kvm/kvm_session_audit_invariants_test.dart` — to `canonicalGuardFiles` so each is
+      liveness-checked (missing / emptied / stripped-of-tests / unreachable ⇒ violation), keeping the
+      real-repo invariant green. Verify each added file has live `test(`/`testWidgets(` cases and is
+      reachable from the whole-tree `flutter test --coverage` run before adding it; RED→GREEN proof by
+      emptying a temp-scan guard, no churn.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues),
+              with RED→GREEN proof (missing/emptied/test-less → violation; intact → clean); writes
+              limited to `test/tool/guard_suite_liveness_test.dart`;
+              `git diff --exit-code -- pubspec.yaml pubspec.lock`; no `lib/`, no production TLS change.
+
 <!-- rf-ideate split 2026-11-20 17:10 UTC: makes the dept-split contract itself machine-checkable —
      MULTI_DEPT.md hard rule 4 requires every issue/queue item to carry `Dept:` (single dept) and
      `Verify:` (exact commands), but nothing fails closed when a future `queues/<dept>.md` item drops
