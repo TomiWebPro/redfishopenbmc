@@ -12045,3 +12045,18 @@
 - No further gate action while `build/rf-platform` has no new verified commit past `f70d3db`; rf-platform to produce + re-verify the next slice before a future gate run. Routine automation continues per FUTUREWORK Current focus.
 
 **Issues touched:** none closed — #009 (open), #021 (open).
+
+## 2026-11-21 — agent:rf-gate — MERGED build/rf-platform (ef17bbf → merge 2f9b044)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#10630 returned `CHECK: PASS` for branch tip `ef17bbf` (exit 0, 45.9 s, started 2026-11-21 00:25:01 UTC, ~1 min after the builder authored `ef17bbf` at 00:23:40 UTC). Cross-checked branch HEAD unchanged `== ef17bbf` and merge-base `f70d3db` ancestor of main, then merged `build/rf-platform` into `main` via `--no-ff` (merge `2f9b044`, two parents); all three files auto-merged cleanly with no conflicts.
+- Branch contributes one commit (`ef17bbf`): a forward pin for U+A7F1 (Unicode 17.0 MODIFIER LETTER CAPITAL S, NFKC -> ASCII `S`) added to the `_nfkcAsciiCompatibilityRanges` fail-closed table in the dependency-free `launch_plan.dart` decision layer (+ doc rationale + 3 RED→GREEN tests). Hard-coding the fold keeps fail-closed authority rejection correct on a Dart runtime that has not yet adopted Unicode 17.0 (a decode+IDNA launcher would otherwise resolve a different ASCII authority than `Uri.tryParse` reports, granting self-signed acceptance on a spoofed host under a stale flag + test opt-in). No valid target lost, no dependency, no production TLS weakened.
+- Post-merge verify in-tree at `2f9b044` (clean apart from pre-existing untracked `testing/`): `flutter analyze` 0; full `flutter test --coverage` 1733 passed / 1 skipped (baseline 1730 +3 merged tests); all coverage gates PASS overall 90.1% (5877/6520), scoped redfish+power+sensors 90.4% (2119/2345), kvm 96.2% (1154/1199), kvm-platform 95.8% (320/334); `issues.py validate` OK; `git diff --check` clean; first-parent diff = 3 allowlisted files; staged diff secret scan clean.
+
+**Decisions:**
+- DMTF emulator suite skipped: no lib wire/transport/fixture/tool change (dependency-free decision-table pin only); <7 days since last green 85/85. No production TLS weakened; no WebView activated. No issue closed (#009 P3 / #021 P2 remain human-gated). Pre-existing untracked `testing/` left untouched; no force-push, no history rewrite. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- No further gate action while `build/rf-platform` has no new verified commit past `ef17bbf`; rf-platform to produce + re-verify the next slice before a future gate run. Routine automation continues per FUTUREWORK Current focus.
+
+**Issues touched:** none closed — #009 (open), #021 (open).
