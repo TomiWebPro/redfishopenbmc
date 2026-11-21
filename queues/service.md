@@ -5,6 +5,36 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 22:03 UTC: splits a residual service-level aggregate-agreement seam of
+     the blocked #009/#021 manager walk into one unblocked, dependency-free, TLS-safe dept slice.
+     RS-6/RS-8/RS-9 pin manager-set identity, dedup, collision determinism and lookup-key
+     normalization; EP-S6 pins capability<->primary URI agreement for one multi-block manager; RM-6
+     and the shared `kvmSessionLimit` helper pin session-limit parsing/cross-view agreement at the
+     MODEL layer. Nothing at the SERVICE layer pins that `fetchCapabilities()` / `fetchCapability()`
+     surface the same session-limit and enablement aggregates as the model cards for ONE manager
+     over a boundary matrix (MaxConcurrentSessions encoded as int / integral double / numeric string
+     / negative / blank, contradictory `ServiceEnabled`+`Enabled`, all-disabled). A divergent
+     aggregation pass could report one limit on the service summary and another on the rendered
+     card. AUDIT FIRST: if the shared helper already guarantees agreement end-to-end, record the
+     audit and do NOT manufacture a test; RED→GREEN only on a genuine divergence, never churn.
+     Human-gated WebView/TLS rendering stays gated and is NOT re-split. No code touched. -->
+
+- [ ] RS-10 Service-level session-limit / enablement aggregate agreement over a boundary matrix:
+      over one in-temp multi-block manager mockup (contradictory `ServiceEnabled` / `Enabled` flags,
+      an all-disabled block set, and `MaxConcurrentSessions` encoded as int, integral JSON double,
+      trimmed numeric string, negative and blank), pin that `KvmService.fetchCapabilities()` and
+      `fetchCapability(id)` resolve the SAME winning block's `maxSessions` / enablement as the
+      model-level `KvmConsole` / `KvmCapability` built from the same body, keep every physical
+      manager surfaced, and fail closed (unreported limit, no launchable primary) for out-of-spec
+      limits — all without changing set identity/cardinality or lookup semantics. AUDIT FIRST; fix
+      only a genuine divergence via RED→GREEN service tests, no churn.
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_service_capability_primary_agreement_test.dart test/features/kvm/kvm_session_limit_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof only on a genuine divergence; writes limited to
+              `lib/features/kvm/kvm_service.dart` + service tests under `test/features/kvm/`; emulator
+              85/85 only if `lib/` wire changes; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-21 17:59 UTC: splits a fresh cross-feature seam of the blocked #009/#021
      launch-target epic into one unblocked, service-level, dependency-free, TLS-safe dept slice. EP-S2
      made `KvmService.pickPrimary` select security-first (secure-HTTPS graphical → secure-HTTPS any →

@@ -4,6 +4,38 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 22:03 UTC: splits a residual pure-model classifier-parity seam of the
+     blocked #009/#021 launch-target epic into one unblocked, dependency-free, TLS-safe dept slice.
+     EP-M2 pinned external-client classifier parity at the model surface and RM-9 pinned OEM depth
+     bounds, but `isExternalClientConsoleUri` / `externalClientConsoleProtocol` (the single shared
+     classifier + protocol label in `launch_plan.dart`, owned by rf-platform but consumed by BOTH
+     models) are referenced by only one model-facing suite; nothing here pins that `KvmConsole` and
+     `KvmCapability` delegate to them identically over the FULL external scheme set
+     (vnc/rfb/kvmip/kvm/ssh/telnet/ipmi) under mixed-case schemes, padded/control-bearing URIs and
+     degenerate (`.` / `..`) authorities. A one-sided model edit could badge a console as an
+     external-client target on one card while the other reports no usable target — the #009
+     divergence class. AUDIT FIRST: if both cards are already exhaustively pinned, record the audit
+     and do NOT manufacture a test; RED→GREEN only on a genuine divergence, never churn. Do NOT
+     edit rf-platform's `launch_plan.dart` (request via `_lib-requests.md` if a real gap needs it).
+     Human-gated WebView/TLS rendering stays gated and is NOT re-split. No code touched. -->
+
+- [ ] RM-12 External-client classifier/label parity across both models for the full scheme set:
+      feed one matrix of external-console URIs (`vnc:` / `rfb:` / `kvmip:` / `kvm:` / `ssh:` / `telnet:`
+      / `ipmi:`, uppercase and mixed-case schemes, padded and control/CRLF-bearing values, opaque
+      `vnc:host=…` forms and degenerate `.` / `..` authorities) through `KvmConsole.fromManager`
+      and `KvmCapability.fromManager` and pin that both models delegate to the shared
+      `isExternalClientConsoleUri` / `externalClientConsoleProtocol` classifier: identical
+      `requiresExternalConsoleClient` / `externalClientProtocolLabel` / `canOpenConsole` results,
+      identical protocol-specific external-open guidance, and fail-closed (no copy/open affordance)
+      on control-bearing or degenerate-authority targets. AUDIT FIRST; fix only a genuine divergence
+      via RED→GREEN pure-model tests, no churn. Read-only model work; no wire/transport/TLS change,
+      no dependency, no WebView/protocol import.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart test/features/kvm/kvm_oem_registry_test.dart && flutter analyze`
+              (0 issues), RED→GREEN proof only on a genuine divergence; writes limited to
+              `lib/features/kvm/models/**` + those named test files; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-21 17:59 UTC: splits a residual intersection of the blocked #009/#021
      capability-aggregation epic into one unblocked, pure-model, dependency-free, TLS-safe dept slice.
      RM-8 pins the enabled-block preference tri-state (flag-absent "unknown" / explicit disable /

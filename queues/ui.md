@@ -5,6 +5,36 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 22:03 UTC: splits a residual display-surface agreement seam of the
+     blocked #009/#021 external-client epic into one unblocked, display-only, dependency-free,
+     TLS-safe dept slice. The protocol-specific `kvmExternalClientNoticeFor` copy is single-sourced
+     in `kvm_transport_notice.dart` and pinned at the helper/string level, and EP-U7/EP-U12 pin the
+     shared-notice surfaces and card<->viewer clipboard agreement; nothing pins that the
+     PROTOCOL-SPECIFIC external-client notice and its control-safe URI row are rendered identically
+     (visible == announced, one merged `excludeSemantics` node) across BOTH cards and the viewer
+     when the protocol label is hostile (control/CRLF-bearing) and falls back to the generic notice.
+     A one-sided view edit could show the protocol-specific wording on one card but the generic on
+     another, or split a control-bearing value into a screen-reader label, with each single-surface
+     suite green. AUDIT FIRST: if all surfaces already share the helper correctly, record the audit
+     and do NOT manufacture a test; RED→GREEN only on a genuine divergence, never churn. Human-gated
+     WebView/TLS rendering stays gated and is NOT re-split. No code touched. -->
+
+- [ ] EP-U16 Protocol-specific external-client notice + control-safe URI display agreement across
+      both cards and the viewer: over one manager whose resolved console endpoint needs an external
+      client, pin that the per-console card, the per-manager capability card and the viewer all
+      render the SAME `kvmExternalClientNoticeFor(protocol)` wording and the SAME control-safe URI
+      row — one merged `excludeSemantics` node per surface with visible text == announced label at
+      320/800/1300 px, no overflow — for a canonical protocol label (`VNC/RFB`, `SSH`, `IPMI
+      serial-over-LAN`), a padded/mixed-case label, and a control/CRLF-bearing label that must fall
+      back to the generic notice with no launch affordance and no injection marker. AUDIT FIRST; fix
+      only a genuine divergence via RED→GREEN widget tests, no churn. Display-only; no WebView/
+      protocol import, no URL opened, no dependency, no production TLS weakening.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_capability_card_test.dart test/features/kvm/kvm_webui_hint_external_client_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof + 320 px no-overflow + visible==announced only on a
+              genuine divergence; writes limited to `lib/features/kvm/views/**` + those named test
+              files; no WebView/protocol import, no production TLS weakening; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-21 17:59 UTC: splits a residual display-surface agreement seam of the
      blocked #009/#021 launch-target epic into one unblocked, widget-level, dependency-free, TLS-safe
      dept slice. EP-S7 (18:52) made the capability card's resolved secure-HTTPS URI agree with the

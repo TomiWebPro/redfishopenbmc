@@ -5,6 +5,37 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 22:03 UTC: a FRESH, machine-checkable "who guards the guards"
+     liveness gap in the blocked #009/#021 epic, CONFIRMED by direct audit (not speculative).
+     EP-T19 pinned canonicalGuardFiles to 34 and added epT19AddedGuards; since then EP-M6 added
+     `kvm_oem_uri_shadow_agreement_test.dart` DIRECTLY to canonicalGuardFiles with NO pinned
+     `ep*AddedGuards` set, and three genuine safety guards — `kvm_lifecycle_parity_test.dart`
+     (KVM<->sensors backgrounded-state parity), `kvm_notice_surface_audit_test.dart` (RU-2 merged-
+     Semantics notice-surface audit) and `test/features/kvm/platform/webview_policy_test.dart`
+     (WebView policy invariants) — are live and reachable from verify.yml's whole-tree
+     `flutter test --coverage` yet absent from the canonical set entirely (the liveness test itself
+     is self-referential and stays excluded). So dropping / emptying / test-stripping / CI-de-invoking
+     any of these stays GREEN. Pure test/tool, dependency-free, never writes lib/; distinct from
+     EP-T12/14/15/16/17/18/19. Human-gated WebView/TLS rendering stays gated and is NOT re-split.
+     No code touched. -->
+
+- [ ] EP-T20 Guard-suite liveness: pin the post-EP-T19 safety guards and add a canonical-registry
+      completeness invariant so no designated guard can be silently dropped. Concretely: (a) add a
+      pinned `epT20AddedGuards ⊆ canonicalGuardFiles` set (disjoint from epT14/15/16/17/18/19) covering
+      the guards added/live since EP-T19 — `kvm_oem_uri_shadow_agreement_test.dart` (EP-M6) plus the
+      audited safety guards `kvm_lifecycle_parity_test.dart`, `kvm_notice_surface_audit_test.dart` and
+      `test/features/kvm/platform/webview_policy_test.dart` if each qualifies as a canonical safety
+      guard — with a pinned length, pairwise-disjointness assertions and a pin test; and (b) add a
+      registry-level invariant that fails closed if any designated canonical guard is removed from
+      `canonicalGuardFiles`, so a guard added directly in a future run cannot sit unpinned. Verify
+      each added file has live `test(`/`testWidgets(` cases and is reachable from the whole-tree
+      `flutter test --coverage` before adding; RED→GREEN by emptying / removing a temp-scan guard.
+      Confirmed gap, no churn.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues),
+              with RED→GREEN proof (missing/emptied/test-less/CI-de-invoked → violation; intact → clean);
+              writes limited to `test/tool/guard_suite_liveness_test.dart`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              no lib/, no production TLS change, no dependency, no WebView/protocol import.
 
 <!-- rf-automation 2026-11-21 20:57 UTC: closes a CONFIRMED liveness gap in the "who guards the
      guards" suite of the blocked #009/#021 epic (same pattern as EP-T14/T15/T16/T17/T18). EP-T18 pinned
