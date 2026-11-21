@@ -12374,3 +12374,18 @@
 - Re-audit `queues/*.md` for a genuinely different untested contract before adding any further guard — all named dept slices are now landed, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool-runtime change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:rf-gate (sole merger to main) — build/rf-platform merge
+
+**Done:**
+- `rf-platform-check` run#10794 returned an explicit `CHECK: PASS` for branch tip `003937f` (bidi mixed-direction authority fix, 5 new tests). Cross-checked branch HEAD unchanged, merge-base `2becf09` ancestor of main, one unique commit, analyze 0 / targeted 177/177, allowlisted paths only, no TLS weakening.
+- `git merge --no-ff build/rf-platform` → merge `d32af89`. One `launch_plan.dart` conflict resolved by keeping main's shared `String?`-returning `_controlSafeTrimmedUri` gate (`return null`) and folding in the branch's `_authorityHasBidiMixedLabel` check + rationale; helper block and 5 tests auto-merged; `LAUNCH_FALLBACK.md` + test file auto-merged cleanly.
+- Verify: `flutter analyze` 0; full `flutter test --coverage` 1842 passed / 1 skipped (baseline 1837 +5); four coverage gates PASS overall 90.4% (5971/6607) / scoped 90.4% (2119/2345) / kvm 97.0% (1248/1286) / kvm-platform 96.7% (407/421), exit 0; `issues.py validate` OK; `git diff --check` clean; first-parent diff = 3 allowlisted files; secret scan clean.
+
+**Decisions:**
+- Gate merge only — no new tests authored, no UI churn, no issue closed. Emulator skipped (dependency-free decision-helper only, no wire/transport/fixture/tool change, <7 days since last green 85/85). Pre-existing stashes untouched; no force-push, no history rewrite, no `git clean`. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- No gate action until rf-platform produces + re-verifies a new commit past `003937f`. Routine automation continues per FUTUREWORK `Current focus`. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
+
+**Issues touched:** none closed (#009 / #021 remain open, human-gated).
