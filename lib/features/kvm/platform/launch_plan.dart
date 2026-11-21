@@ -31,10 +31,11 @@ class KvmConsoleLaunchPlan {
   final KvmConsoleRenderRoute route;
 
   /// The trimmed URI a launcher may open or the user may copy, or `null` when
-  /// there is no usable target. A value made solely of Unicode `Separator` (Z)
-  /// / `Other` (C) code points (whitespace, controls and invisible format
-  /// characters such as zero-width space) is "no usable target" and yields
-  /// `null`, never an invisible string handed to a launcher/copy action.
+  /// there is no usable target. A value made solely of invisible Unicode code
+  /// points — `Separator` (Z) / `Other` (C) plus the `Default_Ignorable`
+  /// property (zero-width space, variation selectors, combining grapheme
+  /// joiner, Hangul fillers, ...) — is "no usable target" and yields `null`,
+  /// never an invisible string handed to a launcher/copy action.
   final String? targetUri;
 
   /// Whether a self-signed certificate may be accepted for this launch.
@@ -2515,24 +2516,39 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   return true;
 }
 
-/// Matches a string consisting entirely of Unicode `Separator` (Z) / `Other`
-/// (C) code points — an "invisible"/blank value that is not a usable target.
-/// Used to fail closed for invisible format characters (e.g. zero-width space,
-/// joiner/non-joiner) that [String.trim] does not strip.
-final RegExp _allInvisibleChars = RegExp(r'^[\p{C}\p{Z}]+$', unicode: true);
+/// Matches a string consisting entirely of "invisible" code points — a blank
+/// value that is not a usable target. This is the Unicode `Separator` (Z) /
+/// `Other` (C) categories PLUS the `Default_Ignorable_Code_Point` property.
+///
+/// The C/Z rule alone misses invisible code points in other general categories:
+/// variation selectors (Mn, U+FE00..U+FE0F / U+E0100..U+E01EF / U+180B..U+180D),
+/// COMBINING GRAPHEME JOINER (U+034F) and the IDNA-ignored Hangul fillers (Lo,
+/// U+115F/U+1160/U+3164/U+FFA0) are all invisible, are not stripped by
+/// [String.trim] (they are not Zs), and are not in C/Z. A URI made solely of
+/// such code points would otherwise survive as a non-null copy target and a
+/// launcher/copy action would surface an invisible string. `Default_Ignorable`
+/// is the principled Unicode property for exactly this class; no real BMC
+/// console URI is made solely of these, so failing closed loses no valid target.
+final RegExp _allInvisibleChars = RegExp(
+  r'^[\p{C}\p{Z}\p{Default_Ignorable_Code_Point}]+$',
+  unicode: true,
+);
 
 /// Returns `true` when [uri] has no usable target and must fail closed to a
 /// `null` copy target.
 ///
 /// This is the "blank URI" contract: `null`, empty/whitespace-only, or a string
-/// made entirely of Unicode `Separator` (Z) / `Other` (C) code points. Dart's
+/// made entirely of invisible Unicode code points ([_allInvisibleChars]:
+/// `Separator` (Z) / `Other` (C) plus the `Default_Ignorable` property). Dart's
 /// [String.trim] removes Unicode whitespace (the `Zs` separators, including
-/// NBSP and BOM) but leaves other invisible `Other`/format characters intact —
-/// e.g. zero-width space (U+200B), zero-width non-joiner/joiner (U+200C/U+200D)
-/// and the word joiner (U+2060). Without this check such a value survives as a
-/// non-null [KvmConsoleLaunchPlan.targetUri], so a launcher/copy action would
-/// surface an invisible string. Real BMC console URIs are visible ASCII, so
-/// treating an all-invisible value as "no usable target" loses no valid target.
+/// NBSP and BOM) but leaves other invisible characters intact — e.g. zero-width
+/// space (U+200B), zero-width non-joiner/joiner (U+200C/U+200D), the word joiner
+/// (U+2060), variation selectors (U+FE00..U+FE0F), COMBINING GRAPHEME JOINER
+/// (U+034F) and the Hangul fillers (U+115F/U+3164). Without this check such a
+/// value survives as a non-null [KvmConsoleLaunchPlan.targetUri], so a
+/// launcher/copy action would surface an invisible string. Real BMC console
+/// URIs are visible ASCII, so treating an all-invisible value as "no usable
+/// target" loses no valid target.
 bool _hasNoUsableTarget(String? uri) {
   if (uri == null) return true;
   final String trimmed = uri.trim();
