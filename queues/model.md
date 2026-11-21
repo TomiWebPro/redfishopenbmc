@@ -48,6 +48,10 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
      AUTHORITATIVE RULE DELIBERATELY (do NOT fold into a guard-only run, do NOT do unattended). Read-only
      model work; no transport/wire/TLS change, no dependency, no WebView/protocol import. -->
 
+- [x] EP-M6 OEM-console URI blank/non-string `Uri` shadow agreement across both views (LANDED 2026-11-21, agent:redfish-automation, FEATURE #009/#021, test/tool-only): added `test/features/kvm/kvm_oem_uri_shadow_agreement_test.dart` (8 tests) pinning that the shared `kvmOemConsoleUri` resolver prefers a usable `Uri` and never lets a blank/empty/non-string `Uri` shadow a valid `ConnectUri`, with per-console↔capability cross-view parity; registered the guard in `canonicalGuardFiles`. Audit-first: the inverse (blank `ConnectUri` cannot shadow a valid `Uri`) was already pinned in `kvm_oem_uri_test.dart`, but the blank-`Uri` direction was not — genuine unguarded seam, no churn. Real-file RED: moved `Uri` return above blank-skip → 5/8 failed; restored byte-clean (SHA `0bea1a6f…`), 8/8 GREEN.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_oem_uri_shadow_agreement_test.dart && flutter analyze` (0 issues), RED→GREEN proof on the blank-`Uri` case; writes limited to `test/features/kvm/**` + `test/tool/guard_suite_liveness_test.dart`; no `lib/`/wire/TLS change, no WebView/protocol import.
+
 - [ ] RM-11 Mixed-regime enablement tri-state agreement (unknown secure block + explicitly-enabled
       insecure block): decide the authoritative rule for the probe-confirmed divergence above and make
       `KvmCapability.resolveLaunchUri` / `connectTypes` / `maxSessions` agree with

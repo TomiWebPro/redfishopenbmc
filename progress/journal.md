@@ -12797,3 +12797,18 @@
 - Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-M6)
+
+**Done:**
+- FEATURE (test/tool-only): EP-M6 OEM-console URI "shadow" agreement guard. Added `test/features/kvm/kvm_oem_uri_shadow_agreement_test.dart` (8 tests) pinning that the shared `kvmOemConsoleUri` resolver (used by both `KvmConsole.fromManager` and `KvmCapability.resolveLaunchUri`) prefers a USABLE `Uri` and never lets a blank/empty/non-string `Uri` shadow a valid `ConnectUri` — plus case-insensitive keys, trimmed values, same-block enablement source, and per-console↔capability cross-view parity on the byte-identical secure-HTTPS target. Registered the new guard in `canonicalGuardFiles` of `test/tool/guard_suite_liveness_test.dart` (liveness-checked). Real-file RED: moved the `Uri` return above the blank-skip in `_uriFromMap` → 5/8 failed (`+3 -5`); source restored byte-clean (SHA `0bea1a6f…`, empty lib diff), backup shredded → 8/8 GREEN.
+- Verify: analyze 0; targeted OEM/model 323/323; liveness 18/18; full `flutter test --concurrency=4` 1985 passed / 1 skipped (baseline 1977 +8); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Genuinely unguarded seam in a shared helper both KVM views depend on — regression guard, not churn. Pure test/tool, no `lib/`, no wire/TLS/fixture change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. UI skipped (§5): no widget surface changed; no manufactured churn.
+
+**Next:**
+- Push the single commit; leave the four pre-existing stashes untouched. EP-S8 / RM-11 / EP-M4 / EP-P3 are audit-first — RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 are deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

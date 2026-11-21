@@ -112,6 +112,8 @@ const List<String> canonicalGuardFiles = <String>[
   'test/features/kvm/kvm_capability_security_tristate_agreement_test.dart',
   'test/features/kvm/platform/navigation_launch_route_agreement_test.dart',
   'test/features/kvm/kvm_three_surface_launch_target_agreement_test.dart',
+  // EP-M6 extension: OEM-console URI shadow agreement across both views.
+  'test/features/kvm/kvm_oem_uri_shadow_agreement_test.dart',
 ];
 
 /// The subset of [canonicalGuardFiles] added by EP-T14. Pinned separately so a
