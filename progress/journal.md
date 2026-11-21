@@ -12246,3 +12246,18 @@
 - Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard (EP-P4 human-gated, EP-U1/EP-U2/EP-T2 human/blocked, EP-S2/EP-M4/EP-S5/EP-S4/RM-1/RS-5/RM-2/RS-2 audited) — never churn; this guard is a candidate for the EP-T14 liveness set. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 05:24 UTC — agent:rf-gate — build/rf-platform merge (check#10728)
+
+**Done:**
+- Sole merger: read `rf-platform-check` state via scheduler → latest run#10728 `CHECK: PASS` (exit 0, SUCCESS, 50.8 s) for `build/rf-platform @ f21a540`, matching the live branch HEAD. Merge-base `789650a` (in main via merge `54eed66`); exactly one unique commit (`f21a540`). Merged into main with `--no-ff` → merge commit `f5c05db` (parents `476f22d`, `f21a540`), no conflicts.
+- Change: `f21a540` forward-pins the IDNA-disallowed Ideographic Description Characters fail-closed set in the dependency-free `launch_plan.dart` from Unicode-16 `U+2FF0..U+2FFB` to the full Unicode-17 block `U+2FF0..U+2FFF` (four additions U+2FFC..U+2FFF: SURROUND FROM RIGHT / LOWER RIGHT, HORIZONTAL REFLECTION, ROTATION), plus module/helper docs and 5 RED→GREEN tests. Parser-differential host-spoofing hardening (browser rejects via IDNA, `Uri.tryParse` does not); runtime-version-independent; authority-scoped; no valid target lost.
+- Verify: `flutter analyze` 0; full `flutter test --coverage` 1792 passed / 1 skipped; all four coverage gates PASS overall 90.2% / scoped 90.4% / kvm 96.4% / kvm-platform 96.2%; `issues.py validate` OK; first-parent `git diff --check` clean.
+
+**Decisions:**
+- Merged only because the branch's latest verdict was an explicit PASS for the exact HEAD being merged. No force-push, no history rewrite. Allowlisted paths only (`lib/features/kvm/platform/**` + `test/**`); no wire/transport/fixture/tool change, no dependency bump, no production TLS weakening. DMTF emulator suite skipped (no lib-wire/fixture/tool change; <7 days since last green 85/85), consistent with prior identical gate merges. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- No gate action until rf-platform produces and re-verifies a new commit past `f21a540`. Routine automation continues per FUTUREWORK Current focus (re-audit `queues/*.md` for a genuinely untested contract, never churn). Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended; never weaken production TLS.
+
+**Issues touched:** none (merge of platform hardening tracked in FUTUREWORK.md + progress/; #009/#021 stay open, human-gated).
