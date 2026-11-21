@@ -1137,10 +1137,13 @@ bool _isMathematicalAlphanumericSymbol(int rune) =>
 /// the fullwidth block, [_isNfkcAsciiLetterOrDigit], the mathematical block or
 /// [_nfkcFractionSlashCodePoints]).
 ///
-/// Generated from Unicode 16.0.0 data: 427 code points in 92 ranges. Each
-/// member NFKC-folds to plain ASCII, so a browser/WebView applying IDNA/NFKC
-/// resolves a DIFFERENT ASCII authority than [Uri.tryParse] reports (which
-/// keeps the percent-encoded escape verbatim in the host). Representative,
+/// Generated from Unicode 16.0.0 data: 427 code points in 92 ranges, plus a
+/// forward pin for U+A7F1 (assigned in Unicode 17.0, where NFKC folds it to
+/// ASCII `S`) so fail-closed never depends on the Dart runtime's Unicode data —
+/// 428 code points in the same 92 ranges. Each member NFKC-folds to plain
+/// ASCII, so a browser/WebView applying IDNA/NFKC resolves a DIFFERENT ASCII
+/// authority than [Uri.tryParse] reports (which keeps the percent-encoded
+/// escape verbatim in the host). Representative,
 /// Node-verified differentials: U+1FBF7 SEGMENTED DIGIT SEVEN ->
 /// `bmc7.example`, U+3251 CIRCLED NUMBER TWENTY ONE -> `bmc21.example`,
 /// U+FB01 LATIN SMALL LIGATURE FI -> `bmcfi.example`, U+02B0 MODIFIER LETTER
@@ -1166,7 +1169,8 @@ const List<int> _nfkcAsciiCompatibilityRanges = <int>[
   0x3371, 0x337A, 0x3380, 0x3381, 0x3383, 0x338B, 0x338E, 0x3394,
   0x3396, 0x339A, 0x339C, 0x33A6, 0x33A9, 0x33AD, 0x33B0, 0x33B1,
   0x33B3, 0x33B5, 0x33B7, 0x33BB, 0x33BD, 0x33BF, 0x33C3, 0x33C5,
-  0x33C8, 0x33D7, 0x33D9, 0x33DD, 0x33FF, 0x33FF, 0xA7F2, 0xA7F4,
+  0x33C8, 0x33D7, 0x33D9, 0x33DD, 0x33FF, 0x33FF,
+  0xA7F1, 0xA7F4, // U+A7F1 (Unicode 17.0 MODIFIER LETTER CAPITAL S) NFKC -> 'S'
   0xFB00, 0xFB06, 0xFB29, 0xFB29, 0xFE10, 0xFE10, 0xFE14, 0xFE15,
   0xFE33, 0xFE38, 0xFE4D, 0xFE50, 0xFE54, 0xFE54, 0xFE57, 0xFE57,
   0xFE59, 0xFE5C, 0xFE60, 0xFE66, 0xFE69, 0xFE6A, 0x107A5, 0x107A5,

@@ -3689,4 +3689,75 @@ void main() {
     });
   },
 );
+
+  group('planConsoleLaunch — Unicode-17 NFKC ASCII-fold additions fail closed', () {
+    // U+A7F1 was UNASSIGNED in Unicode 16.0.0 (the data basis of the
+    // NFKC-to-ASCII authority table) and is assigned in Unicode 17.0 as a
+    // modifier letter whose NFKC folds to plain ASCII `S`. A launcher applying
+    // IDNA/NFKC with Unicode 17 data therefore resolves
+    //   https://bmc%EA%9F%B1.example/console  ->  bmcS.example
+    // — a DIFFERENT authority than Uri.tryParse reports, which keeps the
+    // percent-encoded escape verbatim in a non-empty HTTPS host. The explicit
+    // table pin keeps this fail-closed independent of the Dart runtime's
+    // Unicode version: on Unicode <=16 the encoded C/Z rule also rejects it
+    // (unassigned => category Cn), but on Unicode 17 only the table entry does.
+    const List<String> unicode17AsciiFoldUris = <String>[
+      'https://bmc%EA%9F%B1.example/console', // U+A7F1 -> ASCII 'S'
+      'https://bmc%ea%9f%b1.example/console', // lowercase hex
+      'https://u%EA%9F%B1@bmc.example/console', // U+A7F1 in userinfo
+    ];
+
+    test('a Unicode-17 NFKC ASCII-fold authority never reaches in-app', () {
+      for (final String uri in unicode17AsciiFoldUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+      }
+    });
+
+    test('the forward pin also holds under the production default', () {
+      for (final String uri in unicode17AsciiFoldUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('ordinary encoded UTF-8 host bytes stay launchable (no over-rejection)',
+        () {
+      const List<String> safeUris = <String>[
+        'https://bmc%C3%A9.example/console', // e-acute (Letter)
+        'https://bmc%E2%82%AC.example/console', // euro (Symbol)
+      ];
+      for (final String uri in safeUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+  },
+);
+
 }
