@@ -4624,4 +4624,121 @@ void main() {
   },
 );
 
+  group(
+      'planConsoleLaunch — IDNA-disallowed object-replacement-character authority fails closed',
+      () {
+    // U+FFFC OBJECT REPLACEMENT CHARACTER (category So, NFKC-stable,
+    // permanently assigned) is DISALLOWED by UTS-46 IDNA just like U+FFFD: it
+    // marks an unrepresentable object, so a browser / WebView (WHATWG URL +
+    // IDNA) REJECTS a host that contains it (verified against Node 24:
+    // `domainToASCII` returns the empty string for every authority below).
+    // `Uri.tryParse` instead keeps the escape encoded and reports an opaque,
+    // non-empty HTTPS host, so a purely syntactic re-check calls it "secure".
+    // It evades every earlier authority rule: category So is not Separator/
+    // Other (encoded C/Z misses it), not a combining mark, does not NFKC-fold
+    // to ASCII (the compatibility confusable rules miss it), and — crucially —
+    // a VALID `%EF%BF%BC` sequence decodes cleanly, so the malformed-UTF-8
+    // rule and the U+FFFD-only replacement-character rule both miss it. Under
+    // a stale secure flag + test opt-in that parser differential could grant
+    // in-app rendering and self-signed acceptance on a host the browser cannot
+    // navigate. No real BMC host uses a replacement character, so each fails
+    // closed with no valid target lost.
+    const List<String> objectReplacementCharacterUris = <String>[
+      'https://bmc%EF%BF%BC.example/console', // in a host label
+      'https://%EF%BF%BC.example/console', // as the first label
+      'https://bmc.example%EF%BF%BC/console', // trailing the host
+      'https://u%EF%BF%BC@bmc.example/console', // in userinfo
+      'https://bmc%EF%BF%BC.example:8443/console', // with an explicit port
+    ];
+
+    test('an IDNA-disallowed object-replacement-character authority never reaches in-app',
+        () {
+      for (final String uri in objectReplacementCharacterUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+      }
+    });
+
+    test('an IDNA-disallowed object-replacement-character authority stays off under production',
+        () {
+      for (final String uri in objectReplacementCharacterUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('lowercase hex escapes are rejected too', () {
+      for (final String uri in <String>[
+        'https://bmc%ef%bf%bc.example/console',
+        'https://u%ef%bf%bc@bmc.example/console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('the same escapes in the path/query stay launchable (authority-scoped)',
+        () {
+      for (final String uri in <String>[
+        'https://bmc.example/%EF%BF%BC/console',
+        'https://bmc.example/console?q=%EF%BF%BC',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+
+    test('U+FFFD is still rejected alongside U+FFFC', () {
+      for (final String uri in <String>[
+        'https://bmc%EF%BF%BD.example/console',
+        'https://bmc%EF%BF%BC.example/console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  },
+);
+
 }
