@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 187 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (200 across the platform
+consume; today it locks the fallback behaviour with 188 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (201 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -25,6 +25,7 @@ suite).
 | flag off + plaintext HTTP | `copyOnly` | original URI (for copy) | `false` |
 | flag off + no URI | `copyOnly` | `null` | `false` |
 | flag off + blank URI / inconsistent "secure" flag | `copyOnly` (fail closed) | `null` for blank, raw value otherwise | `false` |
+| flag off + all-invisible URI (ZWSP/ZWJ/ZWNJ, controls) | `copyOnly` (fail closed) | `null` (no usable target) | `false` |
 | test opt-in + HTTPS HTML5 enabled | `inAppWebView` | trimmed HTTPS URI | `true` (test-only) |
 | opt-in but strict TLS | `inAppWebView` | trimmed HTTPS URI | `false` |
 | opt-in + plaintext / disabled / non-HTML5 | never in-app | original URI | `false` |
@@ -594,9 +595,15 @@ Invariants, enforced by tests:
    **Blank-URI target normalization:** a whitespace-only URI is "no usable
    target" (`KvmConsoleLaunchPlan.targetUri`) — the copy-only fallback must
    surface `null`, never a whitespace string, under any policy (including the
-   test-only opt-in). A non-blank URI that merely fails the secure check keeps
-   its raw copy target, so the flag-off external-browser + copy path still
-   works unchanged.
+   test-only opt-in). This was generalized to any value made solely of Unicode
+   `Separator` (Z) / `Other` (C) code points: Dart's `String.trim()` strips `Zs`
+   whitespace (NBSP/BOM) but leaves invisible format characters such as zero-
+   width space/joiner/non-joiner (U+200B/U+200D/U+200C) intact, which previously
+   survived as a non-null copy target — a launcher/copy action would surface an
+   invisible string. `_hasNoUsableTarget` now treats all-invisible values as
+   "no usable target" so they fail closed to `null` (RED/GREEN-locked). A non-
+   blank URI that merely fails the secure check keeps its raw copy target, so
+   the flag-off external-browser + copy path still works unchanged.
 
 ## What remains gated (not done here)
 

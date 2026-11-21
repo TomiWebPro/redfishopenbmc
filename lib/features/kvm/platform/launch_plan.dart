@@ -31,7 +31,10 @@ class KvmConsoleLaunchPlan {
   final KvmConsoleRenderRoute route;
 
   /// The trimmed URI a launcher may open or the user may copy, or `null` when
-  /// there is no usable target.
+  /// there is no usable target. A value made solely of Unicode `Separator` (Z)
+  /// / `Other` (C) code points (whitespace, controls and invisible format
+  /// characters such as zero-width space) is "no usable target" and yields
+  /// `null`, never an invisible string handed to a launcher/copy action.
   final String? targetUri;
 
   /// Whether a self-signed certificate may be accepted for this launch.
@@ -2512,6 +2515,31 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   return true;
 }
 
+/// Matches a string consisting entirely of Unicode `Separator` (Z) / `Other`
+/// (C) code points — an "invisible"/blank value that is not a usable target.
+/// Used to fail closed for invisible format characters (e.g. zero-width space,
+/// joiner/non-joiner) that [String.trim] does not strip.
+final RegExp _allInvisibleChars = RegExp(r'^[\p{C}\p{Z}]+$', unicode: true);
+
+/// Returns `true` when [uri] has no usable target and must fail closed to a
+/// `null` copy target.
+///
+/// This is the "blank URI" contract: `null`, empty/whitespace-only, or a string
+/// made entirely of Unicode `Separator` (Z) / `Other` (C) code points. Dart's
+/// [String.trim] removes Unicode whitespace (the `Zs` separators, including
+/// NBSP and BOM) but leaves other invisible `Other`/format characters intact —
+/// e.g. zero-width space (U+200B), zero-width non-joiner/joiner (U+200C/U+200D)
+/// and the word joiner (U+2060). Without this check such a value survives as a
+/// non-null [KvmConsoleLaunchPlan.targetUri], so a launcher/copy action would
+/// surface an invisible string. Real BMC console URIs are visible ASCII, so
+/// treating an all-invisible value as "no usable target" loses no valid target.
+bool _hasNoUsableTarget(String? uri) {
+  if (uri == null) return true;
+  final String trimmed = uri.trim();
+  if (trimmed.isEmpty) return true;
+  return _allInvisibleChars.hasMatch(trimmed);
+}
+
 /// Builds the concrete launch plan from the RP-1 policy and a console's public
 /// signals.
 ///
@@ -2531,10 +2559,11 @@ bool _uriHasSecureHttpsTarget(String? uri) {
 ///  3. Self-signed acceptance is granted only for an in-app route under the
 ///     test-only opt-in on HTTPS — never for a fallback.
 ///  4. A missing/blank URI fails closed to copy-only and yields a `null`
-///     target, so a launcher/copy action is never handed a whitespace string
-///     (a blank URI is "no usable target"); the URI is trimmed for every other
-///     route. A non-blank URI that merely fails the secure check keeps its raw
-///     value on the copy-only fallback.
+///     target, so a launcher/copy action is never handed a whitespace or
+///     otherwise invisible string (a blank URI is "no usable target"; see
+///     [_hasNoUsableTarget]); the URI is trimmed for every other route. A
+///     non-blank URI that merely fails the secure check keeps its raw value on
+///     the copy-only fallback.
 KvmConsoleLaunchPlan planConsoleLaunch({
   required KvmWebViewPolicy policy,
   required String? uri,
@@ -2555,8 +2584,10 @@ KvmConsoleLaunchPlan planConsoleLaunch({
     isEnabled: isEnabled,
   );
 
-  final String? trimmed =
-      (uri == null || uri.trim().isEmpty) ? null : uri.trim();
+  // "No usable target" covers not just null/whitespace but any string made
+  // solely of invisible Separator/Other code points (ZWSP, ZWJ, ...) that
+  // String.trim() leaves intact — see [_hasNoUsableTarget].
+  final String? trimmed = _hasNoUsableTarget(uri) ? null : uri!.trim();
 
   // Fail closed: a launchable route with no usable URI degrades to copy-only.
   final KvmConsoleRenderRoute safeRoute =
