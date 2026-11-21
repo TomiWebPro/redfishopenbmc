@@ -2638,6 +2638,90 @@ void main() {
     });
   });
 
+  group(
+      'planConsoleLaunch — defense in depth: bare hex-prefix host rejection',
+      () {
+    test('a bare 0x/0X host fails closed with a stale flag', () {
+      // A WHATWG/browser URL parser applies its IPv4 "ends in a number" number
+      // parser to the label "0x"/"0X": it strips the hex prefix, parses the
+      // (empty) remaining hex digits as 0 and resolves the host to 0.0.0.0.
+      // Dart's Uri.tryParse instead reports a non-empty opaque host "0x", so a
+      // purely syntactic secure re-check calls it "secure" — an authority
+      // differential. Under a stale secure flag + test opt-in that differential
+      // could grant in-app rendering and self-signed acceptance on a host the
+      // browser resolves to the unspecified address. The existing hex-IP rule
+      // required label.length > 2, so a bare prefix slipped through.
+      for (final String uri in <String>[
+        'https://0x/console', // browser -> 0.0.0.0
+        'https://0X/console', // uppercase prefix -> 0.0.0.0
+        'https://0x./console', // absolute-FQDN spelling -> 0.0.0.0
+        'https://0X./console',
+        'https://u@0x/console', // userinfo-bearing authority
+        'https://0x:443/console', // with an explicit port
+        'https://bmc.0x/console', // mixed host with a bare hex final label
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true, // stale/inconsistent signal
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('a bare hex-prefix host never reaches in-app under a strict opt-in', () {
+      // Even without granting self-signed acceptance, a host a launcher resolves
+      // to a different address must not be rendered in-app (no host confusion).
+      for (final String uri in <String>[
+        'https://0x/console',
+        'https://0X/console',
+        'https://0x./console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: const KvmWebViewPolicy(enabled: true),
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('ordinary hex-looking DNS names stay launchable (no over-rejection)',
+        () {
+      // Only a label that is exactly a bare hex prefix is rejected. Real DNS
+      // names — including ones that merely start with a digit or contain hex
+      // letters — a browser resolves to the same authority and stay launchable.
+      for (final String uri in <String>[
+        'https://0a.example/console',
+        'https://hex.example/console',
+        'https://x0.example/console',
+        'https://bmc0x.example/console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.route, KvmConsoleRenderRoute.externalBrowser, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+  },
+);
+
   group('planConsoleLaunch — defense in depth: empty DNS-label rejection', () {
     test('a host with an empty DNS label fails closed with a stale flag', () {
       // A leading dot (`.bmc.example`), consecutive dots (`bmc..example`) or a

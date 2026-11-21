@@ -402,7 +402,12 @@ Invariants, enforced by tests:
    non-empty HTTPS host. A launcher can therefore contact a DIFFERENT address
    than the authority Uri reported. Under a stale secure flag + test opt-in
    that SSRF-style parser differential could grant in-app rendering and
-   self-signed acceptance on a mismatched/spoofed host. The same numeric
+   self-signed acceptance on a mismatched/spoofed host. A **bare hex prefix**
+   (`0x` / `0X`, including its single-trailing-dot form `0x.`) fails closed too:
+   the WHATWG IPv4 number parser strips the prefix and parses the empty hex
+   digits as 0, resolving the host to `0.0.0.0`, while `Uri.tryParse` reports the
+   opaque host `0x` — an authority differential the earlier `length > 2` hex
+   rule let through. The same numeric
    spellings with a single trailing dot (`2130706433.`, `0x7f000001.`) are
    rejected too: the WHATWG "ends in a number" check skips one trailing dot
    and still resolves them as IP literals, while `Uri.tryParse` reports an
@@ -531,7 +536,8 @@ Invariants, enforced by tests:
    rejection + malformed-UTF-8 authority rejection + encoded ASCII space
    rejection + encoded unreserved-ASCII rejection + encoded sub-delimiter
    rejection + non-canonical numeric-host
-   rejection (incl. trailing-dot absolute-FQDN numeric spellings) + mixed
+   rejection (incl. trailing-dot absolute-FQDN numeric spellings and the bare
+   `0x`/`0X` hex prefix) + bare hex-prefix host rejection + mixed
    ends-in-number host rejection + empty
    DNS-label rejection + out-of-range port rejection + signed and overflow
    port rejection + IPv4-mapped/IPvFuture IPv6 rejection + IPv4-embedded IPv6
