@@ -12705,3 +12705,19 @@
 - Push the single run commit; leave pre-existing stashes untouched. RM-11 is a deliberate authoritative-rule decision — do NOT fix unattended; audit remaining dept heads EP-S8 / EP-U15 / EP-P11 before adding any further guard (RED→GREEN only on a genuine divergence, never churn); cheap DOCS anchor gate only. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-21 — agent:rf-gate — MERGED build/rf-platform (check#10999 PASS, ab903c2)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#10999 returned `SUCCESS` / `CHECK: PASS` for branch head `ab903c2` (cross-checked unchanged; not already merged). Merged `build/rf-platform` into `main` with `--no-ff` → merge `518d01f` (parents `bc914a8` / `ab903c2`), clean auto-merge, no conflicts.
+- Branch change: RP-1 validation-evidence checklist gates no-local-file/content-provider WebView access (data-theft/RCE vector) — `WEBVIEW_TLS_MATRIX.md` doc acceptance box + `validation_evidence_checklist_guard_test.dart` RED/GREEN guard. Doc+test only, no production Dart or TLS change, allowlisted paths, no dependency.
+- Post-merge verify: `flutter analyze` 0; full `flutter test --coverage` 1957 passed / 1 skipped; all four coverage gates PASS overall 90.5% (6059/6692) / scoped 90.4% (2119/2345) / kvm 97.4% (1336/1371) / kvm-platform 97.0% (460/474); `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; first-parent diff = 2 allowlisted files; secret scan clean.
+
+**Decisions:**
+- Merged on an explicit PASS verdict for the exact checked head only (never merge un-verified / FAIL). Production TLS not weakened; no WebView activation, no human approval granted.
+- DMTF 85-test emulator skipped: doc+test-only change, no lib-wire/fixture/tool-runtime change, <7 days since last green 85/85. No issue closed (#009 P3 / #021 P2 stay human-gated on platform WebView + BMC TLS validation).
+
+**Next:**
+- Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
