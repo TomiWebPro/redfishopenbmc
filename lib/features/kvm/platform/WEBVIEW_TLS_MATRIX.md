@@ -193,6 +193,23 @@ flag stays off for that target.
       page content are inspected for `Content-Security-Policy` frame rules and
       mixed-content (HTTPS page loading HTTP subresources); a console that is
       blocked by CSP framing or mixed-content must not be silently downgraded.
+* [ ] **No referrer / URL-token leakage (strict Referrer-Policy)** — the embedded
+      WebView must not leak the console URI — which may embed session tokens,
+      credentials or BMC identity in its path, query or userinfo — to any other
+      origin: no `Referer` header carrying the console URL may be sent when the
+      attacker-influenced console page loads third-party subresources or performs
+      a navigation. The console must be loaded under a strict referrer policy
+      (`Referrer-Policy: no-referrer`, or at minimum `same-origin`), set through
+      the response header / `<meta>` and the WebView's referrer-policy setting
+      (Android `WebSettings.setReferrerPolicy`, WKWebView configuration), so no
+      cross-origin request receives the console URL. Console content is served
+      by the BMC and is therefore attacker-influenced (a compromised/spoofed BMC,
+      or script running in the page): a leaked `Referer` can hand a session token
+      or BMC endpoint to an attacker-controlled third party — a credential /
+      data-leak surface wholly independent of TLS, hostname, origin, native-bridge,
+      file-access, device-permission and data-at-rest checks. Verified per target
+      (inspect the referrer-policy configuration and observed request headers)
+      before the flag is flipped.
 * [ ] **Fullscreen** — the console can enter/exit fullscreen without leaving the
       app or losing the secure context.
 * [ ] **Keyboard / pointer input forwarding** — keyboard and mouse input are
