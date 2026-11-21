@@ -12231,3 +12231,18 @@
 - Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard (EP-P4 human-gated, EP-U1/EP-U2/EP-T2 human/blocked, EP-S2/EP-M4/EP-S5/RM-2/RS-2 audited) — never churn; a future run could add this guard to the EP-T14 liveness set. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 05:00 UTC — agent:redfish-automation — #009/#021 (RS-5-closeout manager-source precedence guard)
+
+**Done:**
+- Landed `test/features/kvm/kvm_manager_source_precedence_test.dart` (13 tests, test-only): pins the documented 3-level precedence in `kvmManagerSourceUri` — usable caller override wins; a blank / non-string override must not shadow the body's `@odata.id` fallback; both converge on the derived `/redfish/v1/Managers/<id>` path — through both the pure helper and `KvmCapability.fromManager`, plus cross-view agreement on a distinct body id. The override→fallback hand-off with a body id distinct from the derived path was untested (the lone "non-string override ignored" test used a body id equal to the derived path), and blank-string overrides were untested entirely. Audit found no live divergence — regression guard, not churn.
+- RED proof: dropped the `fallback` term in `kvmManagerSourceUri` → 6 tests failed (`+7 -6`, source identity regressed to `/redfish/v1/Managers/BMC` instead of the body-provided id); source restored byte-clean (SHA `3ade1b2156ad79c7…` unchanged, empty lib diff), 600-perm backup shredded → 13/13 GREEN.
+- Verify: targeted 13/13; `dart format` clean; `flutter analyze` 0; full `flutter test` 1787 passed / 1 skipped (baseline 1774 +13); issues validate OK; diff --check clean; deps unchanged; lib diff empty. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Test-only: no product `lib/` change, wire/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. No issue closed (#009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation). Pre-existing stashes (`rf-gate-premerge-1795230500`, `automation-preflight-1793045959`) preserved untouched; no force-push, no history rewrite, no stash dropped. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard (EP-P4 human-gated, EP-U1/EP-U2/EP-T2 human/blocked, EP-S2/EP-M4/EP-S5/EP-S4/RM-1/RS-5/RM-2/RS-2 audited) — never churn; this guard is a candidate for the EP-T14 liveness set. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
