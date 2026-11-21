@@ -37,7 +37,13 @@ Invariants, enforced by tests:
    launch-URI + status + copy viewer changes.
 2. **Self-signed acceptance is gated on the final route being in-app** AND the
    test-only opt-in AND HTTPS. External-browser and copy-only fallbacks can
-   never set it — production TLS is never weakened (issue #021).
+   never set it — production TLS is never weakened (issue #021). At the policy
+   layer, `KvmWebViewPolicy.mayAcceptSelfSigned` also requires the full
+   `permitsInAppRendering` preconditions (enabled + HTML5 + HTTPS), so a
+   disabled or non-HTML5 console can never gain self-signed acceptance even if
+   a future consumer calls that boolean directly without routing through
+   `planConsoleLaunch` (defense in depth; RED/GREEN-locked in
+   `webview_policy_test.dart`).
 3. **Fail closed.** A blank/missing URI degrades to `copyOnly` with a `null`
    target — a whitespace-only string is "no usable target" and is never handed
    to a launcher/copy action, under any policy (including the test-only opt-in).

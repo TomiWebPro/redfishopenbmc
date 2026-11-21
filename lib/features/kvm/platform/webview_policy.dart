@@ -78,10 +78,29 @@ class KvmWebViewPolicy {
   /// Whether a self-signed certificate may be accepted for this launch.
   ///
   /// True only when the flag is on, the mode is the test-only opt-in, AND the
-  /// target is HTTPS. Strict mode, the default, and plaintext HTTP always
-  /// return false — production TLS is never weakened.
-  bool mayAcceptSelfSigned({required bool hasSecureUri}) =>
-      enabled && acceptsSelfSigned && hasSecureUri;
+  /// console may actually be rendered in-app: an enabled, HTML5 console with
+  /// a TLS-encrypted (HTTPS) URI. Strict mode, the default, plaintext HTTP,
+  /// a disabled console and a non-HTML5 console always return false —
+  /// production TLS is never weakened.
+  ///
+  /// Requiring the full [permitsInAppRendering] preconditions here (rather than
+  /// just `hasSecureUri`) keeps this public boolean safe to call directly: a
+  /// future WebView consumer that checks `mayAcceptSelfSigned` without first
+  /// routing through [resolveRenderRoute] can never grant self-signed
+  /// acceptance for a console that is not actually going to be rendered
+  /// in-app. This is defense in depth on top of `planConsoleLaunch`, which
+  /// already gates acceptance on the final route being the in-app WebView.
+  bool mayAcceptSelfSigned({
+    required bool hasSecureUri,
+    required bool isHtml5,
+    required bool isEnabled,
+  }) =>
+      acceptsSelfSigned &&
+      permitsInAppRendering(
+        hasSecureUri: hasSecureUri,
+        isHtml5: isHtml5,
+        isEnabled: isEnabled,
+      );
 }
 
 /// Where a console is routed for rendering, given the active policy.

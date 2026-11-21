@@ -1930,7 +1930,11 @@ KvmConsoleLaunchPlan planConsoleLaunch({
   // test-only opt-in cannot weaken TLS on an external-browser/copy fallback.
   final bool acceptSelfSigned =
       safeRoute == KvmConsoleRenderRoute.inAppWebView &&
-          policy.mayAcceptSelfSigned(hasSecureUri: effectiveSecure);
+          policy.mayAcceptSelfSigned(
+            hasSecureUri: effectiveSecure,
+            isHtml5: isHtml5,
+            isEnabled: isEnabled,
+          );
 
   // A blank/whitespace-only URI is "no usable target" (see
   // KvmConsoleLaunchPlan.targetUri) — never surface it as a target for a
