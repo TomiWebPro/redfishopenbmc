@@ -12200,3 +12200,19 @@
 - Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard (EP-P4 human-gated, EP-U1/EP-U2/EP-T2 human/blocked, EP-M1/RM-2/RS-2 audited) — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 04:12 UTC — agent:rf-gate — MERGE build/rf-platform (789650a)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` latest run#10707 SUCCESS (exit 0, status SUCCESS, 52.2 s, started 2026-11-21 04:12:14 UTC — after builder `rf-platform` run#10705 produced branch HEAD `789650a` at 04:11:10 UTC; no newer in-flight run invalidating it). Branch had exactly 1 unique commit past the last-merged tip `6ea8c7a` (merge-base, already in main via merge `427cea0`) → precondition met → `git merge --no-ff build/rf-platform` created merge `54eed66` (two parents `6e48c89` + `789650a`; first-parent diff = 3 allowlisted files).
+- Branch contributes `789650a`: UTS-46 IDNA-disallowed Ideographic Description Characters (U+2FF0..U+2FFB) fail-closed set in the dependency-free `launch_plan.dart` decision layer. WHATWG/browser+IDNA rejects the block while `Uri.tryParse` reports a non-empty HTTPS host — a parser-differential host-spoofing vector that under a stale secure flag + test opt-in could grant in-app self-signed acceptance on an un-navigable authority. All block code points fail closed (either hex case), authority-scoped (path/query escapes and IDNA-valid euro/emoji hosts stay launchable), + doc rationale + 5 RED→GREEN tests; no dependency, no production TLS weakened.
+- One merge conflict in `launch_plan.dart`: branch authored the call against the old bool `_uriHasSecureHttpsTarget` (`return false`), main now uses the shared `String?`-returning `_controlSafeTrimmedUri` gate. Resolved by keeping main's shared-gate `return null` and folding in the new `_authorityHasIdnaDisallowedIdeographicDescription` check identically to the sibling Modifier-Letter check; `LAUNCH_FALLBACK.md` + `launch_plan_test.dart` auto-merged with all 5 new tests intact.
+- Post-merge verify in-tree at `54eed66` (clean; two pre-existing stashes untouched): `flutter analyze` 0; targeted `launch_plan_test.dart` 173/173; full `flutter test --coverage` 1771 passed / 1 skipped (baseline 1766 +5); all coverage gates PASS overall 90.2% (5913/6556) / scoped 90.4% (2119/2345) / kvm 96.4% (1190/1235) / kvm-platform 96.2% (356/370), gate exit 0; `issues.py validate` OK; `git diff --check` clean; first-parent diff = 3 allowlisted files; staged-diff secret scan clean.
+
+**Decisions:**
+- DMTF emulator suite skipped: no lib wire/transport/fixture/tool change (dependency-free launch decision helper only); <7 days since last green 85/85. No production TLS weakened; no WebView activated. No issue closed (#009 P3 / #021 P2 remain human-gated). No force-push, no history rewrite, no stash dropped. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- No further gate action while `build/rf-platform` has no new verified commit past `789650a`; rf-platform to produce + re-verify the next slice before a future gate run. Routine automation continues per FUTUREWORK Current focus.
+
+**Issues touched:** none closed — #009 (open), #021 (open).
