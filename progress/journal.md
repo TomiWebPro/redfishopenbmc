@@ -12389,3 +12389,20 @@
 - No gate action until rf-platform produces + re-verifies a new commit past `003937f`. Routine automation continues per FUTUREWORK `Current focus`. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
 
 **Issues touched:** none closed (#009 / #021 remain open, human-gated).
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (in-list reload-indicator merged-Semantics guard)
+
+**Done:**
+- Re-audited `queues/*.md` first: all named dept slices landed/audited (RU-2, EP-S1, EP-P3, RM-2/RM-1/EP-M2/EP-M4, EP-S2 all covered) — no churn. Found the one genuinely untested branch: `KvmView.build`'s in-list `if (ui.loading)` (populated `ListView`), distinct from the already-pinned empty-list early return.
+- Added `test/features/kvm/kvm_view_reload_indicator_test.dart` (4 tests): over a seeded non-empty console list with `loading: true`, pin one merged `excludeSemantics` 'Loading KVM consoles' node with the spinner inside it, header present (proves the populated-ListView branch), no overflow at 320/800/1300 px; plus an idle control (`loading: false` → console card, no loading node).
+- RED proof: mutated the in-list `label:` to 'Refreshing consoles' → 3 width tests failed (`+1 -3`, "Found 0 widgets with the label"); restored byte-clean (SHA `b58bf2f1…` unchanged, empty lib diff, backup shredded) → 4/4 GREEN.
+- Verify: `dart format` clean (added `const` for one `prefer_const_constructors` info); `flutter analyze` 0; targeted 4/4; full `flutter test` 1846 passed / 1 skipped (baseline 1842 +4); `issues.py validate` OK; `git diff --check` clean; deps unchanged; lib diff empty; secret scan clean.
+
+**Decisions:**
+- Test-only regression guard at a genuinely untested rendering branch; no live divergence, no behavior change, TLS-safe. Per §5 no manufactured UI churn — the improvement pins an existing a11y contract, not new decoration. Emulator skipped (test-only, <7 days since last green 85/85). Pre-existing stashes untouched; no force-push, no history rewrite, no file deletion. Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; do NOT do unattended, never weaken production TLS.
+
+**Next:**
+- Re-audit `queues/*.md` for a genuinely different untested contract before adding any further guard — all named slices are landed, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool-runtime change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
