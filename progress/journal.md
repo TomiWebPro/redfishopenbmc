@@ -12060,3 +12060,18 @@
 - No further gate action while `build/rf-platform` has no new verified commit past `ef17bbf`; rf-platform to produce + re-verify the next slice before a future gate run. Routine automation continues per FUTUREWORK Current focus.
 
 **Issues touched:** none closed — #009 (open), #021 (open).
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-U4-closeout session audit invariants)
+
+**Done:**
+- Landed `test/features/kvm/kvm_session_audit_invariants_test.dart` (4 tests, test-only) pinning three previously untested contracts of the pure-UI `KvmSessionController`: bounded audit log retains the NEWEST events; manager id is trimmed as the session/eviction key (no phantom session or spurious eviction from a padded BMC id, clean log ids); `backgrounded` flag survives a reconnect to a different manager.
+- THREE independent RED proofs against the real product source (A `_bounded` keeps-oldest → `+3 -1`; B drop `.trim()` → `+2 -2`; C hardcode `backgrounded: false` → `+3 -1`); source restored byte-clean after each (SHA `631889f0…` unchanged), 600-permission backup shredded. 0 probe artifacts, empty lib diff.
+- Verify: targeted 4/4; `dart format --output=none --set-exit-if-changed` clean; `flutter analyze` 0; full `flutter test` 1737 passed / 1 skipped (baseline 1733 +4); `issues.py validate` OK; `git diff --check` clean; deps unchanged. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Test-only: no product `lib/`, wire/transport/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. No issue closed (both #009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation). Pre-existing untracked `testing/` + `stash@{0}` preserved untouched; no force-push, no history rewrite. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Re-audit EP-S2 / EP-T4 / EP-P4 for a genuinely different untested contract before adding any guard — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
