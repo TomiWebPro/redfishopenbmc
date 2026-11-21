@@ -12138,3 +12138,18 @@
 - No further gate action while `build/rf-platform` has no new verified commit past `cfc75f2`; rf-platform to produce + re-verify the next slice before a future gate run. Routine automation continues per FUTUREWORK Current focus.
 
 **Issues touched:** none closed — #009 (open), #021 (open).
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-U11 cross-surface card rendering guard)
+
+**Done:**
+- Landed EP-U11 (last unblocked slice of the 2026-11-21 01:45 rf-ideate split): added `test/features/kvm/kvm_card_cross_surface_agreement_test.dart` (6 widget tests = 2 manager shapes x 320/800/1300 px) that builds both KVM operator cards in ONE real `KvmView` tree (only upstream providers overridden) straight from the same manager body. Enabled RemoteConsole-only: capability card Supported/Enabled + "KVM supported" + no disabled helper, peer card exactly one "Open console" + matching Connect URI, both resolve the same endpoint. BMC-disabled console with URI: capability card no Supported chip + disabled helper + "KVM not supported", peer card no launch affordance + shared enable-on-BMC status (visible == announced).
+- Audited the seam first: model-level RemoteConsole/disable agreement is already pinned in `kvm_capability_test.dart`; the RENDERED-card agreement was not — regression guard at a genuine untested seam, not churn. RED proof: replaced `_ConsoleCard`'s `if (console.canOpenConsole)` with `if (false)` in `kvm_view.dart` → all 3 enabled-RemoteConsole cases failed (`+3 -3`); restored byte-clean (SHA `b58bf2f153a7ea49` unchanged, empty lib diff), 600-perm backup shredded → 6/6 GREEN.
+- Verify: targeted 6/6; `dart format --output=none --set-exit-if-changed` clean; `flutter analyze` 0; full `flutter test` 1754 passed / 1 skipped (baseline 1748 +6); `issues.py validate` OK; `git diff --check` clean; deps unchanged; lib diff empty. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Test-only: no product `lib/`, wire/transport/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. No issue closed (both #009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation). Pre-existing untracked `testing/` + `stash@{0}` preserved untouched; no force-push, no history rewrite. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- All 4 fresh rf-ideate slices resolved (EP-T14/EP-U11 landed, EP-M4/EP-S5 audited) — re-audit `queues/*.md` for a genuinely different untested contract before adding any guard (EP-P4 human-gated), never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
