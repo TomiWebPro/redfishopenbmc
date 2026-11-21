@@ -12153,3 +12153,35 @@
 - All 4 fresh rf-ideate slices resolved (EP-T14/EP-U11 landed, EP-M4/EP-S5 audited) — re-audit `queues/*.md` for a genuinely different untested contract before adding any guard (EP-P4 human-gated), never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-S5 manager-identity hostile-Id guard)
+
+**Done:**
+- Landed `test/features/kvm/kvm_service_manager_identity_test.dart` (2 tests, test-only) over one in-temp 5-manager mockup pinning the full `KvmService._managerId` precedence (`Id` → body `@odata.id` last segment → member-URI last segment, all trimmed) under hostile `Id` shapes the suite never covered: numeric/bool `Id` ignored → @odata.id fallback; blank-string `Id` ignored; numeric `Id` + blank @odata.id → member-URI segment; canonical string `Id` wins over a differing @odata.id segment. Both KVM views must key the same stable, trimmed, control-free id set (no raw '42'/'true'/'false'/'   ' key), and `fetchCapability(id)` resolves each.
+- Re-audited `queues/*.md` first: EP-S5 was marked "audited" on the 01:55 run but this hostile-`Id` precedence slice was genuinely untested; audit found no live divergence — regression guard, not churn. RED proof: stringify any non-null `Id` in `_managerId` → both tests failed (`+0 -2`, raw keys leaked); restored byte-clean (SHA `bfbe6546374f…` unchanged, empty lib diff), 600-perm backup shredded → 2/2 GREEN.
+- Verify: targeted 2/2; `dart format --output=none --set-exit-if-changed` clean; `flutter analyze` 0; full `flutter test` 1761 passed / 1 skipped (pre-change baseline 1759 +2; concurrent PASS-verified rf-gate merge +5 mid-run); `issues.py validate` OK; `git diff --check` clean; deps unchanged; lib diff empty. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Test-only: no product `lib/`, wire/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. No issue closed (#009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation). Pre-existing untracked `testing/` + `stash@{0}` preserved untouched; no force-push, no history rewrite. The concurrent rf-gate agent stashed this run's then-untracked WIP (new test file + the pre-existing `testing/` harness artifacts) into `stash@{0}: rf-gate-premerge-1795230500` before its merge; this run recreated the test file byte-for-byte, verified it, and left both `stash@{0}` and `stash@{1}: automation-preflight-1793045959` intact (no stash dropped; the `testing/` artifacts remain safely preserved in `stash@{0}`). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard (EP-P4 human-gated, EP-U1/EP-U2/EP-T2 human/blocked, EP-M1/RM-1/RM-2/RS-2 audited) — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:rf-gate — MERGED build/rf-platform (6ea8c7a → merge 427cea0)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#10682 returned `CHECK: PASS` for branch tip `6ea8c7a` (exit 0, status SUCCESS, 61.2 s, started 2026-11-21 03:05:31 UTC, ~1 min after the builder authored `6ea8c7a` at 03:04:10 UTC). Cross-checked branch HEAD unchanged `== 6ea8c7a` and merge-base `cfc75f2` ancestor of main, then merged via `--no-ff` (merge `427cea0`, two parents `eef18da` + `6ea8c7a`).
+- Untracked WIP from the crashed 03:08 FEATURE run (`test/features/kvm/kvm_service_manager_identity_test.dart` + `testing/` harness artifacts) was hash-recorded and preserved in `stash@{0}: rf-gate-premerge-1795230500` before the merge so it could not pollute gate verification or be swept into a commit; no `git clean`, no file deletion.
+- Branch contributes one commit (`6ea8c7a`): a UTS-46 IDNA-disallowed Modifier-Letter (category `Lm`) authority fail-closed set in the dependency-free `launch_plan.dart`. Ten NFKC-stable `Lm` code points (U+0640, U+06E5/U+06E6, U+07F4/U+07F5/U+07FA, U+081A/U+0824/U+0828, U+1E94B) that IDNA disallows and a browser/WebView rejects outright, while `Uri.tryParse` reports a non-empty HTTPS host — a parser-differential host-spoofing vector that under a stale secure flag + test opt-in could reach in-app self-signed acceptance on an un-navigable host. All ten fail closed (either hex case), authority-scoped (path/query escapes and valid non-ASCII IDNA hosts stay launchable); no valid target lost, no dependency, no production TLS weakened. + doc rationale + 5 RED→GREEN tests.
+- One merge conflict in `launch_plan.dart`: the branch folded its check into the old bool `_uriHasSecureHttpsTarget`, but main has since refactored to the shared `String?`-returning `_controlSafeTrimmedUri` gate. Resolved by keeping main's shared-gate structure and folding the new `_authorityHasIdnaDisallowedModifierLetter` check in as `return null`, matching the sibling checks. `LAUNCH_FALLBACK.md` + `launch_plan_test.dart` auto-merged cleanly with all 5 new tests preserved.
+- Post-merge verify in-tree at `427cea0` (clean): `flutter analyze` 0; targeted `launch_plan_test.dart` 168/168; full `flutter test --coverage` 1759 passed / 1 skipped (tracked baseline 1754 +5 merged tests); all coverage gates PASS overall 90.2% (5896/6539), scoped 90.4% (2119/2345), kvm 96.3% (1173/1218), kvm-platform 96.0% (339/353), gate exit 0; `issues.py validate` OK; `git diff --check` clean; first-parent diff = 3 allowlisted files; staged-diff secret scan clean.
+
+**Decisions:**
+- DMTF emulator suite skipped: no lib wire/transport/fixture/tool change (dependency-free launch decision helper only); <7 days since last green 85/85. No production TLS weakened; no WebView activated. No issue closed (#009 P3 / #021 P2 remain human-gated). WIP preserved in a stash (not dropped); no force-push, no history rewrite. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- No further gate action while `build/rf-platform` has no new verified commit past `6ea8c7a`; rf-platform to produce + re-verify the next slice before a future gate run. The stashed WIP belongs to the build agent — it should recover it (`git stash pop`/`apply stash@{0}`) on its next run and finish/commit that FEATURE slice. Routine automation continues per FUTUREWORK Current focus.
+
+**Issues touched:** none closed — #009 (open), #021 (open).
