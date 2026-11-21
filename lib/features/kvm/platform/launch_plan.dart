@@ -1691,6 +1691,89 @@ bool _authorityHasIdnaDisallowedNfkcStable(String uri) {
   return false;
 }
 
+/// Inclusive `[start, end]` range pairs of code points that UTS-46 IDNA
+/// disallows in a hostname while [Uri.tryParse] keeps them percent-encoded in a
+/// non-empty HTTPS host. Every member is rejected by a browser / WebView
+/// (verified against Node 24's WHATWG URL / IDNA parsing:
+/// `new URL('https://bmc<cp>.example').hostname` THROWS), yet it evades every
+/// earlier authority rule: the set is Unicode category P (punctuation), N
+/// (number) or S (symbol) — never Separator/Other or a combining mark — and is
+/// either NFKC-stable or (U+FDFA..U+FDFC) NFKC-folds only to non-ASCII text
+/// plus an ASCII space, so it is not an NFKC-to-ASCII confusable either. The
+/// families are Hebrew/Arabic/Syriac/NKo/Samaritan/Mandaic punctuation, digits
+/// and signs, the Arabic Presentation Forms symbols, and the historical-script
+/// numbers of the supplementary planes (427 code points in 49 ranges). The
+/// table is an explicit forward pin: fail-closed never depends on the Dart
+/// runtime's Unicode-data version. Ranges are sorted for a short linear walk
+/// that bails out early.
+const List<int> _idnaDisallowedStableSymbolRanges = <int>[
+  0x5BE, 0x5BE, 0x5C0, 0x5C0, 0x5C3, 0x5C3,
+  0x5C6, 0x5C6, 0x5F3, 0x5F4, 0x608, 0x608,
+  0x60B, 0x60B, 0x60D, 0x60D, 0x61B, 0x61B,
+  0x61E, 0x61F, 0x66D, 0x66D, 0x6D4, 0x6D4,
+  0x6FD, 0x6FE, 0x700, 0x70D, 0x7C0, 0x7C9,
+  0x7FE, 0x7FF, 0x830, 0x83E, 0x85E, 0x85E,
+  0xFBB2, 0xFBC1, 0xFDFA, 0xFDFC, 0x10857, 0x1085F,
+  0x10877, 0x1087F, 0x108A7, 0x108AF, 0x108FB, 0x108FF,
+  0x10916, 0x1091B, 0x1093F, 0x1093F, 0x109BC, 0x109BD,
+  0x109C0, 0x109CF, 0x109D2, 0x109FF, 0x10A40, 0x10A48,
+  0x10A50, 0x10A58, 0x10A7D, 0x10A7F, 0x10A9D, 0x10A9F,
+  0x10AC8, 0x10AC8, 0x10AEB, 0x10AF6, 0x10B58, 0x10B5F,
+  0x10B78, 0x10B7F, 0x10B99, 0x10B9C, 0x10BA9, 0x10BAF,
+  0x10CFA, 0x10CFF, 0x10EAD, 0x10EAD, 0x10F1D, 0x10F26,
+  0x10F51, 0x10F59, 0x10FC5, 0x10FCB, 0x1E8C7, 0x1E8CF,
+  0x1E950, 0x1E959, 0x1E95E, 0x1E95F, 0x1EC71, 0x1ECB4,
+  0x1ED01, 0x1ED3D,
+];
+
+/// Returns `true` when [rune] is a browser-rejected, UTS-46 IDNA-disallowed
+/// stable symbol code point (see [_idnaDisallowedStableSymbolRanges]).
+bool _isIdnaDisallowedStableSymbol(int rune) {
+  for (int i = 0; i < _idnaDisallowedStableSymbolRanges.length; i += 2) {
+    if (rune < _idnaDisallowedStableSymbolRanges[i]) return false; // sorted
+    if (rune <= _idnaDisallowedStableSymbolRanges[i + 1]) return true;
+  }
+  return false;
+}
+
+/// Returns `true` when the raw authority carries a percent-encoded, browser-
+/// rejected IDNA-disallowed stable symbol code point that [Uri.tryParse] still
+/// reports as a non-empty HTTPS host (see [_idnaDisallowedStableSymbolRanges]).
+///
+/// The scan decodes percent-encoded host bytes as UTF-8 in the correct byte
+/// context and is scoped to the authority: the same escape in the path/query,
+/// where it cannot affect which host is contacted, stays launchable. Malformed
+/// UTF-8 bytes are left to [_authorityHasMalformedUtf8] (which also fails
+/// closed). IDNA-valid non-ASCII hosts stay launchable — no valid target lost.
+bool _authorityHasIdnaDisallowedStableSymbol(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  final List<int> bytes = <int>[];
+  for (int i = 0; i < authority.length; i++) {
+    final String char = authority[i];
+    if (char == '%' && i + 2 < authority.length) {
+      final int? hi = _hexDigit(authority[i + 1]);
+      final int? lo = _hexDigit(authority[i + 2]);
+      if (hi != null && lo != null) {
+        bytes.add((hi << 4) | lo);
+        i += 2;
+        continue;
+      }
+    }
+    bytes.add(char.codeUnitAt(0));
+  }
+  final String decoded;
+  try {
+    decoded = utf8.decode(bytes);
+  } on FormatException {
+    return false;
+  }
+  for (final int rune in decoded.runes) {
+    if (_isIdnaDisallowedStableSymbol(rune)) return true;
+  }
+  return false;
+}
+
 /// Inclusive `[start, end]` range pairs of Unicode letters whose bidi class is
 /// R or AL (right-to-left), derived empirically from Node 24's WHATWG URL /
 /// IDNA processing: a letter is included when `domainToASCII` accepts it as a
@@ -2492,6 +2575,20 @@ String? _controlSafeTrimmedUri(String? uri) {
   // Folded into this shared gate (returning `null`, like the other checks) so
   // every HTTP(S) classifier and the launch-plan target reject it identically.
   if (_authorityHasIdnaDisallowedNfkcStable(trimmed)) return null;
+  // Reject a percent-encoded, browser-rejected IDNA-disallowed punctuation /
+  // number / symbol code point (Hebrew/Arabic/Syriac/NKo/Samaritan signs,
+  // Arabic presentation-form symbols, historical-script numbers, ...): these
+  // are NFKC-stable (or fold only to non-ASCII), are not C/Z/marks and are not
+  // modifier letters/IDCs/replacement/bidi letters, so every earlier rule
+  // misses them, yet a browser/WebView rejects the host outright while
+  // Uri.tryParse reports a non-empty HTTPS host. A stale secure flag + test
+  // opt-in could otherwise grant in-app self-signed acceptance on a host the
+  // browser cannot navigate. The explicit table is forward-pinned, independent
+  // of the runtime's Unicode version. IDNA-valid non-ASCII hosts and path/query
+  // escapes stay launchable — no valid target lost. Folded into this shared
+  // gate (returning `null`, like the other checks) so every HTTP(S) classifier
+  // and the launch-plan target reject it identically.
+  if (_authorityHasIdnaDisallowedStableSymbol(trimmed)) return null;
   // Reject a percent-encoded IDNA bidi mixed-direction label (an RTL script
   // letter mixed with LTR text or with leading European digits): a browser /
   // WebView rejects such a host under UTS-46 IDNA's Bidi rule while
