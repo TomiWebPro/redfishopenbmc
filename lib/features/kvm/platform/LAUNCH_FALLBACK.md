@@ -571,7 +571,15 @@ Invariants, enforced by tests:
    leading European digits — the 2,464-letter RTL set derived from Node 24
    WHATWG URL/IDNA behaviour — is browser-rejected under UTS-46/RFC 5893 while
    `Uri.tryParse` reports a non-empty HTTPS host, so it fails closed; pure-RTL
-   labels, RTL+digit labels and LTR non-ASCII text stay launchable).
+   labels, RTL+digit labels and LTR non-ASCII text stay launchable) + NFKC-stable
+   IDNA-disallowed authority rejection (the Arabic-Indic digits and their
+   decimal/thousands separators U+0660..U+066C, the CJK-Strokes ideographic
+   description character U+31EF — outside the U+2FF0..U+2FFF block — Hanifi
+   Rohingya digits U+10D30..U+10D39 and Rumi numerals U+10E60..U+10E7E are
+   NFKC-stable, evade the C/Z/mark/compatibility/modifier-letter/IDC/
+   replacement/bidi rules, yet are browser-rejected while `Uri.tryParse` reports
+   a non-empty HTTPS host, so they fail closed; IDNA-valid non-ASCII hosts and
+   path/query escapes stay launchable).
    **Blank-URI target normalization:** a whitespace-only URI is "no usable
    target" (`KvmConsoleLaunchPlan.targetUri`) — the copy-only fallback must
    surface `null`, never a whitespace string, under any policy (including the
