@@ -317,6 +317,20 @@ Invariants, enforced by tests:
    authority, while non-ASCII that NFKC-folds to non-ASCII (e-acute, euro,
    emoji), punycode hosts and the same escapes in the path/query stay launchable
    — no valid target lost.
+   **Unicode-version-independent forward pin:** a Unicode 16.0.0 -> 17.0
+   completeness audit (Node 17.0 NFKC vs Python 16.0.0 data, cross-checked
+   against every rule in the authority re-validation) found exactly one code
+   point that NFKC-folds to ASCII yet was uncovered by the 16.0.0 table: U+A7F1
+   (unassigned in 16.0.0, assigned in 17.0 as a modifier letter with NFKC -> `S`).
+   On a Unicode 16 Dart runtime it already fails closed only incidentally,
+   because unassigned code points are category Cn and the encoded C/Z rule
+   rejects them; if the runtime's Unicode data is upgraded to 17.0 (where it is
+   a letter) that incidental cover disappears. U+A7F1 is therefore pinned
+   explicitly in the compatibility range table (428 code points in the same 92
+   ranges), so the fail-closed decision never depends on the Dart runtime's
+   Unicode version. No observable behavior change on the current runtime; a
+   characterization test in `test/features/kvm/platform/launch_plan_test.dart`
+   locks the invariant.
    **NFKC vulgar-fraction confusable rejection:** a percent-encoded "vulgar
    fraction" (Unicode category `No`) NFKC-normalises to a decimal digit +
    U+2044 FRACTION SLASH + digit(s) (e.g. U+00BD `1/2` -> `1` + U+2044 + `2`),
@@ -539,7 +553,10 @@ Invariants, enforced by tests:
    delimiter confusable rather than being one, so they evade both the direct
    delimiter set and the complete NFKC-to-ASCII table yet a decode+IDNA launcher
    resolves a different authority; every escape form fails closed, delimiter-
-   free UTF-8 such as e-acute/euro/emoji stays launchable)).
+   free UTF-8 such as e-acute/euro/emoji stays launchable) + Unicode-17 NFKC
+   ASCII-fold forward pin (U+A7F1, assigned after the Unicode 16.0.0 table
+   basis, pinned so fail-closed is independent of the Dart runtime's Unicode
+   version)).
    **Blank-URI target normalization:** a whitespace-only URI is "no usable
    target" (`KvmConsoleLaunchPlan.targetUri`) — the copy-only fallback must
    surface `null`, never a whitespace string, under any policy (including the
