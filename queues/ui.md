@@ -5,6 +5,32 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 17:59 UTC: splits a residual display-surface agreement seam of the
+     blocked #009/#021 launch-target epic into one unblocked, widget-level, dependency-free, TLS-safe
+     dept slice. EP-S7 (18:52) made the capability card's resolved secure-HTTPS URI agree with the
+     `pickPrimary`-selected "Primary" console, and EP-U14 pins the viewer's OWN four renderings of one
+     `launchPlan.targetUri`; but nothing pins that the THREE operator-visible launch surfaces for ONE
+     manager — the "Primary" badge's target on the console card, the capability card's resolved URI,
+     and the viewer's "Open console" target — all carry the SAME security-first secure-HTTPS target.
+     A one-sided card/badge edit could advertise one endpoint while the viewer opens another, with every
+     single-surface test GREEN — the exact #009 divergence class. Display-only; audit first, RED→GREEN
+     only on a genuine divergence, no churn. Human-gated WebView/TLS rendering stays gated and is NOT
+     re-split. No code touched. -->
+
+- [ ] EP-U15 Three-surface launch-target agreement (Primary badge ↔ capability card ↔ viewer) for one
+      manager: over a multi-block manager (disabled Graphical + serial SSH + secure-HTTPS Remote, plus a
+      padded/hostile-authority variant) built once into `KvmConsole` / `KvmCapability`, pin that the
+      console card's "Primary" badge target, the capability card's resolved URI row and the viewer's
+      "Open console" target are all byte-identical, control/injection-free, and the secure-HTTPS endpoint
+      — never a raw CRLF/NUL/control-bearing value, and each affordance present iff a safe target exists.
+      Every merged a11y node keeps visible text == announced label at 320/800/1300 px with no overflow.
+      Display-only; no WebView/protocol import, no URL opened, no dependency, no production TLS weakening.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_capability_card_test.dart test/features/kvm/kvm_viewer_uri_surface_agreement_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof + 320 px no-overflow + visible==announced only on a genuine
+              divergence; writes limited to `lib/features/kvm/views/**`; no WebView/protocol import, no
+              production TLS weakening; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-21 14:10 UTC: splits a residual viewer copy-surface seam of the blocked
      #009/#021 epic into one unblocked, display-only, dependency-free, TLS-safe dept slice. EP-U8
      pins the open-affordance gate, EP-U12 pins that the CARD's "Copy connect info" and the VIEWER's

@@ -4,6 +4,34 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 17:59 UTC: splits a residual intersection of the blocked #009/#021
+     capability-aggregation epic into one unblocked, pure-model, dependency-free, TLS-safe dept slice.
+     RM-8 pins the enabled-block preference tri-state (flag-absent "unknown" / explicit disable /
+     contradictory `ServiceEnabled`+`Enabled`) for URI/types/session aggregates, and EP-S7 (18:52) adds a
+     security-first secure-HTTPS pass to `_standardConnectUri` so the capability summary agrees with
+     `pickPrimary`. But nothing pins that the NEW security-first pass still honours the RM-8 preference
+     contract — i.e. that a disabled or explicitly-disabled block never wins the secure pass, that the
+     all-disabled fallback is unchanged, and that `KvmConsole.fromManager` agrees for the same manager.
+     A one-sided edit to the security pass could resurrect the EP-S7 divergence only for disabled/contradictory
+     blocks while every single-helper test stayed GREEN. Audit first; RED→GREEN only on a genuine
+     divergence; no churn. Human-gated WebView/TLS rendering stays gated and is NOT re-split. No code
+     touched. -->
+
+- [ ] RM-10 Security-first secure-URI preference × enabled-block tri-state agreement in the capability
+      aggregate: feed `KvmCapability.fromManager` one matrix of manager bodies mixing flag-absent
+      ("unknown"), explicitly-enabled and explicitly-disabled Graphical / Serial / Remote blocks with
+      secure-HTTPS, plaintext-HTTP and serial-SSH URIs (plus contradictory `ServiceEnabled` / `Enabled`
+      flags), and pin that the EP-S7 security-first pass in `_standardConnectUri` never selects a
+      disabled or explicitly-disabled block, keeps the RM-8 all-disabled fallback byte-for-byte, and that
+      `resolveLaunchUri`, `connectTypes` and `maxSessions` still prefer the same winning block as
+      `KvmConsole.fromManager` for each body. Read-only model work; no transport/wire/TLS change, no
+      dependency, no WebView/protocol import.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_capability_test.dart test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_primary_uri_agreement_test.dart && flutter analyze`
+              (0 issues), RED→GREEN proof only on a genuine divergence; writes limited to
+              `lib/features/kvm/models/**` + those named test files; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              no wire/TLS change, no WebView/protocol import.
+
 <!-- rf-ideate split 2026-11-21 14:10 UTC: splits a residual hostile-payload normalization seam of the
      blocked #009/#021 capability aggregation into one unblocked, pure-model, dependency-free,
      TLS-safe dept slice. Per-console `ConnectTypesSupported` normalization (trim / drop-empty /

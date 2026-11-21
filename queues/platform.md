@@ -6,6 +6,33 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 17:59 UTC: splits the freshly-landed RP-1 in-app navigation-confinement
+     contract of the blocked #009/#021 WebView closeout into one unblocked, test-only, dependency-free,
+     TLS-safe dept slice. RP-1 added `allowsInAppNavigation` (secure-HTTPS + same-origin + no-userinfo
+     navigation gate) to `launch_plan.dart` (merged 17:31 / 18:34); it is pinned only in isolation by
+     `launch_plan_test.dart`, and EP-P9's cross-layer agreement matrix predates it (no userinfo /
+     cross-origin / cross-port navigation cases). Nothing pins that the navigation gate FAILS CLOSED on
+     the same hostile matrix that `planConsoleLaunch` routes to copyOnly/externalBrowser, so a one-sided
+     edit could let the trusted console frame navigate to a foreign origin/port or a credential-bearing
+     URL while both single-gate suites stay GREEN. Audit first; RED→GREEN only on a genuine divergence;
+     no churn. The human-gated WebView adapter / TLS validation (EP-P1/P2/P4) stays human-gated and is
+     NOT re-split. No code touched. -->
+
+- [ ] EP-P11 In-app navigation-confinement ↔ launch-route fail-closed agreement over one shared hostile
+      matrix: feed the SAME authority matrix through `allowsInAppNavigation` and `planConsoleLaunch` and
+      pin that the navigation gate returns false exactly when the launch plan refuses an in-app route
+      (copyOnly / externalBrowser) — userinfo-bearing `user:pass@host` secure-HTTPS target, cross-origin
+      host, cross-port target, plaintext-HTTP downgrade, CRLF/NUL/control-bearing authority — while a
+      legitimate same-origin credential-free HTTPS target stays navigable in-app on both. `acceptSelfSigned`
+      must never become true under `KvmWebViewPolicy.productionDefault`. Test-only, dependency-free, no
+      WebView/protocol import, no URL opened, no production TLS weakening.
+      Dept: rf-platform
+      Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues), RED→GREEN proof
+              (temporarily weaken one navigation-gate condition → named matrix case fails; restore → clean);
+              writes limited to `test/features/kvm/platform/**` (+ `lib/features/kvm/platform/**` only if a
+              genuine divergence is found); `git diff --exit-code -- pubspec.yaml pubspec.lock`; no
+              WebView/protocol dependency, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-20 17:10 UTC: splits the remaining production-opt-in seam of the blocked
      WebView/TLS closeout (#009/#021) into one unblocked, test-only dept slice. EP-P5 guards product
      imports/channels and EP-P6/P7/P8 the policy/doc route, but nothing fails closed if production

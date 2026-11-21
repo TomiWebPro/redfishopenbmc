@@ -5,6 +5,34 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 17:59 UTC: splits a fresh cross-feature seam of the blocked #009/#021
+     launch-target epic into one unblocked, service-level, dependency-free, TLS-safe dept slice. EP-S2
+     made `KvmService.pickPrimary` select security-first (secure-HTTPS graphical → secure-HTTPS any →
+     fallbacks) and EP-S7 aligned the capability summary to it; but the shared `isSecureHttpsConsoleUri`
+     classifier explicitly treats a userinfo-bearing HTTPS URI as secure, while RP-1's
+     `allowsInAppNavigation` (18:34) FAILS CLOSED on embedded credentials. So a manager exposing a
+     userinfo-bearing secure-HTTPS console alongside a credential-free secure-HTTPS console can badge
+     the credential-bearing one "Primary" and recommend it as the in-app launch target even though the
+     in-app navigation gate refuses it — the authoritative rule is a deliberate decision, so AUDIT first
+     and do NOT fold a behaviour change into a guard-only run. Audit first; RED→GREEN only on a genuine
+     divergence; no churn. Human-gated WebView/TLS rendering stays gated and is NOT re-split. No code
+     touched. -->
+
+- [ ] EP-S8 Primary-badge target ↔ in-app-navigability agreement for credential-bearing secure-HTTPS
+      consoles: over an in-temp mockup with a userinfo-bearing secure-HTTPS console (`https://user:pass@bmc/console`)
+      and a credential-free secure-HTTPS console on the same manager (plus plaintext-HTTP and external-client
+      variants), pin that the console badged "Primary" by `pickPrimary` is one that the final in-app route
+      will actually navigate to — i.e. decide/record the authoritative rule and make `pickPrimary` and the
+      capability summary agree on one launch target that the fail-closed navigation contract accepts.
+      Keep every physical manager surfaced and all prior selection/identity/skip semantics unchanged.
+      Broader behaviour change candidate — audit first, do NOT auto-fix without a genuine divergence.
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_service_capability_primary_agreement_test.dart test/features/kvm/kvm_capability_primary_uri_agreement_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof only on a genuine divergence; writes limited to
+              `lib/features/kvm/kvm_service.dart` + service tests under `test/features/kvm/`; emulator
+              85/85 only if `lib/` wire changes; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no
+              WebView/protocol import, no production TLS weakening.
+
 <!-- Discovered 2026-11-21 17:11 UTC during the EP-S6 audit. NOT fixed unattended — the authoritative
      preference (block-order vs security-first) is a broader behaviour change touching the shared
      launch-plan decision layer / LAUNCH_FALLBACK.md and needs a deliberate decision. GENUINE latent

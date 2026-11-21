@@ -5,6 +5,33 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 17:59 UTC: closes a CONFIRMED liveness gap in the "who guards the
+     guards" suite of the blocked #009/#021 epic (same pattern as EP-T14/T15/T16/T17). EP-T17 pinned
+     canonicalGuardFiles to 28 (24 + 4 post-EP-T16 guards), but THREE guard files landed AFTER EP-T17
+     and are not in that set, so deleting / emptying / test-stripping / CI-de-invoking any one of them
+     would stay GREEN: `kvm_service_capability_primary_agreement_test.dart` (EP-S6, 3 tests, 18:17),
+     `kvm_viewer_uri_surface_agreement_test.dart` (EP-U14, 16 tests, 17:35) and
+     `kvm_capability_primary_uri_agreement_test.dart` (EP-S7, 6 tests, 18:52). All three are present with
+     live `test(`/`testWidgets(` cases and reachable from verify.yml's whole-tree `flutter test --coverage`.
+     Pure test/tool, dependency-free, never writes `lib/`; distinct from EP-T12/14/15/16/17. No code
+     touched. -->
+
+- [ ] EP-T18 Guard-suite liveness extension for the post-EP-T17 safety guards: add the three guard files
+      that landed after EP-T17 — `kvm_service_capability_primary_agreement_test.dart`,
+      `kvm_viewer_uri_surface_agreement_test.dart` and `kvm_capability_primary_uri_agreement_test.dart` —
+      to `canonicalGuardFiles` in `test/tool/guard_suite_liveness_test.dart` so each is liveness-checked
+      (missing / emptied / stripped-of-tests / unreachable ⇒ violation), keeping the real-repo invariant
+      green. Add a pinned `epT18AddedGuards ⊆ canonicalGuardFiles` set disjoint from `epT14AddedGuards`
+      / `epT15AddedGuards` / `epT16AddedGuards` / `epT17AddedGuards`, plus its pairwise-disjointness pin
+      assertions, and update the pinned count. Verify each added file has live `test(` / `testWidgets(`
+      cases and is reachable from the whole-tree `flutter test --coverage` before adding; RED→GREEN proof
+      by emptying a temp-scan guard. Confirmed gap, no churn.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues), with
+              RED→GREEN proof (missing/emptied/test-less → violation; intact → clean); writes limited to
+              `test/tool/guard_suite_liveness_test.dart`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              no `lib/`, no production TLS change.
+
 <!-- rf-ideate split 2026-11-21 14:10 UTC: closes a CONFIRMED liveness gap in the "who guards the
      guards" suite of the blocked #009/#021 epic (same pattern as EP-T14/T15/T16). EP-T16 pinned
      canonicalGuardFiles to 24 (8 EP-T12 + 7 EP-T14 + 6 EP-T15 + 3 EP-T16), but FOUR new guard
