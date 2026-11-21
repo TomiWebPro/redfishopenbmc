@@ -12261,3 +12261,17 @@
 - No gate action until rf-platform produces and re-verifies a new commit past `f21a540`. Routine automation continues per FUTUREWORK Current focus (re-audit `queues/*.md` for a genuinely untested contract, never churn). Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended; never weaken production TLS.
 
 **Issues touched:** none (merge of platform hardening tracked in FUTUREWORK.md + progress/; #009/#021 stay open, human-gated).
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-M1 direct-construction supportsKvmIp fallback guard)
+
+**Done:**
+- Landed `test/features/kvm/kvm_capability_kvmip_fallback_test.dart` (9 tests, test-only): pins the documented `KvmCapability.supportsKvmIp` contract for directly constructed capabilities (`graphicalKvmIp == null`) — scan the aggregate `connectTypes` for an exact, trimmed, case-insensitive `KVMIP` — plus authoritative-bit precedence (a non-null `graphicalKvmIp` wins over a contradictory scan). Covers canonical / lowercase / padded-mixed-case KVMIP, KVMIP among other types, no-KVMIP, empty list, substring near-misses, and both bit-precedence directions.
+- Audit found a genuine zero-coverage seam: all 12 pre-existing `supportsKvmIp` assertions go through `fromManager` (bit always non-null), so the `?? connectTypes.any(...)` fallback never executes; a `?? false` regression or dropped trim/case would stay GREEN. Regression guard, not churn. RED #1 `graphicalKvmIp ?? false` → 4 positive fallback cases failed (`+5 -4`); RED #2 removed trim/case → 3 failed (`+6 -3`); source restored byte-clean (SHA `652a5038…` unchanged, empty lib diff), 600-perm backup shredded → 9/9 GREEN.
+- Verify: targeted 9/9; `dart format` clean; `flutter analyze` 0; full `flutter test` 1801 passed / 1 skipped (baseline 1792 +9); issues validate OK; `git diff --check` clean; deps unchanged; lib diff empty. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Test-only: no product `lib/` change, wire/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. No issue closed (#009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation). Pre-existing stashes (`rf-gate-premerge-1795230500`, `automation-preflight-1793045959`) preserved untouched; no force-push, no history rewrite, no stash dropped. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard (EP-P4 human-gated, EP-U1/EP-U2/EP-T2 human/blocked, EP-S2/EP-M4/EP-S5/EP-S4/RM-1/RS-5/RM-2/RS-2 audited) — never churn; candidate for the EP-T14 liveness set. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
