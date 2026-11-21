@@ -12752,3 +12752,17 @@
 - Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-U15)
+
+**Done:**
+- FEATURE (test-only): EP-U15 three-surface launch-target agreement guard for #009/#021. Added `test/features/kvm/kvm_three_surface_launch_target_agreement_test.dart` (8 tests). Genuine unguarded cross-surface contract: nothing pinned that the Primary-badged console card's "Connect URI" row (`launchUri`), the capability card's "Resolved URI" row (`launchUri`) and the viewer's "Console URI"/Open target (`launchPlan.targetUri`) carry the SAME byte-identical, control-safe secure-HTTPS target for ONE multi-block manager (disabled Graphical + serial SSH + secure-HTTPS Remote). Pins model single-source agreement (legit + trimmed-padded), rendered three-surface byte-identity at 320/800/1300 px with visible==announced + Primary badge on the shared-target card, viewer target agreement, and CRLF fail-closed on interactive surfaces. Real-file RED: one-sided capability "Resolved URI" edit (`launchUri`→`safeManagerUri`) → `+4 -4`; source restored byte-clean (SHA `c6c4b09a…`, empty lib diff), backup shredded → 8/8 GREEN, targeted cross-surface suites 85/85.
+- A concurrent rf-gate PASS-verified merge advanced HEAD f4326e0→1d98799 mid-run and swept the untracked WIP into `stash@{0}: rf-gate-premerge-1795292401`; recovered byte-identically from `stash@{0}^3` (stash left untouched). Verify: analyze 0; targeted new 8/8 + cross-surface 85/85; full `flutter test --concurrency=4` 1973 passed / 1 skipped (baseline 1964 +8 +1 merge); issues validate OK; diff --check clean.
+
+**Decisions:**
+- Regression guard on a genuinely unguarded cross-surface rendering seam, not churn. Pure test-only, no `lib/`, no wire/TLS/fixture change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. The hostile-authority case is pinned as interactive-surface fail-closed (viewer/copy), deliberately NOT as raw-display byte-identity: the cards intentionally show the raw URI ("fail closed, not hidden") while the interactive surfaces refuse it — an authoritative design decision, not a bug.
+
+**Next:**
+- Push the single run commit; leave the four pre-existing stashes untouched. This guard is a candidate for a future EP-T19 guard-suite liveness extension; audit EP-S8 / RM-11 / EP-M5 before adding further guards (RED→GREEN only on genuine divergence, never churn); EP-S8 / RM-11 are deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

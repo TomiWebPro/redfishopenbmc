@@ -17,7 +17,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
      only on a genuine divergence, no churn. Human-gated WebView/TLS rendering stays gated and is NOT
      re-split. No code touched. -->
 
-- [ ] EP-U15 Three-surface launch-target agreement (Primary badge ↔ capability card ↔ viewer) for one
+- [x] EP-U15 LANDED 2026-11-21 (run `auto: FEATURE #009/#021 EP-U15 three-surface launch-target agreement guard + RED->GREEN tests`, analyze 0 / 1973 passed / 1 skipped, test-only) — Three-surface launch-target agreement (Primary badge ↔ capability card ↔ viewer) for one
       manager: over a multi-block manager (disabled Graphical + serial SSH + secure-HTTPS Remote, plus a
       padded/hostile-authority variant) built once into `KvmConsole` / `KvmCapability`, pin that the
       console card's "Primary" badge target, the capability card's resolved URI row and the viewer's
