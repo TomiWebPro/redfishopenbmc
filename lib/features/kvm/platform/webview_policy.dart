@@ -60,6 +60,19 @@ class KvmWebViewPolicy {
   bool get acceptsSelfSigned =>
       tlsMode == KvmWebViewTlsMode.testOptInSelfSigned;
 
+  /// Always `false`: hostname / certificate-identity verification is NEVER
+  /// bypassed, not even by the test-only self-signed opt-in.
+  ///
+  /// Tolerating a self-signed leaf means accepting a certificate that is
+  /// otherwise valid for the *expected* BMC host but untrusted by the platform
+  /// store. It must never relax the hostname check: a blanket trust-all socket
+  /// factory or a catch-all host verifier would let ANY host impersonate the
+  /// BMC, turning the test-only opt-in into a machine-in-the-middle vector and
+  /// weakening TLS. This is a hard, configuration-independent invariant, so a
+  /// future WebView consumer can consult it and can never obtain a policy that
+  /// disables identity verification. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassHostnameVerification => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
