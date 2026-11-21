@@ -12574,3 +12574,21 @@
 - Push merge `278a76c` (+ branch commit `1d27ea6`) to `origin/main` via the sole merger. Re-audit `queues/*.md` for a genuinely different untested contract before any further guard — never churn. Full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:redfish-automation — EP-U14 (#009/#021)
+
+**Done:**
+- FEATURE EP-U14 viewer URI-surface fail-closed agreement guard for #009/#021 (test-only, dependency-free, TLS-safe). Added `test/features/kvm/kvm_viewer_uri_surface_agreement_test.dart` (16 tests): the viewer's merged "Console URI: …" a11y row label, visible `SelectableText`, `Clipboard.setData` payload and "Copied: …" `SnackBar` all carry the SAME fail-closed `console.launchPlan.targetUri`. Pins secure-HTTPS / padded-HTTPS / external-VNC / plaintext-HTTP (all four renderings byte-identical, no control/injection marker) and CRLF / NUL control-unsafe (target null → no URI row, no copy affordance), at 800 px plus 320/1300 px no-overflow with visible==announced.
+- Audit found EP-U12 pinned only CARD↔VIEWER clipboard agreement, not the viewer's OWN four renderings — a one-sided SnackBar/label edit could leak a padded/control-bearing value while every single-surface test stayed GREEN. Genuine untested contract, regression guard, not churn.
+- Real-file RED proof: mutated SnackBar `Text('Copied: $uri')` → raw `console.connectUri ?? ''` → exactly the padded-HTTPS "SnackBar carries the same target as the row + clipboard" test failed (`+15 -1`); source restored byte-clean (SHA `f088a86d…` unchanged, empty lib diff), 600-perm backup shredded → 16/16 GREEN.
+- REPAIR carried from concurrent rf-gate merge `425d806` WIP: the merge committed `launch_plan.dart` `allowsInAppNavigation` calling a deleted `_uriHasSecureHttpsTarget` helper (compile RED); switched both calls to the surviving shared `isSecureHttpsConsoleUri` fail-closed validator (no TLS weakening), restoring green — same carry-forward pattern as the 13:23 run.
+- Verify: targeted 16/16; `dart format` clean; `flutter analyze` 0; full `flutter test --coverage --concurrency=2` 1938 passed / 1 skipped final (preflight 1910 +16 mine + concurrent rf-platform/rf-ui commits; re-run green after carrying the REPAIR); `issues.py validate` OK; `git diff --check` clean.
+
+**Decisions:**
+- EP-U14 is a test-only guard; sole lib diff is the carried 4-line `launch_plan.dart` REPAIR (validator helper rename, no wire/fixture/TLS change). No dependency, no WebView/protocol import, no URL opened, no production TLS weakening. Emulator skipped (no lib wire/fixture/tool-runtime change, <7 days since last green 85/85). No force-push, history rewrite, `git clean`, or file deletion; three pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; do NOT do unattended, never weaken production TLS.
+
+**Next:**
+- Push this single commit (carried with three concurrent rf-gate commits). Audit remaining 14:10-slice candidates EP-M5 (already largely covered) and EP-S6 (service-level capability↔primary agreement) for a genuinely different untested contract — RED→GREEN only on a genuine divergence, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

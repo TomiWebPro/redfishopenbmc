@@ -2870,8 +2870,12 @@ bool allowsInAppNavigation({
   // Both sides must independently be real, valid, secure HTTPS targets. This
   // reuses the exhaustive fail-closed validator so a malformed/spoofed
   // authority can never be called "same origin" with the console.
-  if (!_uriHasSecureHttpsTarget(consoleUri)) return false;
-  if (!_uriHasSecureHttpsTarget(targetUri)) return false;
+  // Folded into main's fail-closed secure-target validator
+  // `isSecureHttpsConsoleUri` (the shared single source of truth that
+  // `planConsoleLaunch` itself uses); the branch authored this against the
+  // older `_uriHasSecureHttpsTarget` name, which main has since refactored.
+  if (!isSecureHttpsConsoleUri(consoleUri)) return false;
+  if (!isSecureHttpsConsoleUri(targetUri)) return false;
   final Uri? console = Uri.tryParse(consoleUri!.trim());
   final Uri? target = Uri.tryParse(targetUri!.trim());
   if (console == null || target == null) return false;
