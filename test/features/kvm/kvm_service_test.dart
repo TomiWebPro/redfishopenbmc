@@ -1557,4 +1557,173 @@ void main() {
           <String>['ext', 'secure-r', 'plain', 'secure-g']);
     });
   });
+
+  group('KvmService manager-Id collision determinism (RS-8)', () {
+    late Directory fixtureDir;
+    late MockRedfishServer server;
+
+    // RS-4 dedups manager MEMBERS by URI: two DISTINCT member URIs whose bodies
+    // report the SAME trimmed `Id` are not collapsed. This in-temp mockup walks
+    // two such managers (BMC-A / BMC-B, both `Id: "Shared"`, distinct source
+    // URIs + console endpoints) plus a manager whose `Id` is blank whitespace
+    // (which must fall back to its `@odata.id` last segment for a usable key).
+    // Both fetch methods must surface all three PHYSICAL managers; the single
+    // `fetchCapability(id)` lookup must deterministically return one stable
+    // capability (first member wins) and never resolve a blank/whitespace key.
+    setUpAll(() async {
+      fixtureDir = await Directory.systemTemp.createTemp('kvm_rs8_fixture_');
+      final Directory managersDir = Directory('${fixtureDir.path}/Managers')
+        ..createSync(recursive: true);
+      File('${managersDir.path}/index.json').writeAsStringSync(
+        jsonEncode(<String, dynamic>{
+          'Members': <dynamic>[
+            <String, dynamic>{'@odata.id': '/redfish/v1/Managers/BMC-A'},
+            <String, dynamic>{'@odata.id': '/redfish/v1/Managers/BMC-B'},
+            <String, dynamic>{'@odata.id': '/redfish/v1/Managers/MgrBlank'},
+          ],
+        }),
+      );
+
+      final Map<String, Map<String, dynamic>> bodies =
+          <String, Map<String, dynamic>>{
+        'BMC-A': <String, dynamic>{
+          'Id': 'Shared',
+          '@odata.id': '/redfish/v1/Managers/BMC-A',
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <String>['KVMIP'],
+            'ConnectUri': 'https://a.example/console',
+          },
+        },
+        'BMC-B': <String, dynamic>{
+          'Id': 'Shared',
+          '@odata.id': '/redfish/v1/Managers/BMC-B',
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <String>['KVMIP'],
+            'ConnectUri': 'https://b.example/console',
+          },
+        },
+        'MgrBlank': <String, dynamic>{
+          'Id': '   ',
+          '@odata.id': '/redfish/v1/Managers/MgrBlank',
+          'GraphicalConsole': <String, dynamic>{
+            'ServiceEnabled': true,
+            'ConnectTypesSupported': <String>['KVMIP'],
+            'ConnectUri': 'https://blank.example/console',
+          },
+        },
+      };
+      for (final MapEntry<String, Map<String, dynamic>> entry
+          in bodies.entries) {
+        final Directory managerDir =
+            Directory('${managersDir.path}/${entry.key}')
+              ..createSync(recursive: true);
+        File('${managerDir.path}/index.json')
+            .writeAsStringSync(jsonEncode(entry.value));
+      }
+      server = await MockRedfishServer(fixturesDir: fixtureDir.path).start();
+    });
+
+    tearDownAll(() async {
+      await server.close();
+      fixtureDir.deleteSync(recursive: true);
+    });
+
+    test(
+        'fetchConsoles surfaces every physical manager under an Id collision '
+        '(RS-8)', () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmConsole> consoles = await svc.fetchConsoles();
+
+      expect(consoles, hasLength(3));
+      expect(
+        consoles.map((KvmConsole c) => c.managerId).toList(),
+        <String>['Shared', 'Shared', 'MgrBlank'],
+        reason: 'both Id-colliding members surface + blank Id falls back',
+      );
+    });
+
+    test(
+        'fetchCapabilities surfaces every physical manager under an Id '
+        'collision (RS-8)', () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+
+      expect(capabilities, hasLength(3));
+      expect(
+        capabilities.map((KvmCapability c) => c.managerId).toList(),
+        <String>['Shared', 'Shared', 'MgrBlank'],
+      );
+      expect(
+        capabilities.map((KvmCapability c) => c.sourceManagerUri).toSet(),
+        <String>{
+          '/redfish/v1/Managers/BMC-A',
+          '/redfish/v1/Managers/BMC-B',
+          '/redfish/v1/Managers/MgrBlank',
+        },
+        reason: 'both colliding managers stay individually distinguishable',
+      );
+    });
+
+    test(
+        'fetchCapability(id) deterministically returns one stable capability '
+        '(RS-8)', () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      final KvmCapability? first = await svc.fetchCapability('Shared');
+      final KvmCapability? again = await svc.fetchCapability('Shared');
+
+      expect(first, isNotNull);
+      expect(first!.managerId, 'Shared');
+      // First member (BMC-A) wins deterministically — never the colliding
+      // BMC-B's endpoint. A Map-keyed or last-wins lookup would flip this.
+      expect(first.sourceManagerUri, '/redfish/v1/Managers/BMC-A');
+      expect(first.uri, 'https://a.example/console');
+      expect(again!.sourceManagerUri, first.sourceManagerUri);
+      expect(again.uri, first.uri);
+      // The single looked-up capability must agree with the one both fetch
+      // methods surface first for that id.
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+      expect(
+        capabilities
+            .firstWhere((KvmCapability c) => c.managerId == 'Shared')
+            .sourceManagerUri,
+        first.sourceManagerUri,
+      );
+    });
+
+    test('a blank/whitespace Id is never a resolvable key (RS-8)', () async {
+      final KvmService svc = KvmService(
+        client: server.buildClient(),
+        systemId: 'bmc1',
+      );
+
+      expect(await svc.fetchCapability(''), isNull);
+      expect(await svc.fetchCapability('   '), isNull);
+
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+      expect(
+        capabilities.any((KvmCapability c) => c.managerId.trim().isEmpty),
+        isFalse,
+        reason: 'no capability keyed under a blank/whitespace id',
+      );
+      // The blank-Id manager is still reachable via its @odata.id fallback.
+      final KvmCapability? blankFallback =
+          await svc.fetchCapability('MgrBlank');
+      expect(blankFallback, isNotNull);
+      expect(blankFallback!.managerId, 'MgrBlank');
+    });
+  });
 }

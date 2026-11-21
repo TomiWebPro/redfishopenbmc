@@ -12308,3 +12308,20 @@
 - Land the next unlanded dept slice on a genuine RED→GREEN gap (RM-8 model aggregation agreement, RS-8 service manager-Id collision determinism, or EP-U12 ui clipboard-target agreement) — re-audit `queues/*.md` first, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool-runtime change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (RS-8 manager-Id collision determinism guard)
+
+**Done:**
+- Added `KvmService manager-Id collision determinism (RS-8)` group (4 tests) to `test/features/kvm/kvm_service_test.dart` over one in-temp 3-manager mockup: two distinct member URIs (BMC-A / BMC-B) whose bodies both report `Id: "Shared"` with distinct source URIs + console endpoints, plus a manager whose `Id` is blank whitespace and must fall back to its `@odata.id` last segment.
+- Pinned: `fetchConsoles()` / `fetchCapabilities()` surface all 3 physical managers (no throw/blank); `fetchCapability('Shared')` deterministically returns one stable capability (first member BMC-A wins, agrees with `fetchCapabilities`, repeated calls stable); blank/whitespace Ids are never resolvable keys while the blank-Id manager stays reachable via its `MgrBlank` fallback.
+- Audit first (`queues/*.md`): the three remaining unlanded slices are RM-8, RS-8 and EP-U12; picked RS-8 as the crispest self-contained seam. No live divergence found — regression guard at a genuinely untested lookup seam, not churn.
+- RED #1: reversed `fetchCapability` iteration (last-wins) → determinism test failed (`+3 -1`, `Expected: /redfish/v1/Managers/BMC-A / Actual: /redfish/v1/Managers/BMC-B`). RED #2: `_managerId` returns raw blank `Id` → 3 tests failed (`+1 -3`, blank key resolvable + fallback id lost). `kvm_service.dart` restored byte-clean after both (SHA `bfbe6546374f1fd896c3ed0b5fb1d4e9d13cfb397e736bc49cd2958ecc7997b7` unchanged, empty lib diff, 600-perm backup shredded) → 4/4 GREEN.
+- Verify: targeted 4/4; `dart format` clean; `flutter analyze` 0; full `flutter test` 1812 passed / 1 skipped (baseline 1808 +4); issues validate OK; `git diff --check` clean; deps unchanged; lib diff empty. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Test-only: no product `lib/` change (restored byte-clean), wire/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. No issue closed (#009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation). Pre-existing stashes (`rf-gate-premerge-1795230500`, `automation-preflight-1793045959`) preserved untouched; no force-push, no history rewrite, no stash dropped. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Land the next unlanded dept slice on a genuine RED→GREEN gap (RM-8 model enabled-block aggregation agreement or EP-U12 ui cross-surface clipboard-target agreement) — re-audit `queues/*.md` first, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool-runtime change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
