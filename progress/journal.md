@@ -12275,3 +12275,20 @@
 - Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard (EP-P4 human-gated, EP-U1/EP-U2/EP-T2 human/blocked, EP-S2/EP-M4/EP-S5/EP-S4/RM-1/RS-5/RM-2/RS-2 audited) — never churn; candidate for the EP-T14 liveness set. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:rf-gate — build/rf-platform merge (e712ab1, check#10749)
+
+**Done:**
+- Sole merger. `rf-platform-check` run#10749 returned explicit `CHECK: PASS` for branch tip `e712ab1` (exit 0, SUCCESS, 46.0 s, started 05:58:03 UTC ~1 min after the builder authored the tip at 05:56:40 UTC). Cross-checked branch HEAD unchanged `== e712ab1` and merge-base `f21a540` an ancestor of `main` immediately before merging, then `git merge --no-ff build/rf-platform` → merge `77ee707` (parents `49c7348`, `e712ab1`).
+- Branch's single new commit `e712ab1` adds a percent-encoded U+FFFD REPLACEMENT CHARACTER authority fail-closed set to the dependency-free `launch_plan.dart` decision layer (UTS-46 IDNA disallows U+FFFD; browser/WebView rejects the host while `Uri.tryParse` reports a non-empty HTTPS host — parser differential that under a stale secure flag + test opt-in could grant in-app rendering + self-signed acceptance on an un-navigable host), plus 5 RED→GREEN tests. No valid target lost, no dependency, no production TLS weakened.
+- One conflict in `launch_plan.dart`: branch authored against the old bool `_uriHasSecureHttpsTarget` (`return false`), main now uses the shared `String?` `_controlSafeTrimmedUri` gate. Resolved by keeping main's shared-gate `return null` structure + "Folded into this shared gate" comment and folding in `_authorityHasIdnaDisallowedReplacementCharacter` with `return null`. `launch_plan_test.dart` auto-merged with all 5 new tests preserved.
+- Post-merge verify: `flutter analyze` 0; full `flutter test --coverage` 1806 passed / 1 skipped (baseline 1801 +5); four coverage gates PASS overall 90.2% (5932/6573) / scoped 90.4% (2119/2345) / kvm 96.6% (1209/1252) / kvm-platform 96.4% (373/387), exit 0; `issues.py validate` OK; first-parent `git diff --check` clean; first-parent diff = 2 allowlisted files only.
+
+**Decisions:**
+- Merged because the latest check verdict was PASS for the exact current tip; skipped if it had been anything else. NO-OP condition not met (branch had one new commit past merge-base).
+- DMTF 85-test emulator suite skipped — merged `lib/` change only tightens the pure fail-closed decision table (no wire/transport/fixture/tool-runtime change), <7 days since last green 85/85. Pre-existing stashes (`rf-gate-premerge-1795230500`, `automation-preflight-1793045959`) left untouched; no force-push, no history rewrite, no file deletion. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- No gate action until rf-platform produces + re-verifies a new commit past `e712ab1`. Routine automation continues per FUTUREWORK `Current focus`. Close #021 then #009 only on human platform-WebView + BMC-TLS validation evidence — do NOT do unattended; never weaken production TLS.
+
+**Issues touched:** none (merge of platform hardening tracked in FUTUREWORK.md + progress/; #009/#021 stay open, human-gated).
