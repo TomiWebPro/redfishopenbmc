@@ -3916,6 +3916,46 @@ void main() {
       }
     });
 
+    test('all default-ignorable (invisible) values yield a null target', () {
+      // Unicode Default_Ignorable_Code_Point includes code points OUTSIDE the
+      // Separator (Z) / Other (C) categories: variation selectors (Mn,
+      // U+FE00..U+FE0F), COMBINING GRAPHEME JOINER (U+034F), the Mongolian free
+      // variation selectors (U+180B..U+180D) and the IDNA-ignored Hangul
+      // fillers (Lo, U+115F/U+1160/U+3164/U+FFA0). They are invisible, yet the
+      // C/Z-only "no usable target" check does not catch them and String.trim()
+      // does not strip them (they are not Zs). Without this guard a value made
+      // solely of them survives as a non-null copy target and a launcher/copy
+      // action would surface an invisible string. Fail closed to null under
+      // every policy, exactly like whitespace and ZWSP.
+      const List<String> invisibleUris = <String>[
+        '\uFE00', // VARIATION SELECTOR-1 (Mn)
+        '\uFE0F', // VARIATION SELECTOR-16 (Mn)
+        '\u034F', // COMBINING GRAPHEME JOINER (Mn)
+        '\u180B', // MONGOLIAN FREE VARIATION SELECTOR ONE (Mn)
+        '\u115F', // HANGUL CHOSEONG FILLER (Lo, IDNA-ignored)
+        '\u3164', // HANGUL FILLER (Lo, IDNA-ignored)
+        '\uFE00\u034F\uFE0F', // combined default-ignorables
+      ];
+      for (final KvmWebViewPolicy policy in <KvmWebViewPolicy>[
+        KvmWebViewPolicy.productionDefault,
+        KvmWebViewPolicy.testOptIn,
+      ]) {
+        for (final String uri in invisibleUris) {
+          final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+            policy: policy,
+            uri: uri,
+            hasSecureUri: true,
+            isHtml5: true,
+            isEnabled: true,
+          );
+
+          expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+          expect(plan.targetUri, isNull, reason: uri);
+          expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        }
+      }
+    });
+
     test('a real insecure URI still keeps its copy target', () {
       // Regression guard: only an unusable/blank target is normalised away;
       // a non-blank URI that merely fails the secure check is still handed

@@ -26,6 +26,7 @@ suite).
 | flag off + no URI | `copyOnly` | `null` | `false` |
 | flag off + blank URI / inconsistent "secure" flag | `copyOnly` (fail closed) | `null` | `false` |
 | flag off + **disabled** console (even HTTPS) | `copyOnly` (fail closed) | trimmed HTTPS URI | `false` |
+| flag off + all-invisible URI (ZWSP/ZWJ/ZWNJ, controls, variation selectors, Hangul fillers) | `copyOnly` (fail closed) | `null` (no usable target) | `false` |
 | test opt-in + HTTPS HTML5 enabled | `inAppWebView` | trimmed HTTPS URI | `true` (test-only) |
 | opt-in but strict TLS | `inAppWebView` | trimmed HTTPS URI | `false` |
 | opt-in + plaintext / disabled / non-HTML5 | never launchable | trimmed URI | `false` |
@@ -640,9 +641,15 @@ Invariants, enforced by tests:
    whitespace (NBSP/BOM) but leaves invisible format characters such as zero-
    width space/joiner/non-joiner (U+200B/U+200D/U+200C) intact, which previously
    survived as a non-null copy target — a launcher/copy action would surface an
-   invisible string. The shared control-safety gate `_controlSafeTrimmedUri`
-   (its `_rawUriForbiddenChars` \p{C}/\p{Z} match) now fails all-invisible values
-   closed to `null` as "no usable target" (RED/GREEN-locked). A non-
+   invisible string. `_hasNoUsableTarget` now treats all-invisible values as
+   "no usable target" so they fail closed to `null` (RED/GREEN-locked). That
+   set was widened from `Separator`/`Other` to the Unicode `Default_Ignorable`
+   property: variation selectors (U+FE00..U+FE0F), COMBINING GRAPHEME JOINER
+   (U+034F), the Mongolian free variation selectors (U+180B..U+180D) and the
+   IDNA-ignored Hangul fillers (U+115F/U+1160/U+3164/U+FFA0) are invisible,
+   are not stripped by `String.trim()` (not `Zs`) and are not in C/Z, so a value
+   made solely of them previously survived as a non-null copy target; they now
+   fail closed to `null` too (RED/GREEN-locked). A non-
    blank URI that merely fails the secure check keeps its raw copy target, so
    the flag-off external-browser + copy path still works unchanged.
 
