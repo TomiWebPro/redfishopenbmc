@@ -12185,3 +12185,18 @@
 - No further gate action while `build/rf-platform` has no new verified commit past `6ea8c7a`; rf-platform to produce + re-verify the next slice before a future gate run. The stashed WIP belongs to the build agent — it should recover it (`git stash pop`/`apply stash@{0}`) on its next run and finish/commit that FEATURE slice. Routine automation continues per FUTUREWORK Current focus.
 
 **Issues touched:** none closed — #009 (open), #021 (open).
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (RM-1 residual multi-vendor enablement)
+
+**Done:**
+- Landed `test/features/kvm/kvm_oem_multi_vendor_enablement_test.dart` (5 tests, test-only): a flag-less console-like metadata block in a multi-vendor `Oem` payload cannot mask a real console's explicit `ServiceEnabled`/`Enabled`. Pins the documented `_consoleLikeBlock` precedence in `lib/features/kvm/models/kvm_oem_uri.dart` (flag-less nested/direct metadata before an explicit disable → disabled; explicit enable still wins; both `KvmConsole.fromManager` and `KvmCapability.fromManager` agree). Audit found no live divergence — regression guard, not churn.
+- RED proof: temporarily removed the enablement-member preference from `_consoleLikeBlock` (return first console-like block) → 3 disable-precedence tests failed (`+2 -3`); source restored byte-clean (SHA `0bea1a6f…` unchanged, empty lib diff), 600-perm backup shredded → 5/5 GREEN.
+- Verify: targeted 5/5; `dart format` clean; `flutter analyze` 0; full `flutter test` 1766 passed / 1 skipped (baseline 1761 +5); issues validate OK; diff --check clean; deps unchanged; lib diff empty. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Test-only: no product `lib/` change, wire/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. RM-1 checkbox stays open (this is the residual enablement-precedence seam, not the per-console-chips item). No issue closed (#009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation). Pre-existing untracked `testing/` + both stashes preserved untouched; no force-push, no history rewrite. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard (EP-P4 human-gated, EP-U1/EP-U2/EP-T2 human/blocked, EP-M1/RM-2/RS-2 audited) — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
