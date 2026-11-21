@@ -5,6 +5,34 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 14:10 UTC: splits a residual cross-method agreement seam of the blocked
+     #009/#021 manager walk into one unblocked, service-level, dependency-free, TLS-safe dept slice.
+     RS-4..RS-9 and EP-S3/S5 pin member dedup, source identity, cardinality, collisions, hostile
+     bodies, lookup-key normalization and `pickPrimary` classification, and RM-5/RM-7/RM-8 pin
+     console↔capability agreement at the MODEL level — but nothing at the SERVICE level pins that
+     `KvmService.fetchCapability(managerId)` (the per-manager capability summary) and
+     `fetchPrimaryConsole()` / `pickPrimary` (the recommended launch target) AGREE for the SAME
+     manager over one multi-block payload (Graphical disabled + secure Remote + serial): a
+     divergent preference could badge the summary "supported / URI X" while the primary opens
+     nothing (or a different endpoint) — the exact #009 divergence the shared helpers prevent.
+     Audit first; RED→GREEN only on a genuine divergence; no churn. Human-gated WebView/TLS
+     rendering stays gated and is NOT re-split. No code touched. -->
+
+- [ ] EP-S6 Service-level capability↔primary agreement for one manager: over an in-temp mockup with
+      one manager exposing several console blocks (explicitly-disabled Graphical + secure-HTTPS
+      Remote + serial SSH, then a variant with no openable block), pin that `fetchCapability(id)`
+      and `fetchPrimaryConsole()` / `pickPrimary` agree for that manager on enablement, the resolved
+      launch target and the session limit — the capability summary never advertises "supported" /
+      a URI when the primary refuses to open, and the primary's URI is the one the summary resolves
+      when it does open. Keep every physical manager surfaced by `fetchConsoles()` /
+      `fetchCapabilities()` and all prior selection/identity/skip semantics unchanged. Audit first;
+      RED→GREEN only on a genuine divergence; no wire/TLS change, no dependency.
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof on a genuine divergence; writes limited to
+              `lib/features/kvm/kvm_service.dart` + service tests under `test/features/kvm/`;
+              emulator 85/85 only if `lib/` wire changes; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-21 09:53 UTC: splits a residual lookup-key seam of the blocked #009/#021
      single-manager resolution path into one unblocked, service-level, dependency-free, TLS-safe dept
      slice. RS-4/5/6/7/8 and EP-S5 pin member dedup, source identity, cardinality, hostile bodies,

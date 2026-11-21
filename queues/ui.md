@@ -5,6 +5,34 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 14:10 UTC: splits a residual viewer copy-surface seam of the blocked
+     #009/#021 epic into one unblocked, display-only, dependency-free, TLS-safe dept slice. EP-U8
+     pins the open-affordance gate, EP-U12 pins that the CARD's "Copy connect info" and the VIEWER's
+     "Copy console URI" place the same fail-closed clipboard target, and EP-T8/EP-U6 pin raw-source
+     display — but nothing pins the viewer's OWN three renderings of that target as one contract:
+     the merged-a11y "Console URI: …" row's `SelectableText` + `label`, the `Clipboard.setData`
+     payload, and the "Copied: …" `SnackBar` text must all carry the SAME fail-closed
+     `launchPlan.targetUri` (never a raw CRLF/NUL/control-bearing value), and the row/copy affordance
+     must be present iff a safe target exists. A one-sided edit could leak a control-bearing string
+     into the SnackBar or a11y label while the clipboard stayed safe. Audit first; RED→GREEN only on
+     a genuine divergence; no churn. Human-gated WebView/TLS rendering stays gated and is NOT
+     re-split. No code touched. -->
+
+- [ ] EP-U14 Viewer URI-row / clipboard / copy-SnackBar fail-closed agreement: pin that
+      `KvmConsoleViewerPage`'s visible "Console URI: …" `SelectableText`, its merged
+      `excludeSemantics` label, the `Clipboard.setData` payload and the "Copied: …" `SnackBar` all
+      carry the SAME fail-closed target from `KvmConsole.launchPlan.targetUri` across the secure-
+      HTTPS, external-client VNC/RFB, plaintext-HTTP and control-unsafe URI paths — never a raw
+      CRLF / NUL / control-bearing value, and the row + copy affordance present iff a safe target
+      exists. Every merged a11y node keeps visible text == announced label, with 320/800/1300 px
+      no-overflow. Display-only; audit first, RED→GREEN only on a genuine divergence, no churn; no
+      WebView/protocol import, no URL opened, no dependency, no production TLS weakening.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_clipboard_cross_surface_agreement_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof + 320 px no-overflow + visible==announced; writes
+              limited to `lib/features/kvm/views/**`; no WebView/protocol import, no production TLS
+              weakening; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-21 09:53 UTC: splits a residual state-agreement seam of the blocked
      #009/#021 populated-console-list UI into one unblocked, widget-level, dependency-free, TLS-safe
      dept slice. The in-list 'Loading KVM consoles' spinner and the in-list 'Unable to refresh KVM

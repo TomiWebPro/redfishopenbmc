@@ -4,6 +4,33 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 14:10 UTC: splits a residual hostile-payload normalization seam of the
+     blocked #009/#021 capability aggregation into one unblocked, pure-model, dependency-free,
+     TLS-safe dept slice. Per-console `ConnectTypesSupported` normalization (trim / drop-empty /
+     case-insensitive dedup) is pinned by `kvm_model_test.dart`, and RM-5 pins an aggregate⊇console
+     subset over mostly-well-formed payloads — but nothing pins that the CAPABILITY aggregate
+     `connectTypes` applies the SAME normalization to hostile `ConnectTypesSupported` entries
+     (duplicate with mixed case/padding, whitespace-only, non-string bool/num/list/map, embedded
+     control chars) as the per-console `connectTypesSupported` getter, nor that RM-8's
+     enabled-block preference still selects the same winning block. A divergent normalization would
+     desync the capability card's connect-type chips from the per-console card while every
+     single-getter test stayed GREEN. Audit first; RED→GREEN only on a genuine divergence; no churn.
+     Human-gated WebView/TLS rendering stays gated and is NOT re-split. No code touched. -->
+
+- [ ] EP-M5 Hostile `ConnectTypesSupported` normalization agreement across both models: feed
+      `KvmConsole.fromManager` and `KvmCapability.fromManager` the same manager whose enabled
+      console block carries a hostile connect-types matrix (mixed-case/padded duplicates, blank /
+      whitespace-only tokens, non-string bool/num/list/map entries, control-bearing values) and pin
+      that the per-console `connectTypesSupported` and the capability aggregate `connectTypes`
+      normalize identically — trimmed, blanks/non-strings dropped, case-insensitive dedup, no raw
+      control code point — with the enabled-block preference (RM-8) and the all-disabled fallback
+      unchanged. Read-only model work; no transport/wire/TLS change, no dependency.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof only on a genuine divergence; writes limited to
+              `lib/features/kvm/models/**` + those two named test files;
+              `git diff --exit-code -- pubspec.yaml pubspec.lock`; no wire/TLS change.
+
 <!-- rf-ideate split 2026-11-21 09:53 UTC: splits a residual internal-consistency seam of the blocked
      #009/#021 OEM-console detection into one unblocked, pure-model, dependency-free, TLS-safe dept
      slice. RM-1..RM-8 and EP-M1/M2/M4 pin enablement precedence, non-map tolerance, cross-view
