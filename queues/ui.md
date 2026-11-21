@@ -5,6 +5,32 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 09:53 UTC: splits a residual state-agreement seam of the blocked
+     #009/#021 populated-console-list UI into one unblocked, widget-level, dependency-free, TLS-safe
+     dept slice. The in-list 'Loading KVM consoles' spinner and the in-list 'Unable to refresh KVM
+     consoles...' stale-data warning were landed in SEPARATE runs and each is pinned in isolation,
+     but nothing pins their AGREEMENT over the four (loading, error) states of the populated
+     `ListView` branch — in particular the both-true case (in-flight reload after a failure) where an
+     operator must see BOTH nodes exactly once, and neither must collide with the early empty-list
+     returns. Audit first; RED→GREEN only on a genuine divergence; no churn. Human-gated WebView/TLS
+     rendering stays gated and is NOT re-split. No code touched. -->
+
+- [ ] EP-U13 Populated-ListView in-branch state agreement: loading vs stale-error nodes: pin the
+      four-state truth table of `KvmView.build`'s populated `ListView` branch over (loading, error):
+      error-only → one merged 'Unable to refresh KVM consoles...' warning + stale cards still shown /
+      copyable, no spinner; loading-only → one merged 'Loading KVM consoles' spinner replacing the
+      cards, no warning; both-true (in-flight reload after a failure) → BOTH nodes present, exactly
+      one of each, no overflow; neither → plain console cards. All nodes must be distinct from the
+      early empty-list error/loading returns, keep visible `Text` == announced label inside each
+      merged `excludeSemantics` node, and render at 320/800/1300 px without overflow. Display-only;
+      audit first, RED→GREEN on a genuine divergence, no churn; no WebView/protocol import, no
+      production TLS weakening, no dependency.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_view_reload_indicator_test.dart test/features/kvm/kvm_view_stale_error_banner_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof + 320 px no-overflow; writes limited to
+              `lib/features/kvm/views/**`; no WebView/protocol import, no production TLS weakening;
+              `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-21 05:49 UTC: splits the remaining cross-surface clipboard-safety seam of
      the blocked #009/#021 epic into one unblocked, widget-level, dependency-free, TLS-safe dept slice.
      CB-1 pinned the card's `clipboardTargetUri` fallback and EP-U8 pinned that the viewer hides the copy

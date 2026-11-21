@@ -5,6 +5,30 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 09:53 UTC: closes a confirmed liveness gap in the "who guards the
+     guards" suite of the blocked #009/#021 epic. EP-T14 enumerated 7 safety guards, EP-T15 extended
+     to 15 with the six behavioral guards that existed at 06:07, but THREE behavioral guard files
+     landed AFTER EP-T15 (`kvm_clipboard_cross_surface_agreement_test.dart`,
+     `kvm_view_reload_indicator_test.dart`, `kvm_view_stale_error_banner_test.dart`) and are not in
+     `canonicalGuardFiles`, so deleting / emptying / test-stripping / CI-de-invoking one of them would
+     stay GREEN. Confirmed at split time: each file has live `test(`/`testWidgets(` cases (3/2/3) and
+     is reachable from verify.yml's whole-tree `flutter test --coverage`. Pure test/tool,
+     dependency-free, never writes `lib/`; distinct from EP-T12/14/15. No code touched. -->
+
+- [ ] EP-T16 Guard-suite liveness extension for the post-EP-T15 regression guards: add the three
+      guard files that landed after EP-T15 — `kvm_clipboard_cross_surface_agreement_test.dart`,
+      `kvm_view_reload_indicator_test.dart`, `kvm_view_stale_error_banner_test.dart` — to
+      `canonicalGuardFiles` in `test/tool/guard_suite_liveness_test.dart` so each is liveness-checked
+      (missing / emptied / stripped-of-tests / unreachable ⇒ violation), keeping the real-repo
+      invariant green. Add a pinned `epT16AddedGuards ⊆ canonicalGuardFiles` set (disjoint from
+      `epT14AddedGuards` and `epT15AddedGuards`) plus its pin assertions, and update any pinned count.
+      RED→GREEN proof by emptying a temp-scan guard; no churn.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues),
+              with RED→GREEN proof (missing/emptied/test-less → violation; intact → clean); writes
+              limited to `test/tool/guard_suite_liveness_test.dart`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              no `lib/`, no production TLS change.
+
 <!-- rf-ideate split 2026-11-21 05:49 UTC: closes a confirmed liveness gap in the "who guards the
      guards" suite of the blocked #009/#021 epic. EP-T14 extended `canonicalGuardFiles` to the seven
      safety guards that existed at 01:55, but six behavioral regression guards landed AFTER it and are

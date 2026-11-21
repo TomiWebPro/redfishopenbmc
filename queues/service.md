@@ -5,6 +5,30 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 09:53 UTC: splits a residual lookup-key seam of the blocked #009/#021
+     single-manager resolution path into one unblocked, service-level, dependency-free, TLS-safe dept
+     slice. RS-4/5/6/7/8 and EP-S5 pin member dedup, source identity, cardinality, hostile bodies,
+     manager-Id collisions and `_managerId` derivation, but `fetchCapability(managerId)` compares the
+     caller argument to `capability.managerId` verbatim while `_managerId` TRIMS body ids — a padded
+     lookup argument can miss a manager that is plainly present in `fetchCapabilities()`. Nothing pins
+     that the public lookup key and the derived card key use the same normalization. Audit first;
+     RED→GREEN only on a genuine divergence; no churn. Human-gated WebView/TLS rendering stays gated
+     and is NOT re-split. No code touched. -->
+
+- [ ] RS-9 `fetchCapability(managerId)` lookup-key normalization agreement with `_managerId`: over an
+      in-temp mockup with padded / blank / numeric / non-string body `Id`, a padded lookup argument
+      and a manager whose `Id` falls back to its `@odata.id` / member-URI segment, pin that
+      `fetchCapability` resolves a manager by the SAME normalized id `_managerId` produces (argument
+      trimmed, blank rejected), agrees with the ids surfaced by `fetchCapabilities()`, returns `null`
+      only for genuinely unknown or blank ids, and never creates a phantom miss for a padded argument
+      while both fetch methods still surface every physical manager. Audit first; RED→GREEN only on a
+      genuine divergence; no wire/TLS change, no dependency.
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_service_manager_identity_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof; writes limited to `lib/features/kvm/kvm_service.dart`
+              + service tests under `test/features/kvm/`; emulator 85/85 only if `lib/` wire changes;
+              `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-21 05:49 UTC: splits the remaining manager-ID uniqueness seam of the blocked
      #009/#021 manager walk into one unblocked, service-level, dependency-free, TLS-safe dept slice.
      RS-4/5/6/7 and EP-S5 pin member-URI dedup, source identity, cardinality, hostile bodies and the

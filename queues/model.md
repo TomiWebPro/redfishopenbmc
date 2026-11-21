@@ -4,6 +4,32 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-21 09:53 UTC: splits a residual internal-consistency seam of the blocked
+     #009/#021 OEM-console detection into one unblocked, pure-model, dependency-free, TLS-safe dept
+     slice. RM-1..RM-8 and EP-M1/M2/M4 pin enablement precedence, non-map tolerance, cross-view
+     registry agreement, session-limit parsing and URI/type aggregation, but nothing pins that the
+     SAME OEM console is visible at the shared recursion-depth bound (3) to every entry point:
+     `FeatureRules.oemHasConsole`, `kvmOemConsoleBlock` / `kvmOemConsoleUri` / `kvmOemConsoleEnabled`,
+     `KvmOemRegistry._findAt` and both `fromManager` factories. A bound off-by-one would let the
+     capability card advertise "supported" while the console card resolves no URI (or vice versa).
+     Audit first; RED→GREEN only on a genuine divergence; no churn. Human-gated WebView/TLS rendering
+     stays gated and is NOT re-split. No code touched. -->
+
+- [ ] RM-9 OEM-console detection/resolution depth-bound agreement across all shared entry points:
+      over an in-memory matrix of `Oem` payloads with a console nested at each depth from 0 to just
+      beyond the shared bound (plus a padded/mixed-case vendor key and a non-map console value), pin
+      that `FeatureRules.oemHasConsole`, `kvmOemConsoleBlock` / `kvmOemConsoleUri` /
+      `kvmOemConsoleEnabled`, `KvmOemRegistry._findAt` and both `KvmConsole.fromManager` and
+      `KvmCapability.fromManager` agree on which payloads expose a console and its URI/enablement —
+      in particular that no payload is "supported" on one card while the peer resolves no URI, and
+      that a hostile deep/blob value cannot cause unbounded recursion. Read-only model work; no
+      transport/TLS change, no dependency.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_oem_uri_test.dart test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+              (0 issues), RED→GREEN proof only on a genuine divergence; writes limited to
+              `lib/features/kvm/models/**` + `lib/redfish/discovery/**` + those named tests;
+              `git diff --exit-code -- pubspec.yaml pubspec.lock`; no wire/TLS change.
+
 <!-- rf-ideate split 2026-11-21 05:49 UTC: splits the last unguarded internal-consistency seam of the
      blocked #009/#021 capability aggregation into one unblocked, pure-model, dependency-free, TLS-safe
      dept slice. EP-M4/RM-1..RM-7 and the per-helper tests (unknown-enablement limit / types / URI /
