@@ -600,6 +600,19 @@ String? externalClientConsoleProtocol(String? uri) {
 /// four fail closed; ordinary pct-encoded UTF-8 host bytes (e-acute, euro,
 /// emoji), punycode hosts and the same escapes in the path/query stay
 /// launchable — no valid target lost.
+///
+/// A UTS-46 IDNA-disallowed Modifier Letter (Unicode category `Lm`) is rejected
+/// for the same reason: code points such as U+0640 TATWEEL, U+06E5/U+06E6,
+/// U+07F4/U+07F5/U+07FA, U+081A/U+0824/U+0828 and U+1E94B have a stable,
+/// non-ASCII NFKC form (so the C/Z, mark, NFKC-to-ASCII and mark-introducing
+/// rules all miss them), yet a browser/WebView (WHATWG URL + IDNA) rejects a
+/// host containing them outright while [Uri.tryParse] reports a non-empty
+/// HTTPS host. Under a stale secure flag + test opt-in that parser differential
+/// could grant in-app rendering and self-signed acceptance on an un-navigable,
+/// malformed authority. No real BMC host uses an IDNA-disallowed modifier
+/// letter, so the ten fail closed; a browser-punycoded modifier letter (e.g.
+/// U+3031) and other valid non-ASCII IDNA hosts stay launchable — no valid
+/// target lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -1373,6 +1386,50 @@ const Set<int> _idnaIgnoredHangulFillers = <int>{
 bool _isIdnaIgnoredHangulFiller(int rune) =>
     _idnaIgnoredHangulFillers.contains(rune);
 
+/// Modifier-Letter (Unicode category `Lm`) code points that UTS-46 IDNA
+/// DISALLOWS in a hostname yet whose Unicode NFKC normalisation is a stable
+/// non-ASCII code point — so they evade every earlier authority rule:
+///
+///  * not Unicode Separator/Other (so the encoded C/Z rule misses them);
+///  * not a combining mark and not NFKC-introducing a mark (so the mark and
+///    mark-introducing rules miss them);
+///  * not a compatibility character that NFKC-folds to ASCII (so the complete
+///    NFKC-to-ASCII compatibility table misses them);
+///  * not a delimiter/fraction/fullwidth/Hangul-filler confusable.
+///
+/// A browser / WebView (WHATWG URL, IDNA with UseSTD3ASCIIRules) REJECTS a host
+/// containing one of these outright (verified against Node 24: each throws),
+/// while [Uri.tryParse] reports it as an opaque, non-empty HTTPS host and a
+/// purely syntactic re-check therefore calls it "secure". Under a stale secure
+/// flag + test opt-in that parser differential could grant in-app rendering
+/// and self-signed acceptance on a host the browser cannot navigate — a
+/// malformed/mismatched authority no real BMC console uses. The complete
+/// browser-rejected, NFKC-stable `Lm` set (Unicode 16.0.0 data + Node ICU
+/// validation) is enumerated here; a legitimate modifier letter that NFKC-folds
+/// to ASCII (e.g. U+02B0 -> 'h') is already caught by the compatibility rule,
+/// and one that a browser punycodes (e.g. U+3031 VERTICAL KANA REPEAT MARK) is
+/// a valid international host and is deliberately NOT in this set. U+037A
+/// GREEK YPOGEGRAMMENI is also absent: NFKC introduces a combining mark, so the
+/// mark-introducing rule already rejects it. No valid target is lost.
+const Set<int> _idnaDisallowedModifierLetters = <int>{
+  0x0640, // ARABIC TATWEEL
+  0x06E5, // ARABIC SMALL WAW WITH HAMZA ABOVE
+  0x06E6, // ARABIC SMALL YEH WITH HAMZA ABOVE
+  0x07F4, // NKO HIGH TONE A
+  0x07F5, // NKO HIGH TONE AA
+  0x07FA, // NKO LAJANYALAN
+  0x081A, // SAMARITAN MARK IN
+  0x0824, // SAMARITAN MARK DAGESH
+  0x0828, // SAMARITAN MARK RAFE
+  0x1E94B, // ADLAM NASALIZATION MARK (supplementary-plane modifier letter)
+};
+
+/// Returns `true` when [rune] is a UTS-46 IDNA-disallowed modifier letter that
+/// [Uri.tryParse] can nevertheless keep percent-encoded in a "secure" host
+/// (see [_idnaDisallowedModifierLetters]).
+bool _isIdnaDisallowedModifierLetter(int rune) =>
+    _idnaDisallowedModifierLetters.contains(rune);
+
 /// Returns `true` when the raw authority carries a percent-encoded non-ASCII
 /// code point that a launcher applying IDNA/NFKC resolves to an ASCII
 /// character: either a structural delimiter ([_compatibilityDelimiterCodePoints])
@@ -1456,6 +1513,46 @@ bool _authorityHasAsciiCompatibilityConfusable(String uri) {
     // authority than Uri.tryParse reports. Generated from Unicode 16.0.0 data
     // so the hand-maintained ranges above cannot leave a family unchecked.
     if (_isNfkcAsciiCompatibility(rune)) return true;
+  }
+  return false;
+}
+
+/// Returns `true` when the raw authority carries a percent-encoded code point
+/// that UTS-46 IDNA disallows in a hostname while [Uri.tryParse] keeps it
+/// encoded in a non-empty HTTPS host — a browser/WebView rejects the host
+/// outright, a parser differential that under a stale secure flag + test opt-in
+/// could grant in-app rendering and self-signed acceptance on an un-navigable
+/// authority (see [_idnaDisallowedModifierLetters]).
+///
+/// The scan decodes percent-encoded host bytes as UTF-8 (in the correct byte
+/// context, matching the other authority rules) and is scoped to the authority:
+/// the same escape in the path/query, where it cannot affect which host is
+/// contacted, stays launchable. Valid non-ASCII IDNA hosts (e-acute, U+3031,
+/// euro, emoji) stay launchable — no valid target lost.
+bool _authorityHasIdnaDisallowedModifierLetter(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  final List<int> bytes = <int>[];
+  for (int i = 0; i < authority.length; i++) {
+    final String char = authority[i];
+    if (char == '%' && i + 2 < authority.length) {
+      final int? hi = _hexDigit(authority[i + 1]);
+      final int? lo = _hexDigit(authority[i + 2]);
+      if (hi != null && lo != null) {
+        bytes.add((hi << 4) | lo);
+        i += 2;
+        continue;
+      }
+    }
+    // Raw characters here are ASCII (raw non-ASCII/forbidden chars were
+    // rejected by earlier rules); keep the byte so an encoded UTF-8 sequence
+    // is decoded in the correct byte context.
+    bytes.add(char.codeUnitAt(0));
+  }
+  final String decoded = utf8.decode(bytes, allowMalformed: true);
+  for (final int rune in decoded.runes) {
+    if (rune < 0x80) continue; // ASCII has no modifier letters.
+    if (_isIdnaDisallowedModifierLetter(rune)) return true;
   }
   return false;
 }
@@ -1949,6 +2046,14 @@ String? _controlSafeTrimmedUri(String? uri) {
   // Folded into this single shared gate (returning `null`, like the other checks)
   // so every HTTP(S) classifier and the launch-plan target reject it identically.
   if (_authorityHasAsciiCompatibilityConfusable(trimmed)) return null;
+  // Reject a percent-encoded UTS-46 IDNA-disallowed modifier letter in the
+  // authority: a browser/WebView rejects such a host outright while Uri.tryParse
+  // reports a non-empty HTTPS host, so a stale secure flag + test opt-in could
+  // grant in-app self-signed acceptance on an un-navigable/mismatched authority.
+  // Valid non-ASCII IDNA hosts (e-acute, U+3031, euro, emoji) stay launchable.
+  // Folded into this shared gate (returning `null`, like the other checks) so
+  // every HTTP(S) classifier and the launch-plan target reject it identically.
+  if (_authorityHasIdnaDisallowedModifierLetter(trimmed)) return null;
   // Reject a percent-encoded octet sequence in the authority that is not
   // well-formed UTF-8 (lone C1 byte, overlong form, truncated sequence): a
   // decode-first launcher could see different/invisible bytes in the host than

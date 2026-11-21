@@ -4148,4 +4148,122 @@ void main() {
   },
 );
 
+  group('planConsoleLaunch — IDNA-disallowed modifier-letter authority fails closed', () {
+    // These Modifier-Letter (Lm) code points have a non-ASCII, NFKC-STABLE
+    // decomposition (so they evade the C/Z, combining-mark, NFKC-to-ASCII
+    // compatibility and mark-introducing rules), yet UTS-46 IDNA disallows
+    // them: a browser / WebView (WHATWG URL) REJECTS the host outright while
+    // Uri.tryParse reports it as an opaque, non-empty HTTPS host. Under a
+    // stale secure flag + test opt-in that parser differential could grant
+    // in-app rendering and self-signed acceptance on a host the browser cannot
+    // navigate. Verified against Node 24 (WHATWG URL): each throws; against
+    // this module before the fix: each passed. U+037A is deliberately absent:
+    // it is already rejected by the NFKC mark-introducing rule.
+    const List<String> disallowedLmUris = <String>[
+      'https://bmc%D9%80.example/console', // U+0640 ARABIC TATWEEL
+      'https://bmc%DB%A5.example/console', // U+06E5 ARABIC SMALL WAW + HAMZA
+      'https://bmc%DB%A6.example/console', // U+06E6 ARABIC SMALL YEH + HAMZA
+      'https://bmc%DF%B4.example/console', // U+07F4 NKO HIGH TONE A
+      'https://bmc%DF%B5.example/console', // U+07F5 NKO HIGH TONE AA
+      'https://bmc%DF%BA.example/console', // U+07FA NKO LAJANYALAN
+      'https://bmc%E0%A0%9A.example/console', // U+081A SAMARITAN MARK IN
+      'https://bmc%E0%A0%A4.example/console', // U+0824 SAMARITAN MARK DAGESH
+      'https://bmc%E0%A0%A8.example/console', // U+0828 SAMARITAN MARK RAFE
+      'https://bmc%F0%9E%A5%8B.example/console', // U+1E94B ADLAM NASALIZATION MARK
+    ];
+
+    test('an IDNA-disallowed modifier-letter authority never reaches in-app', () {
+      for (final String uri in disallowedLmUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+      }
+    });
+
+    test('an IDNA-disallowed modifier-letter authority stays off under production',
+        () {
+      for (final String uri in disallowedLmUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('lowercase hex escapes are rejected too', () {
+      for (final String uri in <String>[
+        'https://bmc%d9%80.example/console',
+        'https://bmc%df%ba.example/console',
+        'https://bmc%e0%a0%9a.example/console',
+        'https://bmc%f0%9e%a5%8b.example/console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('the same escapes in the path stay launchable (authority-scoped)', () {
+      for (final String uri in <String>[
+        'https://bmc.example/%D9%80/console',
+        'https://bmc.example/%E0%A0%9A/console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+
+    test('valid non-ASCII IDNA hosts stay launchable (no over-rejection)', () {
+      // U+3031 VERTICAL KANA REPEAT MARK is also category Lm but a browser
+      // punycodes it (a valid international host), so rejecting *all* Lm would
+      // over-reject. Only the IDNA-disallowed set above fails closed.
+      for (final String uri in <String>[
+        'https://bmc%C3%A9.example/console', // e-acute (Letter)
+        'https://bmc%E2%82%AC.example/console', // euro (Symbol)
+        'https://bmc%E3%80%B1.example/console', // U+3031 vertical kana (valid IDNA)
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+  },
+);
+
 }
