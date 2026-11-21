@@ -12875,3 +12875,19 @@
 - Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (RM-12)
+
+**Done:**
+- FEATURE (test-only): RM-12 external-client classifier/label/openability parity across both models through the real `fromManager` pipeline for #009/#021. Added `test/features/kvm/kvm_external_client_from_manager_parity_test.dart` (5 tests) feeding one matrix of external-console URIs through BOTH `KvmConsole.fromManager` and `KvmCapability.fromManager` and pinning identical `requiresExternalConsoleClient` / `externalClientProtocolLabel` / resolved `launchUri` / `canOpenConsole` / `launchStrategy` over the full scheme set (vnc/rfb/kvmip/kvm/ssh/telnet/ipmi), uppercase/mixed-case, padded and opaque `vnc:host=…` forms, control/CRLF/NUL/TAB/DEL/NBSP/ZWSP-bearing targets and degenerate `.`/`..` authorities, plus identical protocol-specific external-open guidance via `kvmExternalClientNoticeFor`.
+- Audit found no live divergence — both factories delegate to the one shared fail-closed classifier on the same trimmed launch URI; the unguarded seam is the `fromManager` pipeline (existing parity tests use direct constructors), so this is a regression guard, not churn. Real-file RED: mutated `KvmCapability.externalClientProtocolLabel` to a fixed VNC label → 4/5 failed (`+1 -4`, capability leaked `'VNC/RFB'` for SSH/KVMIP/unknown/null); source restored byte-clean (SHA `533ed545…` unchanged, empty lib diff), 600-perm backup shredded → 5/5 GREEN.
+- Verify: `dart format` clean; `flutter analyze` 0; full `flutter test --concurrency=4` 1998 passed / 1 skipped (baseline 1993 +5); issues validate OK; diff --check clean; lib diff empty; deps unchanged.
+
+**Decisions:**
+- Test-only, no `lib/`, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. RM-12 is now LANDED.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. UI skipped (§5): no widget surface changed; no manufactured churn.
+
+**Next:**
+- Push the single commit; leave the five stashes untouched. EP-U16 / EP-M5 / EP-S2 / EP-T4 audit-first — RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended; EP-P4/P1/P2 human-gated. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS. Full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
