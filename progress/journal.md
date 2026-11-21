@@ -12507,3 +12507,20 @@
 - Push this run's single commit together with the two unpushed rf-platform commits. Audit EP-U13 for a genuinely different untested divergence (states largely pinned already), never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-U13 four-state populated-ListView agreement)
+
+**Done:**
+- Audited `queues/*.md` first: EP-U13 was the last unlanded 09:53-slice candidate. Its four states were largely pinned by the reload-indicator and stale-error suites in isolation, but the both-true (failed reload + retry underway) case was covered only at 800 px and no test pinned the two merged nodes' agreement/structural distinctness over one matrix — a genuine narrow-width/agreement gap, not churn.
+- Added `test/features/kvm/kvm_view_state_agreement_test.dart` (13 tests): error-only / loading-only / both-true / neither at 320/800/1300 px, plus a multi-console both-true case. Pins exactly one merged `excludeSemantics` node per active signal, visible payload inside its own announced node, warning + spinner structurally distinct in the both-true case, no cards during reload, no collision with the early empty-list returns, no overflow.
+- RED proof: mutated the in-list gate `if (ui.loading)` → `if (ui.loading && ui.error == null)` in `kvm_view.dart` → exactly the 4 both-true tests failed (`+9 -4`, spinner node missing / cards shown); all other cases passed; source restored byte-clean (SHA `60be27a4…` unchanged, empty lib diff), 600-perm backup shredded → 13/13 GREEN.
+- REPAIR carried from concurrent rf-gate WIP: dropped the stale 9th `LAUNCH_FALLBACK.md` decision-table row (added by the 12:30 rf-platform merge without a matching EP-P8 scenario) that left committed HEAD test-RED (3 EP-P8 failures). Behavior remains documented in prose (`LAUNCH_FALLBACK.md:640-648`) + 36 `launch_plan_test.dart` refs; EP-P8 targeted 8/8 with the repair.
+- Verify: targeted 13/13; `dart format` clean; `flutter analyze` 0; full `flutter test --coverage --concurrency=2` 1902 passed / 1 skipped (baseline 1889 +13); EP-P8 8/8; `issues.py validate` OK; `git diff --check` clean; deps unchanged; secret scan clean. Two plain-`flutter test` attempts hung early on security tests under concurrent agent load; the concurrency-2 invocation completed cleanly.
+
+**Decisions:**
+- Test-only FEATURE guard (+ doc-only REPAIR), dependency-free, TLS-safe. Per §5 no manufactured UI churn — the improvement pins an existing a11y contract, not new decoration. Emulator skipped (no wire/fixture/tool-runtime change, <7 days since last green 85/85). No force-push, history rewrite, `git clean`, or file deletion; three pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; do NOT do unattended, never weaken production TLS.
+
+**Next:**
+- Push this single commit with the two unpushed rf-platform commits. Re-audit `queues/*.md` for a genuinely different untested contract before adding any further guard — all 09:53-slice candidates are landed, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended; full emulator only on lib-wire/fixture/tool-runtime change or >7 days.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

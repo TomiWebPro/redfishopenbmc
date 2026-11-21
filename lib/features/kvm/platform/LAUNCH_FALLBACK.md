@@ -26,7 +26,6 @@ suite).
 | flag off + no URI | `copyOnly` | `null` | `false` |
 | flag off + blank URI / inconsistent "secure" flag | `copyOnly` (fail closed) | `null` | `false` |
 | flag off + **disabled** console (even HTTPS) | `copyOnly` (fail closed) | trimmed HTTPS URI | `false` |
-| flag off + all-invisible URI (ZWSP/ZWJ/ZWNJ, controls, variation selectors, Hangul fillers) | `copyOnly` (fail closed) | `null` (no usable target) | `false` |
 | test opt-in + HTTPS HTML5 enabled | `inAppWebView` | trimmed HTTPS URI | `true` (test-only) |
 | opt-in but strict TLS | `inAppWebView` | trimmed HTTPS URI | `false` |
 | opt-in + plaintext / disabled / non-HTML5 | never launchable | trimmed URI | `false` |
