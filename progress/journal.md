@@ -12721,3 +12721,18 @@
 - Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-P11)
+
+**Done:**
+- FEATURE (test-only): EP-P11 navigation-gate ↔ launch-route fail-closed agreement guard for #009/#021. Added `test/features/kvm/platform/navigation_launch_route_agreement_test.dart` (7 tests). Audit found a genuine unguarded contract: `Uri.tryParse` keeps the SAME origin as the console for 8 control/separator/invisible/malformed targets (ZWSP/NBSP/TAB/`%zz`/NUL/CRLF/raw-space), so `allowsInAppNavigation` fails closed on them ONLY via the load-bearing target-side `isSecureHttpsConsoleUri` check — an origin-only gate would navigate the trusted console frame to a control-bearing URL; the isolated navigation tests cannot catch it (their hostile targets parse to a different/null origin). Pins: same-origin control-bearing fail-closed, authority-hostile fail-closed on both layers, navigable ⇒ in-app-eligible bridge, legitimate same-origin navigable + in-app, userinfo navigation-only exception preserved, production default never in-app/self-signed. Real-file RED: dropped the target-side classifier check → 3 named tests failed (`+4 -3`, ZWSP leaked `nav=true` while the plan refused in-app); source restored byte-clean (SHA `74887e619129209ef622400a3396edc2ef76bfc8694ddaf96574e4126962ee01` unchanged, empty lib diff), 600-perm backup shredded → 7/7 GREEN, targeted platform 40/40.
+- Verify: analyze 0; targeted new suite 7/7 + platform suites 40/40; full `flutter test --concurrency=4` 1964 passed / 1 skipped (baseline 1957 +7); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Regression guard on a genuine untested contract (shared hostile matrix across two RP-1 call sites), not churn. Pure test-only, no `lib/`, no wire/TLS/fixture change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; the guard only fails closed and grants no approval/navigation. The documented userinfo exception is deliberately preserved as navigation-only (the initial load may carry userinfo).
+
+**Next:**
+- Push the single run commit; leave pre-existing stashes untouched. Audit dept-head candidates EP-S8 / EP-U15 / EP-M5 before adding any further guard — RED→GREEN only on a genuine divergence, never churn; RM-11 is a deliberate authoritative-rule decision, not unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
