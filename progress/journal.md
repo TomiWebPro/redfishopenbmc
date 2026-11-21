@@ -12812,3 +12812,19 @@
 - Push the single commit; leave the four pre-existing stashes untouched. EP-S8 / RM-11 / EP-M4 / EP-P3 are audit-first — RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 are deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-21 — agent:rf-gate — MERGED build/rf-platform (check#11058 PASS, 0b107bb)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#11058 returned `SUCCESS` / `CHECK: PASS` for branch head `0b107bb` (cross-checked unchanged == `0b107bb9c0c12e89bc23b19946429e16c5c4c746`; merge-base `67af4df` ancestor of main; not already merged; exactly one unique commit). Merged `build/rf-platform` into `main` with `--no-ff` → merge `e1e17a7` (parents `745fbd5` / `0b107bb`), clean auto-merge (ort, no conflicts).
+- Branch change: RP-1 validation matrix adds a "no sensitive data at rest" acceptance box to `WEBVIEW_TLS_MATRIX.md` (WebView cache/storage + background snapshot/FLAG_SECURE data-leak vector) plus evidence markers + 1 RED guard in `validation_evidence_checklist_guard_test.dart`. Doc+test only, no production Dart or TLS change, allowlisted paths, no dependency.
+- Post-merge verify: `flutter analyze` 0; full `flutter test --coverage --concurrency=4` 1986 passed / 1 skipped (baseline 1985 +1 merged test); all four coverage gates PASS overall 90.5% (6059/6692) / scoped 90.4% (2119/2345) / kvm 97.4% (1336/1371) / kvm-platform 97.0% (460/474), gate exit 0; `asset_guard` OK; `unattended_guard` OK; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; first-parent diff = 2 allowlisted files (36 insertions, 1 deletion); TLS-weakening + secret scan clean.
+
+**Decisions:**
+- Merged on an explicit PASS verdict for the exact checked head only (never merge un-verified / FAIL). Concurrent `redfish-automation` EP-T20 WIP in `test/tool/guard_suite_liveness_test.dart` isolated in `stash@{0}: rf-gate-premerge-1795299078` so it did not pollute verification; four pre-existing stashes untouched. Production TLS not weakened; no WebView activation, no human approval granted.
+- DMTF 85-test emulator skipped: doc+test-only change, no lib-wire/fixture/tool-runtime change, <7 days since last green 85/85. No issue closed (#009 P3 / #021 P2 stay human-gated on platform WebView + BMC TLS validation).
+
+**Next:**
+- Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. EP-T20 WIP awaits the automation agent's recovery from `stash@{0}: rf-gate-premerge-1795299078`. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
