@@ -12736,3 +12736,19 @@
 - Push the single run commit; leave pre-existing stashes untouched. Audit dept-head candidates EP-S8 / EP-U15 / EP-M5 before adding any further guard — RED→GREEN only on a genuine divergence, never churn; RM-11 is a deliberate authoritative-rule decision, not unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-21 — agent:rf-gate — MERGED build/rf-platform (check#11018 PASS, a8ed4b4)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#11018 returned `SUCCESS` / `CHECK: PASS` for branch head `a8ed4b4` (cross-checked unchanged; merge-base `ab903c2` ancestor of main; not already merged). Merged `build/rf-platform` into `main` with `--no-ff` → merge `1d98799` (parents `f4326e0` / `a8ed4b4`), clean auto-merge, no conflicts.
+- Branch change: RP-1 validation matrix adds a no-device-capability/permission-access acceptance box (geolocation/camera/mic/clipboard WebView RCE/privacy vector) + RED/GREEN guard. Doc+test only, no production Dart or TLS change, allowlisted paths, no dependency.
+- Post-merge verify: `flutter analyze` 0; targeted `validation_evidence_checklist_guard_test.dart` 11/11; full `flutter test --coverage --concurrency=4` 1965 passed / 1 skipped; all four coverage gates PASS overall 90.5% (6059/6692) / scoped 90.4% (2119/2345) / kvm 97.4% (1336/1371) / kvm-platform 97.0% (460/474), gate exit 0; `asset_guard` OK; `unattended_guard` OK; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; first-parent diff = 2 allowlisted files (39 insertions, 2 deletions); secret scan clean.
+
+**Decisions:**
+- Merged on an explicit PASS verdict for the exact checked head only (never merge un-verified / FAIL). Untracked automation WIP preserved in `stash@{0}: rf-gate-premerge-1795292401` before merge so it could not pollute verification; three pre-existing stashes untouched. Production TLS not weakened; no WebView activation, no human approval granted.
+- DMTF 85-test emulator skipped: doc+test-only change, no lib-wire/fixture/tool-runtime change, <7 days since last green 85/85. No issue closed (#009 P3 / #021 P2 stay human-gated on platform WebView + BMC TLS validation).
+
+**Next:**
+- Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
