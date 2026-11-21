@@ -538,6 +538,16 @@ Invariants, enforced by tests:
    cannot navigate. All ten fail closed (either hex case); the same escapes in
    the path/query and valid non-ASCII IDNA hosts (e-acute, U+3031 vertical kana
    — a browser punycodes it, euro, emoji) stay launchable — no valid target lost.
+   **IDNA-disallowed ideographic-description rejection:** the Ideographic
+   Description Characters block U+2FF0..U+2FFB (category `So`) is disallowed by
+   UTS-46 IDNA, so a browser/WebView rejects such a host outright (verified
+   against Node 24: all twelve throw) while `Uri.tryParse` reports an opaque,
+   non-empty HTTPS host. These code points are not C/Z, marks, NFKC-introducing
+   or NFKC-to-ASCII, so every earlier authority rule misses them; under a stale
+   secure flag + test opt-in that differential could reach in-app self-signed
+   acceptance on an un-navigable host. The whole block fails closed (either hex
+   case); the same escapes in the path/query and IDNA-valid symbols (euro,
+   emoji) stay launchable — no valid target lost.
    Covered by targeted tests across the defense-in-depth re-validation
    groups (scheme/host/malformed-authority parity + control-character +
    raw-space + Unicode-whitespace/invisible + raw-backslash + RFC-3986
@@ -584,7 +594,10 @@ Invariants, enforced by tests:
    NFKC-stable `Lm` code points U+0640/06E5/06E6/07F4/07F5/07FA/081A/0824/0828/
    1E94B that UTS-46 IDNA disallows and a browser rejects outright, so they fail
    closed rather than reach in-app self-signed acceptance on an un-navigable
-   host)).
+   host) + IDNA-disallowed ideographic-description authority rejection (the
+   U+2FF0..U+2FFB `So` block that UTS-46 IDNA disallows and a browser rejects
+   outright while `Uri.tryParse` reports a non-empty HTTPS host, so all twelve
+   fail closed rather than reach in-app self-signed acceptance)).
    **Blank-URI target normalization:** a whitespace-only URI is "no usable
    target" (`KvmConsoleLaunchPlan.targetUri`) — the copy-only fallback must
    surface `null`, never a whitespace string, under any policy (including the
