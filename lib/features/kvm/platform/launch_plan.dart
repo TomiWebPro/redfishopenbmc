@@ -2659,6 +2659,14 @@ KvmConsoleLaunchPlan planConsoleLaunch({
 /// independently validated so a spoofed "target" that merely echoes a
 /// malformed console authority can never count as the same origin.
 ///
+/// Additionally, a navigation [targetUri] carrying embedded credentials
+/// (userinfo, e.g. `https://user:pass@bmc.example/console`) fails closed: it
+/// is same-origin, but following it would inject attacker-chosen Basic-auth
+/// credentials into the trusted console frame (login CSRF / credential
+/// injection) and presents a `user@host` display-confusion surface. The
+/// initial credentialed console load is a separate path and is unaffected;
+/// only in-session navigation targets must be credential-free.
+///
 /// The decision is deliberately policy-independent: it is an origin invariant
 /// a future WebView consumer consults *in addition to* the opt-in policy, so
 /// it holds even if a consumer calls it directly. It imports no plugin, opens
@@ -2676,6 +2684,21 @@ bool allowsInAppNavigation({
   final Uri? console = Uri.tryParse(consoleUri!.trim());
   final Uri? target = Uri.tryParse(targetUri!.trim());
   if (console == null || target == null) return false;
+  // A navigation must not INTRODUCE embedded credentials (userinfo) into the
+  // trusted console frame. A same-origin target such as
+  // `https://user:pass@bmc.example/console` has the same
+  // scheme/host/port as the console, so the origin comparison alone would
+  // allow it — yet following it dispatches a Basic-auth header with
+  // attacker-chosen credentials to the console origin (login CSRF /
+  // credential injection) and produces a URL whose `user@host` text is a
+  // display-confusion surface. Embedded credentials in a navigation target
+  // are an anomalous, unsafe navigation, so fail closed and leave it to the
+  // external-browser + copy fallback. This is scoped to the *navigation
+  // target*: the initial console load may legitimately carry userinfo
+  // (planConsoleLaunch still accepts such a URI), so this guard is consulted
+  // only for in-session redirects / link clicks / JS top-level navigation.
+  // It is dependency-free, opens no channel and changes no transport TLS.
+  if (target.userInfo.isNotEmpty) return false;
   try {
     // Uri.origin normalises scheme (lower-case), host (lower-case, IDNA/punycode
     // as parsed) and the effective port (an omitted or explicit :443 collapses

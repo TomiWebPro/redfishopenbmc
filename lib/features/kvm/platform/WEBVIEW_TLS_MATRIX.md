@@ -128,6 +128,15 @@ flag stays off for that target.
       anything that leaves the origin is blocked or handed to the external
       secure browser, never silently downgraded. Verified per target before the
       flag is flipped.
+      A same-origin navigation target that carries embedded credentials
+      (userinfo, e.g. `https://user:pass@bmc.example/console`) is likewise
+      rejected (`allowsInAppNavigation` fails closed): it would otherwise pass
+      the same-origin check yet inject attacker-chosen Basic-auth credentials
+      into the trusted console frame (login CSRF / credential injection) and
+      present a `user@host` URL display-confusion surface. Only in-session
+      navigation targets must be credential-free; the initial credentialed
+      console load is a separate path and is unaffected. Verified per target
+      before the flag is flipped.
 * [ ] **CSP / mixed content** — the BMC console's HTTP response headers and
       page content are inspected for `Content-Security-Policy` frame rules and
       mixed-content (HTTPS page loading HTTP subresources); a console that is
