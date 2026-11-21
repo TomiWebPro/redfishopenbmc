@@ -177,7 +177,11 @@ void main() {
               isFalse,
             );
             expect(
-              production.mayAcceptSelfSigned(hasSecureUri: hasSecureUri),
+              production.mayAcceptSelfSigned(
+                hasSecureUri: hasSecureUri,
+                isHtml5: isHtml5,
+                isEnabled: isEnabled,
+              ),
               isFalse,
             );
           }
@@ -189,8 +193,22 @@ void main() {
       const KvmWebViewPolicy optIn = KvmWebViewPolicy.testOptIn;
       expect(optIn.enabled, isTrue);
       expect(optIn.acceptsSelfSigned, isTrue);
-      expect(optIn.mayAcceptSelfSigned(hasSecureUri: true), isTrue);
-      expect(optIn.mayAcceptSelfSigned(hasSecureUri: false), isFalse);
+      expect(
+        optIn.mayAcceptSelfSigned(
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        ),
+        isTrue,
+      );
+      expect(
+        optIn.mayAcceptSelfSigned(
+          hasSecureUri: false,
+          isHtml5: true,
+          isEnabled: true,
+        ),
+        isFalse,
+      );
     });
   });
 }

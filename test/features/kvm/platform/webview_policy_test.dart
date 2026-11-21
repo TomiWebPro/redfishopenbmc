@@ -25,8 +25,11 @@ void main() {
 
     test('production never accepts a self-signed certificate', () {
       expect(
-        KvmWebViewPolicy.productionDefault
-            .mayAcceptSelfSigned(hasSecureUri: true),
+        KvmWebViewPolicy.productionDefault.mayAcceptSelfSigned(
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        ),
         isFalse,
       );
     });
@@ -54,7 +57,11 @@ void main() {
         isFalse,
       );
       expect(
-        KvmWebViewPolicy.testOptIn.mayAcceptSelfSigned(hasSecureUri: false),
+        KvmWebViewPolicy.testOptIn.mayAcceptSelfSigned(
+          hasSecureUri: false,
+          isHtml5: true,
+          isEnabled: true,
+        ),
         isFalse,
       );
     });
@@ -82,15 +89,49 @@ void main() {
       const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
       expect(enabledStrict.enabled, isTrue);
       expect(
-        enabledStrict.mayAcceptSelfSigned(hasSecureUri: true),
+        enabledStrict.mayAcceptSelfSigned(
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        ),
         isFalse,
       );
     });
 
     test('test-only opt-in may accept self-signed on HTTPS only', () {
       expect(
-        KvmWebViewPolicy.testOptIn.mayAcceptSelfSigned(hasSecureUri: true),
+        KvmWebViewPolicy.testOptIn.mayAcceptSelfSigned(
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        ),
         isTrue,
+      );
+    });
+
+    test('opt-in refuses self-signed for a disabled console on HTTPS', () {
+      // A future WebView consumer may call mayAcceptSelfSigned directly;
+      // self-signed acceptance must never be granted for a console that
+      // cannot be rendered in-app (service disabled).
+      expect(
+        KvmWebViewPolicy.testOptIn.mayAcceptSelfSigned(
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: false,
+        ),
+        isFalse,
+      );
+    });
+
+    test('opt-in refuses self-signed for a non-HTML5 console on HTTPS', () {
+      // Same invariant for a console that the in-app renderer cannot display.
+      expect(
+        KvmWebViewPolicy.testOptIn.mayAcceptSelfSigned(
+          hasSecureUri: true,
+          isHtml5: false,
+          isEnabled: true,
+        ),
+        isFalse,
       );
     });
   });

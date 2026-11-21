@@ -65,8 +65,12 @@ transport change):
   HTTPS and **only** for a test profile. Never derived from a normal profile.
 * `permitsInAppRendering(...)` requires flag on + enabled + HTML5 + HTTPS
   (`hasSecureUri`). Plaintext HTTP is never an in-app render target.
-* `mayAcceptSelfSigned(...)` is true only for the test-only mode, on HTTPS —
-  strict mode and plaintext always refuse.
+* `mayAcceptSelfSigned(...)` is true only for the test-only mode, on HTTPS, and
+  only for a console that may actually be rendered in-app (enabled + HTML5).
+  Strict mode, plaintext, a disabled console and a non-HTML5 console always
+  refuse. It reuses `permitsInAppRendering` as the single source of truth, so a
+  future WebView consumer that calls this boolean directly can never grant
+  self-signed acceptance for a console that will not be rendered in-app.
 * `resolveRenderRoute(...)` proves the fallback: with the flag off, HTTPS routes
   to `externalBrowser` and everything else to `copyOnly`.
 * 11 targeted tests lock these invariants in (RED→GREEN this run).

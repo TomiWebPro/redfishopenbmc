@@ -2112,7 +2112,11 @@ KvmConsoleLaunchPlan planConsoleLaunch({
   // test-only opt-in cannot weaken TLS on an external-browser/copy fallback.
   final bool acceptSelfSigned =
       safeRoute == KvmConsoleRenderRoute.inAppWebView &&
-          policy.mayAcceptSelfSigned(hasSecureUri: effectiveSecure);
+          policy.mayAcceptSelfSigned(
+            hasSecureUri: effectiveSecure,
+            isHtml5: isHtml5,
+            isEnabled: isEnabled,
+          );
 
   return KvmConsoleLaunchPlan._(
     route: safeRoute,
