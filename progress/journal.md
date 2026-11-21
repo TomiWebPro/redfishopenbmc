@@ -12121,3 +12121,20 @@
 - Land EP-U11 (RemoteConsole/disabled card cross-surface rendering guard) or re-audit EP-M4/EP-S5 for a genuinely different untested contract — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:rf-gate — MERGED build/rf-platform (cfc75f2 → merge ae7e858)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#10661 returned `CHECK: PASS` for branch tip `cfc75f2` (exit 0, 57.2 s, started 2026-11-21 01:56:40 UTC, ~1 min after the builder authored `cfc75f2` at 01:55:45 UTC). Cross-checked branch HEAD unchanged `== cfc75f2` and merge-base `c592f97` ancestor of main, then merged via `--no-ff` (merge `ae7e858`, two parents).
+- Branch contributes one commit (`cfc75f2`): `KvmWebViewPolicy.mayAcceptSelfSigned` now requires the full `permitsInAppRendering` preconditions (enabled + HTML5 + HTTPS), so a disabled/non-HTML5 console can never gain self-signed acceptance even if a future consumer calls the boolean directly (RP-1 policy defense-in-depth); `planConsoleLaunch` passes `isHtml5`/`isEnabled`. Strictly more gates, production default untouched — no TLS weakening, no dependency, no valid target lost. + doc rationale + RED/GREEN tests.
+- One merge conflict in `LAUNCH_FALLBACK.md`: branch items 3/4 were stale prose from an older base (main had since expanded them with `isControlSafeConsoleUri`, disabled-console gating, control-char rejection); resolved keeping main's fuller items 3/4 and folding in only the branch's new `mayAcceptSelfSigned` policy-layer sentence. Other 4 files auto-merged cleanly.
+- Post-merge the merged tree exposed 6 compile errors in main's newer `human_gate_doc_guard_test.dart` (added after the branch base — the check worktree never had it): 3 `mayAcceptSelfSigned` calls used the old single-argument signature. Fixed test-only by passing the new required `isHtml5`/`isEnabled` args, preserving each test's intent (production always false; opt-in HTTPS true, plaintext false) — the small safe conflict fix the gate is allowed to make to keep `main` shippable.
+- Post-merge verify in-tree at `ae7e858` (clean apart from pre-existing untracked `testing/`): `flutter analyze` 0; doc-guard targeted 8/8; full `flutter test --coverage` 1748 passed / 1 skipped (baseline 1746 +2); all coverage gates PASS overall 90.1% (5878/6521), scoped 90.4% (2119/2345), kvm 96.3% (1155/1200), kvm-platform 95.8% (321/335), gate exit 0; `issues.py validate` OK; `git diff --check` clean; first-parent diff = 6 allowlisted files; staged-diff secret scan clean.
+
+**Decisions:**
+- DMTF emulator suite skipped: no lib wire/transport/fixture/tool change (dependency-free policy boolean only); <7 days since last green 85/85. No production TLS weakened; no WebView activated. No issue closed (#009 P3 / #021 P2 remain human-gated). Pre-existing untracked `testing/` untouched; no force-push, no history rewrite. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- No further gate action while `build/rf-platform` has no new verified commit past `cfc75f2`; rf-platform to produce + re-verify the next slice before a future gate run. Routine automation continues per FUTUREWORK Current focus.
+
+**Issues touched:** none closed — #009 (open), #021 (open).
