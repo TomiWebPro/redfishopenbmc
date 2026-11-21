@@ -151,6 +151,16 @@ flag stays off for that target.
       opt-in tolerates only an otherwise-valid cert for the *expected* BMC host
       that is untrusted by the platform store; it is not a general certificate
       check bypass. Verified per target before the flag is flipped.
+* [ ] **Origin / navigation confinement (no cross-origin or downgrade nav)** —
+      an embedded WebView must never follow a redirect, link click, `window.open`
+      or JavaScript-initiated top-level navigation to a different host/port or
+      to a plaintext / non-HTTPS scheme; doing so would place an attacker-
+      controlled or TLS-downgraded page inside the trusted console frame. The
+      decision reuses the fail-closed authority validator and requires both
+      URIs to be valid HTTPS targets with the **same origin** (`allowsInAppNavigation`);
+      anything that leaves the origin is blocked or handed to the external
+      secure browser, never silently downgraded. Verified per target before the
+      flag is flipped.
 * [ ] **CSP / mixed content** — the BMC console's HTTP response headers and
       page content are inspected for `Content-Security-Policy` frame rules and
       mixed-content (HTTPS page loading HTTP subresources); a console that is

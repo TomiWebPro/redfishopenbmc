@@ -2835,3 +2835,53 @@ KvmConsoleLaunchPlan planConsoleLaunch({
     acceptSelfSigned: acceptSelfSigned,
   );
 }
+
+/// Whether an embedded console WebView may navigate to [targetUri] from the
+/// console's own [consoleUri] (rf-platform RP-1 origin confinement).
+///
+/// An in-app WebView must stay confined to the BMC console's origin. A
+/// redirect, a clicked link, `window.open` or any JavaScript-initiated
+/// top-level navigation must never move the trusted console frame to a
+/// DIFFERENT host/port, or to a plaintext / non-HTTPS scheme: doing so would
+/// present an attacker-controlled or TLS-downgraded page inside the trusted
+/// console frame (phishing / credential capture). The external secure-browser
+/// + copy fallback stays the route for anything that leaves the origin
+/// (RP-2 fallback requirement); no target is silently rewritten here.
+///
+/// This fails closed unless BOTH URIs independently pass the very same
+/// fail-closed secure-target validator [planConsoleLaunch] uses, AND their
+/// normalized origins (scheme + host + effective port, via [Uri.origin])
+/// match exactly. Consequently a relative URI, a blank/invisible value, a
+/// plaintext HTTP target, a different host or port, and every malformed /
+/// spoofed authority rejected by the validator (encoded delimiters, IDNA
+/// confusables, non-canonical ports, ...) all return `false`. Both URIs are
+/// independently validated so a spoofed "target" that merely echoes a
+/// malformed console authority can never count as the same origin.
+///
+/// The decision is deliberately policy-independent: it is an origin invariant
+/// a future WebView consumer consults *in addition to* the opt-in policy, so
+/// it holds even if a consumer calls it directly. It imports no plugin, opens
+/// no channel and changes no transport TLS posture — a `false` result simply
+/// means the navigation must be blocked or handed to the external browser.
+bool allowsInAppNavigation({
+  required String? consoleUri,
+  required String? targetUri,
+}) {
+  // Both sides must independently be real, valid, secure HTTPS targets. This
+  // reuses the exhaustive fail-closed validator so a malformed/spoofed
+  // authority can never be called "same origin" with the console.
+  if (!_uriHasSecureHttpsTarget(consoleUri)) return false;
+  if (!_uriHasSecureHttpsTarget(targetUri)) return false;
+  final Uri? console = Uri.tryParse(consoleUri!.trim());
+  final Uri? target = Uri.tryParse(targetUri!.trim());
+  if (console == null || target == null) return false;
+  try {
+    // Uri.origin normalises scheme (lower-case), host (lower-case, IDNA/punycode
+    // as parsed) and the effective port (an omitted or explicit :443 collapses
+    // to the same origin). A guarded read keeps an unexpected parse failure
+    // fail-closed instead of crashing the caller.
+    return console.origin == target.origin;
+  } on Object {
+    return false;
+  }
+}

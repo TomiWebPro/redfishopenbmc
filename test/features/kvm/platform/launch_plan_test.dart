@@ -5198,4 +5198,111 @@ void main() {
   },
 );
 
+  group('allowsInAppNavigation — WebView stays confined to the console origin', () {
+    // RP-1: an embedded console WebView must never be navigated by a redirect,
+    // a clicked link, window.open or JS away from the BMC console's own origin
+    // (a different host/port or a plaintext/non-HTTPS scheme would put an
+    // attacker-controlled or downgraded page inside the trusted console frame).
+    // The decision fails closed and reuses planConsoleLaunch's validator, so a
+    // spoofed/malformed authority can never count as the "same origin".
+    const String console = 'https://bmc.example:8443/console';
+
+    test('same-origin navigation (path/query/fragment changes) is allowed', () {
+      for (final String target in <String>[
+        'https://bmc.example:8443/console',
+        'https://bmc.example:8443/console?tab=1',
+        'https://bmc.example:8443/other#frag',
+        'https://bmc.example:8443/',
+      ]) {
+        expect(
+          allowsInAppNavigation(consoleUri: console, targetUri: target),
+          isTrue,
+          reason: target,
+        );
+      }
+    });
+
+    test('default and explicit HTTPS port are the same origin', () {
+      expect(
+          allowsInAppNavigation(
+            consoleUri: 'https://bmc.example/console',
+            targetUri: 'https://bmc.example:443/console',
+          ),
+          isTrue);
+    });
+
+    test('a different host, port or scheme fails closed', () {
+      for (final String target in <String>[
+        'https://evil.example:8443/console', // different host
+        'https://bmc.example:9443/console', // different port
+        'http://bmc.example:8443/console', // TLS downgrade
+        'ftp://bmc.example/console', // non-HTTPS scheme
+      ]) {
+        expect(
+          allowsInAppNavigation(consoleUri: console, targetUri: target),
+          isFalse,
+          reason: target,
+        );
+      }
+    });
+
+    test('a relative, blank or invisible target fails closed', () {
+      for (final String? target in <String?>[
+        null,
+        '',
+        '   ',
+        '/relative/path',
+        '\u200B', // zero-width space
+      ]) {
+        expect(
+          allowsInAppNavigation(consoleUri: console, targetUri: target),
+          isFalse,
+          reason: 'target=$target',
+        );
+      }
+    });
+
+    test('an insecure or malformed console origin fails closed', () {
+      for (final String? badConsole in <String?>[
+        null,
+        'http://bmc.example/console',
+        'https:///console',
+        'https://bmc.example%2F.evil/console', // encoded delimiter spoof
+      ]) {
+        expect(
+          allowsInAppNavigation(
+            consoleUri: badConsole,
+            targetUri: console,
+          ),
+          isFalse,
+          reason: 'console=$badConsole',
+        );
+      }
+    });
+
+    test('a spoofed/malformed authority is never treated as the same origin', () {
+      for (final String target in <String>[
+        'https://bmc.example:8443%40evil.example/console', // encoded @
+        'https://bmc.example:8443%2F.evil.example/console', // encoded /
+        'https://bmc.example:8443/console?q=%00', // encoded NUL
+      ]) {
+        expect(
+          allowsInAppNavigation(consoleUri: console, targetUri: target),
+          isFalse,
+          reason: target,
+        );
+      }
+    });
+
+    test('a valid same-origin IPv6 console navigates within itself', () {
+      expect(
+        allowsInAppNavigation(
+          consoleUri: 'https://[::1]:8443/console',
+          targetUri: 'https://[::1]:8443/other',
+        ),
+        isTrue,
+      );
+    });
+  });
+
 }

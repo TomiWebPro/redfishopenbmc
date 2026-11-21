@@ -37,6 +37,9 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'webview-availability', marker: 'webview availability'),
   (name: 'no-production-tls-weakening', marker: 'no production weakening'),
   (name: 'hostname-verification', marker: 'hostname verification'),
+  (name: 'origin-navigation-confinement', marker: 'origin / navigation confinement'),
+  (name: 'no-cross-origin-nav', marker: 'same origin'),
+  (name: 'no-nav-downgrade', marker: 'plaintext / non-https scheme'),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
   (name: 'mixed-content', marker: 'mixed-content'),
@@ -121,6 +124,18 @@ void main() {
           .join('\n');
       final String neutered = matrixWithSection(realMatrix, withoutHostname);
       expect(missingEvidenceMarkers(neutered), contains('hostname-verification'));
+    });
+
+    test('RED: dropping the origin/navigation-confinement box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutOrigin = section
+          .split('\n')
+          .where((String line) =>
+              !line.toLowerCase().contains('origin / navigation confinement'))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutOrigin);
+      expect(missingEvidenceMarkers(neutered),
+          contains('origin-navigation-confinement'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
