@@ -614,19 +614,27 @@ String? externalClientConsoleProtocol(String? uri) {
 /// U+3031) and other valid non-ASCII IDNA hosts stay launchable — no valid
 /// target lost.
 ///
-/// The Ideographic Description Characters block (U+2FF0..U+2FFB, Unicode
-/// category `So`) is likewise DISALLOWED by UTS-46 IDNA: a browser / WebView
-/// (WHATWG URL + IDNA) rejects such a host outright, while [Uri.tryParse]
-/// reports it as an opaque, non-empty HTTPS host. These code points evade every
-/// earlier rule — they are not Separator/Other (so the encoded C/Z rule misses
-/// them), not combining marks and not NFKC-introducing, and do not NFKC-fold to
-/// ASCII (so the compatibility-confusable rules miss them too). Under a stale
-/// secure flag + test opt-in that parser differential could grant in-app
-/// rendering and self-signed acceptance on a host the browser cannot navigate.
-/// No real BMC host uses an ideographic description character (hosts are ASCII
-/// or punycode), so the whole block fails closed; IDNA-valid non-ASCII hosts
-/// (e-acute, euro, emoji) and the same escapes in the path/query stay
-/// launchable — no valid target lost.
+/// The Ideographic Description Characters block (Unicode category `So`) is
+/// likewise DISALLOWED by UTS-46 IDNA: a browser / WebView (WHATWG URL + IDNA)
+/// rejects such a host outright, while [Uri.tryParse] reports it as an opaque,
+/// non-empty HTTPS host. These code points evade every earlier rule — they are
+/// not Separator/Other (so the encoded C/Z rule misses them), not combining
+/// marks and not NFKC-introducing, and do not NFKC-fold to ASCII (so the
+/// compatibility-confusable rules miss them too). Under a stale secure flag +
+/// test opt-in that parser differential could grant in-app rendering and
+/// self-signed acceptance on a host the browser cannot navigate. The block was
+/// U+2FF0..U+2FFB in Unicode 16.0.0 and was extended to U+2FFC..U+2FFF in
+/// Unicode 17.0 (SURROUND FROM RIGHT / LOWER RIGHT, HORIZONTAL REFLECTION,
+/// ROTATION); all 16 are NFKC-stable, IDNA-disallowed and browser-rejected
+/// (verified against Node 24, ICU 78.3). The full block through U+2FFF is
+/// rejected so the decision is independent of the Dart runtime's Unicode data
+/// version: on a Unicode-16 runtime the four additions were caught only
+/// incidentally (unassigned => Cn => encoded C/Z rule), and that cover
+/// disappears once the runtime is upgraded to 17.0 (same forward-pin idiom as
+/// the U+A7F1 compatibility pin). No real BMC host uses an ideographic
+/// description character (hosts are ASCII or punycode), so the whole block
+/// fails closed; IDNA-valid non-ASCII hosts (e-acute, euro, emoji, U+3031) and
+/// the same escapes in the path/query stay launchable — no valid target lost.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -1445,15 +1453,19 @@ bool _isIdnaDisallowedModifierLetter(int rune) =>
     _idnaDisallowedModifierLetters.contains(rune);
 
 /// Returns `true` when [rune] lies in the Ideographic Description Characters
-/// block (U+2FF0..U+2FFB), a family of Unicode `So` symbols that UTS-46 IDNA
-/// disallows in hostnames while [Uri.tryParse] keeps them percent-encoded in a
-/// non-empty HTTPS host (see the module docs).
+/// block (U+2FF0..U+2FFF, including the four Unicode 17.0 additions
+/// U+2FFC..U+2FFF), a family of Unicode `So` symbols that UTS-46 IDNA disallows
+/// in hostnames while [Uri.tryParse] keeps them percent-encoded in a non-empty
+/// HTTPS host (see the module docs). The end is pinned to U+2FFF (not the
+/// Unicode-16 U+2FFB) so fail-closed never depends on the Dart runtime's
+/// Unicode data version.
 bool _isIdnaDisallowedIdeographicDescription(int rune) =>
-    rune >= 0x2FF0 && rune <= 0x2FFB;
+    rune >= 0x2FF0 && rune <= 0x2FFF;
 
 /// Returns `true` when the raw authority carries a percent-encoded ideographic
-/// description character (U+2FF0..U+2FFB) that a browser / WebView rejects
-/// under IDNA while [Uri.tryParse] reports a non-empty HTTPS host.
+/// description character (U+2FF0..U+2FFF, including the Unicode 17.0 additions)
+/// that a browser / WebView rejects under IDNA while [Uri.tryParse] reports a
+/// non-empty HTTPS host.
 ///
 /// The scan decodes percent-encoded host bytes as UTF-8 (in the correct byte
 /// context, matching the other authority rules) and is scoped to the authority:
