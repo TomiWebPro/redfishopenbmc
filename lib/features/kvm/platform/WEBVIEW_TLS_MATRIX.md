@@ -174,6 +174,23 @@ flag stays off for that target.
       navigation is blocked, on every target. Verified per target (inspect the
       WebView controller construction and scheme-navigation callback) before the
       flag is flipped.
+* [ ] **No dangerous device-capability / permission access** — the embedded
+      WebView must not grant the remote BMC console page access to device
+      capabilities or native permission prompts: no geolocation
+      (`setGeolocationEnabled(true)`, WKWebView/WebKit location entitlement), no
+      camera / microphone capture (`onPermissionRequest`, `getUserMedia`,
+      camera/mic entitlements), no notifications, vibration, clipboard read,
+      Bluetooth/NFC or file-download capability, and no auto-granting of any
+      Android runtime permission or WebKit permission to attacker-influenced
+      console content. Console content is served by the BMC and is therefore
+      attacker-influenced (a compromised/spoofed BMC, or script running in the
+      page): any granted device capability is a privacy / remote-code-execution-
+      class escalation from that content into the host device, wholly
+      independent of TLS, hostname, origin, native-bridge and file-access
+      checks. The console WebView runs with all such capabilities **denied by
+      default** and permission requests **rejected by default** on every target
+      (inspect the WebView configuration and `WebChromeClient` / permission
+      callbacks) before the flag is flipped. Verified per target.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
