@@ -12358,3 +12358,19 @@
 - Land the last unlanded dept slice EP-U12 (ui cross-surface clipboard-target agreement under hostile authorities) on a genuine RED→GREEN gap after re-auditing `queues/*.md`, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool-runtime change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-U12 cross-surface clipboard-target agreement guard)
+
+**Done:**
+- Re-audited `queues/*.md` first: EP-U12 was the last unlanded dept slice (RM-8 and all others landed). Added `test/features/kvm/kvm_clipboard_cross_surface_agreement_test.dart` (16 tests) pinning that the per-console card's "Copy connect info" and the viewer's "Copy console URI", built from the SAME KvmConsole over a 6-case hostile-authority matrix, place the SAME fail-closed clipboard target — byte-identical when both offer copy, never a raw control-bearing value, viewer affordance present iff a safe target, both no-overflow at 320/800/1300 px.
+- Two real-file RED proofs then byte-clean restore: #1 card→raw `launchUri` (4 hostile cases failed, injection leak); #2 viewer→raw `connectUri` (5 cases failed, padded-URI disagreement). `kvm_view.dart` SHA `b58bf2f1…` and `kvm_console_viewer_page.dart` SHA `f088a86d…` unchanged, empty lib diff, 600-perm backups shredded → 16/16 GREEN.
+- Verify: `dart format` clean on the new file; `flutter analyze` 0; targeted 16/16; full `flutter test` 1837 passed / 1 skipped (baseline 1821 +16); queue schema guard 13/13; `issues.py validate` OK; `git diff --check` clean; deps unchanged; lib diff empty; secret scan clean.
+
+**Decisions:**
+- Test-only cross-surface regression guard, no live divergence found — no churn, no behavior change, TLS-safe. Per §5 no manufactured UI churn. Emulator skipped (test-only, <7 days since last green 85/85). Pre-existing stashes untouched; two pre-existing launch_plan format drifts left untouched (not part of this diff). No force-push, no history rewrite, no file deletion. Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; do NOT do unattended, never weaken production TLS.
+
+**Next:**
+- Re-audit `queues/*.md` for a genuinely different untested contract before adding any further guard — all named dept slices are now landed, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool-runtime change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
