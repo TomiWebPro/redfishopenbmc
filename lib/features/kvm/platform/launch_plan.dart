@@ -523,6 +523,22 @@ class KvmConsoleLaunchPlan {
 /// description character (hosts are ASCII or punycode), so the whole block
 /// fails closed; IDNA-valid non-ASCII hosts (e-acute, euro, emoji, U+3031) and
 /// the same escapes in the path/query stay launchable — no valid target lost.
+///
+/// A percent-encoded U+FFFD REPLACEMENT CHARACTER is rejected for the same
+/// reason: UTS-46 IDNA disallows it outright (it marks the replacement of
+/// invalid or unrepresentable input), so a browser / WebView rejects such a
+/// host (verified against Node 24: `domainToASCII` returns the empty string)
+/// while [Uri.tryParse] keeps the escape encoded and reports a non-empty HTTPS
+/// host. It evades every other authority rule: it is a stable `So` symbol that
+/// is neither Separator/Other nor a combining mark, does not NFKC-fold to
+/// ASCII, and — unlike a malformed escape — a *valid* `%EF%BF%BD` sequence
+/// decodes cleanly, so the malformed-UTF-8 rule misses it too. Under a stale
+/// secure flag + test opt-in that parser differential could grant in-app
+/// rendering and self-signed acceptance on a host the browser cannot navigate.
+/// U+FFFD is permanently assigned and NFKC-stable across Unicode versions (no
+/// forward pin needed), and no real BMC host uses a replacement character, so
+/// it fails closed with no valid target lost; IDNA-valid non-ASCII hosts and
+/// the same escape in the path/query stay launchable.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -1386,6 +1402,61 @@ bool _authorityHasIdnaDisallowedIdeographicDescription(String uri) {
   return false;
 }
 
+/// Returns `true` when [rune] is U+FFFD REPLACEMENT CHARACTER.
+///
+/// UTS-46 IDNA disallows U+FFFD outright (it marks the replacement of invalid
+/// or unrepresentable input): a browser / WebView rejects a host containing it
+/// while [Uri.tryParse] reports it as an opaque, non-empty HTTPS host. It is
+/// Unicode category `So` and NFKC-stable, so every other authority rule misses
+/// it — including the malformed-UTF-8 rule, where a *valid* `%EF%BF%BD`
+/// sequence decodes cleanly to U+FFFD. It is permanently assigned and stable
+/// across Unicode versions, so no forward pin is needed.
+bool _isIdnaDisallowedReplacementCharacter(int rune) => rune == 0xFFFD;
+
+/// Returns `true` when the raw authority carries a percent-encoded U+FFFD
+/// REPLACEMENT CHARACTER that a browser / WebView rejects under IDNA while
+/// [Uri.tryParse] reports a non-empty HTTPS host.
+///
+/// The scan decodes percent-encoded host bytes as UTF-8 (in the correct byte
+/// context, matching the other authority rules) and is scoped to the authority:
+/// the same escape in the path/query, where it cannot affect which host is
+/// contacted, stays launchable. Malformed UTF-8 bytes are left to
+/// [_authorityHasMalformedUtf8]; a raw U+FFFD is already caught by the raw
+/// non-ASCII rule. IDNA-valid non-ASCII hosts stay launchable.
+bool _authorityHasIdnaDisallowedReplacementCharacter(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  final List<int> bytes = <int>[];
+  for (int i = 0; i < authority.length; i++) {
+    final String char = authority[i];
+    if (char == '%' && i + 2 < authority.length) {
+      final int? hi = _hexDigit(authority[i + 1]);
+      final int? lo = _hexDigit(authority[i + 2]);
+      if (hi != null && lo != null) {
+        bytes.add((hi << 4) | lo);
+        i += 2;
+        continue;
+      }
+    }
+    // Raw characters here are ASCII (raw non-ASCII/forbidden chars were
+    // rejected by earlier rules); keep the byte so an encoded UTF-8 sequence
+    // is decoded in the correct byte context.
+    bytes.add(char.codeUnitAt(0));
+  }
+  final String decoded;
+  try {
+    decoded = utf8.decode(bytes); // allowMalformed == false: leave bad byte
+    // sequences to _authorityHasMalformedUtf8 (both fail closed, this rule
+    // targets only a genuinely encoded U+FFFD).
+  } on FormatException {
+    return false;
+  }
+  for (final int rune in decoded.runes) {
+    if (_isIdnaDisallowedReplacementCharacter(rune)) return true;
+  }
+  return false;
+}
+
 /// Returns `true` when the raw authority carries a percent-encoded non-ASCII
 /// code point that a launcher applying IDNA/NFKC resolves to an ASCII
 /// character: either a structural delimiter ([_compatibilityDelimiterCodePoints])
@@ -1982,6 +2053,13 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // grant in-app self-signed acceptance on an un-navigable authority. IDNA-valid
   // symbols (euro, emoji) and path/query escapes stay launchable — no target lost.
   if (_authorityHasIdnaDisallowedIdeographicDescription(trimmed)) return false;
+  // Reject a percent-encoded U+FFFD REPLACEMENT CHARACTER in the authority:
+  // UTS-46 IDNA disallows it, so a browser/WebView rejects the host outright
+  // while Uri.tryParse reports a non-empty HTTPS host. A stale secure flag +
+  // test opt-in could otherwise grant in-app self-signed acceptance on a host
+  // the browser cannot navigate. IDNA-valid non-ASCII hosts and path/query
+  // escapes stay launchable — no valid target lost.
+  if (_authorityHasIdnaDisallowedReplacementCharacter(trimmed)) return false;
   // Reject a percent-encoded octet sequence in the authority that is not
   // well-formed UTF-8 (lone C1 byte, overlong form, truncated sequence): a
   // decode-first launcher could see different/invisible bytes in the host than
