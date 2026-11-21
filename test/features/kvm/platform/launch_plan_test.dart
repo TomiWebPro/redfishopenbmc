@@ -4741,4 +4741,123 @@ void main() {
   },
 );
 
+  group('planConsoleLaunch — IDNA bidi mixed-direction authority fails closed',
+      () {
+    // UTS-46 IDNA applies the Bidi rule (RFC 5893): a label that mixes a
+    // right-to-left script letter (Hebrew, Arabic, ...) with a left-to-right
+    // letter or with European digits *before* the RTL letter is DISALLOWED.
+    // A browser / WebView (WHATWG URL) rejects such a host outright — verified
+    // against Node 24: `new URL(uri).hostname` THROWS for every authority below
+    // (and `domainToASCII` returns the empty string). `Uri.tryParse` instead
+    // keeps the pct-encoded escape and reports an opaque, non-empty HTTPS host,
+    // so a purely syntactic re-check calls it "secure". These code points are
+    // Unicode letters (category L) that are NFKC-stable and neither Separator/
+    // Other nor marks, so every earlier authority rule misses them. Under a
+    // stale secure flag + test opt-in that parser differential could grant
+    // in-app rendering and self-signed acceptance on a host the browser cannot
+    // navigate. No real BMC host mixes scripts in one label, so each fails
+    // closed with no valid target lost.
+    const List<String> bidiMixedUris = <String>[
+      'https://bmc%D7%90.example/console', // Latin + Hebrew alef
+      'https://a%D7%90a.example/console', // RTL letter between Latin letters
+      'https://bmc%D8%A7.example/console', // Latin + Arabic alef
+      'https://123%D7%90.example/console', // European digits then RTL letter
+      'https://u%D7%90@bmc.example/console', // in userinfo
+      'https://bmc%D7%90.example:8443/console', // with an explicit port
+    ];
+
+    test('a mixed-direction authority never reaches in-app', () {
+      for (final String uri in bidiMixedUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+      }
+    });
+
+    test('a mixed-direction authority stays off under production', () {
+      for (final String uri in bidiMixedUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('lowercase hex escapes are rejected too', () {
+      for (final String uri in <String>[
+        'https://bmc%d7%90.example/console',
+        'https://u%d7%90@bmc.example/console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('the same escapes in the path/query stay launchable (authority-scoped)',
+        () {
+      for (final String uri in <String>[
+        'https://bmc.example/%D7%90/console',
+        'https://bmc.example/console?q=%D7%90',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+
+    test('valid IDNA hosts stay launchable (no over-rejection)', () {
+      // Node 24 accepts each of these hosts (`domainToASCII` returns a
+      // punycode host): a pure-RTL label, an RTL label with trailing digits,
+      // and LTR/non-letter non-ASCII text. The bidi rule must not reject them.
+      for (final String uri in <String>[
+        'https://%D7%90%D7%91%D7%92.example/console', // pure Hebrew label
+        'https://%D7%90%D7%91123.example/console', // Hebrew then digits
+        'https://bmc%C3%A9.example/console', // e-acute (LTR letter)
+        'https://bmc%E2%82%AC.example/console', // euro (symbol)
+        'https://bmc%F0%9F%98%80.example/console', // emoji
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+  },
+);
+
 }
