@@ -4677,4 +4677,147 @@ void main() {
   },
 );
 
+  group('planConsoleLaunch — IDNA-disallowed stable symbol authority fails closed',
+      () {
+    // These code points are NFKC-stable (or, for U+FDFA..U+FDFC, NFKC-fold only
+    // to non-ASCII text plus an ASCII space), are NOT Unicode Separator/Other or
+    // marks (so the C/Z and combining-mark rules miss them), and are not a
+    // modifier letter, ideographic description, replacement character, bidi
+    // RTL letter or NFKC-to-ASCII confusable — yet UTS-46 IDNA disallows them
+    // and a browser / WebView rejects a host containing one outright (verified
+    // against Node 24's WHATWG URL / IDNA parser: `new URL(uri).hostname`
+    // THROWS for every authority below). `Uri.tryParse` instead keeps the
+    // pct-encoded escape and reports an opaque, non-empty HTTPS host, so a
+    // purely syntactic re-check calls it "secure". Under a stale secure flag +
+    // test opt-in that parser differential could grant in-app rendering and
+    // self-signed acceptance on a host the browser cannot navigate. No real
+    // BMC host uses these scripts (hosts are ASCII or punycode), so each fails
+    // closed with no valid target lost.
+    const List<String> idnaDisallowedStableSymbolUris = <String>[
+      'https://bmc%D6%BE.example/console', // U+05BE HEBREW MAQAF (Pd)
+      'https://bmc%D7%80.example/console', // U+05C0 HEBREW PASEQ (Po)
+      'https://bmc%D7%83.example/console', // U+05C3 HEBREW SOF PASUQ (Po)
+      'https://bmc%D7%B3.example/console', // U+05F3 HEBREW GERESH (Po)
+      'https://bmc%D8%88.example/console', // U+0608 ARABIC RAY (Sm)
+      'https://bmc%D8%8B.example/console', // U+060B AFGHANI SIGN (Sc)
+      'https://bmc%D8%9B.example/console', // U+061B ARABIC SEMICOLON (Po)
+      'https://bmc%D9%AD.example/console', // U+066D ARABIC FIVE POINTED STAR
+      'https://bmc%DB%BD.example/console', // U+06FD ARABIC SINDHI AMPERSAND (So)
+      'https://bmc%DC%80.example/console', // U+0700 SYRIAC END OF PARAGRAPH
+      'https://bmc%DC%8D.example/console', // U+070D SYRIAC HARKLEAN ASTERISCUS
+      'https://bmc%DF%80.example/console', // U+07C0 NKO DIGIT ZERO (Nd)
+      'https://bmc%DF%BF.example/console', // U+07FF NKO TAMAN SIGN (Sc)
+      'https://bmc%E0%A0%B0.example/console', // U+0830 SAMARITAN NEQUDAA
+      'https://bmc%E0%A0%BE.example/console', // U+083E SAMARITAN ANNAAU
+      'https://bmc%E0%A1%9E.example/console', // U+085E MANDAIC PUNCTUATION
+      'https://bmc%EF%AE%B2.example/console', // U+FBB2 ARABIC SYMBOL DOT ABOVE
+      'https://bmc%EF%AF%81.example/console', // U+FBC1 ARABIC SYMBOL SMALL TAH
+      'https://bmc%EF%B7%BA.example/console', // U+FDFA ARABIC LIGATURE (Lo)
+      'https://bmc%EF%B7%BC.example/console', // U+FDFC RIAL SIGN (Sc)
+      'https://bmc%F0%90%A1%97.example/console', // U+10857 IMPERIAL ARAMAIC SECTION
+      'https://bmc%F0%90%A1%B7.example/console', // U+10877 PALMYRENE FLEURON (So)
+      'https://bmc%F0%90%A9%80.example/console', // U+10A40 (No)
+      'https://bmc%F0%90%AB%B6.example/console', // U+10AF6 (No)
+      'https://bmc%F0%9E%A3%87.example/console', // U+1E8C7 (No)
+      'https://bmc%F0%9E%A5%90.example/console', // U+1E950 (No)
+      'https://bmc%F0%9E%B1%B1.example/console', // U+1EC71 INDIC SIYAQ NUMBER
+      'https://bmc%F0%9E%B4%81.example/console', // U+1ED01 OTTOMAN SIYAQ NUMBER
+      'https://bmc%F0%9E%B4%BD.example/console', // U+1ED3D OTTOMAN SIYAQ FRACTION
+    ];
+
+    test('an IDNA-disallowed stable-symbol authority never reaches in-app', () {
+      for (final String uri in idnaDisallowedStableSymbolUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+      }
+    });
+
+    test('an IDNA-disallowed stable-symbol authority stays off under production',
+        () {
+      for (final String uri in idnaDisallowedStableSymbolUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('the code point is also rejected in userinfo and lowercase hex', () {
+      for (final String uri in <String>[
+        'https://u%D6%BE@bmc.example/console', // U+05BE in userinfo
+        'https://bmc%d6%be.example/console', // lowercase hex
+        'https://bmc%f0%9e%b4%bd.example/console', // lowercase hex (SMP)
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('the same escapes in the path/query stay launchable (authority-scoped)',
+        () {
+      for (final String uri in <String>[
+        'https://bmc.example/%D6%BE/console',
+        'https://bmc.example/console?q=%F0%9E%B4%BD',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+
+    test('valid IDNA hosts stay launchable (no over-rejection)', () {
+      // Node 24 accepts each of these hosts (`domainToASCII` returns a
+      // punycode host); none is in the disallowed set.
+      for (final String uri in <String>[
+        'https://bmc%C3%A9.example/console', // e-acute (LTR letter)
+        'https://bmc%E2%82%AC.example/console', // euro (symbol)
+        'https://bmc%F0%9F%98%80.example/console', // emoji
+        'https://bmc%E3%80%B1.example/console', // U+3031 vertical kana
+        'https://xn--bmc-dma.example/console', // ASCII punycode
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+  },
+);
+
 }

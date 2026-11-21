@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 134 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (145 across the platform
+consume; today it locks the fallback behaviour with 187 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (200 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -579,7 +579,18 @@ Invariants, enforced by tests:
    NFKC-stable, evade the C/Z/mark/compatibility/modifier-letter/IDC/
    replacement/bidi rules, yet are browser-rejected while `Uri.tryParse` reports
    a non-empty HTTPS host, so they fail closed; IDNA-valid non-ASCII hosts and
-   path/query escapes stay launchable).
+   path/query escapes stay launchable) + IDNA-disallowed stable-symbol authority
+   rejection (the 427 NFKC-stable — or, for U+FDFA..U+FDFC, non-ASCII-folding —
+   Unicode category P/N/S code points that UTS-46 IDNA disallows and a browser /
+   WebView rejects outright (verified against Node 24 WHATWG URL/IDNA: all
+   throw): Hebrew/Arabic/Syriac/NKo/Samaritan/Mandaic punctuation, digits and
+   signs, the Arabic Presentation Forms symbols U+FBB2..U+FBC1 /
+   U+FDFA..U+FDFC, and the supplementary-plane historical-script numbers
+   U+10857..U+1ED3D. All are category P/N/S — never Separator/Other or a mark —
+   and either NFKC-stable or fold only to non-ASCII, so every earlier authority
+   rule misses them; each fails closed via an explicit, 49-range,
+   Unicode-version-independent forward-pinned table. IDNA-valid non-ASCII hosts
+   and path/query escapes stay launchable — no valid target lost).
    **Blank-URI target normalization:** a whitespace-only URI is "no usable
    target" (`KvmConsoleLaunchPlan.targetUri`) — the copy-only fallback must
    surface `null`, never a whitespace string, under any policy (including the
