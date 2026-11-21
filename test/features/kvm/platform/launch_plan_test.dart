@@ -4076,4 +4076,126 @@ void main() {
   },
 );
 
+  group(
+      'planConsoleLaunch — Unicode-17 ideographic-description additions fail closed',
+      () {
+    // The Ideographic Description Characters block was U+2FF0..U+2FFB in
+    // Unicode 16.0.0 (covered by the previous group). Unicode 17.0 extended it
+    // with U+2FFC SURROUND FROM RIGHT, U+2FFD SURROUND FROM LOWER RIGHT,
+    // U+2FFE HORIZONTAL REFLECTION and U+2FFF ROTATION — all NFKC-stable
+    // `So` symbols that UTS-46 IDNA disallows, so a browser / WebView (WHATWG
+    // URL) rejects such a host outright (verified against Node 24, ICU 78.3 /
+    // Unicode 17: all four throw), while Uri.tryParse reports an opaque,
+    // non-empty HTTPS host. The hardcoded Unicode-16 `<= 0x2FFB` range let
+    // these four slip through: on a Unicode-16 Dart runtime they were caught
+    // only incidentally (unassigned => category Cn => encoded C/Z rule), and
+    // that incidental cover disappears once the runtime's Unicode data is
+    // upgraded to 17.0. Pinning them explicitly keeps fail-closed independent
+    // of the Dart runtime's Unicode version (same idiom as the U+A7F1 pin).
+    // No real BMC host uses an ideographic description character, so each
+    // fails closed with no valid target lost.
+    const List<String> unicode17IdeographicDescriptionUris = <String>[
+      'https://bmc%E2%BF%BC.example/console', // U+2FFC SURROUND FROM RIGHT
+      'https://bmc%E2%BF%BD.example/console', // U+2FFD SURROUND FROM LOWER RIGHT
+      'https://bmc%E2%BF%BE.example/console', // U+2FFE HORIZONTAL REFLECTION
+      'https://bmc%E2%BF%BF.example/console', // U+2FFF ROTATION
+      'https://u%E2%BF%BC@bmc.example/console', // in userinfo
+      'https://bmc%E2%BF%BF.example:8443/console', // with an explicit port
+    ];
+
+    test('a Unicode-17 ideographic-description authority never reaches in-app',
+        () {
+      for (final String uri in unicode17IdeographicDescriptionUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+      }
+    });
+
+    test('a Unicode-17 ideographic-description authority stays off under production',
+        () {
+      for (final String uri in unicode17IdeographicDescriptionUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('lowercase hex escapes are rejected too', () {
+      for (final String uri in <String>[
+        'https://bmc%e2%bf%bc.example/console',
+        'https://bmc%e2%bf%bf.example/console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('the same escapes in the path stay launchable (authority-scoped)', () {
+      for (final String uri in <String>[
+        'https://bmc.example/%E2%BF%BC/console',
+        'https://bmc.example/console?q=%E2%BF%BF',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+
+    test('valid IDNA non-ASCII hosts stay launchable (no over-rejection)', () {
+      // Guard: only the IDNA-disallowed ideographic-description block is
+      // rejected. Letters/symbols IDNA punycodes (e-acute, euro, emoji, the
+      // vertical kana repeat mark) and a punycode host keep working.
+      for (final String uri in <String>[
+        'https://bmc%C3%A9.example/console', // e-acute (Letter)
+        'https://bmc%E2%82%AC.example/console', // euro (Symbol, IDNA-valid)
+        'https://bmc%F0%9F%98%80.example/console', // emoji (Symbol, IDNA-valid)
+        'https://bmc%E3%80%B1.example/console', // U+3031 vertical kana repeat
+        'https://xn--bmc-esab.example/console', // punycode host
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+  },
+);
+
 }

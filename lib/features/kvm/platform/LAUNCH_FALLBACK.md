@@ -498,15 +498,23 @@ Invariants, enforced by tests:
    the path/query and valid non-ASCII IDNA hosts (e-acute, U+3031 vertical kana
    — a browser punycodes it, euro, emoji) stay launchable — no valid target lost.
    **IDNA-disallowed ideographic-description rejection:** the Ideographic
-   Description Characters block U+2FF0..U+2FFB (category `So`) is disallowed by
+   Description Characters block (category `So`) is disallowed by
    UTS-46 IDNA, so a browser/WebView rejects such a host outright (verified
-   against Node 24: all twelve throw) while `Uri.tryParse` reports an opaque,
+   against Node 24, ICU 78.3: all throw) while `Uri.tryParse` reports an opaque,
    non-empty HTTPS host. These code points are not C/Z, marks, NFKC-introducing
    or NFKC-to-ASCII, so every earlier authority rule misses them; under a stale
    secure flag + test opt-in that differential could reach in-app self-signed
-   acceptance on an un-navigable host. The whole block fails closed (either hex
-   case); the same escapes in the path/query and IDNA-valid symbols (euro,
-   emoji) stay launchable — no valid target lost.
+   acceptance on an un-navigable host. The block was U+2FF0..U+2FFB in Unicode
+   16.0.0 and was extended by Unicode 17.0 with U+2FFC SURROUND FROM RIGHT,
+   U+2FFD SURROUND FROM LOWER RIGHT, U+2FFE HORIZONTAL REFLECTION and U+2FFF
+   ROTATION (all NFKC-stable). The whole block through U+2FFF fails closed
+   (either hex case), so the decision does not depend on the Dart runtime's
+   Unicode data version — on a Unicode-16 runtime the four additions were
+   caught only incidentally (unassigned => Cn => encoded C/Z rule), and that
+   cover disappears once the runtime is upgraded to 17.0 (the same forward-pin
+   idiom as the U+A7F1 compatibility pin). The same escapes in the path/query
+   and IDNA-valid non-ASCII symbols (euro, emoji, U+3031) stay launchable — no
+   valid target lost.
    Covered by targeted tests across the defense-in-depth re-validation
    groups (scheme/host/malformed-authority parity + control-character +
    raw-space + Unicode-whitespace/invisible + raw-backslash + RFC-3986
@@ -554,9 +562,11 @@ Invariants, enforced by tests:
    1E94B that UTS-46 IDNA disallows and a browser rejects outright, so they fail
    closed rather than reach in-app self-signed acceptance on an un-navigable
    host) + IDNA-disallowed ideographic-description authority rejection (the
-   U+2FF0..U+2FFB `So` block that UTS-46 IDNA disallows and a browser rejects
-   outright while `Uri.tryParse` reports a non-empty HTTPS host, so all twelve
-   fail closed rather than reach in-app self-signed acceptance)).
+   U+2FF0..U+2FFF `So` block — including the four Unicode-17 additions
+   U+2FFC..U+2FFF — that UTS-46 IDNA disallows and a browser rejects outright
+   while `Uri.tryParse` reports a non-empty HTTPS host, so the whole block fails
+   closed rather than reach in-app self-signed acceptance, independent of the
+   Dart runtime's Unicode-data version)).
    **Blank-URI target normalization:** a whitespace-only URI is "no usable
    target" (`KvmConsoleLaunchPlan.targetUri`) — the copy-only fallback must
    surface `null`, never a whitespace string, under any policy (including the
