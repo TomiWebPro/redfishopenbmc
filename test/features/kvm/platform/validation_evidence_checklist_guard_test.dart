@@ -7,7 +7,8 @@
 // test-only TLS opt-in is HUMAN-gated on recorded per-target evidence. This
 // test pins the *detailed* acceptance checklist (CSP / mixed-content,
 // fullscreen, input forwarding, no-native-bridge, no-local-file-access,
-// no-device-permissions, flag-off fallback, human sign-off) so a future edit
+// no-device-permissions, no-sensitive-data-at-rest (WebView cache/storage +
+// background snapshot), flag-off fallback, human sign-off) so a future edit
 // cannot silently erase the evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
@@ -65,6 +66,9 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-geolocation', marker: 'geolocation'),
   (name: 'no-camera-mic', marker: 'camera / microphone'),
   (name: 'permissions-deny-by-default', marker: 'denied by default'),
+  (name: 'no-sensitive-data-at-rest', marker: 'data at rest'),
+  (name: 'no-webview-cache-storage', marker: 'webview cache'),
+  (name: 'no-background-snapshot', marker: 'background snapshot'),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -207,6 +211,17 @@ void main() {
       final String neutered = matrixWithSection(realMatrix, withoutPermissions);
       expect(
           missingEvidenceMarkers(neutered), contains('no-device-permissions'));
+    });
+
+    test('RED: dropping the no-sensitive-data-at-rest box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutDataAtRest = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains('data at rest'))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutDataAtRest);
+      expect(
+          missingEvidenceMarkers(neutered), contains('no-sensitive-data-at-rest'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
