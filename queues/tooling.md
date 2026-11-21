@@ -5,6 +5,41 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+
+<!-- rf-automation 2026-11-21 20:57 UTC: closes a CONFIRMED liveness gap in the "who guards the
+     guards" suite of the blocked #009/#021 epic (same pattern as EP-T14/T15/T16/T17/T18). EP-T18 pinned
+     canonicalGuardFiles to 31 (8 EP-T12 + 7 EP-T14 + 6 EP-T15 + 3 EP-T16 + 4 EP-T17 + 3 EP-T18), but THREE
+     guard files landed AFTER EP-T18 and are not in that set, so deleting / emptying / test-stripping /
+     CI-de-invoking any one of them would stay GREEN: `kvm_capability_security_tristate_agreement_test.dart`
+     (RM-10, 4 cases), `test/features/kvm/platform/navigation_launch_route_agreement_test.dart` (EP-P11, 7 cases)
+     and `kvm_three_surface_launch_target_agreement_test.dart` (EP-U15, 8 cases). All three are present with
+     live `test(`/`testWidgets(` cases and reachable from verify.yml's whole-tree `flutter test --coverage`.
+     Pure test/tool, dependency-free, never writes `lib/`; distinct from EP-T12/14/15/16/17/18. No code touched. -->
+
+- [x] EP-T19 LANDED 2026-11-21 (run `auto: FEATURE #009/#021 EP-T19 guard-suite liveness extension for the post-EP-T18 safety guards`, analyze 0 / 1975 passed / 1 skipped) — add the three guard files
+      that landed after EP-T18 — `kvm_capability_security_tristate_agreement_test.dart`,
+      `test/features/kvm/platform/navigation_launch_route_agreement_test.dart` and
+      `kvm_three_surface_launch_target_agreement_test.dart` — to `canonicalGuardFiles` in
+      `test/tool/guard_suite_liveness_test.dart` so each is liveness-checked (missing / emptied /
+      stripped-of-tests / unreachable ⇒ violation), keeping the real-repo invariant green. Added a pinned
+      `epT19AddedGuards ⊆ canonicalGuardFiles` set (length 3) disjoint from `epT14AddedGuards` /
+      `epT15AddedGuards` / `epT16AddedGuards` / `epT17AddedGuards` / `epT18AddedGuards`, plus
+      pairwise-disjointness pin assertions, a pin test and a temp-root RED→GREEN. Confirmed gap, no churn.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues), with
+              RED→GREEN proof (missing/emptied/test-less → violation; intact → clean); writes limited to
+              `test/tool/guard_suite_liveness_test.dart`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              no `lib/`, no production TLS change.
+      **LANDED** 2026-11-21: extended `canonicalGuardFiles` 31→34 with the three post-EP-T18 safety guards
+      (live cases 4/7/8, reachable from verify.yml whole-tree `flutter test --coverage`); added pinned
+      `epT19AddedGuards` (length 3) ⊆ canonicalGuardFiles disjoint from EP-T14/15/16/17/18 + pairwise-disjointness
+      pin assertions + temp-root RED→GREEN. Real-file RED: dropped `kvm_three_surface_launch_target_agreement_test.dart`
+      from canonicalGuardFiles → EP-T19 pin failed (`+17 -1`, named the dropped guard); restored byte-clean
+      (SHA `38e7c477…` unchanged), 600-perm backup shredded → 18/18 GREEN. Test/tool-only (empty lib diff), deps
+      unchanged; analyze 0 / 1975 passed / 1 skipped (baseline 1973 +2); issues validate OK; diff --check clean;
+      emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL
+      opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-21 17:59 UTC: closes a CONFIRMED liveness gap in the "who guards the
      guards" suite of the blocked #009/#021 epic (same pattern as EP-T14/T15/T16/T17). EP-T17 pinned
      canonicalGuardFiles to 28 (24 + 4 post-EP-T16 guards), but THREE guard files landed AFTER EP-T17

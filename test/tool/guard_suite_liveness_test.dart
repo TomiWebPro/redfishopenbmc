@@ -49,6 +49,15 @@
 // GREEN. A dedicated pinned subset (disjoint from EP-T14/EP-T15/EP-T16/EP-T17)
 // makes the extension itself fail closed against a future silent drop.
 //
+// EP-T19 (epic #009/#021) extends the set once more with the three safety guards
+// that landed AFTER EP-T18 (security-first × enabled-block tri-state agreement,
+// navigation-gate ↔ launch-route fail-closed agreement, three-surface launch
+// target agreement). Each is a live, checked-in test file reachable from the
+// whole-tree CI run, but none was liveness-checked: deleting / emptying /
+// test-stripping one of them would stay GREEN. A dedicated pinned subset
+// (disjoint from EP-T14/EP-T15/EP-T16/EP-T17/EP-T18) makes the extension itself
+// fail closed against a future silent drop.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -99,6 +108,10 @@ const List<String> canonicalGuardFiles = <String>[
   'test/features/kvm/kvm_service_capability_primary_agreement_test.dart',
   'test/features/kvm/kvm_viewer_uri_surface_agreement_test.dart',
   'test/features/kvm/kvm_capability_primary_uri_agreement_test.dart',
+  // EP-T19 extension: safety guards that landed after EP-T18.
+  'test/features/kvm/kvm_capability_security_tristate_agreement_test.dart',
+  'test/features/kvm/platform/navigation_launch_route_agreement_test.dart',
+  'test/features/kvm/kvm_three_surface_launch_target_agreement_test.dart',
 ];
 
 /// The subset of [canonicalGuardFiles] added by EP-T14. Pinned separately so a
@@ -152,6 +165,15 @@ const Set<String> epT18AddedGuards = <String>{
   'test/features/kvm/kvm_service_capability_primary_agreement_test.dart',
   'test/features/kvm/kvm_viewer_uri_surface_agreement_test.dart',
   'test/features/kvm/kvm_capability_primary_uri_agreement_test.dart',
+};
+
+/// The subset of [canonicalGuardFiles] added by EP-T19. Pinned separately so a
+/// future edit cannot silence a liveness violation by dropping one of the newer
+/// post-EP-T18 safety guards back out of the canonical set (issue #009/#021).
+const Set<String> epT19AddedGuards = <String>{
+  'test/features/kvm/kvm_capability_security_tristate_agreement_test.dart',
+  'test/features/kvm/platform/navigation_launch_route_agreement_test.dart',
+  'test/features/kvm/kvm_three_surface_launch_target_agreement_test.dart',
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -426,6 +448,28 @@ void main() {
       expect(epT18AddedGuards.intersection(epT15AddedGuards), isEmpty);
       expect(epT18AddedGuards.intersection(epT16AddedGuards), isEmpty);
       expect(epT18AddedGuards.intersection(epT17AddedGuards), isEmpty);
+    });
+
+    test('EP-T19: every post-EP-T18 guard is in the canonical liveness set',
+        () {
+      // Pins the extension itself: dropping a newer safety guard out of the set
+      // to silence an otherwise-failing liveness run is detected here.
+      expect(epT19AddedGuards, isNotEmpty);
+      expect(epT19AddedGuards.length, 3);
+      for (final String path in epT19AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T19 guard dropped from canonical set: $path',
+        );
+      }
+      // All six extension subsets must stay pairwise distinct — no guard may be
+      // counted toward more than one of EP-T14/15/16/17/18/19.
+      expect(epT19AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT19AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT19AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT19AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT19AddedGuards.intersection(epT18AddedGuards), isEmpty);
     });
   });
 
@@ -746,6 +790,68 @@ void main() {
       // Pick a path from the EP-T18 extension specifically, so this proves the
       // NEW entries are evaluated and not just the EP-T12/14/15/16/17 sets.
       final String addedGuard = epT18AddedGuards.first;
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        // RED 1: the newly-added safety guard is deleted → MISSING.
+        File(p(addedGuard)).deleteSync();
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'MISSING: $addedGuard'),
+          isTrue,
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 2: emptied → EMPTY.
+        File(p(addedGuard)).writeAsStringSync('  \n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'EMPTY: $addedGuard'),
+          isTrue,
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 3: keeps prose but loses every test case → NO_TEST_CASES.
+        File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+          isTrue,
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // GREEN again once the guard is restored.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test('EP-T19: newly-added post-EP-T18 guards are liveness-checked', () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_t19_guard_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      // Pick a path from the EP-T19 extension specifically, so this proves the
+      // NEW entries are evaluated and not just the EP-T12/14/15/16/17/18 sets.
+      final String addedGuard = epT19AddedGuards.first;
       final String verifyLine = '  run: flutter test --coverage\n';
       try {
         for (final String path in canonicalGuardFiles) {

@@ -12766,3 +12766,18 @@
 - Push the single run commit; leave the four pre-existing stashes untouched. This guard is a candidate for a future EP-T19 guard-suite liveness extension; audit EP-S8 / RM-11 / EP-M5 before adding further guards (RED→GREEN only on genuine divergence, never churn); EP-S8 / RM-11 are deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-T19)
+
+**Done:**
+- FEATURE (test/tool-only): EP-T19 guard-suite liveness extension for #009/#021. Extended `canonicalGuardFiles` 31→34 in `test/tool/guard_suite_liveness_test.dart` with the three post-EP-T18 guards `kvm_capability_security_tristate_agreement_test.dart` (RM-10), `test/features/kvm/platform/navigation_launch_route_agreement_test.dart` (EP-P11) and `kvm_three_surface_launch_target_agreement_test.dart` (EP-U15) — all live + reachable, but previously unguarded (delete/empty/test-strip/de-invoke stayed GREEN). Added pinned `epT19AddedGuards` (length 3, disjoint from EP-T14/15/16/17/18) + pairwise-disjointness pin assertions, a pin test and a temp-root RED→GREEN proof, plus the header comment. Real-file RED: dropped the three-surface guard from `canonicalGuardFiles` → EP-T19 pin failed (`+17 -1`); source restored byte-clean (SHA `38e7c477…`, empty lib diff), backup shredded → 18/18 GREEN.
+- Verify: analyze 0; targeted liveness 18/18 (baseline 16 +2); full `flutter test --concurrency=4` 1975 passed / 1 skipped (baseline 1973 +2); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Genuine confirmed "who guards the guards" liveness gap, consistent with EP-T14→T18 — not churn. Pure test/tool, no `lib/`, no wire/TLS/fixture change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated.
+
+**Next:**
+- Push the single run commit; leave the four pre-existing stashes untouched. Remaining dept heads EP-S8 / RM-11 / EP-M5 are audit-first — RED→GREEN only on genuine divergence, never churn; EP-S8 / RM-11 are deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
