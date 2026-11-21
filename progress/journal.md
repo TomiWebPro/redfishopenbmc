@@ -12558,3 +12558,19 @@
 - Push this single commit (carried with the unpushed `rf-ideate` commit `d53298e`). Re-audit remaining 14:10-slice candidates EP-M5 / EP-S6 / EP-U14 for a genuinely different untested contract before adding any further guard — never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:rf-gate — MERGED build/rf-platform (check#10920 PASS) — RP-1 hostname-verification-never-bypassed invariant
+
+**Done:**
+- `rf-platform-check` run#10920 verdict `SUCCESS` / `CHECK: PASS` for branch tip `1d27ea6` (exit 0, 75.1 s, started 16:16:41 UTC — ~2 h after the 14:08 UTC tip commit; tip unchanged before merge; merge-base `807125c` already in main via merge `36d7e67`; exactly one unique commit). Merged `build/rf-platform` into `main` with `--no-ff` as `278a76c`.
+- Branch adds the RP-1 "hostname / certificate-identity verification is NEVER bypassed, not even by the self-signed test opt-in" invariant: a hard `KvmWebViewPolicy.bypassHostnameVerification => false` getter in `webview_policy.dart` (configuration-independent, so no future WebView consumer can obtain a policy that disables identity verification), the matching evidence box in `WEBVIEW_TLS_MATRIX.md`, and RED→GREEN tests in `webview_policy_test.dart` + `validation_evidence_checklist_guard_test.dart`. This STRENGTHENS TLS (no blanket trust-all / catch-all host verifier); production flag stays OFF, no human approval granted.
+- Clean auto-merge (no conflicts). Verify at `278a76c`: `flutter analyze` 0 (No issues found!); targeted `webview_policy_test.dart` + `validation_evidence_checklist_guard_test.dart` 24/24; full `flutter test --coverage` 1930 passed / 1 skipped; four coverage gates PASS overall 90.5% (6047/6680) / scoped 90.4% (2119/2345) / kvm 97.4% (1324/1359) / kvm-platform 97.0% (453/467), gate exit 0; `python3 issues/issues.py validate` OK; `git diff --check` clean; first-parent diff = 4 allowlisted files; first-parent diff secret scan clean.
+
+**Decisions:**
+- PASS-only merge per sole-merger contract; never force-push, no history rewrite, no `git clean`, no file deletion. Concurrent `redfish-automation` untracked WIP `kvm_viewer_uri_surface_agreement_test.dart` + three pre-existing stashes untouched. DMTF 85-test suite skipped (no lib wire/transport/fixture/tool change — pure policy decision helper + doc + tests; <7 days since last green 85/85). Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; the invariant is a decision-layer policy guard that grants no approval.
+
+**Next:**
+- Push merge `278a76c` (+ branch commit `1d27ea6`) to `origin/main` via the sole merger. Re-audit `queues/*.md` for a genuinely different untested contract before any further guard — never churn. Full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
