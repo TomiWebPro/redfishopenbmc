@@ -12626,3 +12626,20 @@
 - Push this single commit (carried with the unpushed `rf-gate` record `c432587`). Decide EP-S7's authoritative URI preference and fix both surfaces together in a deliberate run; EP-M5 is audit-first (already largely covered — never churn). Close #021 then #009 only on human WebView + BMC TLS validation evidence; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:rf-gate — MERGED build/rf-platform (check#10964 PASS) — RP-1 credential-bearing navigation fail-closed
+
+**Done:**
+- `rf-platform-check` run#10964 verdict `SUCCESS` / `CHECK: PASS` for branch tip `372cd34` (exit 0, 63.8 s, started 2026-11-21 17:32 UTC; analyze 0, targeted 198/198 on the branch incl. 2 new credential-guard tests; no production-TLS weakening; allowlisted paths only, no dependency change). Branch HEAD cross-checked unchanged `== 372cd34`; merge-base `9f06e33` confirmed an ancestor of main; exactly one unique commit. Merged `build/rf-platform` into `main` with `--no-ff` as `c54260c` (parents `099a65f` / `372cd34`).
+- Branch hardens RP-1 in-app-navigation: `allowsInAppNavigation` now fails closed for a same-origin target carrying embedded userinfo (`https://user:pass@host/console`), which would otherwise inject attacker-chosen Basic-auth credentials into the trusted console frame (login CSRF / `user@host` display confusion); the initial credentialed console load is a separate unaffected path. RED/GREEN tests + rationale in `LAUNCH_FALLBACK.md` / `WEBVIEW_TLS_MATRIX.md`. No WebView/protocol dependency, no URL opened, no human approval, no production TLS weakened.
+- One merge conflict in `LAUNCH_FALLBACK.md`: main carried a far richer invariants 3/4 text, the older-based branch a stale shorter version plus the new credential-free-navigation note — resolved by keeping main's full detailed text and folding in the branch's new paragraph (all information preserved); remaining three files auto-merged cleanly.
+- Verify: `flutter analyze` 0 (No issues found!); targeted `launch_plan_test.dart` 214/214; full `flutter test --coverage` 1943 passed / 1 skipped; all four coverage gates PASS overall 90.5% (6054/6687) / scoped 90.4% (2119/2345) / kvm 97.4% (1331/1366) / kvm-platform 97.0% (460/474), gate exit 0; asset_guard OK; unattended_guard OK; `python3 issues/issues.py validate` OK; `git diff --check` clean; first-parent diff = 4 allowlisted files (77 insertions, 0 deletions), secret scan clean.
+
+**Decisions:**
+- PASS-only merge per sole-merger contract; never force-push, no history rewrite, no `git clean`, no file deletion. DMTF 85-test suite skipped (dependency-free decision helper — no lib wire/transport/fixture/tool-runtime change; <7 days since last green 85/85). Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; the guard adds no approval and grants no navigation, it only fails closed.
+
+**Next:**
+- No gate action until `rf-platform` produces + re-verifies a new commit past `372cd34`. Routine FEATURE work continues per FUTUREWORK `Current focus`. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended; never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
