@@ -12014,3 +12014,18 @@
 - Re-audit head-first unblocked dept slices (EP-S2 / EP-T4 / EP-U4) for a genuinely different untested contract before adding any guard — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (EP-U4 closeout: viewer single-session limit wiring)
+
+**Done:**
+- FEATURE — EP-U4-closeout single-session limit pass-through guard (test-only, dependency-free, TLS-safe). Added `test/features/kvm/kvm_viewer_session_limit_wiring_test.dart` (3 widget tests) opening real viewers via the Navigator: opening a viewer starts a session for its console manager at the injected clock; a SECOND single-session viewer (limit 1) evicts the first (shared session → B, log records `Evicted console session for manager "A"`); a multi-session viewer (limit 4) replaces the manager WITHOUT a spurious eviction. The `maxConcurrentSessions: widget.console.maxConcurrentSessions` pass-through in `KvmConsoleViewerPage.initState` is the only path a console's limit reaches `KvmSessionController.connect`, yet every existing eviction test drives `connect` directly — a dropped/hardcoded argument would silently break single-session BMC eviction and remain GREEN. Audit found no live divergence — regression guard at a genuinely untested seam, not churn.
+- RED→GREEN BOTH directions: dropped `maxConcurrentSessions:` → single-session eviction test failed (`+2 -1`); hardcoded `maxConcurrentSessions: 1` → multi-session guard failed (`+2 -1`); restored byte-clean after each (viewer SHA `f088a86d…` unchanged, empty lib diff), temp backup shredded → 3/3 GREEN.
+- Verify: targeted 3/3; `flutter analyze` 0; full `flutter test` 1726 passed / 1 skipped (baseline 1723 +3); issues validate OK; `git diff --check` clean; deps unchanged. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Test-only: no product `lib/`, wire/transport/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. No issue closed (both #009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation). Pre-existing untracked `testing/` + `stash@{0}` preserved untouched; no force-push, no history rewrite. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Re-audit EP-S2 / EP-T4 / EP-P4 for a genuinely different untested contract before adding any guard — never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
