@@ -36,6 +36,7 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'per-target', marker: 'per target'),
   (name: 'webview-availability', marker: 'webview availability'),
   (name: 'no-production-tls-weakening', marker: 'no production weakening'),
+  (name: 'hostname-verification', marker: 'hostname verification'),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
   (name: 'mixed-content', marker: 'mixed-content'),
@@ -110,6 +111,16 @@ void main() {
           .join('\n');
       final String neutered = matrixWithSection(realMatrix, withoutCsp);
       expect(missingEvidenceMarkers(neutered), contains('csp'));
+    });
+
+    test('RED: dropping the hostname-verification box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutHostname = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains('hostname verification'))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutHostname);
+      expect(missingEvidenceMarkers(neutered), contains('hostname-verification'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

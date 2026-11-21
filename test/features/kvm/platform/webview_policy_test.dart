@@ -136,6 +136,31 @@ void main() {
     });
   });
 
+  group('KvmWebViewPolicy — hostname verification is never bypassed', () {
+    test('production default always verifies the certificate hostname', () {
+      expect(KvmWebViewPolicy.productionDefault.bypassHostnameVerification, isFalse);
+    });
+
+    test('test-only self-signed opt-in still verifies the hostname', () {
+      // Accepting a self-signed leaf must never disable certificate-identity /
+      // hostname verification: otherwise any host could impersonate the BMC and
+      // the test-only opt-in becomes a MITM vector. This is a hard invariant,
+      // independent of the flag, TLS mode, or console signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassHostnameVerification, isFalse);
+    });
+
+    test('no policy configuration can disable hostname verification', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+    });
+  });
+
   group('resolveRenderRoute — fallback works with the flag off', () {
     test('flag off routes valid HTTPS HTML5 to the external browser', () {
       expect(

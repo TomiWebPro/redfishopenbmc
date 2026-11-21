@@ -108,6 +108,16 @@ flag stays off for that target.
       is a reversible, test-profile-only opt-in that never touches production
       TLS. No blanket `proceed()` / `badCertificateCallback => true` on a
       production profile.
+* [ ] **Hostname verification (never bypassed by the opt-in)** — even under the
+      test-only self-signed acceptance path, the certificate's identity is still
+      matched against the console's hostname. Accepting a self-signed leaf must
+      never disable hostname / certificate-identity verification (no blanket
+      `SSLSocketFactory` trust-all, no wildcard/catch-all host verifier, no
+      `allowSelfSigned`-implies-`verifyHostname:false` shortcut): otherwise any
+      host could impersonate the BMC and the opt-in becomes a MITM vector. The
+      opt-in tolerates only an otherwise-valid cert for the *expected* BMC host
+      that is untrusted by the platform store; it is not a general certificate
+      check bypass. Verified per target before the flag is flipped.
 * [ ] **CSP / mixed content** — the BMC console's HTTP response headers and
       page content are inspected for `Content-Security-Policy` frame rules and
       mixed-content (HTTPS page loading HTTP subresources); a console that is
