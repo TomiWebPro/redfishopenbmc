@@ -12490,3 +12490,20 @@
 - Push this run's single commit. Re-audit RM-9 / EP-U13 for a genuine RED→GREEN gap before landing anything, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (RM-9 OEM depth-bound agreement guard)
+
+**Done:**
+- Audited both 09:53 dept slices: EP-U13's four-state populated-ListView truth table is already largely pinned by the reload-indicator + stale-error-banner suites (churn risk), so chose RM-9 — a genuinely untested agreement seam at the shared OEM console recursion bound.
+- The bound `3` is duplicated across four entry points, two hardcoded (`FeatureRules.oemHasConsole`, `kvmOemConsoleBlock/Uri/Enabled`, `KvmOemRegistry._findAt`, both `fromManager` factories); nothing pinned that they flip at the same depth. Added `test/features/kvm/kvm_oem_depth_bound_agreement_test.dart` (21 tests): console nested at depths 0..5, detection⟺URI agreement, both factories agree, registry bound, padded/mixed-case keys, non-map fail-closed, 12-level hostile blob bounded. Checked off RM-9 in `queues/model.md` with a Log entry.
+- Real-file RED proof: `FeatureRules._oemHasConsoleAt` `depth > 3` → `> 4` → exactly the two depth-4 agreement tests failed (`+19 -2`); source restored byte-clean (SHA `0070f6146f93…`), 600-perm backup shredded → 21/21 GREEN.
+- Verify: targeted 21/21 + sibling 10/10; `dart format` clean; `flutter analyze` 0; full `flutter test` 1888 passed / 1 skipped (baseline 1867 +21); `issues.py validate` OK; `git diff --check` clean; deps unchanged; secret scan clean.
+
+**Decisions:**
+- Regression guard, not churn — test-only, dependency-free, TLS-safe. Audit found no live divergence. Per §5 no manufactured UI churn. Emulator skipped (test-only, <7 days since last green 85/85). No force-push, history rewrite, `git clean`, or file deletion; three pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed. A concurrent rf-gate agent's test held the shared lock at preflight (two full-suite attempts timed out/SIGKILLed); after it exited the clean baseline finished 1867/1.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; do NOT do unattended, never weaken production TLS.
+
+**Next:**
+- Push this run's single commit together with the two unpushed rf-platform commits. Audit EP-U13 for a genuinely different untested divergence (states largely pinned already), never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
