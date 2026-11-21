@@ -540,6 +540,24 @@ class KvmConsoleLaunchPlan {
 /// forward pin needed), and no real BMC host uses a replacement character, so
 /// both fail closed with no valid target lost; IDNA-valid non-ASCII hosts and
 /// the same escapes in the path/query stay launchable.
+///
+/// A percent-encoded IDNA bidi (mixed-direction) label is rejected for the same
+/// reason: UTS-46 IDNA applies the Bidi rule (RFC 5893), so a label mixing a
+/// right-to-left script letter (Hebrew, Arabic, ...) with a left-to-right letter
+/// — or with European digits placed *before* the RTL letter — is DISALLOWED,
+/// and a browser / WebView rejects the host outright (verified against Node 24:
+/// `new URL(uri).hostname` throws for such a host). `Uri.tryParse` instead keeps
+/// the escape encoded and reports a non-empty HTTPS host, so a purely syntactic
+/// re-check calls it "secure". These are Unicode letters (category L) that are
+/// NFKC-stable and neither Separator/Other nor marks, so every earlier authority
+/// rule misses them. Under a stale secure flag + test opt-in that parser
+/// differential could grant in-app rendering and self-signed acceptance on a
+/// host the browser cannot navigate. The RTL-script set
+/// ([_rtlLetterRanges]) is derived from Node 24's WHATWG URL / IDNA behaviour —
+/// a letter is RTL when IDNA accepts it as a standalone label but rejects it
+/// after LTR text — so a pure-RTL label, an RTL label with trailing digits and
+/// ordinary LTR non-ASCII text all stay launchable: no valid target is lost.
+/// Scoped to the authority; the same escapes in the path/query stay launchable.
 final RegExp _rawUriForbiddenChars =
     RegExp(r'[\\"<>{|}`^\p{C}\p{Z}]', unicode: true);
 
@@ -1463,6 +1481,154 @@ bool _authorityHasIdnaDisallowedReplacementCharacter(String uri) {
   return false;
 }
 
+
+/// Inclusive `[start, end]` range pairs of Unicode letters whose bidi class is
+/// R or AL (right-to-left), derived empirically from Node 24's WHATWG URL /
+/// IDNA processing: a letter is included when `domainToASCII` accepts it as a
+/// standalone label but rejects it when appended to LTR text (`bmc<letter>`).
+/// This exact, runtime-independent set (2,464 letters in 119 ranges) lets the
+/// bidi rule reject mixed-direction labels without over-rejecting valid IDN
+/// hosts — a pure RTL label, RTL + trailing digits, and LTR non-ASCII text all
+/// stay launchable. See [_authorityHasBidiMixedLabel].
+const List<int> _rtlLetterRanges = <int>[
+  0x5d0, 0x5ea, 0x5ef, 0x5f2, 0x620, 0x64a, 0x66e, 0x66f,
+  0x671, 0x6d3, 0x6d5, 0x6d5, 0x6e5, 0x6e6, 0x6ee, 0x6ef,
+  0x6fa, 0x6fc, 0x6ff, 0x6ff, 0x710, 0x710, 0x712, 0x72f,
+  0x74d, 0x7a5, 0x7b1, 0x7b1, 0x7ca, 0x7ea, 0x7f4, 0x7f5,
+  0x7fa, 0x7fa, 0x800, 0x815, 0x81a, 0x81a, 0x824, 0x824,
+  0x828, 0x828, 0x840, 0x858, 0x860, 0x86a, 0x8a0, 0x8b4,
+  0x8b6, 0x8c7, 0x2135, 0x2138, 0xfb1d, 0xfb1d, 0xfb1f, 0xfb28,
+  0xfb2a, 0xfb36, 0xfb38, 0xfb3c, 0xfb3e, 0xfb3e, 0xfb40, 0xfb41,
+  0xfb43, 0xfb44, 0xfb46, 0xfbb1, 0xfbd3, 0xfc5d, 0xfc64, 0xfd3d,
+  0xfd50, 0xfd8f, 0xfd92, 0xfdc7, 0xfdf0, 0xfdf9, 0xfe71, 0xfe71,
+  0xfe73, 0xfe73, 0xfe77, 0xfe77, 0xfe79, 0xfe79, 0xfe7b, 0xfe7b,
+  0xfe7d, 0xfe7d, 0xfe7f, 0xfefc, 0x10800, 0x10805, 0x10808, 0x10808,
+  0x1080a, 0x10835, 0x10837, 0x10838, 0x1083c, 0x1083c, 0x1083f, 0x10855,
+  0x10860, 0x10876, 0x10880, 0x1089e, 0x108e0, 0x108f2, 0x108f4, 0x108f5,
+  0x10900, 0x10915, 0x10920, 0x10939, 0x10980, 0x109b7, 0x109be, 0x109bf,
+  0x10a00, 0x10a00, 0x10a10, 0x10a13, 0x10a15, 0x10a17, 0x10a19, 0x10a35,
+  0x10a60, 0x10a7c, 0x10a80, 0x10a9c, 0x10ac0, 0x10ac7, 0x10ac9, 0x10ae4,
+  0x10b00, 0x10b35, 0x10b40, 0x10b55, 0x10b60, 0x10b72, 0x10b80, 0x10b91,
+  0x10c00, 0x10c48, 0x10c80, 0x10cb2, 0x10cc0, 0x10cf2, 0x10d00, 0x10d23,
+  0x10e80, 0x10ea9, 0x10eb0, 0x10eb1, 0x10f00, 0x10f1c, 0x10f27, 0x10f27,
+  0x10f30, 0x10f45, 0x10fb0, 0x10fc4, 0x10fe0, 0x10ff6, 0x1e800, 0x1e8c4,
+  0x1e900, 0x1e943, 0x1e94b, 0x1e94b, 0x1ee00, 0x1ee03, 0x1ee05, 0x1ee1f,
+  0x1ee21, 0x1ee22, 0x1ee24, 0x1ee24, 0x1ee27, 0x1ee27, 0x1ee29, 0x1ee32,
+  0x1ee34, 0x1ee37, 0x1ee39, 0x1ee39, 0x1ee3b, 0x1ee3b, 0x1ee42, 0x1ee42,
+  0x1ee47, 0x1ee47, 0x1ee49, 0x1ee49, 0x1ee4b, 0x1ee4b, 0x1ee4d, 0x1ee4f,
+  0x1ee51, 0x1ee52, 0x1ee54, 0x1ee54, 0x1ee57, 0x1ee57, 0x1ee59, 0x1ee59,
+  0x1ee5b, 0x1ee5b, 0x1ee5d, 0x1ee5d, 0x1ee5f, 0x1ee5f, 0x1ee61, 0x1ee62,
+  0x1ee64, 0x1ee64, 0x1ee67, 0x1ee6a, 0x1ee6c, 0x1ee72, 0x1ee74, 0x1ee77,
+  0x1ee79, 0x1ee7c, 0x1ee7e, 0x1ee7e, 0x1ee80, 0x1ee89, 0x1ee8b, 0x1ee9b,
+  0x1eea1, 0x1eea3, 0x1eea5, 0x1eea9, 0x1eeab, 0x1eebb,
+];
+
+/// Unicode letter (general category L) matcher, applied to a single decoded
+/// rune of the authority.
+final RegExp _letterRune = RegExp(r'\p{L}', unicode: true);
+
+/// Unicode decimal-digit (general category Nd) matcher, applied to a single
+/// decoded rune of the authority.
+final RegExp _decimalDigitRune = RegExp(r'\p{Nd}', unicode: true);
+
+/// Returns `true` when [rune] is a right-to-left script letter
+/// ([_rtlLetterRanges]). The range table is sorted, so lookup is a short
+/// linear walk that bails out early.
+bool _isRtlLetterRune(int rune) {
+  if (rune < _rtlLetterRanges[0]) return false;
+  for (int i = 0; i < _rtlLetterRanges.length; i += 2) {
+    if (rune < _rtlLetterRanges[i]) return false; // sorted
+    if (rune <= _rtlLetterRanges[i + 1]) {
+      return _letterRune.hasMatch(String.fromCharCode(rune));
+    }
+  }
+  return false;
+}
+
+/// Returns `true` when the raw authority carries a percent-encoded IDNA bidi
+/// mixed-direction label — a label combining an RTL script letter with an LTR
+/// letter, or with European digits placed before the RTL letter — that a
+/// browser / WebView rejects under UTS-46 IDNA's Bidi rule while
+/// [Uri.tryParse] reports a non-empty HTTPS host (see the module docs).
+///
+/// The scan decodes percent-encoded host bytes as UTF-8 (in the correct byte
+/// context, matching the other authority rules) and inspects each maximal run
+/// of letters/digits ("word"): the first strong rune (letter or European digit)
+/// fixes the word's direction, and any opposite-direction strong rune in that
+/// same word fails closed. Digits after an RTL letter are permitted (matching
+/// IDNA), so a pure-RTL label with trailing digits stays launchable. '-' and
+/// '_' are bidi neutrals and do not break a word. The check is scoped to the
+/// authority; the same escapes in the path/query stay launchable.
+bool _authorityHasBidiMixedLabel(String uri) {
+  final String? authority = _authorityOf(uri);
+  if (authority == null) return false;
+  final List<int> bytes = <int>[];
+  for (int i = 0; i < authority.length; i++) {
+    final String char = authority[i];
+    if (char == '%' && i + 2 < authority.length) {
+      final int? hi = _hexDigit(authority[i + 1]);
+      final int? lo = _hexDigit(authority[i + 2]);
+      if (hi != null && lo != null) {
+        bytes.add((hi << 4) | lo);
+        i += 2;
+        continue;
+      }
+    }
+    bytes.add(char.codeUnitAt(0));
+  }
+  final String decoded;
+  try {
+    decoded = utf8.decode(bytes); // allowMalformed == false: malformed UTF-8
+    // sequences are left to _authorityHasMalformedUtf8 (both fail closed).
+  } on FormatException {
+    return false;
+  }
+
+  bool mixed = false;
+  bool hasStrong = false;
+  bool directionRtl = false; // direction fixed by the first strong rune
+  bool hasRtl = false;
+  bool hasLtr = false;
+  void finishWord() {
+    if (hasStrong && ((directionRtl && hasLtr) || (!directionRtl && hasRtl))) {
+      mixed = true;
+    }
+    hasStrong = false;
+    hasRtl = false;
+    hasLtr = false;
+  }
+
+  for (final int rune in decoded.runes) {
+    final String runeString = String.fromCharCode(rune);
+    if (_letterRune.hasMatch(runeString)) {
+      final bool rtl = _isRtlLetterRune(rune);
+      if (rtl) {
+        hasRtl = true;
+      } else {
+        hasLtr = true;
+      }
+      if (!hasStrong) {
+        hasStrong = true;
+        directionRtl = rtl;
+      }
+      continue;
+    }
+    if (_decimalDigitRune.hasMatch(runeString)) {
+      // European (ASCII) digits fix an LTR direction when they lead the word;
+      // non-ASCII digits are bidi neutrals here and do not fix direction.
+      if (!hasStrong && rune >= 0x30 && rune <= 0x39) {
+        hasStrong = true;
+        directionRtl = false;
+      }
+      continue;
+    }
+    if (rune == 0x2D || rune == 0x5F) continue; // '-' / '_' bidi neutrals
+    finishWord(); // authority/label separators end the word
+  }
+  finishWord();
+  return mixed;
+}
+
 /// Returns `true` when the raw authority carries a percent-encoded non-ASCII
 /// code point that a launcher applying IDNA/NFKC resolves to an ASCII
 /// character: either a structural delimiter ([_compatibilityDelimiterCodePoints])
@@ -2067,6 +2233,14 @@ bool _uriHasSecureHttpsTarget(String? uri) {
   // host the browser cannot navigate. IDNA-valid non-ASCII hosts and path/query
   // escapes stay launchable — no valid target lost.
   if (_authorityHasIdnaDisallowedReplacementCharacter(trimmed)) return false;
+  // Reject a percent-encoded IDNA bidi mixed-direction label (an RTL script
+  // letter mixed with LTR text or with leading European digits): a browser /
+  // WebView rejects such a host under UTS-46 IDNA's Bidi rule while
+  // Uri.tryParse reports a non-empty HTTPS host. A stale secure flag + test
+  // opt-in could otherwise grant in-app self-signed acceptance on a host the
+  // browser cannot navigate. Pure-RTL labels, RTL+digit labels and LTR non-
+  // ASCII text stay launchable — no valid target lost.
+  if (_authorityHasBidiMixedLabel(trimmed)) return false;
   // Reject a percent-encoded octet sequence in the authority that is not
   // well-formed UTF-8 (lone C1 byte, overlong form, truncated sequence): a
   // decode-first launcher could see different/invisible bytes in the host than

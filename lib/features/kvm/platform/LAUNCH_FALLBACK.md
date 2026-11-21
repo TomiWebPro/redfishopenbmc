@@ -566,7 +566,12 @@ Invariants, enforced by tests:
    U+2FFC..U+2FFF — that UTS-46 IDNA disallows and a browser rejects outright
    while `Uri.tryParse` reports a non-empty HTTPS host, so the whole block fails
    closed rather than reach in-app self-signed acceptance, independent of the
-   Dart runtime's Unicode-data version)).
+   Dart runtime's Unicode-data version)) + IDNA bidi mixed-direction label
+   rejection (a percent-encoded RTL script letter mixed with LTR text or with
+   leading European digits — the 2,464-letter RTL set derived from Node 24
+   WHATWG URL/IDNA behaviour — is browser-rejected under UTS-46/RFC 5893 while
+   `Uri.tryParse` reports a non-empty HTTPS host, so it fails closed; pure-RTL
+   labels, RTL+digit labels and LTR non-ASCII text stay launchable).
    **Blank-URI target normalization:** a whitespace-only URI is "no usable
    target" (`KvmConsoleLaunchPlan.targetUri`) — the copy-only fallback must
    surface `null`, never a whitespace string, under any policy (including the
