@@ -3962,4 +3962,118 @@ void main() {
   },
 );
 
+  group(
+      'planConsoleLaunch — IDNA-disallowed ideographic-description authority fails closed',
+      () {
+    // The Ideographic Description Characters block (U+2FF0..U+2FFB, category
+    // So) is DISALLOWED by UTS-46 IDNA: a browser / WebView (WHATWG URL) rejects
+    // such a host outright (verified against Node 24: each throws), while
+    // Uri.tryParse reports it as an opaque, non-empty HTTPS host. They are not
+    // Separator/Other (so the encoded C/Z rule misses them), not marks, and
+    // do not NFKC-fold to ASCII, so every earlier authority rule misses them.
+    // Under a stale secure flag + test opt-in that parser differential could
+    // grant in-app rendering and self-signed acceptance on a host the browser
+    // cannot navigate. No real BMC host uses an ideographic description
+    // character (hosts are ASCII/punycode), so each fails closed with no valid
+    // target lost.
+    const List<String> ideographicDescriptionUris = <String>[
+      'https://bmc%E2%BF%B0.example/console', // U+2FF0 LEFT TO RIGHT
+      'https://bmc%E2%BF%B9.example/console', // U+2FF9 SURROUND FROM UPPER RIGHT
+      'https://bmc%E2%BF%BB.example/console', // U+2FFB SURROUND FROM LOWER RIGHT
+      'https://u%E2%BF%B0@bmc.example/console', // in userinfo
+      'https://bmc%E2%BF%B0.example:8443/console', // with an explicit port
+    ];
+
+    test('an ideographic-description authority never reaches in-app', () {
+      for (final String uri in ideographicDescriptionUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+      }
+    });
+
+    test('an ideographic-description authority stays off under production', () {
+      for (final String uri in ideographicDescriptionUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('lowercase hex escapes are rejected too', () {
+      for (final String uri in <String>[
+        'https://bmc%e2%bf%b0.example/console',
+        'https://bmc%e2%bf%bb.example/console',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('the same escapes in the path stay launchable (authority-scoped)', () {
+      for (final String uri in <String>[
+        'https://bmc.example/%E2%BF%B0/console',
+        'https://bmc.example/console?q=%E2%BF%BB',
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+
+    test('valid IDNA non-ASCII hosts stay launchable (no over-rejection)', () {
+      // Guard: the rule targets only the IDNA-disallowed ideographic-description
+      // block in the authority. Real letters/symbols that IDNA accepts (e-acute,
+      // euro, emoji) and the same escape in the path keep working.
+      for (final String uri in <String>[
+        'https://bmc%C3%A9.example/console', // e-acute (Letter)
+        'https://bmc%E2%82%AC.example/console', // euro (Symbol, IDNA-valid)
+        'https://bmc%F0%9F%98%80.example/console', // emoji (Symbol, IDNA-valid)
+        'https://xn--bmc-esab.example/console', // punycode host
+      ]) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+  },
+);
+
 }
