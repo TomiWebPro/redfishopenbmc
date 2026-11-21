@@ -210,6 +210,26 @@ flag stays off for that target.
       default** and permission requests **rejected by default** on every target
       (inspect the WebView configuration and `WebChromeClient` / permission
       callbacks) before the flag is flipped. Verified per target.
+* [ ] **No sensitive data at rest (WebView cache / storage / background snapshot)** —
+      the embedded WebView must not persist the remote BMC console's sensitive
+      content (operator credentials, session cookies/tokens, KVM screen frames,
+      managed-host inventory) to disk or expose it to other apps: no on-device
+      HTTP/disk **WebView cache** of console responses, no DOM local/session
+      storage or IndexedDB retention beyond the session, no `setDatabaseEnabled`
+      / `setDomStorageEnabled` persistence, no WebView cookie jar shared with or
+      readable by the system browser for the console origin, and no autofill /
+      password-manager saving of console credentials. On Android the hosting
+      activity/window must set `FLAG_SECURE` so the OS **background snapshot** /
+      recent-apps thumbnail cannot capture console frames, and no native or
+      third-party overlay may render the secure surface. Console content is
+      served by the BMC and is attacker-influenced, but above all it is the
+      operator's privileged management session: any on-device **data at rest**
+      or snapshot of it is a local data-theft / shoulder-surfing surface wholly
+      independent of TLS, hostname, origin, native-bridge, file-access and
+      device-permission checks. The console WebView runs with cache/storage
+      persistence disabled and secure (non-capturable) presentation on every
+      target. Verified per target (inspect the WebView configuration and the
+      hosting activity/window flags) before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
