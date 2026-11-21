@@ -12216,3 +12216,18 @@
 - No further gate action while `build/rf-platform` has no new verified commit past `789650a`; rf-platform to produce + re-verify the next slice before a future gate run. Routine automation continues per FUTUREWORK Current focus.
 
 **Issues touched:** none closed — #009 (open), #021 (open).
+
+## 2026-11-21 04:24 UTC — agent:redfish-automation — #009/#021 (EP-S4-closeout dispose guard)
+
+**Done:**
+- Landed `test/features/kvm/kvm_controller_dispose_guard_test.dart` (3 tests, test-only): pin that `KvmController.load()` honours its `mounted` guard after the fetch's async gap. Each test disposes the notifier while the fetch is gated, then settles the success / `RedfishException` / generic-error branch and asserts the load future completes without throwing. The EP-S4 state-machine suite drove all three branches but never disposed mid-flight, so dropping any `if (mounted)` guard would let a post-dispose `state =` throw and stay GREEN. Audit found no live divergence — regression guard, not churn.
+- RED proof: temporarily removed all three `if (mounted)` guards in `load()` → all 3 tests failed (`+0 -3`, `Bad state: Tried to use KvmController after 'dispose' was called.` at `kvm_controller.dart:90/98`); source restored byte-clean (SHA `8174123e…` unchanged, 3 guards present, empty lib diff), 600-perm backup shredded → 3/3 GREEN.
+- Verify: targeted 3/3; `dart format` clean; `flutter analyze` 0; full `flutter test` 1774 passed / 1 skipped (baseline 1771 +3); issues validate OK; diff --check clean; deps unchanged; lib diff empty. Emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Test-only: no product `lib/` change, wire/fixture, WebView/protocol import, dependency bump, URL opened or human approval; production TLS untouched. No issue closed (#009 P3 / #021 P2 remain human-gated on platform WebView + BMC TLS validation). Pre-existing untracked `testing/` + both stashes preserved untouched; no force-push, no history rewrite. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard (EP-P4 human-gated, EP-U1/EP-U2/EP-T2 human/blocked, EP-S2/EP-M4/EP-S5/RM-2/RS-2 audited) — never churn; a future run could add this guard to the EP-T14 liveness set. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool change or >7 days. Close #021 then #009 only on human validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
