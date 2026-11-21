@@ -1726,4 +1726,185 @@ void main() {
       expect(blankFallback!.managerId, 'MgrBlank');
     });
   });
+
+  group('KvmService session-limit / enablement aggregate agreement (RS-10)',
+      () {
+    late Directory fixtureDir;
+    late MockRedfishServer server;
+
+    // One physical manager per boundary shape for MaxConcurrentSessions and
+    // enablement. The service builds each KvmCapability via
+    // KvmCapability.fromManager, so its resolved maxSessions / serviceEnabled
+    // must match the model built from the SAME body, and fetchCapability(id)
+    // must agree with the matching fetchCapabilities() entry. Out-of-spec
+    // limits (negative / fractional / beyond 2^53) fail closed to an
+    // unreported limit, and an explicitly-disabled block's limit must not win
+    // over an enabled block's (RM-8/RM-10 enabled-preference aggregated here).
+    Map<String, dynamic> graphical(Object? limit, {bool enabled = true}) =>
+        <String, dynamic>{
+          'ServiceEnabled': enabled,
+          'ConnectTypesSupported': <String>['KVMIP', 'HTML5'],
+          'ConnectUri': 'https://bmc.example/console',
+          'MaxConcurrentSessions': limit,
+        };
+
+    final Map<String, Map<String, dynamic>> bodies =
+        <String, Map<String, dynamic>>{
+      'MgrInt': <String, dynamic>{
+        'Id': 'MgrInt',
+        '@odata.id': '/redfish/v1/Managers/MgrInt',
+        'GraphicalConsole': graphical(4),
+      },
+      'MgrDouble': <String, dynamic>{
+        'Id': 'MgrDouble',
+        '@odata.id': '/redfish/v1/Managers/MgrDouble',
+        'GraphicalConsole': graphical(4.0),
+      },
+      'MgrString': <String, dynamic>{
+        'Id': 'MgrString',
+        '@odata.id': '/redfish/v1/Managers/MgrString',
+        'GraphicalConsole': graphical('  4  '),
+      },
+      'MgrNeg': <String, dynamic>{
+        'Id': 'MgrNeg',
+        '@odata.id': '/redfish/v1/Managers/MgrNeg',
+        'GraphicalConsole': graphical(-1),
+      },
+      'MgrFrac': <String, dynamic>{
+        'Id': 'MgrFrac',
+        '@odata.id': '/redfish/v1/Managers/MgrFrac',
+        'GraphicalConsole': graphical(2.5),
+      },
+      'MgrHuge': <String, dynamic>{
+        'Id': 'MgrHuge',
+        '@odata.id': '/redfish/v1/Managers/MgrHuge',
+        'GraphicalConsole': graphical(9007199254740994.0),
+      },
+      'MgrMixed': <String, dynamic>{
+        'Id': 'MgrMixed',
+        '@odata.id': '/redfish/v1/Managers/MgrMixed',
+        // Disabled graphical carries a higher limit; the enabled serial block
+        // must win so the capability card does not advertise a stale limit.
+        'GraphicalConsole': graphical(7, enabled: false),
+        'SerialConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <String>['SSH'],
+          'ConnectUri': 'ssh://bmc.example/serial',
+          'MaxConcurrentSessions': 3,
+        },
+      },
+    };
+
+    final Map<String, int?> expectedLimits = <String, int?>{
+      'MgrInt': 4,
+      'MgrDouble': 4,
+      'MgrString': 4,
+      'MgrNeg': null,
+      'MgrFrac': null,
+      'MgrHuge': null,
+      'MgrMixed': 3,
+    };
+
+    setUpAll(() async {
+      fixtureDir = await Directory.systemTemp.createTemp('kvm_rs10_fixture_');
+      final Directory managersDir = Directory('${fixtureDir.path}/Managers')
+        ..createSync(recursive: true);
+      File('${managersDir.path}/index.json').writeAsStringSync(
+        jsonEncode(<String, dynamic>{
+          'Members': <dynamic>[
+            for (final String id in bodies.keys)
+              <String, dynamic>{'@odata.id': '/redfish/v1/Managers/$id'},
+          ],
+        }),
+      );
+      for (final MapEntry<String, Map<String, dynamic>> entry
+          in bodies.entries) {
+        final Directory managerDir =
+            Directory('${managersDir.path}/${entry.key}')
+              ..createSync(recursive: true);
+        File('${managerDir.path}/index.json')
+            .writeAsStringSync(jsonEncode(entry.value));
+      }
+      server = await MockRedfishServer(fixturesDir: fixtureDir.path).start();
+    });
+
+    tearDownAll(() async {
+      await server.close();
+      fixtureDir.deleteSync(recursive: true);
+    });
+
+    KvmService newService() => KvmService(
+          client: server.buildClient(),
+          systemId: 'bmc1',
+        );
+
+    test(
+        'fetchCapabilities resolves the boundary session-limit matrix '
+        '(RS-10)', () async {
+      final List<KvmCapability> capabilities =
+          await newService().fetchCapabilities();
+
+      expect(capabilities, hasLength(bodies.length));
+      final Map<String, KvmCapability> byId = <String, KvmCapability>{
+        for (final KvmCapability c in capabilities) c.managerId: c,
+      };
+      for (final MapEntry<String, int?> expected in expectedLimits.entries) {
+        expect(byId[expected.key], isNotNull, reason: expected.key);
+        expect(
+          byId[expected.key]!.maxSessions,
+          expected.value,
+          reason: '${expected.key} MaxConcurrentSessions',
+        );
+      }
+    });
+
+    test(
+        'fetchCapability(id) agrees with fetchCapabilities over the boundary '
+        'matrix (RS-10)', () async {
+      final KvmService svc = newService();
+      final List<KvmCapability> capabilities = await svc.fetchCapabilities();
+      final Map<String, KvmCapability> byId = <String, KvmCapability>{
+        for (final KvmCapability c in capabilities) c.managerId: c,
+      };
+
+      for (final String id in expectedLimits.keys) {
+        final KvmCapability? single = await svc.fetchCapability(id);
+        expect(single, isNotNull, reason: id);
+        expect(single!.maxSessions, byId[id]!.maxSessions, reason: id);
+        expect(single.serviceEnabled, byId[id]!.serviceEnabled, reason: id);
+        expect(single.uri, byId[id]!.uri, reason: id);
+      }
+      // Out-of-spec limits are unreported but must never drop a physical
+      // manager or fabricate a launchable limit.
+      for (final String id in <String>['MgrNeg', 'MgrFrac', 'MgrHuge']) {
+        expect(byId[id]!.maxSessions, isNull, reason: id);
+      }
+      // The enabled serial block's limit wins over the disabled graphical one.
+      expect(byId['MgrMixed']!.maxSessions, 3,
+          reason: 'enabled block limit wins over disabled block');
+    });
+
+    test(
+        'service capability agrees with the model built from the same body '
+        '(RS-10)', () async {
+      final List<KvmCapability> capabilities =
+          await newService().fetchCapabilities();
+      final Map<String, KvmCapability> byId = <String, KvmCapability>{
+        for (final KvmCapability c in capabilities) c.managerId: c,
+      };
+
+      for (final MapEntry<String, Map<String, dynamic>> entry
+          in bodies.entries) {
+        final KvmCapability model = KvmCapability.fromManager(
+          entry.value,
+          managerId: entry.key,
+          sourceManagerUri: '/redfish/v1/Managers/${entry.key}',
+        );
+        expect(byId[entry.key]!.maxSessions, model.maxSessions,
+            reason: '${entry.key} maxSessions agreement');
+        expect(byId[entry.key]!.serviceEnabled, model.serviceEnabled,
+            reason: '${entry.key} serviceEnabled agreement');
+      }
+    });
+  });
 }

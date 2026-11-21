@@ -12843,3 +12843,19 @@
 - Push the single commit + the concurrent gate merge; leave the five stashes untouched. RM-12 / RS-10 / EP-U16 are audit-first — RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 are deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (RS-10)
+
+**Done:**
+- FEATURE (test-only): RS-10 service-level session-limit / enablement aggregate agreement guard for #009/#021. Added a 181-line / 3-test group `KvmService session-limit / enablement aggregate agreement (RS-10)` to `test/features/kvm/kvm_service_test.dart` over one in-temp 7-manager mockup: int 4, integral double 4.0, padded numeric string `'  4  '`, negative -1, fractional 2.5, >2^53 double, and a mixed manager (disabled graphical limit 7 + enabled serial limit 3). Pins `fetchCapabilities()` boundary resolution; `fetchCapability(id)`↔`fetchCapabilities()` agreement on maxSessions/serviceEnabled/uri; service↔`KvmCapability.fromManager` agreement from the same body; out-of-spec limits fail closed (unreported, no manager dropped); enabled block's limit wins over a disabled block's.
+- Audit found no live divergence — regression guard at a genuinely untested seam (the 1729-line service test had exactly one `maxSessions` assertion), not churn. TWO real-file RED proofs: (1) dropped `_explicitlyDisabled` from `KvmCapability._aggregateMaxSessions` first pass → 2 tests failed (`+1 -2`, MgrMixed `7` vs `3`), source restored byte-clean (SHA `533ed545…`); (2) neutered `kvmSessionLimit` double-rejection + negative check → 2 tests failed (`+1 -2`, MgrNeg leaked `-1`), source restored byte-clean (SHA `8dba9db2…`). Both 0 residue, empty lib diff, 600-perm backups shredded → 3/3 GREEN.
+- Verify: `dart format` clean; `flutter analyze` 0; full `flutter test --concurrency=4` 1992 passed / 1 skipped (baseline 1989 +3); issues validate OK; diff --check clean; lib diff empty; deps unchanged.
+
+**Decisions:**
+- Test-only, no `lib/`, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. RS-10 is now LANDED.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. UI skipped (§5): no widget surface changed; no manufactured churn.
+
+**Next:**
+- Push the single commit (never force-push); leave the five stashes untouched. RM-12 / EP-U16 are audit-first — both already heavily covered; RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 are deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS. Full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
