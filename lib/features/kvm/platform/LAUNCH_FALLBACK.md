@@ -485,6 +485,18 @@ Invariants, enforced by tests:
    positions); ordinary pct-encoded UTF-8 host bytes (e-acute, euro, emoji),
    punycode hosts and the same escapes in the path/query stay launchable — no
    valid target lost.
+   **IDNA-disallowed modifier-letter rejection:** ten Modifier-Letter (category
+   `Lm`) code points — U+0640 TATWEEL, U+06E5/U+06E6 (Arabic small waw/yeh with
+   hamza), U+07F4/U+07F5/U+07FA (NKO), U+081A/U+0824/U+0828 (Samaritan) and
+   U+1E94B — have a stable non-ASCII NFKC form (so they evade the C/Z, mark,
+   NFKC-to-ASCII and mark-introducing rules), yet UTS-46 IDNA disallows them: a
+   browser/WebView (WHATWG URL) rejects the host outright (verified against
+   Node 24: each throws) while `Uri.tryParse` reports an opaque, non-empty HTTPS
+   host. Under a stale secure flag + test opt-in that parser differential could
+   grant in-app rendering and self-signed acceptance on a host the browser
+   cannot navigate. All ten fail closed (either hex case); the same escapes in
+   the path/query and valid non-ASCII IDNA hosts (e-acute, U+3031 vertical kana
+   — a browser punycodes it, euro, emoji) stay launchable — no valid target lost.
    Covered by targeted tests across the defense-in-depth re-validation
    groups (scheme/host/malformed-authority parity + control-character +
    raw-space + Unicode-whitespace/invisible + raw-backslash + RFC-3986
@@ -527,7 +539,11 @@ Invariants, enforced by tests:
    free UTF-8 such as e-acute/euro/emoji stays launchable) + Unicode-17 NFKC
    ASCII-fold forward pin (U+A7F1, assigned after the Unicode 16.0.0 table
    basis, pinned so fail-closed is independent of the Dart runtime's Unicode
-   version)).
+   version) + IDNA-disallowed modifier-letter authority rejection (the ten
+   NFKC-stable `Lm` code points U+0640/06E5/06E6/07F4/07F5/07FA/081A/0824/0828/
+   1E94B that UTS-46 IDNA disallows and a browser rejects outright, so they fail
+   closed rather than reach in-app self-signed acceptance on an un-navigable
+   host)).
    **Blank-URI target normalization:** a whitespace-only URI is "no usable
    target" (`KvmConsoleLaunchPlan.targetUri`) — the copy-only fallback must
    surface `null`, never a whitespace string, under any policy (including the
