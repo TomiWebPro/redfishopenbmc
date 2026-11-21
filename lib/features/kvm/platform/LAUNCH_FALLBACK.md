@@ -13,8 +13,8 @@ Owner: rf-platform · Status: **flag OFF in production** · Date: 2026-11-19
 dependency-free `KvmConsoleLaunchPlan`. It imports no WebView/protocol plugin and
 opens no channel — so it adds **no dependency** and **does not touch production
 TLS**. It is the flag-gated decision layer a future, validated WebView will
-consume; today it locks the fallback behaviour with 203 targeted tests in
-`test/features/kvm/platform/launch_plan_test.dart` (271 across the platform
+consume; today it locks the fallback behaviour with 204 targeted tests in
+`test/features/kvm/platform/launch_plan_test.dart` (272 across the platform
 suite).
 
 ## Decision contract (`planConsoleLaunch`)
@@ -635,9 +635,16 @@ Invariants, enforced by tests:
    **Blank-URI target normalization:** a whitespace-only URI is "no usable
    target" (`KvmConsoleLaunchPlan.targetUri`) — the copy-only fallback must
    surface `null`, never a whitespace string, under any policy (including the
-   test-only opt-in). A non-blank URI that merely fails the secure check keeps
-   its raw copy target, so the flag-off external-browser + copy path still
-   works unchanged.
+   test-only opt-in). This was generalized to any value made solely of Unicode
+   `Separator` (Z) / `Other` (C) code points: Dart's `String.trim()` strips `Zs`
+   whitespace (NBSP/BOM) but leaves invisible format characters such as zero-
+   width space/joiner/non-joiner (U+200B/U+200D/U+200C) intact, which previously
+   survived as a non-null copy target — a launcher/copy action would surface an
+   invisible string. The shared control-safety gate `_controlSafeTrimmedUri`
+   (its `_rawUriForbiddenChars` \p{C}/\p{Z} match) now fails all-invisible values
+   closed to `null` as "no usable target" (RED/GREEN-locked). A non-
+   blank URI that merely fails the secure check keeps its raw copy target, so
+   the flag-off external-browser + copy path still works unchanged.
 
 ## What remains gated (not done here)
 

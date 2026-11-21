@@ -31,7 +31,10 @@ class KvmConsoleLaunchPlan {
   final KvmConsoleRenderRoute route;
 
   /// The trimmed URI a launcher may open or the user may copy, or `null` when
-  /// there is no usable target.
+  /// there is no usable target. A value made solely of Unicode `Separator` (Z)
+  /// / `Other` (C) code points (whitespace, controls and invisible format
+  /// characters such as zero-width space) is "no usable target" and yields
+  /// `null`, never an invisible string handed to a launcher/copy action.
   final String? targetUri;
 
   /// Whether a self-signed certificate may be accepted for this launch.
@@ -2716,11 +2719,13 @@ bool _isHttpUriWithSchemes(String? uri, Set<String> schemes) {
 ///     test-only opt-in on HTTPS — never for a fallback.
 ///  4. A missing/blank **or control-unsafe** URI fails closed to copy-only with
 ///     a `null` target, so a launcher/clipboard is never handed an empty,
-///     whitespace-padded, CRLF/NUL, raw-space, backslash or otherwise malformed
-///     endpoint. Every non-null target is the shared control-safe trim of the
-///     raw URI — the same rule every transport classifier applies — so the
-///     copied value can never disagree with the classifiers about whether the
-///     target is usable. Properly encoded targets (%20/%5C) are unchanged.
+///     whitespace-padded or all-invisible (ZWSP/ZWJ/ZWNJ/format-char), CRLF/NUL,
+///     raw-space, backslash or otherwise malformed endpoint — "no usable target"
+///     fails closed under every policy. Every non-null target is the shared
+///     control-safe trim of the raw URI — the same rule every transport
+///     classifier applies — so the copied value can never disagree with the
+///     classifiers about whether the target is usable. Properly encoded targets
+///     (%20/%5C) are unchanged.
 KvmConsoleLaunchPlan planConsoleLaunch({
   required KvmWebViewPolicy policy,
   required String? uri,
@@ -2748,8 +2753,12 @@ KvmConsoleLaunchPlan planConsoleLaunch({
   // header/clipboard injection or an authority that differs from the one the
   // classifier trusted. Reuse the single shared hardening core so the target
   // fails closed on exactly the malformed input every transport classifier
-  // refuses to call secure (issues #009 / #021). Properly percent-encoded
-  // targets (%20/%5C/...) and valid non-HTTP external-client URIs are untouched.
+  // refuses to call secure (issues #009 / #021). That core's
+  // `_rawUriForbiddenChars` (\p{C}/\p{Z}) also fails an all-invisible value
+  // (ZWSP/ZWJ/ZWNJ/format chars that String.trim() leaves intact) closed to a
+  // null target — the "no usable target" contract — under every policy.
+  // Properly percent-encoded targets (%20/%5C/...) and valid non-HTTP
+  // external-client URIs are untouched.
   final String? trimmed = _controlSafeTrimmedUri(uri);
 
   // Fail closed: a launchable route with no usable URI degrades to copy-only.

@@ -3882,6 +3882,40 @@ void main() {
       });
     }
 
+    test('an all-invisible Unicode value yields a null target', () {
+      // String.trim() strips Unicode whitespace (Zs, incl. NBSP/BOM) but NOT
+      // other invisible Unicode Other/format characters (Cf) such as ZWSP,
+      // ZWJ and ZWNJ. Such a value is not a launchable URI, yet without an
+      // explicit "no usable target" check it survives as a non-null targetUri
+      // and a launcher/copy action would surface an invisible string. It must
+      // fail closed to null just like whitespace, under every policy.
+      const List<String> invisibleUris = <String>[
+        '\u200B', // ZERO WIDTH SPACE (Cf)
+        '\u200C', // ZERO WIDTH NON-JOINER (Cf)
+        '\u200D', // ZERO WIDTH JOINER (Cf)
+        '\u2060', // WORD JOINER (Cf)
+        '\u200B\u200D', // combined invisible format characters
+      ];
+      for (final KvmWebViewPolicy policy in <KvmWebViewPolicy>[
+        KvmWebViewPolicy.productionDefault,
+        KvmWebViewPolicy.testOptIn,
+      ]) {
+        for (final String uri in invisibleUris) {
+          final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+            policy: policy,
+            uri: uri,
+            hasSecureUri: true,
+            isHtml5: true,
+            isEnabled: true,
+          );
+
+          expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+          expect(plan.targetUri, isNull, reason: uri);
+          expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        }
+      }
+    });
+
     test('a real insecure URI still keeps its copy target', () {
       // Regression guard: only an unusable/blank target is normalised away;
       // a non-blank URI that merely fails the secure check is still handed
