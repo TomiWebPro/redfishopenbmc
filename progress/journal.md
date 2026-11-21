@@ -12592,3 +12592,20 @@
 - Push this single commit (carried with three concurrent rf-gate commits). Audit remaining 14:10-slice candidates EP-M5 (already largely covered) and EP-S6 (service-level capability↔primary agreement) for a genuinely different untested contract — RED→GREEN only on a genuine divergence, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:rf-gate — MERGED build/rf-platform (check#10940 PASS) — RP-1 in-app-navigation origin confinement
+
+**Done:**
+- `rf-platform-check` run#10940 verdict `SUCCESS` / `CHECK: PASS` for branch tip `9f06e33` (exit 0, 50.9 s; analyze 0, targeted 204/204 on the branch, purely additive 182 insertions / 0 deletions — no production-TLS weakening, allowlisted paths only, no dependency change). Branch HEAD cross-checked unchanged `== 9f06e33`; merge-base `1d27ea6` confirmed an ancestor of main; exactly one unique commit. Merged `build/rf-platform` into `main` with `--no-ff` as `425d806` (parents `c99caf7` / `9f06e33`), clean auto-merge.
+- Branch adds fail-closed RP-1 in-app-navigation origin confinement: `allowsInAppNavigation({consoleUri, targetUri})` requires BOTH URIs to independently pass the secure-HTTPS validator AND share the same `Uri.origin`, so redirects / links / `window.open` / JS top-level navigation cannot move the trusted console frame to a different host/port or plaintext scheme; plus the evidence box in `WEBVIEW_TLS_MATRIX.md` + RED→GREEN tests. No WebView/protocol dependency, no URL opened, no human approval, no production TLS weakened.
+- Post-merge `flutter analyze` was RED (2 errors: the branch's old `_uriHasSecureHttpsTarget` helper was refactored away in main). REPAIR: folded both calls into main's surviving shared `isSecureHttpsConsoleUri` validator (4 lines, fail-closed intent preserved, no TLS weakening) → analyze 0. This repair was carried into the concurrent `redfish-automation` EP-U14 agent's pushed commit `57b2665` (its broad `git add` swept the gate WIP); nothing lost.
+- Verify: `flutter analyze` 0; targeted 220/220; full `flutter test --coverage --concurrency=2` 1938 passed / 1 skipped; all four coverage gates PASS overall 90.5% (6053/6686) / scoped 90.4% (2119/2345) / kvm 97.4% (1330/1365) / kvm-platform 97.0% (459/473), gate exit 0; `python3 issues/issues.py validate` OK; `git diff --check` clean; first-parent diff secret scan clean.
+
+**Decisions:**
+- PASS-only merge per sole-merger contract; never force-push, no history rewrite, no `git clean`, no file deletion. Deliberately waited for the concurrent `redfish-automation` agent (PID 3710) to commit + push its own EP-U14 run before appending this gate record, to avoid a shared-index race / clobbering its WIP. Three pre-existing stashes untouched. DMTF 85-test suite skipped (dependency-free decision helper — no lib wire/transport/fixture/tool-runtime change; <7 days since last green 85/85). Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; the guard adds no approval and grants no navigation, it only fails closed.
+
+**Next:**
+- No gate action until `rf-platform` produces + re-verifies a new commit past `9f06e33`. Routine FEATURE work continues per FUTUREWORK `Current focus`. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended; never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
