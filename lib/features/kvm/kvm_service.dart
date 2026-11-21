@@ -88,10 +88,19 @@ class KvmService {
   /// Returns `null` when no manager with that id is exposed. This is the
   /// read-only URI-resolution entry point (no IPC): callers receive a
   /// capability with a resolved [KvmCapability.uri] to open externally.
+  ///
+  /// The lookup argument is normalized with the same trim-nonblank rule that
+  /// [KvmCapability.managerId] keys use (every key comes from `_managerId`): a
+  /// padded lookup must resolve a plainly-present manager, and a blank (or
+  /// blank-after-trim) lookup returns `null` instead of creating a phantom
+  /// miss. Without this, `fetchCapability('  BMC  ')` missed a manager keyed
+  /// `BMC` even though `fetchCapabilities()` surfaced it (issue #009/#021).
   Future<KvmCapability?> fetchCapability(String managerId) async {
+    final String? normalizedId = _trimmedNonBlank(managerId);
+    if (normalizedId == null) return null;
     final List<KvmCapability> capabilities = await fetchCapabilities();
     for (final KvmCapability capability in capabilities) {
-      if (capability.managerId == managerId) return capability;
+      if (capability.managerId == normalizedId) return capability;
     }
     return null;
   }

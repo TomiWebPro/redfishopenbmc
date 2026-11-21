@@ -12473,3 +12473,20 @@
 - Push this run's commit together with the unpushed rf-ideate/rf-gate commits. Re-audit remaining 09:53-slice candidates (RM-9 / RS-9 / EP-U13) for a genuine RED→GREEN gap before landing anything, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (RS-9 fetchCapability lookup-key normalization FIX)
+
+**Done:**
+- Confirmed a genuine live defect at `KvmService.fetchCapability(managerId)`: the caller argument was compared verbatim to `capability.managerId` (always trimmed by `_managerId`), so `fetchCapability('  PaddedBMC  ')` returned `null` for a manager plainly surfaced by `fetchCapabilities()` — a phantom miss at the public read-only lookup entry point.
+- Fixed by normalizing the lookup argument through the shared `_trimmedNonBlank` helper (blank / padded-blank short-circuits to `null`) before comparison. Minimal lib diff: `lib/features/kvm/kvm_service.dart` (3 code lines + doc comment).
+- Added `test/features/kvm/kvm_service_lookup_key_test.dart` (3 tests): trimmed-key surface, padded-lookup agreement over 4 derived-id shapes (padded string Id / numeric Id→@odata / blank string Id→@odata / numeric+blank @odata→member URI), and blank/unknown rejection. Pre-fix RED `+2 -1` (Actual `<null>` for `'  PaddedBMC'`); post-fix targeted 64/64. Pristine-source 600-perm backup shredded.
+- Verify: `dart format` clean; `flutter analyze` 0; full `flutter test` 1866 passed / 1 skipped (baseline 1863 +3); `issues.py validate` OK; `git diff --check` clean; deps unchanged; secret scan clean.
+
+**Decisions:**
+- Genuine defect fix, not churn — lib+test, dependency-free, TLS-safe. Per §5 no manufactured UI churn. Emulator skipped (pure lookup normalization, no wire/transport/fixture/tool-runtime change, <7 days since last green 85/85). No force-push, history rewrite, `git clean`, or file deletion; three pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; do NOT do unattended, never weaken production TLS.
+
+**Next:**
+- Push this run's single commit. Re-audit RM-9 / EP-U13 for a genuine RED→GREEN gap before landing anything, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
