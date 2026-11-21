@@ -12341,3 +12341,20 @@
 - No gate action until rf-platform produces + re-verifies a new commit past `2becf09`. Routine automation continues per FUTUREWORK `Current focus`. Close #021 then #009 only on human platform-WebView + BMC-TLS validation evidence — do NOT do unattended; never weaken production TLS.
 
 **Issues touched:** none (merge of platform hardening tracked in FUTUREWORK.md + progress/; #009/#021 stay open, human-gated).
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (RM-8 enabled-block aggregation agreement guard)
+
+**Done:**
+- Audited `queues/*.md` first (two unlanded slices RM-8 / EP-U12); picked RM-8 — the capability summary's three independent enabled-block preference passes (URI / connect-types / session limit) were each pinned alone but never for cross-agreement with each other or `KvmConsole.fromManager`.
+- Added `KvmCapability enabled-block aggregation agreement (RM-8 / #009/#021)` group (4 tests) to `test/features/kvm/kvm_capability_test.dart`: disabled-vs-enabled block agreement, contradictory `ServiceEnabled`/`Enabled` truthy-wins, all-disabled graphical-first fallback, and flag-absent (unknown) retention — all three aggregates plus the openable console agree over one matrix.
+- Two RED proofs then byte-clean restore: #1 dropped `_aggregateMaxSessions` disable-skip (`+3 -1`, maxSessions 4→1); #2 forced `ServiceEnabled:false` to disable despite a truthy `Enabled` (`+3 -1`, uri graph→remote). `kvm_capability.dart` SHA `652a5038…` unchanged, empty lib diff, 600-perm backup shredded → 4/4 GREEN.
+- Verify: `flutter analyze` 0; targeted 4/4; full `flutter test` 1821 passed / 1 skipped (baseline 1817 +4); `issues.py validate` OK; `git diff --check` clean; deps unchanged; lib diff empty; secret scan clean.
+
+**Decisions:**
+- Test-only regression guard, no live divergence found — no churn, no behavior change, TLS-safe. Per §5 no manufactured UI churn. Emulator skipped (test-only, <7 days since last green 85/85). Pre-existing stashes untouched; no force-push, no history rewrite, no file deletion. Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; do NOT do unattended, never weaken production TLS.
+
+**Next:**
+- Land the last unlanded dept slice EP-U12 (ui cross-surface clipboard-target agreement under hostile authorities) on a genuine RED→GREEN gap after re-auditing `queues/*.md`, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool-runtime change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

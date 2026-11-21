@@ -16,7 +16,7 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
      RED→GREEN only on a genuine divergence; no churn. Human-gated WebView/TLS rendering stays gated and
      is NOT re-split. No code touched. -->
 
-- [ ] RM-8 KvmCapability enabled-block aggregation agreement across URI / connect-types / session-limit:
+- [x] RM-8 LANDED 2026-11-21 (run `auto: FEATURE #009/#021 RM-8 enabled-block aggregation agreement guard + RED->GREEN tests`, analyze 0 / 1821 passed / 1 skipped [baseline 1817 +4], test-only) — KvmCapability enabled-block aggregation agreement across URI / connect-types / session-limit:
       feed `KvmCapability.fromManager` one matrix of manager bodies mixing flag-absent ("unknown"),
       explicitly-enabled and explicitly-disabled Graphical / Serial / Remote blocks (plus contradictory
       `ServiceEnabled` / `Enabled` flags) and pin that `resolveLaunchUri`, `connectTypes` and `maxSessions`
@@ -28,6 +28,21 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
               (0 issues), with RED→GREEN proof only on a genuine divergence; writes limited to
               `lib/features/kvm/models/**` + those two named test files;
               `git diff --exit-code -- pubspec.yaml pubspec.lock`; no wire/TLS change.
+      LANDED: audit found no live divergence — regression guard, not churn. The three aggregates
+      (`_standardConnectUri` / `_aggregateConnectTypes` / `_aggregateMaxSessions`) each apply the
+      `_explicitlyDisabled` predicate in their own preference pass; no single test pinned their AGREEMENT
+      over one matrix. Added `KvmCapability enabled-block aggregation agreement (RM-8 / #009/#021)` group
+      (4 tests) to `test/features/kvm/kvm_capability_test.dart`: (1) disabled graphical vs enabled remote —
+      uri/types/limit all come from the remote block and `KvmConsole.fromManager`'s openable console agrees;
+      (2) contradictory `ServiceEnabled`/`Enabled` flags — a truthy flag wins on all three aggregates and in
+      `KvmConsole.serviceEnabled`; (3) all-disabled fallback is graphical-first across all three with no
+      openable console; (4) a flag-absent (unknown) block is retained identically by all three. RED #1:
+      dropped the disable-skip in `_aggregateMaxSessions` first pass → "prefer one enabled block" test failed
+      (`+3 -1`, maxSessions `Expected 4 / Actual 1`, i.e. the limit leaked from the disabled graphical block);
+      RED #2: `ServiceEnabled:false` forced-disabled even with truthy `Enabled` → contradictory-flag test failed
+      (`+3 -1`, uri `Expected .../graph / Actual .../remote`, desyncing the aggregates from the openable console);
+      `kvm_capability.dart` restored byte-clean (SHA `652a5038fa8ff0d…` unchanged, empty lib diff), 600-perm
+      backup shredded → 4/4 GREEN. Test-only, deps unchanged.
 
 <!-- rf-ideate split 2026-11-21 01:45 UTC: splits the remaining cross-view console-source parity seam
      of the blocked #009/#021 epic (RemoteConsole + explicit-disable parity) into one unblocked,
@@ -216,6 +231,8 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
               writes limited to `lib/features/kvm/models/**`.
 
 ## Log
+- 2026-11-21 07:23 — RM-8 enabled-block aggregation agreement guard LANDED (agent:redfish-automation, FEATURE #009/#021, test-only): added `KvmCapability enabled-block aggregation agreement (RM-8 / #009/#021)` group (4 tests) to `test/features/kvm/kvm_capability_test.dart`. The capability summary's three independent enabled-block preference passes (`_standardConnectUri` / `_aggregateConnectTypes` / `_aggregateMaxSessions`) were each pinned in isolation but never for AGREEMENT over one matrix or with `KvmConsole.fromManager`; a refactor with divergent predicates could desync the capability card from the launchable console while every single-aggregate test stayed GREEN. Pins (1) disabled graphical vs enabled remote → uri/types/limit all from remote + openable console agrees, (2) contradictory `ServiceEnabled`/`Enabled` truthy-wins on all three + `KvmConsole.serviceEnabled`, (3) all-disabled fallback graphical-first on all three with no openable console, (4) flag-absent (unknown) block retained identically by all three. Audit found no live divergence — regression guard, not churn. RED #1: dropped disable-skip in `_aggregateMaxSessions` first pass → "prefer one enabled block" failed (`+3 -1`, maxSessions `4`→`1`); RED #2: `ServiceEnabled:false` forced-disabled despite truthy `Enabled` → contradictory test failed (`+3 -1`, uri graph→remote); `kvm_capability.dart` restored byte-clean (SHA `652a5038fa8ff0d…` unchanged, empty lib diff), 600-perm backup shredded → 4/4 GREEN. analyze 0 / full `flutter test` 1821 passed / 1 skipped (baseline 1817 +4); issues validate OK; diff --check clean; deps unchanged; test-only, emulator skipped (<7 days since last green 85/85), no TLS weakening.
+
 - 2026-11-21 05:39 — EP-M1 residual direct-construction `supportsKvmIp` fallback guard LANDED (agent:redfish-automation, FEATURE #009/#021): added `test/features/kvm/kvm_capability_kvmip_fallback_test.dart` (9 tests). The documented `KvmCapability.supportsKvmIp` fallback (graphical-only bit `graphicalKvmIp == null` → scan aggregate `connectTypes` for an exact, trimmed, case-insensitive `KVMIP`) had ZERO coverage — every prior assertion went through `fromManager` where the bit is always non-null — so a `?? false` regression or dropped trim/case would stay GREEN while breaking directly constructed widget fixtures. Pins canonical/lowercase/padded-mixed-case KVMIP, among-other-types, no-KVMIP, empty list, substring near-misses + authoritative-bit precedence. Audit found no live divergence — regression guard, not churn; EP-M1 checkbox stays open (residual fallback seam). RED #1 `?? false` → 4 failed (`+5 -4`); RED #2 removed trim/case → 3 failed (`+6 -3`); restored byte-clean (SHA `652a5038…` unchanged, empty lib diff), backup shredded → 9/9 GREEN. analyze 0 / full `flutter test` 1801 passed / 1 skipped (baseline 1792 +9); issues validate OK; diff --check clean; test-only, deps unchanged, emulator skipped (<7 days since last green 85/85), no TLS weakening.
 
 - 2026-11-21 05:00 — RS-5 residual manager-source 3-level precedence guard LANDED (agent:redfish-automation, FEATURE #009/#021): added `test/features/kvm/kvm_manager_source_precedence_test.dart` (13 tests). The documented `kvmManagerSourceUri` contract — usable override wins, a blank/non-string override must not shadow the body's `@odata.id` fallback, both converge on the derived manager-id path — had no test at the override→fallback hand-off with a body id DISTINCT from the derived path (the lone "non-string override ignored" test used a body id equal to the derived path, so it could not tell "body fallback" from "derived fallback"), and no blank-string-override test at all. Pins all 3 levels through the pure helper and `KvmCapability.fromManager`, plus cross-view agreement. Audit found no live divergence — regression guard, not churn; RS-5 checkbox stays landed (this is a residual precedence seam). RED proof: dropped the `fallback` term in `kvmManagerSourceUri` → 6 tests failed (`+7 -6`, source identity regressed to `/redfish/v1/Managers/BMC` instead of the body id); restored byte-clean (SHA `3ade1b21…` unchanged, empty lib diff), 600-perm backup shredded → 13/13 GREEN. analyze 0 / full `flutter test` 1787 passed / 1 skipped (baseline 1774 +13); issues validate OK; diff --check clean; test-only, deps unchanged, emulator skipped (<7 days since last green 85/85), no TLS weakening.

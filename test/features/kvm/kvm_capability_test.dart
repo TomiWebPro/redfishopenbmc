@@ -1999,4 +1999,171 @@ void main() {
       );
     });
   });
+
+  // RM-8 (issue #009/#021): the capability summary resolves three separate
+  // aggregates — the launch URI, the connect-type chips and the session limit —
+  // each with its own enabled-block preference pass. Existing tests pin each
+  // aggregate in isolation; this group pins that all three of them, plus the
+  // per-console card built from the SAME manager body, agree on one matrix
+  // (explicit enabled / explicit disabled / contradictory flags / flag-absent)
+  // and share one consistent all-disabled fallback. A refactor that unified the
+  // passes with different enablement predicates (or dropped the disable skip in
+  // just one of them) could desync the capability card from the launchable
+  // console while every single-aggregate test stayed GREEN.
+  group('KvmCapability enabled-block aggregation agreement (RM-8 / #009/#021)',
+      () {
+    test(
+        'uri, connectTypes and maxSessions prefer one enabled block over a disabled graphical block',
+        () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+          'ConnectUri': 'https://bmc.example/disabled-kvm',
+          'MaxConcurrentSessions': 1,
+        },
+        'RemoteConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'ConnectTypesSupported': <dynamic>['HTML5'],
+          'ConnectUri': 'https://bmc.example/html5',
+          'MaxConcurrentSessions': 4,
+        },
+      };
+      final KvmCapability capability = KvmCapability.fromManager(
+        body,
+        managerId: 'BMC',
+      );
+      final KvmConsole openable = KvmConsole.fromManager(
+        body,
+        managerId: 'BMC',
+      ).firstWhere((KvmConsole c) => c.canOpenConsole);
+
+      // All three aggregates, and the openable console, point at the same
+      // launchable remote block — nothing leaks from the disabled graphical one.
+      expect(capability.supported, isTrue);
+      expect(capability.uri, 'https://bmc.example/html5');
+      expect(capability.connectTypes, contains('HTML5'));
+      expect(capability.connectTypes, isNot(contains('KVMIP')));
+      expect(capability.maxSessions, 4);
+      expect(openable.launchUri, capability.uri);
+      expect(openable.maxConcurrentSessions, capability.maxSessions);
+      expect(openable.connectTypesSupported, contains('HTML5'));
+      expect(openable.connectTypesSupported, isNot(contains('KVMIP')));
+    });
+
+    test(
+        'contradictory ServiceEnabled/Enabled flags keep every aggregate in agreement with the console card',
+        () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          'Enabled': true,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+          'ConnectUri': 'https://bmc.example/graph',
+          'MaxConcurrentSessions': 2,
+        },
+        'RemoteConsole': <String, dynamic>{
+          'ServiceEnabled': true,
+          'Enabled': false,
+          'ConnectTypesSupported': <dynamic>['HTML5'],
+          'ConnectUri': 'https://bmc.example/remote',
+          'MaxConcurrentSessions': 8,
+        },
+      };
+      final KvmCapability capability = KvmCapability.fromManager(
+        body,
+        managerId: 'BMC',
+      );
+      final List<KvmConsole> consoles = KvmConsole.fromManager(
+        body,
+        managerId: 'BMC',
+      );
+
+      // A truthy flag wins regardless of the other member's value, in the
+      // capability aggregators AND in KvmConsole.serviceEnabled — so both
+      // blocks are enabled and the graphical one wins each aggregate first.
+      expect(capability.serviceEnabled, isTrue);
+      expect(capability.uri, 'https://bmc.example/graph');
+      expect(capability.maxSessions, 2);
+      expect(capability.connectTypes, contains('KVMIP'));
+      expect(capability.connectTypes, contains('HTML5'));
+      final KvmConsole graph = consoles.first;
+      expect(graph.serviceEnabled, isTrue);
+      expect(graph.canOpenConsole, isTrue);
+      expect(graph.launchUri, capability.uri);
+      expect(graph.maxConcurrentSessions, capability.maxSessions);
+      // The remote block's contradictory (true then false) flags also keep it
+      // openable — no aggregate may silently drop a truthy-enabled block.
+      expect(consoles[1].serviceEnabled, isTrue);
+      expect(consoles[1].canOpenConsole, isTrue);
+    });
+
+    test(
+        'all-disabled fallback is graphical-first across all three aggregates and yields no openable console',
+        () {
+      final Map<String, dynamic> body = <String, dynamic>{
+        'GraphicalConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          'ConnectTypesSupported': <dynamic>['KVMIP'],
+          'ConnectUri': 'https://bmc.example/g',
+          'MaxConcurrentSessions': 1,
+        },
+        'SerialConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          'ConnectTypesSupported': <dynamic>['SSH'],
+          'ConnectUri': 'https://bmc.example/s',
+          'MaxConcurrentSessions': 2,
+        },
+        'RemoteConsole': <String, dynamic>{
+          'ServiceEnabled': false,
+          'ConnectTypesSupported': <dynamic>['HTML5'],
+          'ConnectUri': 'https://bmc.example/r',
+          'MaxConcurrentSessions': 3,
+        },
+      };
+      final KvmCapability capability = KvmCapability.fromManager(
+        body,
+        managerId: 'BMC',
+      );
+
+      // With every block explicitly disabled there is no launchable console;
+      // all three aggregates fall back to the SAME first (graphical) block.
+      expect(capability.supported, isFalse);
+      expect(capability.serviceEnabled, isFalse);
+      expect(capability.uri, 'https://bmc.example/g');
+      expect(capability.maxSessions, 1);
+      expect(capability.connectTypes.first, 'KVMIP');
+      expect(capability.connectTypes, contains('SSH'));
+      expect(capability.connectTypes, contains('HTML5'));
+      expect(
+        KvmConsole.fromManager(body, managerId: 'BMC')
+            .any((KvmConsole c) => c.canOpenConsole),
+        isFalse,
+      );
+    });
+
+    test(
+        'a flag-absent (unknown) block is retained identically by all three aggregates',
+        () {
+      // A flag-absent block is "unknown", not explicitly disabled: most BMC
+      // mockups omit the flag, so the capability card must still show its URI /
+      // types / limit. This pins the three aggregators use the SAME predicate
+      // here — a "treat missing flag as disabled" refactor in only one of them
+      // would drop that block's chip while keeping its URI and limit.
+      final KvmCapability capability = KvmCapability.fromManager(
+        <String, dynamic>{
+          'GraphicalConsole': <String, dynamic>{
+            'ConnectTypesSupported': <dynamic>['KVMIP'],
+            'ConnectUri': 'https://bmc.example/unknown',
+            'MaxConcurrentSessions': 3,
+          },
+        },
+        managerId: 'BMC',
+      );
+
+      expect(capability.uri, 'https://bmc.example/unknown');
+      expect(capability.connectTypes, contains('KVMIP'));
+      expect(capability.maxSessions, 3);
+    });
+  });
 }
