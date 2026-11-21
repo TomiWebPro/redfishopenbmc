@@ -1421,7 +1421,8 @@ bool _isCanonicalIpv4Octet(String value) {
 /// Legacy / WHATWG URL parsers accept several numeric spellings of an IP
 /// address that Dart's [Uri] treats as opaque DNS names:
 ///
-///  * hex forms `0x7f000001` / `0x7f.1` -> 127.0.0.1;
+///  * hex forms `0x7f000001` / `0x7f.1` -> 127.0.0.1, including the BARE prefix
+///    `0x` / `0X` (empty hex digits) -> 0.0.0.0;
 ///  * a bare decimal integer `2130706433` / `0` -> 127.0.0.1 / 0.0.0.0;
 ///  * abbreviated dotted forms `127.1` / `127.0.1` -> 127.0.0.1;
 ///  * leading-zero ("octal") forms `0177.0.0.1` -> 127.0.0.1;
@@ -1455,8 +1456,14 @@ bool _isNonCanonicalNumericHost(String host) {
   }
   final List<String> labels = core.split('.');
   // Hex IP forms: any 0x-prefixed label. A real host never uses 0x labels.
+  // Include the BARE prefix (`0x` / `0X`, length 2): a WHATWG/browser parser's
+  // IPv4 number parser strips the prefix and parses the empty remaining hex
+  // digits as 0, so `https://0x/` resolves to 0.0.0.0 while Uri.tryParse reports
+  // the opaque host `0x` — an authority differential that under a stale secure
+  // flag + test opt-in could grant in-app self-signed acceptance on the
+  // unspecified address. A length > 2 check let that bare prefix slip through.
   for (final String label in labels) {
-    if (label.length > 2 &&
+    if (label.length >= 2 &&
         label.startsWith('0') &&
         (label[1] == 'x' || label[1] == 'X')) {
       return true;
