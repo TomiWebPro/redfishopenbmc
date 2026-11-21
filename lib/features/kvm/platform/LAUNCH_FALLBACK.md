@@ -531,7 +531,15 @@ Invariants, enforced by tests:
    SUPERSCRIPT LATIN SMALL LETTER I — category `Lm`, NFKC-normalises to ASCII
    `i`, sitting between the U+2070 digit and the U+2074..U+2079 superscript
    digits the digit family otherwise covers; a decode+IDNA launcher resolves a
-   different ASCII authority, so every escape form fails closed)).
+   different ASCII authority, so every escape form fails closed) + NFKC
+   delimiter-introducing authority rejection (U+013F/U+0140 L WITH MIDDLE DOT
+   -> U+00B7 -> '.', the SQUARE "M OVER S" units U+33A7/33A8/33AE/33AF/33C6/
+   33DE/33DF -> U+2215 -> '/', and U+FE12 vertical ideographic full stop ->
+   U+3002 -> '.': non-ASCII code points whose NFKC introduces a structural
+   delimiter confusable rather than being one, so they evade both the direct
+   delimiter set and the complete NFKC-to-ASCII table yet a decode+IDNA launcher
+   resolves a different authority; every escape form fails closed, delimiter-
+   free UTF-8 such as e-acute/euro/emoji stays launchable)).
    **Blank-URI target normalization:** a whitespace-only URI is "no usable
    target" (`KvmConsoleLaunchPlan.targetUri`) — the copy-only fallback must
    surface `null`, never a whitespace string, under any policy (including the

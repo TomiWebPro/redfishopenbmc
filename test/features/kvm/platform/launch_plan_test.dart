@@ -3883,4 +3883,114 @@ void main() {
     });
   },
 );
+
+  group('planConsoleLaunch — NFKC delimiter-introducing authority fails closed', () {
+    // A non-ASCII code point whose NFKC normalisation *introduces* a structural
+    // delimiter confusable evades every earlier rule: the decoded code point is
+    // not itself a delimiter, is not a Unicode Separator/Other or mark, and its
+    // NFKC is non-ASCII (so the complete NFKC-to-ASCII compatibility table does
+    // not match it). Yet a launcher applying IDNA/NFKC resolves a DIFFERENT
+    // authority than Uri.tryParse reports, which keeps the percent-encoded
+    // escape verbatim in a non-empty HTTPS host:
+    //  * U+013F / U+0140 (L/l WITH MIDDLE DOT) NFKC -> `L`/`l` + U+00B7 MIDDLE
+    //    DOT, which nameprep/IDNA2003 maps to the domain-label dot '.';
+    //  * U+33A7 / U+33A8 / U+33AE / U+33AF / U+33C6 / U+33DE / U+33DF
+    //    (SQUARE units "M OVER S", "RAD OVER S", "C OVER KG", ...) NFKC embeds
+    //    U+2215 DIVISION SLASH, which IDNA maps to '/';
+    //  * U+FE12 PRESENTATION FORM FOR VERTICAL IDEOGRAPHIC FULL STOP NFKC ->
+    //    U+3002 IDEOGRAPHIC FULL STOP, which IDNA maps to '.' (Node's WHATWG
+    //    URL parser rejects the host outright).
+    // Under a stale secure flag + test opt-in that parser differential could
+    // grant in-app rendering and self-signed acceptance on a spoofed/invalid
+    // host. This is the delimiter analogue of the NFKC-mark-introducing rule.
+    const List<String> delimiterIntroducingUris = <String>[
+      'https://bmc%C4%BF.example/console', // U+013F -> 'L' + U+00B7
+      'https://bmc%c4%bf.example/console', // lowercase hex
+      'https://bmc%C5%80.example/console', // U+0140 -> 'l' + U+00B7
+      'https://bmc%E3%8E%A7.example/console', // U+33A7 -> 'm' + U+2215 + 's'
+      'https://bmc%E3%8E%A8.example/console', // U+33A8
+      'https://bmc%E3%8E%AE.example/console', // U+33AE
+      'https://bmc%E3%8E%AF.example/console', // U+33AF
+      'https://bmc%E3%8F%86.example/console', // U+33C6
+      'https://bmc%E3%8F%9E.example/console', // U+33DE
+      'https://bmc%E3%8F%9F.example/console', // U+33DF
+      'https://bmc%EF%B8%92evil.com/console', // U+FE12 -> U+3002
+      'https://u%EF%B8%92@bmc.example/console', // U+FE12 in userinfo
+    ];
+
+    test('an NFKC delimiter-introducing authority never reaches in-app', () {
+      for (final String uri in delimiterIntroducingUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+        expect(plan.route, KvmConsoleRenderRoute.copyOnly, reason: uri);
+      }
+    });
+
+    test('an NFKC delimiter-introducing authority stays off under production', () {
+      for (final String uri in delimiterIntroducingUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.productionDefault,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isFalse, reason: uri);
+        expect(plan.acceptSelfSigned, isFalse, reason: uri);
+      }
+    });
+
+    test('the same escapes in the path stay launchable (authority-scoped)', () {
+      const List<String> pathUris = <String>[
+        'https://bmc.example/console%EF%B8%92',
+        'https://bmc.example/console%E3%8E%A7',
+        'https://bmc.example/console%C4%BF',
+      ];
+      for (final String uri in pathUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+        expect(plan.targetUri, uri, reason: uri);
+      }
+    });
+
+    test('ordinary percent-encoded UTF-8 host bytes stay launchable', () {
+      // Guard against over-rejection: e-acute and euro are real letters/symbols
+      // whose NFKC is non-ASCII and introduces no delimiter, so they remain
+      // renderable — this rule must reject only delimiter-introducing families.
+      const List<String> safeUris = <String>[
+        'https://bmc%C3%A9.example/console', // e-acute
+        'https://bmc%E2%82%AC.example/console', // euro
+      ];
+      for (final String uri in safeUris) {
+        final KvmConsoleLaunchPlan plan = planConsoleLaunch(
+          policy: KvmWebViewPolicy.testOptIn,
+          uri: uri,
+          hasSecureUri: true,
+          isHtml5: true,
+          isEnabled: true,
+        );
+
+        expect(plan.isInApp, isTrue, reason: uri);
+        expect(plan.acceptSelfSigned, isTrue, reason: uri);
+      }
+    });
+  },
+);
 }
