@@ -45,6 +45,13 @@ Invariants, enforced by tests:
    a future consumer calls that boolean directly without routing through
    `planConsoleLaunch` (defense in depth; RED/GREEN-locked in
    `webview_policy_test.dart`).
+   **Credential-free in-app navigation.** The origin-confinement guard
+   (`allowsInAppNavigation`, RP-1) also fails closed for a same-origin
+   navigation target that carries embedded credentials (`user:pass@host`),
+   which would otherwise inject Basic-auth credentials into the trusted frame.
+   This restricts in-session navigation targets only; an initial credentialed
+   console URI is still a secure external-browser target under the flag-off
+   fallback (RED/GREEN-locked in `launch_plan_test.dart`).
 3. **Fail closed.** A blank/missing URI degrades to `copyOnly` rather than
    handing a launcher a null/whitespace target; URIs are trimmed on **every**
    route (including copy-only, so the clipboard never surfaces a padded

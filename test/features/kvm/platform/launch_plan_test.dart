@@ -5303,6 +5303,44 @@ void main() {
         isTrue,
       );
     });
+
+    // RP-1: a navigation must not INTRODUCE embedded credentials into the
+    // trusted console frame. A same-origin target carrying userinfo
+    // (`https://user:pass@bmc.example/...`) is a login-CSRF / credential-
+    // injection and URL-display-confusion vector: the WebView would follow it
+    // and dispatch a Basic-auth header with attacker-chosen credentials to the
+    // console origin. It is an anomalous navigation, so the guard fails closed
+    // (the external-browser + copy fallback still surfaces it with the flag
+    // off); the initial credentialed console load is a separate path and is
+    // unaffected (planConsoleLaunch still accepts a userinfo URI).
+    test('a navigation target carrying userinfo/credentials fails closed', () {
+      for (final String target in <String>[
+        'https://user@bmc.example:8443/console',
+        'https://user:pass@bmc.example:8443/console',
+        'https://user:pw@bmc.example:8443/other#frag',
+        'https://user@bmc.example:8443/console?tab=1',
+      ]) {
+        expect(
+          allowsInAppNavigation(consoleUri: console, targetUri: target),
+          isFalse,
+          reason: target,
+        );
+      }
+    });
+
+    test('a credentialed same-origin load is still a valid console plan', () {
+      // Guard against over-rejection: the *initial* load may carry userinfo and
+      // stays a secure external-browser target under the production default.
+      // Only in-session navigation targets are restricted to credential-free.
+      final plan = planConsoleLaunch(
+        policy: KvmWebViewPolicy.productionDefault,
+        uri: 'https://user@bmc.example:8443/console',
+        hasSecureUri: true,
+        isHtml5: true,
+        isEnabled: true,
+      );
+      expect(plan.isExternalBrowser, isTrue);
+    });
   });
 
 }
