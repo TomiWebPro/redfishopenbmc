@@ -223,6 +223,65 @@ class _KvmViewState extends ConsumerState<KvmView> {
           ),
         ),
         const SizedBox(height: 16),
+        // #009 / #021: a failed RELOAD while consoles are already displayed
+        // keeps the last-known console list (KvmController.load clears the
+        // primary on error but not the consoles), so the empty-list early error
+        // return above does not fire. Without this banner the operator saw the
+        // stale consoles as if they were fresh, with no warning that the
+        // refresh failed. Surface the failure in-list as ONE merged
+        // `excludeSemantics` node (visible text inside the announced node, so
+        // sighted and screen-reader users get the same honest warning) while
+        // keeping the stale list visible and copyable — fail closed, not
+        // hidden. Display-only: no URL opened, no TLS change.
+        if (ui.error != null) ...<Widget>[
+          Semantics(
+            container: true,
+            excludeSemantics: true,
+            label: 'Unable to refresh KVM consoles. ${ui.error}',
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: <Widget>[
+                  Icon(Icons.cloud_off_outlined,
+                      color: Theme.of(context).colorScheme.onErrorContainer),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          'Unable to refresh KVM consoles',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onErrorContainer,
+                                  ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          ui.error!,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onErrorContainer,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         // Acceptance #009: the session-persistence note is visible AND
         // announced as one merged node (never a bare detached sentence). It
         // sits at the top so it is read before the launch controls.

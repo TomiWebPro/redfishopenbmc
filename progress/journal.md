@@ -12406,3 +12406,20 @@
 - Re-audit `queues/*.md` for a genuinely different untested contract before adding any further guard — all named slices are landed, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool-runtime change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (in-list stale-data refresh-failure warning)
+
+**Done:**
+- Re-audited `queues/*.md` first: all named dept slices landed/audited — no churn. Found a genuine untested defect: `KvmController.load()` keeps the last-known console list on error, and `KvmView.build`'s early error return fires only when `consoles.isEmpty`, so a failed RELOAD with consoles already shown rendered the stale list with NO warning.
+- Added one in-list merged `excludeSemantics` warning node in the populated `ListView` (`kvm_view.dart`, +59 lines): `'Unable to refresh KVM consoles. <error>'` with visible text inside the announced node, stale list kept visible/copyable (fail closed, not hidden), distinct from the empty-list error node.
+- Added `test/features/kvm/kvm_view_stale_error_banner_test.dart` (5 tests): warning with stale cards at 320/800/1300 px, visible error text inside the merged node, no duplicate early error node, idle control clean, in-flight reload keeps warning+spinner, no overflow. Pre-fix RED `+1 -4`; source-mutation RED (flipped `excludeSemantics: true` -> `false`) `+1 -4`; `kvm_view.dart` restored byte-clean (SHA `60be27a4…`), 600-perm backup shredded -> 5/5 GREEN.
+- Verify: targeted 9/9 (banner + sibling reload-indicator); `dart format` clean; `flutter analyze` 0; full `flutter test` 1851 passed / 1 skipped (baseline 1846 +5); `issues.py validate` OK; `git diff --check` clean; deps unchanged; secret scan clean.
+
+**Decisions:**
+- Genuine defect fix (not churn): a failed refresh must warn the operator even when stale consoles remain, so last-known endpoints stay available without a false "fresh" impression. Display-only, TLS-safe; per §5 no manufactured UI churn. Emulator skipped (display-only lib, no wire/fixture/tool-runtime change, <7 days since last green 85/85). Pre-existing stashes untouched; no force-push, no history rewrite, no file deletion. Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; do NOT do unattended, never weaken production TLS.
+
+**Next:**
+- Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard — all named slices are landed, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool-runtime change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
