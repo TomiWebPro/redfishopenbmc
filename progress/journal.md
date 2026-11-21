@@ -12541,3 +12541,20 @@
 - Push the merge commit `36d7e67` (+ branch commit `807125c`) to `origin/main` via the sole merger. Re-audit `queues/*.md` for a genuinely different untested contract before any further guard — never churn. Full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:redfish-automation — EP-T17 (#009/#021)
+
+**Done:**
+- FEATURE EP-T17 guard-suite liveness extension for #009/#021 (test/tool-only, dependency-free, TLS-safe). Closed a CONFIRMED gap: four safety guards that landed after EP-T16 (`kvm_service_lookup_key_test.dart` RS-9, `kvm_oem_depth_bound_agreement_test.dart` RM-9, `kvm_view_state_agreement_test.dart` EP-U13, `test/features/kvm/platform/validation_evidence_checklist_guard_test.dart` EP-P4/RP-1) were live and reachable from CI but not in `canonicalGuardFiles`, so deleting/emptying/test-stripping one would stay GREEN.
+- Extended `canonicalGuardFiles` 24→28 with all four (live cases 3/6/5/6, each reachable from verify.yml whole-tree `flutter test --coverage`); added pinned `epT17AddedGuards` (length 4) ⊆ canonicalGuardFiles disjoint from EP-T14/EP-T15/EP-T16 + pairwise-disjointness pin assertions + a temp-root RED→GREEN test (missing/emptied/test-less → violation, intact → clean) and a pin test.
+- Real-file RED proof: dropped `validation_evidence_checklist_guard_test.dart` from `canonicalGuardFiles` → the EP-T17 pin test failed (`+12 -1`, named the dropped guard); restored byte-clean (SHA `ba73c965…` unchanged), 600-perm backup shredded → 14/14 GREEN.
+- Verify: targeted 14/14; `dart format` clean; `flutter analyze` 0; full `flutter test --coverage --concurrency=2` 1910 passed / 1 skipped (baseline 1908 +2); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; secret scan clean.
+
+**Decisions:**
+- Test/tool-only guard extension (empty lib diff), no dependency, no wire/fixture, no WebView/protocol import, no URL opened, no production TLS weakening. Emulator skipped (no lib wire/fixture/tool-runtime change, <7 days since last green 85/85). No force-push, history rewrite, `git clean`, or file deletion; three pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; do NOT do unattended, never weaken production TLS.
+
+**Next:**
+- Push this single commit (carried with the unpushed `rf-ideate` commit `d53298e`). Re-audit remaining 14:10-slice candidates EP-M5 / EP-S6 / EP-U14 for a genuinely different untested contract before adding any further guard — never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
+
+**Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.

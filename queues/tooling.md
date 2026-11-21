@@ -17,7 +17,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      `flutter test --coverage`. Pure test/tool, dependency-free, never writes `lib/`; distinct from
      EP-T12/14/15/16. No code touched. -->
 
-- [ ] EP-T17 Guard-suite liveness extension for the post-EP-T16 safety guards: add the four
+- [x] EP-T17 LANDED 2026-11-21 (run `auto: FEATURE #009/#021 EP-T17 guard-suite liveness extension for the post-EP-T16 safety guards + RED->GREEN tests`, analyze 0 / 1910 passed / 1 skipped) — add the four
       guard files that landed after EP-T16 — `kvm_service_lookup_key_test.dart`,
       `kvm_oem_depth_bound_agreement_test.dart`, `kvm_view_state_agreement_test.dart` and
       `test/features/kvm/platform/validation_evidence_checklist_guard_test.dart` — to
@@ -33,6 +33,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
               with RED→GREEN proof (missing/emptied/test-less → violation; intact → clean); writes
               limited to `test/tool/guard_suite_liveness_test.dart`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
               no `lib/`, no production TLS change.
+      **LANDED** 2026-11-21: extended `canonicalGuardFiles` 24→28 with the four post-EP-T16 safety guards (`kvm_service_lookup_key_test.dart`, `kvm_oem_depth_bound_agreement_test.dart`, `kvm_view_state_agreement_test.dart`, `test/features/kvm/platform/validation_evidence_checklist_guard_test.dart`, live cases 3/6/5/6, reachable from verify.yml whole-tree `flutter test --coverage`); added pinned `epT17AddedGuards` (length 4) ⊆ canonicalGuardFiles disjoint from EP-T14/EP-T15/EP-T16 + pairwise-disjointness pin assertions + temp-root RED→GREEN. Genuine confirmed liveness gap, not churn. Real-file RED proof: dropped `validation_evidence_checklist_guard_test.dart` from `canonicalGuardFiles` → the EP-T17 pin test failed (`+12 -1`, named the dropped guard); restored byte-clean (SHA `ba73c965…` unchanged), 600-perm backup shredded → 14/14 GREEN. Test/tool-only (empty lib diff), deps unchanged; analyze 0 / 1910 passed / 1 skipped (baseline 1908 +2); issues validate OK; diff --check clean; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
 
 <!-- rf-ideate split 2026-11-21 09:53 UTC: closes a confirmed liveness gap in the "who guards the
      guards" suite of the blocked #009/#021 epic. EP-T14 enumerated 7 safety guards, EP-T15 extended
