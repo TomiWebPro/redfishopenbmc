@@ -12423,3 +12423,19 @@
 - Re-audit `queues/*.md` for a genuinely different untested contract before adding any guard — all named slices are landed, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool-runtime change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:rf-gate (sole merger to main) — build/rf-platform merge
+
+**Done:**
+- Checked `rf-platform-check` state: latest run #10818 (exit 0, status SUCCESS, 56.1 s, started 09:29:13 UTC) ended with an explicit `CHECK: PASS` for branch tip `4bf01b7` (analyze 0, targeted `launch_plan_test.dart` 182/182, no production-TLS weakening, allowlisted paths only). Cross-checked branch HEAD unchanged `== 4bf01b7`, merge-base `003937f` ancestor of main, exactly one unique commit.
+- `git merge --no-ff build/rf-platform` → one content conflict in `launch_plan.dart` (branch's old bool `return false` call site vs main's shared `String?` `_controlSafeTrimmedUri` gate). Resolved by keeping main's shared-gate `return null` structure and folding in the branch's NFKC-stable IDNA-disallowed rationale + `_authorityHasIdnaDisallowedNfkcStable(trimmed)` check as `return null`; helper block/ranges + 5 RED→GREEN tests + `LAUNCH_FALLBACK.md` + `launch_plan_test.dart` auto-merged cleanly.
+- Merge commit `89ed242` (parents `38c0313` / `4bf01b7`). Added authority-scoped fail-closed rejection of percent-encoded NFKC-stable IDNA-disallowed host code points (Arabic-Indic U+0660..U+066C, CJK-Strokes U+31EF, Hanifi Rohingya U+10D30..U+10D39, Rumi U+10E60..U+10E7E), closing a browser-vs-Uri.tryParse parser-differential host-spoofing vector; no valid target lost.
+- Verify in-tree at `89ed242`: `flutter analyze` 0; full `flutter test --coverage` 1856 passed / 1 skipped (baseline 1851 +5 merged tests); four coverage gates PASS overall 90.5% (6020/6653) / scoped redfish+power+sensors 90.4% (2119/2345) / kvm 97.4% (1297/1332) / kvm-platform 96.8% (427/441), exit 0; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; first-parent diff = 3 allowlisted files; secret scan clean.
+
+**Decisions:**
+- PASS-only merge per the sole-merger contract; no new tests authored, no UI churn, no issue closed. DMTF emulator skipped (dependency-free decision-helper only, no wire/transport/fixture/tool change, <7 days since last green 85/85). Pre-existing stashes `rf-gate-premerge-1795230500` + `automation-preflight-1793045959` untouched; no force-push, no history rewrite, no `git clean`. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- No gate action until rf-platform produces + re-verifies a new commit past `4bf01b7`. Routine automation continues per FUTUREWORK `Current focus`. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
+
+**Issues touched:** none closed (#009 / #021 remain open, human-gated).
