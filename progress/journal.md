@@ -12325,3 +12325,19 @@
 - Land the next unlanded dept slice on a genuine RED→GREEN gap (RM-8 model enabled-block aggregation agreement or EP-U12 ui cross-surface clipboard-target agreement) — re-audit `queues/*.md` first, never churn. Cheap DOCS anchor re-verify only; full emulator on lib-wire/fixture/tool-runtime change or >7 days. Close #021 then #009 only on human WebView + BMC TLS validation evidence — do NOT do unattended.
 
 **Issues touched:** #009 (open), #021 (open) — progress logs updated; no closure.
+
+## 2026-11-21 — agent:rf-gate — build/rf-platform merge (2becf09, check#10770)
+
+**Done:**
+- `scheduler.py state rf-platform-check` → latest `run#10770 SUCCESS exit=0`; full `report 10770` shows explicit `CHECK: PASS` for branch tip `2becf09` (analyze 0, targeted `launch_plan_test.dart` 172/172, no production-TLS weakening, allowlisted paths only). Branch HEAD cross-checked `== 2becf09`; one unique commit past merge-base `e712ab1`.
+- `git merge --no-ff build/rf-platform` → merge `9c648b3` (parents `7490c35`, `2becf09`). One conflict in `launch_plan.dart` resolved by keeping main's shared `String?`-returning `_controlSafeTrimmedUri` gate (`return null`) and folding in the branch's U+FFFC replacement-character rationale; helper change and all new tests auto-merged.
+- Verify: `flutter analyze` 0; targeted 188/188; full `flutter test --coverage` 1817 passed / 1 skipped (baseline 1812 +5); four coverage gates PASS overall 90.3% (5934/6575) / scoped 90.4% (2119/2345) / kvm 96.6% (1211/1254) / kvm-platform 96.4% (375/389), exit 0; `python3 issues/issues.py validate` OK; `git diff --check` clean; first-parent diff = 2 allowlisted files.
+
+**Decisions:**
+- Merged because the latest check verdict was PASS for the exact current tip; NO-OP condition not met (one new commit past merge-base).
+- DMTF 85-test emulator suite skipped — merged `lib/` change only tightens the pure fail-closed launch-plan decision table (no wire/transport/fixture/tool-runtime change), <7 days since last green 85/85. Pre-existing stashes left untouched; no force-push, no history rewrite, no file deletion. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- No gate action until rf-platform produces + re-verifies a new commit past `2becf09`. Routine automation continues per FUTUREWORK `Current focus`. Close #021 then #009 only on human platform-WebView + BMC-TLS validation evidence — do NOT do unattended; never weaken production TLS.
+
+**Issues touched:** none (merge of platform hardening tracked in FUTUREWORK.md + progress/; #009/#021 stay open, human-gated).
