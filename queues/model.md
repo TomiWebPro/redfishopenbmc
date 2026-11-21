@@ -17,8 +17,7 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
      divergence; no churn. Human-gated WebView/TLS rendering stays gated and is NOT re-split. No code
      touched. -->
 
-- [ ] RM-10 Security-first secure-URI preference × enabled-block tri-state agreement in the capability
-      aggregate: feed `KvmCapability.fromManager` one matrix of manager bodies mixing flag-absent
+- [x] RM-10 LANDED 2026-11-21 (run `auto: FEATURE #009/#021 RM-10 security-first x enabled-block tri-state agreement guard + RED->GREEN tests`, analyze 0 / 1956 passed / 1 skipped) — added `test/features/kvm/kvm_capability_security_tristate_agreement_test.dart` (4 tests) pinning the currently-correct tri-state invariants of the EP-S7 security-first pass: it never selects an explicitly-disabled block's secure URI / types / session limit while a launchable block exists, the RM-8 all-disabled fallback is preserved byte-for-byte after EP-S7, contradictory `ServiceEnabled`/`Enabled` truthy-wins agrees across all three aggregates AND `pickPrimary`, and a flag-absent secure console keeps its URI in the all-unknown regime (agreeing with pickPrimary's graphical fallback). Real-file RED proof: dropped `_explicitlyDisabled` from the security-first pass → the disabled-secure-URI test failed (`+3 -1`, `cap.uri` leaked `https://bmc.example/disabled-secure`); source restored byte-clean (SHA `533ed545ee344726ceb84de5e131cfc3bfb2aa7f56bb3a2c74bde08e22a2f559` unchanged, empty lib diff), 600-perm backup shredded → 4/4 GREEN. Test-only, no `lib/`, no dependency, no WebView/protocol import, no production TLS weakening. The MIXED-regime divergence found during the audit is recorded as a NEW deferred item below (behaviour-change candidate, NOT auto-fixed). Original item: feed `KvmCapability.fromManager` one matrix of manager bodies mixing flag-absent
       ("unknown"), explicitly-enabled and explicitly-disabled Graphical / Serial / Remote blocks with
       secure-HTTPS, plaintext-HTTP and serial-SSH URIs (plus contradictory `ServiceEnabled` / `Enabled`
       flags), and pin that the EP-S7 security-first pass in `_standardConnectUri` never selects a
@@ -29,6 +28,36 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
       Dept: rf-model
       Verify: `flutter test test/features/kvm/kvm_capability_test.dart test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_primary_uri_agreement_test.dart && flutter analyze`
               (0 issues), RED→GREEN proof only on a genuine divergence; writes limited to
+              `lib/features/kvm/models/**` + those named test files; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              no wire/TLS change, no WebView/protocol import.
+
+<!-- Discovered 2026-11-21 during the RM-10 audit via a probe (NOT fixed unattended, NOT asserted as
+     expected in the RM-10 guard): a GENUINE mixed-regime divergence between the capability summary
+     and pickPrimary. When a manager exposes a flag-absent ("unknown") secure-HTTPS GraphicalConsole
+     alongside an EXPLICITLY-ENABLED but insecure/external block (serial SSH or plaintext HTTP remote):
+     `_standardConnectUri`'s security-first pass treats the unknown graphical block as non-disabled
+     and resolves its secure URI (`https://bmc.example/graphical`), while `pickPrimary` treats that
+     console as non-openable (`KvmConsole.serviceEnabled == false` for a flag-absent block), skips its
+     secure tier and badges the enabled SSH/HTTP block (`ssh://bmc.example/serial` / `http://…/remote`).
+     Probe output: `cap.uri=https://bmc.example/graphical primary=ssh://bmc.example/serial canOpen=true`.
+     Root cause: the two layers interpret the enablement tri-state differently — `KvmCapability._explicitlyDisabled`
+     treats flag-absent as "unknown (usable)", while `KvmConsole.serviceEnabled` treats it as false
+     (not openable). Both the all-unknown regime and the both-flagged regime already AGREE (pinned by
+     the RM-10 guard + EP-S7); only the mixed regime diverges. Fixing it means redefining a documented
+     core semantic ("unknown keeps URI") and touches `connectTypes` / `maxSessions` too, so DECIDE THE
+     AUTHORITATIVE RULE DELIBERATELY (do NOT fold into a guard-only run, do NOT do unattended). Read-only
+     model work; no transport/wire/TLS change, no dependency, no WebView/protocol import. -->
+
+- [ ] RM-11 Mixed-regime enablement tri-state agreement (unknown secure block + explicitly-enabled
+      insecure block): decide the authoritative rule for the probe-confirmed divergence above and make
+      `KvmCapability.resolveLaunchUri` / `connectTypes` / `maxSessions` agree with
+      `KvmConsole.fromManager` / `KvmService.pickPrimary` for one manager mixing flag-absent and
+      explicitly-enabled console blocks. Keep the all-unknown "unknown keeps URI" fallback (RM-10)
+      and the both-flagged EP-S7 security-first preference byte-for-byte; RED→GREEN only once the
+      authoritative rule is chosen. No wire/TLS change, no dependency, no WebView/protocol import.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_capability_test.dart test/features/kvm/kvm_capability_primary_uri_agreement_test.dart test/features/kvm/kvm_capability_security_tristate_agreement_test.dart && flutter analyze`
+              (0 issues), RED→GREEN proof on the genuine mixed-regime case; writes limited to
               `lib/features/kvm/models/**` + those named test files; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
               no wire/TLS change, no WebView/protocol import.
 

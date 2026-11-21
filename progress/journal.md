@@ -12689,3 +12689,19 @@
 - Push the single run commit; leave pre-existing stashes untouched. Audit dept-head candidates EP-M10 / EP-S8 / EP-U15 / EP-P11 before adding any further guard — RED→GREEN only on a genuine divergence, never churn; cheap DOCS anchor gate only. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-21 — agent:redfish-automation — #009/#021 (RM-10)
+
+**Done:**
+- FEATURE (test-only): RM-10 security-first secure-URI preference × enabled-block tri-state agreement guard for #009/#021. Added `test/features/kvm/kvm_capability_security_tristate_agreement_test.dart` (4 tests) pinning that the EP-S7 security-first pass in `KvmCapability._standardConnectUri` still honours the RM-8 enabled-block tri-state: never selects an explicitly-disabled block's secure URI/types/session limit while a launchable block exists; all-disabled fallback preserved byte-for-byte after EP-S7; contradictory `ServiceEnabled`/`Enabled` truthy-wins agrees across all three aggregates AND `pickPrimary`; flag-absent secure console keeps its URI in the all-unknown regime. Real-file RED proof: dropped `_explicitlyDisabled` from the security-first pass → the disabled-secure test failed (`+3 -1`, `cap.uri` leaked `https://bmc.example/disabled-secure`); source restored byte-clean (SHA `533ed545ee344726ceb84de5e131cfc3bfb2aa7f56bb3a2c74bde08e22a2f559` unchanged, empty lib diff), 600-perm backup shredded → 4/4 GREEN.
+- Verify: analyze 0; targeted new suite 4/4 + capability suites 139/139; full `flutter test --concurrency=4` 1956 passed / 1 skipped (baseline 1952 +4); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Regression guard on a genuine untested contract (EP-S7 security-first pass tri-state), not churn. Pure test-only, no `lib/`, no wire/TLS/fixture change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening.
+- DISCOVERED + DEFERRED (RM-11 in `queues/model.md`, NOT fixed unattended): a probe-confirmed genuine MIXED-regime divergence (flag-absent secure-HTTPS graphical + explicitly-enabled insecure SSH/HTTP block) where the capability resolves the secure URI while `pickPrimary` badges the enabled insecure console. Root cause: `KvmCapability._explicitlyDisabled` treats flag-absent as "unknown (usable)" while `KvmConsole.serviceEnabled` treats it as false (not openable). Fixing it redefines the documented "unknown keeps URI" semantic and touches connectTypes/maxSessions — a behaviour-change candidate needing a deliberate authoritative-rule decision, not done unattended. The guard deliberately does NOT assert the divergent case as expected.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated; the guard only fails closed and grants no approval/navigation.
+
+**Next:**
+- Push the single run commit; leave pre-existing stashes untouched. RM-11 is a deliberate authoritative-rule decision — do NOT fix unattended; audit remaining dept heads EP-S8 / EP-U15 / EP-P11 before adding any further guard (RED→GREEN only on a genuine divergence, never churn); cheap DOCS anchor gate only. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
