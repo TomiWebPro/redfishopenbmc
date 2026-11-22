@@ -14,7 +14,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
       fixed-value suite stays GREEN. Display-only; the human-gated WebView/TLS rendering stays gated and is
       NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
 
-- [ ] EP-U20 Extreme-content no-overflow + single merged a11y node across both KVM operator cards: over
+- [x] EP-U20 LANDED 2026-11-22 (run, agent:redfish-automation — FEATURE #009/#021, analyze 0 / full suite 2225 passed / 1 skipped, test-only) — Extreme-content no-overflow + single merged a11y node across both KVM operator cards: over
        one manager built into both real cards with a very long manager name, 20+ normalized connect-type
        chips, a very large `MaxConcurrentSessions` and a long control-safe resolved URI, pin that neither
        card overflows at 320 / 800 / 1300 px, that each card's chips/session/URI keep visible text == announced
@@ -29,6 +29,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
                divergence; writes limited to `lib/features/kvm/views/**` + those named test files; no WebView/
                protocol import, no URL opened, no dependency, no production TLS weakening;
                `git diff --exit-code -- pubspec.yaml`.
+      **LANDED** 2026-11-22: AUDIT first — EP-U19 pins both cards over a modest 3-chip matrix; extreme content (24 chips / 1e9 session / long control-safe URI) on BOTH real cards was unguarded at 800/1300 px. Added test/features/kvm/kvm_card_extreme_content_agreement_test.dart (3 tests) pinning byte-identical chip sequence + session number + URI on both cards, each card's merged excludeSemantics node with visible==announced, and no overflow at 320/800/1300 px. Real-file RED: capability-card chip Wrap→Row -> all 3 new tests failed (+0 -3) while EP-U19's 3-chip matrix stayed GREEN at 800/1300 px; restored byte-clean (SHA c6c4b09a..., 600-perm backup shredded) → 3/3 GREEN. Test-only, empty lib/ diff, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. NOT yet registered in the guard-suite liveness canonical set — next run should do that.
 
 <!-- rf-ideate split 2026-11-22 10:12 UTC: carves a fresh, display-only, unblocked slice of the
      still-open #009/#021 closeout. The model layer pins connect-type / session-limit aggregate agreement

@@ -13477,3 +13477,19 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept heads EP-P15 / RM-17 / EP-S12 / EP-U20 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-U20)
+
+**Done:**
+- FEATURE (test-only): EP-U20 extreme-content no-overflow + single merged-a11y cross-card agreement guard. AUDIT FIRST: EP-U19 pins both operator cards over a modest 3-chip matrix and EP-U16/U15 pin notice/launch agreement, but extreme content (24 chips / 1e9 session / long control-safe URI / long manager id) on BOTH real cards was unguarded at 800/1300 px — clean-but-unguarded regression guard, no live divergence.
+- Added `test/features/kvm/kvm_card_extreme_content_agreement_test.dart` (3 tests, 320/800/1300 px): one extreme manager built into both real cards; pins byte-identical chip sequence + session number + URI on both, each card's own merged `excludeSemantics` node with visible==announced, and no overflow.
+- RED→GREEN: capability-card chip `Wrap`→`Row` → all 3 EP-U20 tests failed (`+0 -3`) while EP-U19's 3-chip matrix stayed GREEN at 800/1300 px; long-URI `Column`→`Row` probe was caught by 4 existing tests (recorded as covered). Restored byte-clean both times (SHA `c6c4b09a…`, 600-perm backups shredded) → 3/3 GREEN.
+- Verify: targeted 3/3; `dart format` clean (my file); analyze 0; full suite 2225 passed / 1 skipped (baseline 2222 +3); issues validate OK; diff --check clean; deps unchanged; emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Guard-only — empty `lib/` diff, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-U20 LANDED (`queues/ui.md`). Both issues stay human-gated (platform WebView + BMC TLS validation). The new guard is NOT yet in the guard-suite liveness canonical set — deferred to the next run as a separate cheap registration.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Register the EP-U20 guard in `test/tool/guard_suite_liveness_test.dart` under a fresh pinned epoch, then continue EP-P15 / RM-17 / EP-S12 audit-first, RED→GREEN only on a genuine divergence, never churn.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
