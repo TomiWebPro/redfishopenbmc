@@ -8,9 +8,10 @@
 // test pins the *detailed* acceptance checklist (CSP / mixed-content,
 // fullscreen, input forwarding, no-native-bridge, no-local-file-access,
 // no-device-permissions, no-sensitive-data-at-rest (WebView cache/storage +
-// background snapshot), no-referrer/URL-token-leak (Referrer-Policy), flag-off
-// fallback, human sign-off) so a future edit cannot silently erase the evidence
-// boxes that gate that decision.
+// background snapshot), no-referrer/URL-token-leak (Referrer-Policy),
+// no-popup/secondary-window/iframe navigation bypass, flag-off fallback, human
+// sign-off) so a future edit cannot silently erase the evidence boxes that gate
+// that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -49,6 +50,12 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-arbitrary-scheme-nav', marker: 'non-http(s) scheme'),
   (name: 'no-deep-link-nav', marker: 'deep-link'),
   (name: 'no-script-url-nav', marker: 'javascript:'),
+  (
+    name: 'no-popup-secondary-window',
+    marker: 'pop-up / secondary window'
+  ),
+  (name: 'no-multiple-windows', marker: 'multiple windows'),
+  (name: 'no-iframe-bypass', marker: 'iframe'),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
   (name: 'mixed-content', marker: 'mixed-content'),
@@ -193,6 +200,22 @@ void main() {
       final String neutered = matrixWithSection(realMatrix, withoutScheme);
       expect(missingEvidenceMarkers(neutered),
           contains('no-arbitrary-scheme-nav'));
+    });
+
+    test('RED: dropping the no-popup/secondary-window/iframe box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutPopupBypass = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'pop-up / secondary window|multiple windows|iframe')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutPopupBypass);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-popup-secondary-window'));
+      expect(missing, contains('no-multiple-windows'));
+      expect(missing, contains('no-iframe-bypass'));
     });
 
     test('RED: dropping the no-native-bridge box fails closed', () {
