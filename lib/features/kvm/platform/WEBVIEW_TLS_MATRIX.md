@@ -416,6 +416,24 @@ flag stays off for that target.
       per target (inspect the WebView cookie manager / SameSite handling and confirm session
       cookies are Secure/HttpOnly/SameSite-scoped and third-party cookies are blocked) before
       the flag is flipped.
+* [ ] **No tapjacking / UI-overlay / clickjacking (obscured-window touch, CWE-1021)** —
+      the embedded WebView must not let an attacker-influenced console page or a
+      malicious co-resident app hijack the operator's input through a UI-overlay / tapjacking /
+      clickjacking layer: no touch delivered through an obscured window may reach the console
+      (Android `filterTouchesWhenObscured="true"` / `setFilterTouchesWhenObscured(true)` and
+      rejection of touches carrying `MotionEvent.FLAG_WINDOW_IS_OBSCURED`), no transparent or
+      `SYSTEM_ALERT_WINDOW` / `TYPE_APPLICATION_OVERLAY` window may be drawn over the secure
+      console surface, and on iOS/macOS no overlay view may sit above the WebView. Console
+      content is served by the BMC and is attacker-influenced, but above all it is the
+      operator's privileged management session: an invisible overlay can capture taps on
+      credential fields, confirm destructive KVM actions or approve prompts on the operator's
+      behalf — a UI-redressing / input-hijack surface wholly independent of TLS, hostname,
+      origin, native-bridge, file-access, JS-dialog and data-at-rest checks (which govern
+      transport, navigation, capabilities, modals and storage, not obscured-window input).
+      The console WebView rejects obscured-window touches and disallows overlays on every
+      target. Verified per target (inspect the WebView / host-activity touch filtering and
+      window flags, and confirm no overlay can cover the secure surface) before the flag is
+      flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
