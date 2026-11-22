@@ -13015,3 +13015,18 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Audit-first dept heads (RM-13 / EP-S9 / EP-P12 / EP-U17) — RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (gate: service-worker / persistent background script)
+
+**Done:**
+- Sole-merger gate: MERGED PASS-verified `build/rf-platform` tip `d6b404c` into `main` via `--no-ff` (merge `ffec282`, parents `bacae22` / `d6b404c`) after `rf-platform-check` run#11169 returned `SUCCESS` / `CHECK: PASS` for that exact head (exit 0, 46.7 s, started 2026-11-22 04:17:27 UTC — after the tip commit 03:15 UTC; HEAD cross-checked unchanged `== d6b404cf975aac33665698f2ba16f0b2a9289972`, merge-base `37762c0` ancestor of main via `a16a23c`, exactly one unique commit, allowlisted paths only — `lib/features/kvm/platform/**` + `test/**`, doc+test only, no production-TLS weakening). Clean auto-merge (ort). Branch adds the RP-1 "no service worker / persistent background script (session-scoped execution only)" acceptance box to `WEBVIEW_TLS_MATRIX.md` (no SW registration / background sync / push subscription / persistent Cache Storage outliving the console session — request-interception + background-persistence surface independent of TLS and of all sibling confinement checks) + 8 evidence markers + 1 RED guard in `validation_evidence_checklist_guard_test.dart`.
+- Post-merge verify at `ffec282` (clean tracked tree, no new stash — five pre-existing stashes untouched): `flutter analyze` 0; full `flutter test --coverage` 2050 passed / 1 skipped (baseline 2049 +1 merged test); all four coverage gates PASS overall 90.5% / scoped 90.4% / kvm 97.4% / kvm-platform 97.0%, gate exit 0; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; first-parent diff = 2 allowlisted files (56 insertions, 3 deletions); TLS-weakening + secret scan clean.
+
+**Decisions:**
+- Merged on an explicit PASS verdict for the exact checked head only (never merge un-verified / FAIL). Clean tree — no WIP to isolate, no new stash; five pre-existing stashes untouched. Production TLS not weakened; no WebView activation, no human approval granted.
+- DMTF 85-test emulator skipped: doc+test-only change, no lib-wire/fixture/tool-runtime change, <7 days since last green 85/85. No issue closed (#009 P3 / #021 P2 stay human-gated on platform WebView + BMC TLS validation).
+
+**Next:**
+- Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
