@@ -12891,3 +12891,19 @@
 - Push the single commit; leave the five stashes untouched. EP-U16 / EP-M5 / EP-S2 / EP-T4 audit-first — RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended; EP-P4/P1/P2 human-gated. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS. Full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-U16)
+
+**Done:**
+- FEATURE (test/tool-only): EP-U16 cross-card protocol-specific external-client notice RENDERED-agreement guard for #009/#021. Added `test/features/kvm/kvm_external_notice_cross_surface_agreement_test.dart` (28 tests) pumping ONE manager body per external scheme (vnc/rfb/kvmip/kvm/ssh/telnet/ipmi) through BOTH real `fromManager` factories into one `KvmView`, pinning byte-identical `kvmExternalClientNoticeFor(label)` wording on the per-console and capability cards (one merged `excludeSemantics` node each, visible==announced, no fallback/HTTP/injection leak, no overflow) at 320/800/1300 px + model-label agreement. Registered the guard in `canonicalGuardFiles` + pinned `epU16AddedGuards` in `test/tool/guard_suite_liveness_test.dart`.
+- AUDIT: both cards already share the helper with agreeing fromManager labels — genuine unguarded RENDERED cross-card seam (single-surface suites cover one card each, vnc/ssh/ipmi only; EP-M2/RM-12 pin labels at model layer), regression guard not churn. Real-file RED: console card notice → generic constant → 21 rendered-agreement cases failed (`+7 -21`); source restored byte-clean (SHA `60be27a4…` unchanged, empty lib diff), 600-perm backup shredded → 28/28 GREEN.
+- Verify: `dart format` clean (my 2 files); `flutter analyze` 0; full `flutter test --concurrency=4` 2027 passed / 1 skipped (baseline 1998 +28 +1); targeted 171/171; issues validate OK; diff --check clean; lib diff empty; deps unchanged.
+
+**Decisions:**
+- Test/tool-only, no `lib/`, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-U16 is now LANDED. Viewer intentionally uses distinct `kvmLaunchStatusText` guidance (per `kvm_transport_notice.dart`), so the dept head's "same wording on viewer" is narrowed to the two operator launch cards that share the notice helper.
+- Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. UI skipped as a separate increment (§5): no widget source changed; no manufactured churn. DMTF 85-test emulator skipped (test/tool-only, <7 days since last green 85/85).
+
+**Next:**
+- Push the single commit; leave pre-existing stashes untouched. EP-M5 / EP-S2 / EP-T4 audit-first — RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended; EP-P4/P1/P2 human-gated. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

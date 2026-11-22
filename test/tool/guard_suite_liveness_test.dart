@@ -131,6 +131,8 @@ const List<String> canonicalGuardFiles = <String>[
   'test/features/kvm/kvm_lifecycle_parity_test.dart',
   'test/features/kvm/kvm_notice_surface_audit_test.dart',
   'test/features/kvm/platform/webview_policy_test.dart',
+  // EP-U16 extension: cross-card protocol-notice rendered agreement.
+  'test/features/kvm/kvm_external_notice_cross_surface_agreement_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -221,6 +223,14 @@ const Set<String> epT20AddedGuards = <String>{
   'test/features/kvm/platform/webview_policy_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-U16: the cross-card
+/// protocol-specific external-client notice rendered-agreement guard. Pinned
+/// separately so a future edit cannot drop it out of the canonical set
+/// (issue #009/#021).
+const Set<String> epU16AddedGuards = <String>{
+  'test/features/kvm/kvm_external_notice_cross_surface_agreement_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -234,6 +244,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT18AddedGuards,
   ...epT19AddedGuards,
   ...epT20AddedGuards,
+  ...epU16AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -543,7 +554,7 @@ void main() {
           reason: 'EP-T20 guard dropped from canonical set: $path',
         );
       }
-      // All seven extension subsets + the initial set must stay pairwise
+      // All extension subsets + the initial set must stay pairwise
       // distinct — no guard may be counted toward more than one epoch.
       expect(epT20AddedGuards.intersection(epT12InitialGuards), isEmpty);
       expect(epT20AddedGuards.intersection(epT14AddedGuards), isEmpty);
@@ -552,6 +563,29 @@ void main() {
       expect(epT20AddedGuards.intersection(epT17AddedGuards), isEmpty);
       expect(epT20AddedGuards.intersection(epT18AddedGuards), isEmpty);
       expect(epT20AddedGuards.intersection(epT19AddedGuards), isEmpty);
+    });
+
+    test('EP-U16: the cross-card notice guard is in the canonical liveness set',
+        () {
+      expect(epU16AddedGuards, isNotEmpty);
+      expect(epU16AddedGuards.length, 1);
+      for (final String path in epU16AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-U16 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epU16AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epU16AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epU16AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epU16AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epU16AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epU16AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epU16AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epU16AddedGuards.intersection(epT20AddedGuards), isEmpty);
     });
 
     test('EP-T20: canonical registry is exactly the union of designated guards',
@@ -587,7 +621,8 @@ void main() {
             epT17AddedGuards.length +
             epT18AddedGuards.length +
             epT19AddedGuards.length +
-            epT20AddedGuards.length,
+            epT20AddedGuards.length +
+            epU16AddedGuards.length,
       );
     });
   });
