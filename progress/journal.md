@@ -13714,3 +13714,19 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next tooling head: liveness-register the EP-P16 guard in `test/tool/guard_suite_liveness_test.dart`; remaining heads RM-18 / EP-U21 / EP-S13 audit-first, RED→GREEN only on a genuine divergence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-T32)
+
+**Done:**
+- FEATURE (test/tool-only): EP-T32 "who guards the guards" liveness registration of the EP-P16 nonstandard-port authority fail-closed cross-layer agreement guard. AUDIT FIRST: `port_authority_fail_closed_agreement_test.dart` (9 live cases) landed last run and is reachable from verify.yml whole-tree `flutter test --coverage`, but was absent from BOTH `canonicalGuardFiles` and every pinned epoch — deleting / emptying / test-stripping it stayed GREEN (confirmed registry gap, no live divergence, not churn).
+- Extended `test/tool/guard_suite_liveness_test.dart`: +1 canonical path, pinned `epT32AddedGuards` epoch (length 1, disjoint from all 24 earlier designations) in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test +1 temp-root RED→GREEN (deleted / emptied / test-stripped → violation, intact → clean).
+- RED→GREEN: dropped only the canonical entry (epoch kept) under a 600-perm backup → exactly 3 named failures (`+49 -3`: EP-T32 pin, EP-T20 completeness, EP-T32 temp-root liveness), other 49 GREEN; restored byte-clean (SHA `a8899757…` unchanged, 0 residue, backup shredded) → 52/52 GREEN.
+- Verify: targeted 52/52; `dart format --set-exit-if-changed` clean; analyze 0; full suite 2283 passed / 1 skipped (baseline 2281 +2); issues validate OK; diff --check clean; deps unchanged.
+
+**Decisions:**
+- Regression guard — no behaviour change, no production `lib/` change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-T32 LANDED (`queues/tooling.md`). Both issues stay human-gated (platform WebView + BMC TLS validation). No issue closed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next heads RM-18 / EP-U21 / EP-S13 audit-first, RED→GREEN only on a genuine divergence; cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
