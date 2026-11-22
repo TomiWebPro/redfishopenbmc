@@ -13604,3 +13604,19 @@
 **Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-M4)
+
+**Done:**
+- FEATURE (test-only): EP-M4 RemoteConsole-only + explicit-disable cross-view parity guard. AUDIT FIRST: all fields were pinned in isolation, but no test drove RemoteConsole-focused bodies through BOTH `KvmConsole.fromManager` and `KvmCapability.fromManager` at once pinning detection + resolved URI + aggregated types + session limit + per-console launch strategy/openability together (CONFIRMED unguarded seam, no live divergence).
+- Added `test/features/kvm/kvm_remote_console_disable_parity_test.dart` (9 tests): enabled RemoteConsole-only, `ServiceEnabled:false` / legacy `Enabled:false` fail-closed, contradictory truthy-wins, Graphical↔Remote both precedence orders, disabled Serial+Remote, OEM-disabled+Remote, all-disabled graphical-first fallback; a BMC-disabled standard block fails closed on BOTH views.
+- RED→GREEN: dropped `remoteEnabled` from `KvmCapability.fromManager`'s `supported` → exactly 5 named agreement tests failed (`+4 -5`), 4 disable/control cases GREEN; restored byte-clean (SHA `533ed545…`, 0 residue, empty `lib/` diff, 600-perm backup shredded) → 9/9 GREEN.
+- Verify: targeted 9/9; queue Verify 261/261; `dart format` clean; analyze 0; full suite 2254 passed / 1 skipped (baseline 2245 +9); issues validate OK; diff --check clean; deps unchanged; emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Regression guard only — no behaviour change, no production `lib/` change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-M4 LANDED (`queues/model.md`). Both issues stay human-gated (platform WebView + BMC TLS validation). New guard NOT yet liveness-registered (next tooling head EP-T30).
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next tooling head EP-T30 (liveness-register the new guard); remaining model heads EP-M2 / EP-M1 / RM-1 / RM-2 audit-first; RM-11 / EP-S8 deliberate behaviour-change decisions, do NOT fix unattended.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
