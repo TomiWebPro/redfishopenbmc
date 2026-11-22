@@ -22,9 +22,10 @@
 // (TLS 1.2+ floor, no weak/export suites, no silent fallback),
 // no-DNS-rebinding/stale-resolution (connect to the validated origin, TOCTOU-
 // free resolution), no-external/attacker-controlled initial console URL (trusted
-// entry path, no exported activity / Intent-seeded first load), flag-off
-// fallback, human sign-off) so a future edit cannot silently erase the evidence
-// boxes that gate that decision.
+// entry path, no exported activity / Intent-seeded first load),
+// no-sensitive-console-URL/session-token in logs/telemetry/crash reports
+// (CWE-532), flag-off fallback, human sign-off) so a future edit cannot silently
+// erase the evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -165,6 +166,13 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-sensitive-data-at-rest', marker: 'data at rest'),
   (name: 'no-webview-cache-storage', marker: 'webview cache'),
   (name: 'no-background-snapshot', marker: 'background snapshot'),
+  (name: 'no-sensitive-url-in-logs', marker: 'cwe-532'),
+  (name: 'no-logcat-leak', marker: 'logcat'),
+  (name: 'no-nslog-leak', marker: 'nslog'),
+  (name: 'no-debugprint-leak', marker: 'debugprint'),
+  (name: 'no-crash-report-leak', marker: 'crash report'),
+  (name: 'no-analytics-token-leak', marker: 'analytics'),
+  (name: 'no-telemetry-token-leak', marker: 'telemetry'),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -472,8 +480,7 @@ void main() {
       expect(missing, contains('opt-in-keeps-tls-floor'));
     });
 
-    test(
-        'RED: dropping the no-DNS-rebinding/stale-resolution box fails closed',
+    test('RED: dropping the no-DNS-rebinding/stale-resolution box fails closed',
         () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutRebinding = section
@@ -553,6 +560,26 @@ void main() {
       final String neutered = matrixWithSection(realMatrix, withoutDataAtRest);
       expect(missingEvidenceMarkers(neutered),
           contains('no-sensitive-data-at-rest'));
+    });
+
+    test(
+        'RED: dropping the no-sensitive-URL-in-logs/telemetry/CWE-532 box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutLogLeak = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'cwe-532|logcat|nslog|debugprint|crash report|analytics|telemetry')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutLogLeak);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-sensitive-url-in-logs'));
+      expect(missing, contains('no-logcat-leak'));
+      expect(missing, contains('no-nslog-leak'));
+      expect(missing, contains('no-debugprint-leak'));
+      expect(missing, contains('no-crash-report-leak'));
+      expect(missing, contains('no-analytics-token-leak'));
+      expect(missing, contains('no-telemetry-token-leak'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
