@@ -6,6 +6,30 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 06:09 UTC: carves a fresh, machine-checkable half of the still-open
+     (human-gated) WebView/TLS closeout of #009/#021. EP-P11/EP-P9 pin the navigation gate and launch
+     plan over control/CRLF/NUL/cross-origin/userinfo authorities, but not over scheme-relative,
+     network-path and percent/backslash-confused authorities — an area where `Uri` parsing is chronic
+     authority confusion and a one-sided gate edit could navigate the trusted frame off-origin while
+     both single-gate suites stay GREEN. Test/doc-only; the human validation (EP-P1/P2/P4) stays gated
+     and is NOT re-split. AUDIT FIRST; RED→GREEN only on a genuine divergence, never churn. No code
+     touched. -->
+
+- [ ] EP-P13 Navigation-gate ↔ launch-route fail-closed agreement on scheme-relative / network-path
+      and encoded-authority tricks: feed the SAME authority matrix (scheme-relative `//bmc/console`,
+      `https:///bmc/console`, `https://evil.example\@bmc/console`, backslash-confused authorities,
+      `https:%2f%2fbmc`, userinfo-bearing and control-bearing hosts) through `allowsInAppNavigation`
+      and `planConsoleLaunch`, pinning that the navigation gate refuses in-app exactly when the launch
+      plan routes to copyOnly / externalBrowser, and that `KvmWebViewPolicy.productionDefault` never
+      navigates in-app or accepts self-signed. AUDIT FIRST: if EP-P11 / EP-P9 already pin the whole
+      matrix, record the audit and add nothing; RED→GREEN only on a genuine divergence, never churn.
+      Test/doc-only; no WebView/protocol dependency, no URL opened, no production TLS weakening.
+      Dept: rf-platform
+      Verify: `flutter test test/features/kvm/platform/navigation_launch_route_agreement_test.dart test/features/kvm/platform/launch_plan_test.dart && flutter analyze`
+              (0 issues), RED→GREEN proof only on a genuine divergence; writes limited to
+              `test/features/kvm/platform/**` + the decision docs; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              no WebView/protocol dependency, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-22 02:06 UTC: splits the machine-checkable half of the human-gated
      WebView/TLS rendering closeout (EP-P1/P2/P4, blocked on platform validation) of #009/#021 into
      one unblocked, test/doc-only, dependency-free, TLS-safe dept slice. EP-P8 already pins the 8-row

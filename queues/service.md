@@ -5,6 +5,31 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 06:09 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     blocked #009/#021 manager-walk epic. RS-6/RS-8 pin manager-set identity and collision
+     determinism, EP-S2/EP-S3 pin Primary tier precedence and no-unopenable selection, RS-7 pins
+     hostile-body tolerance — but nothing ties all of them together for the CONCENTRATED case where
+     every healthy manager's only openable target is control/bidi-unsafe and the rest are disabled /
+     URI-less. Pure service characterization/regression guard; the credentialed-Primary decision
+     (EP-S8) stays blocked and is NOT re-split. AUDIT FIRST; RED→GREEN only on a genuine divergence,
+     never churn. No code touched. -->
+
+- [ ] EP-S10 Primary-selection fail-closed determinism over an all-unsafe candidate set: over in-temp
+      multi-manager bodies where every healthy manager's only openable console carries a control- or
+      bidi-bearing secure-HTTPS `ConnectUri`, plus one manager whose blocks are all disabled / URI-less,
+      pin that `KvmService.fetchPrimaryConsole()` and `pickPrimary()` return the SAME deterministic,
+      launch-safe primary (or none) and never badge an unsafe target, while every physical manager
+      stays surfaced identically in `fetchConsoles()` / `fetchCapabilities()` and `fetchCapability(id)`
+      agrees with the aggregate. AUDIT FIRST: if EP-S2/EP-S3/RS-6/RS-8 already pin this end-to-end,
+      record the audit and add nothing; RED→GREEN only on a genuine divergence, never churn. No
+      behaviour change folded in; no WebView/protocol import, no production TLS weakening.
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_service_manager_identity_test.dart test/features/kvm/kvm_service_primary_secure_tier_test.dart && flutter analyze`
+              (0 issues), RED→GREEN proof only on a genuine divergence; writes limited to
+              `test/features/kvm/**` (+ `lib/features/kvm/kvm_service.dart` only on a genuine
+              divergence); emulator 85/85 only if `lib/` wire changes; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-22 02:06 UTC: splits the BLOCKED behaviour-change head EP-S8
      (credential-bearing secure-HTTPS Primary badge vs in-app navigability) of the #009/#021 epic
      into its unattended-doable half. EP-P11 pinned that `allowsInAppNavigation` fails closed on

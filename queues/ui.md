@@ -5,6 +5,31 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 06:09 UTC: carves a fresh, display-only, unblocked slice of the
+     blocked #009/#021 final-route closeout. EP-U8/EP-U17 pin the no-WebView affordance contract and
+     EP-U14 pins the viewer URI row, but nothing pins the route-dependent COPY-vs-BROWSER affordance
+     split (copyOnly vs externalBrowser) as ONE contract across all three surfaces — a one-sided view
+     edit could show a browser-open button on a control-unsafe target while every single-surface suite
+     stays GREEN. Display-only; the human-gated WebView/TLS rendering stays gated and is NOT re-split.
+     AUDIT FIRST; RED→GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-U18 Copy-only vs browser-open route agreement across the three KVM surfaces for a
+      control-unsafe resolved target: over one manager whose graphical `ConnectUri` is control/bidi-
+      bearing so `planConsoleLaunch` degrades to copyOnly, pin that the viewer, the per-console card
+      and the capability card all expose copy guidance and NEVER a browser-open / render affordance,
+      and that a clean secure-HTTPS target yields browser-open guidance on all three — each as one
+      merged `excludeSemantics` node with visible text == announced label at 320/800/1300 px and no
+      overflow. AUDIT FIRST: if EP-U8/EP-U17/EP-U14 already pin both routes on all three surfaces,
+      record the audit and add nothing; RED→GREEN only on a genuine divergence, never churn.
+      Display-only; no WebView/protocol import, no URL opened, no dependency, no production TLS
+      weakening.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_open_affordance_gating_test.dart test/features/kvm/kvm_three_surface_launch_target_agreement_test.dart test/features/kvm/kvm_capability_card_test.dart && flutter analyze`
+              (0 issues), RED→GREEN proof + 320 px no-overflow + visible==announced only on a
+              genuine divergence; writes limited to `lib/features/kvm/views/**` + those named test
+              files; no WebView/protocol import, no URL opened, no dependency, no production TLS
+              weakening; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-22 02:06 UTC: splits the display half of the human-gated WebView/TLS
      rendering closeout (blocked on platform validation) of #009/#021 into one unblocked,
      display-only, dependency-free, TLS-safe dept slice. EP-U2/EP-U4/EP-U8 pin the viewer launch

@@ -5,6 +5,27 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 06:09 UTC: a fresh, machine-checkable slice of the blocked #009/#021
+     epic's queue-hygiene tooling. EP-T13 added `queue_item_schema_guard_test.dart` to fail closed on
+     a missing/duplicate/out-of-set single dept field or an empty verify command, but a command that
+     names a dangling / placeholder / typo'd test path still passes the schema, so a stale queue item
+     can point builders at a non-existent suite. Pure test/tool, dependency-free, never writes lib/.
+     Distinct from the still-open EP-T23 liveness-registry item — do NOT register the affordance guard
+     here. AUDIT FIRST; RED→GREEN only on a genuine gap, never churn. No code touched. -->
+
+- [ ] EP-T24 Queue-schema guard extension to validate verify-command targets: extend
+      `test/tool/queue_item_schema_guard_test.dart` so that, in addition to the existing single-dept /
+      non-empty-command checks, every unchecked item's verify command must name at least one
+      repo-existing `test/**` or `tool/**` path (no dangling / placeholder / typo'd suite), with a
+      temp-root RED→GREEN (missing / placeholder / valid target) plus a real-repo invariant over the
+      current `queues/*.md`. AUDIT FIRST: if the guard already validates command targets, record the
+      audit and add nothing; no churn. Pure test/tool, dependency-free, never writes `lib/`.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/queue_item_schema_guard_test.dart && flutter analyze` (0 issues),
+              with RED→GREEN proof (placeholder/dangling command → violation; intact → clean);
+              writes limited to `test/tool/queue_item_schema_guard_test.dart`;
+              `git diff --exit-code -- pubspec.yaml pubspec.lock`; no lib/, no production TLS weakening.
+
 <!-- rf-automation 2026-11-22 02:09 UTC: closes a CONFIRMED "who guards the guards" liveness gap in the blocked #009/#021 epic (same pattern as EP-T14..T20). EP-T20 pinned canonicalGuardFiles and added a registry-completeness invariant; RM-12 later added `kvm_external_client_from_manager_parity_test.dart` (5 live cases, reachable from verify.yml whole-tree `flutter test --coverage`) WITHOUT adding it to canonicalGuardFiles or any pinned epoch set, so deleting / emptying / test-stripping that safety guard stayed GREEN. Pure test/tool, dependency-free, never writes lib/; distinct from EP-T12/14/15/16/17/18/19/20. No product code touched. -->
 
 - [x] EP-T21 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 EP-T21 guard-suite liveness — pin the RM-12 fromManager parity guard + RED->GREEN tests`, analyze 0 / 2046 passed / 1 skipped) — Guard-suite liveness: add the RM-12 `kvm_external_client_from_manager_parity_test.dart` safety guard (cross-factory classifier/label/openability parity through the real `fromManager` pipeline) to `canonicalGuardFiles` (41→42) under a pinned `epT21AddedGuards` set (length 1, disjoint from every earlier designation), include it in `allDesignatedGuards`, a pin test with pairwise-disjointness assertions and a temp-root RED→GREEN proof (missing/emptied/test-less → violation, intact → clean), keeping the EP-T20 registry-completeness invariant green. Confirmed gap, no churn.
