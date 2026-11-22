@@ -13073,3 +13073,18 @@
 - Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (RM-13)
+
+**Done:**
+- FEATURE (test/tool-only): RM-13 enablement-regime decision-boundary characterization guard. AUDIT: RM-10/EP-S7 already pin the agreeing regimes byte-for-byte, but the MIXED-regime divergence (flag-absent secure console + explicitly-enabled insecure block — capability keeps the secure URI while `pickPrimary` badges the insecure console) was recorded only in prose, so an "enabled-first" refactor erased it with all pre-existing guards GREEN. Added `test/features/kvm/kvm_enablement_regime_boundary_test.dart` (8 tests): 4 agreeing-regime agreement cases (all-unknown / disabled-vs-enabled / contradictory truthy-wins / integral-double limit) + 4 RECORD-only mixed-regime divergence cases (SSH serial / plaintext HTTP / flag-absent secure remote / legacy `Enabled:true`) that assert the divergence + direction but never bless either side as expected (RM-11 deferred human decision).
+- Real-file RED #1: enabled-first pass inserted into `KvmCapability._standardConnectUri` → exactly `+4 -4` (only the 4 mixed tests failed; agreeing tests + RM-10/EP-S7 GREEN); mutation reversed byte-clean (SHA `533ed545…` unchanged, empty lib diff), 600-perm backup shredded → 8/8 GREEN. Registered the guard in `canonicalGuardFiles` (46→47) + pinned `rm13AddedGuards` epoch (length 1, disjoint from all earlier designations) in `test/tool/guard_suite_liveness_test.dart` (+1 pin test, completeness arithmetic, temp-root RED). Real-file RED #2: dropped the canonical entry → 3 failures (RM-13 pin + EP-T20 completeness + RM-13 temp-root RED), restored byte-clean (SHA `8014e306…`), backup shredded → 32/32 GREEN.
+- Verify: targeted new + liveness + RM-10/EP-S7 50/50; `dart format` clean (0 changed); `flutter analyze` 0; full `flutter test --concurrency=4` 2072 passed / 1 skipped (baseline 2061 + 10 mine + 1 concurrent rf-gate merge); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test/tool-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. RM-13 is now LANDED (`queues/model.md`). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. UI skipped as a separate increment (§5): no widget source changed; no manufactured churn. DMTF 85-test emulator skipped (test/tool-only, <7 days since last green 85/85). RM-11 divergence is now a stable characterized baseline, never blessed as the authoritative rule.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Remaining dept heads EP-S9 / EP-P12 / EP-U17 audit-first — RED→GREEN only on a genuine divergence, never churn; RM-11 / EP-S8 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

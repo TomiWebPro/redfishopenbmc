@@ -123,6 +123,15 @@
 // OEM test GREEN. Registering it under a pinned `rm14AddedGuards` subset makes
 // deleting / emptying / test-stripping it fail closed.
 //
+// RM-13 (epic #009/#021) registers the enablement-regime decision-boundary
+// guard. The mixed-regime divergence (flag-absent secure console vs an
+// explicitly-enabled insecure block: capability keeps the secure URI while
+// pickPrimary badges the insecure console) is a deferred human decision (RM-11)
+// recorded as a stable baseline; an "enabled-first" refactor silently erased
+// that record with every pre-existing RM-10 / EP-S7 guard GREEN. Registering
+// this guard under a pinned `rm13AddedGuards` subset makes deleting / emptying /
+// test-stripping it fail closed.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -198,6 +207,9 @@ const List<String> canonicalGuardFiles = <String>[
   'test/security/credential_leak_audit_test.dart',
   // RM-14 extension: OEM console-block documented direct-key precedence.
   'test/features/kvm/kvm_oem_block_precedence_test.dart',
+  // RM-13 extension: enablement-regime decision-boundary characterization
+  // (agreeing-regime byte-for-byte agreement + deferred RM-11 divergence record).
+  'test/features/kvm/kvm_enablement_regime_boundary_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -342,6 +354,15 @@ const Set<String> rm14AddedGuards = <String>{
   'test/features/kvm/kvm_oem_block_precedence_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by RM-13: the enablement-regime
+/// decision-boundary characterization guard (agreeing-regime byte-for-byte
+/// agreement plus the deferred RM-11 mixed-regime divergence record). Pinned
+/// separately so a future edit cannot drop it back out of the canonical set
+/// (issue #009/#021).
+const Set<String> rm13AddedGuards = <String>{
+  'test/features/kvm/kvm_enablement_regime_boundary_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -361,6 +382,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT21AddedGuards,
   ...epT22AddedGuards,
   ...rm14AddedGuards,
+  ...rm13AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -839,6 +861,36 @@ void main() {
       expect(rm14AddedGuards.intersection(epT22AddedGuards), isEmpty);
     });
 
+    test(
+        'RM-13: the enablement-regime boundary guard is in the canonical '
+        'liveness set', () {
+      expect(rm13AddedGuards, isNotEmpty);
+      expect(rm13AddedGuards.length, 1);
+      for (final String path in rm13AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'RM-13 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(rm13AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(rm13AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(rm13AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(rm13AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(rm13AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(rm13AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(rm13AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(rm13AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(rm13AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(rm13AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(rm13AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(rm13AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(rm13AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(rm13AddedGuards.intersection(rm14AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -878,7 +930,8 @@ void main() {
             epS2AddedGuards.length +
             epT21AddedGuards.length +
             epT22AddedGuards.length +
-            rm14AddedGuards.length,
+            rm14AddedGuards.length +
+            rm13AddedGuards.length,
       );
     });
   });
@@ -1526,6 +1579,69 @@ void main() {
         );
 
         final String addedGuard = rm14AddedGuards.single;
+        // RED 1: the newly-added guard is deleted → MISSING.
+        File(p(addedGuard)).deleteSync();
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'MISSING: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when deleted',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 2: the guard is emptied → EMPTY.
+        File(p(addedGuard)).writeAsStringSync('  \n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'EMPTY: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when emptied',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 3: the guard keeps prose but loses every test case.
+        File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when test-stripped',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // GREEN again once the guard is restored.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test('RM-13: newly-added enablement-boundary guard is liveness-checked',
+        () {
+      final Directory temp = Directory.systemTemp.createTempSync('rm13_guard_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        final String addedGuard = rm13AddedGuards.single;
         // RED 1: the newly-added guard is deleted → MISSING.
         File(p(addedGuard)).deleteSync();
         expect(
