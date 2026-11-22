@@ -13000,3 +13000,18 @@
 - Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-T22)
+
+**Done:**
+- FEATURE (test/tool-only): EP-T22 guard-suite liveness registration of the three cross-cutting safety guards for #009/#021. CONFIRMED gap: `test/tool/asset_guard_test.dart` (15 cases), `test/tool/unattended_guard_test.dart` (16) and `test/security/credential_leak_audit_test.dart` (3) are live, checked-in tests reachable from verify.yml's whole-tree `flutter test --coverage`, named as part of the guard family by EP-T12's header (LA-1 assets, EP-T6 unattended) plus the #010 credential-leak audit, but were never in `canonicalGuardFiles` or any pinned epoch set — so deleting / emptying / test-stripping one stayed GREEN (verify.yml invokes the `asset_guard.dart` / `unattended_guard.dart` TOOLS directly, not their test files). Registered all three in `canonicalGuardFiles` (42→45) under a pinned `epT22AddedGuards` set (length 3, disjoint from epT12Initial / epT14..epT21 / epU16 / epM5 / epS2), included in `allDesignatedGuards` + completeness arithmetic, +1 pin test with pairwise disjointness and a temp-root RED→GREEN covering missing/emptied/test-less for each guard.
+- Real-file RED: dropped `test/security/credential_leak_audit_test.dart` from the canonical set → 3 failures (`+25 -3`: EP-T20 completeness + EP-T22 pin + EP-T22 RED test), named the dropped guard; mutation reversed byte-clean (canonical 45, 0 residue, SHA `a28eaa8e…` unchanged), 600-perm backup shredded → 28/28 GREEN.
+- Verify: `dart format` clean (my file); `flutter analyze` 0; full `flutter test --concurrency=4` 2049 passed / 1 skipped (baseline 2047 +2); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test/tool-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-T22 is now LANDED (`queues/tooling.md`). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. UI skipped as a separate increment (§5): no widget source changed; no manufactured churn. DMTF 85-test emulator skipped (test/tool-only, <7 days since last green 85/85). Final-route fixtures unchanged.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Audit-first dept heads (RM-13 / EP-S9 / EP-P12 / EP-U17) — RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

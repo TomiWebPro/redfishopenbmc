@@ -22,7 +22,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      fixtures still parse, record the audit and add nothing; test/tool-only, never writes lib/, no
      dependency, no TLS change. No code touched. -->
 
-- [ ] EP-T22 Liveness + fixture registration for the final-route guard set: when the RM-13 / EP-S9 /
+- [x] EP-T22 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 EP-T22 guard-suite liveness — register the asset / unattended / credential-leak safety guards + RED→GREEN tests`, analyze 0 / 2049 passed / 1 skipped) — Liveness + registration of cross-cutting safety guards: AUDIT found three live, CI-reachable guards named as part of the family by EP-T12 but never registered — `test/tool/asset_guard_test.dart` (15 cases), `test/tool/unattended_guard_test.dart` (16), `test/security/credential_leak_audit_test.dart` (3) — so deleting/emptying/test-stripping one stayed GREEN (verify.yml runs the TOOLS directly, not their test files). Registered all three in `canonicalGuardFiles` (42→45) under a pinned `epT22AddedGuards` epoch (length 3, disjoint from epT12Initial / epT14..epT21 / epU16 / epM5 / epS2), included in `allDesignatedGuards` + completeness arithmetic, +1 pin test +1 temp-root RED→GREEN covering missing/emptied/test-less for each. Genuine gap, no churn; final-route fixtures unchanged (still parse, still reachable). (Original item:) when the RM-13 / EP-S9 /
       EP-P12 / EP-U17 slices add guard files, register each in `canonicalGuardFiles` under a fresh
       pinned epoch set (disjoint from epT12Initial / epT14..epT21 / epU16 / epM5 / epS2) with length
       and pairwise-disjointness pin assertions, keeping the EP-T20 registry-completeness invariant
@@ -37,6 +37,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
               clean); writes limited to `test/tool/guard_suite_liveness_test.dart` + `test/fixtures/**`;
               `git diff --exit-code -- pubspec.yaml pubspec.lock`; no lib/, no WebView/protocol import,
               no production TLS change.
+      **LANDED** 2026-11-22: extended `canonicalGuardFiles` 42→45; added pinned `epT22AddedGuards` (length 3, disjoint from all twelve earlier designations), included in `allDesignatedGuards` and the completeness arithmetic (+1 pin test), added a temp-root RED→GREEN covering missing/emptied/test-less for each of the three guards. Real-file RED: dropped `test/security/credential_leak_audit_test.dart` from the canonical set → 3 failures (`+25 -3`: EP-T20 completeness + EP-T22 pin + EP-T22 RED test), named the dropped guard; mutation reversed byte-clean (canonical 45, 0 residue, SHA `a28eaa8e…` unchanged), 600-perm backup shredded → 28/28 GREEN. Test/tool-only (empty lib diff), deps unchanged; emulator skipped.
 
 <!-- rf-ideate split 2026-11-21 22:03 UTC: a FRESH, machine-checkable "who guards the guards"
      liveness gap in the blocked #009/#021 epic, CONFIRMED by direct audit (not speculative).
