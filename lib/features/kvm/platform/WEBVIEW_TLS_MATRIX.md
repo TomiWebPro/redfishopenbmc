@@ -136,6 +136,35 @@ flag stays off for that target.
       protocol / cipher floor even though it tolerates the untrusted leaf.
       Verified per target (inspect the WebView TLS configuration and an
       observed handshake) before the flag is flipped.
+* [ ] **No cleartext / HTTPS-only transport at the WebView platform layer (no
+      plaintext fallback)** — independently of the handshake floor above, the
+      embedded WebView's *platform network configuration* must forbid cleartext
+      HTTP traffic entirely: Android `usesCleartextTraffic=false` / Network
+      Security Config `cleartextTrafficPermitted=false`, and Apple ATS enforced
+      with no `NSAllowsArbitraryLoads` / `NSExceptionAllowsInsecureHTTPLoads`
+      escape hatch (no per-domain exception back down to plain HTTP), on every
+      target. The decision layer already refuses plaintext launch targets and
+      every in-session plaintext navigation, but a platform config that permits
+      cleartext can still let a redirect, a subresource, an upgrade/downgrade
+      proxy or a fallback path silently open an `http://` socket for the trusted
+      console outside that decision layer. This is a distinct control surface
+      from the TLS protocol-version / cipher-suite floor (which governs a TLS
+      handshake that actually occurs) and from origin confinement (which governs
+      in-session navigations): it governs whether ANY cleartext socket may be
+      opened by the WebView at all. Console content is served by the BMC and is
+      therefore attacker-influenced (a compromised/spoofed BMC, or script running
+      in the page): a cleartext fallback hands the operator's privileged
+      management session — session tokens, credentials, KVM frames — to any
+      on-path observer, wholly independent of certificate trust, hostname
+      verification, protocol version and navigation checks. The test-only
+      self-signed opt-in relaxes ONLY leaf trust: it must never add a cleartext
+      exception, must never set `cleartextTrafficPermitted=true` or
+      `usesCleartextTraffic=true`, and must never enable `NSAllowsArbitraryLoads`
+      or an insecure-load exception — not even for the test profile. The console
+      WebView opens no plaintext socket on any target. Verified per target
+      (inspect the WebView host's network-security config / ATS settings and
+      confirm no cleartext request can be made, with the flag both off and on)
+      before the flag is flipped.
 * [ ] **No DNS rebinding / stale-resolution (connect to the validated origin,
       not a re-resolved one)** — the embedded WebView must not let an
       attacker-influenced console hostname pass the same-origin HTTPS validation

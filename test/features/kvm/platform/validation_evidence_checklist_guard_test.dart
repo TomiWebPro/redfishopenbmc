@@ -20,6 +20,8 @@
 // third-party-cookie / HttpOnly), no-tapjacking/UI-overlay/clickjacking
 // (CWE-1021 obscured-window touch), no-TLS-version/cipher-suite downgrade
 // (TLS 1.2+ floor, no weak/export suites, no silent fallback),
+// no-cleartext/HTTPS-only platform transport (no cleartextTrafficPermitted,
+// no NSAllowsArbitraryLoads; opt-in relaxes leaf trust only, never cleartext),
 // no-DNS-rebinding/stale-resolution (connect to the validated origin, TOCTOU-
 // free resolution), no-external/attacker-controlled initial console URL (trusted
 // entry path, no exported activity / Intent-seeded first load),
@@ -96,6 +98,21 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-export-cipher', marker: 'export'),
   (name: 'no-tls-downgrade', marker: 'tls_fallback_scsv'),
   (name: 'opt-in-keeps-tls-floor', marker: 'must never relax'),
+  (name: 'no-cleartext-transport', marker: 'no cleartext'),
+  (name: 'https-only-platform', marker: 'https-only transport'),
+  (name: 'android-cleartext-permitted', marker: 'cleartexttrafficpermitted'),
+  (name: 'android-uses-cleartext', marker: 'usescleartexttraffic'),
+  (name: 'ios-ats-no-arbitrary-loads', marker: 'nsallowsarbitraryloads'),
+  (
+    name: 'no-insecure-load-exception',
+    marker: 'nsexceptionallowsinsecurehttploads'
+  ),
+  (name: 'cleartext-distinct-control-surface', marker: 'control surface'),
+  (name: 'cleartext-on-path-observer', marker: 'on-path'),
+  (
+    name: 'opt-in-no-cleartext-exception',
+    marker: 'never add a cleartext exception'
+  ),
   (name: 'no-dns-rebinding', marker: 'dns rebinding'),
   (name: 'no-stale-resolution', marker: 'stale-resolution'),
   (name: 'no-re-resolution', marker: 're-resolv'),
@@ -478,6 +495,27 @@ void main() {
       expect(missing, contains('no-export-cipher'));
       expect(missing, contains('no-tls-downgrade'));
       expect(missing, contains('opt-in-keeps-tls-floor'));
+    });
+
+    test('RED: dropping the no-cleartext/HTTPS-only transport box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutCleartext = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'cleartext|https-only|nsallowsarbitraryloads|nsexceptionallowsinsecurehttploads|on-path|control surface')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutCleartext);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-cleartext-transport'));
+      expect(missing, contains('https-only-platform'));
+      expect(missing, contains('android-cleartext-permitted'));
+      expect(missing, contains('android-uses-cleartext'));
+      expect(missing, contains('ios-ats-no-arbitrary-loads'));
+      expect(missing, contains('no-insecure-load-exception'));
+      expect(missing, contains('cleartext-distinct-control-surface'));
+      expect(missing, contains('cleartext-on-path-observer'));
+      expect(missing, contains('opt-in-no-cleartext-exception'));
     });
 
     test('RED: dropping the no-DNS-rebinding/stale-resolution box fails closed',
