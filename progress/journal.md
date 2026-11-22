@@ -13348,3 +13348,19 @@
 - Push `main` (never force-push); leave the five pre-existing stashes untouched. Await the next `rf-platform-check` verdict before any further merge. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (RM-16)
+
+**Done:**
+- FEATURE (test-only): RM-16 hostile enablement-flag encoding agreement guard. AUDIT FIRST: both `KvmConsole.fromManager` (`_fromBlock`) and `KvmCapability.fromManager` (`_blockEnabled`/`_explicitlyDisabled`) read enablement through the identical `member == true` rule, with the OEM path on the shared `kvmOemConsoleEnabled` — so string "true"/"TRUE", padded, int 1/0, double 1.0, null, list, map and control-bearing values all fail closed to "not enabled" on BOTH views, while canonical-bool truthy-wins (RM-8/RM-13) is preserved. No live divergence. Only prior coverage was one single-view `ServiceEnabled: 'true'` case in `kvm_model_test.dart`; the full cross-factory encoding matrix was unguarded.
+- Added `test/features/kvm/kvm_enablement_encoding_agreement_test.dart` (34 tests): hostile matrix on `ServiceEnabled`, legacy `Enabled` and OEM blocks, canonical true/false controls and truthy-wins — byte-for-byte agreement of `serviceEnabled` / `supported` / openability / connect types / session limit plus canonical-URI agreement.
+- RED→GREEN: mutated `KvmCapability._blockEnabled` to accept `== 'true'` on one side → exactly the 2 string-"true" cross-factory cases failed (`+32 -2`), all 32 others GREEN; restored byte-clean (SHA `533ed545…` unchanged, 0 residue, empty lib diff), 600-perm backup shredded → 34/34 GREEN.
+- Verify: targeted 34/34; `dart format` clean; `flutter analyze` 0; full `flutter test --concurrency=4` 2190 passed / 1 skipped (baseline 2156 +34); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. RM-16 LANDED (`queues/model.md`). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. DMTF 85-test emulator skipped (test-only, <7 days since last green 85/85). No manufactured UI churn (§5). Pre-existing stashes untouched; no force-push/history rewrite/`git clean`. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the pre-existing stashes untouched. Next fresh dept heads EP-U19 / EP-P14 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
