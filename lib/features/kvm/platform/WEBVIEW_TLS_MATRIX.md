@@ -151,6 +151,24 @@ flag stays off for that target.
       opt-in tolerates only an otherwise-valid cert for the *expected* BMC host
       that is untrusted by the platform store; it is not a general certificate
       check bypass. Verified per target before the flag is flipped.
+* [ ] **TLS protocol-version / cipher-suite floor (no downgrade)** — the
+      embedded WebView must negotiate only a modern TLS protocol version and
+      strong cipher suites for the console origin, never a legacy or weakened
+      handshake: no TLS 1.0 / TLS 1.1 (or SSLv3), no weak / export / NULL /
+      anonymous cipher suites, no 3DES / RC4 / MD5-based suites, and no fallback
+      that silently downgrades a TLS 1.2 / TLS 1.3 connection to a weaker
+      version (downgrade protection such as TLS_FALLBACK_SCSV /
+      `supported_versions` must stay intact). This box is distinct from the
+      trust-store and hostname-verification checks: a console can present a
+      valid, correctly-named certificate yet still be negotiated over a weak
+      protocol or cipher, exposing the operator's privileged management session
+      to a downgrade / decryption attack independent of certificate validity.
+      The per-target WebView / platform TLS configuration must enforce a TLS 1.2+
+      floor with strong cipher suites and no downgrade, in strict mode **and**
+      in the test-only self-signed opt-in — the opt-in must never relax the
+      protocol / cipher floor even though it tolerates the untrusted leaf.
+      Verified per target (inspect the WebView TLS configuration and an
+      observed handshake) before the flag is flipped.
 * [ ] **Origin / navigation confinement (no cross-origin or downgrade nav)** —
       an embedded WebView must never follow a redirect, link click, `window.open`
       or JavaScript-initiated top-level navigation to a different host/port or

@@ -18,8 +18,10 @@
 // exfiltration), no-arbitrary/drive-by file download (APK / executable /
 // auto-open / content-disposition), no-cross-site-cookie/session-leak (SameSite /
 // third-party-cookie / HttpOnly), no-tapjacking/UI-overlay/clickjacking
-// (CWE-1021 obscured-window touch), flag-off fallback, human sign-off) so a
-// future edit cannot silently erase the evidence boxes that gate that decision.
+// (CWE-1021 obscured-window touch), no-TLS-version/cipher-suite downgrade
+// (TLS 1.2+ floor, no weak/export suites, no silent fallback), flag-off fallback,
+// human sign-off) so a future edit cannot silently erase the evidence boxes that
+// gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -83,6 +85,13 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'obscured-window-touch', marker: 'flag_window_is_obscured'),
   (name: 'cwe-1021', marker: 'cwe-1021'),
   (name: 'filter-touches-obscured', marker: 'filtertoucheswhenobscured'),
+  (name: 'tls-protocol-floor', marker: 'tls 1.2'),
+  (name: 'tls-modern-version', marker: 'tls 1.3'),
+  (name: 'no-legacy-tls', marker: 'tls 1.0'),
+  (name: 'no-weak-cipher-suite', marker: 'cipher suite'),
+  (name: 'no-export-cipher', marker: 'export'),
+  (name: 'no-tls-downgrade', marker: 'tls_fallback_scsv'),
+  (name: 'opt-in-keeps-tls-floor', marker: 'must never relax'),
   (name: 'no-arbitrary-file-download', marker: 'arbitrary file download'),
   (name: 'no-driveby-download', marker: 'drive-by download'),
   (name: 'no-content-disposition-download', marker: 'content-disposition'),
@@ -408,7 +417,8 @@ void main() {
       expect(missing, contains('no-cookie-script-read'));
     });
 
-    test('RED: dropping the no-tapjacking/UI-overlay/clickjacking box fails '
+    test(
+        'RED: dropping the no-tapjacking/UI-overlay/clickjacking box fails '
         'closed', () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutTapjacking = section
@@ -424,6 +434,26 @@ void main() {
       expect(missing, contains('obscured-window-touch'));
       expect(missing, contains('cwe-1021'));
       expect(missing, contains('filter-touches-obscured'));
+    });
+
+    test(
+        'RED: dropping the no-TLS-version/cipher-suite downgrade box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutTlsFloor = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'tls 1\.2|tls 1\.3|tls 1\.0|cipher suite|export|tls_fallback_scsv|must never relax')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutTlsFloor);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('tls-protocol-floor'));
+      expect(missing, contains('tls-modern-version'));
+      expect(missing, contains('no-legacy-tls'));
+      expect(missing, contains('no-weak-cipher-suite'));
+      expect(missing, contains('no-export-cipher'));
+      expect(missing, contains('no-tls-downgrade'));
+      expect(missing, contains('opt-in-keeps-tls-floor'));
     });
 
     test('RED: dropping the no-native-bridge box fails closed', () {
