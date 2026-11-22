@@ -13,7 +13,7 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
      are NOT re-split. AUDIT FIRST; RED→GREEN only on a genuine divergence, never churn. No code
      touched. -->
 
-- [ ] RM-15 Unicode bidi / RTL-override and confusable-host fail-closed agreement across both
+- [x] RM-15 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 RM-15 bidi/confusable manager-source cross-factory agreement guard + RED->GREEN tests`, analyze 0 / full suite green (count in automation-tracking)) — Unicode bidi / RTL-override and confusable-host fail-closed agreement across both
       `fromManager` factories: over one manager matrix whose `ConnectUri` and `@odata.id` authorities
       carry U+202E/U+202D (RLO/LRO), U+2066..U+2069 isolates, U+200E/U+200F direction marks, homoglyph
       Cyrillic/Greek host labels and fullwidth digits, pin that `KvmConsole.fromManager` and
@@ -30,6 +30,24 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
               (0 issues), RED→GREEN only on a genuine divergence; writes limited to
               `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no
               wire/TLS change, no WebView/protocol import, no production TLS weakening.
+      **LANDED** 2026-11-22: AUDIT first — the shared `isControlSafeConsoleUri` gate already rejects
+      every Unicode `C`/`Z` bidi format mark (RLO/LRO, isolates, direction marks, WJ, BOM) via
+      `_rawUriForbiddenChars`, and `_authorityHasNonAscii` rejects confusable hosts, so both
+      `fromManager` factories already agree and fail closed — no live divergence. Genuine unguarded
+      seam: no test fed the bidi FORMAT family through an `@odata.id` RESOURCE PATH (where the
+      authority-scoped non-ASCII rule does not apply) across both factories, nor pinned
+      confusable-host cross-factory agreement. Added
+      `test/features/kvm/kvm_manager_source_bidi_agreement_test.dart` (30 tests): bidi marks in
+      `@odata.id` sanitize to the same clean fallback on both views, bidi/confusable authorities get
+      no secure badge / copyable target on both, confusable resource paths stay byte-identical, a
+      combined-hostile manager fully agrees, and the load-bearing classifier rejects the bidi path.
+      Real-file RED: dropped `\p{C}` from `_rawUriForbiddenChars` → exactly 12 new tests failed
+      (`+18 -12`: all 10 bidi `@odata.id` cases + combined + classifier; confusable authority/path
+      cases stayed GREEN because the authority-non-ASCII rule and category-`L` confusables are
+      unaffected); source restored byte-clean (SHA `74887e61…` unchanged, empty `lib/` diff),
+      600-perm backup shredded → 30/30 GREEN. Registered under a pinned `rm15AddedGuards` epoch in
+      `test/tool/guard_suite_liveness_test.dart` (+1 pin test +1 temp-root RED test; 68/68 targeted).
+      Test/tool-only, dependency-free, no WebView/protocol import, no URL opened, no TLS weakening.
 
 <!-- rf-ideate split 2026-11-22 02:06 UTC: splits the BLOCKED behaviour-change head RM-11 (mixed-regime
      enablement tri-state) of the #009/#021 epic into its unattended-doable half. RM-10 pinned the

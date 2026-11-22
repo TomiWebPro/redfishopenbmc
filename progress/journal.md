@@ -13232,3 +13232,19 @@
 - Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (RM-15)
+
+**Done:**
+- FEATURE (test/tool-only): RM-15 bidi / RTL-override / confusable-host cross-factory fail-closed agreement guard. AUDIT first: `isControlSafeConsoleUri` already rejects every Unicode `C`/`Z` bidi format mark (RLO/LRO, isolates, direction marks, WJ, BOM) via `_rawUriForbiddenChars`, and `_authorityHasNonAscii` rejects confusable hosts, so both `KvmConsole.fromManager` and `KvmCapability.fromManager` already agree and fail closed — no live divergence. Genuine unguarded seam: no test fed the bidi FORMAT family through an `@odata.id` RESOURCE PATH (where the authority-scoped non-ASCII rule does not apply) across both factories, nor pinned confusable-host agreement. Added `test/features/kvm/kvm_manager_source_bidi_agreement_test.dart` (30 tests): bidi `@odata.id` sanitizes to the same clean fallback on both views, bidi/confusable authorities get no secure badge / copyable target on both, confusable paths stay byte-identical, a combined-hostile manager fully agrees, and the load-bearing classifier rejects the bidi path directly.
+- RED→GREEN: dropped `\p{C}` from `_rawUriForbiddenChars` in `lib/features/kvm/platform/launch_plan.dart` → exactly 12 new tests failed (`+18 -12`: all 10 bidi `@odata.id` cases + combined + classifier; confusable authority/path cases stayed GREEN); source restored byte-clean (SHA `74887e61…` unchanged, empty `lib/` diff), 600-perm backup shredded → 30/30 GREEN.
+- Registered the guard under a pinned `rm15AddedGuards` epoch in `test/tool/guard_suite_liveness_test.dart` (+1 pin test +1 temp-root RED liveness proof; 38/38 liveness GREEN, 68/68 targeted combined). `queues/model.md` RM-15 marked LANDED.
+- Verify: targeted 30/30 + 68/68; `dart format` clean (both changed files); `flutter analyze` 0; full `flutter test --concurrency=4` 2136 passed / 1 skipped (baseline 2104 +30 guard +2 liveness); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test/tool-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. Confusable letters in a resource PATH are legitimate non-ASCII text (no authority to spoof, no TLS decision), so the contract asserted is byte-identical cross-factory agreement + no format/control marker — NOT that they fail closed (which would be a behaviour change). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. DMTF 85-test emulator skipped (test/tool-only, <7 days since last green 85/85). No manufactured UI churn (§5).
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-S10 / EP-U18 / EP-P12 — audit-first, RED→GREEN only on a genuine divergence; ALSO register EP-P13's `navigation_launch_authority_confusion_agreement_test.dart` (landed last run, still unpinned in `canonicalGuardFiles`) under a new epoch. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
