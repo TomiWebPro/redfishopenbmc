@@ -13175,3 +13175,18 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-T24 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-T24)
+
+**Done:**
+- FEATURE (test/tool-only): EP-T24 queue-schema verify-command target-path guard. AUDIT: the EP-T13 `queue_item_schema_guard_test.dart` checked single-dept + non-empty `Verify:` but never validated the command's target path — a dangling / placeholder / typo'd suite passed, so a stale queue item could point a builder at a non-existent test/tool path. AUDIT of all unchecked items found EP-T2's wrapped command whose `tool/**` target sat on a continuation line the parser dropped. Added `extractVerifyTargets` (roots `test/`, `tool/`, `test_integration/`, `lib/`; glob-normalising) + injectable `PathExists`; `evaluateQueueSchema` now emits `VERIFY_NO_TARGET` / `VERIFY_DANGLING_TARGET`, clean when ≥1 target exists. Taught the parser to capture wrapped `Verify:` continuation lines (only when the `Verify:` line had content) so EP-T13's `EMPTY_VERIFY` RED stays intact. `lib/` accepted for human-gated EP-P1's `test -f lib/.../WEBVIEW_TLS_MATRIX.md`.
+- RED→GREEN: temp-root missing / placeholder-typo / dangling-lib → violation; valid / glob / one-valid-among-dangling / EP-P1-shape → clean; restore clean. Real-repo invariant: all unchecked commands name a repo-existing target; injected all-paths-gone predicate makes the same real queues fail closed (non-vacuous). No real queue-file mutation (tooling.md concurrently edited by dept agents), no 600-perm backup.
+- Verify: targeted 21/21; `dart format` clean (my file); `flutter analyze` 0; full `flutter test --concurrency=4` 2098 passed / 1 skipped (baseline 2090 +8); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test/tool-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-T24 LANDED (`queues/tooling.md`). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. DMTF 85-test emulator skipped (test/tool-only, <7 days since last green 85/85). No manufactured UI churn (§5).
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads RM-15 / EP-S10 / EP-P13 / EP-U18 (audit-first, RED→GREEN only on a genuine divergence) and EP-T4 / EP-T1 / EP-T2 (fixture/CI, human-gated). Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

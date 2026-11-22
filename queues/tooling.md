@@ -13,7 +13,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      Distinct from the still-open EP-T23 liveness-registry item — do NOT register the affordance guard
      here. AUDIT FIRST; RED→GREEN only on a genuine gap, never churn. No code touched. -->
 
-- [ ] EP-T24 Queue-schema guard extension to validate verify-command targets: extend
+- [x] EP-T24 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 EP-T24 queue-schema verify-command target guard + RED->GREEN tests`, analyze 0 / 2098 passed / 1 skipped) — Queue-schema guard extension to validate verify-command targets: extend
       `test/tool/queue_item_schema_guard_test.dart` so that, in addition to the existing single-dept /
       non-empty-command checks, every unchecked item's verify command must name at least one
       repo-existing `test/**` or `tool/**` path (no dangling / placeholder / typo'd suite), with a
@@ -25,6 +25,17 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
               with RED→GREEN proof (placeholder/dangling command → violation; intact → clean);
               writes limited to `test/tool/queue_item_schema_guard_test.dart`;
               `git diff --exit-code -- pubspec.yaml pubspec.lock`; no lib/, no production TLS weakening.
+      **LANDED** 2026-11-22: AUDIT confirmed a genuine gap — the EP-T13 schema guard only proved a
+      `Verify:` field was non-empty, so a dangling / placeholder / typo'd suite path passed. Added
+      `extractVerifyTargets` (roots `test/`, `tool/`, `test_integration/`, `lib/`; glob-normalising)
+      and an injectable `PathExists` predicate; `evaluateQueueSchema` now emits `VERIFY_NO_TARGET`
+      / `VERIFY_DANGLING_TARGET`. Also taught the parser to capture wrapped `Verify:` continuation
+      lines (EP-T2's `tool/**` lived on line 2) without re-breaking EP-T13's `EMPTY_VERIFY` RED case.
+      `lib/` is accepted because human-gated EP-P1 legitimately uses `test -f lib/.../WEBVIEW_TLS_MATRIX.md`.
+      Temp-root RED→GREEN (missing / placeholder / dangling lib → violation; valid / glob / one-valid-
+      among-dangling → clean) + real-repo invariant with an injected all-paths-gone RED (no real
+      queue-file mutation — tooling.md is concurrently edited by dept agents). 21/21 targeted GREEN,
+      analyze 0, full 2098 passed / 1 skipped, deps unchanged, empty lib diff, no production TLS weakening.
 
 <!-- rf-automation 2026-11-22 02:09 UTC: closes a CONFIRMED "who guards the guards" liveness gap in the blocked #009/#021 epic (same pattern as EP-T14..T20). EP-T20 pinned canonicalGuardFiles and added a registry-completeness invariant; RM-12 later added `kvm_external_client_from_manager_parity_test.dart` (5 live cases, reachable from verify.yml whole-tree `flutter test --coverage`) WITHOUT adding it to canonicalGuardFiles or any pinned epoch set, so deleting / emptying / test-stripping that safety guard stayed GREEN. Pure test/tool, dependency-free, never writes lib/; distinct from EP-T12/14/15/16/17/18/19/20. No product code touched. -->
 

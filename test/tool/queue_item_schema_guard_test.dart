@@ -14,6 +14,18 @@
 // temporary queue tree; the real-repo invariant pins the checked-in queues.
 // CI already invokes this file via the existing whole-tree `flutter test
 // --coverage` run, so no second workflow invocation is added.
+//
+// EP-T24 (epic #009/#021): the EP-T13 schema check only proved a `Verify:`
+// field was non-empty. A command naming a dangling / placeholder / typo'd
+// suite still passed, so a stale queue item could point a builder at a
+// non-existent test/tool path. This guard additionally requires every
+// unchecked item's verify command to name at least one REPO-EXISTING target
+// path. Accepted target roots are `test/`, `tool/`, `test_integration/` and
+// `lib/`: the first three are the suite/script roots, while `lib/` is needed
+// because the human-gated EP-P1 item legitimately verifies a doc's existence
+// with `test -f lib/features/kvm/platform/WEBVIEW_TLS_MATRIX.md`. Existence is
+// checked with an injectable predicate so the RED→GREEN proof needs no real
+// queue-file mutation (safe under concurrent dept-agent edits).
 
 import 'dart:io';
 
@@ -56,6 +68,49 @@ String stripHtmlComments(String source) {
     i++;
   }
   return out.toString();
+}
+
+/// Injectable path-existence predicate. The real-repo invariant uses the
+/// filesystem; the RED→GREEN proof injects a controlled set so no real queue
+/// file has to be mutated (they are being edited concurrently by dept agents).
+typedef PathExists = bool Function(String path);
+
+bool _repoPathExists(String path) =>
+    FileSystemEntity.typeSync(path) != FileSystemEntityType.notFound;
+
+/// Strips trailing glob / directory markers so a command's `test/tool/**`
+/// normalises to the real base directory `test/tool` for the existence check.
+String normaliseVerifyTarget(String token) {
+  String t = token;
+  while (true) {
+    if (t.endsWith('/**')) {
+      t = t.substring(0, t.length - 3);
+    } else if (t.endsWith('/*')) {
+      t = t.substring(0, t.length - 2);
+    } else if (t.endsWith('/')) {
+      t = t.substring(0, t.length - 1);
+    } else {
+      break;
+    }
+  }
+  return t;
+}
+
+final RegExp _verifyPathToken = RegExp(
+    r'(?:^|[^A-Za-z0-9_./-])((?:test_integration|test|tool|lib)/[A-Za-z0-9_.\-/*]+)');
+
+/// Extracts normalised repo-relative target paths named in a verify command.
+/// `flutter analyze` alone names none; `flutter test test/tool/x_test.dart`
+/// names `test/tool/x_test.dart`; `test -f lib/x.md` names `lib/x.md`.
+List<String> extractVerifyTargets(String command) {
+  final List<String> out = <String>[];
+  for (final RegExpMatch m in _verifyPathToken.allMatches(command)) {
+    final String path = normaliseVerifyTarget(m.group(1)!);
+    if (path.isNotEmpty && !out.contains(path)) {
+      out.add(path);
+    }
+  }
+  return out;
 }
 
 /// One parsed unchecked `- [ ]` queue item. [dept] / [verify] hold the raw
@@ -112,6 +167,17 @@ List<QueueItem> parseUncheckedItems(String file, String source) {
     final RegExpMatch? verify = _verifyField.firstMatch(line);
     if (verify != null) {
       current.verify.add(verify.group(1)!.trim());
+    } else if (current.verify.isNotEmpty &&
+        current.verify.last.isNotEmpty &&
+        line.startsWith(RegExp(r'\s'))) {
+      // A wrapped `Verify:` field continues on the following indented lines.
+      // Capture them so path tokens on a later line (e.g. EP-T2's `tool/**`)
+      // are not silently dropped and mistaken for a missing target (EP-T24).
+      final String continuation = line.trim();
+      if (continuation.isNotEmpty) {
+        current.verify[current.verify.length - 1] =
+            '${current.verify.last} $continuation';
+      }
     }
   }
   if (current != null) {
@@ -122,7 +188,10 @@ List<QueueItem> parseUncheckedItems(String file, String source) {
 
 /// Evaluates a map of queue file name → raw content. Returns a list of
 /// fail-closed violations (empty means every unchecked item is well-formed).
-List<String> evaluateQueueSchema(Map<String, String> queueSources) {
+List<String> evaluateQueueSchema(
+  Map<String, String> queueSources, {
+  PathExists pathExists = _repoPathExists,
+}) {
   final List<String> violations = <String>[];
   queueSources.forEach((String file, String raw) {
     final String source = stripHtmlComments(raw.replaceAll('\r', ''));
@@ -139,6 +208,17 @@ List<String> evaluateQueueSchema(Map<String, String> queueSources) {
         violations.add('MISSING_VERIFY: $at');
       } else if (item.verify.every((String v) => v.isEmpty)) {
         violations.add('EMPTY_VERIFY: $at');
+      } else {
+        // EP-T24: a non-empty command must name at least one repo-existing
+        // target path, so a dangling / placeholder / typo'd suite fails closed.
+        final List<String> targets =
+            extractVerifyTargets(item.verify.join(' '));
+        if (targets.isEmpty) {
+          violations.add('VERIFY_NO_TARGET: $at');
+        } else if (!targets.any(pathExists)) {
+          violations
+              .add('VERIFY_DANGLING_TARGET: $at -> ${targets.join(" | ")}');
+        }
       }
     }
   });
@@ -219,7 +299,7 @@ void main() {
 - [ ] EP-X1 Item
       Dept: rf-ui
       Dept: rf-model
-      Verify: `flutter test`
+      Verify: `flutter test test/tool/`
 ''';
       final List<String> violations =
           evaluateQueueSchema(<String, String>{'queues/ui.md': bad});
@@ -274,7 +354,7 @@ void main() {
 <!-- Every item carries the mandatory Dept:/Verify: fields (hard rule 4). -->
 - [ ] EP-X1 Item
       Dept: rf-platform
-      Verify: `flutter test`
+      Verify: `flutter test test/tool/`
 ''';
       expect(evaluateQueueSchema(<String, String>{'queues/platform.md': src}),
           isEmpty);
@@ -288,7 +368,7 @@ void main() {
 
 - [ ] EP-X1 Item
       Dept: rf-service
-      Verify: `flutter test`
+      Verify: `flutter test test/tool/`
 ''';
       final List<QueueItem> items =
           parseUncheckedItems('queues/service.md', stripHtmlComments(src));
@@ -302,10 +382,10 @@ void main() {
       const String src = '''
 - [ ] EP-X1 Good item
       Dept: rf-ui
-      Verify: `flutter test`
+      Verify: `flutter test test/tool/`
 - [ ] EP-X2 Bad item
       Dept: rf-nope
-      Verify: `flutter test`
+      Verify: `flutter test test/tool/`
 ''';
       final List<String> violations =
           evaluateQueueSchema(<String, String>{'queues/ui.md': src});
@@ -399,6 +479,235 @@ void main() {
         violations,
         isEmpty,
         reason: 'queue schema drift: ${violations.join(", ")}',
+      );
+    });
+  });
+
+  group('EP-T24 verify-target evaluator (pure)', () {
+    const Set<String> existing = <String>{
+      'test/tool',
+      'test/tool/queue_item_schema_guard_test.dart',
+      'test/features/kvm',
+      'tool/emulator/run_tests.sh',
+      'test_integration/emulator/foo.dart',
+      'lib/features/kvm/platform/WEBVIEW_TLS_MATRIX.md',
+    };
+    bool exists(String path) => existing.contains(path);
+
+    test('extractVerifyTargets finds and normalises repo path tokens', () {
+      expect(extractVerifyTargets('flutter analyze'), isEmpty);
+      expect(
+        extractVerifyTargets(
+            'flutter test test/tool/queue_item_schema_guard_test.dart && flutter analyze'),
+        <String>['test/tool/queue_item_schema_guard_test.dart'],
+      );
+      expect(
+        extractVerifyTargets(
+            'flutter test test/features/kvm/** && flutter analyze'),
+        <String>['test/features/kvm'],
+      );
+      expect(extractVerifyTargets('bash tool/emulator/run_tests.sh'),
+          <String>['tool/emulator/run_tests.sh']);
+      expect(
+        extractVerifyTargets(
+            'test -f lib/features/kvm/platform/WEBVIEW_TLS_MATRIX.md && flutter analyze'),
+        <String>['lib/features/kvm/platform/WEBVIEW_TLS_MATRIX.md'],
+      );
+      expect(
+        extractVerifyTargets('flutter test test_integration/emulator/foo.dart'),
+        <String>['test_integration/emulator/foo.dart'],
+      );
+      expect(
+        extractVerifyTargets(
+            'flutter test test/tool/a_test.dart test/tool/a_test.dart test/tool/b_test.dart'),
+        <String>['test/tool/a_test.dart', 'test/tool/b_test.dart'],
+      );
+      // A word merely ending in a root name is not a path token.
+      expect(
+          extractVerifyTargets(
+              'flutter test mylib/foo.dart && flutter analyze'),
+          isEmpty);
+    });
+
+    test('a verify command naming no repo path fails closed', () {
+      final List<String> v = evaluateQueueSchema(
+        <String, String>{
+          'queues/ui.md':
+              '- [ ] EP-X24 Item\n      Dept: rf-ui\n      Verify: `flutter analyze`\n',
+        },
+        pathExists: exists,
+      );
+      expect(v.any((String s) => s.startsWith('VERIFY_NO_TARGET:')), isTrue);
+    });
+
+    test("a dangling / typo'd verify target fails closed", () {
+      final List<String> v = evaluateQueueSchema(
+        <String, String>{
+          'queues/ui.md':
+              '- [ ] EP-X24 Item\n      Dept: rf-ui\n      Verify: `flutter test test/tool/placeholder_typo_test.dart`\n',
+        },
+        pathExists: exists,
+      );
+      expect(
+        v.any((String s) =>
+            s.startsWith('VERIFY_DANGLING_TARGET:') &&
+            s.contains('placeholder_typo_test.dart')),
+        isTrue,
+      );
+    });
+
+    test('one existing target among dangling ones is clean', () {
+      expect(
+        evaluateQueueSchema(
+          <String, String>{
+            'queues/ui.md':
+                '- [ ] EP-X24 Item\n      Dept: rf-ui\n      Verify: `flutter test test/tool/nope_test.dart test/tool/queue_item_schema_guard_test.dart`\n',
+          },
+          pathExists: exists,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('glob targets and lib doc-existence checks are accepted', () {
+      for (final String command in <String>[
+        'flutter test test/features/kvm/** && flutter analyze',
+        'test -f lib/features/kvm/platform/WEBVIEW_TLS_MATRIX.md && flutter analyze',
+        'flutter test test_integration/emulator/foo.dart && flutter analyze',
+      ]) {
+        expect(
+          evaluateQueueSchema(
+            <String, String>{
+              'queues/ui.md':
+                  '- [ ] EP-X24 Item\n      Dept: rf-ui\n      Verify: `$command`\n',
+            },
+            pathExists: exists,
+          ),
+          isEmpty,
+          reason: command,
+        );
+      }
+    });
+
+    test('missing or empty Verify reports only its schema violation', () {
+      final List<String> missing = evaluateQueueSchema(
+        <String, String>{
+          'queues/ui.md': '- [ ] EP-X24 Item\n      Dept: rf-ui\n',
+        },
+        pathExists: exists,
+      );
+      expect(missing.length, 1);
+      expect(missing.single.startsWith('MISSING_VERIFY:'), isTrue);
+      expect(missing.any((String s) => s.startsWith('VERIFY_')), isFalse);
+    });
+  });
+
+  group('EP-T24 RED→GREEN guard proof (temporary queue tree)', () {
+    test(
+        'valid target is clean; missing/placeholder/dangling fail closed; restore is clean',
+        () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_t24_queue_');
+      final File queue = File(
+        '${temp.path}${Platform.pathSeparator}queues${Platform.pathSeparator}'
+        'tooling.md',
+      );
+      const Set<String> existing = <String>{
+        'test/tool',
+        'test/tool/queue_item_schema_guard_test.dart',
+        'lib/features/kvm/platform/WEBVIEW_TLS_MATRIX.md',
+      };
+      bool exists(String path) => existing.contains(path);
+      String item(String verify) =>
+          '- [ ] EP-X24 Item\n      Dept: rf-tooling\n      Verify: $verify\n';
+      try {
+        queue.parent.createSync(recursive: true);
+        Map<String, String> read() => <String, String>{
+              'queues/tooling.md': queue.readAsStringSync(),
+            };
+
+        // GREEN: a concrete repo-existing suite target.
+        queue.writeAsStringSync(item(
+            '`flutter test test/tool/queue_item_schema_guard_test.dart && flutter analyze` (0 issues);'));
+        expect(evaluateQueueSchema(read(), pathExists: exists), isEmpty);
+
+        // RED 1 (missing): a non-empty command that names no target path.
+        queue.writeAsStringSync(item('`flutter analyze` (0 issues);'));
+        expect(
+          evaluateQueueSchema(read(), pathExists: exists)
+              .any((String v) => v.startsWith('VERIFY_NO_TARGET:')),
+          isTrue,
+        );
+
+        // RED 2 (placeholder / typo'd suite): a named path that does not exist.
+        queue.writeAsStringSync(
+            item('`flutter test test/tool/placeholder_typo_test.dart`'));
+        expect(
+          evaluateQueueSchema(read(), pathExists: exists)
+              .any((String v) => v.startsWith('VERIFY_DANGLING_TARGET:')),
+          isTrue,
+        );
+
+        // RED 3 (dangling lib doc-existence target).
+        queue.writeAsStringSync(item(
+            '`test -f lib/features/kvm/platform/MISSING_MATRIX.md && flutter analyze`'));
+        expect(
+          evaluateQueueSchema(read(), pathExists: exists)
+              .any((String v) => v.startsWith('VERIFY_DANGLING_TARGET:')),
+          isTrue,
+        );
+
+        // GREEN: glob target normalises to the existing test/tool base.
+        queue.writeAsStringSync(
+            item('`flutter test test/tool/** && flutter analyze`'));
+        expect(evaluateQueueSchema(read(), pathExists: exists), isEmpty);
+
+        // GREEN: the legitimate EP-P1 shape (lib doc existence) is accepted.
+        queue.writeAsStringSync(item(
+            '`test -f lib/features/kvm/platform/WEBVIEW_TLS_MATRIX.md && flutter analyze`'));
+        expect(evaluateQueueSchema(read(), pathExists: exists), isEmpty);
+
+        // GREEN: one valid target rescues a command that also lists a typo.
+        queue.writeAsStringSync(item(
+            '`flutter test test/tool/nope_test.dart test/tool/queue_item_schema_guard_test.dart`'));
+        expect(evaluateQueueSchema(read(), pathExists: exists), isEmpty);
+
+        // GREEN again once the canonical command is restored.
+        queue.writeAsStringSync(item(
+            '`flutter test test/tool/queue_item_schema_guard_test.dart && flutter analyze` (0 issues);'));
+        expect(evaluateQueueSchema(read(), pathExists: exists), isEmpty);
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+  });
+
+  group('EP-T24 real repository verify-target invariant', () {
+    test('every unchecked verify command names a repo-existing target', () {
+      final Map<String, String> queues = readRealQueues();
+      expect(queues.length, 5, reason: 'expected the five dept queue files');
+      final List<QueueItem> all = <QueueItem>[];
+      queues.forEach((String file, String raw) {
+        all.addAll(parseUncheckedItems(file, stripHtmlComments(raw)));
+      });
+      int withTarget = 0;
+      for (final QueueItem item in all) {
+        if (extractVerifyTargets(item.verify.join(' ')).isNotEmpty) {
+          withTarget++;
+        }
+      }
+      expect(withTarget, greaterThanOrEqualTo(15),
+          reason: 'target extractor saw too few commands');
+      // The checked-in queues are clean against the real filesystem.
+      expect(evaluateQueueSchema(queues), isEmpty);
+      // Liveness: if every path vanished, the very same real queues must fail
+      // closed on dangling targets — proving the invariant is not vacuous.
+      final List<String> forced =
+          evaluateQueueSchema(queues, pathExists: (_) => false);
+      expect(
+        forced.any((String v) => v.startsWith('VERIFY_DANGLING_TARGET:')),
+        isTrue,
+        reason: 'real-repo target invariant did not fail when paths vanished',
       );
     });
   });
