@@ -13769,3 +13769,20 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next heads EP-U21 (large-font no-overflow a11y) then EP-S13 (manager-skip agreement) — audit-first, RED→GREEN only on a genuine divergence, never churn; cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85 (just re-run).
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-U21)
+
+**Done:**
+- FEATURE (lib+test): EP-U21 large-font no-overflow + single merged a11y node across both KVM operator cards and the viewer. AUDIT FIRST: no KVM test pumped any console/viewer row under a `textScaler`; EP-U20 is fixed-font, `test/a11y/kvm_view_text_scale_test.dart` pumps only an empty KvmView at 2.0x, and the PowerView text-scale test covers a different view — genuine unguarded seam, no churn.
+- Added `test/features/kvm/kvm_large_font_cross_surface_a11y_test.dart` (6 widget tests): one long-name manager with an enabled secure-HTTPS Graphical console and an enabled SSH Serial console through both real cards and the viewer at 1.0 / 1.3 / 2.0 text scale on a 320 px viewport; pins one merged `excludeSemantics` node per signal with visible==announced, no duplicate/screen-reader-only copy, byte-identical resolved URI on both cards, and no RenderFlex overflow.
+- GENUINE LIVE DEFECT found and fixed: at 2.0x the per-console card's fixed "Connect URI:" label + `Expanded(SelectableText)` Row overflowed by 91 px, leaving only one card built. Changed `lib/features/kvm/views/kvm_view.dart` `_ConsoleCard` URI row to a stacked `Column` (the capability card's existing pattern), preserving the merged label and both visible strings byte-for-byte.
+- Real-file RED: original production source → exactly 1 named failure (`+5 -1`, 91 px overflow at kvm_view.dart:506), other 5 GREEN; fix restored byte-clean (SHA `7359effb…` unchanged, 600-perm backup shredded) → 6/6 GREEN. EP-U21 marked LANDED (`queues/ui.md`).
+- Verify: targeted 6/6 + related 138/138; `dart format` clean; analyze 0; full suite 2370 passed / 1 skipped (baseline 2364 +6); DMTF emulator 85/85 (re-run because `lib/` changed); issues validate OK; diff --check clean; deps unchanged; five stashes untouched.
+
+**Decisions:**
+- Genuine live contract violation fixed, not churn: the stacked URI row eliminates the 2.0x overflow on the operator's first launch-decision surface without changing any announcement or visible string. No dependency, no WebView/protocol import, no URL opened, no production TLS weakening, no deliberate behaviour decision (RM-11/EP-S8 stay blocked). Both issues stay human-gated (#009 P3 / #021 P2). No issue closed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Liveness-register the EP-U21 guard in `test/tool/guard_suite_liveness_test.dart`; next fresh dept head EP-S13 (manager-skip agreement) — audit-first, RED→GREEN only on a genuine divergence, never churn; cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85 (just re-run).
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

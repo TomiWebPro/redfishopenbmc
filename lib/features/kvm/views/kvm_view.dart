@@ -503,16 +503,21 @@ class _ConsoleCard extends StatelessWidget {
                 container: true,
                 excludeSemantics: true,
                 label: 'Connect URI: $launchUri',
-                child: Row(
+                // Two lines (label above, value below) rather than a Row: at
+                // 2.0x accessibility font on a 320 px viewport the fixed
+                // "Connect URI:" label alone exceeded the card width and
+                // pushed the URI into a RenderFlex overflow (EP-U21). Stacking
+                // them gives the URI the full card width at every scale,
+                // matching the capability card's resolved-URI row. The merged
+                // announcement and both visible strings stay byte-identical.
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     const Text('Connect URI:'),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: SelectableText(
-                        launchUri,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
+                    const SizedBox(height: 4),
+                    SelectableText(
+                      launchUri,
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
                 ),

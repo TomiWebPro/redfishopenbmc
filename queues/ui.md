@@ -23,7 +23,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
       stays GREEN. Display-only; the human-gated WebView/TLS rendering stays gated and is NOT re-split.
       AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
 
-- [ ] EP-U21 Large-accessibility-font no-overflow + single merged a11y node across both KVM operator
+- [x] EP-U21 LANDED 2026-11-22 (run, agent:redfish-automation — FEATURE #009/#021, analyze 0 / targeted 6/6 / full suite 2370 passed / 1 skipped / emulator 85/85, lib+test) — Large-accessibility-font no-overflow + single merged a11y node across both KVM operator
        cards and the viewer: pump one manager with a long name, an enabled secure-HTTPS connect URI and an
        external-client (VNC/SSH) console through both real cards and the viewer at textScaleFactor
        1.0 / 1.3 / 2.0 on a 320 px viewport, pinning no RenderFlex overflow, exactly one merged
@@ -38,6 +38,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
                divergence; writes limited to `lib/features/kvm/views/**` + `test/features/kvm/**`; no WebView/
                protocol import, no URL opened, no dependency, no production TLS weakening;
                `git diff --exit-code -- pubspec.yaml`.
+       **LANDED** 2026-11-22: AUDIT first — no KVM test pumped any console/viewer row under a `textScaler`: EP-U20 covers extreme content at a fixed font, and `test/a11y/kvm_view_text_scale_test.dart` pumps only an EMPTY KvmView ("No consoles found.") at 2.0x; `a11y/power_view_text_scale_test.dart` covers PowerView only. Added `test/features/kvm/kvm_large_font_cross_surface_a11y_test.dart` (6 tests): one manager with a long name, an enabled secure-HTTPS Graphical console and an enabled SSH Serial console through both real cards and the viewer at 1.0/1.3/2.0 on a 320 px viewport, pinning one merged `excludeSemantics` node per signal with visible==announced, no duplicate/screen-reader-only notice copy, and no RenderFlex overflow. GENUINE LIVE DEFECT found and fixed: at 2.0x the per-console card's fixed `Text('Connect URI:')` + `Expanded(SelectableText)` `Row` (kvm_view.dart:506) overflowed by 91 px, leaving only one of the two cards built; changed that row to a stacked `Column` matching the capability card's resolved-URI row (merged label and both visible strings byte-identical). Real-file RED: original production code → exactly 1 named failure (`+5 -1`: 2.0x cards, 91 px RenderFlex overflow), other 5 GREEN; fix restored byte-clean (SHA `7359effb…` unchanged, 600-perm backup shredded) → 6/6 GREEN. `lib/` change ⇒ emulator re-run 85/85. Empty `pubspec` diff; no WebView/protocol import, no URL opened, no production TLS weakening. NOT yet registered in the guard-suite liveness canonical set — next run should do that.
 
 - [x] EP-U20 LANDED 2026-11-22 (run, agent:redfish-automation — FEATURE #009/#021, analyze 0 / full suite 2225 passed / 1 skipped, test-only) — Extreme-content no-overflow + single merged a11y node across both KVM operator cards: over
        one manager built into both real cards with a very long manager name, 20+ normalized connect-type
