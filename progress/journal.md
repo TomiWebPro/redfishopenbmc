@@ -13848,3 +13848,22 @@
 **Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-S13 manager-skip agreement guard)
+
+**Done:**
+- FEATURE — EP-S13 (test-only, dependency-free, TLS-safe): added `test/features/kvm/kvm_service_manager_skip_agreement_test.dart` (9 tests) pinning that `fetchConsoles()` and `fetchCapabilities()` skip the SAME manager(s) under a retryable/404 failure matrix. In-temp 4-manager `/Managers`: MgrPrimary + MgrSerial survive; MgrGone (404) and MgrFlappy (503) fault-injected via `MockRedfishServer.statusByPath`. Pins identical survivor id sets (RS-6 identity unchanged), exactly-once cards, `fetchCapability(id)` resolve survivors / null on skipped, same deterministic secure external-browser primary, no blanked screen / phantom cards, a 429 variant, an all-but-one-fail variant, and 401 / non-retryable 501 propagation on BOTH surfaces (RS-2 agreement on propagation).
+- AUDIT FIRST: both surfaces already share `KvmService._fetchManagerBodies()` with ONE skip filter, so agreement holds by construction — no live divergence, no behaviour change. Genuine unguarded seam: RS-2 covers ONE failing manager per surface, RS-6 covers well-formed bodies, nothing covered BOTH surfaces over a multi-failure walk. Characterization / regression lock, not churn.
+- Real-file RED: a one-sided skip-filter divergence (temporary `{bool strict}` strict walk for `fetchCapabilities()` only) → exactly 6 named failures (`+3 -6`, all cross-surface agreement tests; primary-only + 401/501 propagation tests GREEN). Source restored byte-clean (SHA `653e64a63a52b8d2741a438daf7e77a0291c559393e5328877d41e5e8091ddd0`, 0 residue, empty `lib/` diff, 600-perm backup shredded) → 9/9 GREEN.
+- Queue `service.md` EP-S13 marked LANDED; FUTUREWORK Last updated + Current focus refreshed. Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. `flutter test --concurrency=4`: 2389 passed / 1 skipped (baseline 2380 +9). `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Emulator: SKIPPED (test-only, <7 days since last green 85/85 at 21:43). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Regression lock for a construction-time invariant, not a live fix or churn. Test-only change with an empty `lib/` diff and no dependency change. The four whole-tree `dart format` findings are pre-existing gate-merge files, deliberately left untouched; my new file is format-clean. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-S14 (zero-usable-console manager surfacing agreement) — audit-first, RED→GREEN only on a genuine divergence, never churn; optionally register this new EP-S13 guard in the liveness registry under a fresh epoch. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
