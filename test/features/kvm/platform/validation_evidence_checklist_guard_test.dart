@@ -36,6 +36,9 @@
 // transport (hard configuration-independent invariant; the opt-in never opens a
 // cleartext socket), certificate revocation checking (CRL / OCSP; opt-in never
 // disables revocation, so a revoked BMC certificate cannot resume the session),
+// validated-origin binding / no-DNS-rebinding (hard configuration-independent
+// invariant; the opt-in never bypasses binding to the validated origin, so the
+// console connects only to the address that passed the fail-closed check),
 // flag-off fallback, human sign-off) so a future edit cannot silently erase the
 // evidence boxes that gate that decision.
 //
@@ -258,6 +261,18 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'revocation-policy-getter',
     marker: 'bypasscertificaterevocationcheck'
+  ),
+  (
+    name: 'origin-binding-config-invariant',
+    marker: 'configuration-independent invariant'
+  ),
+  (
+    name: 'origin-binding-never-bypassed',
+    marker: 'never bypasses binding to the validated origin'
+  ),
+  (
+    name: 'origin-binding-policy-getter',
+    marker: 'bypassvalidatedoriginbinding'
   ),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
@@ -794,6 +809,22 @@ void main() {
       expect(missing, contains('opt-in-keeps-revocation'));
       expect(missing, contains('revocation-never-skipped'));
       expect(missing, contains('revocation-policy-getter'));
+    });
+
+    test(
+        'RED: dropping the validated-origin-binding hard-invariant box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutOriginBinding = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses binding to the validated origin|bypassvalidatedoriginbinding')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutOriginBinding);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('origin-binding-never-bypassed'));
+      expect(missing, contains('origin-binding-policy-getter'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
