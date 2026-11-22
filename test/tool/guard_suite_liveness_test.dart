@@ -225,6 +225,18 @@
 // EP-T20 completeness arithmetic, keeping the registry fail-closed against a
 // future silent drop.
 //
+// EP-T30 (issues #009/#021 guard-suite closeout) closes the same CONFIRMED
+// "who guards the guards" gap for the EP-M4 RemoteConsole-only + explicit-
+// disable cross-view parity guard (`kvm_remote_console_disable_parity_test.dart`).
+// That guard landed with EP-M4 and is live + reachable from verify.yml's
+// whole-tree `flutter test --coverage`, yet it was never added to
+// `canonicalGuardFiles` or any pinned epoch — so deleting / emptying /
+// test-stripping it stayed GREEN. EP-T30 adds it to the canonical set under a
+// pinned `epT30AddedGuards` epoch (length 1, disjoint from every earlier
+// designation) with a pin test, a temp-root RED→GREEN proof and the updated
+// EP-T20 completeness arithmetic, keeping the registry fail-closed against a
+// future silent drop.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -342,6 +354,11 @@ const List<String> canonicalGuardFiles = <String>[
   // authoritative, colliding spellings ignored) — live + CI-reachable but
   // unpinned until this run.
   'test/features/kvm/kvm_key_collision_agreement_test.dart',
+  // EP-T30 extension: the EP-M4 RemoteConsole-only + explicit-disable
+  // cross-view parity guard (detection / resolved URI / aggregated types /
+  // session limit / per-console launch strategy agree across both fromManager
+  // factories) — live + CI-reachable but unpinned until this run.
+  'test/features/kvm/kvm_remote_console_disable_parity_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -580,6 +597,16 @@ const Set<String> epT29AddedGuards = <String>{
   'test/features/kvm/kvm_key_collision_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-T30: the EP-M4
+/// RemoteConsole-only + explicit-disable cross-view parity guard, which landed
+/// after EP-T29 unpinned. It is live + CI-reachable but was absent from the
+/// registry, so deleting / emptying / test-stripping it stayed GREEN. Pinned
+/// separately so a future edit cannot drop it back out of the canonical set
+/// (issues #009/#021 closeout).
+const Set<String> epT30AddedGuards = <String>{
+  'test/features/kvm/kvm_remote_console_disable_parity_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -608,6 +635,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT26AddedGuards,
   ...epT28AddedGuards,
   ...epT29AddedGuards,
+  ...epT30AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -1392,6 +1420,45 @@ void main() {
       expect(epT29AddedGuards.intersection(epT28AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-T30: the EP-M4 remote-console-disable parity guard is in the '
+        'canonical liveness set', () {
+      expect(epT30AddedGuards, isNotEmpty);
+      expect(epT30AddedGuards.length, 1);
+      for (final String path in epT30AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T30 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epT30AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(rm15AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epP13AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(sec010AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epT26AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epT28AddedGuards), isEmpty);
+      expect(epT30AddedGuards.intersection(epT29AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -1440,7 +1507,8 @@ void main() {
             sec010AddedGuards.length +
             epT26AddedGuards.length +
             epT28AddedGuards.length +
-            epT29AddedGuards.length,
+            epT29AddedGuards.length +
+            epT30AddedGuards.length,
       );
     });
   });
@@ -2664,6 +2732,70 @@ void main() {
         // The newly-registered RM-17 key-collision agreement guard must fail
         // closed when deleted, emptied or stripped of its test cases.
         for (final String addedGuard in epT29AddedGuards) {
+          File(p(addedGuard)).deleteSync();
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'MISSING: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when deleted',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('  \n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'EMPTY: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when emptied',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when test-stripped',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+        }
+
+        // GREEN again once every guard is restored.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test('EP-T30: newly-registered EP-M4 parity guard is liveness-checked', () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_m4_parity_guard_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        // Populate every canonical guard with a live synthetic case.
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        // The newly-registered EP-M4 RemoteConsole-disable parity guard must
+        // fail closed when deleted, emptied or stripped of its test cases.
+        for (final String addedGuard in epT30AddedGuards) {
           File(p(addedGuard)).deleteSync();
           expect(
             evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
