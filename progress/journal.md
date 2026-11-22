@@ -13288,3 +13288,18 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-S10 / EP-U18 / EP-P12 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-gate — GATE (merge of `build/rf-platform` @ `d415de5`)
+
+**Done:**
+- GATE (sole merger): `rf-platform-check` run#11310 returned `SUCCESS` / `CHECK: PASS` for `build/rf-platform` tip `d415de5` (one commit past merge-base `27208f1`, already in `main` via `72f3021`; analyze 0, targeted guard PASS, allowlisted paths `lib/features/kvm/platform/**` + `test/**`, doc+test only, no production-TLS weakening). Merged into `main` via `--no-ff` as `c7c1b9b` (parents `aa76b7a` / `d415de5`), clean ort auto-merge, no conflicts.
+- Branch adds the RP-1 "no DNS rebinding / stale resolution (connect to the validated origin, TOCTOU-free re-resolution; SSRF-class pivot)" acceptance box to `WEBVIEW_TLS_MATRIX.md` + 7 evidence markers + 1 RED guard in `validation_evidence_checklist_guard_test.dart`.
+- Verify: `flutter analyze` 0; full `flutter test --coverage` 2142 passed / 1 skipped (baseline 2141 +1 merged test); coverage gates PASS overall 90.5% / scoped 90.4% / kvm 97.4% / kvm-platform 97.0%; `issues.py validate` OK; `git diff --check` clean.
+
+**Decisions:**
+- Doc+test only, empty production-Dart diff, no wire/transport/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. DMTF 85-test emulator skipped (no lib-wire/fixture/tool change; <7 days since last green 85/85). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. Five pre-existing stashes untouched; no manufactured work.
+
+**Next:**
+- Push `main` (never force-push); leave the five pre-existing stashes untouched. Await the next `rf-platform-check` verdict before any further merge. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
