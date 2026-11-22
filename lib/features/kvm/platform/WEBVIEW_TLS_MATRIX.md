@@ -600,6 +600,34 @@ flag stays off for that target.
       the live session auto-locks on idle and on backgrounding and that
       re-authentication is required before the console is shown) before the flag is
       flipped.
+* [ ] **No HTTP-auth / login-form credential-prompt spoofing (native
+      authentication-challenge dialog, auto-submitted credentials)** — the
+      embedded WebView must not let attacker-influenced console content — or a
+      cross-origin subresource returning 401 — induce the operator to enter BMC
+      credentials into a spoofed native authentication prompt, nor silently
+      auto-answer a challenge with stored credentials for an unintended origin:
+      Android `WebViewClient.onReceivedHttpAuthRequest` and
+      `onReceivedLoginRequest` must `cancel()` by default (never `proceed()` or
+      `useHttpAuthUsernamePassword()` on a production profile), no
+      `setHttpAuthUsernamePassword` pre-seeding or `WebStorage` auto-complete of
+      console credentials, and on iOS/macOS no `URLSession` / WKWebView
+      authentication-challenge handler may auto-answer with saved credentials or
+      present an unlabelled challenge dialog for the console origin. Console
+      content is served by the BMC and is therefore attacker-influenced (a
+      compromised/spoofed BMC, or script in the page can make a third-party
+      subresource return a 401 targeting a realm whose prompt imitates the app's
+      own login): a spoofed or auto-answered challenge hands operator credentials
+      to an attacker or an unintended origin — a credential-phishing /
+      credential-leak surface wholly independent of TLS, hostname,
+      origin-confinement, referrer, cookie, JS-dialog and form-submission checks
+      (which govern the handshake, the literal authority, navigation, URL
+      headers, cookie attachment, page modals and form POSTs, not the platform's
+      native authentication-challenge path). Every HTTP-auth / login-form
+      challenge must be denied by default and never auto-answered with stored
+      credentials on every target, with the flag both off and on. Verified per
+      target (inspect the WebView auth callbacks and confirm challenges are
+      cancelled and no credential store is pre-seeded) before the flag is
+      flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
