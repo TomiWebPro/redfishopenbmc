@@ -350,6 +350,27 @@ flag stays off for that target.
       target (inspect the WebView client / UIDelegate dialog callbacks and
       confirm dialogs are denied or labelled and `beforeunload` is
       non-blocking) before the flag is flipped.
+* [ ] **No cross-origin form submission / data exfiltration** — the embedded
+      WebView must not let attacker-influenced console content exfiltrate
+      operator credentials, session tokens or KVM frame data through an HTML
+      form: no `<form action>` (GET query or POST body) targeting any origin
+      other than the approved same-origin HTTPS console, no auto-submit-on-load
+      or scripted `form.submit()` that silently sends console DOM data to an
+      attacker origin, and no browser autofill of saved console credentials
+      into an attacker-controlled form. Console content is served by the BMC
+      and is therefore attacker-influenced (a compromised/spoofed BMC, or
+      script running in the page): a form is a distinct navigation and data
+      channel from a link or scripted top-level navigation — a form submission
+      with `POST` carries a body that can smuggle session tokens or KVM frames
+      out of the trusted frame without any visible URL change — and the
+      origin-confinement and subresource-egress boxes govern navigation and
+      subresource fetches, not form submissions or their request bodies. Every
+      form submission must be blocked or handed to the external secure browser
+      unless its action is the same-origin HTTPS console, and form autofill of
+      console credentials must be disabled, on every target. Verified per
+      target (inspect the WebView form/navigation callback, confirm cross-origin
+      form submissions and their POST bodies are blocked and autofill is off)
+      before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

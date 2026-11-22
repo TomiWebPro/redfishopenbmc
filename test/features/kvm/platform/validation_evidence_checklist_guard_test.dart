@@ -14,8 +14,9 @@
 // no-remote-debugging/WebView-inspectability (active debug code),
 // no-service-worker/persistent-background-script (session-scoped execution),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload),
-// flag-off fallback, human sign-off) so a future edit cannot silently erase the
-// evidence boxes that gate that decision.
+// no-cross-origin-form-submission (form action POST / auto-submit / post body
+// exfiltration), flag-off fallback, human sign-off) so a future edit cannot
+// silently erase the evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -54,10 +55,7 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-arbitrary-scheme-nav', marker: 'non-http(s) scheme'),
   (name: 'no-deep-link-nav', marker: 'deep-link'),
   (name: 'no-script-url-nav', marker: 'javascript:'),
-  (
-    name: 'no-popup-secondary-window',
-    marker: 'pop-up / secondary window'
-  ),
+  (name: 'no-popup-secondary-window', marker: 'pop-up / secondary window'),
   (name: 'no-multiple-windows', marker: 'multiple windows'),
   (name: 'no-iframe-bypass', marker: 'iframe'),
   (name: 'no-private-network-egress', marker: 'private network'),
@@ -67,6 +65,10 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-webrtc-ip-leak', marker: 'webrtc'),
   (name: 'no-ssrf-pivot', marker: 'ssrf'),
   (name: 'subresource-egress-gate', marker: 'subresource request'),
+  (name: 'no-cross-origin-form-submission', marker: 'form submission'),
+  (name: 'no-form-action-exfil', marker: 'form action'),
+  (name: 'no-form-auto-submit', marker: 'auto-submit'),
+  (name: 'no-form-post-body-exfil', marker: 'post body'),
   (name: 'no-remote-debugging', marker: 'remote debugging'),
   (name: 'no-webcontents-debugging', marker: 'webcontentsdebuggingenabled'),
   (name: 'no-webview-inspectable', marker: 'inspectable'),
@@ -228,7 +230,8 @@ void main() {
           contains('origin-navigation-confinement'));
     });
 
-    test('RED: dropping the no-arbitrary-scheme/deep-link box fails closed', () {
+    test('RED: dropping the no-arbitrary-scheme/deep-link box fails closed',
+        () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutScheme = section
           .split('\n')
@@ -245,18 +248,18 @@ void main() {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutPopupBypass = section
           .split('\n')
-          .where((String line) => !line.toLowerCase().contains(RegExp(
-              r'pop-up / secondary window|multiple windows|iframe')))
+          .where((String line) => !line.toLowerCase().contains(
+              RegExp(r'pop-up / secondary window|multiple windows|iframe')))
           .join('\n');
-      final String neutered =
-          matrixWithSection(realMatrix, withoutPopupBypass);
+      final String neutered = matrixWithSection(realMatrix, withoutPopupBypass);
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('no-popup-secondary-window'));
       expect(missing, contains('no-multiple-windows'));
       expect(missing, contains('no-iframe-bypass'));
     });
 
-    test('RED: dropping the no-private-network/loopback egress box fails closed',
+    test(
+        'RED: dropping the no-private-network/loopback egress box fails closed',
         () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutEgress = section
@@ -275,7 +278,8 @@ void main() {
       expect(missing, contains('subresource-egress-gate'));
     });
 
-    test('RED: dropping the no-remote-debugging/inspectability box fails closed',
+    test(
+        'RED: dropping the no-remote-debugging/inspectability box fails closed',
         () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutDebug = section
@@ -293,7 +297,8 @@ void main() {
       expect(missing, contains('no-active-debug-code'));
     });
 
-    test('RED: dropping the no-service-worker/persistent-background-script box '
+    test(
+        'RED: dropping the no-service-worker/persistent-background-script box '
         'fails closed', () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutServiceWorker = section
@@ -330,6 +335,22 @@ void main() {
       expect(missing, contains('no-beforeunload-trap'));
       expect(missing, contains('js-dialog-ui-spoofing'));
       expect(missing, contains('js-dialog-suppressed-or-labelled'));
+    });
+
+    test('RED: dropping the no-cross-origin-form-submission box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutFormExfil = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(
+              RegExp(r'form submission|form action|auto-submit|post body')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutFormExfil);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-cross-origin-form-submission'));
+      expect(missing, contains('no-form-action-exfil'));
+      expect(missing, contains('no-form-auto-submit'));
+      expect(missing, contains('no-form-post-body-exfil'));
     });
 
     test('RED: dropping the no-native-bridge box fails closed', () {
@@ -374,8 +395,8 @@ void main() {
           .where((String line) => !line.toLowerCase().contains('data at rest'))
           .join('\n');
       final String neutered = matrixWithSection(realMatrix, withoutDataAtRest);
-      expect(
-          missingEvidenceMarkers(neutered), contains('no-sensitive-data-at-rest'));
+      expect(missingEvidenceMarkers(neutered),
+          contains('no-sensitive-data-at-rest'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
