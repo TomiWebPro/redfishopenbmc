@@ -229,6 +229,16 @@ flag stays off for that target.
       (inspect the WebView host's network-security config / ATS settings and
       confirm no cleartext request can be made, with the flag both off and on)
       before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassHttpsOnlyTransport`, always
+      `false`): the test-only opt-in never bypasses the HTTPS-only floor and can
+      never open a cleartext socket, in strict mode and with the flag both off
+      and on. It is distinct from the TLS protocol-version / cipher-suite floor
+      (which governs a handshake that actually occurs) and from hostname
+      verification / certificate-public-key pinning (which govern certificate
+      identity and key binding): this box governs whether ANY cleartext socket
+      may be opened at all. No policy configuration can permit cleartext
+      transport; the opt-in relaxes only leaf trust, never the HTTPS-only floor.
 * [ ] **No DNS rebinding / stale-resolution (connect to the validated origin,
       not a re-resolved one)** — the embedded WebView must not let an
       attacker-influenced console hostname pass the same-origin HTTPS validation

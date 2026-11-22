@@ -32,9 +32,10 @@
 // auto-submitted stored credentials), certificate / public-key pinning (no
 // trust-all / accept-any-certificate; opt-in never relaxes the pin),
 // TLS protocol-version / cipher-suite floor (hard configuration-independent
-// invariant; the test-only opt-in never bypasses the TLS floor), flag-off
-// fallback, human sign-off) so a future edit cannot silently erase the evidence
-// boxes that gate that decision.
+// invariant; the test-only opt-in never bypasses the TLS floor), HTTPS-only
+// transport (hard configuration-independent invariant; the opt-in never opens a
+// cleartext socket), flag-off fallback, human sign-off) so a future edit cannot
+// silently erase the evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -121,6 +122,11 @@ const List<({String name, String marker})> evidenceChecks =
   ),
   (name: 'tls-floor-never-bypassed', marker: 'never bypasses the tls floor'),
   (name: 'tls-floor-policy-getter', marker: 'bypasstlsprotocolfloor'),
+  (
+    name: 'cleartext-never-bypassed',
+    marker: 'never bypasses the https-only floor'
+  ),
+  (name: 'cleartext-policy-getter', marker: 'bypasshttpsonlytransport'),
   (name: 'no-cleartext-transport', marker: 'no cleartext'),
   (name: 'https-only-platform', marker: 'https-only transport'),
   (name: 'android-cleartext-permitted', marker: 'cleartexttrafficpermitted'),
@@ -569,6 +575,20 @@ void main() {
       expect(missing, contains('tls-floor-config-invariant'));
       expect(missing, contains('tls-floor-never-bypassed'));
       expect(missing, contains('tls-floor-policy-getter'));
+    });
+
+    test('RED: dropping the HTTPS-only hard-invariant box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutCleartextInvariant = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses the https-only floor|bypasshttpsonlytransport')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutCleartextInvariant);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('cleartext-never-bypassed'));
+      expect(missing, contains('cleartext-policy-getter'));
     });
 
     test('RED: dropping the no-cleartext/HTTPS-only transport box fails closed',

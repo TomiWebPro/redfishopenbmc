@@ -195,7 +195,8 @@ void main() {
 
   group('KvmWebViewPolicy — TLS protocol/cipher floor is never bypassed', () {
     test('production default always enforces the TLS floor', () {
-      expect(KvmWebViewPolicy.productionDefault.bypassTlsProtocolFloor, isFalse);
+      expect(
+          KvmWebViewPolicy.productionDefault.bypassTlsProtocolFloor, isFalse);
     });
 
     test('test-only self-signed opt-in still enforces the TLS floor', () {
@@ -220,6 +221,38 @@ void main() {
       // test-only opt-in can disable none of them.
       expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
       expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+    });
+  });
+
+  group('KvmWebViewPolicy — HTTPS-only transport is never bypassed', () {
+    test('production default never permits cleartext transport', () {
+      expect(
+          KvmWebViewPolicy.productionDefault.bypassHttpsOnlyTransport, isFalse);
+    });
+
+    test('test-only self-signed opt-in still forbids cleartext transport', () {
+      // Tolerating the test BMC's untrusted leaf relaxes ONLY leaf trust: it
+      // must never add a cleartext exception (no cleartextTrafficPermitted /
+      // usesCleartextTraffic=true, no NSAllowsArbitraryLoads), not even for the
+      // test profile. This is a hard invariant, independent of the flag, TLS
+      // mode or console signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassHttpsOnlyTransport, isFalse);
+    });
+
+    test('no policy configuration can bypass HTTPS-only transport', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Identity, pinning, handshake-floor and HTTPS-only invariants are
+      // independent: the test-only opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
     });
   });
 

@@ -108,6 +108,26 @@ class KvmWebViewPolicy {
   /// (RP-1).
   bool get bypassTlsProtocolFloor => false;
 
+  /// Always `false`: HTTPS-only transport is NEVER bypassed — the embedded
+  /// WebView may never open a cleartext (`http://`) socket, not even by the
+  /// test-only self-signed opt-in.
+  ///
+  /// This invariant is distinct from the TLS floor ([bypassTlsProtocolFloor]),
+  /// hostname verification ([bypassHostnameVerification]) and pinning
+  /// ([bypassCertificatePinning]): those govern a TLS handshake that actually
+  /// occurs (its protocol/cipher strength) and the certificate's identity/key.
+  /// HTTPS-only transport instead governs whether ANY cleartext socket may be
+  /// opened at the WebView platform layer at all — Android
+  /// `cleartextTrafficPermitted` / `usesCleartextTraffic` must stay false and
+  /// Apple ATS must forbid arbitrary/insecure loads. A redirect, subresource or
+  /// fallback path must never silently downgrade to a plaintext socket outside
+  /// the decision layer. Tolerating a self-signed leaf on the expected test host
+  /// relaxes ONLY leaf trust: it must never add a cleartext exception, even for
+  /// the test profile. This is a hard, configuration-independent invariant, so
+  /// a future WebView consumer can consult it and can never obtain a policy
+  /// that permits cleartext transport. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassHttpsOnlyTransport => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
