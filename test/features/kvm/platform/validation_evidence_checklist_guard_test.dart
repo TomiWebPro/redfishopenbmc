@@ -9,9 +9,10 @@
 // fullscreen, input forwarding, no-native-bridge, no-local-file-access,
 // no-device-permissions, no-sensitive-data-at-rest (WebView cache/storage +
 // background snapshot), no-referrer/URL-token-leak (Referrer-Policy),
-// no-popup/secondary-window/iframe navigation bypass, flag-off fallback, human
-// sign-off) so a future edit cannot silently erase the evidence boxes that gate
-// that decision.
+// no-popup/secondary-window/iframe navigation bypass,
+// no-private-network/loopback subresource egress (SSRF pivot), flag-off fallback,
+// human sign-off) so a future edit cannot silently erase the evidence boxes that
+// gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -56,6 +57,13 @@ const List<({String name, String marker})> evidenceChecks =
   ),
   (name: 'no-multiple-windows', marker: 'multiple windows'),
   (name: 'no-iframe-bypass', marker: 'iframe'),
+  (name: 'no-private-network-egress', marker: 'private network'),
+  (name: 'no-loopback-egress', marker: 'loopback'),
+  (name: 'no-link-local-metadata', marker: 'link-local'),
+  (name: 'no-cloud-metadata-endpoint', marker: '169.254.169.254'),
+  (name: 'no-webrtc-ip-leak', marker: 'webrtc'),
+  (name: 'no-ssrf-pivot', marker: 'ssrf'),
+  (name: 'subresource-egress-gate', marker: 'subresource request'),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
   (name: 'mixed-content', marker: 'mixed-content'),
@@ -216,6 +224,25 @@ void main() {
       expect(missing, contains('no-popup-secondary-window'));
       expect(missing, contains('no-multiple-windows'));
       expect(missing, contains('no-iframe-bypass'));
+    });
+
+    test('RED: dropping the no-private-network/loopback egress box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutEgress = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'private network|loopback|link-local|169.254.169.254|webrtc|ssrf|subresource request')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutEgress);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-private-network-egress'));
+      expect(missing, contains('no-loopback-egress'));
+      expect(missing, contains('no-link-local-metadata'));
+      expect(missing, contains('no-cloud-metadata-endpoint'));
+      expect(missing, contains('no-webrtc-ip-leak'));
+      expect(missing, contains('no-ssrf-pivot'));
+      expect(missing, contains('subresource-egress-gate'));
     });
 
     test('RED: dropping the no-native-bridge box fails closed', () {
