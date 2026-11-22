@@ -12923,3 +12923,18 @@
 - Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-M5)
+
+**Done:**
+- FEATURE (test/tool-only): EP-M5 hostile `ConnectTypesSupported` cross-factory normalization-agreement guard for #009/#021. Added `test/features/kvm/kvm_connect_types_hostile_agreement_test.dart` (8 tests) pinning that `KvmConsole.fromManager` (`_normalizedConnectTypes`, one block) and `KvmCapability.fromManager` (`_aggregateConnectTypes`/`_appendTypes`, all blocks) normalize the same hostile matrix identically — nested list/map + null/int/double/bool dropped, blanks dropped, padded mixed-case dedup keeping first spelling, control-bearing values byte-identical — and that the multi-block enabled-preference (RM-8) / all-disabled / flag-absent fallback aggregates exactly the union of the preferred per-console type lists. Registered in `canonicalGuardFiles` + pinned `epM5AddedGuards` (length 1, disjoint) in `test/tool/guard_suite_liveness_test.dart` (+1 pin test).
+- AUDIT: the existing `kvm_model_test.dart` agreement group pins only a single GraphicalConsole block with a modest null/int/bool matrix — nested collections, control-bearing values and multi-block enablement preference across both factories were unguarded; genuine regression guard, no live divergence. Real-file RED: `KvmCapability._appendTypes` stringifying non-string entries → 5/8 failed (`+3 -5`); source restored byte-clean (SHA `533ed545…` unchanged, empty lib diff), 600-perm backup shredded → 8/8 GREEN.
+- Verify: `dart format` clean (my 2 files); `flutter analyze` 0; full `flutter test --concurrency=4` 2037 passed / 1 skipped (baseline 2028 +8 +1); liveness 23/23; issues validate OK; diff --check clean; lib diff empty; deps unchanged.
+
+**Decisions:**
+- Test/tool-only, no `lib/`, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-M5 is now LANDED (`queues/model.md` checked off). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. UI skipped as a separate increment (§5): no widget source changed; no manufactured churn. DMTF 85-test emulator skipped (test/tool-only, <7 days since last green 85/85).
+
+**Next:**
+- Push the single commit; leave pre-existing stashes untouched. EP-S2 / EP-T4 audit-first — RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended; EP-P4/P1/P2 human-gated. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
