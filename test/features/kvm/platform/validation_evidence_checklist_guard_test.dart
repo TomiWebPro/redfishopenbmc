@@ -15,8 +15,9 @@
 // no-service-worker/persistent-background-script (session-scoped execution),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload),
 // no-cross-origin-form-submission (form action POST / auto-submit / post body
-// exfiltration), flag-off fallback, human sign-off) so a future edit cannot
-// silently erase the evidence boxes that gate that decision.
+// exfiltration), no-arbitrary/drive-by file download (APK / executable /
+// auto-open / content-disposition), flag-off fallback, human sign-off) so a
+// future edit cannot silently erase the evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -69,6 +70,12 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-form-action-exfil', marker: 'form action'),
   (name: 'no-form-auto-submit', marker: 'auto-submit'),
   (name: 'no-form-post-body-exfil', marker: 'post body'),
+  (name: 'no-arbitrary-file-download', marker: 'arbitrary file download'),
+  (name: 'no-driveby-download', marker: 'drive-by download'),
+  (name: 'no-content-disposition-download', marker: 'content-disposition'),
+  (name: 'no-download-listener-open', marker: 'setdownloadlistener'),
+  (name: 'no-malicious-apk-executable', marker: 'apk'),
+  (name: 'no-auto-open-download', marker: 'auto-open'),
   (name: 'no-remote-debugging', marker: 'remote debugging'),
   (name: 'no-webcontents-debugging', marker: 'webcontentsdebuggingenabled'),
   (name: 'no-webview-inspectable', marker: 'inspectable'),
@@ -351,6 +358,24 @@ void main() {
       expect(missing, contains('no-form-action-exfil'));
       expect(missing, contains('no-form-auto-submit'));
       expect(missing, contains('no-form-post-body-exfil'));
+    });
+
+    test('RED: dropping the no-arbitrary/drive-by download box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutDownload = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'arbitrary file download|drive-by download|content-disposition|setdownloadlistener|apk|auto-open')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutDownload);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-arbitrary-file-download'));
+      expect(missing, contains('no-driveby-download'));
+      expect(missing, contains('no-content-disposition-download'));
+      expect(missing, contains('no-download-listener-open'));
+      expect(missing, contains('no-malicious-apk-executable'));
+      expect(missing, contains('no-auto-open-download'));
     });
 
     test('RED: dropping the no-native-bridge box fails closed', () {

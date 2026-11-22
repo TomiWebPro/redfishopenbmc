@@ -371,6 +371,32 @@ flag stays off for that target.
       target (inspect the WebView form/navigation callback, confirm cross-origin
       form submissions and their POST bodies are blocked and autofill is off)
       before the flag is flipped.
+* [ ] **No arbitrary / drive-by file download (malicious APK / executable /
+      payload-in-a-file install)** — the embedded WebView must not let
+      attacker-influenced console content trigger a file download that escapes
+      the trusted frame or lands a runnable file on the device: no
+      arbitrary file download via an `<a download>` attribute, a scripted
+      `window.location` assignment, a redirect, or a
+      `Content-Disposition: attachment` response; no auto-open of a downloaded
+      file (Android `DownloadManager` / `setDownloadListener` handing a
+      `.apk` / `.exe` / `.dmg` / `.sh` to an `ACTION_INSTALL_PACKAGE` intent or
+      a launcher) and no auto-install, and no console-controlled download
+      destination or filename. Console content is served by the BMC and is
+      therefore attacker-influenced (a compromised/spoofed BMC, or script
+      running in the page): a drive-by download is a distinct response / intent
+      channel from a link's top-level navigation, a subresource fetch and a
+      form POST — the origin-confinement, subresource-egress and
+      form-submission boxes govern those, not downloads — so an attacker-chosen
+      APK or executable delivered through the trusted console frame and then
+      opened is a code-execution / malware-installation surface wholly
+      independent of TLS, hostname, origin, native-bridge, file-access and
+      device-permission checks. Every download must be blocked at the WebView
+      (`setDownloadListener` that cancels and, at most, hands the HTTPS URI to
+      the external secure browser) with no auto-open, no auto-install and no
+      console-controlled destination, on every target. Verified per target
+      (inspect the WebView download listener / navigation-response callbacks
+      and confirm downloads are blocked and nothing is auto-opened) before the
+      flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
