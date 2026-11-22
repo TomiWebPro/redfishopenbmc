@@ -13515,3 +13515,19 @@
 **Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-T28)
+
+**Done:**
+- FEATURE (test/tool-only): EP-T28 guard-suite liveness registration of the EP-U20 extreme-content cross-card agreement guard. AUDIT FIRST: `kvm_card_extreme_content_agreement_test.dart` was live (3 runtime tests at 320/800/1300 px) and CI-reachable but absent from `canonicalGuardFiles` and every pinned epoch — deleting/emptying/test-stripping it stayed GREEN (CONFIRMED gap, no live divergence).
+- Extended `test/tool/guard_suite_liveness_test.dart`: +1 canonical path, pinned `epT28AddedGuards` epoch (length 1, pairwise-disjoint from all 21 earlier designations) in `allDesignatedGuards` + EP-T20 completeness arithmetic, containment/disjointness pin test, temp-root RED→GREEN proof (deleted/emptied/test-stripped → violation).
+- RED→GREEN: dropped only the canonical path (epoch kept) → exactly 3 named failures (`+42 -3`: EP-T28 pin, EP-T20 completeness, EP-T28 liveness), other 43 GREEN; restored byte-clean (SHA `380d15ce…`, 0 residue, 600-perm backup shredded) → 46/46 GREEN.
+- Verify: targeted 46/46; `dart format` clean; analyze 0; full suite 2228 passed / 1 skipped (baseline 2226 +2); issues validate OK; diff --check clean; deps unchanged; emulator skipped (test/tool-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Registration only — no behaviour change, no production widget or `lib/` change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-T28 LANDED (`queues/tooling.md`); the EP-U20 guard is now liveness-checked. Both issues stay human-gated (platform WebView + BMC TLS validation).
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-P15 / RM-17 / EP-S12 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
