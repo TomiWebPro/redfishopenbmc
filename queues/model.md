@@ -34,6 +34,13 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
               limited to `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
               no wire/TLS change, no WebView/protocol import, no production TLS weakening.
 
+- [x] RM-14 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 RM-14 OEM console-block direct-key precedence + RED->GREEN tests`, analyze 0 / full suite green) — `kvmOemConsoleBlock` documented search-order guard: added `test/features/kvm/kvm_oem_block_precedence_test.dart` (9 tests) pinning that a direct console-like key (`kvm`/`console`/`webconsole`, case-insensitive, `Uri` or `ConnectUri`) outranks a nested vendor `KVM` block carrying a usable endpoint, a blank/non-string direct member cannot shadow the valid nested fallback, enablement comes from the winning direct block (direct enabled vs nested disabled), and BOTH `KvmConsole.fromManager` / `KvmCapability.fromManager` resolve the same direct endpoint through a dual-console `Oem` payload. AUDIT: every pre-existing OEM test carried exactly one console source, so the documented two-pass order (direct before recursive) was unguarded; no live divergence — regression guard, not churn. Real-file RED: swapped the two passes in `_findBlock` → 7/9 new tests failed (`+2 -7`, full suite showed NO other failure); source restored byte-clean (SHA `0bea1a6f…` unchanged, empty lib diff), 600-perm backup shredded → 9/9 GREEN. Registered in `canonicalGuardFiles` (45→46) + pinned `rm14AddedGuards` epoch (length 1, disjoint from all earlier designations) in `test/tool/guard_suite_liveness_test.dart` (+1 pin test, completeness arithmetic, temp-root RED; real-file RED dropped canonical entry → 3 failures, restored byte-clean → 30/30 GREEN). Test/tool-only, no lib/, no dependency, no WebView/protocol import, no production TLS weakening.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_oem_block_precedence_test.dart && flutter analyze`
+              (0 issues), RED→GREEN proof (reversed passes → 7/9 failures; restored → 9/9); writes
+              limited to `test/features/kvm/**` + `test/tool/guard_suite_liveness_test.dart`;
+              `git diff --exit-code -- pubspec.yaml pubspec.lock`; no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-21 22:03 UTC: splits a residual pure-model classifier-parity seam of the
      blocked #009/#021 launch-target epic into one unblocked, dependency-free, TLS-safe dept slice.
      EP-M2 pinned external-client classifier parity at the model surface and RM-9 pinned OEM depth

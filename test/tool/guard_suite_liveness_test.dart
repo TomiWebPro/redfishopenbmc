@@ -114,6 +114,15 @@
 // from every earlier designation) with a pin test and a temp-root RED→GREEN
 // proof, keeping the EP-T20 registry-completeness invariant green.
 //
+// RM-14 (epic #009/#021) registers the OEM console-block documented
+// direct-key-precedence guard. `kvmOemConsoleBlock`'s two-pass search order
+// (direct `kvm`/`console`/`webconsole` key before a recursive walk into nested
+// vendor blocks) was documented but had no test that carried BOTH a direct and
+// a nested console in one payload, so a reversed-order refactor re-pointed both
+// views' OEM endpoint and enablement flag with every existing single-console
+// OEM test GREEN. Registering it under a pinned `rm14AddedGuards` subset makes
+// deleting / emptying / test-stripping it fail closed.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -187,6 +196,8 @@ const List<String> canonicalGuardFiles = <String>[
   'test/tool/asset_guard_test.dart',
   'test/tool/unattended_guard_test.dart',
   'test/security/credential_leak_audit_test.dart',
+  // RM-14 extension: OEM console-block documented direct-key precedence.
+  'test/features/kvm/kvm_oem_block_precedence_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -319,6 +330,18 @@ const Set<String> epT22AddedGuards = <String>{
   'test/security/credential_leak_audit_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by RM-14: the OEM console-block
+/// documented direct-key precedence guard. `kvmOemConsoleBlock`'s two-pass
+/// search order (direct console-like key before nested vendor block) was
+/// documented but unpinned; a reversed-order refactor would re-point both KVM
+/// views' OEM endpoint and source the enablement flag from a different node,
+/// with every pre-existing single-console OEM test staying GREEN. Pinned
+/// separately so a future edit cannot drop it back out of the canonical set
+/// (issue #009/#021).
+const Set<String> rm14AddedGuards = <String>{
+  'test/features/kvm/kvm_oem_block_precedence_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -337,6 +360,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epS2AddedGuards,
   ...epT21AddedGuards,
   ...epT22AddedGuards,
+  ...rm14AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -786,6 +810,35 @@ void main() {
       expect(epT22AddedGuards.intersection(epT21AddedGuards), isEmpty);
     });
 
+    test(
+        'RM-14: the OEM block-precedence guard is in the canonical liveness set',
+        () {
+      expect(rm14AddedGuards, isNotEmpty);
+      expect(rm14AddedGuards.length, 1);
+      for (final String path in rm14AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'RM-14 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(rm14AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(rm14AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(rm14AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(rm14AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(rm14AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(rm14AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(rm14AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(rm14AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(rm14AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(rm14AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(rm14AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(rm14AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(rm14AddedGuards.intersection(epT22AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -824,7 +877,8 @@ void main() {
             epM5AddedGuards.length +
             epS2AddedGuards.length +
             epT21AddedGuards.length +
-            epT22AddedGuards.length,
+            epT22AddedGuards.length +
+            rm14AddedGuards.length,
       );
     });
   });
@@ -1440,6 +1494,69 @@ void main() {
         }
 
         // GREEN again once every guard is restored.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test('RM-14: newly-added OEM block-precedence guard is liveness-checked',
+        () {
+      final Directory temp = Directory.systemTemp.createTempSync('rm14_guard_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        final String addedGuard = rm14AddedGuards.single;
+        // RED 1: the newly-added guard is deleted → MISSING.
+        File(p(addedGuard)).deleteSync();
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'MISSING: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when deleted',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 2: the guard is emptied → EMPTY.
+        File(p(addedGuard)).writeAsStringSync('  \n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'EMPTY: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when emptied',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 3: the guard keeps prose but loses every test case.
+        File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when test-stripped',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // GREEN again once the guard is restored.
         expect(
           evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
           isEmpty,

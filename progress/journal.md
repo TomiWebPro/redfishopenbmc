@@ -13030,3 +13030,18 @@
 - Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (RM-14)
+
+**Done:**
+- FEATURE (test/tool-only): RM-14 OEM console-block documented direct-key precedence guard for #009/#021. CONFIRMED gap: `lib/features/kvm/models/kvm_oem_uri.dart` `_findBlock` documents a strict two-pass order (direct `kvm`/`console`/`webconsole` key whose map carries a usable `Uri`/`ConnectUri` BEFORE a recursive nested-vendor walk), but every pre-existing OEM test (`kvm_oem_uri_test.dart`, `kvm_oem_uri_shadow_agreement_test.dart`, `kvm_oem_depth_bound_agreement_test.dart`, `kvm_capability_test.dart`, `kvm_model_test.dart`) fixtures exactly ONE console source — a reversed two-pass order (plausible refactor) re-pointed both KVM views' OEM endpoint and enablement flag with all of them GREEN. Added `test/features/kvm/kvm_oem_block_precedence_test.dart` (9 tests) over ONE dual-console `Oem` payload (direct `Console`/`WebConsole`/`ConnectUri` + nested vendor `KVM`): direct key wins at helper + `kvmOemConsoleBlock` identity level, a blank/non-string direct member cannot shadow the valid nested fallback, enablement comes from the winning direct block (direct enabled vs nested disabled), and BOTH `KvmConsole.fromManager` / `KvmCapability.fromManager` resolve the same direct endpoint byte-for-byte.
+- Real-file RED #1: swapped the two passes in `_findBlock` → 7/9 new tests failed (`+2 -7`, actual nested URI vs expected direct; full suite showed NO other failure); mutation reversed byte-clean (SHA `0bea1a6f…` unchanged, empty lib diff), 600-perm backup shredded → 9/9 GREEN. Registered the guard in `canonicalGuardFiles` (45→46) + pinned `rm14AddedGuards` epoch (length 1, disjoint from all earlier designations) in `test/tool/guard_suite_liveness_test.dart` (+1 pin test, completeness arithmetic, temp-root RED). Real-file RED #2: dropped the canonical entry → 3 failures (RM-14 pin + EP-T20 completeness + RM-14 temp-root RED), restored byte-clean (SHA `792b5b5a…` unchanged), 600-perm backup shredded → 30/30 GREEN.
+- Verify: targeted new + liveness suites 39/39; `dart format` clean (0 changed); `flutter analyze` 0; full `flutter test --concurrency=4` 2061 passed / 1 skipped (baseline 2050 +9 new +2 liveness); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test/tool-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. RM-14 is now LANDED (`queues/model.md`). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. UI skipped as a separate increment (§5): no widget source changed; no manufactured churn. DMTF 85-test emulator skipped (test/tool-only, empty lib diff, <7 days since last green 85/85). Final-route fixtures unchanged.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Remaining dept heads RM-13 / EP-S9 / EP-P12 / EP-U17 audit-first — RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
