@@ -247,6 +247,17 @@
 // test, a temp-root RED→GREEN proof and the updated EP-T20 completeness
 // arithmetic, keeping the registry fail-closed against a future silent drop.
 //
+// EP-T33 (epic #009/#021) closes the same CONFIRMED gap for the EP-U21
+// large-accessibility-font no-overflow + merged-a11y cross-surface guard
+// (`kvm_large_font_cross_surface_a11y_test.dart`, 2 live testWidgets cases)
+// that landed with EP-U21 but was never added to `canonicalGuardFiles` or any
+// pinned epoch — so deleting / emptying / test-stripping it stays GREEN. It is
+// live + reachable from the whole-tree CI run. EP-T33 adds it to the canonical
+// set under a pinned `epT33AddedGuards` epoch (disjoint from every earlier
+// designation) with a pin test, a temp-root RED→GREEN proof and the updated
+// EP-T20 completeness arithmetic, keeping the registry fail-closed against a
+// future silent drop.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -374,6 +385,11 @@ const List<String> canonicalGuardFiles = <String>[
   // classifier, launch plan, nav gate and stale-flag TLS boundary) — live +
   // CI-reachable but unpinned until this run.
   'test/features/kvm/platform/port_authority_fail_closed_agreement_test.dart',
+  // EP-T33 extension: the EP-U21 large-accessibility-font no-overflow +
+  // merged-a11y cross-surface guard (both real cards + the viewer at 1.0/1.3/
+  // 2.0 text scale on 320 px, one merged node per signal, no RenderFlex
+  // overflow) — live + CI-reachable but unpinned until this run.
+  'test/features/kvm/kvm_large_font_cross_surface_a11y_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -632,6 +648,16 @@ const Set<String> epT32AddedGuards = <String>{
   'test/features/kvm/platform/port_authority_fail_closed_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-T33: the EP-U21
+/// large-accessibility-font no-overflow + merged-a11y cross-surface guard,
+/// which landed with EP-U21 unpinned. It is live + CI-reachable but was absent
+/// from the registry, so deleting / emptying / test-stripping it stayed GREEN.
+/// Pinned separately so a future edit cannot drop it back out of the canonical
+/// set (issues #009/#021 closeout).
+const Set<String> epT33AddedGuards = <String>{
+  'test/features/kvm/kvm_large_font_cross_surface_a11y_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -662,6 +688,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT29AddedGuards,
   ...epT30AddedGuards,
   ...epT32AddedGuards,
+  ...epT33AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -1525,6 +1552,47 @@ void main() {
       expect(epT32AddedGuards.intersection(epT30AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-T33: the EP-U21 large-font cross-surface a11y guard is in the '
+        'canonical liveness set', () {
+      expect(epT33AddedGuards, isNotEmpty);
+      expect(epT33AddedGuards.length, 1);
+      for (final String path in epT33AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T33 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epT33AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(rm15AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epP13AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(sec010AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT26AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT28AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT29AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT30AddedGuards), isEmpty);
+      expect(epT33AddedGuards.intersection(epT32AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -1575,7 +1643,8 @@ void main() {
             epT28AddedGuards.length +
             epT29AddedGuards.length +
             epT30AddedGuards.length +
-            epT32AddedGuards.length,
+            epT32AddedGuards.length +
+            epT33AddedGuards.length,
       );
     });
   });
@@ -2929,6 +2998,72 @@ void main() {
         // The newly-registered EP-P16 nonstandard-port authority agreement
         // guard must fail closed when deleted, emptied or stripped of tests.
         for (final String addedGuard in epT32AddedGuards) {
+          File(p(addedGuard)).deleteSync();
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'MISSING: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when deleted',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('  \n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'EMPTY: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when emptied',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when test-stripped',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+        }
+
+        // GREEN again once every guard is restored.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test(
+        'EP-T33: newly-registered EP-U21 large-font a11y guard is '
+        'liveness-checked', () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_u21_large_font_guard_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        // Populate every canonical guard with a live synthetic case.
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        // The newly-registered EP-U21 large-font cross-surface a11y guard
+        // must fail closed when deleted, emptied or stripped of tests.
+        for (final String addedGuard in epT33AddedGuards) {
           File(p(addedGuard)).deleteSync();
           expect(
             evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())

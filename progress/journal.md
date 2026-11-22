@@ -13809,3 +13809,19 @@
 **Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-T33)
+
+**Done:**
+- FEATURE — EP-T33 guard-suite liveness registration of the EP-U21 large-font cross-surface a11y guard for #009/#021 (test/tool-only, dependency-free, TLS-safe). AUDIT FIRST: the EP-U21 guard `kvm_large_font_cross_surface_a11y_test.dart` (2 live `testWidgets` cases = 6 runtime assertions at 1.0/1.3/2.0 text scale on 320 px) landed at 21:43 and is live + reachable from verify.yml's whole-tree `flutter test --coverage`, but was absent from BOTH `canonicalGuardFiles` and every pinned epoch — deleting / emptying / test-stripping it stayed GREEN (CONFIRMED "who guards the guards" gap, no live divergence, not churn).
+- Extended `test/tool/guard_suite_liveness_test.dart`: +1 canonical path, pinned `epT33AddedGuards` epoch (length 1, pairwise-disjoint from all 25 earlier designations) in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test +1 temp-root RED→GREEN (deleted / emptied / test-stripped → violation, intact → clean).
+- Real-file RED: dropped only the canonical path (epoch designation kept) under a 600-perm backup → exactly 3 named failures (`+51 -3`: EP-T33 pin, EP-T20 completeness, EP-T33 temp-root liveness), the other 51 GREEN; source restored byte-clean (SHA `a35f372617e803624e4a6f43683aea11d6ff3e93c8b4efecd40892c1c70c95c8` unchanged, 0 residue, backup shredded) → 54/54 GREEN. Queue `tooling.md` EP-T33 marked LANDED.
+- Verify: targeted 54/54; `dart format` clean; `flutter analyze` 0 issues; full `flutter test --concurrency=4` 2376 passed / 1 skipped (baseline 2374 +2); `issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; five pre-existing stashes untouched; emulator skipped (test/tool-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Genuine confirmed registry gap fixed, not churn: the new pinned epoch keeps the EP-U21 a11y guard fail-closed against a future silent drop, preserving the EP-T20 registry-completeness invariant. No dependency, no WebView/protocol import, no URL opened, no production TLS weakening, no deliberate behaviour decision. Both issues stay human-gated (#009 P3 / #021 P2). No issue closed. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept head EP-S13 (manager-skip agreement between `fetchConsoles()` / `fetchCapabilities()` under a 404/retryable matrix) — audit-first, RED→GREEN only on a genuine divergence, never churn; cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
