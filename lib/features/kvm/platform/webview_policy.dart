@@ -225,6 +225,40 @@ class KvmWebViewPolicy {
   /// governs the client credential. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassClientCertificateValidation => false;
 
+  /// Always `false`: the strict Referrer-Policy is NEVER bypassed, not even by
+  /// the test-only self-signed opt-in.
+  ///
+  /// The console URI is the operator's privileged management-session handle and
+  /// may carry a session token, credential or BMC identity in its userinfo,
+  /// path or query. The embedded WebView must therefore load the console under
+  /// a strict referrer policy (`Referrer-Policy: no-referrer`, or at minimum
+  /// `same-origin`), in the response header / `<meta>` and in the WebView's own
+  /// referrer-policy setting, so no cross-origin subresource load or navigation
+  /// ever receives the console URL in a `Referer` header. A lax policy
+  /// (`unsafe-url`, `no-referrer-when-downgrade` to an attacker origin, or an
+  /// override that emits the full URL) would hand that token to any third party
+  /// the attacker-influenced console page contacts.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that relaxes the
+  /// referrer policy. The test-only self-signed opt-in tolerates ONLY the test
+  /// BMC's untrusted server leaf for the expected host; it must never weaken the
+  /// referrer policy or expose the console handle. It is distinct from every
+  /// server-side certificate check — hostname verification
+  /// ([bypassHostnameVerification]) and pinning ([bypassCertificatePinning])
+  /// bind server identity/key, revocation ([bypassCertificateRevocationCheck])
+  /// checks certificate status, and platform trust-store integrity
+  /// ([bypassPlatformTrustStoreIntegrity]) governs device-wide anchors — from
+  /// the TLS floor ([bypassTlsProtocolFloor]), HTTPS-only transport
+  /// ([bypassHttpsOnlyTransport]) and validated-origin binding
+  /// ([bypassValidatedOriginBinding]) (the handshake, cleartext sockets and
+  /// resolved address), and from client-certificate validation
+  /// ([bypassClientCertificateValidation]) (the client credential): those
+  /// govern the connection and its credentials, whereas this box governs the
+  /// app's own outbound `Referer` header content. See `WEBVIEW_TLS_MATRIX.md`
+  /// (RP-1).
+  bool get bypassStrictReferrerPolicy => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
