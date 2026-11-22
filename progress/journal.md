@@ -13786,3 +13786,26 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Liveness-register the EP-U21 guard in `test/tool/guard_suite_liveness_test.dart`; next fresh dept head EP-S13 (manager-skip agreement) — audit-first, RED→GREEN only on a genuine divergence, never churn; cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85 (just re-run).
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:rf-gate — #009/#021 (build/rf-platform merge)
+
+**Done:**
+- GATE (sole merger to `main`): `rf-platform-check` run#11536 returned `SUCCESS` / `CHECK: PASS` for `build/rf-platform` HEAD `263c76c` (exit 0, 70.6 s, 70/70 targeted tests across both touched test files, no production-TLS weakening, allowlisted paths only). Branch HEAD cross-checked unchanged immediately before merge; merge-base `90f15b7` already in `main` via `94f7f7a`; exactly one branch-unique commit.
+- Merged `263c76c` into `main` with `--no-ff` (merge `de2050c`, parents `2985380` / `263c76c`), clean ort auto-merge, no conflicts. PASS-only merge gate honored (no SKIP/NO-OP). A concurrent `redfish-automation` EP-U21 WIP present at gate start committed as `2985380` before the merge, so the merge ran on a clean tree — that WIP was neither stashed nor swept into this gate commit.
+- Branch content: RP-1 "platform trust-store integrity / no-CA-trust-anchor addition" acceptance box in `WEBVIEW_TLS_MATRIX.md` + evidence markers + 1 RED guard, with hard `bypassPlatformTrustStoreIntegrity => false` getter in `webview_policy.dart` + policy tests — hardening only; the test-only self-signed opt-in never adds a CA / trust anchor or globally weakens TLS.
+- `FUTUREWORK.md` gained one gate entry; no `Current focus` change (automation job owns focus).
+
+**Verification (in-tree at `de2050c`):**
+- `flutter analyze`: 0 issues ("No issues found!").
+- `flutter test --coverage --concurrency=4`: 2374 passed / 1 skipped (baseline 2370 +4 merged tests).
+- Coverage gates: all PASS — overall 90.6% (6067/6700), scoped redfish+power+sensors 90.4% (2119/2345), kvm 97.5% (1344/1379), kvm-platform 97.1% (466/480); gate exit 0 (JSON `passed=true`).
+- `dart run tool/asset_guard.dart`: OK; `dart run tool/unattended_guard.dart`: OK.
+- `python3 issues/issues.py validate`: OK.
+- first-parent `git diff --check`: clean; first-parent diff = 4 allowlisted files (146 insertions, 0 deletions); TLS-weakening + secret scan clean.
+- DMTF 85-test emulator: SKIPPED (no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:** Clean tracked tree at merge time (no new stash); five pre-existing stashes untouched; no force-push, history rewrite, `git clean`, or file deletion. No issue closed (#009 P3 / #021 P2 stay human-gated). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
