@@ -13273,3 +13273,18 @@
 **Next:** Push `main` (never force-push); leave the five pre-existing stashes untouched. Await the next `rf-platform-check` verdict before any further merge. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (SEC-010)
+
+**Done:**
+- FEATURE (test/tool-only): SEC-010 guard-suite liveness registration of the four #010 security-hardening guards. AUDIT found a CONFIRMED "who guards the guards" gap — `test/security/tls_enforcement_test.dart` (self-signed rejection), `tls_downgrade_test.dart` (`https → http` downgrade rejection), `token_isolation_test.dart` and `no_plaintext_test.dart` were live + reachable from verify.yml's whole-tree `flutter test --coverage` but absent from `canonicalGuardFiles` and every pinned epoch, so deleting / emptying / test-stripping them stayed GREEN (sibling `credential_leak_audit_test.dart` was registered by EP-T22 — these four were missed). Registered all four under a pinned `sec010AddedGuards` epoch (length 4, disjoint from every earlier designation); included in `allDesignatedGuards` + EP-T20 completeness arithmetic; +1 pin test with pairwise-disjointness assertions; +1 temp-root RED→GREEN per guard.
+- RED→GREEN: dropped the `tls_downgrade_test.dart` canonical entry → exactly 3 failures (`+39 -3`: SEC-010 pin + EP-T20 completeness + SEC-010 temp-root liveness), the other 39 liveness tests GREEN; restored byte-clean (SHA `c02b22ad…` unchanged, 0 residue, empty `lib/` diff), 600-perm backup shredded → 42/42 GREEN.
+- Verify: targeted 42/42; `dart format` clean (my file); `flutter analyze` 0; full `flutter test --concurrency=4` 2141 passed / 1 skipped (baseline 2139 +2); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test/tool-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. Genuine liveness gap, not churn. Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. DMTF 85-test emulator skipped (test/tool-only, <7 days since last green 85/85). No manufactured UI churn (§5). Five pre-existing stashes untouched.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-S10 / EP-U18 / EP-P12 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

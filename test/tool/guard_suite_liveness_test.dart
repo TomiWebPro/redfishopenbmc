@@ -173,6 +173,19 @@
 // epoch (disjoint from every earlier designation), a pin test and a temp-root
 // RED→GREEN proof keep the EP-T20 registry-completeness invariant green.
 //
+// SEC-010 (issues #009/#021 guard-suite closeout; #010 security hardening)
+// registers the four cross-cutting security guards that were live + reachable
+// from verify.yml's whole-tree `flutter test --coverage` but never added to
+// `canonicalGuardFiles` or any pinned epoch: TLS self-signed enforcement,
+// `https → http` TLS-downgrade rejection, auth-token isolation and the
+// no-plaintext-persistence structural guard. The sibling
+// `test/security/credential_leak_audit_test.dart` was registered by EP-T22 —
+// these four were missed. Without registration, deleting / emptying /
+// test-stripping e.g. `tls_downgrade_test.dart` stayed GREEN even though it
+// guards production TLS (which is never weakened). A pinned `sec010AddedGuards`
+// epoch (disjoint from every earlier designation), a pin test and a temp-root
+// RED→GREEN proof keep the EP-T20 registry-completeness invariant green.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -265,6 +278,14 @@ const List<String> canonicalGuardFiles = <String>[
   // cross-layer fail-closed agreement guard (landed with EP-P13, left unpinned
   // until this run).
   'test/features/kvm/platform/navigation_launch_authority_confusion_agreement_test.dart',
+  // SEC-010 extension: the four cross-cutting #010 security-hardening guards
+  // (TLS self-signed enforcement, TLS-downgrade rejection, auth-token isolation,
+  // no-plaintext persistence) that were live + CI-reachable but never
+  // registered — siblings of the EP-T22 credential-leak guard.
+  'test/security/tls_enforcement_test.dart',
+  'test/security/tls_downgrade_test.dart',
+  'test/security/token_isolation_test.dart',
+  'test/security/no_plaintext_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -455,6 +476,21 @@ const Set<String> epP13AddedGuards = <String>{
   'test/features/kvm/platform/navigation_launch_authority_confusion_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by SEC-010: the four cross-cutting
+/// `#010` security-hardening guards (TLS self-signed enforcement, `https → http`
+/// TLS-downgrade rejection, auth-token isolation and no-plaintext persistence).
+/// They were live + reachable from verify.yml's whole-tree coverage but never
+/// registered, so deleting / emptying / test-stripping one stayed GREEN even
+/// though it guards production TLS (never weakened). Pinned separately so a
+/// future edit cannot drop them back out of the canonical set (issues
+/// #009/#021 guard-suite closeout).
+const Set<String> sec010AddedGuards = <String>{
+  'test/security/tls_enforcement_test.dart',
+  'test/security/tls_downgrade_test.dart',
+  'test/security/token_isolation_test.dart',
+  'test/security/no_plaintext_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -479,6 +515,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT23AddedGuards,
   ...rm15AddedGuards,
   ...epP13AddedGuards,
+  ...sec010AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -1117,6 +1154,41 @@ void main() {
       expect(epP13AddedGuards.intersection(rm15AddedGuards), isEmpty);
     });
 
+    test(
+        'SEC-010: the cross-cutting security guards are in the canonical '
+        'liveness set', () {
+      expect(sec010AddedGuards, isNotEmpty);
+      expect(sec010AddedGuards.length, 4);
+      for (final String path in sec010AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'SEC-010 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(sec010AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(rm15AddedGuards), isEmpty);
+      expect(sec010AddedGuards.intersection(epP13AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -1161,7 +1233,8 @@ void main() {
             epS9AddedGuards.length +
             epT23AddedGuards.length +
             rm15AddedGuards.length +
-            epP13AddedGuards.length,
+            epP13AddedGuards.length +
+            sec010AddedGuards.length,
       );
     });
   });
@@ -2156,6 +2229,70 @@ void main() {
         File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
 
         // GREEN again once the guard is restored.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+    test('SEC-010: newly-registered security guards are liveness-checked', () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('sec010_guard_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        // Populate every canonical guard with a live synthetic case.
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        // Each of the four newly-registered security guards must individually
+        // fail closed when deleted, emptied or stripped of its test cases —
+        // including `tls_downgrade_test.dart`, which guards production TLS.
+        for (final String addedGuard in sec010AddedGuards) {
+          File(p(addedGuard)).deleteSync();
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'MISSING: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when deleted',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('  \n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'EMPTY: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when emptied',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when test-stripped',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+        }
+
+        // GREEN again once every guard is restored.
         expect(
           evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
           isEmpty,
