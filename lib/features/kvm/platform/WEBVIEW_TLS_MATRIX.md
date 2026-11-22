@@ -343,6 +343,26 @@ flag stays off for that target.
       the opt-in flag. Verified per target (inspect the WebView construction and
       platform configuration for any debugging/inspectable flag or debugging
       port) before the flag is flipped.
+* [ ] **No service worker / persistent background script (session-scoped
+      execution only)** — the embedded WebView must not let attacker-influenced
+      console content install a Service Worker or any persistent background
+      script that outlives the page or session: no
+      `navigator.serviceWorker.register(...)`, no background sync / periodic
+      background sync, no push subscription and no persistent `Cache Storage` /
+      Cache API entries beyond the session. A Service Worker runs independently
+      of the page, survives navigation and restarts, and can intercept/modify
+      every request for the console origin — a request-interception /
+      background-persistence surface — so a compromised or spoofed BMC page could
+      install one that keeps running after the operator closes the console,
+      silently intercepting console traffic or exfiltrating KVM frames and
+      session tokens in the background. This is wholly independent of TLS,
+      hostname, origin-navigation, native-bridge, file-access and
+      device-permission checks. The console WebView must disallow Service Worker
+      registration, unregister any existing registrations and clear Cache
+      Storage at session teardown, and grant no background execution on every
+      target. Verified per target (inspect the WebView configuration / settings,
+      confirm Service Workers are disabled and cleared at teardown) before the
+      flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

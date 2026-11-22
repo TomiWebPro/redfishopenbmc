@@ -11,9 +11,10 @@
 // background snapshot), no-referrer/URL-token-leak (Referrer-Policy),
 // no-popup/secondary-window/iframe navigation bypass,
 // no-private-network/loopback subresource egress (SSRF pivot),
-// no-remote-debugging/WebView-inspectability (active debug code), flag-off
-// fallback, human sign-off) so a future edit cannot silently erase the evidence
-// boxes that gate that decision.
+// no-remote-debugging/WebView-inspectability (active debug code),
+// no-service-worker/persistent-background-script (session-scoped execution),
+// flag-off fallback, human sign-off) so a future edit cannot silently erase the
+// evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -71,6 +72,17 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-devtools-endpoint', marker: 'devtools'),
   (name: 'no-web-inspector', marker: 'web-inspector'),
   (name: 'no-active-debug-code', marker: 'cwe-489'),
+  (name: 'no-service-worker', marker: 'service worker'),
+  (name: 'no-sw-register', marker: 'navigator.serviceworker'),
+  (name: 'no-bg-sync', marker: 'background sync'),
+  (name: 'no-push-subscription', marker: 'push subscription'),
+  (name: 'no-cache-storage', marker: 'cache storage'),
+  (name: 'session-scoped-execution', marker: 'session-scoped'),
+  (name: 'unregister-at-teardown', marker: 'unregister'),
+  (
+    name: 'no-persistent-background-script',
+    marker: 'persistent background script'
+  ),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
   (name: 'mixed-content', marker: 'mixed-content'),
@@ -268,6 +280,27 @@ void main() {
       expect(missing, contains('no-devtools-endpoint'));
       expect(missing, contains('no-web-inspector'));
       expect(missing, contains('no-active-debug-code'));
+    });
+
+    test('RED: dropping the no-service-worker/persistent-background-script box '
+        'fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutServiceWorker = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'service worker|navigator\.serviceworker|background sync|push subscription|cache storage|session-scoped|unregister|persistent background script')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutServiceWorker);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-service-worker'));
+      expect(missing, contains('no-sw-register'));
+      expect(missing, contains('no-bg-sync'));
+      expect(missing, contains('no-push-subscription'));
+      expect(missing, contains('no-cache-storage'));
+      expect(missing, contains('session-scoped-execution'));
+      expect(missing, contains('unregister-at-teardown'));
+      expect(missing, contains('no-persistent-background-script'));
     });
 
     test('RED: dropping the no-native-bridge box fails closed', () {
