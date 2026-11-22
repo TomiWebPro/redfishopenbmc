@@ -13461,3 +13461,19 @@
 - Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-T27)
+
+**Done:**
+- FEATURE (test/tool-only): EP-T27 queue-item dept ↔ queue-filename routing guard. AUDIT FIRST: EP-T13 (one valid `Dept:`), EP-T24 (verify target existence) and EP-T25 (product-path ownership) never compared the declared dept to the queue FILE the item lives in (MULTI_DEPT hard rule 1 single-writer routing) — a mis-filed item passed all three guards yet routed to the wrong worktree. All 28 unchecked items complied, so a clean-but-non-vacuous regression guard, not churn.
+- Extended `test/tool/queue_item_schema_guard_test.dart`: `deptForQueueFile` (five files, injectable `deptForFile`) + `DEPT_QUEUE_MISMATCH` violation; +8 tests (6 pure, 1 temp-root RED→GREEN, 1 real-repo invariant with injected foreign map). Fixed EP-T24 temp filename and EP-T25 pure `check()` file key to route to their declared dept.
+- RED→GREEN: disabled the new check in the real file → exactly 4 EP-T27 liveness tests failed (`+35 -4`), other 35 green; restored byte-clean (SHA `576a984e…`, 0 residue, 600-perm backup shredded) → 39/39 GREEN.
+- Verify: targeted 39/39; `dart format` clean; analyze 0; full suite 2222 passed / 1 skipped (baseline 2214 +8); issues validate OK; diff --check clean; deps unchanged; emulator skipped (test/tool-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Registration/guard only — no behaviour or production/widget change, empty `lib/` diff, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-T27 LANDED (`queues/tooling.md`). Both issues stay human-gated (platform WebView + BMC TLS validation). No real queue-file mutation (dept files edited concurrently) — RED proof used a temp tree + an injected foreign map.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept heads EP-P15 / RM-17 / EP-S12 / EP-U20 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

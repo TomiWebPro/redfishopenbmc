@@ -15,7 +15,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      hard rule 1). Pure test/tool, dependency-free, never writes lib/. Distinct from EP-T13/T24/T25.
      AUDIT FIRST; RED->GREEN only on a genuine gap, never churn. No code touched. -->
 
-- [ ] EP-T27 Queue-item dept ↔ queue-filename routing guard: extend `test/tool/queue_item_schema_guard_test.dart`
+- [x] EP-T27 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 EP-T27 queue-item dept↔queue-filename routing guard + RED->GREEN tests`, analyze 0 / 2222 passed / 1 skipped) — Queue-item dept ↔ queue-filename routing guard: extend `test/tool/queue_item_schema_guard_test.dart`
        so that every unchecked item's `Dept:` value must equal the dept encoded in the queue file it lives
        in (`queues/platform.md`->`rf-platform`, `model.md`->`rf-model`, `ui.md`->`rf-ui`, `service.md`->`rf-service`,
        `tooling.md`->`rf-tooling`), failing closed with a concrete diagnostic naming the file, item ID and
@@ -31,6 +31,17 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
                RED->GREEN proof (mis-filed dept -> violation; matching dept -> clean); writes limited to
                `test/tool/queue_item_schema_guard_test.dart`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
                no lib/, no WebView/protocol import, no production TLS weakening.
+       LANDED: AUDIT FIRST confirmed a genuine gap — EP-T13 pins one valid `Dept:`, EP-T24 pins verify
+       target existence, EP-T25 pins product-path ownership, but none compared `Dept:` to the queue FILE
+       (all 28 unchecked items happened to comply, so the invariant is clean yet non-vacuous). Added
+       `deptForQueueFile` (five files, injectable as `deptForFile`) + a `DEPT_QUEUE_MISMATCH` violation in
+       `evaluateQueueSchema`, 8 new tests (6 pure, 1 temp-root RED→GREEN, 1 real-repo invariant with an
+       injected foreign map proving non-vacuity). Corrected the EP-T24 temp-tree filename (`tooling.md`
+       → `platform.md`) and the EP-T25 pure `check()` helper's file key so both route to their declared
+       dept. Real-file RED: disabled the new check (`if (false && …)`) → exactly 4 EP-T27 liveness tests
+       failed (`+35 -4`), all 35 others green; restored byte-clean (SHA `576a984e…`, 0 residue, 600-perm
+       backup shredded) → 39/39 GREEN. Test/tool-only, dependency-free, no `lib/`, no WebView/protocol
+       import, no URL opened, no production TLS weakening.
 
 - [x] EP-T26 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 EP-T26 guard-suite liveness registration of three newly-landed agreement guards + RED->GREEN tests`, analyze 0 / 2213 passed / 1 skipped) — Closes a CONFIRMED "who guards the guards" gap: the three agreement guards that landed after SEC-010 (EP-P14 launch-plan scheme-spelling matrix, EP-U19 cross-surface chip + session-limit agreement, RM-16 hostile enablement-flag encoding agreement) were live + reachable from verify.yml's whole-tree `flutter test --coverage`, but absent from BOTH `canonicalGuardFiles` and every pinned epoch — deleting / emptying / test-stripping one of them stayed GREEN. Extended `test/tool/guard_suite_liveness_test.dart` with the three canonical paths, a pinned `epT26AddedGuards` epoch (length 3, pairwise disjoint from all 20 earlier designations), inclusion in `allDesignatedGuards` + EP-T20 completeness arithmetic, a containment/disjointness pin test and a temp-root RED→GREEN liveness test (each guard fails closed on deleted / emptied / test-stripped). Real-file RED: dropped one canonical path → exactly 3 named failures (`+41 -3`), restored byte-clean (SHA `7b63feb7…`, 0 residue, backup shredded) → 44/44 GREEN. Test/tool-only, dependency-free, no `lib/`, no WebView/protocol import, no URL opened, no production TLS weakening.
       Dept: rf-tooling

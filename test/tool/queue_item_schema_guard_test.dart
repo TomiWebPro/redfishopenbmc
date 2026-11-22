@@ -38,6 +38,18 @@
 // own no product lib). Shared `test/**` / `tool/**` / `test_integration/**`
 // paths stay exempt. Ownership is injectable so the real-repo invariant can
 // prove non-vacuity without mutating concurrently-edited queue files.
+//
+// EP-T27 (epic #009/#021): EP-T13 pins exactly one VALID `Dept:`, EP-T24 pins
+// the verify target paths and EP-T25 pins that named product `lib/**` paths
+// are owned by that dept — but NONE of them checks that the declared `Dept:`
+// matches the queue FILE the item is filed in. MULTI_DEPT.md hard rule 1
+// (single-writer routing) requires `queues/platform.md` → `rf-platform`,
+// `model.md` → `rf-model`, `ui.md` → `rf-ui`, `service.md` → `rf-service`,
+// `tooling.md` → `rf-tooling`; a mis-filed item (e.g. `Dept: rf-model` inside
+// ui.md) passes all three earlier guards yet is handed to the wrong worktree.
+// This guard fails closed on that drift. The expected-dept map is injectable
+// so the RED→GREEN proof needs no real queue-file mutation (dept files are
+// being edited concurrently) and the real-repo invariant can prove non-vacuity.
 
 import 'dart:io';
 
@@ -77,6 +89,19 @@ const Map<String, List<String>> deptOwnedProductPaths = <String, List<String>>{
   'rf-ideate': <String>[],
   'rf-check': <String>[],
   'rf-gate': <String>[],
+};
+
+/// The dept encoded in each checked-in queue FILE NAME from MULTI_DEPT.md
+/// §"Departments" (single-writer routing, hard rule 1). Only the five real
+/// dept queue files are mapped; an unknown file name skips the routing check
+/// (the real-repo invariant separately asserts exactly those five files).
+/// Injectable so RED→GREEN and non-vacuity need no real queue-file mutation.
+const Map<String, String> deptForQueueFile = <String, String>{
+  'queues/platform.md': 'rf-platform',
+  'queues/model.md': 'rf-model',
+  'queues/ui.md': 'rf-ui',
+  'queues/service.md': 'rf-service',
+  'queues/tooling.md': 'rf-tooling',
 };
 
 /// True when [path] (already normalised) is at or below one of [owned] prefixes.
@@ -233,6 +258,7 @@ List<String> evaluateQueueSchema(
   Map<String, String> queueSources, {
   PathExists pathExists = _repoPathExists,
   Map<String, List<String>> ownedPaths = deptOwnedProductPaths,
+  Map<String, String> deptForFile = deptForQueueFile,
 }) {
   final List<String> violations = <String>[];
   queueSources.forEach((String file, String raw) {
@@ -248,6 +274,16 @@ List<String> evaluateQueueSchema(
         violations.add('BAD_DEPT: $at -> ${item.dept.single}');
       } else {
         deptIsValid = true;
+        // EP-T27: MULTI_DEPT.md hard rule 1 — the declared dept must route to
+        // the queue FILE the item lives in. Unknown file names are skipped
+        // (only the five real dept queue files carry a canonical dept).
+        final String? expected = deptForFile[file];
+        if (expected != null && item.dept.single != expected) {
+          violations.add(
+            'DEPT_QUEUE_MISMATCH: $at -> file=$file declares '
+            'dept=${item.dept.single}, expected $expected',
+          );
+        }
       }
       if (item.verify.isEmpty) {
         violations.add('MISSING_VERIFY: $at');
@@ -675,9 +711,12 @@ void main() {
         () {
       final Directory temp =
           Directory.systemTemp.createTempSync('ep_t24_queue_');
+      // EP-T27: this fixture's item declares `rf-platform`, so its queue file
+      // name must route to rf-platform (the name was arbitrary before routing
+      // was checked); see the read() map below.
       final File queue = File(
         '${temp.path}${Platform.pathSeparator}queues${Platform.pathSeparator}'
-        'tooling.md',
+        'platform.md',
       );
       const Set<String> existing = <String>{
         'test/tool',
@@ -693,7 +732,7 @@ void main() {
       try {
         queue.parent.createSync(recursive: true);
         Map<String, String> read() => <String, String>{
-              'queues/tooling.md': queue.readAsStringSync(),
+              'queues/platform.md': queue.readAsStringSync(),
             };
 
         // GREEN: a concrete repo-existing suite target.
@@ -790,8 +829,12 @@ void main() {
         '      Dept: $dept\n'
         '      Verify: `flutter test test/tool/ && flutter analyze` (0 issues);\n'
         '              writes limited to `$scope`.\n';
+    // EP-T27: the temp file name must route to the dept under test so the
+    // routing guard stays silent and each case names exactly one cause.
     List<String> check(String dept, String scope) => evaluateQueueSchema(
-          <String, String>{'queues/ui.md': item(dept, scope)},
+          <String, String>{
+            'queues/${dept.replaceFirst('rf-', '')}.md': item(dept, scope)
+          },
           pathExists: exists,
         );
 
@@ -969,6 +1012,163 @@ void main() {
         forced.any((String s) => s.startsWith('DEPT_PATH_OWNERSHIP:')),
         isTrue,
         reason: 'real-repo ownership invariant did not fail with no owners',
+      );
+    });
+  });
+
+  group('EP-T27 dept <-> queue-file routing evaluator (pure)', () {
+    // Permissive predicates isolate the routing check from EP-T24's target
+    // check and EP-T25's ownership check, so each case names exactly one cause.
+    bool exists(String _) => true;
+    String item(String dept) => '- [ ] EP-X27 Item\n'
+        '      Dept: $dept\n'
+        '      Verify: `flutter test test/tool/` (0 issues);\n';
+    List<String> check(String file, String dept) => evaluateQueueSchema(
+          <String, String>{file: item(dept)},
+          pathExists: exists,
+        );
+
+    test('the routing map covers exactly the five dept queue files', () {
+      expect(deptForQueueFile.length, 5);
+      expect(deptForQueueFile, <String, String>{
+        'queues/platform.md': 'rf-platform',
+        'queues/model.md': 'rf-model',
+        'queues/ui.md': 'rf-ui',
+        'queues/service.md': 'rf-service',
+        'queues/tooling.md': 'rf-tooling',
+      });
+      expect(deptForQueueFile['queues/unknown.md'], isNull);
+    });
+
+    test('an item whose dept matches its queue file is clean', () {
+      deptForQueueFile.forEach((String file, String dept) {
+        expect(check(file, dept), isEmpty, reason: '$file / $dept');
+      });
+    });
+
+    test('a mis-filed dept fails closed with file, line and both depts', () {
+      final List<String> v = check('queues/ui.md', 'rf-model');
+      expect(
+        v.any((String s) =>
+            s.startsWith('DEPT_QUEUE_MISMATCH:') &&
+            s.contains('file=queues/ui.md') &&
+            s.contains('dept=rf-model') &&
+            s.contains('expected rf-ui')),
+        isTrue,
+        reason: v.join(' | '),
+      );
+      expect(v.single, contains('queues/ui.md:1'));
+    });
+
+    test('every queue file rejects a dept belonging to another file', () {
+      deptForQueueFile.forEach((String file, String dept) {
+        final String foreign = dept == 'rf-ui' ? 'rf-model' : 'rf-ui';
+        expect(
+          check(file, foreign)
+              .any((String s) => s.startsWith('DEPT_QUEUE_MISMATCH:')),
+          isTrue,
+          reason: '$file declaring $foreign',
+        );
+      });
+    });
+
+    test('missing / duplicate / invalid dept reports only its schema cause',
+        () {
+      for (final String bad in <String>[
+        '- [ ] EP-X27 Item\n      Verify: `flutter test test/tool/`\n',
+        '- [ ] EP-X27 Item\n      Dept: rf-ui\n      Dept: rf-model\n' +
+            '      Verify: `flutter test test/tool/`\n',
+        '- [ ] EP-X27 Item\n      Dept: rf-evil\n' +
+            '      Verify: `flutter test test/tool/`\n',
+      ]) {
+        expect(
+          evaluateQueueSchema(<String, String>{'queues/ui.md': bad},
+                  pathExists: exists)
+              .any((String s) => s.startsWith('DEPT_QUEUE_MISMATCH:')),
+          isFalse,
+          reason: bad,
+        );
+      }
+    });
+
+    test('an unknown queue file skips the routing check', () {
+      expect(check('queues/unknown.md', 'rf-ui'), isEmpty);
+    });
+  });
+
+  group('EP-T27 RED→GREEN guard proof (temporary queue tree)', () {
+    test('matching dept is clean; mis-filed dept fails; restore is clean', () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_t27_queue_');
+      final File queue = File(
+        '${temp.path}${Platform.pathSeparator}queues${Platform.pathSeparator}'
+        'ui.md',
+      );
+      bool exists(String _) => true;
+      String item(String dept) => '- [ ] EP-X27 Item\n'
+          '      Dept: $dept\n'
+          '      Verify: `flutter test test/tool/` (0 issues);\n';
+      Map<String, String> read() => <String, String>{
+            'queues/ui.md': queue.readAsStringSync(),
+          };
+      try {
+        queue.parent.createSync(recursive: true);
+
+        // GREEN: the dept matches the file that carries the item.
+        queue.writeAsStringSync(item('rf-ui'));
+        expect(evaluateQueueSchema(read(), pathExists: exists), isEmpty);
+
+        // RED: a model item filed in the UI queue fails closed.
+        queue.writeAsStringSync(item('rf-model'));
+        expect(
+          evaluateQueueSchema(read(), pathExists: exists)
+              .any((String s) => s.startsWith('DEPT_QUEUE_MISMATCH:')),
+          isTrue,
+        );
+
+        // GREEN again once the correct dept is restored.
+        queue.writeAsStringSync(item('rf-ui'));
+        expect(evaluateQueueSchema(read(), pathExists: exists), isEmpty);
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+  });
+
+  group('EP-T27 real repository dept-routing invariant', () {
+    test('every unchecked item is filed in its own dept queue file', () {
+      final Map<String, String> queues = readRealQueues();
+      expect(queues.length, 5, reason: 'expected the five dept queue files');
+      final List<QueueItem> all = <QueueItem>[];
+      queues.forEach((String file, String raw) {
+        all.addAll(parseUncheckedItems(file, stripHtmlComments(raw)));
+      });
+      int routed = 0;
+      for (final QueueItem item in all) {
+        if (item.dept.length == 1 &&
+            deptForQueueFile[item.file] == item.dept.single) {
+          routed++;
+        }
+      }
+      expect(routed, greaterThanOrEqualTo(15),
+          reason: 'routing guard saw too few correctly-filed items (vacuous?)');
+      // The checked-in queues are clean against the canonical file→dept map.
+      expect(evaluateQueueSchema(queues), isEmpty);
+      // Non-vacuity: with every file routed to a foreign dept, the very same
+      // real queues fail closed on DEPT_QUEUE_MISMATCH (no real queue mutation).
+      final List<String> forced = evaluateQueueSchema(
+        queues,
+        deptForFile: deptForQueueFile.map(
+          (String file, String dept) => MapEntry<String, String>(
+            file,
+            dept == 'rf-ui' ? 'rf-model' : 'rf-ui',
+          ),
+        ),
+      );
+      expect(
+        forced.any((String s) => s.startsWith('DEPT_QUEUE_MISMATCH:')),
+        isTrue,
+        reason: 'real-repo routing invariant did not fail on a foreign map',
       );
     });
   });
