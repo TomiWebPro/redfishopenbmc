@@ -5,6 +5,33 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 14:17 UTC: carves a fresh, machine-checkable, unblocked slice of the
+      still-open #009/#021 manager-walk epic (never-empty-well malformed-payload tolerance, MULTI_DEPT
+      hard rule 10). RS-6/RS-8 pin manager-set identity, dedup and duplicate-Id collision determinism for
+      WELL-FORMED member URIs, and RS-7 pins hostile manager BODY tolerance — but nothing pins the
+      collection layer when `/Managers` `Members` itself is malformed: a non-list `Members` (string/map/
+      int/null) or a list holding blank / non-string / control-bearing / padded / case-variant duplicate
+      member references. A one-sided change could throw a cast, or drop/duplicate a physical manager, while
+      every identity and body-tolerance suite stays GREEN. Pure service characterization; the credentialed-Primary
+      decision (EP-S8) stays blocked and is NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence,
+      never churn. No code touched. -->
+
+- [ ] EP-S12 Malformed `Members` collection tolerance at the manager walk: over in-temp `/Managers` payloads
+       whose `Members` is a non-list (string / map / int / null) and lists containing blank / non-string /
+       control-bearing / padded / case-variant duplicate member references, pin that `KvmService.fetchConsoles()`
+       / `fetchCapabilities()` fail closed (skip unusable refs, no throw, no duplicated or phantom manager),
+       that every well-formed physical manager is still surfaced exactly once with RS-6/RS-8 identity
+       unchanged, and that `fetchCapability(id)` agrees with the aggregate for the surviving managers.
+       AUDIT FIRST: if the shared walk already tolerates the whole matrix end-to-end, record the audit and
+       add nothing; RED->GREEN only on a genuine divergence, never churn. No behaviour change folded in; no
+       WebView/protocol import, no production TLS weakening.
+       Dept: rf-service
+       Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_service_manager_identity_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to `test/features/kvm/**`
+               (+ `lib/features/kvm/kvm_service.dart` only on a genuine divergence); emulator 85/85 only if
+               `lib/` wire changes; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no WebView/protocol
+               import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-22 10:12 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 manager-walk epic. RS-6/RS-8 pin manager-set identity, dedup and duplicate-Id
      collision determinism, EP-S2/S3/EP-S10 pin tier precedence and all-unsafe selection — but nothing pins

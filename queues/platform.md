@@ -6,6 +6,31 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 14:17 UTC: another machine-checkable slice of the still-open (human-gated)
+     WebView/TLS closeout of #009/#021. `resolveRenderRoute` carries an explicit
+     `if (!isEnabled) return copyOnly` fail-closed branch (disabled console never gets a browser/in-app
+     launch target), and `planConsoleLaunch` delegates to it; EP-P6 sweeps route OUTPUTS over the signal
+     cross-product but does not prove that specific branch is LOAD-BEARING via mutation — removing /
+     reordering it (so a disabled HTTPS console is handed to `externalBrowser`) could stay GREEN in the
+     route-table suites while silently reintroducing the #009 dead-end launch the UI already refuses.
+     Test-only; the human WebView/TLS validation (EP-P1/P2/P4) stays gated and is NOT re-split. AUDIT FIRST;
+     RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-P15 Disabled-console fail-closed branch liveness guard at the render-policy decision layer:
+       add a pure-Dart test under `test/features/kvm/platform/` that (a) pins `resolveRenderRoute` returns
+       `copyOnly` for a disabled console across the full URI form × HTML5 × policy matrix (productionDefault
+       AND test-only opt-in), with a null/control-safe target and `acceptSelfSigned` false from the resulting
+       `planConsoleLaunch`, and (b) proves the `if (!isEnabled) return copyOnly` branch is load-bearing by a
+       temp-copy mutation (remove/reorder it so a disabled secure-HTTPS console routes `externalBrowser` ->
+       named fail-closed cases fail; restore -> clean). AUDIT FIRST: if EP-P6/EP-P8 already mutation-pin this
+       branch, record the audit and add nothing; RED->GREEN only on a genuine divergence, never churn.
+       Test/doc-only; no WebView/protocol import, no dependency, no URL opened, no production TLS weakening.
+       Dept: rf-platform
+       Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues), RED->GREEN proof
+               only on a genuine divergence; writes limited to `test/features/kvm/platform/**` + the decision
+               docs; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no WebView/protocol dependency, no URL
+               opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-22 10:12 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open (human-gated) WebView/TLS render closeout of #009/#021. EP-P9/EP-P13 pin the platform
      launch plan and navigation gate over hostile AUTHORITIES (confusables, scheme-relative, encoded

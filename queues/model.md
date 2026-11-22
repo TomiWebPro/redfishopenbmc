@@ -4,6 +4,34 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 14:17 UTC: carves a fresh, machine-checkable, unblocked slice of the
+      still-open #009/#021 epic. RM-16 pins hostile VALUE encodings of `ServiceEnabled`/`Enabled`
+      (string/num/null/list/map/control) and RM-8/RM-13 pin the canonical tri-state across both
+      `fromManager` factories, but nothing pins DUPLICATE / case-variant KEY collisions inside one
+      console block (`ServiceEnabled` vs `serviceenabled`, `Enabled` vs `enabled`,
+      `MaxConcurrentSessions` vs `maxconcurrentsessions`) with conflicting values — a hostile BMC (or a
+      parser that lowercases keys late) could make `KvmConsole.fromManager` and `KvmCapability.fromManager`
+      resolve different enablement/URI/session aggregates from the SAME payload. Read-only
+      characterization; the two deliberate behaviour decisions (RM-11 mixed regime, EP-S8 credentialed
+      Primary) stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence,
+      never churn. No code touched. -->
+
+- [ ] RM-17 Duplicate / case-variant console-block key collision agreement across both `fromManager`
+       factories: over one manager whose Graphical/Serial/Remote blocks carry duplicate and case-variant
+       `ServiceEnabled` / `Enabled` / `MaxConcurrentSessions` keys with conflicting values (plus a canonical
+       single-key control), pin that `KvmConsole.fromManager` and `KvmCapability.fromManager` resolve the
+       SAME `supported` / `serviceEnabled`, launch URI, connect-type chips and `maxSessions`, with no raw
+       key leaking into a rendered payload and non-canonical/colliding encodings failing closed rather than
+       one factory winning a different value. AUDIT FIRST: if the shared helpers already normalize keys
+       identically across both factories, record the audit and add nothing; RED->GREEN only on a genuine
+       divergence, never churn. Read-only model work; no wire/transport/TLS change, no dependency, no
+       WebView/protocol import, no behaviour decision folded in.
+       Dept: rf-model
+       Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart test/features/kvm/kvm_enablement_encoding_agreement_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/models/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+               no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-22 10:12 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 epic. RM-8/RM-13 pin the canonical enablement tri-state (bool flags, truthy-wins)
      across both factories, but nothing pins the NON-BOOL encoding seam at the model surface: string / numeric

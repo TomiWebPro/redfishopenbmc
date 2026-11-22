@@ -5,6 +5,31 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 14:17 UTC: another fresh, display-only, unblocked slice of the
+      still-open #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U19 pins both
+      operator cards' chip/session agreement over a MODEST hostile matrix and EP-U16/U15 pin notice/launch
+      agreement, but nothing pins that the two cards stay usable when one manager carries EXTREME content:
+      a very long manager name, 20+ connect-type chips, very large session-limit digits and a long resolved
+      URI. A one-sided layout/wrap edit could overflow at 320 px or split a merged a11y node while every
+      fixed-value suite stays GREEN. Display-only; the human-gated WebView/TLS rendering stays gated and is
+      NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-U20 Extreme-content no-overflow + single merged a11y node across both KVM operator cards: over
+       one manager built into both real cards with a very long manager name, 20+ normalized connect-type
+       chips, a very large `MaxConcurrentSessions` and a long control-safe resolved URI, pin that neither
+       card overflows at 320 / 800 / 1300 px, that each card's chips/session/URI keep visible text == announced
+       label inside one merged `excludeSemantics` node, and that the two cards agree on the shared payload
+       values (chip set, session number, URI) regardless of their intentionally different prefixes. AUDIT
+       FIRST: if both cards already wrap/clip extreme content with byte-identical output and no overflow,
+       record the audit and add nothing; RED->GREEN only on a genuine divergence, never churn. Display-only;
+       no WebView/protocol import, no URL opened, no dependency, no production TLS weakening.
+       Dept: rf-ui
+       Verify: `flutter test test/features/kvm/kvm_card_chip_session_agreement_test.dart test/features/kvm/kvm_capability_card_test.dart test/features/kvm/kvm_widget_test.dart && flutter analyze`
+               (0 issues), with RED->GREEN proof + 320 px no-overflow + visible==announced only on a genuine
+               divergence; writes limited to `lib/features/kvm/views/**` + those named test files; no WebView/
+               protocol import, no URL opened, no dependency, no production TLS weakening;
+               `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-22 10:12 UTC: carves a fresh, display-only, unblocked slice of the
      still-open #009/#021 closeout. The model layer pins connect-type / session-limit aggregate agreement
      (RM-6/RM-8/EP-M5) and EP-U11/U15 pin rendered card agreement for RemoteConsole/disabled and launch
