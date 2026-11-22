@@ -12984,3 +12984,19 @@
 - Push the single commit (never force-push); leave pre-existing stashes untouched. EP-T4 (fixture/CI guard) audit-first — fixture half covered by EP-T10, dependency/flag halves by EP-P5/EP-T6 + human-gate guards, so land only a genuine RED→GREEN divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (gate: CWE-489 remote-debugging / inspectability)
+
+**Done:**
+- Sole-merger gate: MERGED PASS-verified `build/rf-platform` tip `37762c0` into `main` via `--no-ff` (merge `a16a23c`, parents `fd2134b` / `37762c0`) after `rf-platform-check` run#11145 returned `SUCCESS` / `CHECK: PASS` for that exact head (exit 0, 43.0 s, started 2026-11-22 02:12:16 UTC — ~63 s after the tip commit 02:11:13 UTC; HEAD cross-checked unchanged, merge-base `08c0d85` ancestor of main, exactly one unique commit, allowlisted paths only — `lib/features/kvm/platform/**` + `test/**`, doc+test only, no production-TLS weakening). Clean auto-merge (ort). Branch adds the RP-1 "no remote debugging / WebView inspectability (CWE-489 active debug code)" acceptance box to `WEBVIEW_TLS_MATRIX.md` (no production `setWebContentsDebuggingEnabled(true)` / WKWebView `isInspectable` / web-inspector entitlement / DevTools exposure of the trusted BMC console) + `no-web-inspector` evidence marker + 1 RED guard in `validation_evidence_checklist_guard_test.dart`.
+- Post-merge verify at `a16a23c` (clean tracked tree, no new stash — five pre-existing stashes untouched): `flutter analyze` 0; full `flutter test --coverage --concurrency=4` 2047 passed / 1 skipped (baseline 2046 +1 merged test); all coverage gates PASS overall 90.5% / scoped 90.4% / kvm 97.4% / kvm-platform 97.0%, gate exit 0; `dart run tool/asset_guard.dart` OK; `dart run tool/unattended_guard.dart` OK; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; first-parent diff = 2 allowlisted files (46 insertions, 3 deletions); TLS-weakening + secret scan clean.
+
+**Decisions:**
+- Merged on an explicit PASS verdict for the exact checked head only (never merge un-verified / FAIL). Clean tree — no WIP to isolate, no new stash; five pre-existing stashes untouched. Production TLS not weakened; no WebView activation, no human approval granted.
+- DMTF 85-test emulator skipped: doc+test-only change, no lib-wire/fixture/tool-runtime change, <7 days since last green 85/85. No issue closed (#009 P3 / #021 P2 stay human-gated on platform WebView + BMC TLS validation).
+
+**Next:**
+- Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
