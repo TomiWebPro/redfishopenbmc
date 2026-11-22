@@ -90,6 +90,24 @@ class KvmWebViewPolicy {
   /// disables pinning. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassCertificatePinning => false;
 
+  /// Always `false`: the TLS protocol-version / cipher-suite floor is NEVER
+  /// bypassed, not even by the test-only self-signed opt-in.
+  ///
+  /// Hostname verification ([bypassHostnameVerification]) binds the certificate
+  /// identity to the console host, and pinning ([bypassCertificatePinning])
+  /// binds the connection to the expected BMC key. This invariant is distinct
+  /// from both: it governs the *handshake itself*. The embedded WebView must
+  /// negotiate only a modern TLS version (1.2+ floor) with strong cipher suites
+  /// and downgrade protection, never TLS 1.0/1.1, SSLv3, weak/export/NULL
+  /// suites or a silent downgrade. Tolerating a self-signed leaf on the
+  /// expected test host relaxes ONLY leaf trust: it must never lower the
+  /// protocol/cipher floor, otherwise the privileged console session is exposed
+  /// to a downgrade/decryption attack. This is a hard, configuration-independent
+  /// invariant, so a future WebView consumer can consult it and can never
+  /// obtain a policy that bypasses the TLS floor. See `WEBVIEW_TLS_MATRIX.md`
+  /// (RP-1).
+  bool get bypassTlsProtocolFloor => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

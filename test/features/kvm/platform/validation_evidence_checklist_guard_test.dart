@@ -30,7 +30,9 @@
 // re-auth (no unattended privileged console), no-HTTP-auth / login-form
 // credential-prompt spoofing (native authentication-challenge dialog, no
 // auto-submitted stored credentials), certificate / public-key pinning (no
-// trust-all / accept-any-certificate; opt-in never relaxes the pin), flag-off
+// trust-all / accept-any-certificate; opt-in never relaxes the pin),
+// TLS protocol-version / cipher-suite floor (hard configuration-independent
+// invariant; the test-only opt-in never bypasses the TLS floor), flag-off
 // fallback, human sign-off) so a future edit cannot silently erase the evidence
 // boxes that gate that decision.
 //
@@ -113,6 +115,12 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-export-cipher', marker: 'export'),
   (name: 'no-tls-downgrade', marker: 'tls_fallback_scsv'),
   (name: 'opt-in-keeps-tls-floor', marker: 'must never relax'),
+  (
+    name: 'tls-floor-config-invariant',
+    marker: 'configuration-independent invariant'
+  ),
+  (name: 'tls-floor-never-bypassed', marker: 'never bypasses the tls floor'),
+  (name: 'tls-floor-policy-getter', marker: 'bypasstlsprotocolfloor'),
   (name: 'no-cleartext-transport', marker: 'no cleartext'),
   (name: 'https-only-platform', marker: 'https-only transport'),
   (name: 'android-cleartext-permitted', marker: 'cleartexttrafficpermitted'),
@@ -546,6 +554,21 @@ void main() {
       expect(missing, contains('no-export-cipher'));
       expect(missing, contains('no-tls-downgrade'));
       expect(missing, contains('opt-in-keeps-tls-floor'));
+    });
+
+    test('RED: dropping the TLS-floor hard-invariant box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutTlsFloorInvariant = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'configuration-independent invariant|never bypasses the tls floor|bypasstlsprotocolfloor')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutTlsFloorInvariant);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('tls-floor-config-invariant'));
+      expect(missing, contains('tls-floor-never-bypassed'));
+      expect(missing, contains('tls-floor-policy-getter'));
     });
 
     test('RED: dropping the no-cleartext/HTTPS-only transport box fails closed',
