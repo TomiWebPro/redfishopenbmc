@@ -5,6 +5,10 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+- [x] EP-T26 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 EP-T26 guard-suite liveness registration of three newly-landed agreement guards + RED->GREEN tests`, analyze 0 / 2213 passed / 1 skipped) — Closes a CONFIRMED "who guards the guards" gap: the three agreement guards that landed after SEC-010 (EP-P14 launch-plan scheme-spelling matrix, EP-U19 cross-surface chip + session-limit agreement, RM-16 hostile enablement-flag encoding agreement) were live + reachable from verify.yml's whole-tree `flutter test --coverage`, but absent from BOTH `canonicalGuardFiles` and every pinned epoch — deleting / emptying / test-stripping one of them stayed GREEN. Extended `test/tool/guard_suite_liveness_test.dart` with the three canonical paths, a pinned `epT26AddedGuards` epoch (length 3, pairwise disjoint from all 20 earlier designations), inclusion in `allDesignatedGuards` + EP-T20 completeness arithmetic, a containment/disjointness pin test and a temp-root RED→GREEN liveness test (each guard fails closed on deleted / emptied / test-stripped). Real-file RED: dropped one canonical path → exactly 3 named failures (`+41 -3`), restored byte-clean (SHA `7b63feb7…`, 0 residue, backup shredded) → 44/44 GREEN. Test/tool-only, dependency-free, no `lib/`, no WebView/protocol import, no URL opened, no production TLS weakening.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues); writes limited to `test/tool/guard_suite_liveness_test.dart`; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no lib/, no WebView/protocol dependency, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-22 10:12 UTC: a fresh, machine-checkable slice of the still-open #009/#021
      epic's queue hygiene. EP-T13 pins a single valid `Dept:` + non-empty `Verify:`, EP-T24 pins that the
      verify command names repo-existing paths, but NEITHER pins the single-writer dimension (MULTI_DEPT

@@ -13429,3 +13429,19 @@
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
 
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-T26)
+
+**Done:**
+- FEATURE (test/tool-only): EP-T26 guard-suite liveness registration of the three newly-landed agreement guards. AUDIT FIRST: the EP-P14 scheme-spelling matrix, EP-U19 chip/session agreement and RM-16 enablement-encoding agreement guards were live + CI-reachable but absent from `canonicalGuardFiles` and every pinned epoch — a CONFIRMED "who guards the guards" gap.
+- Extended `test/tool/guard_suite_liveness_test.dart`: three canonical paths, pinned `epT26AddedGuards` epoch (length 3, disjoint from all 20 earlier designations) in `allDesignatedGuards` + EP-T20 completeness arithmetic, containment/disjointness pin test, temp-root RED→GREEN liveness test (each guard fails closed on deleted / emptied / test-stripped).
+- RED→GREEN: dropped one canonical path → exactly 3 named failures (`+41 -3`: EP-T26 pin, EP-T20 completeness, EP-T26 liveness); restored byte-clean (SHA `7b63feb7…`, 0 residue, 600-perm backup shredded) → 44/44 GREEN.
+- Verify: targeted 44/44; `dart format` clean; analyze 0; full suite 2213 passed / 1 skipped (baseline 2211 +2); issues validate OK; diff --check clean; deps unchanged; emulator skipped (test/tool-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Registration only — no behaviour change, no production widget or `lib/` change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-T26 LANDED (`queues/tooling.md`). Both issues stay human-gated (platform WebView + BMC TLS validation).
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-P12 (audit-first — EP-P8 may already cover it) and remaining model/service/UI items — RED→GREEN only on a genuine divergence, never churn.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
+
