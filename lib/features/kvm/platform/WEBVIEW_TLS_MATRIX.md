@@ -500,6 +500,24 @@ flag stays off for that target.
       target. Verified per target (inspect the WebView / host-activity touch filtering and
       window flags, and confirm no overlay can cover the secure surface) before the flag is
       flipped.
+* [ ] **No sensitive console URL / session token in logs, telemetry or crash
+      reports (CWE-532)** — the WebView-hosting layer and the app's launch / fallback
+      code must never write the console URI — or any session token, credential or BMC
+      identity embedded in its userinfo, path or query — to logs or diagnostics
+      (Android `Logcat`, `NSLog` / `os_log`, Flutter `debugPrint`), nor embed it in
+      analytics events, crash reports / breadcrumbs or any other telemetry sink. The
+      console URI is the operator's privileged management-session handle and may carry a
+      token in its query or userinfo; capturing such a URL in a log line or crash report
+      leaves a durable, exfiltratable copy of that handle on the device or in a third-party
+      sink — a sensitive-information-in-logs / -telemetry surface (CWE-532) wholly
+      independent of TLS, hostname, origin-confinement, referrer, cookie, subresource-egress
+      and data-at-rest checks (which govern the handshake, the literal authority,
+      navigation, URL headers, cookie attachment, request destinations and on-disk
+      persistence, not the app's own diagnostic / telemetry output). Every console URI and
+      every token derived from it must be redacted from logs, analytics and crash reports on
+      every target. Verified per target (inspect the WebView load / error callbacks and the
+      app's logging and telemetry configuration, and confirm no console URL or token is
+      emitted) before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
