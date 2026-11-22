@@ -182,6 +182,27 @@ flag stays off for that target.
       navigation targets must be credential-free; the initial credentialed
       console load is a separate path and is unaffected. Verified per target
       before the flag is flipped.
+* [ ] **No externally-supplied / attacker-controlled initial console URL (trusted
+      entry path only)** — the WebView's initial console URL must be derived only
+      from the validated user-configured BMC profile; it must never be seeded by
+      an external Intent, an exported activity launched via a `DATA_URI` /
+      `Intent.parseUri` / custom-scheme deep link, or a payload supplied by
+      another app. No route may let an outside actor choose the first load. This
+      is a distinct entry-point surface: the origin-confinement and
+      arbitrary-scheme gates govern subsequent in-session navigations, and the
+      initial credentialed console load is explicitly a separate path (see the
+      origin-confinement box) — so an attacker who can seed that initial URL gets
+      an unconfined first render and can inject credentials into an
+      attacker-chosen origin, bypassing both. Console identity is
+      operator-configured, but console content is served by the BMC and is
+      attacker-influenced: letting an external actor pick the initial console URL
+      is a phishing / credential-injection surface wholly independent of TLS,
+      hostname, subresource-egress and in-session navigation checks (which govern
+      the handshake, the literal authority, request destinations and subsequent
+      navigations, not the trusted entry URL itself). Verified per target
+      (inspect the WebView-hosting activity's exported / launch configuration and
+      confirm the initial console URL comes only from the validated profile)
+      before the flag is flipped.
 * [ ] **No arbitrary-scheme / deep-link navigation** — the embedded WebView must
       never follow a top-level navigation to any non-HTTP(S) scheme, including
       `javascript:`, `data:`, `blob:`, `intent:`, `market:`, `tel:`, `mailto:`
