@@ -13698,3 +13698,19 @@
 **Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-P16)
+
+**Done:**
+- FEATURE (test-only): EP-P16 nonstandard-port authority fail-closed agreement across the platform decision layer. AUDIT FIRST: `isSecureHttpsConsoleUri`, `planConsoleLaunch` and `allowsInAppNavigation` all share the fail-closed `_isHttpUriWithSchemes` classifier (`_hasNonCanonicalPort` + `Uri.port` 0..65535 range) so they agree by construction, but no test swept the PORT family through all three at once; Dart `Uri.tryParse` folds signed `:+443` to 443 and reports `:99999` as a valid URI — a genuine unguarded parser-differential seam, no live drift.
+- Added `test/features/kvm/platform/port_authority_fail_closed_agreement_test.dart` (9 tests): 7 legitimate ports stay secure+externalBrowser+same-origin-nav+opt-in in-app-eligible; 7 malformed ports (65536/99999/abc/+443/-1/IPv6 malformed) fail closed on classifier, plan (copyOnly), nav gate and stale-flag TLS boundary; model `KvmConsole.launchPlan` agrees field-for-field.
+- RED→GREEN: neutralized the digits-only port check in `_hasNonCanonicalPort` under a 600-perm backup → exactly 3 named failures (all `:+443`: classifier, plan/nav, stale-flag), other 6 GREEN; restored byte-clean (SHA `74887e6…` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 9/9 GREEN.
+- Verify: targeted 9/9; queue Verify platform dir 362/362; `dart format` clean; analyze 0; full suite 2281 passed / 1 skipped (baseline 2272 +9); issues validate OK; diff --check clean; deps unchanged; emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Regression guard — no behaviour change, no production `lib/` change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-P16 LANDED (`queues/platform.md`). Both issues stay human-gated (platform WebView + BMC TLS validation). UI skipped: pure decision-layer agreement guard, no widget surface, no manufactured UI churn per §5.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next tooling head: liveness-register the EP-P16 guard in `test/tool/guard_suite_liveness_test.dart`; remaining heads RM-18 / EP-U21 / EP-S13 audit-first, RED→GREEN only on a genuine divergence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
