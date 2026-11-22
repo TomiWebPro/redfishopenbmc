@@ -21,8 +21,10 @@
 // (CWE-1021 obscured-window touch), no-TLS-version/cipher-suite downgrade
 // (TLS 1.2+ floor, no weak/export suites, no silent fallback),
 // no-DNS-rebinding/stale-resolution (connect to the validated origin, TOCTOU-
-// free resolution), flag-off fallback, human sign-off) so a future edit cannot
-// silently erase the evidence boxes that gate that decision.
+// free resolution), no-external/attacker-controlled initial console URL (trusted
+// entry path, no exported activity / Intent-seeded first load), flag-off
+// fallback, human sign-off) so a future edit cannot silently erase the evidence
+// boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -100,6 +102,12 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'toctou-check', marker: 'time-of-check'),
   (name: 'toctou', marker: 'toctou'),
   (name: 'pinned-resolved-address', marker: 'resolved address'),
+  (name: 'no-external-initial-url', marker: 'initial console url'),
+  (name: 'profile-derived-entry-url', marker: 'user-configured bmc profile'),
+  (name: 'no-exported-activity-launch', marker: 'exported activity'),
+  (name: 'no-external-intent-seed', marker: 'external intent'),
+  (name: 'no-outside-actor-entry', marker: 'outside actor'),
+  (name: 'trusted-entry-path', marker: 'trusted entry url'),
   (name: 'no-arbitrary-file-download', marker: 'arbitrary file download'),
   (name: 'no-driveby-download', marker: 'drive-by download'),
   (name: 'no-content-disposition-download', marker: 'content-disposition'),
@@ -482,6 +490,23 @@ void main() {
       expect(missing, contains('toctou-check'));
       expect(missing, contains('toctou'));
       expect(missing, contains('pinned-resolved-address'));
+    });
+
+    test('RED: dropping the trusted-initial-console-URL box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutEntryGate = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'initial console url|user-configured bmc profile|exported activity|external intent|outside actor|trusted entry url')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutEntryGate);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-external-initial-url'));
+      expect(missing, contains('profile-derived-entry-url'));
+      expect(missing, contains('no-exported-activity-launch'));
+      expect(missing, contains('no-external-intent-seed'));
+      expect(missing, contains('no-outside-actor-entry'));
+      expect(missing, contains('trusted-entry-path'));
     });
 
     test('RED: dropping the no-native-bridge box fails closed', () {
