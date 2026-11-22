@@ -26,6 +26,18 @@
 // with `test -f lib/features/kvm/platform/WEBVIEW_TLS_MATRIX.md`. Existence is
 // checked with an injectable predicate so the RED→GREEN proof needs no real
 // queue-file mutation (safe under concurrent dept-agent edits).
+//
+// EP-T25 (epic #009/#021): EP-T13 pins exactly one valid `Dept:` and EP-T24
+// pins that the verify command names repo-existing paths, but NEITHER pins
+// MULTI_DEPT.md hard rule 1 (single-writer path ownership): an item whose
+// declared write-scope / verify command names a product `lib/**` path owned
+// by a DIFFERENT dept still passed both guards, silently breaking the
+// one-writer contract. This guard additionally requires every product `lib/`
+// path named in an unchecked item to fall inside that item's `Dept:` owned
+// product-path set (rf-tooling / rf-ideate / rf-audit / rf-check / rf-gate
+// own no product lib). Shared `test/**` / `tool/**` / `test_integration/**`
+// paths stay exempt. Ownership is injectable so the real-repo invariant can
+// prove non-vacuity without mutating concurrently-edited queue files.
 
 import 'dart:io';
 
@@ -44,6 +56,35 @@ const Set<String> allowedDepartments = <String>{
   'rf-check',
   'rf-gate',
 };
+
+/// Product `lib/**` write-scope owned by each dept, from MULTI_DEPT.md
+/// §"Departments" (paths normalised: no trailing glob / slash). rf-service's
+/// "controllers/providers" ownership is represented by the concrete
+/// controller/provider files in this app; adding a new owned product path is
+/// an intentional central edit here. Depts with no product `lib/` ownership
+/// map to an empty list, so ANY product path they name fails closed.
+const Map<String, List<String>> deptOwnedProductPaths = <String, List<String>>{
+  'rf-model': <String>['lib/features/kvm/models', 'lib/redfish/discovery'],
+  'rf-ui': <String>['lib/features/kvm/views', 'lib/features/systems'],
+  'rf-service': <String>[
+    'lib/features/kvm/kvm_service.dart',
+    'lib/features/kvm/kvm_controller.dart',
+    'lib/redfish/client',
+  ],
+  'rf-platform': <String>['lib/features/kvm/platform'],
+  'rf-tooling': <String>[],
+  'rf-audit': <String>[],
+  'rf-ideate': <String>[],
+  'rf-check': <String>[],
+  'rf-gate': <String>[],
+};
+
+/// True when [path] (already normalised) is at or below one of [owned] prefixes.
+/// A prefix matches itself or a descendant only on a `/` boundary, so
+/// `lib/features/kvm/models` never accepts `lib/features/kvm/models_extra`.
+bool pathIsOwned(String path, List<String> owned) => owned.any(
+      (String prefix) => path == prefix || path.startsWith('$prefix/'),
+    );
 
 /// Removes `<!-- ... -->` HTML comments, blanking their bytes but preserving
 /// newlines so line numbers stay stable. Queue files contain comments that
@@ -191,18 +232,22 @@ List<QueueItem> parseUncheckedItems(String file, String source) {
 List<String> evaluateQueueSchema(
   Map<String, String> queueSources, {
   PathExists pathExists = _repoPathExists,
+  Map<String, List<String>> ownedPaths = deptOwnedProductPaths,
 }) {
   final List<String> violations = <String>[];
   queueSources.forEach((String file, String raw) {
     final String source = stripHtmlComments(raw.replaceAll('\r', ''));
     for (final QueueItem item in parseUncheckedItems(file, source)) {
       final String at = '$file:${item.line} ${item.header}';
+      bool deptIsValid = false;
       if (item.dept.isEmpty) {
         violations.add('MISSING_DEPT: $at');
       } else if (item.dept.length > 1) {
         violations.add('MULTIPLE_DEPT: $at -> ${item.dept.join(" | ")}');
       } else if (!allowedDepartments.contains(item.dept.single)) {
         violations.add('BAD_DEPT: $at -> ${item.dept.single}');
+      } else {
+        deptIsValid = true;
       }
       if (item.verify.isEmpty) {
         violations.add('MISSING_VERIFY: $at');
@@ -218,6 +263,25 @@ List<String> evaluateQueueSchema(
         } else if (!targets.any(pathExists)) {
           violations
               .add('VERIFY_DANGLING_TARGET: $at -> ${targets.join(" | ")}');
+        }
+        // EP-T25: MULTI_DEPT hard rule 1 — any product `lib/**` path named in
+        // the write-scope / verify command must sit inside this dept's owned
+        // product-path set. Shared test/tool paths are exempt. Only evaluated
+        // when the item has exactly one valid dept (ownership is undefined
+        // otherwise, and the dept schema violation is already reported).
+        if (deptIsValid) {
+          final String dept = item.dept.single;
+          final List<String> owned = ownedPaths[dept] ?? const <String>[];
+          for (final String productPath in targets.where(
+            (String p) => p.startsWith('lib/'),
+          )) {
+            if (!pathIsOwned(productPath, owned)) {
+              violations.add(
+                'DEPT_PATH_OWNERSHIP: $at -> dept=$dept names foreign '
+                'product path $productPath',
+              );
+            }
+          }
         }
       }
     }
@@ -578,8 +642,11 @@ void main() {
         expect(
           evaluateQueueSchema(
             <String, String>{
-              'queues/ui.md':
-                  '- [ ] EP-X24 Item\n      Dept: rf-ui\n      Verify: `$command`\n',
+              // The lib doc-existence command is EP-P1's shape, owned by
+              // rf-platform; the other two commands name only shared test
+              // paths and are valid for any dept.
+              'queues/platform.md':
+                  '- [ ] EP-X24 Item\n      Dept: rf-platform\n      Verify: `$command`\n',
             },
             pathExists: exists,
           ),
@@ -618,8 +685,11 @@ void main() {
         'lib/features/kvm/platform/WEBVIEW_TLS_MATRIX.md',
       };
       bool exists(String path) => existing.contains(path);
+      // rf-platform owns the `lib/features/kvm/platform/**` doc-existence
+      // target used by the EP-P1-shaped GREEN case below; test/tool targets
+      // are dept-agnostic.
       String item(String verify) =>
-          '- [ ] EP-X24 Item\n      Dept: rf-tooling\n      Verify: $verify\n';
+          '- [ ] EP-X24 Item\n      Dept: rf-platform\n      Verify: $verify\n';
       try {
         queue.parent.createSync(recursive: true);
         Map<String, String> read() => <String, String>{
@@ -708,6 +778,197 @@ void main() {
         forced.any((String v) => v.startsWith('VERIFY_DANGLING_TARGET:')),
         isTrue,
         reason: 'real-repo target invariant did not fail when paths vanished',
+      );
+    });
+  });
+
+  group('EP-T25 dept <-> product-path ownership evaluator (pure)', () {
+    // A permissive path-existence predicate isolates the ownership check from
+    // EP-T24's dangling-target check so each pure case names exactly one cause.
+    bool exists(String _) => true;
+    String item(String dept, String scope) => '- [ ] EP-X25 Item\n'
+        '      Dept: $dept\n'
+        '      Verify: `flutter test test/tool/ && flutter analyze` (0 issues);\n'
+        '              writes limited to `$scope`.\n';
+    List<String> check(String dept, String scope) => evaluateQueueSchema(
+          <String, String>{'queues/ui.md': item(dept, scope)},
+          pathExists: exists,
+        );
+
+    test('ownership map covers the nine depts; non-product depts own none', () {
+      expect(deptOwnedProductPaths.keys.toSet(), allowedDepartments);
+      for (final String dept in <String>[
+        'rf-tooling',
+        'rf-audit',
+        'rf-ideate',
+        'rf-check',
+        'rf-gate',
+      ]) {
+        expect(deptOwnedProductPaths[dept], isEmpty, reason: dept);
+      }
+    });
+
+    test('pathIsOwned matches the prefix itself and descendants on / only', () {
+      const List<String> models = <String>['lib/features/kvm/models'];
+      expect(pathIsOwned('lib/features/kvm/models', models), isTrue);
+      expect(pathIsOwned('lib/features/kvm/models/foo.dart', models), isTrue);
+      expect(pathIsOwned('lib/features/kvm/models_extra', models), isFalse);
+      expect(pathIsOwned('lib/features/kvm', models), isFalse);
+      expect(pathIsOwned('lib/features/kvm/models', const <String>[]), isFalse);
+    });
+
+    test('a dept naming an owned product path is clean', () {
+      expect(check('rf-model', 'lib/features/kvm/models/**'), isEmpty);
+      expect(check('rf-ui', 'lib/features/kvm/views/**'), isEmpty);
+      expect(check('rf-service', 'lib/features/kvm/kvm_service.dart'), isEmpty);
+      expect(check('rf-platform', 'lib/features/kvm/platform/**'), isEmpty);
+    });
+
+    test('a dept naming a foreign product path fails closed', () {
+      final List<String> v = check('rf-ui', 'lib/features/kvm/models/**');
+      expect(
+        v.any((String s) =>
+            s.startsWith('DEPT_PATH_OWNERSHIP:') &&
+            s.contains('dept=rf-ui') &&
+            s.contains('lib/features/kvm/models')),
+        isTrue,
+        reason: v.join(' | '),
+      );
+      // The diagnostic names the offending item's file and line.
+      expect(v.single, contains('queues/ui.md:1'));
+    });
+
+    test('a no-product-lib dept naming any product path fails closed', () {
+      for (final String dept in <String>[
+        'rf-tooling',
+        'rf-audit',
+        'rf-ideate',
+        'rf-check',
+        'rf-gate',
+      ]) {
+        expect(
+          check(dept, 'lib/features/kvm/models/**').any(
+            (String s) => s.startsWith('DEPT_PATH_OWNERSHIP:'),
+          ),
+          isTrue,
+          reason: dept,
+        );
+      }
+    });
+
+    test('shared test/tool paths stay exempt for every dept', () {
+      for (final String dept in allowedDepartments) {
+        expect(
+          check(dept, 'test/features/kvm/**'),
+          isEmpty,
+          reason: dept,
+        );
+      }
+    });
+
+    test('every product path is checked; one foreign among owned fails', () {
+      final List<String> v = evaluateQueueSchema(
+        <String, String>{
+          'queues/model.md': item(
+            'rf-model',
+            'lib/features/kvm/models/** + lib/features/kvm/views/**',
+          ),
+        },
+        pathExists: exists,
+      );
+      expect(
+        v.where((String s) => s.startsWith('DEPT_PATH_OWNERSHIP:')).length,
+        1,
+        reason: v.join(' | '),
+      );
+      expect(v.single, contains('lib/features/kvm/views'));
+    });
+
+    test('an invalid dept reports its schema violation, not ownership', () {
+      final List<String> v = check('rf-evil', 'lib/features/kvm/models/**');
+      expect(v.any((String s) => s.startsWith('BAD_DEPT:')), isTrue);
+      expect(
+          v.any((String s) => s.startsWith('DEPT_PATH_OWNERSHIP:')), isFalse);
+    });
+  });
+
+  group('EP-T25 RED→GREEN guard proof (temporary queue tree)', () {
+    test('owned path is clean; foreign / no-lib-dept paths fail; restore clean',
+        () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_t25_queue_');
+      final File queue = File(
+        '${temp.path}${Platform.pathSeparator}queues${Platform.pathSeparator}'
+        'ui.md',
+      );
+      bool exists(String _) => true;
+      String item(String dept, String scope) => '- [ ] EP-X25 Item\n'
+          '      Dept: $dept\n'
+          '      Verify: `flutter test test/tool/` writes limited to `$scope`.\n';
+      Map<String, String> read() => <String, String>{
+            'queues/ui.md': queue.readAsStringSync(),
+          };
+      try {
+        queue.parent.createSync(recursive: true);
+
+        // GREEN: a dept naming its own product path.
+        queue.writeAsStringSync(item('rf-ui', 'lib/features/kvm/views/**'));
+        expect(evaluateQueueSchema(read(), pathExists: exists), isEmpty);
+
+        // RED 1: a dept naming another dept's product path.
+        queue.writeAsStringSync(item('rf-ui', 'lib/features/kvm/models/**'));
+        expect(
+          evaluateQueueSchema(read(), pathExists: exists)
+              .any((String s) => s.startsWith('DEPT_PATH_OWNERSHIP:')),
+          isTrue,
+        );
+
+        // RED 2: a no-product-lib dept naming any product path.
+        queue.writeAsStringSync(
+            item('rf-tooling', 'lib/features/kvm/platform/**'));
+        expect(
+          evaluateQueueSchema(read(), pathExists: exists)
+              .any((String s) => s.startsWith('DEPT_PATH_OWNERSHIP:')),
+          isTrue,
+        );
+
+        // GREEN again once the owned path is restored.
+        queue.writeAsStringSync(item('rf-ui', 'lib/features/kvm/views/**'));
+        expect(evaluateQueueSchema(read(), pathExists: exists), isEmpty);
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+  });
+
+  group('EP-T25 real repository product-path ownership invariant', () {
+    test('every unchecked item names only dept-owned product paths', () {
+      final Map<String, String> queues = readRealQueues();
+      expect(queues.length, 5, reason: 'expected the five dept queue files');
+      final List<QueueItem> all = <QueueItem>[];
+      queues.forEach((String file, String raw) {
+        all.addAll(parseUncheckedItems(file, stripHtmlComments(raw)));
+      });
+      int productPaths = 0;
+      for (final QueueItem item in all) {
+        productPaths += extractVerifyTargets(item.verify.join(' '))
+            .where((String p) => p.startsWith('lib/'))
+            .length;
+      }
+      expect(productPaths, greaterThanOrEqualTo(10),
+          reason: 'ownership guard saw too few product paths (vacuous?)');
+      // The checked-in queues satisfy single-writer path ownership.
+      expect(evaluateQueueSchema(queues), isEmpty);
+      // Non-vacuity: with every dept's ownership removed, the very same real
+      // queues fail closed on the product paths that were just accepted.
+      final List<String> forced = evaluateQueueSchema(
+        queues,
+        ownedPaths: <String, List<String>>{},
+      );
+      expect(
+        forced.any((String s) => s.startsWith('DEPT_PATH_OWNERSHIP:')),
+        isTrue,
+        reason: 'real-repo ownership invariant did not fail with no owners',
       );
     });
   });

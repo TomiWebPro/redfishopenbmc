@@ -13303,3 +13303,18 @@
 - Push `main` (never force-push); leave the five pre-existing stashes untouched. Await the next `rf-platform-check` verdict before any further merge. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-T25)
+
+**Done:**
+- FEATURE (test/tool-only): EP-T25 queue-item dept↔product-path ownership cross-check. AUDIT first: EP-T13 pins one valid `Dept:` and EP-T24 pins that `Verify:` names repo-existing paths, but neither pins MULTI_DEPT.md hard rule 1 — an unchecked item naming a product `lib/**` path owned by a DIFFERENT dept passed both. Added `deptOwnedProductPaths`, `pathIsOwned`, injectable `ownedPaths` and a `DEPT_PATH_OWNERSHIP` diagnostic to `test/tool/queue_item_schema_guard_test.dart` (+10 tests; shared test/tool paths exempt), plus 2 EP-T24 lib-doc fixtures aligned to their owning dept (rf-platform).
+- RED→GREEN: removed rf-ui's `lib/features/kvm/views` ownership from the real file → exactly 5 failures (`+26 -5`), restored byte-clean (SHA `cc1fa9f4…`, 0 residue, empty `lib/` diff), 600-perm backup shredded → 31/31 GREEN.
+- Verify: targeted 31/31; `dart format` clean; `flutter analyze` 0; full `flutter test --concurrency=4` 2152 passed / 1 skipped (baseline 2142 +10); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test/tool-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-T25 LANDED (`queues/tooling.md`). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. DMTF 85-test emulator skipped (test/tool-only, <7 days since last green 85/85). No manufactured UI churn (§5). Five pre-existing stashes untouched.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept heads RM-16 / EP-U19 / EP-S11 / EP-P14 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

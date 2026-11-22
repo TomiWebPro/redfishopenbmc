@@ -12,7 +12,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      dept still passes both guards, silently breaking path ownership. Pure test/tool, dependency-free,
      never writes lib/. Distinct from EP-T13/T24. AUDIT FIRST; RED->GREEN only on a genuine gap, no churn. -->
 
-- [ ] EP-T25 Queue-item dept <-> product-path ownership cross-check: extend
+- [x] EP-T25 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 EP-T25 dept<->product-path ownership guard + RED->GREEN tests`, analyze 0 / full suite 2152 passed / 1 skipped) — Queue-schema guard extension enforcing MULTI_DEPT.md hard rule 1: every unchecked item's product `lib/**` write-scope / verify path must fall inside its `Dept:` owned set (rf-tooling/audit/ideate/check/gate own none; shared test/tool paths exempt). Added `deptOwnedProductPaths`, `pathIsOwned`, injectable `ownedPaths` param + `DEPT_PATH_OWNERSHIP` diagnostic; +10 tests (file 21→31). AUDIT: EP-T13/T24 pin dept shape + path existence only, no ownership check — genuine gap. Real-file RED: removed rf-ui's `lib/features/kvm/views` ownership from the real file -> exactly 5 failures (`+26 -5`), restored byte-clean (SHA `cc1fa9f4...`, 0 residue), 600-perm backup shredded -> 31/31 GREEN. Aligned two pre-existing EP-T24 lib-doc fixtures to the owning dept (rf-platform) so the legitimate EP-P1 shape stays GREEN. Original item:
       `test/tool/queue_item_schema_guard_test.dart` so that, for every unchecked item, any product `lib/**`
       path named in the item's declared write-scope / verify command must fall inside that item's `Dept:`
       owned-path set from MULTI_DEPT.md (rf-model -> `lib/features/kvm/models/**`, `lib/redfish/discovery/**`;
