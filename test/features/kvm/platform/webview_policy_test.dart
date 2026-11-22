@@ -338,7 +338,8 @@ void main() {
           isFalse);
     });
 
-    test('test-only self-signed opt-in still never mutates the trust store', () {
+    test('test-only self-signed opt-in still never mutates the trust store',
+        () {
       // Accepting the test BMC's untrusted leaf must NOT be implemented by
       // installing its CA / trust anchor into the platform trust store (Android
       // NetworkSecurityConfig <certificates src="user"/> or KeyStore mutation,
@@ -346,8 +347,8 @@ void main() {
       // every app and every host — a global weakening of production TLS. The
       // opt-in tolerates the leaf only in a scoped per-connection verifier.
       // This is a hard invariant, independent of the flag, TLS mode or signals.
-      expect(
-          KvmWebViewPolicy.testOptIn.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(KvmWebViewPolicy.testOptIn.bypassPlatformTrustStoreIntegrity,
+          isFalse);
     });
 
     test('no policy configuration can weaken the platform trust store', () {
@@ -371,7 +372,8 @@ void main() {
     });
   });
 
-  group('KvmWebViewPolicy — client-certificate (mTLS) validation is never '
+  group(
+      'KvmWebViewPolicy — client-certificate (mTLS) validation is never '
       'bypassed', () {
     test('production default always validates the client certificate', () {
       expect(
@@ -391,7 +393,8 @@ void main() {
           isFalse);
     });
 
-    test('no policy configuration can bypass client-certificate validation', () {
+    test('no policy configuration can bypass client-certificate validation',
+        () {
       const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
       const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
         enabled: true,
@@ -410,6 +413,45 @@ void main() {
       expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
       expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
       expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+    });
+  });
+
+  group('KvmWebViewPolicy — strict Referrer-Policy is never bypassed', () {
+    test('production default always enforces the strict referrer policy', () {
+      expect(KvmWebViewPolicy.productionDefault.bypassStrictReferrerPolicy,
+          isFalse);
+    });
+
+    test(
+        'test-only self-signed opt-in still enforces the strict referrer policy',
+        () {
+      // Tolerating the test BMC's untrusted SERVER leaf relaxes ONLY server leaf
+      // trust. It must never relax the strict referrer policy or the console's
+      // privileged URL / session token could leak in a cross-origin Referer
+      // header. This is a hard invariant, independent of the flag, TLS mode or
+      // console signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassStrictReferrerPolicy, isFalse);
+    });
+
+    test('no policy configuration can bypass the strict referrer policy', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassStrictReferrerPolicy, isFalse);
+      expect(enabledSelfSigned.bypassStrictReferrerPolicy, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Every server/transport/client-credential invariant is independent of
+      // the outbound Referer-header control: the opt-in can disable none.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
     });
   });
 

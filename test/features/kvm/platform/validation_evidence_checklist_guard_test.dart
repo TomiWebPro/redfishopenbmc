@@ -42,8 +42,11 @@
 // platform trust-store integrity / no-CA-trust-anchor addition (hard
 // configuration-independent invariant; the opt-in never mutates the platform
 // trust store, so self-signed acceptance never becomes a global TLS weakening),
-// flag-off fallback, human sign-off) so a future edit cannot silently erase the
-// evidence boxes that gate that decision.
+// strict Referrer-Policy / no URL-token leakage (hard configuration-independent
+// invariant; the opt-in never relaxes the referrer policy, so the console's
+// privileged URL / session token is never emitted in a cross-origin Referer
+// header), flag-off fallback, human sign-off) so a future edit cannot silently
+// erase the evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -317,6 +320,11 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'client-cert-policy-getter',
     marker: 'bypassclientcertificatevalidation'
   ),
+  (
+    name: 'referrer-never-bypassed',
+    marker: 'never bypasses the strict referrer policy'
+  ),
+  (name: 'referrer-policy-getter', marker: 'bypassstrictreferrerpolicy'),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -893,7 +901,8 @@ void main() {
       expect(missing, contains('trust-store-policy-getter'));
     });
 
-    test('RED: dropping the client-certificate/mTLS validation box fails '
+    test(
+        'RED: dropping the client-certificate/mTLS validation box fails '
         'closed', () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutClientCert = section
@@ -908,6 +917,22 @@ void main() {
       expect(missing, contains('client-private-key-protection'));
       expect(missing, contains('opt-in-keeps-client-cert'));
       expect(missing, contains('client-cert-policy-getter'));
+    });
+
+    test(
+        'RED: dropping the strict-referrer-policy hard-invariant box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutReferrerInvariant = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses the strict referrer policy|bypassstrictreferrerpolicy')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutReferrerInvariant);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('referrer-never-bypassed'));
+      expect(missing, contains('referrer-policy-getter'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

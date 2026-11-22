@@ -404,6 +404,20 @@ flag stays off for that target.
       file-access, device-permission and data-at-rest checks. Verified per target
       (inspect the referrer-policy configuration and observed request headers)
       before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassStrictReferrerPolicy`, always
+      `false`): the test-only opt-in never bypasses the strict referrer policy —
+      the console's privileged URL / session token is never emitted in a
+      cross-origin `Referer` header, in strict mode and with the flag both off and
+      on. The opt-in relaxes ONLY the test BMC's untrusted server leaf for the
+      expected host; it never weakens the referrer policy. This box governs the
+      app's own outbound `Referer` header content, so it is distinct from the
+      server-side certificate checks (hostname verification, pinning, revocation,
+      platform trust-store integrity), the TLS floor, HTTPS-only transport and
+      validated-origin binding (the handshake, cleartext sockets and resolved
+      address), and client-certificate validation (the client credential), all of
+      which govern the connection and its credentials. Verified per target before
+      the flag is flipped.
 * [ ] **Fullscreen** — the console can enter/exit fullscreen without leaving the
       app or losing the secure context.
 * [ ] **Keyboard / pointer input forwarding** — keyboard and mouse input are
