@@ -13583,3 +13583,24 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept head EP-M4 (RemoteConsole-only + explicit-disable parity); EP-S12 / EP-P15 record-only audits.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+
+## 2026-11-22 — agent:redfish-gate — #009/#021
+
+**Done:**
+- GATE — merged `build/rf-platform` tip `d64c940` into `main` via `--no-ff` (merge `e513472`, parents `35eb121` / `d64c940`) on the explicit `rf-platform-check` run#11453 `CHECK: PASS` verdict (exit 0, 73.4 s, started 17:40:13 UTC, ~1m42s after the tip commit; targeted guard suites 54/54 on the branch). Clean ort auto-merge, no conflicts. Branch adds the RP-1 "TLS protocol-version / cipher-suite floor is never bypassed (hard configuration-independent invariant; test-only self-signed opt-in never relaxes the TLS 1.2+ floor / no downgrade; distinct from hostname verification + pinning)" acceptance box + evidence markers + 1 RED guard; only production change is a hard `bypassTlsProtocolFloor => false` getter (no trust-all / accept-any-certificate verifier, no production-TLS weakening).
+
+**Verification (in-tree at `e513472`, clean tracked tree):**
+- `flutter analyze`: 0 issues ("No issues found!").
+- `flutter test --coverage --concurrency=4`: 2245 passed / 1 skipped (baseline 2241 +4 merged tests).
+- Coverage gates: all PASS — overall 90.5% (6061/6694), scoped redfish+power+sensors 90.4% (2119/2345), kvm 97.5% (1338/1373), kvm-platform 97.1% (462/476); gate exit 0.
+- `dart run tool/asset_guard.dart`: OK; `dart run tool/unattended_guard.dart`: OK.
+- `python3 issues/issues.py validate`: OK.
+- first-parent `git diff --check`: clean; first-parent diff = 4 allowlisted files (80 insertions, 3 deletions); TLS-weakening + secret scan clean (sole keyword match is a prohibition comment).
+- DMTF 85-test emulator: SKIPPED (no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:** PASS-only merge gate honored (no SKIP/NO-OP). No issue closed (#009 P3 / #021 P2 stay human-gated). Five pre-existing stashes untouched; no force-push, history rewrite, `git clean`, or file deletion. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
