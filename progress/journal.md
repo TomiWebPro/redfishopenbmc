@@ -13445,3 +13445,19 @@
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
 
+
+## 2026-11-22 — agent:rf-gate — MERGE 5ab335a (check#11389 PASS)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#11389 returned `SUCCESS` / `CHECK: PASS` for branch head `5ab335a` (cross-checked unchanged == `5ab335a4855c95322470c26c0edb11025857bd22`; merge-base `625b359` ancestor of main; exactly one unique commit; targeted `validation_evidence_checklist_guard_test.dart` 29/29 on the branch per check). Merged `build/rf-platform` into `main` with `--no-ff` → merge `85ca2d2` (parents `2ffe0a2` / `5ab335a`), clean ort auto-merge (no conflicts).
+- Branch change: RP-1 validation matrix adds an "operator-session auto-lock / session timeout (no unattended privileged console; idle + backgrounding lock + re-auth)" acceptance box to `WEBVIEW_TLS_MATRIX.md` — bounded idle-timeout auto-lock, immediate lock on app backgrounding, re-auth to resume, teardown on dispose; a session-exposure / local-privilege surface independent of TLS/hostname/origin — plus 5 evidence markers + 1 RED guard in `validation_evidence_checklist_guard_test.dart`. Doc+test only, no production Dart or TLS change, allowlisted paths, no dependency.
+- Post-merge verify in-tree at `85ca2d2`: `flutter analyze` 0 (No issues found!); full `flutter test --coverage` 2214 passed / 1 skipped; all coverage gates PASS overall 90.5% (6059/6692) / scoped 90.4% (2119/2345) / kvm 97.4% (1336/1371) / kvm-platform 97.0% (460/474), gate exit 0; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; first-parent diff = 2 allowlisted files; TLS-weakening + secret scan clean.
+
+**Decisions:**
+- Merged on an explicit PASS verdict for the exact checked head only (never merge un-verified / FAIL). Clean tree — no WIP to isolate, no new stash; five pre-existing stashes untouched. Production TLS not weakened; no WebView activation, no human approval granted.
+- DMTF 85-test emulator skipped: doc+test-only change, no lib-wire/fixture/tool-runtime change, <7 days since last green 85/85. No issue closed (#009 P3 / #021 P2 stay human-gated on platform WebView + BMC TLS validation).
+
+**Next:**
+- Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
