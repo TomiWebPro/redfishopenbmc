@@ -13620,3 +13620,26 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next tooling head EP-T30 (liveness-register the new guard); remaining model heads EP-M2 / EP-M1 / RM-1 / RM-2 audit-first; RM-11 / EP-S8 deliberate behaviour-change decisions, do NOT fix unattended.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:rf-gate — #009/#021 (build/rf-platform merge)
+
+**Done:**
+- GATE (sole merger to `main`): `rf-platform-check` run#11470 returned `SUCCESS` / `CHECK: PASS` for `build/rf-platform` HEAD `02006a5` (exit 0, 71.6 s, 58/58 targeted tests, no production-TLS weakening, allowlisted paths only). Branch HEAD cross-checked unchanged immediately before merge; merge-base `d64c940` already in `main` via `e513472`; exactly one branch-unique commit.
+- Merged `02006a5` into `main` with `--no-ff` (merge `82ac162`, parents `db07fe6` / `02006a5`), clean ort auto-merge, no conflicts. PASS-only merge gate honored (no SKIP/NO-OP).
+- Branch content: RP-1 "HTTPS-only transport is never bypassed" acceptance box in `WEBVIEW_TLS_MATRIX.md` + evidence markers + 1 RED guard, with hard `bypassHttpsOnlyTransport => false` getter in `webview_policy.dart` + 3 policy tests — hardening only; the test-only self-signed opt-in never opens a cleartext socket.
+- `FUTUREWORK.md` gained one gate entry; no `Current focus` change (automation job owns focus).
+
+**Verification (in-tree at `82ac162`):**
+- `flutter analyze`: 0 issues ("No issues found!").
+- `flutter test --coverage --concurrency=4`: 2258 passed / 1 skipped (+1 merged test; concurrent EP-T31 WIP present in tree).
+- Coverage gates: all PASS — overall 90.5% (6062/6695), scoped redfish+power+sensors 90.4% (2119/2345), kvm 97.5% (1339/1374), kvm-platform 97.1% (463/477); gate exit 0.
+- `dart run tool/asset_guard.dart`: OK; `dart run tool/unattended_guard.dart`: OK.
+- `python3 issues/issues.py validate`: OK.
+- first-parent `git diff --check`: clean; first-parent diff = 4 allowlisted files (87 insertions, 4 deletions); TLS-weakening + secret scan clean (only prohibition comments matched).
+- DMTF 85-test emulator: SKIPPED (no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:** Concurrent `redfish-automation` EP-T31 WIP `test/tool/coverage_gate_test.dart` (+225 lines) left untouched and unstaged so it did not pollute the gate commit; five pre-existing stashes untouched; no force-push, history rewrite, `git clean`, or file deletion. No issue closed (#009 P3 / #021 P2 stay human-gated). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
