@@ -13531,3 +13531,23 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-P15 / RM-17 / EP-S12 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+
+## 2026-11-22 — agent:redfish-gate — #009/#021
+
+**Done:**
+- GATE — merged `build/rf-platform` tip `37e91e8` into `main` via `--no-ff` (merge `754d5bd`, parents `fea0a81` / `37e91e8`) on the explicit `rf-platform-check` run#11430 `CHECK: PASS` verdict (exit 0, 67.3 s, started 16:35:39 UTC, ~65 s after the tip commit). Clean ort auto-merge, no conflicts. Branch adds the RP-1 "certificate / public-key pinning never bypassed" acceptance box + evidence markers + 1 RED guard; only production change is a hard `bypassCertificatePinning => false` getter (no trust-all / accept-any-certificate verifier; test-only self-signed leaf tolerance never relaxes the pin).
+
+**Verification (in-tree at `754d5bd`, clean tracked tree):**
+- `flutter analyze`: 0 issues ("No issues found!").
+- `flutter test --coverage --concurrency=2`: 2232 passed / 1 skipped (baseline 2228 +4 merged tests).
+- Coverage gates: all PASS — overall 90.5% (6060/6693), scoped redfish+power+sensors 90.4% (2119/2345), kvm 97.4% (1337/1372), kvm-platform 97.1% (461/475); gate exit 0.
+- `python3 issues/issues.py validate`: OK.
+- first-parent `git diff --check`: clean; first-parent diff = 4 allowlisted files (110 insertions, 5 deletions); TLS-weakening + secret scan clean.
+- DMTF 85-test emulator: SKIPPED (no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:** PASS-only merge gate honored (no SKIP/NO-OP). No issue closed (#009 P3 / #021 P2 stay human-gated). Five pre-existing stashes untouched; no force-push, history rewrite, `git clean`, or file deletion. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
