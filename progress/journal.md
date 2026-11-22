@@ -13551,3 +13551,19 @@
 **Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (RM-17)
+
+**Done:**
+- FEATURE (test-only): RM-17 duplicate / case-variant console-block key-collision agreement guard. AUDIT FIRST: both `fromManager` factories read `ServiceEnabled` / `Enabled` / `MaxConcurrentSessions` with exact-case keys and already agree for every key variant; prior agreement guards fed hostile VALUES through canonical keys, so nothing pinned collision KEY agreement (CONFIRMED unguarded seam, no live divergence). EP-S12 / EP-P15 were also audited and found ALREADY pinned by existing tests — no guard added for either.
+- Added `test/features/kvm/kvm_key_collision_agreement_test.dart` (7 tests): canonical control, four conflicting collision spellings (lower/upper/mixed-case/padded), non-canonical-only fail-closed, multi-block aggregate — byte-identical `serviceEnabled`/`supported`, URI, chips and `maxSessions` across both factories; canonical keys authoritative, colliding spellings ignored, no raw key leak.
+- RED→GREEN: mutated `_fromBlock` to lowercase keys late under a 600-perm backup → exactly 5 named failures (`+2 -5`), control + padded-key set GREEN; restored byte-clean (SHA `85af8a1c…`, 0 residue, empty `lib/` diff, backup shredded) → 7/7 GREEN.
+- Verify: targeted 7/7; `dart format` clean; analyze 0; full suite 2239 passed / 1 skipped (baseline 2232 +7); issues validate OK; diff --check clean; deps unchanged; emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Registration-only-style regression guard — no behaviour change, no production widget or `lib/` change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. RM-17 LANDED (`queues/model.md`). Both issues stay human-gated (platform WebView + BMC TLS validation).
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads: EP-T29 (register the RM-17 guard in the liveness registry), EP-M4; EP-S12 / EP-P15 record-only audits.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
