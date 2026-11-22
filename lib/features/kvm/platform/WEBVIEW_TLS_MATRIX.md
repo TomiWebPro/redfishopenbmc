@@ -169,6 +169,33 @@ flag stays off for that target.
       protocol / cipher floor even though it tolerates the untrusted leaf.
       Verified per target (inspect the WebView TLS configuration and an
       observed handshake) before the flag is flipped.
+* [ ] **No DNS rebinding / stale-resolution (connect to the validated origin,
+      not a re-resolved one)** — the embedded WebView must not let an
+      attacker-influenced console hostname pass the same-origin HTTPS validation
+      at decision time and then, at connect time, be re-resolved by the platform
+      resolver to a DIFFERENT address than the one that was validated: no DNS
+      rebinding (a name that resolves first to the approved BMC address during
+      validation and then to loopback / link-local / cloud-metadata / an
+      internal management-network service when the WebView actually connects),
+      no time-of-check / time-of-use (TOCTOU) gap between the fail-closed
+      authority check and the WebView's own load, and no host-vs-address
+      mismatch where the WebView contacts a resolved address different from the
+      validated authority. Console content is served by the BMC and is
+      therefore attacker-influenced (a compromised/spoofed BMC, or script
+      running in the page): a validated name that is re-resolved to an internal
+      address turns the in-app frame into a confused-deputy pivot that can reach
+      loopback-only admin services, the `169.254.169.254` metadata endpoint or
+      the BMC management network — an SSRF-class surface wholly independent of
+      TLS negotiation, hostname-string validation, subresource egress and
+      top-level-navigation confinement, which govern the handshake, the literal
+      authority text, subresource destinations and in-session navigation, not
+      the resolution of the validated top-level origin at connect time. The
+      per-target WebView / platform must pin the console to the validated
+      host/address (or re-validate the resolved address at connect time) so the
+      trusted frame can never be silently redirected to a different address
+      after passing the fail-closed check. Verified per target (inspect the
+      WebView connection/resolution path and observe the resolved address at
+      connect time) before the flag is flipped.
 * [ ] **Origin / navigation confinement (no cross-origin or downgrade nav)** —
       an embedded WebView must never follow a redirect, link click, `window.open`
       or JavaScript-initiated top-level navigation to a different host/port or
