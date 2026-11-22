@@ -29,9 +29,10 @@
 // (CWE-532), operator-session auto-lock / session timeout / backgrounding +
 // re-auth (no unattended privileged console), no-HTTP-auth / login-form
 // credential-prompt spoofing (native authentication-challenge dialog, no
-// auto-submitted stored credentials), flag-off fallback, human sign-off) so a
-// future edit cannot silently erase the evidence boxes that gate that
-// decision.
+// auto-submitted stored credentials), certificate / public-key pinning (no
+// trust-all / accept-any-certificate; opt-in never relaxes the pin), flag-off
+// fallback, human sign-off) so a future edit cannot silently erase the evidence
+// boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -61,6 +62,16 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'webview-availability', marker: 'webview availability'),
   (name: 'no-production-tls-weakening', marker: 'no production weakening'),
   (name: 'hostname-verification', marker: 'hostname verification'),
+  (name: 'certificate-pinning', marker: 'certificate pinning'),
+  (name: 'public-key-pinning', marker: 'public-key pinning'),
+  (name: 'pin-expected-bmc-identity', marker: 'expected bmc certificate'),
+  (name: 'no-trust-all', marker: 'trust-all'),
+  (name: 'no-accept-any-cert', marker: 'accept any certificate'),
+  (
+    name: 'pinning-distinct-from-hostname',
+    marker: 'distinct from hostname verification'
+  ),
+  (name: 'opt-in-keeps-pinning', marker: 'never relax the pin'),
   (
     name: 'origin-navigation-confinement',
     marker: 'origin / navigation confinement'
@@ -306,6 +317,25 @@ void main() {
       final String neutered = matrixWithSection(realMatrix, withoutHostname);
       expect(
           missingEvidenceMarkers(neutered), contains('hostname-verification'));
+    });
+
+    test('RED: dropping the certificate/public-key-pinning box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutPinning = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'certificate pinning|public-key pinning|expected bmc certificate|trust-all|accept any certificate|distinct from hostname verification|never relax the pin')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutPinning);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('certificate-pinning'));
+      expect(missing, contains('public-key-pinning'));
+      expect(missing, contains('pin-expected-bmc-identity'));
+      expect(missing, contains('no-trust-all'));
+      expect(missing, contains('no-accept-any-cert'));
+      expect(missing, contains('pinning-distinct-from-hostname'));
+      expect(missing, contains('opt-in-keeps-pinning'));
     });
 
     test('RED: dropping the origin/navigation-confinement box fails closed',
@@ -659,7 +689,8 @@ void main() {
       expect(missing, contains('no-unattended-console'));
     });
 
-    test('RED: dropping the no-HTTP-auth / credential-prompt-spoofing box '
+    test(
+        'RED: dropping the no-HTTP-auth / credential-prompt-spoofing box '
         'fails closed', () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutHttpAuth = section
