@@ -14,7 +14,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
      WebView/TLS rendering stays gated and is NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine
      divergence, never churn. No code touched. -->
 
-- [ ] EP-U19 Connect-type chip + session-limit text rendered agreement across the two KVM operator cards:
+- [x] EP-U19 LANDED 2026-11-22 (run, agent:redfish-automation — FEATURE #009/#021, analyze 0 / targeted 9/9 / full suite green (count in automation-tracking), test-only) — Connect-type chip + session-limit text rendered agreement across the two KVM operator cards: added `test/features/kvm/kvm_card_chip_session_agreement_test.dart` (9 tests) building BOTH real cards from ONE hostile manager body (padded/mixed-case/blank/non-string/nested ConnectTypesSupported normalizing to `['KVMIP','HTML5','SSH']` + boundary MaxConcurrentSessions 2 / 5.0 / ' 3 ') and pinning byte-identical rendered chip VALUES in the SAME ORDER on both cards, equal session-limit NUMBER, each card's own merged `excludeSemantics` node with visible==announced, and 320/800/1300 px no-overflow. AUDIT: EP-U11 pins support/URI agreement and EP-M5/RS-10 pin the model-level chip/limit normalization, but both cards' chips/session were only pinned SINGLE-surface with fixed values — no test fed the hostile matrix through BOTH rendered cards at once; genuine unguarded cross-surface seam (the two cards' Semantics prefixes differ intentionally — 'Connection types:' vs 'Supported connection types:', 'Max sessions:' vs 'Max concurrent sessions:' — so only the shared payload is pinned, cf. EP-U16's narrowed scope). TWO real-file RED proofs: (A) capability chip loop `connectTypes` → `connectTypes.reversed` → exactly the 3 chip-agreement tests failed (`+6 -3`); (B) capability session `maxSessions` → `maxSessions! + 1` → exactly the 6 session tests failed (`+3 -6`); source restored byte-clean both times (SHA `c6c4b09abeca88169859b85a6dc3999c963c9acd50b3ffd9716a1018d74d9b00` unchanged, empty lib diff), 600-perm backups shredded → 9/9 GREEN. Test-only, no lib/, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. Original item:
        over one manager built into both real cards whose enabled console block carries a hostile connect-types
        matrix (padded/mixed-case duplicates, blank/non-string/control-bearing entries) and a boundary
        `MaxConcurrentSessions` (int / integral-double / padded numeric string), pin that the per-console card
@@ -25,7 +25,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
        a genuine divergence, never churn. Display-only; no WebView/protocol import, no URL opened, no
        dependency, no production TLS weakening.
        Dept: rf-ui
-       Verify: `flutter test test/features/kvm/kvm_capability_card_test.dart test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_card_cross_surface_agreement_test.dart && flutter analyze`
+       Verify: `flutter test test/features/kvm/kvm_card_chip_session_agreement_test.dart test/features/kvm/kvm_capability_card_test.dart test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_card_cross_surface_agreement_test.dart && flutter analyze`
                (0 issues), with RED->GREEN proof + 320 px no-overflow + visible==announced only on a genuine
                divergence; writes limited to `lib/features/kvm/views/**` + those named test files; no WebView/
                protocol import, no URL opened, no dependency, no production TLS weakening;

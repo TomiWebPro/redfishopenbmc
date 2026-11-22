@@ -13364,3 +13364,20 @@
 - Push the single commit (never force-push); leave the pre-existing stashes untouched. Next fresh dept heads EP-U19 / EP-P14 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-U19)
+
+**Done:**
+- FEATURE (test-only): EP-U19 cross-surface rendered connect-type chip + session-limit agreement guard. AUDIT FIRST: EP-U11 pins support/URI agreement; EP-M5/RS-10 pin model-level chip/limit agreement; but both cards' chips/session were pinned only SINGLE-surface with fixed values — no test fed a hostile matrix through BOTH real rendered cards at once. Genuine unguarded cross-surface seam, not churn.
+- Added `test/features/kvm/kvm_card_chip_session_agreement_test.dart` (9 tests): one hostile manager body (ConnectTypesSupported normalizing to `['KVMIP','HTML5','SSH']`; boundary limits 2 / 5.0 / ' 3 ') built into both cards; byte-identical chip VALUES in same order, equal session number, each card's own merged `excludeSemantics` node visible==announced, 320/800/1300 px no-overflow. Prefixes deliberately differ; only the shared payload is pinned.
+- RED→GREEN: capability chip loop reversed → 3 chip tests failed (`+6 -3`); capability session `+1` → 6 session tests failed (`+3 -6`); restored byte-clean both times (SHA `c6c4b09a…`, empty lib diff), 600-perm backups shredded → 9/9 GREEN.
+- Verify: targeted 9/9; `dart format` clean; analyze 0; full suite 2200 passed / 1 skipped (baseline 2190 +9 mine +1 concurrent rf-gate merge `cd6c1b8`); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-U19 LANDED (`queues/ui.md`). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. DMTF 85-test emulator skipped (test-only, <7 days since last green 85/85). No manufactured UI churn (§5). Five pre-existing stashes untouched; no force-push/history rewrite/`git clean`. Concurrent rf-gate merge `cd6c1b8` (+ `56905e8`) landed during this run; full suite re-run on the merged tree. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the pre-existing stashes untouched. Next dept head EP-P14 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
