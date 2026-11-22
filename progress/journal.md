@@ -13146,3 +13146,17 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-T23 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-gate — #009/#021 (gate merge)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#11231 returned explicit `CHECK: PASS` for exact branch head `f844cca`; merged `build/rf-platform` into `main` with `--no-ff` → merge `a6306ed` (parents `134b305` / `f844cca`), clean ort auto-merge. Two allowlisted files (53 insertions, 2 deletions): `WEBVIEW_TLS_MATRIX.md` + RP-1 arbitrary/drive-by file-download acceptance box, and `validation_evidence_checklist_guard_test.dart` + evidence markers + 1 RED guard. Doc+test only, dependency-free, no production Dart, no TLS weakening.
+- Verify: targeted 22/22; `flutter analyze` 0; full `flutter test --coverage --concurrency=4` 2088 passed / 1 skipped (baseline 2087 +1); all coverage gates PASS overall 90.5% (6059/6692) / scoped 90.4% (2119/2345) / kvm 97.4% (1336/1371) / kvm-platform 97.0% (460/474); issues validate OK; first-parent `git diff --check` clean.
+
+**Decisions:**
+- Merge gated strictly on the explicit PASS verdict for the exact verified head; branch HEAD cross-checked unchanged, one unique commit, merge-base already in main, allowlisted paths only. DMTF 85-test emulator skipped (doc+test only, no wire/fixture/tool-runtime change, <7 days since last green 85/85). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. Five pre-existing stashes untouched; no force-push/history rewrite/`git clean`.
+
+**Next:**
+- Push `main` (never force-push), including the unpushed rf-ideate commit. Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
