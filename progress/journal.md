@@ -13412,3 +13412,20 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-P12 and the EP-T guard-suite-liveness registration of the new EP-P14 guard — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:rf-gate — MERGE 625b359 (check#11380 PASS)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#11380 returned `SUCCESS` / `CHECK: PASS` for branch head `625b359` (cross-checked unchanged == `625b359cc0db9360d441cb80f4cca7a40b6fe1c4`; merge-base `56905e8` ancestor of main; exactly one unique commit). Merged `build/rf-platform` into `main` with `--no-ff` → merge `cded470` (parents `37b909c` / `625b359`), clean auto-merge (ort, no conflicts).
+- Branch change: RP-1 validation matrix adds a "no-cleartext / HTTPS-only platform transport" acceptance box to `WEBVIEW_TLS_MATRIX.md` (no `cleartextTrafficPermitted=true` / `usesCleartextTraffic=true` / `NSAllowsArbitraryLoads`; the test-only self-signed opt-in relaxes leaf trust only, never cleartext / TLS floor) + 1 RED guard in `validation_evidence_checklist_guard_test.dart`. Doc+test only, no production Dart or TLS change, allowlisted paths, no dependency.
+- Post-merge verify: `flutter analyze` 0; full `flutter test --coverage --concurrency=4` 2211 passed / 1 skipped (baseline 2210 +1 merged test); all coverage gates PASS overall 90.5% (6059/6692) / scoped 90.4% (2119/2345) / kvm 97.4% (1336/1371) / kvm-platform 97.0% (460/474), gate exit 0; `asset_guard` OK; `unattended_guard` OK; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; first-parent diff = 2 allowlisted files (67 insertions, 0 deletions); TLS-weakening + secret scan clean.
+
+**Decisions:**
+- Merged on an explicit PASS verdict for the exact checked head only (never merge un-verified / FAIL). Clean tree — no WIP to isolate, no new stash; five pre-existing stashes untouched. Production TLS not weakened; no WebView activation, no human approval granted.
+- DMTF 85-test emulator skipped: doc+test-only change, no lib-wire/fixture/tool-runtime change, <7 days since last green 85/85. No issue closed (#009 P3 / #021 P2 stay human-gated on platform WebView + BMC TLS validation).
+
+**Next:**
+- Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
+
