@@ -13333,3 +13333,18 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept heads RM-16 / EP-U19 / EP-P14 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended; this guard is a candidate for a future liveness epoch. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-gate — #009/#021 (gate merge: trusted initial console URL)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#11334 returned explicit `CHECK: PASS` for exact branch head `98c73cd` (exit 0, 49.9 s, started 11:24:50 UTC ~2 min after the tip commit; analyze 0, targeted guard 26/26, no production-TLS weakening, allowlisted paths only — `lib/features/kvm/platform/**` + `test/**`, doc+test only, no dependency change). Branch HEAD cross-checked unchanged; merge-base `d415de5` already in `main` via merge `c7c1b9b`; exactly one branch-unique commit. Merged `build/rf-platform` into `main` with `--no-ff` → merge `fb60bc1` (parents `76ce4fb` / `98c73cd`), clean ort auto-merge, no conflicts.
+- Branch adds the RP-1 "trusted initial console URL / no attacker- or Intent-seeded first load" acceptance box to `WEBVIEW_TLS_MATRIX.md` + 1 RED guard in `validation_evidence_checklist_guard_test.dart`. First-parent diff = 2 allowlisted files (48 insertions, 2 deletions).
+- Verify: `flutter analyze` 0; full `flutter test --coverage --concurrency=4` 2156 passed / 1 skipped (baseline 2155 +1); all coverage gates PASS overall 90.5% / scoped 90.4% / kvm 97.4% / kvm-platform 97.0%; asset_guard OK; unattended_guard OK; `issues.py validate` OK; first-parent `git diff --check` clean; deps unchanged.
+
+**Decisions:**
+- Merged only after explicit `CHECK: PASS` for the exact verified branch tip; stale or mismatched verdict would have been SKIPPED. Doc+test only, empty production-Dart diff, no wire/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. DMTF 85-test emulator skipped (no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. Five pre-existing stashes untouched; no force-push/history rewrite/`git clean`. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push `main` (never force-push); leave the five pre-existing stashes untouched. Await the next `rf-platform-check` verdict before any further merge. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
