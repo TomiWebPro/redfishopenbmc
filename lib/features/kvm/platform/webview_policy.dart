@@ -168,6 +168,35 @@ class KvmWebViewPolicy {
   /// to the validated origin. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassValidatedOriginBinding => false;
 
+  /// Always `false`: the platform trust store's integrity is NEVER compromised
+  /// by the test-only self-signed opt-in — no CA / trust anchor is ever added.
+  ///
+  /// A naive way to accept a self-signed BMC certificate would be to install the
+  /// BMC's CA (or the leaf itself) into the OS/platform trust store (e.g. an
+  /// Android `NetworkSecurityConfig` `<certificates src="user"/>` trust-anchor
+  /// addition or `KeyStore` mutation, an iOS/macOS custom CA / `SecTrust`
+  /// anchor, or an ATS/network-security exception that adds a trust anchor).
+  /// That would make the CA trusted for EVERY app and EVERY host on the device —
+  /// a global weakening of production TLS, exactly what this spike forbids — and
+  /// would let any certificate signed by that CA impersonate any host. The
+  /// opt-in must instead tolerate the test BMC's untrusted leaf ONLY through a
+  /// scoped, per-connection certificate verifier bound to the expected console
+  /// host; the platform trust store itself is never mutated.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that mutates the
+  /// trust store to accept a certificate. It is distinct from hostname
+  /// verification ([bypassHostnameVerification]) and pinning
+  /// ([bypassCertificatePinning]) (which bind certificate identity/key), the
+  /// TLS floor ([bypassTlsProtocolFloor]) and HTTPS-only transport
+  /// ([bypassHttpsOnlyTransport]) (which govern the handshake and cleartext
+  /// sockets), revocation ([bypassCertificateRevocationCheck]) (which checks
+  /// certificate status) and validated-origin binding
+  /// ([bypassValidatedOriginBinding]) (which binds the resolved address): those
+  /// govern the connection, whereas this box governs the device-wide trust
+  /// anchors themselves. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassPlatformTrustStoreIntegrity => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

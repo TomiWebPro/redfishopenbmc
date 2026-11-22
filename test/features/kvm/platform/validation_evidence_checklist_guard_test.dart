@@ -39,6 +39,9 @@
 // validated-origin binding / no-DNS-rebinding (hard configuration-independent
 // invariant; the opt-in never bypasses binding to the validated origin, so the
 // console connects only to the address that passed the fail-closed check),
+// platform trust-store integrity / no-CA-trust-anchor addition (hard
+// configuration-independent invariant; the opt-in never mutates the platform
+// trust store, so self-signed acceptance never becomes a global TLS weakening),
 // flag-off fallback, human sign-off) so a future edit cannot silently erase the
 // evidence boxes that gate that decision.
 //
@@ -273,6 +276,28 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'origin-binding-policy-getter',
     marker: 'bypassvalidatedoriginbinding'
+  ),
+  (name: 'trust-store-integrity', marker: 'trust-store integrity'),
+  (name: 'no-ca-trust-anchor-addition', marker: 'trust anchor'),
+  (name: 'android-user-ca-anchors', marker: 'networksecurityconfig'),
+  (name: 'android-keystore-mutation', marker: 'keystore'),
+  (name: 'ios-custom-ca-anchor', marker: 'sectrust'),
+  (name: 'global-trust-weakening', marker: 'global weakening'),
+  (
+    name: 'scoped-per-connection-verifier',
+    marker: 'per-connection certificate'
+  ),
+  (
+    name: 'trust-store-never-mutated',
+    marker: 'never mutates the platform trust store'
+  ),
+  (
+    name: 'trust-store-config-invariant',
+    marker: 'configuration-independent invariant'
+  ),
+  (
+    name: 'trust-store-policy-getter',
+    marker: 'bypassplatformtruststoreintegrity'
   ),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
@@ -825,6 +850,29 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('origin-binding-never-bypassed'));
       expect(missing, contains('origin-binding-policy-getter'));
+    });
+
+    test(
+        'RED: dropping the platform-trust-store-integrity hard-invariant box '
+        'fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutTrustStoreIntegrity = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'trust-store integrity|trust anchor|networksecurityconfig|keystore|sectrust|global weakening|per-connection certificate|never mutates the platform trust store|bypassplatformtruststoreintegrity')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutTrustStoreIntegrity);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('trust-store-integrity'));
+      expect(missing, contains('no-ca-trust-anchor-addition'));
+      expect(missing, contains('android-user-ca-anchors'));
+      expect(missing, contains('android-keystore-mutation'));
+      expect(missing, contains('ios-custom-ca-anchor'));
+      expect(missing, contains('global-trust-weakening'));
+      expect(missing, contains('scoped-per-connection-verifier'));
+      expect(missing, contains('trust-store-never-mutated'));
+      expect(missing, contains('trust-store-policy-getter'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
