@@ -430,6 +430,25 @@ flag stays off for that target.
       (inspect the WebView download listener / navigation-response callbacks
       and confirm downloads are blocked and nothing is auto-opened) before the
       flag is flipped.
+* [ ] **No cross-site cookie / session-token leakage (SameSite + third-party-cookie
+      blocking + Secure/HttpOnly scoping)** — the embedded WebView must not let
+      attacker-influenced console content leak the operator's BMC session cookie/token to
+      another origin through cookie attachment or script reads: no `SameSite=None` console
+      session cookie that is attached to cross-site subresource requests, no third-party
+      cookie sharing with attacker-controlled origins, and no script-readable session cookie
+      (no `HttpOnly`) that `document.cookie` exfiltration can steal. Cookies for the console
+      origin must be `Secure` + `HttpOnly` + `SameSite`-scoped, third-party cookies must be
+      blocked, and the WebView cookie store must be isolated from the system browser.
+      Console content is served by the BMC and is therefore attacker-influenced (a
+      compromised/spoofed BMC, or script running in the page): a scripted cross-origin
+      subresource request would otherwise attach the BMC session cookie, or page script could
+      read `document.cookie` and exfiltrate it — a session-theft / account-takeover surface
+      wholly independent of TLS, hostname, origin-confinement, referrer, subresource-egress
+      and data-at-rest checks (which govern navigation, URL headers, request destinations and
+      on-disk persistence, not cookie attachment semantics or script readability). Verified
+      per target (inspect the WebView cookie manager / SameSite handling and confirm session
+      cookies are Secure/HttpOnly/SameSite-scoped and third-party cookies are blocked) before
+      the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

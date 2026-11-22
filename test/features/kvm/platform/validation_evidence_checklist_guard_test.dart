@@ -16,7 +16,8 @@
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload),
 // no-cross-origin-form-submission (form action POST / auto-submit / post body
 // exfiltration), no-arbitrary/drive-by file download (APK / executable /
-// auto-open / content-disposition), flag-off fallback, human sign-off) so a
+// auto-open / content-disposition), no-cross-site-cookie/session-leak (SameSite /
+// third-party-cookie / HttpOnly), flag-off fallback, human sign-off) so a
 // future edit cannot silently erase the evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
@@ -70,6 +71,11 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-form-action-exfil', marker: 'form action'),
   (name: 'no-form-auto-submit', marker: 'auto-submit'),
   (name: 'no-form-post-body-exfil', marker: 'post body'),
+  (name: 'no-cross-site-cookie-leak', marker: 'cross-site cookie'),
+  (name: 'samesite-scoping', marker: 'samesite'),
+  (name: 'third-party-cookie-blocking', marker: 'third-party cookie'),
+  (name: 'secure-httponly-cookie', marker: 'httponly'),
+  (name: 'no-cookie-script-read', marker: 'document.cookie'),
   (name: 'no-arbitrary-file-download', marker: 'arbitrary file download'),
   (name: 'no-driveby-download', marker: 'drive-by download'),
   (name: 'no-content-disposition-download', marker: 'content-disposition'),
@@ -376,6 +382,23 @@ void main() {
       expect(missing, contains('no-download-listener-open'));
       expect(missing, contains('no-malicious-apk-executable'));
       expect(missing, contains('no-auto-open-download'));
+    });
+
+    test('RED: dropping the no-cross-site-cookie/session-leak box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutCookieLeak = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'cross-site cookie|samesite|third-party cookie|httponly|document\.cookie')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutCookieLeak);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-cross-site-cookie-leak'));
+      expect(missing, contains('samesite-scoping'));
+      expect(missing, contains('third-party-cookie-blocking'));
+      expect(missing, contains('secure-httponly-cookie'));
+      expect(missing, contains('no-cookie-script-read'));
     });
 
     test('RED: dropping the no-native-bridge box fails closed', () {
