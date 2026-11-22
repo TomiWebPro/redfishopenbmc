@@ -213,6 +213,31 @@ flag stays off for that target.
       page content are inspected for `Content-Security-Policy` frame rules and
       mixed-content (HTTPS page loading HTTP subresources); a console that is
       blocked by CSP framing or mixed-content must not be silently downgraded.
+* [ ] **No local / private-network subresource egress (SSRF / loopback / link-local
+      pivot)** — the embedded WebView must not let attacker-influenced console
+      content turn the in-app frame into a confused-deputy network pivot: no
+      subresource request (fetch / XHR / `<img>` / `<iframe>` / WebSocket /
+      font) and no WebRTC candidate or ICE gathering may reach loopback
+      (`localhost`, `127.0.0.0/8`, `::1`), link-local (`169.254.0.0/16`, notably
+      the `169.254.169.254` cloud-metadata endpoint) or any private network
+      (`10/8`, `172.16/12`, `192.168/16`) other than the console's own approved
+      origin. Console content is served by the BMC and is therefore
+      attacker-influenced (a compromised/spoofed BMC, or script running in the
+      page): a script could otherwise scan the BMC management network, read
+      cloud-metadata credentials or probe loopback-only admin services from
+      inside the trusted app — a server-side-request-forgery (SSRF) / local
+      network-reconnaissance / metadata-theft surface wholly independent of TLS,
+      hostname, top-level-navigation origin confinement, file access and
+      device-permission checks (which govern navigation and capabilities, not
+      subresource egress). This box does NOT restrict the approved console's own
+      top-level URL: a BMC on a private address remains a valid launch target.
+      On every target the WebView must block or intercept such subresource
+      requests (Android `WebViewClient.shouldInterceptRequest` /
+      network-security config, WKWebView content-blocking rules / `URLSession`
+      configuration, WebRTC local-IP disclosure disabled) and let only the
+      approved console origin's own subresources through. Verified per target
+      (inspect the WebView request-interception / content-blocking configuration
+      and observed subresource destinations) before the flag is flipped.
 * [ ] **No referrer / URL-token leakage (strict Referrer-Policy)** — the embedded
       WebView must not leak the console URI — which may embed session tokens,
       credentials or BMC identity in its path, query or userinfo — to any other
