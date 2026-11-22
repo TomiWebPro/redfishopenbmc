@@ -5,6 +5,28 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 22:24 UTC: another fresh, display-only, unblocked slice of the still-open
+     #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U19/U20/U21 pin chip/session,
+     extreme-content and large-font RENDERED agreement, and RM-15 pins bidi/RTL fail-closed at the MODEL
+     classifier — but nothing pins how a bidirectional/RTL control-bearing manager DISPLAY NAME and
+     external-client notice actually RENDER across both operator cards and the viewer: a name carrying
+     RLO/LRO, isolates or a word-joiner plus mixed LTR text, at 320/800/1300 px, could overflow a Row or
+     produce a mirrored/split merged Semantics node whose visible text != announced label, while every
+     fixed-ASCII suite stays GREEN. Display-only; the human-gated WebView/TLS rendering stays gated and is NOT
+     re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-U22 Bidirectional/RTL display-text rendering agreement across both KVM operator cards and the
+       viewer: pump one manager carrying a bidi/RTL-control-bearing (RLO/LRO, isolates, word-joiner) DISPLAY
+       NAME plus an external-client (VNC/SSH) notice through both real cards and the viewer at
+       320/800/1300 px, pinning no RenderFlex overflow, exactly one merged `excludeSemantics` node per active
+       signal with visible text == announced label, and no mirror-induced node split or duplicate. AUDIT FIRST:
+       if the model sanitizes all such text before render (so the screens only ever see clean strings), record
+       the audit and add nothing; RED->GREEN only on a genuine divergence, never churn. Display-only; no
+       WebView/protocol import, no production TLS weakening.
+       Dept: rf-ui
+       Verify: `flutter test test/features/kvm/kvm_card_cross_surface_agreement_test.dart test/features/kvm/kvm_external_notice_cross_surface_agreement_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence.
+
 <!-- rf-ideate split 2026-11-22 14:17 UTC: another fresh, display-only, unblocked slice of the
       still-open #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U19 pins both
       operator cards' chip/session agreement over a MODEST hostile matrix and EP-U16/U15 pin notice/launch

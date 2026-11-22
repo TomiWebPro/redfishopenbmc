@@ -4,6 +4,32 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 22:24 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open #009/#021 model epic (never-empty-well malformed-payload tolerance, MULTI_DEPT hard
+     rule 10). RM-15 pins bidi/control in the `@odata.id` RESOURCE PATH and EP-M5 pins `ConnectTypesSupported`
+     normalization, while RM-18/RM-19 pin the RAW DERIVED source fallback when the MANAGER ID itself is
+     hostile — but nothing pins the BODY `@odata.id` RESOURCE-PATH side of the shared `kvmManagerSourceUri`
+     helper when it is present yet structurally hostile (dot-segments `.` / `..`, percent-encoded separators
+     `%2F` / `%5C`, repeated `//`, trailing control/whitespace, non-string), as consumed by BOTH
+     `KvmConsole.fromManager` and `KvmCapability.fromManager`. A one-sided normalization edit could make the
+     per-console and per-manager cards advertise different manager identities or leak a raw traversal / control
+     code point while every value-agreement suite stays GREEN. Read-only model characterization; the two
+     deliberate behaviour decisions (RM-11 mixed regime, EP-S8 credentialed Primary) stay blocked and are NOT
+     re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-M7 Body `@odata.id` resource-path normalization agreement across both `fromManager` factories:
+       over an in-temp matrix of `Manager` bodies whose `@odata.id` is present but structurally hostile
+       (dot-segments `.` / `..`, percent-encoded separators `%2F` / `%5C`, repeated `//`, trailing
+       control/whitespace, non-string), pin that `KvmConsole.fromManager` and `KvmCapability.fromManager`
+       resolve the SAME control-safe `safeManagerUri` and manager identity, never emit a raw traversal or
+       control code point, and agree with the shared source helper's normalization. AUDIT FIRST: if both
+       factories already share one normalizer over the whole matrix, record the audit and add nothing;
+       RED->GREEN only on a genuine divergence, never churn. This is the BODY-path side; the DERIVED fallback
+       (RM-18/RM-19) is already covered — no behaviour change folded in.
+       Dept: rf-model
+       Verify: `flutter test test/features/kvm/kvm_model_test.dart && flutter analyze` (0 issues),
+               RED->GREEN proof only on a genuine divergence.
+
 <!-- rf-ideate split 2026-11-22 14:17 UTC: carves a fresh, machine-checkable, unblocked slice of the
       still-open #009/#021 epic. RM-16 pins hostile VALUE encodings of `ServiceEnabled`/`Enabled`
       (string/num/null/list/map/control) and RM-8/RM-13 pin the canonical tri-state across both

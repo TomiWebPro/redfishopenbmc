@@ -5,6 +5,30 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 22:24 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open #009/#021 manager-walk epic. RS-7 pins hostile-body tolerance when a manager FETCH SUCCEEDS
+     but still yields usable consoles, EP-S13 pins SAME-manager skip when a sibling fetch FAILS
+     (404/retryable), and RS-6/RS-8 pin identity/cardinality for well-formed bodies — but nothing pins the two
+     service surfaces' agreement when a manager is fetched successfully yet yields ZERO USABLE consoles (all
+     blocks disabled / URI-less / unsupported ConnectTypes, or an all-malformed console set): does
+     `fetchConsoles()` still surface exactly one card and `fetchCapability(id)` one discovery-only summary with
+     NO phantom launch target, while a healthy sibling keeps its deterministic secure Primary? Pure service
+     characterization; the credentialed-Primary decision (EP-S8) stays blocked and is NOT re-split. AUDIT FIRST;
+     RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-S14 Zero-usable-console manager surfacing agreement between `fetchConsoles()` and
+       `fetchCapabilities()`: over in-temp `/Managers` mockups where one manager is fetched OK but every
+       console block is disabled / URI-less / unsupported-type / all-malformed (yielding zero launchable
+       consoles), pin that BOTH service surfaces surface that manager exactly once (RS-6/RS-8 identity
+       unchanged) with a discovery-only, non-launchable summary and NEVER a phantom Primary or launch target,
+       while a healthy sibling keeps its deterministic secure primary and its own cards. AUDIT FIRST: if both
+       surfaces already share one walk result and agree end-to-end, record the audit and add nothing;
+       RED->GREEN only on a genuine divergence, never churn. Distinct from EP-S13 (fetch FAILURE skip) and
+       RS-7 (hostile body that still yields usable consoles); no behaviour change folded in.
+       Dept: rf-service
+       Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_service_capability_primary_agreement_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence.
+
 <!-- rf-ideate split 2026-11-22 14:17 UTC: carves a fresh, machine-checkable, unblocked slice of the
       still-open #009/#021 manager-walk epic (never-empty-well malformed-payload tolerance, MULTI_DEPT
       hard rule 10). RS-6/RS-8 pin manager-set identity, dedup and duplicate-Id collision determinism for

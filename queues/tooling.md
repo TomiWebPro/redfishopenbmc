@@ -5,6 +5,26 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 22:24 UTC: another machine-checkable slice of the still-open #009/#021
+     epic's tool hygiene. EP-T31 pins that ALL FOUR coverage gates (overall / scoped redfish+power+sensors /
+     kvm / kvm-platform) are actually WIRED into the CLI `main` + CI verify, but nothing pins that the four
+     numeric THRESHOLDS in `tool/coverage_gate.dart` stay at or above their documented floors — a silent
+     lowering (e.g. kvm 75 -> 50, or overall 80 -> 40) would keep every gate 'wired' and every test GREEN while
+     erasing the hard invariant. Pure test/tool, dependency-free, never writes `lib/`. Distinct from
+     EP-T12..T33 (test-file liveness) and EP-T31 (gate wiring). AUDIT FIRST; RED->GREEN only on a genuine gap,
+     never churn. No code touched. -->
+
+- [ ] EP-T34 Coverage-gate threshold-floor liveness guard: add a pure-Dart test that reads the four threshold
+       constants in `tool/coverage_gate.dart` (overall / scoped redfish+power+sensors / kvm / kvm-platform) and
+       fails closed if any falls below its documented floor (match the real constant names and current floor
+       values), with a temp-root RED->GREEN proof (a lowered threshold -> violation, floor-respecting -> clean)
+       and a real-repo invariant pinning the current values. AUDIT FIRST: if the thresholds are already pinned by
+       an existing guard, record the audit and add nothing; RED->GREEN only on a genuine gap, never churn. Pure
+       test/tool, dependency-free, never writes `lib/`; no WebView/protocol import, no production TLS weakening.
+       Dept: rf-tooling
+       Verify: `flutter test test/tool/coverage_gate_test.dart && flutter analyze` (0 issues),
+               RED->GREEN proof only on a genuine gap.
+
 <!-- rf-ideate split 2026-11-22 14:17 UTC: another machine-checkable slice of the still-open #009/#021
      epic's queue hygiene. EP-T13 pins exactly one valid `Dept:` + non-empty `Verify:`, EP-T24 pins that
      the verify command names repo-existing paths, and EP-T25 pins that any product `lib/**` path named

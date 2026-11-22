@@ -6,6 +6,29 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 22:24 UTC: another machine-checkable slice of the still-open (human-gated)
+     WebView/TLS closeout of #009/#021. Authority, port, scheme spelling and same-origin navigation are heavily
+     pinned (EP-P9/P11/P13/P14/P16), and EP-P11/EP-S9 pin the plain-userinfo navigation exception and the
+     credentialed-Primary boundary — but nothing pins OBFUSCATED / percent-encoded USERINFO
+     (`user%40x:pass@host`, `user:pa%0Ass@host`, multiple `@`, padded/control userinfo) through all platform
+     decision layers at once: a differential could treat an encoded-CRLF or embedded-`@` userinfo as a clean
+     same-origin secure target (in-app-eligible / copyable) on one layer while another fails closed, with every
+     authority-suite staying GREEN. Test-only; the human WebView/TLS validation (EP-P1/P2/P4) stays gated and is
+     NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-P17 Obfuscated / percent-encoded userinfo fail-closed cross-layer agreement: over a matrix of
+       `https://userinfo@host/...` connect URIs with encoded/embedded userinfo (`user%40x:pass@host`,
+       `user:pa%0Ass@host`, multiple `@`, padded/control userinfo), pin that the platform classifier,
+       `planConsoleLaunch`, `allowsInAppNavigation` and the stale-flag TLS boundary all agree — control/CRLF-bearing
+       userinfo fails closed (no in-app eligibility, no copyable launch target) while the documented clean-userinfo
+       navigation-only exception is preserved — and that `KvmConsole.launchPlan` reports the same route/target on
+       the model side. AUDIT FIRST: if all layers already share the fail-closed core over the whole matrix, record
+       the audit and add nothing; RED->GREEN only on a genuine divergence, never churn. Test-only; no WebView/protocol
+       import, no production TLS weakening.
+       Dept: rf-platform
+       Verify: `flutter test test/features/kvm/platform/cross_layer_authority_agreement_test.dart test/features/kvm/platform/navigation_launch_route_agreement_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence.
+
 <!-- rf-ideate split 2026-11-22 14:17 UTC: another machine-checkable slice of the still-open (human-gated)
      WebView/TLS closeout of #009/#021. `resolveRenderRoute` carries an explicit
      `if (!isEnabled) return copyOnly` fail-closed branch (disabled console never gets a browser/in-app
