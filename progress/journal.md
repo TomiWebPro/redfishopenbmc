@@ -13381,3 +13381,18 @@
 - Push the single commit (never force-push); leave the pre-existing stashes untouched. Next dept head EP-P14 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:rf-gate — merge build/rf-platform (verified PASS check#11357)
+
+**Done:**
+- Merged `build/rf-platform` tip `56905e8` into `main` via `--no-ff` (merge `cd6c1b8`, parents `8698a77` / `56905e8`) after `rf-platform-check` run#11357 returned `SUCCESS` / `CHECK: PASS` for that exact tip (branch HEAD cross-checked unchanged; merge-base `98c73cd` already in `main`; exactly 1 branch-unique commit; 2 allowlisted paths `lib/features/kvm/platform/WEBVIEW_TLS_MATRIX.md` + `test/features/kvm/platform/validation_evidence_checklist_guard_test.dart`, doc+test only). Clean ort merge.
+- Branch adds the RP-1 CWE-532 acceptance box: sensitive console URLs / session tokens must never enter logs, telemetry or crash reports (+1 RED guard).
+
+**Decisions:**
+- A concurrent `redfish-automation` EP-U19 FEATURE run owned the shared worktree/index mid-run with an untracked WIP test file — left untouched, unstaged, undeleted; verification ran in a clean detached worktree at `cd6c1b8` to avoid pollution. Gate: analyze 0; tests 2191 passed / 1 skipped; coverage gates PASS overall 90.5% / scoped 90.4% / kvm 97.4% / kvm-platform 97.0%; asset+unattended guards OK; issues validate OK; first-parent diff --check clean; DMTF 85-test emulator skipped (doc+test only, no wire/fixture/tool change, <7 days since last green 85/85); no production TLS weakening, no secrets.
+- Waited for the concurrent agent to finish (EP-U19 committed as `5d36e38` on top of the merge) before writing tracking, then re-verified the final HEAD: analyze 0, tests 2200 passed / 1 skipped, all four coverage gates PASS, issues validate OK, diff --check clean.
+
+**Next:**
+- Push `main` (never force-push). Next gate run: skip with NO-OP if `build/rf-platform` has no new PASS-verified commit; otherwise verify + `--no-ff` merge only a PASS tip. No issue closed here (#009 P3 / #021 P2 stay human-gated on platform WebView + BMC TLS validation).
+
+**Issues touched:** none closed (#009 open, #021 open).
