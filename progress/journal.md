@@ -12954,3 +12954,18 @@
 - Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-S2)
+
+**Done:**
+- FEATURE (test/tool-only): EP-S2 `KvmService.pickPrimary` secure-HTTPS tier-precedence guard for #009/#021. Added `test/features/kvm/kvm_service_primary_secure_tier_test.dart` (5 tests) pinning that a secure-HTTPS console of ANY type (tier 2) outranks an OPENABLE plaintext-HTTP graphical (tier 3) — order-independently, padded-HTTPS trimmed before classification, a CRLF/spoofed "HTTPS" graphical failing closed and never winning the secure tier, and tier 3 preserved when no secure console exists. Registered in `canonicalGuardFiles` + pinned `epS2AddedGuards` (length 1, disjoint from all earlier epochs) in `test/tool/guard_suite_liveness_test.dart` (+1 pin test, completeness arithmetic updated; liveness 24/24).
+- AUDIT: existing safe-target tests pin secure-vs-plaintext graphical / secure-vs-external-client (non-graphical) / secure-graphical-vs-secure-non-graphical, but none pins secure-any-type vs openable-plaintext-graphical — swapping tiers 2/3 passed all existing tests while badging a plaintext console Primary while a secure one existed (#021 invariant). Genuine regression guard, no live divergence. Real-file RED: swapped `firstSecure`/`firstOpenableGraphical` → exactly 3 tier tests failed (`+2 -3`, both orderings + padded); source restored byte-clean (SHA `653e64a6…` unchanged, empty lib diff), 600-perm backup shredded → 5/5 GREEN. Liveness structural RED `+22 -2`, restored byte-clean (SHA `922bd05c…`), backup shredded → 24/24 GREEN.
+- Verify: `dart format` clean (my 2 files); `flutter analyze` 0; full `flutter test --concurrency=4` 2044 passed / 1 skipped (baseline 2038 +5 new +1 liveness pin); issues validate OK; diff --check clean; lib diff empty; deps unchanged.
+
+**Decisions:**
+- Test/tool-only, no `lib/`, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-S2 is now LANDED (`queues/service.md` checked off). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. UI skipped as a separate increment (§5): no widget source changed; no manufactured churn. DMTF 85-test emulator skipped (test/tool-only, <7 days since last green 85/85).
+
+**Next:**
+- Push the single commit (never force-push), which also lands the two prior unpushed commits; leave pre-existing stashes untouched. EP-T4 (tooling fixture/CI guard) audit-first — RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

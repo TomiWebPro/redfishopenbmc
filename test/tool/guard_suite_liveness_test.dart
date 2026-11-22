@@ -79,6 +79,15 @@
 // test-stripping that guard would otherwise stay GREEN. A pinned `epM5AddedGuards`
 // subset (disjoint from every earlier epoch) makes the extension fail closed.
 //
+// EP-S2 (epic #009/#021) extends the set with the `pickPrimary` secure-HTTPS tier
+// precedence guard. Existing selection tests pin secure-vs-plaintext graphical
+// and secure-vs-external-client, but none pins that a secure-HTTPS console of
+// ANY type outranks an OPENABLE plaintext graphical — swapping tiers 2/3 of the
+// return expression would pass every existing test while badging a plaintext
+// console Primary while a secure one exists (issue #021). Deleting / emptying /
+// test-stripping that guard would otherwise stay GREEN; a pinned
+// `epS2AddedGuards` subset (disjoint from every earlier epoch) fails closed.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -143,6 +152,8 @@ const List<String> canonicalGuardFiles = <String>[
   'test/features/kvm/kvm_external_notice_cross_surface_agreement_test.dart',
   // EP-M5 extension: hostile ConnectTypesSupported cross-factory agreement.
   'test/features/kvm/kvm_connect_types_hostile_agreement_test.dart',
+  // EP-S2 extension: secure-HTTPS tier precedence in pickPrimary.
+  'test/features/kvm/kvm_service_primary_secure_tier_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -248,6 +259,13 @@ const Set<String> epM5AddedGuards = <String>{
   'test/features/kvm/kvm_connect_types_hostile_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-S2: the `pickPrimary`
+/// secure-HTTPS tier-precedence guard. Pinned separately so a future edit
+/// cannot drop it out of the canonical set (issue #009/#021).
+const Set<String> epS2AddedGuards = <String>{
+  'test/features/kvm/kvm_service_primary_secure_tier_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -263,6 +281,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT20AddedGuards,
   ...epU16AddedGuards,
   ...epM5AddedGuards,
+  ...epS2AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -631,6 +650,32 @@ void main() {
       expect(epM5AddedGuards.intersection(epU16AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-S2: the pickPrimary secure-tier guard is in the canonical liveness set',
+        () {
+      expect(epS2AddedGuards, isNotEmpty);
+      expect(epS2AddedGuards.length, 1);
+      for (final String path in epS2AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-S2 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epS2AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epS2AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epS2AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epS2AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epS2AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epS2AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epS2AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epS2AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epS2AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epS2AddedGuards.intersection(epM5AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -666,7 +711,8 @@ void main() {
             epT19AddedGuards.length +
             epT20AddedGuards.length +
             epU16AddedGuards.length +
-            epM5AddedGuards.length,
+            epM5AddedGuards.length +
+            epS2AddedGuards.length,
       );
     });
   });
