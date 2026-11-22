@@ -13218,3 +13218,17 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-P12 (decision-record ↔ code agreement) — audit-first, RED→GREEN only on a genuine divergence; RM-15 / EP-S10 / EP-U18 also audit-first; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-gate — #009/#021 (gate merge: tapjacking / UI-overlay / clickjacking)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#11275 returned explicit `CHECK: PASS` for exact branch head `9ac3049`; merged `build/rf-platform` into `main` with `--no-ff` → merge `b579cdc` (parents `c9c8211` / `9ac3049`), clean ort auto-merge. Two allowlisted files (44 insertions, 1 deletion): `WEBVIEW_TLS_MATRIX.md` + RP-1 no-tapjacking / UI-overlay / clickjacking acceptance box (CWE-1021 obscured-window touch, `filterTouchesWhenObscured`, rejection of `FLAG_WINDOW_IS_OBSCURED` touches, no `SYSTEM_ALERT_WINDOW` overlay), and `validation_evidence_checklist_guard_test.dart` + 6 evidence markers + 1 RED guard. Doc+test only, dependency-free, no production Dart, no TLS weakening.
+- Verify: `flutter analyze` 0; full `flutter test --coverage --concurrency=4` 2104 passed / 1 skipped (baseline 2103 +1); all coverage gates PASS overall 90.5% (6059/6692) / scoped 90.4% (2119/2345) / kvm 97.4% (1336/1371) / kvm-platform 97.0% (460/474); issues validate OK; first-parent `git diff --check` clean; deps unchanged.
+
+**Decisions:**
+- Merge gated strictly on the explicit PASS verdict for the exact verified head; branch HEAD cross-checked unchanged, one unique commit, merge-base already in main, allowlisted paths only. DMTF 85-test emulator skipped (doc+test only, no wire/fixture/tool-runtime change, <7 days since last green 85/85). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. Five pre-existing stashes untouched; no force-push/history rewrite/`git clean`.
+
+**Next:**
+- Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
