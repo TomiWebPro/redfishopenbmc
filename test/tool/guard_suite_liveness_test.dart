@@ -132,6 +132,16 @@
 // this guard under a pinned `rm13AddedGuards` subset makes deleting / emptying /
 // test-stripping it fail closed.
 //
+// EP-S9 (epic #009/#021) registers the credential-bearing Primary ↔ navigation
+// decision-boundary guard. A userinfo-bearing secure-HTTPS console can be
+// badged "Primary" by `pickPrimary` (the shared secure classifier accepts
+// userinfo) while `allowsInAppNavigation` refuses that same URI in-session —
+// a deferred human decision (EP-S8) recorded as a stable baseline. A refactor
+// that silently resolves the divergence (e.g. skipping credential-bearing
+// consoles in the Primary tier) erased the record with every EP-P11 / EP-S2
+// guard GREEN. Registering this guard under a pinned `epS9AddedGuards` subset
+// makes deleting / emptying / test-stripping it fail closed.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -210,6 +220,9 @@ const List<String> canonicalGuardFiles = <String>[
   // RM-13 extension: enablement-regime decision-boundary characterization
   // (agreeing-regime byte-for-byte agreement + deferred RM-11 divergence record).
   'test/features/kvm/kvm_enablement_regime_boundary_test.dart',
+  // EP-S9 extension: credential-bearing Primary ↔ navigation decision
+  // boundary (agreeing invariants + deferred EP-S8 divergence record).
+  'test/features/kvm/kvm_credential_primary_navigation_boundary_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -363,6 +376,14 @@ const Set<String> rm13AddedGuards = <String>{
   'test/features/kvm/kvm_enablement_regime_boundary_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-S9: the credential-bearing
+/// Primary ↔ navigation-gate decision-boundary characterization guard. Pinned
+/// separately so a future edit cannot drop it out of the canonical set
+/// (issue #009/#021).
+const Set<String> epS9AddedGuards = <String>{
+  'test/features/kvm/kvm_credential_primary_navigation_boundary_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -383,6 +404,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT22AddedGuards,
   ...rm14AddedGuards,
   ...rm13AddedGuards,
+  ...epS9AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -891,6 +913,37 @@ void main() {
       expect(rm13AddedGuards.intersection(rm14AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-S9: the credential-primary boundary guard is in the canonical '
+        'liveness set', () {
+      expect(epS9AddedGuards, isNotEmpty);
+      expect(epS9AddedGuards.length, 1);
+      for (final String path in epS9AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-S9 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epS9AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epS9AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epS9AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epS9AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epS9AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epS9AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epS9AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epS9AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epS9AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epS9AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epS9AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epS9AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epS9AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epS9AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epS9AddedGuards.intersection(rm13AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -931,7 +984,8 @@ void main() {
             epT21AddedGuards.length +
             epT22AddedGuards.length +
             rm14AddedGuards.length +
-            rm13AddedGuards.length,
+            rm13AddedGuards.length +
+            epS9AddedGuards.length,
       );
     });
   });
@@ -1642,6 +1696,70 @@ void main() {
         );
 
         final String addedGuard = rm13AddedGuards.single;
+        // RED 1: the newly-added guard is deleted → MISSING.
+        File(p(addedGuard)).deleteSync();
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'MISSING: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when deleted',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 2: the guard is emptied → EMPTY.
+        File(p(addedGuard)).writeAsStringSync('  \n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'EMPTY: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when emptied',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 3: the guard keeps prose but loses every test case.
+        File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when test-stripped',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // GREEN again once the guard is restored.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test('EP-S9: newly-added credential-boundary guard is liveness-checked',
+        () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_s9_guard_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        final String addedGuard = epS9AddedGuards.single;
         // RED 1: the newly-added guard is deleted → MISSING.
         File(p(addedGuard)).deleteSync();
         expect(

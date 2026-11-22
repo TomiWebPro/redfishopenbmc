@@ -17,7 +17,7 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
      genuine divergence, never churn. Human-gated WebView/TLS rendering stays gated and is NOT
      re-split. No code touched. -->
 
-- [ ] EP-S9 Credential-bearing secure-HTTPS Primary-badge ↔ navigation-gate decision-boundary guard
+- [x] EP-S9 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 EP-S9 credential-bearing Primary ↔ navigation decision-boundary guard + RED->GREEN tests`, analyze 0 / 2082 passed / 1 skipped) — Credential-bearing secure-HTTPS Primary-badge ↔ navigation-gate decision-boundary guard
       (unblocked half of the blocked EP-S8): over one in-temp manager with a userinfo-bearing
       secure-HTTPS console (`https://user:pass@bmc/console`), a credential-free secure-HTTPS console
       and plaintext/external variants, pin the agreeing invariants — `allowsInAppNavigation` fails
@@ -34,6 +34,7 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
               `test/features/kvm/**` (+ `lib/features/kvm/kvm_service.dart` only on a genuine
               divergence); emulator 85/85 only if `lib/` wire changes; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
               no WebView/protocol import, no production TLS weakening.
+      **LANDED** 2026-11-22: `test/features/kvm/kvm_credential_primary_navigation_boundary_test.dart` (8 tests) — 1 boundary-precondition (userinfo-bearing HTTPS is a genuine same-origin control-safe secure target), 2 RECORD-only divergence cases (`pickPrimary` badges a credentialed secure graphical Primary while `allowsInAppNavigation` refuses the same URI; first-wins makes it follow BMC order) asserting the divergence + direction but never blessing either side (deferred EP-S8), 5 agreement cases (navigation refuses a credentialed target even from a clean console; clean secure console stays navigable/in-app-eligible; production default never in-app/self-signed; test-only opt-in preserves the initial-load credential exception; `fromManager` surfaces every block and preserves the credentialed URI through the real pipeline). AUDIT: EP-P11 pins the navigation gate + EP-S2 pins tier precedence but neither tied the service Primary badge to the navigation refusal for one credentialed URI. Real-file RED #1: mutated `pickPrimary` to skip credential-bearing secure consoles (the EP-S8 "fix") → exactly 3 new tests failed (`+5 -3`), EP-P11/EP-S2 GREEN; reversed byte-clean (SHA `653e64a6…`, empty lib diff), 600-perm backup shredded → 8/8. Registered in `canonicalGuardFiles` (47→48) + pinned `epS9AddedGuards` epoch (length 1, disjoint from all earlier designations) in `test/tool/guard_suite_liveness_test.dart` (+1 pin test, completeness arithmetic, temp-root RED; real-file RED dropped canonical entry → 3 failures, restored byte-clean SHA `21974afe…`, backup shredded → 56/56). Test/tool-only, no lib/, no dependency, no WebView/protocol import, no production TLS weakening; emulator skipped.
 
 <!-- rf-ideate split 2026-11-21 22:03 UTC: splits a residual service-level aggregate-agreement seam of
      the blocked #009/#021 manager walk into one unblocked, dependency-free, TLS-safe dept slice.
