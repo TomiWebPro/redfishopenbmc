@@ -13730,3 +13730,26 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next heads RM-18 / EP-U21 / EP-S13 audit-first, RED→GREEN only on a genuine divergence; cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:rf-gate — #009/#021 (build/rf-platform merge)
+
+**Done:**
+- GATE (sole merger to `main`): `rf-platform-check` run#11515 returned `SUCCESS` / `CHECK: PASS` for `build/rf-platform` HEAD `90f15b7` (exit 0, 61.5 s, 66/66 targeted tests, no production-TLS weakening, allowlisted paths only). Branch HEAD cross-checked unchanged immediately before merge (main + platform worktree); merge-base `171752c` already in `main` via `ae54679`; exactly one branch-unique commit.
+- Merged `90f15b7` into `main` with `--no-ff` (merge `94f7f7a`, parents `7cae33a` / `90f15b7`), clean ort auto-merge, no conflicts. PASS-only merge gate honored (no SKIP/NO-OP).
+- Branch content: RP-1 "validated-origin binding / no-DNS-rebinding" acceptance box in `WEBVIEW_TLS_MATRIX.md` + evidence markers + 1 RED guard, with hard `bypassValidatedOriginBinding => false` getter in `webview_policy.dart` + policy tests — hardening only; the test-only self-signed opt-in never bypasses binding to the validated origin or pivots to a re-resolved address.
+- `FUTUREWORK.md` gained one gate entry; no `Current focus` change (automation job owns focus).
+
+**Verification (in-tree at `94f7f7a`):**
+- `flutter analyze`: 0 issues ("No issues found!").
+- `flutter test --coverage --concurrency=4`: 2287 passed / 1 skipped (baseline 2283 +4 merged tests).
+- Coverage gates: all PASS — overall 90.5% (6064/6697), scoped redfish+power+sensors 90.4% (2119/2345), kvm 97.5% (1341/1376), kvm-platform 97.1% (465/479); gate exit 0.
+- `dart run tool/asset_guard.dart`: OK; `dart run tool/unattended_guard.dart`: OK.
+- `python3 issues/issues.py validate`: OK.
+- first-parent `git diff --check`: clean; first-parent diff = 4 allowlisted files (102 insertions, 0 deletions); TLS-weakening + secret scan clean.
+- DMTF 85-test emulator: SKIPPED (no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:** Clean tracked tree at merge time (no new stash); five pre-existing stashes untouched; no force-push, history rewrite, `git clean`, or file deletion. No issue closed (#009 P3 / #021 P2 stay human-gated). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
