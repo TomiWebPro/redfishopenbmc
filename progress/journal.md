@@ -13318,3 +13318,18 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept heads RM-16 / EP-U19 / EP-S11 / EP-P14 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-S11)
+
+**Done:**
+- FEATURE (test-only): EP-S11 member-order tie determinism guard. AUDIT first of the four fresh rf-ideate dept heads: EP-S2 pins secure-HTTPS tier precedence, EP-S6 pins capability↔primary agreement for ONE multi-block manager, but no existing test fed TWO equally-ranked openable secure-HTTPS graphical consoles in fixed BMC order across `fetchConsoles()` / `fetchPrimaryConsole()` / `pickPrimary()` / `fetchCapability(id)` / `fetchCapabilities()`. Added `test/features/kvm/kvm_service_member_order_tie_test.dart` (3 tests) over one in-temp 3-manager mockup (padded link-map first, bare string, plain link-map, padded duplicate of BMC-A for first-occurrence dedup): pins BMC member order + stability, first-in-order winner determinism across repeated calls, and capability order + winner-URI↔primary agreement with every manager keeping its own URI. No live divergence — regression guard, not churn.
+- RED→GREEN: mutated `pickPrimary` `firstSecureGraphical ??= console; break` → `firstSecureGraphical = console` (no break) → exactly the 2 winner-determination tests failed (`+1 -2`), all 28 related existing guards GREEN; restored byte-clean (SHA `653e64a6…`, 0 residue, empty lib diff), 600-perm backup shredded → 3/3 GREEN.
+- Verify: targeted 3/3; `dart format` clean; `flutter analyze` 0; full `flutter test --concurrency=4` 2155 passed / 1 skipped (baseline 2152 +3); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-S11 LANDED (`queues/service.md`). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. DMTF 85-test emulator skipped (test-only, <7 days since last green 85/85). No manufactured UI churn (§5). Five pre-existing stashes untouched.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept heads RM-16 / EP-U19 / EP-P14 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended; this guard is a candidate for a future liveness epoch. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
