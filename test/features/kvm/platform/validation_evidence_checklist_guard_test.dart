@@ -17,7 +17,8 @@
 // no-cross-origin-form-submission (form action POST / auto-submit / post body
 // exfiltration), no-arbitrary/drive-by file download (APK / executable /
 // auto-open / content-disposition), no-cross-site-cookie/session-leak (SameSite /
-// third-party-cookie / HttpOnly), flag-off fallback, human sign-off) so a
+// third-party-cookie / HttpOnly), no-tapjacking/UI-overlay/clickjacking
+// (CWE-1021 obscured-window touch), flag-off fallback, human sign-off) so a
 // future edit cannot silently erase the evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
@@ -76,6 +77,12 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'third-party-cookie-blocking', marker: 'third-party cookie'),
   (name: 'secure-httponly-cookie', marker: 'httponly'),
   (name: 'no-cookie-script-read', marker: 'document.cookie'),
+  (name: 'no-tapjacking', marker: 'tapjacking'),
+  (name: 'no-ui-overlay', marker: 'ui-overlay'),
+  (name: 'no-clickjacking', marker: 'clickjacking'),
+  (name: 'obscured-window-touch', marker: 'flag_window_is_obscured'),
+  (name: 'cwe-1021', marker: 'cwe-1021'),
+  (name: 'filter-touches-obscured', marker: 'filtertoucheswhenobscured'),
   (name: 'no-arbitrary-file-download', marker: 'arbitrary file download'),
   (name: 'no-driveby-download', marker: 'drive-by download'),
   (name: 'no-content-disposition-download', marker: 'content-disposition'),
@@ -399,6 +406,24 @@ void main() {
       expect(missing, contains('third-party-cookie-blocking'));
       expect(missing, contains('secure-httponly-cookie'));
       expect(missing, contains('no-cookie-script-read'));
+    });
+
+    test('RED: dropping the no-tapjacking/UI-overlay/clickjacking box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutTapjacking = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'tapjacking|ui-overlay|clickjacking|flag_window_is_obscured|cwe-1021|filtertoucheswhenobscured')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutTapjacking);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-tapjacking'));
+      expect(missing, contains('no-ui-overlay'));
+      expect(missing, contains('no-clickjacking'));
+      expect(missing, contains('obscured-window-touch'));
+      expect(missing, contains('cwe-1021'));
+      expect(missing, contains('filter-touches-obscured'));
     });
 
     test('RED: dropping the no-native-bridge box fails closed', () {
