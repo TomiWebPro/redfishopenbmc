@@ -13493,3 +13493,25 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Register the EP-U20 guard in `test/tool/guard_suite_liveness_test.dart` under a fresh pinned epoch, then continue EP-P15 / RM-17 / EP-S12 audit-first, RED→GREEN only on a genuine divergence, never churn.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 15:36 UTC — GATE (rf-gate, sole merger)
+
+**Verdict:** `rf-platform-check` run#11413 → `SUCCESS` / `CHECK: PASS` (exit 0, 89.0 s) for `build/rf-platform` tip `8cac6e1` (HEAD cross-checked unchanged immediately before merge). Started 15:29:28 UTC, ~45 s after the tip commit (15:28:43 UTC).
+
+**Merge:** `git merge --no-ff build/rf-platform` → merge `c4fc305` (parents `257fd31` / `8cac6e1`); clean ort auto-merge, no conflicts. Merge-base `5ab335a` already in `main` via merge `85ca2d2`; exactly one branch-unique commit.
+
+**Merged change:** RP-1 "no-HTTP-auth / login-form credential-prompt spoofing" acceptance box in `lib/features/kvm/platform/WEBVIEW_TLS_MATRIX.md` + evidence markers + 1 RED guard in `test/features/kvm/platform/validation_evidence_checklist_guard_test.dart`. Native auth challenges deny by default; no `proceed()` / `useHttpAuthUsernamePassword()` on production profiles, no `setHttpAuthUsernamePassword` pre-seeding or `WebStorage` credential autocomplete. Doc+test only, no production Dart, no dependency change, no production-TLS weakening.
+
+**Verification (in-tree at `c4fc305`, clean tracked tree):**
+- `flutter analyze`: 0 issues ("No issues found!").
+- `flutter test --coverage --concurrency=2`: 2226 passed / 1 skipped (baseline 2225 +1 merged test).
+- Coverage gates: all PASS — overall 90.5% (6059/6692), scoped redfish+power+sensors 90.4% (2119/2345), kvm 97.4% (1336/1371), kvm-platform 97.0% (460/474); gate exit 0.
+- `python3 issues/issues.py validate`: OK.
+- first-parent `git diff --check`: clean; first-parent diff = 2 allowlisted files (65 insertions, 2 deletions); TLS-weakening + secret scan clean.
+- DMTF 85-test emulator: SKIPPED (doc+test only, no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:** PASS-only merge gate honored (no SKIP/NO-OP). No issue closed (#009 P3 / #021 P2 stay human-gated). Five pre-existing stashes untouched; no force-push, history rewrite, `git clean`, or file deletion. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
