@@ -299,6 +299,24 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'trust-store-policy-getter',
     marker: 'bypassplatformtruststoreintegrity'
   ),
+  (name: 'client-cert-validation', marker: 'client-certificate validation'),
+  (name: 'mutual-tls-client-cert', marker: 'mutual tls'),
+  (
+    name: 'client-private-key-protection',
+    marker: 'private key must remain protected'
+  ),
+  (
+    name: 'opt-in-keeps-client-cert',
+    marker: 'never disable client-certificate validation'
+  ),
+  (
+    name: 'client-cert-config-invariant',
+    marker: 'configuration-independent invariant'
+  ),
+  (
+    name: 'client-cert-policy-getter',
+    marker: 'bypassclientcertificatevalidation'
+  ),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -873,6 +891,23 @@ void main() {
       expect(missing, contains('scoped-per-connection-verifier'));
       expect(missing, contains('trust-store-never-mutated'));
       expect(missing, contains('trust-store-policy-getter'));
+    });
+
+    test('RED: dropping the client-certificate/mTLS validation box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutClientCert = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'client-certificate validation|mutual tls|private key must remain protected|never disable client-certificate validation|bypassclientcertificatevalidation')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutClientCert);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('client-cert-validation'));
+      expect(missing, contains('mutual-tls-client-cert'));
+      expect(missing, contains('client-private-key-protection'));
+      expect(missing, contains('opt-in-keeps-client-cert'));
+      expect(missing, contains('client-cert-policy-getter'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

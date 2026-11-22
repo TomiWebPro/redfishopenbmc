@@ -701,6 +701,29 @@ flag stays off for that target.
       configuration and the host's trust-store / network-security settings, and
       confirm no CA or trust anchor is added, with the flag both off and on)
       before the flag is flipped.
+* [ ] **Client-certificate (mutual TLS) validation never bypassed** — when a BMC
+      console requires mutual TLS, the embedded WebView must present the
+      configured client certificate and validate the connection against it; the
+      client certificate's private key must remain protected and never be
+      exported or exposed to page JavaScript / a native bridge. The test-only
+      self-signed opt-in tolerates ONLY the test BMC's untrusted *server* leaf
+      for the expected host: it must never disable client-certificate validation,
+      never accept a missing, invalid or expired client certificate, and never
+      expose the private key. This is a control distinct from the server-side
+      certificate checks — hostname verification and pinning (identity/key of
+      the BMC's server certificate), revocation (server certificate status) and
+      platform trust-store integrity (device-wide anchors) — and from the TLS
+      floor, HTTPS-only transport and validated-origin binding (the handshake,
+      cleartext sockets and resolved address): those govern the server side and
+      the transport, whereas this box governs the client credential. This is a
+      hard, configuration-independent invariant that a future WebView consumer
+      can consult (`KvmWebViewPolicy.bypassClientCertificateValidation`, always
+      `false`): the opt-in never bypasses client-certificate validation, in
+      strict mode and with the flag both off and on. Verified per target
+      (inspect the WebView client-certificate / mTLS configuration and observe
+      that a missing, invalid or expired client certificate is rejected and the
+      private key is not exposed to page content, with the flag both off and on)
+      before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
