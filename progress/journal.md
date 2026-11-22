@@ -13643,3 +13643,19 @@
 **Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-T31)
+
+**Done:**
+- FEATURE (test/tool-only): EP-T31 coverage-gate CLI/CI wiring liveness guard. AUDIT FIRST: `coverage_gate_test.dart` pinned `evaluateAllGates()`'s four named results and `guard_suite_liveness_test.dart` pinned verify.yml's `flutter test --coverage`, but nothing pinned that verify.yml invokes `dart run tool/coverage_gate.dart` nor that CLI `main` calls `evaluateAllGates` (could silently call the two-gate `evaluateGates`) — CONFIRMED unguarded invariant (no live drift).
+- Added pure evaluator `evaluateCoverageGateWiring(cliSource, verifySource)` + 8 tests to `test/tool/coverage_gate_test.dart`: real-repo invariant, 5 drift cases (dropped/renamed kvm-platform builder, renamed kvm builder, main→evaluateGates, CI gate step removed, CI `--coverage` removed), 1 temp-root RED→GREEN.
+- Real-file RED: removed the coverage-gate step from the real `.github/workflows/verify.yml` under a 600-perm backup → exactly 1 named failure (`+36 -1`, diagnostic `CI: verify.yml no longer runs tool/coverage_gate.dart`), other 36 GREEN; restored byte-clean (SHA `7e97e3a3...` unchanged, 0 residue, backup shredded, `git diff --exit-code` clean) → 37/37 GREEN.
+- Verify: targeted 37/37; `dart format` clean; analyze 0; full suite 2266 passed / 1 skipped (baseline 2258 +8); issues validate OK; diff --check clean; deps unchanged; lib diff empty; CI config byte-clean; emulator skipped (test/tool-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Registration-only regression guard — no behaviour change, no production `lib/` or CI-config change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-T31 LANDED (`queues/tooling.md`). Both issues stay human-gated (platform WebView + BMC TLS validation). UI skipped: pure tool/test wiring guard, no widget surface, no manufactured UI churn per §5.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept heads: RM-18 / EP-U21 / EP-S13 / EP-P16 (audit-first); EP-T30 (liveness-register EP-M4 guard) still pending.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

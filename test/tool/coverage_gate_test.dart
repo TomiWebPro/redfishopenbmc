@@ -2,7 +2,10 @@
 //
 // These are pure-Dart tests over inline lcov strings — no real coverage run or
 // file I/O is needed, so `flutter test` never depends on `coverage/lcov.info`.
+// (EP-T31 adds a file-based CLI/CI wiring invariant; it reads only checked-in
+// source/config files, never a generated coverage artifact.)
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
@@ -16,6 +19,97 @@ String record(String path, int found, int hit) => [
       'LH:$hit',
       'end_of_record',
     ].join('\n');
+
+/// Builder tokens that [evaluateAllGates] must call so all four enforced gates
+/// (overall + redfish/power/sensors from `evaluateGates`, plus `kvm` and
+/// `kvm-platform`) stay bound. EP-T31 pins these against a silent drop/rename.
+const List<String> kAllGateBuilderTokens = <String>[
+  'evaluateGates(',
+  'evaluateKvmGate(',
+  'evaluateKvmPlatformGate(',
+];
+
+/// Pure evaluator for the coverage-gate CLI/CI wiring invariant (EP-T31).
+///
+/// [cliSource] is the text of `tool/coverage_gate.dart`; [verifySource] is the
+/// text of `.github/workflows/verify.yml`. Returns concrete drift diagnostics;
+/// empty means every enforced gate is wired into both the CLI entry point and
+/// the CI workflow. No I/O and no Flutter bindings — callers supply the text.
+///
+/// Guard-suite liveness (EP-T12..T29) pins that TEST files stay in the canonical
+/// set and runs `flutter test --coverage`; it does not pin that the coverage
+/// gates themselves are still invoked. Without this invariant, a future edit
+/// could drop the `dart run tool/coverage_gate.dart` CI step (or make `main`
+/// call the two-gate `evaluateGates`) and silently stop enforcing the
+/// kvm-platform gate while every test stayed GREEN.
+List<String> evaluateCoverageGateWiring(String cliSource, String verifySource) {
+  final String cli = cliSource.replaceAll('\r', '');
+  final String verify = verifySource.replaceAll('\r', '');
+  final List<String> violations = <String>[];
+
+  // (1) evaluateAllGates must still bind all four enforced gates. Slice from
+  // its definition up to the next top-level declaration so a token appearing
+  // elsewhere (a comment, a test) cannot satisfy the check.
+  final int start = cli.indexOf('CoverageGateReport evaluateAllGates(');
+  if (start < 0) {
+    violations.add('CLI: evaluateAllGates definition missing');
+  } else {
+    final int end = cli.indexOf('const String kDefaultLcovPath', start);
+    final String body =
+        end > start ? cli.substring(start, end) : cli.substring(start);
+    for (final String token in kAllGateBuilderTokens) {
+      if (!body.contains(token)) {
+        violations.add('CLI: evaluateAllGates no longer calls $token');
+      }
+    }
+  }
+
+  // (2) main() must call evaluateAllGates — the narrower evaluateGates returns
+  // only two results, silently dropping kvm + kvm-platform from the CLI.
+  final int mainStart = cli.indexOf('main(List<String> args)');
+  if (mainStart < 0) {
+    violations.add('CLI: main() definition missing');
+  } else if (!RegExp(r'\bevaluateAllGates\s*\(')
+      .hasMatch(cli.substring(mainStart))) {
+    violations.add('CLI: main() no longer invokes evaluateAllGates');
+  }
+
+  // (3) CI must actually run the gate CLI; dropping the step would stop
+  // enforcing every coverage gate while all tests stayed GREEN.
+  if (!RegExp(r'dart\s+run\s+tool/coverage_gate\.dart').hasMatch(verify)) {
+    violations.add('CI: verify.yml no longer runs tool/coverage_gate.dart');
+  }
+
+  // (4) CI must produce lcov before that CLI reads it.
+  if (!RegExp(r'flutter\s+test\b[^\n]*--coverage').hasMatch(verify)) {
+    violations.add('CI: verify.yml no longer runs "flutter test --coverage"');
+  }
+
+  return violations;
+}
+
+/// Minimal, genuinely wired synthetic sources for the pure evaluator tests.
+const String syntheticCliSource = '''
+CoverageGateReport evaluateAllGates(CoverageSummary summary) {
+  return CoverageGateReport(<GateResult>[
+    ...evaluateGates(summary).results,
+    evaluateKvmGate(summary),
+    evaluateKvmPlatformGate(summary),
+  ]);
+}
+const String kDefaultLcovPath = 'coverage/lcov.info';
+Future<void> main(List<String> args) async {
+  final CoverageGateReport report = evaluateAllGates(summary);
+  exitCode = report.passed ? 0 : 1;
+}
+''';
+
+const String syntheticVerifySource = '''
+      - name: Test with coverage
+        run: flutter test --coverage
+      - name: Enforce coverage gates
+        run: dart run tool/coverage_gate.dart coverage/lcov.info
+''';
 
 void main() {
   group('parseLcov', () {
@@ -477,6 +571,137 @@ void main() {
       expect(
         () => parseGateCliArgs(const <String>['a.info', 'b.info']),
         throwsArgumentError,
+      );
+    });
+  });
+
+  group('coverage-gate CLI/CI wiring (EP-T31)', () {
+    test('fully wired CLI + CI has no drift', () {
+      expect(
+        evaluateCoverageGateWiring(
+          syntheticCliSource,
+          syntheticVerifySource,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('dropping the kvm-platform gate builder fails closed', () {
+      final String mutated = syntheticCliSource.replaceFirst(
+        '    evaluateKvmPlatformGate(summary),\n',
+        '',
+      );
+      expect(
+        evaluateCoverageGateWiring(mutated, syntheticVerifySource),
+        contains(
+            'CLI: evaluateAllGates no longer calls evaluateKvmPlatformGate('),
+      );
+    });
+
+    test('renaming the kvm gate builder fails closed', () {
+      final String mutated = syntheticCliSource.replaceFirst(
+        'evaluateKvmGate(summary)',
+        'evaluateKvmGateRenamed(summary)',
+      );
+      expect(
+        evaluateCoverageGateWiring(mutated, syntheticVerifySource),
+        contains('CLI: evaluateAllGates no longer calls evaluateKvmGate('),
+      );
+    });
+
+    test('main calling the two-gate evaluateGates fails closed', () {
+      final String mutated = syntheticCliSource.replaceFirst(
+        'final CoverageGateReport report = evaluateAllGates(summary);',
+        'final CoverageGateReport report = evaluateGates(summary);',
+      );
+      expect(
+        evaluateCoverageGateWiring(mutated, syntheticVerifySource),
+        contains('CLI: main() no longer invokes evaluateAllGates'),
+      );
+    });
+
+    test('CI without the coverage-gate CLI step fails closed', () {
+      final String mutated = syntheticVerifySource.replaceFirst(
+        RegExp(r'.*coverage_gate\.dart.*\n'),
+        '',
+      );
+      expect(
+        evaluateCoverageGateWiring(syntheticCliSource, mutated),
+        contains('CI: verify.yml no longer runs tool/coverage_gate.dart'),
+      );
+    });
+
+    test('CI without flutter test --coverage fails closed', () {
+      final String mutated = syntheticVerifySource.replaceFirst(
+        RegExp(r'.*flutter test --coverage.*\n'),
+        '',
+      );
+      expect(
+        evaluateCoverageGateWiring(syntheticCliSource, mutated),
+        contains('CI: verify.yml no longer runs "flutter test --coverage"'),
+      );
+    });
+
+    test('temp-root RED→GREEN proves file-level wiring liveness', () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_t31_wiring_');
+      try {
+        final File cli = File('${temp.path}${Platform.pathSeparator}cli.dart');
+        final File verify =
+            File('${temp.path}${Platform.pathSeparator}verify.yml');
+        cli.writeAsStringSync(syntheticCliSource);
+        verify.writeAsStringSync(syntheticVerifySource);
+        expect(
+          evaluateCoverageGateWiring(
+            cli.readAsStringSync(),
+            verify.readAsStringSync(),
+          ),
+          isEmpty,
+        );
+
+        // Drop the kvm-platform gate from the on-disk CLI source: fails closed.
+        cli.writeAsStringSync(
+          syntheticCliSource.replaceFirst(
+            '    evaluateKvmPlatformGate(summary),\n',
+            '',
+          ),
+        );
+        expect(
+          evaluateCoverageGateWiring(
+            cli.readAsStringSync(),
+            verify.readAsStringSync(),
+          ),
+          contains(
+              'CLI: evaluateAllGates no longer calls evaluateKvmPlatformGate('),
+        );
+
+        // Restore: clean once more.
+        cli.writeAsStringSync(syntheticCliSource);
+        expect(
+          evaluateCoverageGateWiring(
+            cli.readAsStringSync(),
+            verify.readAsStringSync(),
+          ),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test('real repository: all four gates wired into CLI and CI', () {
+      final File cli = File('tool/coverage_gate.dart');
+      final File verify = File('.github/workflows/verify.yml');
+      expect(cli.existsSync(), isTrue);
+      expect(verify.existsSync(), isTrue);
+      final List<String> violations = evaluateCoverageGateWiring(
+        cli.readAsStringSync(),
+        verify.readAsStringSync(),
+      );
+      expect(
+        violations,
+        isEmpty,
+        reason: 'coverage-gate wiring drift: ${violations.join(', ')}',
       );
     });
   });
