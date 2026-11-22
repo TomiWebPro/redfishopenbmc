@@ -580,6 +580,26 @@ flag stays off for that target.
       every target. Verified per target (inspect the WebView load / error callbacks and the
       app's logging and telemetry configuration, and confirm no console URL or token is
       emitted) before the flag is flipped.
+* [ ] **Operator-session auto-lock / session timeout (no unattended privileged
+      console)** — the embedded WebView must not leave the operator's privileged
+      BMC/KVM session live and visible when the operator walks away: a bounded
+      session timeout must auto-lock the console after idle, and the session must
+      lock immediately on backgrounding / app minimize (Android `onPause` / `onStop`,
+      iOS `applicationDidEnterBackground`), requiring re-authentication before the
+      console is shown again, and be torn down at teardown. An unattended, still-live
+      console exposes KVM frames, credentials and privileged management actions to
+      any shoulder-surfer or co-resident app that resumes the task — a session-
+      exposure / local-privilege surface wholly independent of TLS, hostname,
+      origin-navigation, native-bridge, file-access and data-at-rest checks (which
+      govern the handshake, the authority, navigation, capabilities, files and on-disk
+      persistence, not the LIVE session's idle/background lifecycle). Console content
+      is served by the BMC and is attacker-influenced, but above all it is the
+      operator's privileged management session: it must lock on idle and on
+      backgrounding and require re-authentication to resume, on every target.
+      Verified per target (inspect the WebView host's lifecycle callbacks and confirm
+      the live session auto-locks on idle and on backgrounding and that
+      re-authentication is required before the console is shown) before the flag is
+      flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

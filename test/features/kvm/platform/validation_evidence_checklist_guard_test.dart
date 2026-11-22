@@ -26,8 +26,10 @@
 // free resolution), no-external/attacker-controlled initial console URL (trusted
 // entry path, no exported activity / Intent-seeded first load),
 // no-sensitive-console-URL/session-token in logs/telemetry/crash reports
-// (CWE-532), flag-off fallback, human sign-off) so a future edit cannot silently
-// erase the evidence boxes that gate that decision.
+// (CWE-532), operator-session auto-lock / session timeout / backgrounding +
+// re-auth (no unattended privileged console), flag-off fallback, human sign-off)
+// so a future edit cannot silently erase the evidence boxes that gate that
+// decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -190,6 +192,11 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-crash-report-leak', marker: 'crash report'),
   (name: 'no-analytics-token-leak', marker: 'analytics'),
   (name: 'no-telemetry-token-leak', marker: 'telemetry'),
+  (name: 'session-timeout', marker: 'session timeout'),
+  (name: 'idle-auto-lock', marker: 'auto-lock'),
+  (name: 'lock-on-backgrounding', marker: 'backgrounding'),
+  (name: 'reauth-on-resume', marker: 're-authentication'),
+  (name: 'no-unattended-console', marker: 'unattended'),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -618,6 +625,24 @@ void main() {
       expect(missing, contains('no-crash-report-leak'));
       expect(missing, contains('no-analytics-token-leak'));
       expect(missing, contains('no-telemetry-token-leak'));
+    });
+
+    test(
+        'RED: dropping the operator-session auto-lock / session-timeout box '
+        'fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutSessionLock = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'session timeout|auto-lock|backgrounding|re-authentication|unattended')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutSessionLock);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('session-timeout'));
+      expect(missing, contains('idle-auto-lock'));
+      expect(missing, contains('lock-on-backgrounding'));
+      expect(missing, contains('reauth-on-resume'));
+      expect(missing, contains('no-unattended-console'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
