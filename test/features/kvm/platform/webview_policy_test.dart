@@ -330,6 +330,47 @@ void main() {
     });
   });
 
+  group('KvmWebViewPolicy — platform trust-store integrity is never bypassed',
+      () {
+    test('production default never mutates the platform trust store', () {
+      expect(
+          KvmWebViewPolicy.productionDefault.bypassPlatformTrustStoreIntegrity,
+          isFalse);
+    });
+
+    test('test-only self-signed opt-in still never mutates the trust store', () {
+      // Accepting the test BMC's untrusted leaf must NOT be implemented by
+      // installing its CA / trust anchor into the platform trust store (Android
+      // NetworkSecurityConfig <certificates src="user"/> or KeyStore mutation,
+      // iOS/macOS custom CA / SecTrust anchor). That would trust that CA for
+      // every app and every host — a global weakening of production TLS. The
+      // opt-in tolerates the leaf only in a scoped per-connection verifier.
+      // This is a hard invariant, independent of the flag, TLS mode or signals.
+      expect(
+          KvmWebViewPolicy.testOptIn.bypassPlatformTrustStoreIntegrity, isFalse);
+    });
+
+    test('no policy configuration can weaken the platform trust store', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Identity, pinning, handshake-floor, HTTPS-only, revocation,
+      // origin-binding and trust-store-integrity invariants are independent:
+      // the test-only opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+    });
+  });
+
   group('resolveRenderRoute — fallback works with the flag off', () {
     test('flag off routes valid HTTPS HTML5 to the external browser', () {
       expect(

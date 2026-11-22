@@ -673,6 +673,34 @@ flag stays off for that target.
       flag both off and on. Verified per target (inspect the WebView TLS /
       revocation configuration and observe that a revoked certificate is
       rejected, with the flag both off and on) before the flag is flipped.
+* [ ] **Platform trust-store integrity (no CA / trust-anchor addition, no global
+      TLS weakening)** — the test-only self-signed opt-in must never add a CA,
+      trust anchor or certificate to the platform / OS trust store, and must
+      never mutate that store: no Android `NetworkSecurityConfig`
+      `<certificates src="user"/>` trust-anchor addition or `KeyStore`
+      mutation, no iOS / macOS custom CA installation or `SecTrust` anchor
+      override, and no ATS / network-security exception that adds a trust
+      anchor. Doing so would make the BMC's CA trusted for EVERY app and EVERY
+      host on the device — a global weakening of production TLS, exactly what
+      this spike forbids — and would let any certificate signed by that CA
+      impersonate any host. The console WebView instead tolerates the test
+      BMC's untrusted leaf ONLY through a scoped, per-connection certificate
+      verifier bound to the expected console host; the platform trust store
+      itself is untouched. This is a control distinct from hostname
+      verification (identity binding), certificate/public-key pinning (key
+      binding), the TLS protocol/cipher floor and HTTPS-only transport (the
+      handshake and cleartext sockets), certificate revocation checking
+      (certificate status) and validated-origin binding (the resolved address):
+      those govern the connection, whereas this box governs the device-wide
+      trust anchors themselves. This is a hard, configuration-independent
+      invariant that a future WebView consumer can consult
+      (`KvmWebViewPolicy.bypassPlatformTrustStoreIntegrity`, always `false`):
+      the opt-in never bypasses trust-store integrity.
+      The opt-in never mutates the platform trust store, in strict mode and with
+      the flag both off and on. Verified per target (inspect the WebView TLS
+      configuration and the host's trust-store / network-security settings, and
+      confirm no CA or trust anchor is added, with the flag both off and on)
+      before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
