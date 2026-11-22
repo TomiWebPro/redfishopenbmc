@@ -13867,3 +13867,26 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-S14 (zero-usable-console manager surfacing agreement) — audit-first, RED→GREEN only on a genuine divergence, never churn; optionally register this new EP-S13 guard in the liveness registry under a fresh epoch. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:rf-gate — #009/#021 (build/rf-platform merge)
+
+**Done:**
+- GATE (sole merger to `main`): `rf-platform-check` run#11578 returned `SUCCESS` / `CHECK: PASS` for `build/rf-platform` HEAD `3cf3b3c` (exit 0, 71.2 s, 78/78 targeted tests across both touched test files, no production-TLS weakening, allowlisted paths only). Branch HEAD cross-checked unchanged immediately before merge; merge-base `513f3c8` already in `main` via `1738e4a`; exactly one branch-unique commit.
+- Merged `3cf3b3c` into `main` with `--no-ff` (merge `663d735`, parents `9814e8c` / `3cf3b3c`), clean ort auto-merge, no conflicts. PASS-only merge gate honored (no SKIP / NO-OP). Tree clean at gate start (no WIP stashed or swept in); five pre-existing stashes untouched.
+- Branch content: RP-1 "strict Referrer-Policy / no URL-token leakage" acceptance box in `WEBVIEW_TLS_MATRIX.md` + evidence markers + 1 RED guard, with hard `bypassStrictReferrerPolicy => false` getter in `webview_policy.dart` + policy tests — hardening only; the test-only self-signed opt-in never relaxes the referrer policy or emits the console URL / session token in a cross-origin `Referer` header.
+- `FUTUREWORK.md` gained one gate entry; no `Current focus` change (automation job owns focus).
+
+**Verification (in-tree at `663d735`):**
+- `flutter analyze`: 0 issues ("No issues found!").
+- `flutter test --coverage --concurrency=4`: 2393 passed / 1 skipped (baseline 2389 +4 merged tests).
+- Coverage gates: all PASS — overall 90.6% (6069/6702), scoped redfish+power+sensors 90.4% (2119/2345), kvm 97.5% (1346/1381), kvm-platform 97.1% (468/482); gate exit 0 (JSON `passed=true`).
+- `dart run tool/asset_guard.dart`: OK; `dart run tool/unattended_guard.dart`: OK.
+- `python3 issues/issues.py validate`: OK.
+- first-parent `git diff --check`: clean; first-parent diff = 4 allowlisted files (123 insertions, 8 deletions); TLS-weakening + secret scan clean.
+- DMTF 85-test emulator: SKIPPED (no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:** Clean tracked tree at merge time (no new stash); five pre-existing stashes untouched; no force-push, history rewrite, `git clean`, or file deletion. No issue closed (#009 P3 / #021 P2 stay human-gated). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
