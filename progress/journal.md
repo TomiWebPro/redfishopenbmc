@@ -12969,3 +12969,18 @@
 - Push the single commit (never force-push), which also lands the two prior unpushed commits; leave pre-existing stashes untouched. EP-T4 (tooling fixture/CI guard) audit-first — RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-T21)
+
+**Done:**
+- FEATURE (test/tool-only): EP-T21 guard-suite liveness extension pinning the RM-12 `kvm_external_client_from_manager_parity_test.dart` safety guard for #009/#021. CONFIRMED gap: that guard (5 live cases, reachable from verify.yml whole-tree `flutter test --coverage`) landed after EP-T20 unpinned — absent from `canonicalGuardFiles` and every epoch set — so dropping / emptying / test-stripping it stayed GREEN. Added it to `canonicalGuardFiles` (41→42) under a pinned `epT21AddedGuards` set (length 1, disjoint from all 11 earlier designations), included in `allDesignatedGuards` + completeness arithmetic, +1 pin test with pairwise disjointness and a temp-root RED→GREEN (missing/emptied/test-less → violation, intact → clean).
+- Real-file RED: dropped the canonical entry → 3 failures (`+23 -3`: EP-T21 pin + EP-T20 designated-guard + completeness length), named the dropped guard; mutation reversed byte-clean (canonical 42, 0 residue), 600-perm backup shredded → 26/26 GREEN.
+- Verify: `dart format` clean (my file); `flutter analyze` 0; full `flutter test --concurrency=4` 2046 passed / 1 skipped (baseline 2044 +2); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test/tool-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-T21 is now LANDED (`queues/tooling.md`). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. UI skipped as a separate increment (§5): no widget source changed; no manufactured churn. DMTF 85-test emulator skipped (test/tool-only, <7 days since last green 85/85).
+
+**Next:**
+- Push the single commit (never force-push); leave pre-existing stashes untouched. EP-T4 (fixture/CI guard) audit-first — fixture half covered by EP-T10, dependency/flag halves by EP-P5/EP-T6 + human-gate guards, so land only a genuine RED→GREEN divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
