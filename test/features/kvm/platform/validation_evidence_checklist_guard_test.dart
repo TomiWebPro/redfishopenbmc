@@ -19,9 +19,10 @@
 // auto-open / content-disposition), no-cross-site-cookie/session-leak (SameSite /
 // third-party-cookie / HttpOnly), no-tapjacking/UI-overlay/clickjacking
 // (CWE-1021 obscured-window touch), no-TLS-version/cipher-suite downgrade
-// (TLS 1.2+ floor, no weak/export suites, no silent fallback), flag-off fallback,
-// human sign-off) so a future edit cannot silently erase the evidence boxes that
-// gate that decision.
+// (TLS 1.2+ floor, no weak/export suites, no silent fallback),
+// no-DNS-rebinding/stale-resolution (connect to the validated origin, TOCTOU-
+// free resolution), flag-off fallback, human sign-off) so a future edit cannot
+// silently erase the evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -92,6 +93,13 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-export-cipher', marker: 'export'),
   (name: 'no-tls-downgrade', marker: 'tls_fallback_scsv'),
   (name: 'opt-in-keeps-tls-floor', marker: 'must never relax'),
+  (name: 'no-dns-rebinding', marker: 'dns rebinding'),
+  (name: 'no-stale-resolution', marker: 'stale-resolution'),
+  (name: 'no-re-resolution', marker: 're-resolv'),
+  (name: 'validate-at-connect-time', marker: 'connect time'),
+  (name: 'toctou-check', marker: 'time-of-check'),
+  (name: 'toctou', marker: 'toctou'),
+  (name: 'pinned-resolved-address', marker: 'resolved address'),
   (name: 'no-arbitrary-file-download', marker: 'arbitrary file download'),
   (name: 'no-driveby-download', marker: 'drive-by download'),
   (name: 'no-content-disposition-download', marker: 'content-disposition'),
@@ -454,6 +462,26 @@ void main() {
       expect(missing, contains('no-export-cipher'));
       expect(missing, contains('no-tls-downgrade'));
       expect(missing, contains('opt-in-keeps-tls-floor'));
+    });
+
+    test(
+        'RED: dropping the no-DNS-rebinding/stale-resolution box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutRebinding = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'dns rebinding|stale-resolution|re-resolv|connect time|time-of-check|toctou|resolved address')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutRebinding);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-dns-rebinding'));
+      expect(missing, contains('no-stale-resolution'));
+      expect(missing, contains('no-re-resolution'));
+      expect(missing, contains('validate-at-connect-time'));
+      expect(missing, contains('toctou-check'));
+      expect(missing, contains('toctou'));
+      expect(missing, contains('pinned-resolved-address'));
     });
 
     test('RED: dropping the no-native-bridge box fails closed', () {
