@@ -146,6 +146,28 @@ class KvmWebViewPolicy {
   /// revocation. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassCertificateRevocationCheck => false;
 
+  /// Always `false`: binding to the validated console origin is NEVER bypassed,
+  /// not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must connect only to the address that passed the
+  /// fail-closed origin check: no DNS rebinding (a name that resolves to the
+  /// approved BMC address at validation time and to loopback / link-local /
+  /// cloud-metadata / an internal management address at connect time), no
+  /// time-of-check / time-of-use gap and no host-vs-address mismatch. This is
+  /// distinct from hostname verification ([bypassHostnameVerification]) and
+  /// pinning ([bypassCertificatePinning]) (which bind certificate identity and
+  /// key), the TLS floor ([bypassTlsProtocolFloor]) and HTTPS-only transport
+  /// ([bypassHttpsOnlyTransport]) (which govern a handshake that actually
+  /// occurs and whether a cleartext socket may be opened), and revocation
+  /// ([bypassCertificateRevocationCheck]) (which checks certificate status):
+  /// this box governs which resolved address the validated top-level origin
+  /// may connect to. Tolerating a self-signed leaf relaxes ONLY leaf trust; it
+  /// must never let the console pivot to a different, re-resolved address.
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that skips binding
+  /// to the validated origin. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassValidatedOriginBinding => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

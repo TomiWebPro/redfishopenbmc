@@ -294,6 +294,42 @@ void main() {
     });
   });
 
+  group('KvmWebViewPolicy — validated-origin binding is never bypassed', () {
+    test('production default always binds to the validated origin', () {
+      expect(KvmWebViewPolicy.productionDefault.bypassValidatedOriginBinding,
+          isFalse);
+    });
+
+    test('test-only self-signed opt-in still binds to the validated origin',
+        () {
+      // Tolerating the test BMC's untrusted leaf relaxes ONLY leaf trust: it
+      // must never let the console connect to a re-resolved address (DNS
+      // rebinding / time-of-check-time-of-use) different from the one that
+      // passed the fail-closed origin check, or the trusted frame becomes an
+      // SSRF-style pivot into loopback / link-local / internal services. This
+      // is a hard invariant, independent of the flag, TLS mode or signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassValidatedOriginBinding, isFalse);
+    });
+
+    test('no policy configuration can bypass validated-origin binding', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Identity, pinning, handshake-floor, HTTPS-only, revocation and
+      // origin-binding invariants are independent: the opt-in can disable none.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+    });
+  });
+
   group('resolveRenderRoute — fallback works with the flag off', () {
     test('flag off routes valid HTTPS HTML5 to the external browser', () {
       expect(

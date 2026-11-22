@@ -233,6 +233,19 @@ flag stays off for that target.
       after passing the fail-closed check. Verified per target (inspect the
       WebView connection/resolution path and observe the resolved address at
       connect time) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassValidatedOriginBinding`,
+      always `false`): the test-only opt-in never bypasses binding to the
+      validated origin — the console connects only to the address that passed
+      the fail-closed origin check, never a re-resolved one — in strict mode and
+      with the flag both off and on. It is distinct from hostname verification
+      and certificate/public-key pinning (which bind certificate identity/key),
+      the TLS protocol/cipher floor and HTTPS-only transport (which govern the
+      handshake and cleartext sockets) and certificate revocation checking
+      (which checks certificate status): those govern the certificate and the
+      handshake, whereas this box governs which resolved address the validated
+      top-level origin is allowed to connect to. Verified per target before the
+      flag is flipped.
 * [ ] **Origin / navigation confinement (no cross-origin or downgrade nav)** —
       an embedded WebView must never follow a redirect, link click, `window.open`
       or JavaScript-initiated top-level navigation to a different host/port or
