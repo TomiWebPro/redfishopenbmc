@@ -15,7 +15,7 @@ platform validation evidence.
      and is NOT re-split. AUDIT FIRST; RED→GREEN only on a genuine divergence, never churn. No code
      touched. -->
 
-- [ ] EP-P13 Navigation-gate ↔ launch-route fail-closed agreement on scheme-relative / network-path
+- [x] EP-P13 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 EP-P13 scheme-relative / network-path / encoded-authority cross-layer fail-closed agreement guard + RED->GREEN tests`, analyze 0 / 2103 passed / 1 skipped) — Navigation-gate ↔ launch-route fail-closed agreement on scheme-relative / network-path
       and encoded-authority tricks: feed the SAME authority matrix (scheme-relative `//bmc/console`,
       `https:///bmc/console`, `https://evil.example\@bmc/console`, backslash-confused authorities,
       `https:%2f%2fbmc`, userinfo-bearing and control-bearing hosts) through `allowsInAppNavigation`
@@ -29,6 +29,18 @@ platform validation evidence.
               (0 issues), RED→GREEN proof only on a genuine divergence; writes limited to
               `test/features/kvm/platform/**` + the decision docs; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
               no WebView/protocol dependency, no URL opened, no production TLS weakening.
+      **LANDED** 2026-11-22: AUDIT first — `isSecureHttpsConsoleUri` already fails closed on the whole
+      authority matrix (scheme-relative has no scheme, `https:///host` has no host, encoded delimiters /
+      backslash-userinfo / bidi marks are rejected by the shared classifier), and `launch_plan_test.dart`
+      / EP-P11 pin the individual layers — but NO test pinned the CROSS-LAYER agreement for the
+      authority-confusion shapes (only path/fragment control chars in EP-P11). Genuine unguarded seam,
+      not a live divergence: added `test/features/kvm/platform/navigation_launch_authority_confusion_agreement_test.dart`
+      (4 tests) pinning both layers fail closed on the 10-target matrix, nav-agrees-with-plan one-for-one
+      (EP-P11's userinfo exception excluded), and productionDefault never in-app/self-signed. Real-file
+      RED: relaxed `_isHttpUriWithSchemes` to accept scheme-relative `//host` → exactly 2 new tests failed
+      (`+2 -2`: classifier accepted `//bmc.example:8443/console`, opt-in plan routed it in-app while the
+      nav gate refused); source restored byte-clean (SHA `74887e61…` unchanged, empty `lib/` diff),
+      600-perm backup shredded → 4/4 GREEN, 247/247 targeted. Test-only, deps unchanged, TLS untouched.
 
 <!-- rf-ideate split 2026-11-22 02:06 UTC: splits the machine-checkable half of the human-gated
      WebView/TLS rendering closeout (EP-P1/P2/P4, blocked on platform validation) of #009/#021 into

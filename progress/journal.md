@@ -13204,3 +13204,17 @@
 - Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-P13)
+
+**Done:**
+- FEATURE (test-only): EP-P13 authority-confusion cross-layer fail-closed agreement guard. AUDIT first: the shared `isSecureHttpsConsoleUri` classifier already rejects scheme-relative / network-path / encoded-authority / backslash-userinfo / bidi targets, and `launch_plan_test.dart` + EP-P11 pin each layer individually — but NO test pinned the nav↔launch agreement for these authority-confusion shapes. Added `test/features/kvm/platform/navigation_launch_authority_confusion_agreement_test.dart` (4 tests): the 10-target matrix fails closed on both layers, the navigation gate refuses in-app exactly when the launch plan refuses an in-app route (EP-P11's userinfo exception excluded), and `KvmWebViewPolicy.productionDefault` never routes in-app or accepts self-signed.
+- RED→GREEN: relaxed `_isHttpUriWithSchemes` to accept scheme-relative `//host` → exactly 2 new tests failed (`+2 -2`: classifier accepted `//bmc.example:8443/console`, opt-in plan routed it in-app while nav refused); source restored byte-clean (SHA `74887e61…`, empty `lib/` diff), 600-perm backup shredded → 4/4 GREEN, 247/247 targeted.
+- Verify: targeted 4/4 + 247/247; `dart format` clean (my file); `flutter analyze` 0; full `flutter test --concurrency=4` 2103 passed / 1 skipped (baseline 2099 +4); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-P13 LANDED (`queues/platform.md`). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. DMTF 85-test emulator skipped (test-only, <7 days since last green 85/85). No manufactured UI churn (§5).
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-P12 (decision-record ↔ code agreement) — audit-first, RED→GREEN only on a genuine divergence; RM-15 / EP-S10 / EP-U18 also audit-first; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
