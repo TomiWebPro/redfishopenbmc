@@ -16,6 +16,35 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
       Primary) stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence,
       never churn. No code touched. -->
 
+<!-- rf-ideate split 2026-11-22 18:21 UTC: carves a fresh, machine-checkable, unblocked slice of the
+      still-open #009/#021 epic. RM-4 / RS-5 pin the control-safe source getter (`safeManagerUri`) and
+      the three-level source precedence (caller override -> body @odata.id -> derived
+      /redfish/v1/Managers/<id>), including hostile-id pct-encoding on the safe getter — but nothing
+      pins the RAW derived fallback in the shared `kvmManagerSourceUri` helper and the two `fromManager`
+      factories that call it when the manager ID itself is hostile (padded, CRLF/NUL/control-bearing,
+      non-ASCII or blank) and the body @odata.id is absent / blank / non-string. A one-sided normalization
+      edit could make the per-console and per-manager cards show different source identities or leak a raw
+      control code point into a derived path while every value-agreement suite stays GREEN. Read-only model
+      characterization; the two deliberate behaviour decisions (RM-11 mixed regime, EP-S8 credentialed
+      Primary) stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence,
+      never churn. No code touched. -->
+
+- [ ] RM-18 Manager-ID control-safety in the derived source fallback, cross-factory agreement: over
+       one manager matrix whose `@odata.id` is absent / blank / non-string and whose `managerId` is
+       padded, CRLF/NUL/control-bearing, non-ASCII or blank, pin that `KvmConsole.fromManager` and
+       `KvmCapability.fromManager` derive the SAME trimmed, control-free source identity (fail-closed
+       `/redfish/v1/Managers/<id>` fallback with the id safely encoded), that no raw control code point
+       or stray whitespace leaks into either card's source, and that each card's `safeManagerUri` agrees
+       with the other for the same payload. AUDIT FIRST: if the shared helper already normalizes and the
+       safe getter already gates the derived path identically on both factories, record the audit and add
+       nothing; RED->GREEN only on a genuine divergence, never churn. Read-only model work; no wire/
+       transport/TLS change, no dependency, no WebView/protocol import, no behaviour decision folded in.
+       Dept: rf-model
+       Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_manager_source_precedence_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/models/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+               no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+
 - [x] RM-17 LANDED 2026-11-22 (auto: FEATURE — key-collision guard, analyze 0 / 2239 passed / 1 skipped) — AUDIT FIRST: both `fromManager` factories read `ServiceEnabled` / `Enabled` / `MaxConcurrentSessions` with exact-case keys, so they already agree for every key variant; the only prior agreement guards fed hostile VALUES through canonical keys, so nothing pinned collision KEY agreement (genuine unguarded seam, no live drift). Added `test/features/kvm/kvm_key_collision_agreement_test.dart` (7 tests): canonical control + four conflicting collision spellings (lower/upper/mixed-case/padded) + non-canonical-only fail-closed + multi-block aggregate, each pinning byte-identical `serviceEnabled` / `supported` / launch URI / chips / `maxSessions` on both views, canonical keys authoritative and no raw key text leaking. Real-file RED: mutated `_fromBlock` to lowercase keys late (`block.map(k.toLowerCase())`) under a 600-perm backup — exactly 5 named cases failed (`+2 -5`: 3 collision sets 5→99, non-canonical-only false→true, multi-block true→false), canonical control + padded-key set GREEN; restored byte-clean (SHA `85af8a1c…`, 0 residue, empty `lib/` diff, backup shredded) → 7/7 GREEN. Original item: Duplicate / case-variant console-block key collision agreement across both `fromManager`
        factories: over one manager whose Graphical/Serial/Remote blocks carry duplicate and case-variant
        `ServiceEnabled` / `Enabled` / `MaxConcurrentSessions` keys with conflicting values (plus a canonical

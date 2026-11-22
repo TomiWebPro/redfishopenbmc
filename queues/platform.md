@@ -16,6 +16,32 @@ platform validation evidence.
      Test-only; the human WebView/TLS validation (EP-P1/P2/P4) stays gated and is NOT re-split. AUDIT FIRST;
      RED->GREEN only on a genuine divergence, never churn. No code touched. -->
 
+<!-- rf-ideate split 2026-11-22 18:21 UTC: another machine-checkable slice of the still-open (human-gated)
+     WebView/TLS closeout of #009/#021. Hostile AUTHORITIES (IDNA/bidi/confusables/encoded delimiters),
+     scheme spellings and same-origin navigation are heavily pinned, but the URI PORT component is not:
+     `https://host[:port]` connect URIs with nonstandard port spellings (`:0`, `:65536`, `:99999`, `:abc`,
+     empty `:`, `:0443`, `:+443`, IPv6-with-port) could be classified as a secure/in-app launch target on
+     one decision layer and fail closed on another, or route a malformed authority to the browser while
+     every authority-suite stays GREEN. Test/doc-only; the human WebView/TLS validation (EP-P1/P2/P4) stays
+     gated and is NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code
+     touched. -->
+
+- [ ] EP-P16 Nonstandard-port authority fail-closed agreement across the platform decision layer:
+       over a matrix of `https://host[:port]` connect URIs with nonstandard port spellings (`:0`, `:65536`,
+       `:99999`, `:abc`, empty `:`, `:0443`, `:+443`, IPv6-with-port, plus legitimate `:443` / `:8443`),
+       pin that `isSecureHttpsConsoleUri`, `planConsoleLaunch` and `allowsInAppNavigation` agree fail-closed
+       on every malformed / out-of-range / non-numeric port (no secure or in-app route, null control-safe
+       target, `acceptSelfSigned` false under `productionDefault`) while legitimate ports stay
+       external-browser launchable. AUDIT FIRST: if `Uri.tryParse` already rejects the whole matrix
+       identically on all three layers, record the audit and add nothing; RED->GREEN only on a genuine
+       divergence, never churn. Test/doc-only; no WebView/protocol import, no URL opened, no dependency,
+       no production TLS weakening.
+       Dept: rf-platform
+       Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues), RED->GREEN proof
+               only on a genuine divergence; writes limited to `test/features/kvm/platform/**` + the decision
+               docs; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no WebView/protocol dependency, no URL
+               opened, no production TLS weakening.
+
 - [ ] EP-P15 Disabled-console fail-closed branch liveness guard at the render-policy decision layer:
        add a pure-Dart test under `test/features/kvm/platform/` that (a) pins `resolveRenderRoute` returns
        `copyOnly` for a disabled console across the full URI form × HTML5 × policy matrix (productionDefault

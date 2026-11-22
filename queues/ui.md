@@ -14,6 +14,31 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
       fixed-value suite stays GREEN. Display-only; the human-gated WebView/TLS rendering stays gated and is
       NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
 
+<!-- rf-ideate split 2026-11-22 18:21 UTC: another display-only, unblocked slice of the still-open
+      #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U20 pins EXTREME CONTENT at
+      a fixed font and EP-U8/EP-U7 pin fixed-width overflow and notice a11y, but nothing pins that the two
+      operator cards and the viewer stay usable when the platform accessibility font is large: a long
+      manager name, an enabled secure-HTTPS URI and an external-client (VNC/SSH) notice at textScaleFactor
+      2.0 on a 320 px viewport could overflow a Row or split a merged a11y node while every fixed-font suite
+      stays GREEN. Display-only; the human-gated WebView/TLS rendering stays gated and is NOT re-split.
+      AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-U21 Large-accessibility-font no-overflow + single merged a11y node across both KVM operator
+       cards and the viewer: pump one manager with a long name, an enabled secure-HTTPS connect URI and an
+       external-client (VNC/SSH) console through both real cards and the viewer at textScaleFactor
+       1.0 / 1.3 / 2.0 on a 320 px viewport, pinning no RenderFlex overflow, exactly one merged
+       `excludeSemantics` node per active signal with visible text == announced label, and no duplicate or
+       screen-reader-only copy. AUDIT FIRST: if the surfaces already scale/clip cleanly with byte-identical
+       labels at every scale, record the audit and add nothing; RED->GREEN only on a genuine divergence,
+       never churn. Display-only; no WebView/protocol import, no URL opened, no dependency, no production
+       TLS weakening.
+       Dept: rf-ui
+       Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_capability_card_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof + 320 px no-overflow + visible==announced only on a genuine
+               divergence; writes limited to `lib/features/kvm/views/**` + `test/features/kvm/**`; no WebView/
+               protocol import, no URL opened, no dependency, no production TLS weakening;
+               `git diff --exit-code -- pubspec.yaml`.
+
 - [x] EP-U20 LANDED 2026-11-22 (run, agent:redfish-automation — FEATURE #009/#021, analyze 0 / full suite 2225 passed / 1 skipped, test-only) — Extreme-content no-overflow + single merged a11y node across both KVM operator cards: over
        one manager built into both real cards with a very long manager name, 20+ normalized connect-type
        chips, a very large `MaxConcurrentSessions` and a long control-safe resolved URI, pin that neither

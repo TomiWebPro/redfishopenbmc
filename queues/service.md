@@ -16,6 +16,33 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
       decision (EP-S8) stays blocked and is NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence,
       never churn. No code touched. -->
 
+<!-- rf-ideate split 2026-11-22 18:21 UTC: carves a fresh, machine-checkable, unblocked slice of the
+      still-open #009/#021 manager-walk epic. RS-2 pins the per-manager skip-vs-propagate status semantics
+      (404 / retryable 429,5xx-except-501 skipped; 401/403/TLS failures propagate) and EP-S6 pins
+      capability<->primary agreement for one HEALTHY manager — but nothing pins that `fetchConsoles()` and
+      `fetchCapabilities()` skip the SAME manager in ONE walk when a sibling manager's `/Managers/{id}`
+      fetch fails transiently: a one-sided skip filter could drop a physical manager from one card surface
+      and not the other while every single-surface suite stays GREEN. Pure service characterization; the
+      credentialed-Primary decision (EP-S8) stays blocked and is NOT re-split. AUDIT FIRST; RED->GREEN only
+      on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-S13 Manager-skip agreement between `fetchConsoles()` and `fetchCapabilities()` under a
+       retryable/404 manager-walk failure matrix: over in-temp `/Managers` payloads where one of two or
+       three managers returns 404 or a transient/retryable failure (429 / 5xx-except-501) from its
+       `/Managers/{id}` fetch, pin that BOTH service surfaces skip exactly the SAME manager(s), surface the
+       SAME surviving manager-id set exactly once (RS-6/RS-8 identity unchanged), resolve the SAME primary
+       and `fetchCapability(id)` results on the survivors, and never blank the whole gated screen or emit a
+       phantom card for the skipped manager. AUDIT FIRST: if both surfaces already share one walk result
+       with an identical skip filter, record the audit and add nothing; RED->GREEN only on a genuine
+       divergence, never churn. No behaviour change folded in (401/403/TLS failures must still propagate
+       per RS-2); no WebView/protocol import, no production TLS weakening.
+       Dept: rf-service
+       Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_service_capability_primary_agreement_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `test/features/kvm/**` (+ `lib/features/kvm/kvm_service.dart` only on a genuine divergence);
+               emulator 85/85 only if `lib/` wire changes; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+               no WebView/protocol import, no production TLS weakening.
+
 - [ ] EP-S12 Malformed `Members` collection tolerance at the manager walk: over in-temp `/Managers` payloads
        whose `Members` is a non-list (string / map / int / null) and lists containing blank / non-string /
        control-bearing / padded / case-variant duplicate member references, pin that `KvmService.fetchConsoles()`

@@ -15,6 +15,32 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      hard rule 1). Pure test/tool, dependency-free, never writes lib/. Distinct from EP-T13/T24/T25.
      AUDIT FIRST; RED->GREEN only on a genuine gap, never churn. No code touched. -->
 
+<!-- rf-ideate split 2026-11-22 18:21 UTC: another machine-checkable slice of the still-open #009/#021
+     epic's queue/tool hygiene. Guard-suite liveness (EP-T12..T29) pins that TEST files stay in
+     `canonicalGuardFiles`, but nothing pins that the four COVERAGE gates enforced by `evaluateAllGates()`
+     in `tool/coverage_gate.dart` (overall / scoped redfish+power+sensors / kvm / kvm-platform) are still
+     invoked by both the CLI `main` and the CI verify workflow — dropping or omitting one gate (e.g. the
+     kvm-platform gate) would silently remove a hard invariant while every test stays GREEN. Pure test/tool,
+     dependency-free, never writes lib/. Distinct from EP-T12..T29 (test-file liveness). NOTE: EP-T30 is
+     the pending liveness-registration follow-up recorded in automation-tracking; this is a separate gate.
+     AUDIT FIRST; RED->GREEN only on a genuine gap, never churn. No code touched. -->
+
+- [ ] EP-T31 Coverage-gate CI wiring liveness guard: pin that all four coverage gates enforced by
+       `evaluateAllGates()` in `tool/coverage_gate.dart` (overall / scoped redfish+power+sensors / kvm /
+       kvm-platform) remain invoked by both the CLI `main` and the CI verify workflow, failing closed with a
+       concrete diagnostic if any gate is dropped, renamed, or silently omitted from the CI invocation (so
+       a future edit could not quietly stop enforcing the kvm-platform gate while every test stays GREEN).
+       AUDIT FIRST: guard-suite liveness (EP-T12..T29) covers TEST files, not the coverage-gate CLI/CI wiring
+       — if a guard already asserts all four gates are wired into verify.yml and the CLI, record the audit
+       and add nothing; RED->GREEN only on a genuine gap, never churn. Pure test/tool, dependency-free,
+       never writes lib/.
+       Dept: rf-tooling
+       Verify: `flutter test test/tool/coverage_gate_test.dart && flutter analyze` (0 issues), with RED->GREEN
+               proof (dropped/renamed/omitted gate -> violation; all four wired -> clean); writes limited to
+               `test/tool/coverage_gate_test.dart` (+ `.github/workflows/**` only on a genuine gap);
+               `git diff --exit-code -- pubspec.yaml pubspec.lock`; no lib/, no WebView/protocol import, no
+               production TLS weakening.
+
 - [x] EP-T29 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 EP-T29 guard-suite liveness registration of the RM-17 key-collision guard + RED->GREEN tests`, analyze 0 / 2241 passed / 1 skipped) — AUDIT FIRST: the RM-17 duplicate / case-variant console-block key-collision cross-factory agreement guard (`test/features/kvm/kvm_key_collision_agreement_test.dart`, 7 tests) landed with RM-17 and is live + reachable from verify.yml's whole-tree `flutter test --coverage`, but was absent from BOTH `canonicalGuardFiles` and every pinned epoch — deleting / emptying / test-stripping it stayed GREEN, a CONFIRMED "who guards the guards" gap (no live divergence, not churn). Registered it in `test/tool/guard_suite_liveness_test.dart`: +1 canonical path, pinned `epT29AddedGuards` epoch (length 1, pairwise-disjoint from all 22 earlier designations), inclusion in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation, intact → clean). Real-file RED: dropped only the canonical path (epoch designation kept) → exactly 3 named failures (`+45 -3`: EP-T29 pin, EP-T20 completeness, EP-T29 liveness), the other 45 GREEN; restored byte-clean (SHA `09fd936f…`, 0 residue, 600-perm backup shredded) → 48/48 GREEN. Test/tool-only, dependency-free, empty `lib/` diff, no WebView/protocol import, no URL opened, no production TLS weakening.
   Dept: rf-tooling
 - [x] EP-T28 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 EP-T28 guard-suite liveness registration of the EP-U20 extreme-content guard + RED->GREEN tests`, analyze 0 / 2228 passed / 1 skipped) — AUDIT FIRST: the EP-U20 extreme-content cross-card rendered agreement guard (`test/features/kvm/kvm_card_extreme_content_agreement_test.dart`, 3 runtime tests at 320/800/1300 px via a width loop) is live and reachable from verify.yml's whole-tree `flutter test --coverage`, but was absent from BOTH `canonicalGuardFiles` and every pinned epoch — deleting / emptying / test-stripping it stayed GREEN, a CONFIRMED "who guards the guards" gap (no live divergence, not churn). Registered it in `test/tool/guard_suite_liveness_test.dart`: +1 canonical path, pinned `epT28AddedGuards` epoch (length 1, pairwise-disjoint from all 21 earlier designations), inclusion in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation, intact → clean). Real-file RED: dropped only the canonical path (epoch designation kept) → exactly 3 named failures (`+42 -3`: EP-T28 pin, EP-T20 completeness, EP-T28 liveness), the other 43 GREEN; restored byte-clean (SHA `380d15ce…`, 0 residue, 600-perm backup shredded) → 46/46 GREEN. Test/tool-only, dependency-free, empty `lib/` diff, no WebView/protocol import, no URL opened, no production TLS weakening.
