@@ -15,7 +15,7 @@ platform validation evidence.
      the human WebView/TLS validation (EP-P1/P2/P4) stays gated and is NOT re-split. AUDIT FIRST;
      RED->GREEN only on a genuine divergence, never churn. No code touched. -->
 
-- [ ] EP-P14 Launch-plan scheme-spelling fail-closed matrix: over a matrix of HTTP(S) scheme spellings
+- [x] EP-P14 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 EP-P14 launch-plan scheme-spelling fail-closed matrix + RED->GREEN tests`, analyze 0 / 2210 passed / 1 skipped) — Launch-plan route table over HTTP(S) scheme spellings
       (canonical `https:`, mixed-case `HTTPS:` / `HtTpS:`, leading/trailing whitespace around the
       `ConnectUri`, a percent-encoded scheme colon `https%3A//host`, a scheme-relative form and a
       control-bearing scheme), feed each through `planConsoleLaunch` under `KvmWebViewPolicy.productionDefault`
@@ -31,6 +31,23 @@ platform validation evidence.
               only on a genuine divergence; writes limited to `test/features/kvm/platform/**` + the decision
               docs; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no WebView/protocol dependency,
               no URL opened, no production TLS weakening.
+      **LANDED** 2026-11-22: AUDIT first — EP-P6 pins the production route invariants, EP-P9 pins
+      cross-layer authority agreement (hostile matrix + padded legitimate HTTPS), EP-P13 pins the
+      nav↔launch agreement over scheme-relative / encoded AUTHORITIES, and `launch_plan_test.dart` holds
+      ONE isolated uppercase-`HTTPS:` case — but NO test swept the SCHEME-SPELLING family (mixed-case
+      `hTtPs:`/`HtTpS:`, percent-encoded scheme colon `https%3A//host`, scheme-relative form,
+      control-bearing scheme) through `planConsoleLaunch` pinning the full route/target/self-signed
+      contract. Genuine unguarded seam, no live divergence: added
+      `test/features/kvm/platform/launch_plan_scheme_spelling_matrix_test.dart` (10 tests) pinning the
+      `LAUNCH_FALLBACK.md` route table over 5 canonical-secure + 8 fail-closed spellings — canonical stays
+      `externalBrowser` with a trimmed control-safe target under production; every non-canonical degrades
+      to `copyOnly`, NEVER `inAppWebView` / `acceptSelfSigned` even under the test-only opt-in with a stale
+      `hasSecureUri: true` flag; model plan agrees field-for-field over the whole matrix. Real-file RED:
+      mutated `planConsoleLaunch` `effectiveSecure = hasSecureUri && isSecureHttpsConsoleUri(uri)` →
+      `effectiveSecure = hasSecureUri` → exactly the load-bearing stale-flag test failed (`+9 -1`,
+      `https%3A//` routed in-app), 9 other new tests GREEN; source restored byte-clean (SHA `74887e61…`
+      unchanged, 0 residue, empty `lib/` diff), 600-perm backup shredded → 10/10 GREEN. No drift from the
+      documented route table — no doc-body edit. Test-only, deps unchanged, TLS untouched.
 
 <!-- rf-ideate split 2026-11-22 06:09 UTC: carves a fresh, machine-checkable half of the still-open
      (human-gated) WebView/TLS closeout of #009/#021. EP-P11/EP-P9 pin the navigation gate and launch

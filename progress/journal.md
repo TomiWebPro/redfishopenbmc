@@ -13396,3 +13396,19 @@
 - Push `main` (never force-push). Next gate run: skip with NO-OP if `build/rf-platform` has no new PASS-verified commit; otherwise verify + `--no-ff` merge only a PASS tip. No issue closed here (#009 P3 / #021 P2 stay human-gated on platform WebView + BMC TLS validation).
 
 **Issues touched:** none closed (#009 open, #021 open).
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-P14)
+
+**Done:**
+- FEATURE (test-only): EP-P14 launch-plan scheme-spelling fail-closed matrix. AUDIT FIRST: EP-P6/P9/P13 pin route invariants / authority agreement; `launch_plan_test.dart` holds one isolated `HTTPS:` case — the full scheme-spelling family was unguarded.
+- Added `test/features/kvm/platform/launch_plan_scheme_spelling_matrix_test.dart` (10 tests): 5 canonical-secure spellings stay `externalBrowser` with a trimmed control-safe target under `productionDefault`; 8 non-canonical spellings (encoded colon, scheme-relative, NUL/TAB in scheme, plaintext HTTP, single slash) degrade to `copyOnly`, NEVER in-app/self-signed even under opt-in with a stale flag; model plan agrees field-for-field.
+- RED→GREEN: `effectiveSecure = hasSecureUri && isSecureHttpsConsoleUri(uri)` → `= hasSecureUri` → exactly the load-bearing stale-flag test failed (`+9 -1`); restored byte-clean (SHA `74887e61…`, empty lib diff), backup shredded → 10/10 GREEN.
+- Verify: targeted 10/10; `dart format` clean; analyze 0; full suite 2210 passed / 1 skipped (baseline 2200 +10); issues validate OK; diff --check clean; deps unchanged; emulator skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- No drift from the documented `LAUNCH_FALLBACK.md` route table — no doc-body edit, no production change. Test-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-P14 LANDED (`queues/platform.md`). Both issues stay human-gated (platform WebView + BMC TLS validation).
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-P12 and the EP-T guard-suite-liveness registration of the new EP-P14 guard — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
