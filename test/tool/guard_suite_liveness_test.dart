@@ -163,6 +163,16 @@
 // earlier designation), a pin test and a temp-root RED→GREEN proof keep the
 // EP-T20 registry-completeness invariant green.
 //
+// EP-P13 (epic #009/#021) registers the authority-confusion cross-layer
+// fail-closed agreement guard
+// (`test/features/kvm/platform/navigation_launch_authority_confusion_agreement_test.dart`).
+// That guard landed with EP-P13 but was left unpinned: it is live and reachable
+// from verify.yml's whole-tree `flutter test --coverage`, yet deleting /
+// emptying / test-stripping it stayed GREEN because it was absent from
+// `canonicalGuardFiles` and every pinned epoch. A pinned `epP13AddedGuards`
+// epoch (disjoint from every earlier designation), a pin test and a temp-root
+// RED→GREEN proof keep the EP-T20 registry-completeness invariant green.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -251,6 +261,10 @@ const List<String> canonicalGuardFiles = <String>[
   // (bidi format marks + confusable hosts fail closed identically on both
   // fromManager factories).
   'test/features/kvm/kvm_manager_source_bidi_agreement_test.dart',
+  // EP-P13 extension: the scheme-relative / network-path / encoded-authority
+  // cross-layer fail-closed agreement guard (landed with EP-P13, left unpinned
+  // until this run).
+  'test/features/kvm/platform/navigation_launch_authority_confusion_agreement_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -431,6 +445,16 @@ const Set<String> rm15AddedGuards = <String>{
   'test/features/kvm/kvm_manager_source_bidi_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-P13: the scheme-relative /
+/// network-path / encoded-authority cross-layer fail-closed agreement guard,
+/// which landed with EP-P13 but stayed unpinned (absent from the canonical set
+/// and every epoch), so deleting / emptying / test-stripping it stayed GREEN.
+/// Pinned separately so a future edit cannot drop it back out of the canonical
+/// set (issue #009/#021).
+const Set<String> epP13AddedGuards = <String>{
+  'test/features/kvm/platform/navigation_launch_authority_confusion_agreement_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -454,6 +478,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epS9AddedGuards,
   ...epT23AddedGuards,
   ...rm15AddedGuards,
+  ...epP13AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -1058,6 +1083,40 @@ void main() {
       expect(rm15AddedGuards.intersection(epT23AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-P13: the authority-confusion guard is in the canonical '
+        'liveness set', () {
+      expect(epP13AddedGuards, isNotEmpty);
+      expect(epP13AddedGuards.length, 1);
+      for (final String path in epP13AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-P13 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epP13AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(epP13AddedGuards.intersection(rm15AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -1101,7 +1160,8 @@ void main() {
             rm13AddedGuards.length +
             epS9AddedGuards.length +
             epT23AddedGuards.length +
-            rm15AddedGuards.length,
+            rm15AddedGuards.length +
+            epP13AddedGuards.length,
       );
     });
   });
@@ -2001,6 +2061,70 @@ void main() {
         );
 
         final String addedGuard = rm15AddedGuards.single;
+        // RED 1: the newly-added guard is deleted → MISSING.
+        File(p(addedGuard)).deleteSync();
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'MISSING: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when deleted',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 2: the guard is emptied → EMPTY.
+        File(p(addedGuard)).writeAsStringSync('  \n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'EMPTY: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when emptied',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 3: the guard keeps prose but loses every test case.
+        File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when test-stripped',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // GREEN again once the guard is restored.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test('EP-P13: newly-added authority-confusion guard is liveness-checked',
+        () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_p13_guard_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        final String addedGuard = epP13AddedGuards.single;
         // RED 1: the newly-added guard is deleted → MISSING.
         File(p(addedGuard)).deleteSync();
         expect(

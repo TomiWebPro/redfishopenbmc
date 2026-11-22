@@ -41,6 +41,15 @@ platform validation evidence.
       (`+2 -2`: classifier accepted `//bmc.example:8443/console`, opt-in plan routed it in-app while the
       nav gate refused); source restored byte-clean (SHA `74887e61…` unchanged, empty `lib/` diff),
       600-perm backup shredded → 4/4 GREEN, 247/247 targeted. Test-only, deps unchanged, TLS untouched.
+      **GUARD REGISTERED** 2026-11-22 (run `auto: FEATURE #009/#021 EP-P13 guard-suite liveness registration ...`):
+      the guard above was live + reachable from verify.yml's whole-tree `flutter test --coverage` but was
+      absent from `canonicalGuardFiles` and every pinned epoch, so deleting / emptying / test-stripping it
+      stayed GREEN. Registered under a pinned `epP13AddedGuards` epoch (length 1, disjoint from all earlier
+      designations) in `test/tool/guard_suite_liveness_test.dart` (+1 pin test +1 temp-root RED→GREEN),
+      included in `allDesignatedGuards` + EP-T20 completeness arithmetic. Real-file RED: dropped the
+      canonical entry → exactly 3 failures (`+37 -3`: EP-P13 pin + EP-T20 completeness + EP-P13 temp-root
+      liveness); source restored byte-clean (SHA `56018be5…` unchanged, empty `lib/` diff), 600-perm backup
+      shredded → 40/40 GREEN. Test/tool-only, deps unchanged, TLS untouched.
 
 <!-- rf-ideate split 2026-11-22 02:06 UTC: splits the machine-checkable half of the human-gated
      WebView/TLS rendering closeout (EP-P1/P2/P4, blocked on platform validation) of #009/#021 into

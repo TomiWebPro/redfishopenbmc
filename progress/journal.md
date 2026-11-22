@@ -13248,3 +13248,18 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-S10 / EP-U18 / EP-P12 — audit-first, RED→GREEN only on a genuine divergence; ALSO register EP-P13's `navigation_launch_authority_confusion_agreement_test.dart` (landed last run, still unpinned in `canonicalGuardFiles`) under a new epoch. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-P13 guard registration)
+
+**Done:**
+- FEATURE (test/tool-only): EP-P13 guard-suite liveness registration. CONFIRMED gap flagged by the previous run — `test/features/kvm/platform/navigation_launch_authority_confusion_agreement_test.dart` (4 live cross-layer fail-closed agreement tests) landed with EP-P13, is reachable from verify.yml's whole-tree `flutter test --coverage`, but was never in `canonicalGuardFiles` or any pinned epoch, so deleting / emptying / test-stripping it stayed GREEN. Registered under a new pinned `epP13AddedGuards` epoch (length 1, disjoint from all eighteen earlier designations) in `test/tool/guard_suite_liveness_test.dart`; included in `canonicalGuardFiles` + `allDesignatedGuards` + EP-T20 completeness arithmetic; +1 pin test with pairwise-disjointness assertions +1 temp-root RED→GREEN test. Liveness 40/40 (baseline 38 +2).
+- RED→GREEN: dropped the canonical entry → exactly 3 failures (`+37 -3`: EP-P13 pin + EP-T20 completeness + EP-P13 temp-root liveness), 37 independent liveness tests GREEN; source restored byte-clean (SHA `56018be5…` unchanged, empty `lib/` diff), 600-perm backup shredded → 40/40 GREEN.
+- Verify: targeted 40/40; `dart format` clean (my file); `flutter analyze` 0; full `flutter test --concurrency=4` 2138 passed / 1 skipped (baseline 2136 +2); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test/tool-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. Genuine "who guards the guards" gap, not churn. Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. DMTF 85-test emulator skipped (test/tool-only, <7 days since last green 85/85). No manufactured UI churn (§5). Five pre-existing stashes untouched.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-S10 / EP-U18 / EP-P12 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
