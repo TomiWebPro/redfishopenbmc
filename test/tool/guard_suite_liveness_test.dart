@@ -142,6 +142,16 @@
 // guard GREEN. Registering this guard under a pinned `epS9AddedGuards` subset
 // makes deleting / emptying / test-stripping it fail closed.
 //
+// EP-T23 (epic #009/#021) closes a CONFIRMED "who guards the guards" gap: the
+// EP-U8/EP-U17 no-WebView final-route affordance guard
+// (`test/features/kvm/kvm_open_affordance_gating_test.dart`) landed with live
+// cases reachable from the whole-tree CI run, but was never added to
+// `canonicalGuardFiles` or any pinned epoch set — so deleting / emptying /
+// test-stripping that guard stayed GREEN. EP-T23 adds it to the canonical set
+// under a pinned `epT23AddedGuards` epoch (disjoint from every earlier
+// designation) with a pin test and a temp-root RED→GREEN proof, keeping the
+// EP-T20 registry-completeness invariant green.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -223,6 +233,9 @@ const List<String> canonicalGuardFiles = <String>[
   // EP-S9 extension: credential-bearing Primary ↔ navigation decision
   // boundary (agreeing invariants + deferred EP-S8 divergence record).
   'test/features/kvm/kvm_credential_primary_navigation_boundary_test.dart',
+  // EP-T23 extension: the EP-U8/EP-U17 no-WebView final-route affordance
+  // agreement guard (no in-app render / self-signed-accept affordance).
+  'test/features/kvm/kvm_open_affordance_gating_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -384,6 +397,14 @@ const Set<String> epS9AddedGuards = <String>{
   'test/features/kvm/kvm_credential_primary_navigation_boundary_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-T23: the EP-U8/EP-U17
+/// no-WebView final-route affordance agreement guard, which landed after
+/// EP-S9 unpinned. Pinned separately so a future edit cannot drop it out of
+/// the canonical set (issue #009/#021).
+const Set<String> epT23AddedGuards = <String>{
+  'test/features/kvm/kvm_open_affordance_gating_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -405,6 +426,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...rm14AddedGuards,
   ...rm13AddedGuards,
   ...epS9AddedGuards,
+  ...epT23AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -944,6 +966,38 @@ void main() {
       expect(epS9AddedGuards.intersection(rm13AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-T23: the no-WebView affordance guard is in the canonical '
+        'liveness set', () {
+      expect(epT23AddedGuards, isNotEmpty);
+      expect(epT23AddedGuards.length, 1);
+      for (final String path in epT23AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T23 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epT23AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epT23AddedGuards.intersection(epS9AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -985,7 +1039,8 @@ void main() {
             epT22AddedGuards.length +
             rm14AddedGuards.length +
             rm13AddedGuards.length +
-            epS9AddedGuards.length,
+            epS9AddedGuards.length +
+            epT23AddedGuards.length,
       );
     });
   });
@@ -1760,6 +1815,69 @@ void main() {
         );
 
         final String addedGuard = epS9AddedGuards.single;
+        // RED 1: the newly-added guard is deleted → MISSING.
+        File(p(addedGuard)).deleteSync();
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'MISSING: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when deleted',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 2: the guard is emptied → EMPTY.
+        File(p(addedGuard)).writeAsStringSync('  \n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'EMPTY: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when emptied',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // RED 3: the guard keeps prose but loses every test case.
+        File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+              .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+          isTrue,
+          reason: '$addedGuard not liveness-checked when test-stripped',
+        );
+        File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+        // GREEN again once the guard is restored.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test('EP-T23: newly-added affordance guard is liveness-checked', () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_t23_guard_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        final String addedGuard = epT23AddedGuards.single;
         // RED 1: the newly-added guard is deleted → MISSING.
         File(p(addedGuard)).deleteSync();
         expect(

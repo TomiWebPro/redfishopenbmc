@@ -467,7 +467,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      `canonicalGuardFiles` or any pinned epoch set, so deleting / emptying / test-stripping it
      stays GREEN. Same "who guards the guards" gap family as EP-T14..T22. Test/tool-only, no lib/. -->
 
-- [ ] EP-T23 Guard-suite liveness: register the EP-U8/EP-U17 no-WebView affordance guard
+- [x] EP-T23 LANDED 2026-11-22 (run `auto: FEATURE #009/#021 EP-T23 guard-suite liveness — register the no-WebView affordance guard + RED→GREEN tests`, analyze 0 / 2090 passed / 1 skipped) — Guard-suite liveness: register the EP-U8/EP-U17 no-WebView affordance guard
       (`test/features/kvm/kvm_open_affordance_gating_test.dart`) in `canonicalGuardFiles` under a
       fresh pinned `epT23AddedGuards` epoch set (length 1, disjoint from every earlier designation),
       include it in `allDesignatedGuards` + the EP-T20 completeness arithmetic, and add a pin test
@@ -479,6 +479,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
               with RED→GREEN proof (dropped canonical entry → pin + completeness failures; restored →
               green); writes limited to `test/tool/guard_suite_liveness_test.dart`;
               `git diff --exit-code -- pubspec.yaml pubspec.lock`; no lib/, no production TLS weakening.
+      **LANDED** 2026-11-22: registered `test/features/kvm/kvm_open_affordance_gating_test.dart` in `canonicalGuardFiles`; added pinned `epT23AddedGuards` (length 1, disjoint from every earlier designation), included it in `allDesignatedGuards` and the EP-T20 completeness arithmetic (+1 pin test), added a temp-root RED→GREEN. Real-file RED: dropped the canonical entry → 3 failures (`+33 -3`: EP-T23 pin + EP-T20 completeness + EP-T23 liveness temp-root); restored byte-clean (SHA `bc67790c…` unchanged), 600-perm backup shredded → 36/36 GREEN. `dart format` clean; analyze 0; full suite 2090 passed / 1 skipped (baseline 2088 +2); issues validate OK; diff --check clean; deps unchanged; lib diff empty; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
 
 ## Log
 

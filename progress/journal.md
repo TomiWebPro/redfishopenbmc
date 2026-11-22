@@ -13160,3 +13160,18 @@
 - Push `main` (never force-push), including the unpushed rf-ideate commit. Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-T23)
+
+**Done:**
+- FEATURE (test/tool-only): EP-T23 guard-suite liveness registration of the EP-U8/EP-U17 no-WebView affordance guard. AUDIT: `test/features/kvm/kvm_open_affordance_gating_test.dart` has live cases and is reachable from verify.yml's whole-tree `flutter test --coverage`, but was absent from `canonicalGuardFiles` and every pinned epoch — deleting / emptying / test-stripping it stayed GREEN (confirmed gap, no live divergence). Registered it in `canonicalGuardFiles` under a pinned `epT23AddedGuards` epoch (length 1, disjoint from every earlier designation), folded into `allDesignatedGuards` + EP-T20 completeness arithmetic (+1 pin test with pairwise-disjointness), and added a temp-root RED→GREEN test (missing / emptied / test-less → violation, intact → clean).
+- Real-file RED: dropped the canonical entry (kept `epT23AddedGuards`) → exactly 3 failures (`+33 -3`: EP-T23 pin + EP-T20 completeness + EP-T23 liveness temp-root); restored byte-clean (SHA `bc67790c…` unchanged), 600-perm backup shredded → 36/36 GREEN.
+- Verify: targeted 36/36; `dart format` clean (my file); `flutter analyze` 0; full `flutter test --concurrency=4` 2090 passed / 1 skipped (baseline 2088 +2); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test/tool-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-T23 LANDED (`queues/tooling.md`). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. DMTF 85-test emulator skipped (test/tool-only, <7 days since last green 85/85). No manufactured UI churn (§5).
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-T24 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
