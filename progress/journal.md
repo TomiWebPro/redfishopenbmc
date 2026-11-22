@@ -13753,3 +13753,19 @@
 **Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (RM-18)
+
+**Done:**
+- FEATURE — RM-18 manager-ID control-safety in the derived source fallback, cross-factory agreement guard + live gap fix. AUDIT FIRST: both `fromManager` factories share `kvmManagerSourceUri` + `safeManagerUri` gate (agreement by construction), but no test swept a hostile `managerId` through the DERIVED fallback (unusable `@odata.id`) on both views. Added `test/features/kvm/kvm_manager_id_control_safety_agreement_test.dart` (77 tests) over 9 hostile ids × 8 unusable-`@odata.id` shapes, pinning byte-identical derived `sourceManagerUri` + control-safe `safeManagerUri` on both views, zero raw C/Z leaks, 4 byte-exact fallback literals and a load-bearing shared-gate case.
+- GENUINE LIVE DEFECT found and fixed: a blank `managerId` with unusable `@odata.id` disclosed `/redfish/v1/Managers/   ` (raw trailing spaces) on both cards because `_controlSafeTrimmedUri` trims the whole URI before its char scan so the gate passed while the getter returned the untrimmed path. Fixed the single shared helper `lib/features/kvm/models/kvm_manager_source.dart` (`kvmManagerSourceUri` now uses a new `kvmManagerDerivedSource()` that trims + `Uri.encodeComponent`s the id with an empty→`manager` guard; identity for ordinary ids), so both views are safe by construction; the getters' own encoding stays defence-in-depth for directly-constructed hostile sources.
+- Real-file RED→GREEN: temporarily reverted the fix under a 600-perm backup → exactly 9 named failures (all blank-id cases), other 68 GREEN; restored byte-clean (SHA `fe7cb773…` unchanged, 0 residue, backup shredded) → 77/77 GREEN. Queue `model.md` RM-18 marked LANDED.
+- Verification: targeted 77/77; related suites 392/392; `dart format` clean; `flutter analyze` 0 issues; full `flutter test --concurrency=4` 2364 passed / 1 skipped (baseline 2287 +77); DMTF emulator 85/85 (re-run because `lib/` changed); `issues.py validate` OK; `git diff --check` clean; deps unchanged; five stashes untouched.
+
+**Decisions:**
+- Genuine live contract violation fixed, not churn: the shared-helper fix eliminates the whitespace leak on BOTH views at once, preserving cross-factory agreement by construction. No dependency, no WebView/protocol import, no URL opened, no production TLS weakening, no deliberate behaviour decision (RM-11/EP-S8 stay blocked). Both issues stay human-gated (#009 P3 / #021 P2). No issue closed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next heads EP-U21 (large-font no-overflow a11y) then EP-S13 (manager-skip agreement) — audit-first, RED→GREEN only on a genuine divergence, never churn; cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85 (just re-run).
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

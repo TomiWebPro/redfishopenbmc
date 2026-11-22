@@ -44,5 +44,27 @@ String kvmManagerSourceUri(
 ]) {
   return kvmManagerSourceTrimmed(value) ??
       kvmManagerSourceTrimmed(fallback) ??
-      '/redfish/v1/Managers/$managerId';
+      kvmManagerDerivedSource(managerId);
+}
+
+/// Builds the fail-closed `/redfish/v1/Managers/<managerId>` fallback used when
+/// neither the `@odata.id` nor an explicit source override is usable (RM-18,
+/// issue #009/#021).
+///
+/// The manager id is BMC-supplied, so it must be trimmed and percent-encoded
+/// before it is embedded in a path that both KVM cards disclose (source row and
+/// clipboard fallback). Without the encoding a padded / blank / control-bearing
+/// / non-ASCII id would leak raw whitespace or a control code point into the
+/// derived path: `_controlSafeTrimmedUri` trims the *whole* URI before its
+/// character scan, so a trailing-space-only id such as `'   '` was reported
+/// control-safe while `safeManagerUri` returned the untrimmed
+/// `/redfish/v1/Managers/   ` verbatim. Encoding here makes the derived source
+/// itself safe on BOTH views (which share this helper) and keeps the
+/// `safeManagerUri` getters' own encoding as defence-in-depth for directly
+/// constructed models. A blank id degrades to the non-empty `manager` segment,
+/// matching the existing getter fallback. For an ordinary id (`BMC`, `bmc`, …)
+/// `Uri.encodeComponent` is the identity, so no valid source is lost.
+String kvmManagerDerivedSource(String managerId) {
+  final String encodedId = Uri.encodeComponent(managerId.trim());
+  return '/redfish/v1/Managers/${encodedId.isEmpty ? 'manager' : encodedId}';
 }
