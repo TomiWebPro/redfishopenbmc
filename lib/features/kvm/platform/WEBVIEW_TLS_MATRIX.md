@@ -192,8 +192,14 @@ flag stays off for that target.
       floor with strong cipher suites and no downgrade, in strict mode **and**
       in the test-only self-signed opt-in — the opt-in must never relax the
       protocol / cipher floor even though it tolerates the untrusted leaf.
-      Verified per target (inspect the WebView TLS configuration and an
-      observed handshake) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassTlsProtocolFloor`, always
+      `false`): the test-only opt-in never bypasses the TLS floor, in strict
+      mode and with the flag both off and on. It is distinct from hostname
+      verification and certificate/public-key pinning, which govern certificate
+      identity and key binding rather than the handshake's protocol/cipher
+      strength. Verified per target (inspect the WebView TLS configuration and
+      an observed handshake) before the flag is flipped.
 * [ ] **No cleartext / HTTPS-only transport at the WebView platform layer (no
       plaintext fallback)** — independently of the handshake floor above, the
       embedded WebView's *platform network configuration* must forbid cleartext

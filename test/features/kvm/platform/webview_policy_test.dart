@@ -193,6 +193,36 @@ void main() {
     });
   });
 
+  group('KvmWebViewPolicy — TLS protocol/cipher floor is never bypassed', () {
+    test('production default always enforces the TLS floor', () {
+      expect(KvmWebViewPolicy.productionDefault.bypassTlsProtocolFloor, isFalse);
+    });
+
+    test('test-only self-signed opt-in still enforces the TLS floor', () {
+      // Tolerating the test BMC's untrusted leaf must not relax the TLS
+      // protocol-version / cipher-suite floor (no downgrade to TLS 1.0/1.1,
+      // no weak/export/NULL suites, no silent fallback): that would expose the
+      // privileged console session to a downgrade/decryption attack. This is a
+      // hard invariant, independent of the flag, TLS mode or console signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassTlsProtocolFloor, isFalse);
+    });
+
+    test('no policy configuration can bypass the TLS floor', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Identity, pinning and handshake-floor invariants are independent: the
+      // test-only opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+    });
+  });
+
   group('resolveRenderRoute — fallback works with the flag off', () {
     test('flag off routes valid HTTPS HTML5 to the external browser', () {
       expect(
