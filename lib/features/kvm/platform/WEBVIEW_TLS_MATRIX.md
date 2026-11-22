@@ -151,6 +151,31 @@ flag stays off for that target.
       opt-in tolerates only an otherwise-valid cert for the *expected* BMC host
       that is untrusted by the platform store; it is not a general certificate
       check bypass. Verified per target before the flag is flipped.
+* [ ] **Certificate pinning / public-key pinning (no trust-all, no
+      accept-any-certificate)** — the embedded WebView must bind the console to
+      the expected BMC certificate or public key (a pinned SPKI fingerprint or an
+      operator-supplied pin), so that a DIFFERENT, otherwise-valid and
+      platform-trusted certificate for the same hostname cannot impersonate the
+      BMC and take over the privileged management session. This is a control
+      distinct from hostname verification: hostname verification checks that the
+      certificate's identity matches the console's hostname, whereas pinning
+      additionally binds the connection to the specific expected key, so a valid
+      certificate issued to that same name by another trusted CA — or a
+      rotated / attacker-supplied leaf — cannot transparently replace the BMC.
+      Strict mode keeps the OS trust-store validation AND enforces the pin. The
+      test-only self-signed opt-in tolerates only the test BMC's untrusted leaf
+      for the expected host and must never relax the pinning or degrade to a
+      trust-all / accept-any-certificate verifier — it must never accept any
+      certificate presented by an unexpected host: a blanket `TrustManager` that
+      accepts every chain, a catch-all `SSLSocketFactory`, or a disabled
+      certificate-identity check would hand the operator's privileged session to
+      any host and turn the opt-in into a MITM vector. Console content is served
+      by the BMC and is therefore attacker-influenced, but the pin belongs to the
+      operator-configured identity and is never derived from page content or an
+      external actor. Verified per target (inspect the WebView TLS configuration
+      and confirm the expected BMC pin is enforced and no trust-all /
+      accept-any-certificate path exists, with the flag both off and on) before
+      the flag is flipped.
 * [ ] **TLS protocol-version / cipher-suite floor (no downgrade)** — the
       embedded WebView must negotiate only a modern TLS protocol version and
       strong cipher suites for the console origin, never a legacy or weakened

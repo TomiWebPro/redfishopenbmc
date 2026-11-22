@@ -138,7 +138,8 @@ void main() {
 
   group('KvmWebViewPolicy — hostname verification is never bypassed', () {
     test('production default always verifies the certificate hostname', () {
-      expect(KvmWebViewPolicy.productionDefault.bypassHostnameVerification, isFalse);
+      expect(KvmWebViewPolicy.productionDefault.bypassHostnameVerification,
+          isFalse);
     });
 
     test('test-only self-signed opt-in still verifies the hostname', () {
@@ -158,6 +159,37 @@ void main() {
       expect(enabledStrict.bypassHostnameVerification, isFalse);
       expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
       expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+    });
+  });
+
+  group('KvmWebViewPolicy — certificate/public-key pinning is never bypassed',
+      () {
+    test('production default always enforces the certificate pin', () {
+      expect(
+          KvmWebViewPolicy.productionDefault.bypassCertificatePinning, isFalse);
+    });
+
+    test('test-only self-signed opt-in still enforces the pin', () {
+      // Tolerating the test BMC's untrusted leaf for the expected host must not
+      // degrade to a trust-all / accept-any-certificate verifier: that would let
+      // any host impersonate the BMC and take over the privileged session. This
+      // is a hard invariant, independent of the flag, TLS mode or console
+      // signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassCertificatePinning, isFalse);
+    });
+
+    test('no policy configuration can disable certificate pinning', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Identity verification and pinning are independent invariants: neither
+      // can be disabled by the opt-in.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
     });
   });
 

@@ -73,6 +73,23 @@ class KvmWebViewPolicy {
   /// disables identity verification. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassHostnameVerification => false;
 
+  /// Always `false`: certificate / public-key pinning is NEVER bypassed, not
+  /// even by the test-only self-signed opt-in.
+  ///
+  /// Hostname verification (see [bypassHostnameVerification]) binds the
+  /// certificate's identity to the console hostname. Pinning goes further: it
+  /// binds the connection to the *specific* expected BMC certificate / public
+  /// key, so a DIFFERENT, otherwise-valid and platform-trusted certificate for
+  /// the same hostname cannot impersonate the BMC. Tolerating a self-signed leaf
+  /// on the expected test host must therefore not degrade to a trust-all /
+  /// accept-any-certificate verifier (a blanket `TrustManager` accepting every
+  /// chain, a catch-all socket factory, or a disabled identity check) — that
+  /// would let any host takeover the privileged console session and would
+  /// weaken TLS. This is a hard, configuration-independent invariant, so a
+  /// future WebView consumer can consult it and can never obtain a policy that
+  /// disables pinning. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassCertificatePinning => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
