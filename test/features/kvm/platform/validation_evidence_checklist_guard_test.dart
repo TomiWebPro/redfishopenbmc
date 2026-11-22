@@ -27,8 +27,10 @@
 // entry path, no exported activity / Intent-seeded first load),
 // no-sensitive-console-URL/session-token in logs/telemetry/crash reports
 // (CWE-532), operator-session auto-lock / session timeout / backgrounding +
-// re-auth (no unattended privileged console), flag-off fallback, human sign-off)
-// so a future edit cannot silently erase the evidence boxes that gate that
+// re-auth (no unattended privileged console), no-HTTP-auth / login-form
+// credential-prompt spoofing (native authentication-challenge dialog, no
+// auto-submitted stored credentials), flag-off fallback, human sign-off) so a
+// future edit cannot silently erase the evidence boxes that gate that
 // decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
@@ -197,6 +199,18 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'lock-on-backgrounding', marker: 'backgrounding'),
   (name: 'reauth-on-resume', marker: 're-authentication'),
   (name: 'no-unattended-console', marker: 'unattended'),
+  (name: 'no-http-auth-spoof', marker: 'http-auth'),
+  (name: 'no-login-form-spoof', marker: 'login-form'),
+  (name: 'no-http-auth-callback', marker: 'onreceivedhttpauthrequest'),
+  (name: 'no-login-request-callback', marker: 'onreceivedloginrequest'),
+  (
+    name: 'no-http-auth-stored-credentials',
+    marker: 'sethttpauthusernamepassword'
+  ),
+  (name: 'no-http-auth-webstorage-autocomplete', marker: 'webstorage'),
+  (name: 'http-auth-credential-phishing', marker: 'credential-phishing'),
+  (name: 'http-auth-auto-answer', marker: 'auto-answered'),
+  (name: 'http-auth-distinct-surface', marker: 'authentication-challenge'),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -643,6 +657,27 @@ void main() {
       expect(missing, contains('lock-on-backgrounding'));
       expect(missing, contains('reauth-on-resume'));
       expect(missing, contains('no-unattended-console'));
+    });
+
+    test('RED: dropping the no-HTTP-auth / credential-prompt-spoofing box '
+        'fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutHttpAuth = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'http-auth|login-form|onreceivedhttpauthrequest|onreceivedloginrequest|sethttpauthusernamepassword|webstorage|credential-phishing|auto-answered|authentication-challenge')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutHttpAuth);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-http-auth-spoof'));
+      expect(missing, contains('no-login-form-spoof'));
+      expect(missing, contains('no-http-auth-callback'));
+      expect(missing, contains('no-login-request-callback'));
+      expect(missing, contains('no-http-auth-stored-credentials'));
+      expect(missing, contains('no-http-auth-webstorage-autocomplete'));
+      expect(missing, contains('http-auth-credential-phishing'));
+      expect(missing, contains('http-auth-auto-answer'));
+      expect(missing, contains('http-auth-distinct-surface'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
