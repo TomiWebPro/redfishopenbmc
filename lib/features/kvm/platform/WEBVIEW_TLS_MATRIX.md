@@ -156,6 +156,26 @@ flag stays off for that target.
       the per-target WebView navigation callback must still be inspected to
       confirm no scheme is passed through. Verified per target before the flag
       is flipped.
+* [ ] **No pop-up / secondary window / iframe navigation bypass** — the embedded
+      WebView must not let attacker-influenced console content escape the trusted
+      frame through a secondary rendering surface: no pop-ups or multiple windows
+      (`window.open`, `target="_blank"`, Android
+      `setSupportMultipleWindows(true)` / `onCreateWindow`, WKWebView
+      `createWebViewWithConfiguration` / `window.open` handlers), no additional
+      WebView/frame instance, and no cross-origin `iframe` navigation — each of
+      which creates a frame whose top-level navigations may bypass the single
+      navigation delegate that enforces the same-origin HTTPS confinement on the
+      primary frame. Every such navigation must be blocked or handed to the
+      external secure browser; no secondary frame may render an attacker-chosen
+      or TLS-downgraded origin inside the app. Console content is served by the
+      BMC and is therefore attacker-influenced (a compromised/spoofed BMC, or
+      script running in the page): a `window.open` / `target="_blank"` link or a
+      script can open a fresh, unconfined frame to an arbitrary origin — a
+      phishing / credential-capture surface wholly independent of TLS, hostname
+      and same-origin checks on the primary frame. Verified per target (inspect
+      the WebView client / UIDelegate and confirm no secondary WebView is
+      created, or that it applies the identical fail-closed navigation gate)
+      before the flag is flipped.
 * [ ] **CSP / mixed content** — the BMC console's HTTP response headers and
       page content are inspected for `Content-Security-Policy` frame rules and
       mixed-content (HTTPS page loading HTTP subresources); a console that is
