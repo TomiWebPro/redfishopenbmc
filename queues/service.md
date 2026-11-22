@@ -5,6 +5,31 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 10:12 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open #009/#021 manager-walk epic. RS-6/RS-8 pin manager-set identity, dedup and duplicate-Id
+     collision determinism, EP-S2/S3/EP-S10 pin tier precedence and all-unsafe selection — but nothing pins
+     that a genuine tier TIE (two equally-ranked, openable secure-HTTPS consoles declared in a fixed BMC
+     order) resolves to the SAME first-in-order winner across pickPrimary / fetchPrimaryConsole /
+     fetchCapability / fetchConsoles on every repeated call. A one-sided iteration-order refactor could flip
+     the badged/primary target while every identity and tier test stays GREEN (the #009 divergence class).
+     No behaviour change folded in; AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. -->
+
+- [ ] EP-S11 Member-order tie determinism across the primary/capability service surfaces: over an in-temp
+       multi-manager mockup with two or more EQUALLY-ranked openable secure-HTTPS consoles (same tier, no
+       credentials) declared in a fixed BMC order, plus a padded/hostile-order variant, pin that
+       `KvmService.pickPrimary` / `fetchPrimaryConsole`, `fetchCapability(id)` and `fetchConsoles()` resolve the
+       SAME first-in-BMC-order winner on every repeated call, that the surfaced manager-set iteration order is
+       stable across calls, and that every physical manager is still surfaced (RS-6/RS-8 identity unchanged).
+       AUDIT FIRST: if the first-match iteration already pins this end-to-end, record the audit and add nothing;
+       RED->GREEN only on a genuine divergence, never churn. No behaviour change folded in; no WebView/protocol
+       import, no production TLS weakening.
+       Dept: rf-service
+       Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_service_manager_identity_test.dart test/features/kvm/kvm_service_primary_secure_tier_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to `test/features/kvm/**`
+               (+ `lib/features/kvm/kvm_service.dart` only on a genuine divergence); emulator 85/85 only if `lib/`
+               wire changes; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no WebView/protocol import, no
+               production TLS weakening.
+
 <!-- rf-ideate split 2026-11-22 06:09 UTC: carves a fresh, machine-checkable, unblocked slice of the
      blocked #009/#021 manager-walk epic. RS-6/RS-8 pin manager-set identity and collision
      determinism, EP-S2/EP-S3 pin Primary tier precedence and no-unopenable selection, RS-7 pins

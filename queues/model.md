@@ -4,6 +4,31 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 10:12 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open #009/#021 epic. RM-8/RM-13 pin the canonical enablement tri-state (bool flags, truthy-wins)
+     across both factories, but nothing pins the NON-BOOL encoding seam at the model surface: string / numeric
+     / null / list / map / control-bearing `ServiceEnabled` / `Enabled` / legacy enablement values could make
+     the two `fromManager` factories disagree on enablement, URI and aggregates. Read-only characterization;
+     the two deliberate behaviour decisions (RM-11 mixed regime, EP-S8 credentialed Primary) stay blocked and
+     are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] RM-16 Hostile enablement-flag encoding agreement across both `fromManager` factories: feed
+       `KvmConsole.fromManager` and `KvmCapability.fromManager` one manager matrix whose Graphical/Serial/
+       Remote blocks carry non-canonical `ServiceEnabled` / `Enabled` / legacy enablement values (`"true"`,
+       `"false"`, `"TRUE"`, padded booleans, `1`/`0`, null, list/map, control-bearing strings) plus a
+       canonical-bool control, and pin that both factories agree byte-for-byte on `supported` /
+       `serviceEnabled`, the resolved launch URI, aggregated connect types and session limit — treating
+       non-canonical encodings as unknown/disabled (fail closed), never as truthy, while preserving the
+       documented truthy-wins behaviour for canonical bools (RM-8/RM-13 unchanged). AUDIT FIRST: if the
+       shared helper already normalizes every hostile encoding identically across both factories, record the
+       audit and add nothing; RED->GREEN only on a genuine divergence, never churn. Read-only model work; no
+       wire/transport/TLS change, no dependency, no WebView/protocol import, no behaviour decision folded in.
+       Dept: rf-model
+       Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+               (0 issues), RED->GREEN only on a genuine divergence; writes limited to `lib/features/kvm/models/**`
+               + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no wire/TLS change,
+               no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-22 06:09 UTC: carves a fresh, machine-checkable, unblocked slice of the
      blocked #009/#021 epic. The control-safe classifier family is heavily guarded for CRLF/NUL/TAB/
      NBSP/ZWSP and degenerate authorities (RM-5/RM-12), but nothing pins the BIDI / RTL-override and

@@ -5,6 +5,32 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 10:12 UTC: carves a fresh, display-only, unblocked slice of the
+     still-open #009/#021 closeout. The model layer pins connect-type / session-limit aggregate agreement
+     (RM-6/RM-8/EP-M5) and EP-U11/U15 pin rendered card agreement for RemoteConsole/disabled and launch
+     targets, but nothing pins that the two KVM operator cards RENDER byte-identical connect-type chips and
+     session-limit text for one manager over a hostile aggregation matrix. A one-sided view edit could desync
+     the chips while every model and single-surface suite stays GREEN. Display-only; the human-gated
+     WebView/TLS rendering stays gated and is NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine
+     divergence, never churn. No code touched. -->
+
+- [ ] EP-U19 Connect-type chip + session-limit text rendered agreement across the two KVM operator cards:
+       over one manager built into both real cards whose enabled console block carries a hostile connect-types
+       matrix (padded/mixed-case duplicates, blank/non-string/control-bearing entries) and a boundary
+       `MaxConcurrentSessions` (int / integral-double / padded numeric string), pin that the per-console card
+       and the capability card render byte-identical connect-type chips and session-limit text — each as one
+       merged `excludeSemantics` node with visible text == announced label at 320/800/1300 px, no overflow,
+       no raw control marker and no divergent chip order. AUDIT FIRST: if both cards already share one renderer
+       with byte-identical output over the whole matrix, record the audit and add nothing; RED->GREEN only on
+       a genuine divergence, never churn. Display-only; no WebView/protocol import, no URL opened, no
+       dependency, no production TLS weakening.
+       Dept: rf-ui
+       Verify: `flutter test test/features/kvm/kvm_capability_card_test.dart test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_card_cross_surface_agreement_test.dart && flutter analyze`
+               (0 issues), with RED->GREEN proof + 320 px no-overflow + visible==announced only on a genuine
+               divergence; writes limited to `lib/features/kvm/views/**` + those named test files; no WebView/
+               protocol import, no URL opened, no dependency, no production TLS weakening;
+               `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-22 06:09 UTC: carves a fresh, display-only, unblocked slice of the
      blocked #009/#021 final-route closeout. EP-U8/EP-U17 pin the no-WebView affordance contract and
      EP-U14 pins the viewer URI row, but nothing pins the route-dependent COPY-vs-BROWSER affordance

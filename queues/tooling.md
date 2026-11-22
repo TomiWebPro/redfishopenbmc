@@ -5,6 +5,31 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 10:12 UTC: a fresh, machine-checkable slice of the still-open #009/#021
+     epic's queue hygiene. EP-T13 pins a single valid `Dept:` + non-empty `Verify:`, EP-T24 pins that the
+     verify command names repo-existing paths, but NEITHER pins the single-writer dimension (MULTI_DEPT
+     hard rule #1): an item whose declared write-scope names a product `lib/**` path owned by a DIFFERENT
+     dept still passes both guards, silently breaking path ownership. Pure test/tool, dependency-free,
+     never writes lib/. Distinct from EP-T13/T24. AUDIT FIRST; RED->GREEN only on a genuine gap, no churn. -->
+
+- [ ] EP-T25 Queue-item dept <-> product-path ownership cross-check: extend
+      `test/tool/queue_item_schema_guard_test.dart` so that, for every unchecked item, any product `lib/**`
+      path named in the item's declared write-scope / verify command must fall inside that item's `Dept:`
+      owned-path set from MULTI_DEPT.md (rf-model -> `lib/features/kvm/models/**`, `lib/redfish/discovery/**`;
+      rf-ui -> `lib/features/kvm/views/**`, `lib/features/systems/**`; rf-service -> `lib/features/kvm/kvm_service.dart`,
+      controllers/providers, `lib/redfish/client/**`; rf-platform -> `lib/features/kvm/platform/**`;
+      rf-tooling/rf-check/rf-gate/rf-audit/rf-ideate -> no product lib path). Shared test paths (`test/**`,
+      `tool/**`) stay exempt. Fail closed with a concrete diagnostic naming the item and the foreign product
+      path. Temp-root RED->GREEN (foreign product path -> violation; owned or test-only path -> clean) plus
+      a real-repo invariant over `queues/*.md`. AUDIT FIRST: if the guard already enforces dept/product-path
+      ownership, record the audit and add nothing; RED->GREEN only on a genuine gap, never churn. Pure
+      test/tool, dependency-free, never writes lib/.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/queue_item_schema_guard_test.dart && flutter analyze` (0 issues), with
+              RED->GREEN proof (foreign product path -> violation; owned/test-only -> clean); writes limited
+              to `test/tool/queue_item_schema_guard_test.dart`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              no lib/, no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-22 06:09 UTC: a fresh, machine-checkable slice of the blocked #009/#021
      epic's queue-hygiene tooling. EP-T13 added `queue_item_schema_guard_test.dart` to fail closed on
      a missing/duplicate/out-of-set single dept field or an empty verify command, but a command that

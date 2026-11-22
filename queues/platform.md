@@ -6,6 +6,32 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 10:12 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open (human-gated) WebView/TLS render closeout of #009/#021. EP-P9/EP-P13 pin the platform
+     launch plan and navigation gate over hostile AUTHORITIES (confusables, scheme-relative, encoded
+     delimiters), but nothing pins the SCHEMEPS themselves: case-folded / padded / percent-encoded
+     scheme spellings (`HTTPS:`, `hTtPs:`, ` https:`, `https%3A//host`, a scheme-relative form) can shift
+     a URI from "secure HTTPS -> externalBrowser" to "degrade -> copyOnly" or be misrouted. Test/doc-only;
+     the human WebView/TLS validation (EP-P1/P2/P4) stays gated and is NOT re-split. AUDIT FIRST;
+     RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-P14 Launch-plan scheme-spelling fail-closed matrix: over a matrix of HTTP(S) scheme spellings
+      (canonical `https:`, mixed-case `HTTPS:` / `HtTpS:`, leading/trailing whitespace around the
+      `ConnectUri`, a percent-encoded scheme colon `https%3A//host`, a scheme-relative form and a
+      control-bearing scheme), feed each through `planConsoleLaunch` under `KvmWebViewPolicy.productionDefault`
+      and pin that the route is NEVER `inAppWebView`, `acceptSelfSigned` is NEVER true, and every URI that
+      is not a canonical secure-HTTPS target degrades to `copyOnly` with a control-safe / null target —
+      while a canonical secure-HTTPS URI stays `externalBrowser`. Record any drift from the documented
+      `LAUNCH_FALLBACK.md` route table as a RED->GREEN fix, never a doc-only edit. AUDIT FIRST: if EP-P6/P9/P13
+      already pin the full scheme matrix, record the audit and add nothing; RED->GREEN only on a genuine
+      divergence, never churn. Test/doc-only; no WebView/protocol import, no URL opened, no dependency,
+      no production TLS weakening.
+      Dept: rf-platform
+      Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues), RED->GREEN proof
+              only on a genuine divergence; writes limited to `test/features/kvm/platform/**` + the decision
+              docs; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no WebView/protocol dependency,
+              no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-22 06:09 UTC: carves a fresh, machine-checkable half of the still-open
      (human-gated) WebView/TLS closeout of #009/#021. EP-P11/EP-P9 pin the navigation gate and launch
      plan over control/CRLF/NUL/cross-origin/userinfo authorities, but not over scheme-relative,
