@@ -256,6 +256,44 @@ void main() {
     });
   });
 
+  group('KvmWebViewPolicy — certificate revocation checking is never bypassed',
+      () {
+    test('production default always checks certificate revocation', () {
+      expect(
+          KvmWebViewPolicy.productionDefault.bypassCertificateRevocationCheck,
+          isFalse);
+    });
+
+    test('test-only self-signed opt-in still checks revocation', () {
+      // Tolerating the test BMC's untrusted leaf relaxes ONLY leaf trust: it
+      // must never disable CRL/OCSP revocation checking for otherwise-trusted
+      // certificates, so a revoked BMC certificate cannot silently resume the
+      // privileged console session. This is a hard invariant, independent of
+      // the flag, TLS mode or console signals.
+      expect(
+          KvmWebViewPolicy.testOptIn.bypassCertificateRevocationCheck, isFalse);
+    });
+
+    test('no policy configuration can skip certificate revocation checking',
+        () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Identity, pinning, handshake-floor, HTTPS-only and revocation
+      // invariants are independent: the test-only opt-in can disable none of
+      // them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+    });
+  });
+
   group('resolveRenderRoute — fallback works with the flag off', () {
     test('flag off routes valid HTTPS HTML5 to the external browser', () {
       expect(

@@ -128,6 +128,24 @@ class KvmWebViewPolicy {
   /// that permits cleartext transport. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassHttpsOnlyTransport => false;
 
+  /// Always `false`: certificate revocation checking (CRL / OCSP) is NEVER
+  /// bypassed, not even by the test-only self-signed opt-in.
+  ///
+  /// The three certificate-related invariants are independent: hostname
+  /// verification ([bypassHostnameVerification]) binds the certificate's
+  /// identity to the console host, pinning ([bypassCertificatePinning]) binds
+  /// the connection to the expected BMC key, and revocation checking rejects a
+  /// certificate that has been revoked (e.g. because the BMC's private key was
+  /// compromised) even when it still chains to a trusted CA, carries the
+  /// expected hostname and matches the pin. Tolerating a self-signed leaf on the
+  /// expected test host relaxes ONLY leaf trust in the platform store: it must
+  /// never disable revocation checking for otherwise-trusted certificates, or a
+  /// revoked BMC certificate could silently resume the privileged console
+  /// session. This is a hard, configuration-independent invariant, so a future
+  /// WebView consumer can consult it and can never obtain a policy that skips
+  /// revocation. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassCertificateRevocationCheck => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

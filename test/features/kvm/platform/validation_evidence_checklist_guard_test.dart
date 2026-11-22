@@ -34,8 +34,10 @@
 // TLS protocol-version / cipher-suite floor (hard configuration-independent
 // invariant; the test-only opt-in never bypasses the TLS floor), HTTPS-only
 // transport (hard configuration-independent invariant; the opt-in never opens a
-// cleartext socket), flag-off fallback, human sign-off) so a future edit cannot
-// silently erase the evidence boxes that gate that decision.
+// cleartext socket), certificate revocation checking (CRL / OCSP; opt-in never
+// disables revocation, so a revoked BMC certificate cannot resume the session),
+// flag-off fallback, human sign-off) so a future edit cannot silently erase the
+// evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -236,6 +238,27 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'http-auth-credential-phishing', marker: 'credential-phishing'),
   (name: 'http-auth-auto-answer', marker: 'auto-answered'),
   (name: 'http-auth-distinct-surface', marker: 'authentication-challenge'),
+  (
+    name: 'certificate-revocation-checking',
+    marker: 'certificate revocation checking'
+  ),
+  (name: 'crl-ocsp-revocation', marker: 'crl / ocsp'),
+  (name: 'revoked-cert-rejected', marker: 'revoked'),
+  (name: 'ssl-error-revoked', marker: 'ssl_error_revoked'),
+  (
+    name: 'revocation-distinct-from-hostname',
+    marker: 'distinct from hostname verification'
+  ),
+  (name: 'opt-in-keeps-revocation', marker: 'never disable revocation'),
+  (name: 'revocation-never-skipped', marker: 'never skips revocation'),
+  (
+    name: 'revocation-config-invariant',
+    marker: 'configuration-independent invariant'
+  ),
+  (
+    name: 'revocation-policy-getter',
+    marker: 'bypasscertificaterevocationcheck'
+  ),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -752,6 +775,25 @@ void main() {
       expect(missing, contains('http-auth-credential-phishing'));
       expect(missing, contains('http-auth-auto-answer'));
       expect(missing, contains('http-auth-distinct-surface'));
+    });
+
+    test('RED: dropping the certificate-revocation-checking box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutRevocation = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'certificate revocation checking|crl / ocsp|revoked|ssl_error_revoked|never disable revocation|never skips revocation|bypasscertificaterevocationcheck')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutRevocation);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('certificate-revocation-checking'));
+      expect(missing, contains('crl-ocsp-revocation'));
+      expect(missing, contains('revoked-cert-rejected'));
+      expect(missing, contains('ssl-error-revoked'));
+      expect(missing, contains('opt-in-keeps-revocation'));
+      expect(missing, contains('revocation-never-skipped'));
+      expect(missing, contains('revocation-policy-getter'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

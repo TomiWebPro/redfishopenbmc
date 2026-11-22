@@ -669,6 +669,30 @@ flag stays off for that target.
       target (inspect the WebView auth callbacks and confirm challenges are
       cancelled and no credential store is pre-seeded) before the flag is
       flipped.
+* [ ] **Certificate revocation checking (CRL / OCSP) never bypassed** — the
+      embedded WebView must reject a certificate that has been revoked (e.g.
+      because the BMC's private key was compromised) even when it still chains
+      to a trusted CA, carries the expected hostname and matches the pin:
+      online OCSP / CRL Distribution Points must be consulted (Android
+      `RevocationMode` / `WebViewClient.onReceivedSslError` with
+      `SSL_ERROR_REVOKED`, WKWebView / `URLSession` revocation policy), and the
+      connection must fail closed on a revoked or unverifiable status. Console
+      content is served by the BMC and is therefore attacker-influenced, but the
+      revocation state is an operator/PKI trust signal, not page content: this
+      is a control distinct from hostname verification (which binds the
+      certificate identity to the console host), certificate/public-key pinning
+      (which binds the connection to the expected key) and the TLS
+      protocol/cipher floor (which governs the handshake). The test-only
+      self-signed opt-in tolerates ONLY the test BMC's untrusted leaf for the
+      expected host: it must never disable revocation checking for otherwise-
+      trusted certificates, so a revoked BMC certificate cannot silently
+      resume the privileged management session. This is a hard,
+      configuration-independent invariant that a future WebView consumer can
+      consult (`KvmWebViewPolicy.bypassCertificateRevocationCheck`, always
+      `false`): the opt-in never skips revocation, in strict mode and with the
+      flag both off and on. Verified per target (inspect the WebView TLS /
+      revocation configuration and observe that a revoked certificate is
+      rejected, with the flag both off and on) before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
