@@ -439,6 +439,26 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
       Verify: `flutter test test/tool/coverage_gate_test.dart && flutter analyze` (0 issues);
               writes limited to `tool/**` + `test/tool/**`.
 
+
+<!-- rf-automation 2026-11-22 06:05 UTC: discovered during the EP-U17 audit — the guard file
+     extended by that slice (`test/features/kvm/kvm_open_affordance_gating_test.dart`, EP-U8 + EP-U17,
+     live cases, reachable from verify.yml whole-tree `flutter test --coverage`) is NOT in
+     `canonicalGuardFiles` or any pinned epoch set, so deleting / emptying / test-stripping it
+     stays GREEN. Same "who guards the guards" gap family as EP-T14..T22. Test/tool-only, no lib/. -->
+
+- [ ] EP-T23 Guard-suite liveness: register the EP-U8/EP-U17 no-WebView affordance guard
+      (`test/features/kvm/kvm_open_affordance_gating_test.dart`) in `canonicalGuardFiles` under a
+      fresh pinned `epT23AddedGuards` epoch set (length 1, disjoint from every earlier designation),
+      include it in `allDesignatedGuards` + the EP-T20 completeness arithmetic, and add a pin test
+      with pairwise-disjointness assertions plus a temp-root RED→GREEN (missing/emptied/test-less →
+      violation, intact → clean). AUDIT FIRST: if the guard is already registered and liveness-checked,
+      record the audit and add nothing; no churn.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues),
+              with RED→GREEN proof (dropped canonical entry → pin + completeness failures; restored →
+              green); writes limited to `test/tool/guard_suite_liveness_test.dart`;
+              `git diff --exit-code -- pubspec.yaml pubspec.lock`; no lib/, no production TLS weakening.
+
 ## Log
 
 - 2026-11-21 10:17 UTC — EP-T16 LANDED (agent:redfish-automation, FEATURE #009/#021): extended `canonicalGuardFiles` in `test/tool/guard_suite_liveness_test.dart` 21→24 with the three post-EP-T15 widget-level regression guards that were live/reachable but not liveness-checked (`kvm_clipboard_cross_surface_agreement_test.dart`, `kvm_view_reload_indicator_test.dart`, `kvm_view_stale_error_banner_test.dart`; live cases 3/2/3). Confirmed liveness gap: deleting / emptying / test-stripping one would stay GREEN. Added pinned `epT16AddedGuards ⊆ canonicalGuardFiles` set, pairwise-disjointness assertions vs EP-T14/EP-T15, a pin test and a temp-root RED→GREEN (missing/emptied/test-less → violation, intact → clean). Real-file RED proof: dropped `kvm_view_stale_error_banner_test.dart` from the canonical list → both new EP-T16 tests failed (`+11 -1`, pin test named the dropped guard); restored byte-clean (SHA `c66f8ebc…`), 600-perm backups shredded → 12/12 GREEN. analyze 0; full `flutter test` 1863 passed / 1 skipped (baseline 1861 +2); issues validate OK; diff --check clean; deps unchanged. Test/tool-only — no `lib/`, wire/fixture/tool-runtime or TLS change; DMTF emulator skipped (<7 days since last green 85/85). Concurrent rf-gate merge swept WIP into `stash@{0}`; recovered via `git stash apply` (stash left untouched).

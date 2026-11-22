@@ -13131,3 +13131,18 @@
 - Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-U17)
+
+**Done:**
+- FEATURE (test-only): EP-U17 no-WebView final-route affordance agreement guard. AUDIT: EP-P12 is fully covered by EP-P8's 8-row doc↔`planConsoleLaunch` decision-table guard, EP-P6's 96-case cross-product invariant and EP-P7's deferred-human-gate guard — nothing added. EP-U17 had a genuine unguarded negative invariant: adding an in-app render button or a self-signed-accept affordance to any of the three surfaces passed every existing test. Extended `test/features/kvm/kvm_open_affordance_gating_test.dart` (+4 tests): detector sensitivity/honest-copy exemption plus viewer / per-console card / capability card scans at 320/800/1300 px, pinning copy + browser-open guidance, merged visible==announced affordances and absence of render/TLS affordances. Concept-based detectors start at an imperative render verb so honest negative guidance ("Embedded rendering requires a WebView dependency") never matches.
+- Real-file RED #1: `OutlinedButton` "Render console in-app" inserted into `kvm_console_viewer_page.dart` → exactly 1 new failure (`+15 -1`) while 92 independent existing guard tests stayed GREEN; restored byte-clean (SHA `f088a86d…`, empty lib diff), 600-perm backup shredded. Real-file RED #2: `Switch` + "Accept self-signed certificate" added to `kvm_capability_card.dart` → exactly 1 new failure; restored byte-clean (SHA `c6c4b09a…`), backup shredded.
+- Verify: targeted 16/16; `dart format` clean (my file); `flutter analyze` 0; full `flutter test --concurrency=4` 2087 passed / 1 skipped (baseline 2083 +4); issues validate OK; diff --check clean; deps unchanged; lib diff empty.
+
+**Decisions:**
+- Test-only, empty `lib/` diff, no wire/TLS/fixture/tool-runtime change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-U17 LANDED (`queues/ui.md`); EP-P12 audited fully covered; EP-T23 discovered (`queues/tooling.md`) for the confirmed liveness-registry gap. Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. DMTF 85-test emulator skipped (test-only, <7 days since last green 85/85). No manufactured UI churn (§5).
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-T23 — audit-first, RED→GREEN only on a genuine divergence, never churn; EP-S8 / RM-11 deliberate behaviour-change decisions, do NOT fix unattended. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
