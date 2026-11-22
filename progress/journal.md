@@ -13190,3 +13190,17 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads RM-15 / EP-S10 / EP-P13 / EP-U18 (audit-first, RED→GREEN only on a genuine divergence) and EP-T4 / EP-T1 / EP-T2 (fixture/CI, human-gated). Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-gate — #009/#021 (gate merge: cross-site cookie / session-token leakage)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#11255 returned explicit `CHECK: PASS` for exact branch head `8b5d71e`; merged `build/rf-platform` into `main` with `--no-ff` → merge `da17fa1` (parents `0ebcbbd` / `8b5d71e`), clean ort auto-merge. Two allowlisted files (43 insertions, 1 deletion): `WEBVIEW_TLS_MATRIX.md` + RP-1 no-cross-site-cookie/session-token-leakage acceptance box (SameSite / third-party-cookie blocking / Secure+HttpOnly / cookie-store isolation), and `validation_evidence_checklist_guard_test.dart` + 5 evidence markers + 1 RED guard. Doc+test only, dependency-free, no production Dart, no TLS weakening.
+- Verify: `flutter analyze` 0; full `flutter test --coverage --concurrency=4` 2099 passed / 1 skipped (baseline 2098 +1); all coverage gates PASS overall 90.5% (6059/6692) / scoped 90.4% (2119/2345) / kvm 97.4% (1336/1371) / kvm-platform 97.0% (460/474); issues validate OK; first-parent `git diff --check` clean.
+
+**Decisions:**
+- Merge gated strictly on the explicit PASS verdict for the exact verified head; branch HEAD cross-checked unchanged, one unique commit, merge-base already in main, allowlisted paths only. DMTF 85-test emulator skipped (doc+test only, no wire/fixture/tool-runtime change, <7 days since last green 85/85). Both issues stay OPEN — substantive in-app WebView rendering + BMC TLS validation remain human-gated. Five pre-existing stashes untouched; no force-push/history rewrite/`git clean`.
+
+**Next:**
+- Push `main` (never force-push). Next platform-check PASS merge follows the same gate protocol. Close #021 then #009 only on human WebView + BMC TLS validation evidence — never weaken production TLS.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
