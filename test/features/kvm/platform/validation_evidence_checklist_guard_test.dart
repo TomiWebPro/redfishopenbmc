@@ -10,9 +10,10 @@
 // no-device-permissions, no-sensitive-data-at-rest (WebView cache/storage +
 // background snapshot), no-referrer/URL-token-leak (Referrer-Policy),
 // no-popup/secondary-window/iframe navigation bypass,
-// no-private-network/loopback subresource egress (SSRF pivot), flag-off fallback,
-// human sign-off) so a future edit cannot silently erase the evidence boxes that
-// gate that decision.
+// no-private-network/loopback subresource egress (SSRF pivot),
+// no-remote-debugging/WebView-inspectability (active debug code), flag-off
+// fallback, human sign-off) so a future edit cannot silently erase the evidence
+// boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -64,6 +65,12 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-webrtc-ip-leak', marker: 'webrtc'),
   (name: 'no-ssrf-pivot', marker: 'ssrf'),
   (name: 'subresource-egress-gate', marker: 'subresource request'),
+  (name: 'no-remote-debugging', marker: 'remote debugging'),
+  (name: 'no-webcontents-debugging', marker: 'webcontentsdebuggingenabled'),
+  (name: 'no-webview-inspectable', marker: 'inspectable'),
+  (name: 'no-devtools-endpoint', marker: 'devtools'),
+  (name: 'no-web-inspector', marker: 'web-inspector'),
+  (name: 'no-active-debug-code', marker: 'cwe-489'),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
   (name: 'mixed-content', marker: 'mixed-content'),
@@ -243,6 +250,24 @@ void main() {
       expect(missing, contains('no-webrtc-ip-leak'));
       expect(missing, contains('no-ssrf-pivot'));
       expect(missing, contains('subresource-egress-gate'));
+    });
+
+    test('RED: dropping the no-remote-debugging/inspectability box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutDebug = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'remote debugging|webcontentsdebuggingenabled|inspectable|devtools|web-inspector|cwe-489')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutDebug);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-remote-debugging'));
+      expect(missing, contains('no-webcontents-debugging'));
+      expect(missing, contains('no-webview-inspectable'));
+      expect(missing, contains('no-devtools-endpoint'));
+      expect(missing, contains('no-web-inspector'));
+      expect(missing, contains('no-active-debug-code'));
     });
 
     test('RED: dropping the no-native-bridge box fails closed', () {

@@ -325,6 +325,24 @@ flag stays off for that target.
       persistence disabled and secure (non-capturable) presentation on every
       target. Verified per target (inspect the WebView configuration and the
       hosting activity/window flags) before the flag is flipped.
+* [ ] **No remote debugging / WebView inspectability (no active debug code in
+      production)** — the embedded WebView must not be remotely debuggable or
+      inspectable in production: no `WebView.setWebContentsDebuggingEnabled(true)`
+      on Android, no WKWebView `isInspectable = true` / web-inspector entitlement
+      on iOS/macOS, and no DevTools / `webkit.Debugger` / remote-debugging
+      endpoint or port exposed to ADB, another app or a nearby device
+      (CWE-489: active debug code). Console content is served by the BMC and is
+      attacker-influenced, but above all it is the operator's privileged
+      management session: a remotely debuggable WebView lets an attacker with
+      ADB/local access, or a malicious app on the same device, attach a debugger,
+      read the DOM, inject script and exfiltrate session tokens, credentials and
+      KVM frames — a credential/session-theft surface wholly independent of TLS,
+      hostname, origin, native-bridge, file-access and data-at-rest checks. Web
+      contents debugging and inspectability must be **disabled in production**
+      on every target and enabled only for a test-only validation spike behind
+      the opt-in flag. Verified per target (inspect the WebView construction and
+      platform configuration for any debugging/inspectable flag or debugging
+      port) before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
