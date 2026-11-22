@@ -5,6 +5,36 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 02:06 UTC: splits the BLOCKED behaviour-change head EP-S8
+     (credential-bearing secure-HTTPS Primary badge vs in-app navigability) of the #009/#021 epic
+     into its unattended-doable half. EP-P11 pinned that `allowsInAppNavigation` fails closed on
+     userinfo/cross-origin/control-bearing targets and that productionDefault never navigates in-app
+     or accepts self-signed; RS-6/RS-8 pin determinism and manager identity. But pickPrimary can still
+     badge a `https://user:pass@bmc/console` URI "Primary" while the navigation gate refuses it —
+     deciding which side is authoritative is a deliberate human decision (EP-S8, stays blocked).
+     This slice only pins the currently-agreeing invariants and RECORDS the divergence as a stable
+     baseline. AUDIT FIRST: if already pinned, record the audit and add nothing; RED→GREEN only on a
+     genuine divergence, never churn. Human-gated WebView/TLS rendering stays gated and is NOT
+     re-split. No code touched. -->
+
+- [ ] EP-S9 Credential-bearing secure-HTTPS Primary-badge ↔ navigation-gate decision-boundary guard
+      (unblocked half of the blocked EP-S8): over one in-temp manager with a userinfo-bearing
+      secure-HTTPS console (`https://user:pass@bmc/console`), a credential-free secure-HTTPS console
+      and plaintext/external variants, pin the agreeing invariants — `allowsInAppNavigation` fails
+      closed on userinfo (EP-P11), `KvmWebViewPolicy.productionDefault` never navigates in-app or
+      accepts self-signed, `pickPrimary` selection stays deterministic and every physical manager is
+      surfaced (RS-6/RS-8). RECORD the divergence (a credential-bearing URI can be badged Primary
+      while the navigation gate refuses it) in the test/progress doc as a deferred human decision
+      (EP-S8) without asserting either side as authoritative. AUDIT FIRST; do NOT fold a behaviour
+      change in; RED→GREEN only on a genuine divergence. No dependency, no WebView/protocol import,
+      no production TLS weakening.
+      Dept: rf-service
+      Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/platform/navigation_launch_route_agreement_test.dart && flutter analyze`
+              (0 issues), RED→GREEN only on a genuine divergence; writes limited to
+              `test/features/kvm/**` (+ `lib/features/kvm/kvm_service.dart` only on a genuine
+              divergence); emulator 85/85 only if `lib/` wire changes; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-21 22:03 UTC: splits a residual service-level aggregate-agreement seam of
      the blocked #009/#021 manager walk into one unblocked, dependency-free, TLS-safe dept slice.
      RS-6/RS-8/RS-9 pin manager-set identity, dedup, collision determinism and lookup-key

@@ -5,6 +5,33 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 02:06 UTC: splits the display half of the human-gated WebView/TLS
+     rendering closeout (blocked on platform validation) of #009/#021 into one unblocked,
+     display-only, dependency-free, TLS-safe dept slice. EP-U2/EP-U4/EP-U8 pin the viewer launch
+     affordance and external-client notices and EP-U14 pins the viewer URI row, but nothing pins as
+     ONE contract that the no-WebView final route (external-browser + copy under productionDefault)
+     never renders an in-app "render"/self-signed-accept affordance on any of the three surfaces.
+     A one-sided view edit could reintroduce a launch/render button with every single-surface suite
+     green. AUDIT FIRST: if all three surfaces already expose only copy + browser-open guidance,
+     record the audit and add nothing; RED→GREEN only on a genuine divergence, never churn. Human-
+     gated WebView/TLS rendering stays gated and is NOT re-split. No code touched. -->
+
+- [ ] EP-U17 No-WebView final-route viewer affordance agreement guard (display half of the blocked
+      rendering closeout): over a rendered console whose launch plan is external-browser/copy
+      (productionDefault, no WebView), pin that the viewer and both operator cards expose copy +
+      browser-open guidance and NEVER an in-app render button or a self-signed-accept affordance,
+      each as one merged `excludeSemantics` node with visible text == announced label at
+      320/800/1300 px and no overflow. AUDIT FIRST: if EP-U2/EP-U4/EP-U8 already pin these
+      affordances on all three surfaces, record the audit and add nothing; RED→GREEN only on a
+      genuine divergence, never churn. Display-only; no WebView/protocol import, no URL opened, no
+      dependency, no production TLS weakening.
+      Dept: rf-ui
+      Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_open_affordance_gating_test.dart test/features/kvm/kvm_viewer_uri_surface_agreement_test.dart && flutter analyze`
+              (0 issues), with RED→GREEN proof + 320 px no-overflow + visible==announced only on a
+              genuine divergence; writes limited to `lib/features/kvm/views/**` + those named test
+              files; no WebView/protocol import, no URL opened, no dependency, no production TLS
+              weakening; `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-21 22:03 UTC: splits a residual display-surface agreement seam of the
      blocked #009/#021 external-client epic into one unblocked, display-only, dependency-free,
      TLS-safe dept slice. The protocol-specific `kvmExternalClientNoticeFor` copy is single-sourced

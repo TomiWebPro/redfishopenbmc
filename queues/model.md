@@ -4,6 +4,36 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 02:06 UTC: splits the BLOCKED behaviour-change head RM-11 (mixed-regime
+     enablement tri-state) of the #009/#021 epic into its unattended-doable half. RM-10 pinned the
+     all-unknown "unknown keeps URI" fallback and EP-S7 pinned the both-flagged security-first
+     preference, and both agree across KvmCapability/KvmConsole/pickPrimary; only the MIXED regime
+     (flag-absent secure-HTTPS Graphical alongside an explicitly-enabled insecure SSH/plaintext HTTP
+     block) diverges, and fixing it redefines a documented core semantic (a deliberate human
+     decision — stays blocked). This slice only pins the two agreeing regimes byte-for-byte and
+     RECORDS the mixed-regime divergence as a stable baseline for that decision; it never asserts
+     the divergent value as expected and never changes semantics. AUDIT FIRST: if RM-10/EP-S7 already
+     pin both regimes, record the audit and add nothing; RED→GREEN only on a genuine divergence, never
+     churn. Human-gated WebView/TLS rendering stays gated and is NOT re-split. No code touched. -->
+
+- [ ] RM-13 Mixed-regime enablement tri-state — decision-boundary characterization guard (unblocked
+      half of the blocked RM-11): over one manager matrix spanning the all-unknown regime and the
+      both-flagged regime (contradictory ServiceEnabled/Enabled, secure-HTTPS Graphical + SSH/HTTP
+      blocks), pin that `KvmCapability.fromManager` (`resolveLaunchUri` / `connectTypes` /
+      `maxSessions`) and `KvmConsole.fromManager` / `KvmService.pickPrimary` still AGREE byte-for-byte
+      — the RM-10 all-unknown fallback and the EP-S7 security-first preference stay unchanged. For
+      the probe-confirmed MIXED regime (flag-absent secure-HTTPS Graphical + explicitly-enabled
+      insecure block), RECORD the divergence in the test/progress doc as a deferred human decision
+      (RM-11) without asserting either side as the expected value. AUDIT FIRST; do NOT change any
+      semantics, do NOT fold the behaviour decision in; RED→GREEN only on a genuine divergence in
+      the agreeing regimes. Read-only model work; no wire/transport/TLS change, no dependency, no
+      WebView/protocol import.
+      Dept: rf-model
+      Verify: `flutter test test/features/kvm/kvm_capability_security_tristate_agreement_test.dart test/features/kvm/kvm_capability_primary_uri_agreement_test.dart test/features/kvm/kvm_model_test.dart && flutter analyze`
+              (0 issues), RED→GREEN only on a genuine divergence in the agreeing regimes; writes
+              limited to `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+              no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-21 22:03 UTC: splits a residual pure-model classifier-parity seam of the
      blocked #009/#021 launch-target epic into one unblocked, dependency-free, TLS-safe dept slice.
      EP-M2 pinned external-client classifier parity at the model surface and RM-9 pinned OEM depth

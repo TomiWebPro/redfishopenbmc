@@ -6,6 +6,34 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 02:06 UTC: splits the machine-checkable half of the human-gated
+     WebView/TLS rendering closeout (EP-P1/P2/P4, blocked on platform validation) of #009/#021 into
+     one unblocked, test/doc-only, dependency-free, TLS-safe dept slice. EP-P8 already pins the 8-row
+     Decision contract table in LAUNCH_FALLBACK.md and cross-doc final-route agreement with
+     WEBVIEW_TLS_MATRIX.md; this slice re-checks that the recorded authoritative final route
+     (external-browser + copy, no in-app WebView, no self-signed under productionDefault) still
+     agrees with planConsoleLaunch after the latest guards, and records the outstanding human
+     validation as a stable baseline. AUDIT FIRST: if the decision docs and the validation-evidence
+     checklist already agree with code, record the audit and add nothing — do NOT add a WebView or
+     protocol dependency, do NOT open a URL, do NOT weaken production TLS. The human validation
+     remains gated and is NOT re-split. No code touched. -->
+
+- [ ] EP-P12 Final-route decision-record ↔ code agreement guard (machine-checkable half of the
+      human-gated WebView/TLS closeout): pin that the documented authoritative final render route
+      (external-browser + copy, never in-app WebView, never self-signed under productionDefault) in
+      `LAUNCH_FALLBACK.md` / `WEBVIEW_TLS_MATRIX.md` still agrees with `planConsoleLaunch` over the
+      full flag-off signal matrix (secure HTTPS, plaintext HTTP, external-client, disabled), failing
+      closed if any doc row drifts to an in-app route or if opt-in ever documents plaintext/disabled/
+      non-HTML5 in-app. Record the still-outstanding human WebView/TLS validation (EP-P1/P2/P4) as a
+      deferred baseline. AUDIT FIRST: if EP-P8 already pins all of this, record the audit and add
+      nothing; RED→GREEN only on a genuine divergence, never churn. Test/doc-only; no WebView/
+      protocol dependency, no URL opened, no production TLS weakening.
+      Dept: rf-platform
+      Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues), RED→GREEN
+              proof only on a genuine divergence; writes limited to `test/features/kvm/platform/**`
+              + the decision docs; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no WebView/
+              protocol dependency, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-21 17:59 UTC: splits the freshly-landed RP-1 in-app navigation-confinement
      contract of the blocked #009/#021 WebView closeout into one unblocked, test-only, dependency-free,
      TLS-safe dept slice. RP-1 added `allowsInAppNavigation` (secure-HTTPS + same-origin + no-userinfo

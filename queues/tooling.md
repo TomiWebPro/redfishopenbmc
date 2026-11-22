@@ -5,6 +5,32 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-22 02:06 UTC: the tooling half of the #009/#021 split — keeps the
+     "who guards the guards" liveness registry and the final-route fixtures in lockstep with the new
+     RM-13 / EP-S9 / EP-P12 / EP-U17 guard slices. EP-T20 made the registry-completeness invariant
+     fail closed on any canonical guard missing from a pinned epoch set; EP-T21 registered the RM-12
+     guard. Any guard added by the new slices must likewise be registered under a fresh pinned epoch
+     (disjoint from all earlier designations) or the completeness invariant will reject it. AUDIT
+     FIRST: if the invariant already fails closed on an unregistered guard and the final-route
+     fixtures still parse, record the audit and add nothing; test/tool-only, never writes lib/, no
+     dependency, no TLS change. No code touched. -->
+
+- [ ] EP-T22 Liveness + fixture registration for the final-route guard set: when the RM-13 / EP-S9 /
+      EP-P12 / EP-U17 slices add guard files, register each in `canonicalGuardFiles` under a fresh
+      pinned epoch set (disjoint from epT12Initial / epT14..epT21 / epU16 / epM5 / epS2) with length
+      and pairwise-disjointness pin assertions, keeping the EP-T20 registry-completeness invariant
+      green; and confirm the no-WebView final-route fixtures (EP-T1/EP-T4) still parse and remain
+      reachable from verify.yml's whole-tree `flutter test --coverage`. AUDIT FIRST: if the
+      completeness invariant already fails closed on an unregistered guard and the fixtures already
+      parse, record the audit and add nothing; RED→GREEN by emptying/removing a temp-scan guard.
+      Test/tool-only, no lib/, no dependency, no production TLS change.
+      Dept: rf-tooling
+      Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues),
+              with RED→GREEN proof (unregistered/emptied/test-less/CI-de-invoked → violation; intact →
+              clean); writes limited to `test/tool/guard_suite_liveness_test.dart` + `test/fixtures/**`;
+              `git diff --exit-code -- pubspec.yaml pubspec.lock`; no lib/, no WebView/protocol import,
+              no production TLS change.
+
 <!-- rf-ideate split 2026-11-21 22:03 UTC: a FRESH, machine-checkable "who guards the guards"
      liveness gap in the blocked #009/#021 epic, CONFIRMED by direct audit (not speculative).
      EP-T19 pinned canonicalGuardFiles to 34 and added epT19AddedGuards; since then EP-M6 added
