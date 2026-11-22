@@ -13890,3 +13890,22 @@
 **Next:** Push `main` (never force-push); await the next `rf-platform-check` verdict before any further merge; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-S14)
+
+**Done:**
+- FEATURE — EP-S14 (test-only, dependency-free, TLS-safe): added `test/features/kvm/kvm_service_zero_usable_console_agreement_test.dart` (8 tests) pinning cross-surface agreement for WELL-FORMED zero-usable managers. In-temp 5-manager `/Managers`: MgrEmpty (no blocks), MgrDisabled (all-disabled, URI-less), MgrUnsupported (HTML5-only unsupported type, URI-less), MgrMalformed (all-malformed blocks) interleaved with a healthy secure-HTTPS sibling at both member positions. Pins each manager surfaced exactly once on the capability surface (RS-6/RS-8 identity), each zero-usable capability discovery-only/non-launchable (`supported=false`, `uri=null`, no secure/HTTP target), no launchable console card or phantom target for a zero-usable manager, `fetchCapability(id)` field-for-field agreement with `fetchCapabilities()`, a deterministic secure external-browser Primary on the healthy sibling stable across positions, and unknown/blank ids never resolving.
+- AUDIT FIRST: both surfaces already share `KvmService._fetchManagerBodies()` with one walk; the capability factory emits one summary per manager and the console factory one card per well-formed block, so surfacing agreement holds by construction — no live divergence, characterization / regression lock, not churn. Distinct from EP-S13 (fetch FAILURE skip) and RS-7 (HOSTILE/malformed bodies).
+- Real-file RED: a one-sided `fetchCapabilities()` filter dropping a URI-less all-disabled manager → exactly 4 named failures (`+4 -4`, all cross-surface surfacing/agreement tests; the console-surface/primary/no-phantom/unknown-id tests GREEN), all 72 sibling service tests GREEN. Source restored byte-clean (SHA `653e64a6…` unchanged, 0 residue, empty `lib/` diff, 600-perm backup shredded) → 8/8 GREEN.
+- Queue `service.md` EP-S14 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed (next head EP-M7). Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. `flutter test --concurrency=4`: 2401 passed / 1 skipped (baseline 2389 +8 mine +4 from a concurrent rf-gate merge `51a61a7` mid-run). `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Emulator: SKIPPED (test-only, <7 days since last green 85/85 at 21:43). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Regression lock for a construction-time invariant, not a live fix or churn. Test-only change with an empty `lib/` diff and no dependency change. The whole-tree `dart format` findings are pre-existing gate-merge files, deliberately left untouched; my new file is format-clean. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept head EP-M7 (body `@odata.id` resource-path normalization agreement) — audit-first, RED→GREEN only on a genuine divergence, never churn; optionally register this new EP-S14 guard in the liveness registry under a fresh epoch (EP-T34). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
