@@ -13567,3 +13567,19 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads: EP-T29 (register the RM-17 guard in the liveness registry), EP-M4; EP-S12 / EP-P15 record-only audits.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-22 — agent:redfish-automation — #009/#021 (EP-T29)
+
+**Done:**
+- FEATURE (test/tool-only): EP-T29 guard-suite liveness registration of the RM-17 duplicate / case-variant console-block key-collision cross-factory agreement guard. AUDIT FIRST: the RM-17 guard (`test/features/kvm/kvm_key_collision_agreement_test.dart`, 7 tests) landed with RM-17, is live + reachable from verify.yml's whole-tree `flutter test --coverage`, but was absent from `canonicalGuardFiles` and every pinned epoch — deleting / emptying / test-stripping it stayed GREEN (CONFIRMED registry gap, no live divergence).
+- Extended `test/tool/guard_suite_liveness_test.dart`: +1 canonical path, pinned `epT29AddedGuards` epoch (length 1, pairwise-disjoint from all 22 earlier designations) in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test +1 temp-root RED→GREEN proof.
+- RED→GREEN: dropped only the canonical path (epoch kept) → exactly 3 named failures (`+45 -3`), other 45 GREEN; restored byte-clean (SHA `09fd936f…`, 0 residue, empty `lib/` diff, 600-perm backup shredded) → 48/48 GREEN.
+- Verify: targeted 48/48; `dart format` clean; analyze 0; full suite 2241 passed / 1 skipped (baseline 2239 +2); issues validate OK; diff --check clean; deps unchanged; emulator skipped (test/tool-only, <7 days since last green 85/85).
+
+**Decisions:**
+- Registration-only regression guard — no behaviour change, no production widget / `lib/` change, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. EP-T29 LANDED (`queues/tooling.md`). Both issues stay human-gated (platform WebView + BMC TLS validation).
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept head EP-M4 (RemoteConsole-only + explicit-disable parity); EP-S12 / EP-P15 record-only audits.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
