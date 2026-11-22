@@ -371,6 +371,48 @@ void main() {
     });
   });
 
+  group('KvmWebViewPolicy — client-certificate (mTLS) validation is never '
+      'bypassed', () {
+    test('production default always validates the client certificate', () {
+      expect(
+          KvmWebViewPolicy.productionDefault.bypassClientCertificateValidation,
+          isFalse);
+    });
+
+    test('test-only self-signed opt-in still validates the client certificate',
+        () {
+      // Tolerating the test BMC's untrusted SERVER leaf relaxes ONLY server
+      // leaf trust. It must never disable client-certificate (mutual TLS)
+      // validation or expose the client private key: doing so would let the
+      // privileged console session be opened with a missing/invalid client
+      // credential. This is a hard invariant, independent of the flag, TLS
+      // mode or console signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassClientCertificateValidation,
+          isFalse);
+    });
+
+    test('no policy configuration can bypass client-certificate validation', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // The server-side identity/key/status/anchor, handshake, cleartext and
+      // resolved-address invariants are independent of the client credential:
+      // the test-only opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+    });
+  });
+
   group('resolveRenderRoute — fallback works with the flag off', () {
     test('flag off routes valid HTTPS HTML5 to the external browser', () {
       expect(

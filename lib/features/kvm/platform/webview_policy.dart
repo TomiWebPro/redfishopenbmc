@@ -197,6 +197,34 @@ class KvmWebViewPolicy {
   /// anchors themselves. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassPlatformTrustStoreIntegrity => false;
 
+  /// Always `false`: client-certificate (mutual TLS) validation is NEVER
+  /// bypassed, not even by the test-only self-signed opt-in.
+  ///
+  /// When a BMC console requires mutual TLS, the embedded WebView must present
+  /// the configured client certificate, validate the connection against it and
+  /// keep that certificate's private key protected — never exported or exposed
+  /// to page JavaScript / a native bridge. The test-only self-signed opt-in
+  /// tolerates ONLY the test BMC's untrusted *server* leaf for the expected
+  /// host; it must never disable client-certificate validation, never accept a
+  /// missing/invalid/expired client certificate and never expose the client
+  /// private key. Otherwise the privileged console session could be opened with
+  /// a missing or attacker-chosen client credential.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that skips client
+  /// credential validation. It is distinct from every server-side certificate
+  /// check — hostname verification ([bypassHostnameVerification]) and pinning
+  /// ([bypassCertificatePinning]) bind the BMC's server identity/key,
+  /// revocation ([bypassCertificateRevocationCheck]) checks server certificate
+  /// status, and platform trust-store integrity
+  /// ([bypassPlatformTrustStoreIntegrity]) governs device-wide trust anchors —
+  /// and from the TLS floor ([bypassTlsProtocolFloor]), HTTPS-only transport
+  /// ([bypassHttpsOnlyTransport]) and validated-origin binding
+  /// ([bypassValidatedOriginBinding]) (the handshake, cleartext sockets and
+  /// resolved address): those govern the server / transport, whereas this box
+  /// governs the client credential. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassClientCertificateValidation => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
