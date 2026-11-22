@@ -13,6 +13,7 @@
 // no-private-network/loopback subresource egress (SSRF pivot),
 // no-remote-debugging/WebView-inspectability (active debug code),
 // no-service-worker/persistent-background-script (session-scoped execution),
+// no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload),
 // flag-off fallback, human sign-off) so a future edit cannot silently erase the
 // evidence boxes that gate that decision.
 //
@@ -82,6 +83,16 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'no-persistent-background-script',
     marker: 'persistent background script'
+  ),
+  (name: 'no-js-dialog-spoofing', marker: 'javascript dialog'),
+  (name: 'no-js-alert', marker: 'onjsalert'),
+  (name: 'no-js-confirm', marker: 'onjsconfirm'),
+  (name: 'no-js-prompt', marker: 'onjsprompt'),
+  (name: 'no-beforeunload-trap', marker: 'beforeunload'),
+  (name: 'js-dialog-ui-spoofing', marker: 'ui-spoofing'),
+  (
+    name: 'js-dialog-suppressed-or-labelled',
+    marker: 'suppressed or clearly attributed'
   ),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
@@ -301,6 +312,24 @@ void main() {
       expect(missing, contains('session-scoped-execution'));
       expect(missing, contains('unregister-at-teardown'));
       expect(missing, contains('no-persistent-background-script'));
+    });
+
+    test('RED: dropping the no-js-dialog/modal-spoofing box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutJsDialog = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'javascript dialog|onjsalert|onjsconfirm|onjsprompt|beforeunload|ui-spoofing|suppressed or clearly attributed')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutJsDialog);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-js-dialog-spoofing'));
+      expect(missing, contains('no-js-alert'));
+      expect(missing, contains('no-js-confirm'));
+      expect(missing, contains('no-js-prompt'));
+      expect(missing, contains('no-beforeunload-trap'));
+      expect(missing, contains('js-dialog-ui-spoofing'));
+      expect(missing, contains('js-dialog-suppressed-or-labelled'));
     });
 
     test('RED: dropping the no-native-bridge box fails closed', () {

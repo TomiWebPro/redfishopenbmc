@@ -330,6 +330,26 @@ flag stays off for that target.
       target. Verified per target (inspect the WebView configuration / settings,
       confirm Service Workers are disabled and cleared at teardown) before the
       flag is flipped.
+* [ ] **No JavaScript dialog / modal spoofing (alert / confirm / prompt /
+      beforeunload)** — the embedded WebView must not let attacker-influenced
+      console content present spoofed or blocking native-style modals: no
+      unlabelled `alert()` / `confirm()` / `prompt()` dialogs (Android
+      `WebChromeClient.onJsAlert` / `onJsConfirm` / `onJsPrompt`, WKWebView
+      `runJavaScriptAlertPanelWithMessage` / `runJavaScriptConfirmPanelWithMessage`
+      / `runJavaScriptTextInputPanelWithPrompt`) and no `beforeunload` handler
+      that traps the operator or blocks closing/navigating the console. Console
+      content is served by the BMC and is therefore attacker-influenced (a
+      compromised/spoofed BMC, or script running in the page): an unlabelled JS
+      dialog can imitate an OS or app credential/system prompt and trick the
+      operator into disclosing credentials, while a `beforeunload` loop can pin
+      the console frame and block teardown — a UI-spoofing / denial-of-control
+      surface wholly independent of TLS, hostname, origin, native-bridge,
+      file-access and device-permission checks. Every JavaScript dialog must be
+      suppressed or clearly attributed to the untrusted console origin, and
+      `beforeunload` must never block teardown, on every target. Verified per
+      target (inspect the WebView client / UIDelegate dialog callbacks and
+      confirm dialogs are denied or labelled and `beforeunload` is
+      non-blocking) before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
