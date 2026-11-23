@@ -14825,3 +14825,20 @@
 - Next rf-gate run: re-check `rf-platform-check` latest verdict first; `--no-ff` merge only a PASS branch, skip + report otherwise; NO-OP if no new commits. Builder continues audit-first dept heads; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — EP-S20 (#009/#021)
+
+**Done:**
+- FEATURE EP-S20 for open #009/#021: added `test/features/kvm/kvm_service_top_level_shape_agreement_test.dart` (2 tests) pinning the top-level `/Managers` DOCUMENT-SHAPE cross-surface agreement contract. AUDIT FIRST: `RedfishClient.getJson._asMap` normalizes every decoded root to a Map (bare list/scalar -> `{'value': ...}`, `null` -> `{}`) and both discovery surfaces share one `_fetchManagerBodies()` walk reading `Members`, so NO live divergence; the genuine gap was the root-shape MATRIX — EP-S12 only varied the `Members` VALUE inside a fixed root. 6 invalid roots fail closed to empty on both `fetchConsoles()`/`fetchCapabilities()` with no throw/phantom lookup; the spec-valid `{'Members': [...]}` root yields the same survivor set once on both surfaces with deterministic Primary and field-for-field `fetchCapability(id)` agreement. Test-only, dependency-free, TLS-safe.
+- Real-file RED: `root['Members']` -> `root['value']` in `kvm_service.dart:_fetchManagerBodies` under a 600-perm backup -> exactly 2 named failures (`+0 -2`: bare-list phantom survivors + Members-root survivor loss); restored byte-clean (SHA `653e64a63a52b8d2741a438daf7e77a0291c559393e5328877d41e5e8091ddd0` unchanged, 0 residue, empty `lib/` diff, backup shredded) -> 2/2 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2725 passed / 1 skipped (baseline 2723 +2 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool agreement guard closing a genuine unguarded input-dimension gap; no live divergence, no behaviour change, no product code per §5. New guard not yet epoch-registered in `guard_suite_liveness_test.dart` — deferred to next EP-T pass. No issue closed (#009/#021 stay human-gated). Both fresh heads audited out (EP-U27: viewer renders no chips; EP-P22: previously defeated). Never force-push, rewrite history, `git clean`, or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push). Register the new guard in the next EP-T liveness pass (EP-T44); AUDIT FIRST for a genuinely new unguarded seam, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
