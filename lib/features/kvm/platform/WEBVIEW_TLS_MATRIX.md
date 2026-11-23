@@ -727,6 +727,27 @@ flag stays off for that target.
       target (inspect the WebView form/navigation callback, confirm cross-origin
       form submissions and their POST bodies are blocked and autofill is off)
       before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassCrossOriginFormSubmission`,
+      always `false`): the test-only opt-in never bypasses cross-origin form
+      submission — every HTML form submission is confined to the approved
+      same-origin HTTPS console, no auto-submit or scripted `form.submit()` may
+      send console DOM data to a non-approved origin and form autofill of
+      console credentials stays disabled, in strict mode and with the flag both
+      off and on. The opt-in relaxes ONLY the test BMC's untrusted server leaf
+      for the expected host; it must never allow a `<form action>` POST body to
+      smuggle session tokens or KVM frames out of the trusted frame just to make
+      a console render or to debug it. This box governs the form-submission /
+      POST-body data channel, so it is distinct from origin / navigation
+      confinement (where the top-level frame may go), the outbound egress
+      allowlist (the destinations of the page's programmatic connections) and
+      private-network egress protection (the address class of subresources) —
+      those govern other navigation or request surfaces, not HTML form
+      submissions or their request bodies. It is also distinct from the strict
+      Referrer-Policy and log redaction (the app's own URL header and diagnostic
+      output) and every server-side certificate / TLS / transport check: those
+      govern the connection, its credentials and its other outputs, not the
+      form POST path. Verified per target before the flag is flipped.
 * [ ] **No arbitrary / drive-by file download (malicious APK / executable /
       payload-in-a-file install)** — the embedded WebView must not let
       attacker-influenced console content trigger a file download that escapes
