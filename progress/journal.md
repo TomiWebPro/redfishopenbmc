@@ -14313,3 +14313,20 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads: RM-11 / EP-P15 / EP-S8 / EP-T4 from the 06:31 split — audit-first, RED→GREEN only on a genuine divergence, never churn; register accumulating newly-landed guards in an EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:rf-gate — #009/#021 (sole-merger GATE)
+
+**Done:**
+- Sole-merger GATE: `rf-platform-check` run#11767 returned `SUCCESS` / explicit `CHECK: PASS` for the exact branch tip `a03b8de` (branch HEAD cross-checked unchanged `== a03b8de4b296a7af039dd555e6bf88660bcd4dfe` in the gate repo; net diff 4 allowlisted files, analyze 0, hardening-only always-`false` getter; tip authored 08:56 UTC, check started 09:43:23 UTC, 56.0 s, targeted 114/114 green). Merge-base `9bb5a4d` already in `main` via merge `9da2ce1`; exactly one branch-unique commit.
+- Merged `build/rf-platform` `a03b8de` into `main` via `--no-ff` (merge `c9f1072`, parents `745a6a0` / `a03b8de`, clean ort auto-merge). Added the RP-1 "no-HTTP-auth / login-form credential-prompt spoofing" acceptance box to `WEBVIEW_TLS_MATRIX.md` + evidence markers (`http-auth-never-bypassed` / `http-auth-policy-getter`) + 1 RED guard in `validation_evidence_checklist_guard_test.dart`, plus a hardening-only `bypassHttpAuthChallengeDenial => false` getter in `webview_policy.dart` with 3 policy tests. 4 allowlisted files, 149 insertions; no dependency change, no production-TLS weakening.
+
+**Verification:**
+- In-tree at `c9f1072` (tracked tree clean, no WIP — no new stash): `flutter analyze` 0 issues (No issues found!). Full `flutter test --coverage --concurrency=4`: 2535 passed / 1 skipped. All coverage gates PASS — overall 90.6% (6080/6711), scoped redfish+power+sensors 90.4% (2119/2345), kvm 97.6% (1357/1390), kvm-platform 97.6% (479/491), gate exit 0. `dart run tool/asset_guard.dart` OK; `dart run tool/unattended_guard.dart` OK; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; TLS-weakening + secret scan clean. DMTF 85-test emulator skipped (no lib-wire / fixture / tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:**
+- Merged ONLY because the verifier returned an explicit `CHECK: PASS` for the exact tip that was merged; a non-PASS verdict would have been a SKIP/NO-OP with no commits. Production change is hardening-only (always-`false` getter) — no bypass returns true, no credential prompt spoofed or challenge auto-answered, no TLS weakening. No force-push, history rewrite, `git clean`, or file deletion; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push this tracking commit (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: check `rf-platform-check` state first; merge only on a fresh explicit `CHECK: PASS` for the exact new tip. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
