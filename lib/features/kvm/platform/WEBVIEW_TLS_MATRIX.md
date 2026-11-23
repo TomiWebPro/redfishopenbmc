@@ -371,6 +371,28 @@ flag stays off for that target.
       approved console origin's own subresources through. Verified per target
       (inspect the WebView request-interception / content-blocking configuration
       and observed subresource destinations) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassPrivateNetworkEgressProtection`,
+      always `false`): the test-only opt-in never bypasses private-network egress
+      protection — the console WebView never lets a subresource request (fetch /
+      XHR / image / iframe / WebSocket / font / WebRTC candidate) reach loopback,
+      link-local (including the 169.254.169.254 cloud-metadata endpoint) or any
+      private network other than the approved console origin, in strict mode and
+      with the flag both off and on. The opt-in relaxes ONLY the test BMC's
+      untrusted server leaf for the expected host; it must never add a loopback /
+      link-local / private-network exception just to make a console render or to
+      debug it. This box governs the NETWORK DESTINATIONS that console subresource
+      requests may reach, so it is distinct from CSP / mixed-content enforcement
+      (which schemes / resource types the page may load), validated-origin binding
+      (the resolved address of the validated TOP-LEVEL origin at connect time),
+      the TLS floor and HTTPS-only transport (the handshake and cleartext sockets),
+      hostname verification / pinning / revocation / trust-store integrity /
+      client-certificate validation (certificate identity, key, status, device
+      anchors and the client credential), the strict Referrer-Policy (the app's
+      own outbound Referer header), sensitive URL / token log redaction
+      (diagnostic output), sensitive data at rest (on-disk persistence / screen
+      capture) and native bridge isolation (code injected into the page). Verified
+      per target before the flag is flipped.
 * [ ] **No referrer / URL-token leakage (strict Referrer-Policy)** — the embedded
       WebView must not leak the console URI — which may embed session tokens,
       credentials or BMC identity in its path, query or userinfo — to any other

@@ -413,6 +413,49 @@ class KvmWebViewPolicy {
   /// See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassNativeBridgeIsolation => false;
 
+  /// Always `false`: isolation of the console's subresource egress from local /
+  /// private networks is NEVER bypassed, not even by the test-only self-signed
+  /// opt-in.
+  ///
+  /// The embedded WebView must let attacker-influenced console content open no
+  /// subresource socket (fetch / XHR / `<img>` / `<iframe>` / WebSocket / font)
+  /// and emit no WebRTC candidate to loopback (`localhost`, `127.0.0.0/8`,
+  /// `::1`), link-local (`169.254.0.0/16`, notably the `169.254.169.254` cloud
+  /// metadata endpoint) or any private network (`10/8`, `172.16/12`,
+  /// `192.168/16`) other than the approved console origin. Console content is
+  /// served by the BMC and is therefore attacker-influenced: a page script could
+  /// otherwise scan the BMC management network, read cloud-metadata credentials
+  /// or probe loopback-only admin services from inside the trusted app — a
+  /// server-side-request-forgery (SSRF) / network-reconnaissance / metadata-theft
+  /// pivot. The approved console's own top-level URL is NOT restricted (a BMC on
+  /// a private address remains a valid launch target); only subresource
+  /// destinations are confined.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits local /
+  /// private-network subresource egress. Tolerating the test BMC's untrusted
+  /// server leaf relaxes ONLY that leaf's trust; it must never add a loopback /
+  /// link-local / private-network exception just to make a console render or to
+  /// debug it. It governs where the page's subresource requests may be SENT, so
+  /// it is distinct from every server-side certificate check — hostname
+  /// verification ([bypassHostnameVerification]), pinning
+  /// ([bypassCertificatePinning]), revocation ([bypassCertificateRevocationCheck])
+  /// and platform trust-store integrity ([bypassPlatformTrustStoreIntegrity]) —
+  /// the TLS floor and HTTPS-only transport ([bypassTlsProtocolFloor],
+  /// [bypassHttpsOnlyTransport]) (the handshake and cleartext sockets),
+  /// validated-origin binding ([bypassValidatedOriginBinding]) (the resolved
+  /// address of the validated TOP-LEVEL origin at connect time), client
+  /// certificate validation ([bypassClientCertificateValidation]) (the client
+  /// credential), the strict Referrer-Policy ([bypassStrictReferrerPolicy]) (the
+  /// app's own outbound `Referer` header), CSP / mixed-content enforcement
+  /// ([bypassMixedContentBlocking]) (which schemes / resource types the page may
+  /// load), sensitive URL / token log redaction ([bypassLogRedaction]) (the app's
+  /// diagnostic output), sensitive data at rest
+  /// ([bypassSensitiveDataAtRestProtection]) (on-disk persistence / screen
+  /// capture) and native bridge isolation ([bypassNativeBridgeIsolation]) (code
+  /// injected into the page). See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassPrivateNetworkEgressProtection => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
