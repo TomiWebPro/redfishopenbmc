@@ -14774,3 +14774,20 @@
 - Re-check `rf-platform-check` verdict first next gate cycle; merge only PASS, NO-OP otherwise. #021 / #009 stay human-gated on platform WebView + BMC TLS validation.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (RM-24 enablement-scalar coercion guard)
+
+**Done:**
+- FEATURE RM-24 for open #009/#021: added `test/features/kvm/kvm_enablement_scalar_coercion_agreement_test.dart` (35 tests). AUDIT FIRST found the three enablement readers are independent strict `== true` checks (no shared helper) that all fail closed on non-boolean scalars today, but no test drove a hostile non-boolean matrix through both `fromManager` factories + the OEM helper — a genuine unguarded cross-factory seam. Pins 15-value scalar matrix × both `ServiceEnabled`/`Enabled` keys for `serviceEnabled`/`supported`/`canOpenConsole`/`launchStrategy` agreement, OEM-path agreement across both factories + helper, absent-member control, no-throw on non-map/list values, and a source liveness pin against coercion. EP-P22 audited first and defeated (EP-P17 already pins encoded userinfo). Test-only, dependency-free, TLS-safe.
+- Real-file RED: `== 1` enablement coercion in `lib/features/kvm/models/kvm_capability.dart:451-453` `_blockEnabled` under a 600-perm backup → exactly 3 named failures (`+32 -3`: numeric-1 via both keys — capability flipped while console stayed fail-closed — plus source pin), 32 GREEN; restored byte-clean (SHA `53ab173201fb430fa47f73fb29b4b7e33622ca28cde0e5516c0e43407ca5195d` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 35/35 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2717 passed / 1 skipped (baseline 2678 +35 mine +4 concurrent rf-gate merge `7f6cbaf`); sibling model/capability suites 261/261; `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test-only regression guard closing a confirmed unguarded cross-factory seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). New guard deferred to the next EP-T liveness pass for epoch registration. Never force-push, rewrite history, `git clean`, or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push). Next: audit-first EP-U27 (dense chip set, ui) / EP-S20 (top-level `/Managers` shape, service); register the RM-24 guard in the next EP-T liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
