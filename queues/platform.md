@@ -16,22 +16,25 @@ platform validation evidence.
      on a genuine divergence, never churn. Test-only; the human WebView/TLS validation (EP-P1/P2/P4) stays gated
      and is NOT re-split. No code touched. -->
 
-- [ ] EP-P19 Query/fragment control + encoded-delimiter fail-closed cross-layer agreement: over a matrix of
-       otherwise-canonical secure-HTTPS connect URIs whose QUERY (`?x=…`) and FRAGMENT (`#…`) carry raw C0/C1
-       controls, CRLF, raw space and encoded delimiters (`%0A`/`%0D`/`%00`/`%25`) plus a clean control, pin that
-       `isSecureHttpsConsoleUri`, `planConsoleLaunch`, `allowsInAppNavigation` and the stale-flag TLS boundary ALL
-       agree — every hostile query/fragment target is uniformly fail-closed (no in-app eligibility, no self-signed,
-       null/non-copyable target, never navigable) while the clean control stays external-browser launchable — and
-       that `KvmConsole.launchPlan` reports the same route/target on the model side. AUDIT FIRST: EP-P11 pins
-       path/fragment control chars on the navigation gate in isolation and EP-P17's encoded-delimiter check is
-       authority-scoped; if all layers already share a whole-URI fail-closed core over the whole matrix, record the
-       audit and add nothing; RED→GREEN only on a genuine divergence, never churn. Test-only; writes limited to
-       `test/features/kvm/platform/**`; no WebView/protocol import, no URL opened, no dependency, no production TLS
-       weakening.
-       Dept: rf-platform
-       Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues), RED→GREEN proof only on
-               a genuine divergence; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no WebView/protocol
-               dependency, no URL opened, no production TLS weakening.
+- [x] EP-P19 LANDED 2026-11-23 (run `auto: FEATURE #009/#021 EP-P19 query/fragment control fail-closed cross-layer agreement guard + RED->GREEN tests`, analyze 0 / 2498 passed / 1 skipped; +3 new tests) — Query/fragment control + encoded-delimiter fail-closed cross-layer agreement. AUDIT FIRST: all layers already share the whole-URI fail-closed `_controlSafeTrimmedUri` core — `_rawUriForbiddenChars` (raw C0/C1, CRLF, raw space anywhere) and `_encodedControlOctet` (valid `%00`–`%1F`/`%7F` escapes, applied to the WHOLE URI, unlike the deliberately authority-scoped encoded-DIFFERENT rules) — so a query/fragment control matrix is uniformly fail-closed by construction; no live divergence. Genuine unguarded seam: no test drove raw controls, CRLF, raw space and pct-encoded control octets in the QUERY (`?x=…`) / FRAGMENT (`#…`) through all four layers at once (EP-P11 covers path/fragment controls on the navigation gate in isolation; the encoded-control rule is only tested on authority/path shapes), nor pinned the legal encoded space/percent/delimiter query controls that must stay launchable. Added `test/features/kvm/platform/query_fragment_control_fail_closed_agreement_test.dart` (3 tests): 16 hostile cases (8 raw + 8 encoded controls in query/fragment) + 5 clean controls, pinning per-URI `Uri.tryParse` same-origin differential, classifier + `isControlSafeConsoleUri`, production plan (copyOnly/null target/no self-signed), stale-flag TLS boundary under test-only opt-in, navigation gate both directions, and `KvmConsole.hasSecureLaunchUri`/`launchPlan` field-for-field agreement. Real-file RED: scoped the shared `_encodedControlOctet` check to the AUTHORITY only (the plausible 'consistency' refactor matching the authority-scoped encoded-delimiter rules) under a 600-perm backup → the hostile-matrix test failed on the first query-encoded case (`?x=%00` classified secure), clean-control test stayed GREEN; source restored byte-clean (SHA `74887e619129209ef622400a3396edc2ef76bfc8694ddaf96574e4126962ee01` unchanged, empty `lib/` diff, backup shredded) → 3/3 targeted + 420/420 sibling platform suites GREEN. Test-only, no `lib/`, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening.
+       Original item: EP-P19 Query/fragment control + encoded-delimiter fail-closed cross-layer agreement: over a matrix of
+              otherwise-canonical secure-HTTPS connect URIs whose QUERY (`?x=…`) and FRAGMENT (`#…`) carry raw C0/C1
+              controls, CRLF, raw space and encoded delimiters (`%0A`/`%0D`/`%00`/`%25`) plus a clean control, pin that
+              `isSecureHttpsConsoleUri`, `planConsoleLaunch`, `allowsInAppNavigation` and the stale-flag TLS boundary ALL
+              agree — every hostile query/fragment target is uniformly fail-closed (no in-app eligibility, no self-signed,
+              null/non-copyable target, never navigable) while the clean control stays external-browser launchable — and
+              that `KvmConsole.launchPlan` reports the same route/target on the model side. AUDIT FIRST: EP-P11 pins
+              path/fragment control chars on the navigation gate in isolation and EP-P17's encoded-delimiter check is
+              authority-scoped; if all layers already share a whole-URI fail-closed core over the whole matrix, record the
+              audit and add nothing; RED→GREEN only on a genuine divergence, never churn. Test-only; writes limited to
+              `test/features/kvm/platform/**`; no WebView/protocol import, no URL opened, no dependency, no production TLS
+              weakening.
+              Dept: rf-platform
+              Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues), RED→GREEN proof only on
+                      a genuine divergence; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no WebView/protocol
+                      dependency, no URL opened, no production TLS weakening.
+
+
 
 <!-- rf-ideate split 2026-11-23 02:27 UTC: another machine-checkable slice of the still-open (human-gated)
      WebView/TLS closeout of #009/#021. Authority hostility, port, userinfo, scheme spelling and

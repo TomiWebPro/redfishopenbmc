@@ -14225,3 +14225,20 @@
 - Push this tracking commit (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: check `rf-platform-check` state first; merge only on a fresh explicit `CHECK: PASS` for the exact new tip. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-P19)
+
+**Done:**
+- FEATURE — EP-P19 (test-only, dependency-free, TLS-safe): added `test/features/kvm/platform/query_fragment_control_fail_closed_agreement_test.dart` (3 tests) pinning query/fragment control fail-closed agreement across all decision layers for #009/#021. AUDIT FIRST confirmed the whole-URI fail-closed core (`_rawUriForbiddenChars` for raw C0/C1/CRLF/space, `_encodedControlOctet` for pct-encoded C0/DEL applied to the whole URI) already classifies a query/fragment control matrix uniformly — no live divergence. Genuine unguarded seam: no test drove raw controls, CRLF, raw space and pct-encoded control octets in `?x=…`/`#…` through all four layers at once (EP-P11 covers path/fragment nav-gate controls in isolation; encoded controls only on authority/path), nor pinned the legal encoded space/percent/delimiter query controls that must stay launchable. 16 hostile + 5 clean cases pin the `Uri.tryParse` same-origin differential, classifier + `isControlSafeConsoleUri`, production plan, stale-flag TLS boundary, navigation gate both directions, and `KvmConsole.hasSecureLaunchUri`/`launchPlan` field-for-field agreement.
+- Real-file RED: scoped the shared `_encodedControlOctet` check to the authority only (plausible "consistency" refactor) under a 600-perm backup → hostile test failed on first query-encoded case (`?x=%00` classified secure), clean test GREEN; source restored byte-clean (SHA `74887e619129…` unchanged, empty `lib/` diff, backup shredded) → 3/3 targeted + 420/420 sibling platform suites GREEN. Queue `platform.md` EP-P19 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed. Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. Full `flutter test --concurrency=4`: 2498 passed / 1 skipped (baseline 2495 +3 mine). Targeted 3/3. `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Empty `lib/` diff. Emulator: SKIPPED (test-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Cross-layer characterization / regression guard, not a live fix or churn. Test-only change with empty `lib/` diff and no dependency change. Scoping the encoded-control rule to the authority (matching the other encoded-* rules) is the exact divergence class; it flips one query-encoded case RED while clean controls stay GREEN, proving non-vacuity and isolation. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept heads: RM-21 / EP-S17 / EP-U24 — audit-first, RED→GREEN only on a genuine divergence, never churn; register this new EP-P19 guard in a future EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
