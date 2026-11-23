@@ -764,6 +764,41 @@ class KvmWebViewPolicy {
   /// not the form POST path. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassCrossOriginFormSubmission => false;
 
+  /// Always `false`: the WebView's TLS certificate-error callback is NEVER
+  /// turned into a blanket accept, not even by the test-only self-signed opt-in.
+  ///
+  /// When the platform TLS stack rejects the BMC certificate for ANY reason —
+  /// expired, untrusted / self-signed on a production profile, hostname /
+  /// identity mismatch, revoked, or a weak signature — the embedded WebView's
+  /// certificate-error path must fail closed: Android
+  /// `WebViewClient.onReceivedSslError` must `cancel()` (never `proceed()`),
+  /// WKWebView / `URLSession` must cancel the challenge / reject the delegate,
+  /// and Dart `HttpClient.badCertificateCallback` must remain `false` on a
+  /// production profile. Console content is served by the BMC and is therefore
+  /// attacker-influenced: a single blanket-accept error handler would silently
+  /// defeat hostname verification, pinning, revocation and the TLS floor at
+  /// once, so the error-handling path is its own control surface. Tolerating
+  /// the test BMC's untrusted server leaf relaxes ONLY that leaf's trust,
+  /// through a scoped per-connection verifier bound to the expected console
+  /// host; it must never install a blanket `proceed()` /
+  /// `badCertificateCallback => true` just to make a console render or to
+  /// debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy whose error handler
+  /// accepts a rejected certificate. It governs the reaction path when
+  /// certificate validation FAILS, so it is distinct from the checks that
+  /// decide acceptance: hostname verification ([bypassHostnameVerification])
+  /// and pinning ([bypassCertificatePinning]) bind server identity/key,
+  /// revocation ([bypassCertificateRevocationCheck]) checks certificate status,
+  /// platform trust-store integrity ([bypassPlatformTrustStoreIntegrity])
+  /// governs device-wide anchors, client-certificate validation
+  /// ([bypassClientCertificateValidation]) governs the client credential, and
+  /// the TLS floor ([bypassTlsProtocolFloor]) and HTTPS-only transport
+  /// ([bypassHttpsOnlyTransport]) govern the handshake and cleartext sockets.
+  /// See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassSslErrorRejection => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
