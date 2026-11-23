@@ -16,7 +16,9 @@
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload),
 // no-cross-origin-form-submission (form action POST / auto-submit / post body
 // exfiltration), no-arbitrary/drive-by file download (APK / executable /
-// auto-open / content-disposition), no-cross-site-cookie/session-leak (SameSite /
+// auto-open / content-disposition; hard configuration-independent invariant;
+// the opt-in never permits a console-controlled download or drive-by install to
+// land a runnable file on the device), no-cross-site-cookie/session-leak (SameSite /
 // third-party-cookie / HttpOnly), no-tapjacking/UI-overlay/clickjacking
 // (CWE-1021 obscured-window touch), no-TLS-version/cipher-suite downgrade
 // (TLS 1.2+ floor, no weak/export suites, no silent fallback),
@@ -247,6 +249,14 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-download-listener-open', marker: 'setdownloadlistener'),
   (name: 'no-malicious-apk-executable', marker: 'apk'),
   (name: 'no-auto-open-download', marker: 'auto-open'),
+  (
+    name: 'arbitrary-download-never-bypassed',
+    marker: 'never bypasses arbitrary / drive-by file download'
+  ),
+  (
+    name: 'arbitrary-download-policy-getter',
+    marker: 'bypassarbitraryfiledownload'
+  ),
   (name: 'no-remote-debugging', marker: 'remote debugging'),
   (name: 'no-webcontents-debugging', marker: 'webcontentsdebuggingenabled'),
   (name: 'no-webview-inspectable', marker: 'inspectable'),
@@ -791,6 +801,22 @@ void main() {
       expect(missing, contains('no-download-listener-open'));
       expect(missing, contains('no-malicious-apk-executable'));
       expect(missing, contains('no-auto-open-download'));
+    });
+
+    test(
+        'RED: dropping the arbitrary-download hard-invariant box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutDownloadInvariant = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses arbitrary / drive-by file download|bypassarbitraryfiledownload')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutDownloadInvariant);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('arbitrary-download-never-bypassed'));
+      expect(missing, contains('arbitrary-download-policy-getter'));
     });
 
     test('RED: dropping the no-cross-site-cookie/session-leak box fails closed',
