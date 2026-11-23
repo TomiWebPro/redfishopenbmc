@@ -142,6 +142,38 @@ flag stays off for that target.
       (the client credential): those decide whether a certificate/connection
       is acceptable, whereas this box governs the fail-closed handler when any
       of them rejects. Verified per target before the flag is flipped.
+* [ ] **Top-level navigation confinement (never bypassed)** — the WebView's
+      top-level frame must never navigate off the approved same-origin HTTPS
+      console: no navigation (Android `WebViewClient.shouldOverrideUrlLoading`,
+      WKWebView `decidePolicyForNavigationAction`) to a different origin, a
+      plaintext `http://` page, a non-http(s) scheme (deep link / `javascript:`)
+      or a spoofed/phishing page, and no escape via a pop-up / secondary window,
+      a scripted `window.location`, a `<meta refresh>` or an iframe break-out.
+      Console content is served by the BMC and is therefore attacker-influenced:
+      without confinement an attacker could redirect the privileged console
+      frame to a look-alike login page and harvest the operator's BMC
+      credentials or session token, downgrade the load to cleartext, or hand
+      the session to another origin. Verified per target (attempt cross-origin,
+      plaintext, non-http(s) and scripted/pop-up navigations; observe the frame
+      stays on the approved console with the flag both off and on) before the
+      flag is flipped. This is a hard, configuration-independent invariant that
+      a future WebView consumer can consult
+      (`KvmWebViewPolicy.bypassTopLevelNavigationConfinement`, always `false`):
+      the opt-in never bypasses top-level navigation confinement — the frame is
+      confined to the approved console origin in strict mode and with the flag
+      both off and on. The test-only self-signed opt-in relaxes ONLY the test
+      BMC's untrusted server leaf for the expected host, through a scoped
+      per-connection verifier; it must never permit the frame to navigate away
+      just to make a console render or to debug it. This box governs where the
+      top-level frame may go, so it is distinct from the outbound egress
+      allowlist (destinations of programmatic connections), private-network
+      egress (address class of subresources), cross-origin form submission (the
+      form POST body channel), CSP / mixed-content blocking (which subresources
+      the page may load), HTTPS-only transport (cleartext sockets),
+      validated-origin binding (the resolved address at connect time) and the
+      strict Referrer-Policy (the app's outbound `Referer` header): those govern
+      connections, requests, outputs or the initial address, not navigation of
+      the top-level frame. Verified per target before the flag is flipped.
 * [ ] **Hostname verification (never bypassed by the opt-in)** — even under the
       test-only self-signed acceptance path, the certificate's identity is still
       matched against the console's hostname. Accepting a self-signed leaf must

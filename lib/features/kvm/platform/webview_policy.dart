@@ -799,6 +799,46 @@ class KvmWebViewPolicy {
   /// See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassSslErrorRejection => false;
 
+  /// Always `false`: the console frame's top-level navigation is NEVER allowed
+  /// off the approved same-origin HTTPS console, not even by the test-only
+  /// self-signed opt-in.
+  ///
+  /// The embedded WebView must confine the TOP-LEVEL frame to the approved
+  /// console origin: no navigation (Android `WebViewClient.
+  /// shouldOverrideUrlLoading`, WKWebView `decidePolicyForNavigationAction`)
+  /// to a different origin, a plaintext `http://` page, a non-http(s) scheme
+  /// (deep link / `javascript:`), or a spoofed/phishing page; and no escape via
+  /// a pop-up / secondary window, a scripted `window.location`, a `<meta
+  /// refresh>` or an iframe break-out. Console content is served by the BMC and
+  /// is therefore attacker-influenced (a compromised/spoofed BMC or script
+  /// running in the page): without confinement an attacker could redirect the
+  /// privileged console frame to a look-alike login page and harvest the
+  /// operator's BMC credentials or session token, downgrade the load to
+  /// cleartext, or hand the session to a different origin — a credential /
+  /// session-theft and phishing surface. Tolerating the test BMC's untrusted
+  /// server leaf relaxes ONLY that leaf's trust, through a scoped per-connection
+  /// verifier bound to the expected console host; it must never let the frame
+  /// navigate away just to make a console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that relaxes
+  /// navigation confinement. It governs where the top-level frame may go, so
+  /// it is distinct from the outbound egress allowlist
+  /// ([bypassOutboundEgressAllowlist]) (the destinations of the page's
+  /// programmatic fetch / WebSocket / WebRTC connections), private-network
+  /// egress protection ([bypassPrivateNetworkEgressProtection]) (the address
+  /// class of subresources), cross-origin form submission
+  /// ([bypassCrossOriginFormSubmission]) (the form POST body channel), CSP /
+  /// mixed-content blocking ([bypassMixedContentBlocking]) (which subresources
+  /// the page may load), HTTPS-only transport ([bypassHttpsOnlyTransport])
+  /// (cleartext sockets), validated-origin binding
+  /// ([bypassValidatedOriginBinding]) (the resolved address at connect time)
+  /// and the strict Referrer-Policy ([bypassStrictReferrerPolicy]) (the app's
+  /// outbound `Referer` header): those govern connections, requests, outputs
+  /// or the initial address, not navigation of the top-level frame. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassTopLevelNavigationConfinement => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
