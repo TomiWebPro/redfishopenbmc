@@ -700,6 +700,35 @@ class KvmWebViewPolicy {
   /// file/content reads by the remote page. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassLocalFileAccess => false;
 
+  /// Whether the console WebView may relax its outbound egress allowlist.
+  ///
+  /// Always `false`: the console page is served by the BMC and is therefore
+  /// attacker-influenced, so it must never open a programmatic network
+  /// connection (fetch / XHR / WebSocket / WebRTC / `sendBeacon` /
+  /// `EventSource` / media) to any origin other than the approved console
+  /// origin. A CSP `connect-src 'self'` allowlist plus WebView request
+  /// interception confine every such connection; this is a covert-channel /
+  /// cross-origin data-exfiltration surface (KVM frames, session tokens,
+  /// credentials, managed-host inventory leaking to an attacker-controlled
+  /// external host, or a command-and-control channel) wholly independent of
+  /// TLS, hostname, navigation and subresource-address-class checks.
+  ///
+  /// This is a hard, configuration-independent invariant that a future WebView
+  /// consumer can consult: the test-only opt-in relaxes ONLY the test BMC's
+  /// untrusted server leaf for the expected host and can never let console
+  /// content connect to a non-approved origin — not for rendering, not for
+  /// debugging. It is distinct from private-network egress protection
+  /// ([bypassPrivateNetworkEgressProtection]) (the destination ADDRESS CLASS —
+  /// loopback / link-local / private LAN — of subresources), mixed-content
+  /// blocking ([bypassMixedContentBlocking]) (framing rules and cleartext
+  /// subresources), top-level navigation confinement (where the frame may
+  /// go), cross-origin form submission (the `<form>` POST path) and the strict
+  /// Referrer-Policy ([bypassStrictReferrerPolicy]) (the app's own outbound
+  /// `Referer` header): those govern other connection, request or output
+  /// surfaces, not the destinations of the page's programmatic connections.
+  /// See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassOutboundEgressAllowlist => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
