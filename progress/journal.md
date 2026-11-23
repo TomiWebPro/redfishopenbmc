@@ -14927,3 +14927,20 @@
 - Push the single commit (never force-push). AUDIT FIRST for a genuinely new unguarded seam from the fresh dept heads (RM-25 non-integer session-limit, EP-P23 degenerate hierarchical URI, EP-S21 hostile OEM console shapes, EP-U28 RTL-locale rendering), never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (RM-25)
+
+**Done:**
+- FEATURE RM-25 for open #009/#021: added `test/features/kvm/kvm_session_limit_coercion_agreement_test.dart` (30 tests) driving a hostile non-integer `MaxConcurrentSessions` matrix through BOTH `KvmConsole.fromManager` and `KvmCapability.fromManager` plus the shared `kvmSessionLimit` helper, pinning helper == console `maxConcurrentSessions` == capability `maxSessions` field-for-field (never negative/fractional/overflow, no throw), across Graphical/Serial/RemoteConsole blocks and a three-block coexisting-limit control, plus a source-liveness pin that both factories keep delegating to the shared helper. AUDIT FIRST confirmed the helper is pinned in isolation and valid encodings are pinned at the render layer, but no test drove a hostile non-integer matrix through both factories at once — a genuine unguarded cross-factory regression seam, no live divergence, no behaviour change, not churn.
+- Real-file RED: added a one-sided numeric coercion to `kvm_models.dart:_fromBlock` under a 600-perm backup → exactly 8 named failures (`+22 -8`: fractional/negative/>2^53 desync + three block-type loops + source-liveness pin), 22 GREEN; source restored byte-clean (SHA `63e441141f07cf12f01b7412b198c0a2f296ab7dea632c2fc910af118196557f`, 0 residue, empty diff, backup shredded) → 30/30 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2773 passed / 1 skipped (baseline 2743 +30 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test-only cross-factory regression guard closing a genuine unguarded seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). Never force-push, rewrite history, `git clean`, or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push). AUDIT FIRST for a genuinely new unguarded seam (EP-P23 degenerate hierarchical URI, EP-S21 hostile OEM console shapes, EP-U28 RTL-locale rendering), never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
