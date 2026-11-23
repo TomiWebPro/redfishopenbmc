@@ -680,6 +680,50 @@ void main() {
     });
   });
 
+  group('KvmWebViewPolicy — cross-site cookie isolation is never bypassed', () {
+    test('production default never bypasses cross-site cookie isolation', () {
+      expect(KvmWebViewPolicy.productionDefault.bypassCookieIsolation, isFalse);
+    });
+
+    test('test-only self-signed opt-in still isolates console cookies', () {
+      // Tolerating the test BMC's untrusted SERVER leaf relaxes ONLY server leaf
+      // trust. It must never relax Secure/HttpOnly/SameSite scoping, permit
+      // third-party cookies, allow script reads of the session cookie via
+      // document.cookie, or share the console cookie jar with the system browser
+      // — any of which hands the operator's privileged session to an attacker.
+      // This is a hard invariant, independent of the flag, TLS mode or signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassCookieIsolation, isFalse);
+    });
+
+    test('no policy configuration can bypass cross-site cookie isolation', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassCookieIsolation, isFalse);
+      expect(enabledSelfSigned.bypassCookieIsolation, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Every other server/transport/client-credential/referrer/page-content/
+      // diagnostic/persistence/bridge/egress invariant is independent of cookie
+      // isolation: the opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.bypassStrictReferrerPolicy, isFalse);
+      expect(enabledSelfSigned.bypassMixedContentBlocking, isFalse);
+      expect(enabledSelfSigned.bypassLogRedaction, isFalse);
+      expect(enabledSelfSigned.bypassSensitiveDataAtRestProtection, isFalse);
+      expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
+      expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
+    });
+  });
+
   group('resolveRenderRoute — fallback works with the flag off', () {
     test('flag off routes valid HTTPS HTML5 to the external browser', () {
       expect(
