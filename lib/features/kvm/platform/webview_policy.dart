@@ -375,6 +375,44 @@ class KvmWebViewPolicy {
   /// persistence or screen capture. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassSensitiveDataAtRestProtection => false;
 
+  /// Always `false`: isolation from an injected native JavaScript bridge /
+  /// script-message surface is NEVER bypassed, not even by the test-only
+  /// self-signed opt-in.
+  ///
+  /// The embedded WebView must render the remote BMC console with NO native
+  /// bridge or message handler injected into the page — no
+  /// `addJavascriptInterface`, `WKScriptMessageHandler`,
+  /// `WebMessageListener`/`addWebMessageListener`, `WebMessageChannel`, or any
+  /// app-controlled `window.*` object exposed to it. Console content is served
+  /// by the BMC and is therefore attacker-influenced (a compromised/spoofed BMC
+  /// or script running in the page): any exposed bridge is a direct
+  /// remote-code-execution path from that content into the host app. Tolerating
+  /// the test BMC's untrusted server leaf relaxes ONLY that leaf's trust; it
+  /// must never add a bridge or message handler just to make a console render
+  /// or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that injects a
+  /// native bridge. It governs the code-execution surface exposed to the remote
+  /// page, so it is distinct from every server-side certificate check —
+  /// hostname verification ([bypassHostnameVerification]), pinning
+  /// ([bypassCertificatePinning]), revocation ([bypassCertificateRevocationCheck])
+  /// and platform trust-store integrity ([bypassPlatformTrustStoreIntegrity]) —
+  /// the TLS floor ([bypassTlsProtocolFloor]), HTTPS-only transport
+  /// ([bypassHttpsOnlyTransport]) and validated-origin binding
+  /// ([bypassValidatedOriginBinding]) (the handshake, cleartext sockets and
+  /// resolved address), client-certificate validation
+  /// ([bypassClientCertificateValidation]) (the client credential), the strict
+  /// Referrer-Policy ([bypassStrictReferrerPolicy]) (the app's outbound `Referer`
+  /// header), CSP / mixed-content enforcement ([bypassMixedContentBlocking])
+  /// (which subresources the page may load), sensitive URL / token log redaction
+  /// ([bypassLogRedaction]) (the app's diagnostic output) and sensitive data at
+  /// rest ([bypassSensitiveDataAtRestProtection]) (on-disk persistence and
+  /// screen capture) — those govern the connection, its credentials, its
+  /// requests or its other outputs, not native code injected into the page.
+  /// See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassNativeBridgeIsolation => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

@@ -449,8 +449,28 @@ flag stays off for that target.
       attacker-influenced (a compromised/spoofed BMC, or script running in the
       page): any exposed native bridge is a remote-code-execution path from that
       content into the host app, independent of TLS/origin checks. The console
-      must run with **no injected interfaces**. Verified per target (inspect the
-      WebView controller construction) before the flag is flipped.
+      must run with **no injected interfaces**.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassNativeBridgeIsolation`, always
+      `false`): the test-only opt-in never bypasses native bridge isolation — the
+      console WebView never injects a native JavaScript bridge / message handler
+      and never exposes an app-controlled `window.*` object to attacker-influenced
+      console content, in strict mode and with the flag both off and on. The opt-in
+      relaxes ONLY the test BMC's untrusted server leaf for the expected host; it
+      must never add a bridge or message handler just to make a console render or
+      to debug it. This box governs the code-execution surface exposed to the
+      remote page, so it is distinct from every server-side certificate check
+      (hostname verification, pinning, revocation, platform trust-store
+      integrity), the TLS floor, HTTPS-only transport and validated-origin
+      binding (the handshake, cleartext sockets and resolved address),
+      client-certificate validation (the client credential), the strict
+      Referrer-Policy (the app's outbound `Referer` header), CSP / mixed-content
+      enforcement (which subresources the page may load), sensitive URL / token
+      log redaction (the app's diagnostic output) and sensitive data at rest
+      (on-disk persistence and screen capture) — those govern the connection,
+      its credentials, its requests or its other outputs, not native code
+      injected into the page. Verified per target (inspect the WebView controller
+      construction) before the flag is flipped.
 * [ ] **No local file / content-provider access** — the embedded WebView must not
       enable local file or content access: no
       `setAllowFileAccess(true)` / `setAllowContentAccess(true)` /
