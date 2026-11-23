@@ -54,7 +54,11 @@
 // sensitive data-at-rest protection never bypassed (hard configuration-
 // independent invariant; the opt-in never persists console cache/storage or
 // exposes an unprotected background snapshot, so the privileged session is not
-// left on disk), flag-off fallback, human sign-off) so a future edit cannot silently erase the
+// left on disk), native bridge isolation never bypassed (hard configuration-
+// independent invariant; the opt-in never injects a native JS bridge / message
+// handler or exposes an app-controlled window.* object to attacker-influenced
+// console content, so no RCE path into the host app is opened), flag-off
+// fallback, human sign-off) so a future edit cannot silently erase the
 // evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
@@ -352,6 +356,11 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'data-at-rest-policy-getter',
     marker: 'bypasssensitivedataatrestprotection'
   ),
+  (
+    name: 'native-bridge-never-bypassed',
+    marker: 'never bypasses native bridge isolation'
+  ),
+  (name: 'native-bridge-policy-getter', marker: 'bypassnativebridgeisolation'),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -1007,6 +1016,21 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('data-at-rest-never-bypassed'));
       expect(missing, contains('data-at-rest-policy-getter'));
+    });
+
+    test('RED: dropping the no-native-bridge hard-invariant box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutNativeBridgeInvariant = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses native bridge isolation|bypassnativebridgeisolation')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutNativeBridgeInvariant);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('native-bridge-never-bypassed'));
+      expect(missing, contains('native-bridge-policy-getter'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
