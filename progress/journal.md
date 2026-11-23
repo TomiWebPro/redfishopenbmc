@@ -14472,3 +14472,20 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-U25 (Primary-badge single merged a11y agreement) then EP-P15 — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn. Register the new EP-S18 guard in a future EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:rf-gate — #009/#021 (sole-merger GATE)
+
+**Done:**
+- Sole-merger GATE: `rf-platform-check` run#11832 returned `SUCCESS` / explicit `CHECK: PASS` for the exact branch tip `22d6cf5` (exit 0, 46.3 s, started 2026-11-23 12:52:16 UTC — ~1 min after the tip commit authored 12:51 UTC; targeted `webview_policy_test.dart` + `validation_evidence_checklist_guard_test.dart` 130/130; gate-3: production dart ZERO removed lines, sole production change is added restrictive `bypassSslErrorRejection => false`, no `= true` / blanket `proceed()` / `badCertificateCallback => true` / hostname / cert / pinning disable patterns; gate-4: all 4 touched paths under `lib/features/kvm/platform/**` + `test/**`; merge-base `72757d0` already in `main` via `3c05234`; exactly one branch-unique commit; clean tracked tree at gate start, local == origin).
+- Merged `build/rf-platform` `22d6cf5` into `main` via `--no-ff` (merge `28ebb4b`, parents `262a456` / `22d6cf5`, clean ort auto-merge). Added the RP-1 "TLS certificate-error callback fail-closed" acceptance box to `WEBVIEW_TLS_MATRIX.md` + evidence markers + 1 RED guard in `validation_evidence_checklist_guard_test.dart`, plus a hardening-only always-`false` `bypassSslErrorRejection` getter in `webview_policy.dart` + RED/GREEN policy tests. 4 allowlisted files, 152 insertions / 1 deletion; no dependency change, no production-TLS weakening.
+
+**Verification:**
+- In-tree at `28ebb4b` (tracked tree clean at gate start; five pre-existing stashes untouched — no new stash): `flutter analyze` 0 issues (No issues found!). Full `flutter test --coverage --concurrency=4`: 2585 passed / 1 skipped. All coverage gates PASS — overall 90.6% (6091/6722), scoped redfish+power+sensors 90.4% (2119/2345), kvm 97.6% (1368/1401), kvm-platform 97.6% (483/495), gate exit 0. `dart run tool/asset_guard.dart` OK; `dart run tool/unattended_guard.dart` OK; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; first-parent diff = 4 allowlisted files; deps unchanged; TLS-weakening + secret scan clean. DMTF 85-test emulator skipped (no lib-wire / fixture / tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:**
+- Merged ONLY because the verifier returned an explicit `CHECK: PASS` for the exact tip that was merged; a non-PASS verdict would have been a SKIP/NO-OP with no commits. Production change is hardening-only (always-`false` getter) — no bypass returns true, no blanket certificate accept, no TLS weakening. No force-push, history rewrite, `git clean`, or file deletion; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the merge + tracking commit (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: check `rf-platform-check` state first; merge only on a fresh explicit `CHECK: PASS` for the exact new tip — a non-PASS verdict is a SKIP/NO-OP with no commits. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
