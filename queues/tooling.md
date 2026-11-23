@@ -18,7 +18,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      remainder; RED->GREEN only on a genuine gap, never churn. Pure test/tool, dependency-free, never
      writes `lib/`. No code touched. -->
 
-- [ ] EP-T39 Guard-suite liveness registration of the five newest agreement guards (EP-P20 backslash,
+- [x] EP-T39 LANDED 2026-11-23 (run `auto: FEATURE #009/#021 EP-T39 guard-suite liveness registration of the five newest agreement guards + RED->GREEN tests`, test/tool-only) — Guard-suite liveness registration of the five newest agreement guards (EP-P20 backslash,
        RM-22 confusable connect-type, EP-S18 same-tier Primary, EP-U25 Primary badge, EP-U22 bidi text):
        extend `test/tool/guard_suite_liveness_test.dart` so each unregistered guard is in
        `canonicalGuardFiles` and a fresh pinned epoch (disjoint from every earlier designation incl.
@@ -32,6 +32,27 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
        Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues),
                RED->GREEN proof only on a genuine gap; test/tool-only, never writes product code; no
                dependency, no WebView/protocol import, no production TLS weakening.
+      LANDED: AUDIT FIRST confirmed all five guards — EP-P20 `backslash_mixed_separator_agreement_test.dart`,
+               RM-22 `kvm_connect_type_confusable_agreement_test.dart`, EP-S18
+               `kvm_service_same_tier_primary_agreement_test.dart`, EP-U25
+               `kvm_card_primary_badge_single_merged_a11y_test.dart` and EP-U22
+               `kvm_card_bidi_display_text_a11y_agreement_test.dart` — are live + CI-reachable (verify.yml
+               whole-tree `flutter test --coverage`) yet absent from BOTH `canonicalGuardFiles` and every
+               pinned epoch (EP-T37 registered only the EP-P19/RM-21/EP-S17/EP-U24 quartet), so deleting /
+               emptying / test-stripping any of them stayed GREEN — a genuine "who guards the guards" gap,
+               no live divergence, not churn. Extended `test/tool/guard_suite_liveness_test.dart`: +5
+               canonical paths, pinned `epT39AddedGuards` epoch (length 5, pairwise-disjoint from all 27
+               earlier designations incl. EP-T37) in `allDesignatedGuards` + EP-T20 completeness arithmetic,
+               +1 containment/disjointness pin test +1 temp-root RED->GREEN proof (deleted / emptied /
+               test-stripped -> violation, intact -> clean) for each. Real-file RED: dropped only the RM-22
+               canonical path (epoch kept) under a 600-perm backup -> exactly `+59 -3` (EP-T39 pin, EP-T20
+               completeness, EP-T39 temp-root liveness), the other 59 GREEN; source restored byte-clean (SHA
+               `8d6957783bbc5e720bedce32e447002d87f91f9ecb882b1680988604bff02e2f` unchanged, 0 residue, backup
+               shredded) -> 62/62 targeted GREEN. test/tool-only, empty `lib/` diff, deps unchanged; analyze 0;
+               issues validate OK; diff --check clean; emulator skipped (test/tool-only, <7 days since last green
+               85/85); no WebView/protocol import, no URL opened, no production TLS weakening. NOTE: the EP-U18
+               guard (`kvm_copy_only_browser_open_route_agreement_test.dart`) is also still unregistered —
+               deferred to a future EP-T-style liveness pass (out of EP-T39's five-item scope).
 
 <!-- rf-ideate split 2026-11-23 10:35 UTC: another concrete "who guards the guards" gap in the still-open
      #009/#021 epic. EP-T31 pins all four coverage gates are WIRED into CLI+CI and EP-T34 pins the

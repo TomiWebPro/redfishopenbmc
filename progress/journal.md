@@ -14577,3 +14577,20 @@
 - Push the merge + tracking commit (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: check `rf-platform-check` state first; merge only on a fresh explicit `CHECK: PASS` for the exact new tip — a non-PASS verdict is a SKIP/NO-OP with no commits. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-T39)
+
+**Done:**
+- FEATURE EP-T39 for open #009/#021: AUDIT FIRST confirmed a concrete "who guards the guards" gap — the five newest agreement guards (EP-P20 backslash/mixed-separator, RM-22 confusable connect-type, EP-S18 same-tier Primary, EP-U25 Primary badge, EP-U22 bidi display text) are live + CI-reachable (verify.yml whole-tree `flutter test --coverage`) but absent from BOTH `canonicalGuardFiles` and every pinned epoch, so deleting / emptying / test-stripping any stayed GREEN. Extended `test/tool/guard_suite_liveness_test.dart`: +5 canonical paths, pinned `epT39AddedGuards` epoch (length 5, pairwise-disjoint from all 27 earlier designations incl. EP-T37) in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation, intact → clean) per guard. Test/tool-only, dependency-free, TLS-safe.
+
+**Verification:**
+- Real-file RED: dropped only the RM-22 canonical path (epoch kept) under a 600-perm backup → exactly 3 named failures (`+59 -3`: EP-T39 pin, EP-T20 completeness, EP-T39 temp-root liveness), other 59 GREEN; source restored byte-clean (SHA `8d6957783bbc5e720bedce32e447002d87f91f9ecb882b1680988604bff02e2f` unchanged, 0 residue, backup shredded) → 62/62 targeted GREEN.
+- `dart format --output=none --set-exit-if-changed` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2615 passed / 1 skipped (baseline 2613 +2); emulator skipped (test/tool-only, <7 days since last green 85/85); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Registration guard at a genuine unguarded registry seam; no live divergence, no behaviour change; test/tool-only, no product code per §5. RED proof mutates only one canonical registration entry, restored byte-clean. Never force-push, rewrite history, `git clean`, or delete user files; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-U26 / EP-P21 / RM-23 / EP-S19 — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn; register the still-unregistered EP-U18 guard in a future EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
