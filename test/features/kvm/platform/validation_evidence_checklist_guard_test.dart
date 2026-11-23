@@ -73,6 +73,9 @@
 // independent invariant; the opt-in never grants geolocation / camera /
 // microphone / clipboard / notification / Bluetooth / NFC / download capability
 // or auto-answers a permission prompt for attacker-influenced console content),
+// no-http-auth / login-form credential-prompt spoofing (hard configuration-
+// independent invariant; the opt-in never presents a spoofed native auth prompt
+// nor auto-answers an HTTP-auth / login challenge with stored credentials),
 // flag-off fallback, human sign-off) so a future edit cannot silently erase the
 // evidence boxes that gate that decision.
 //
@@ -404,6 +407,14 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'device-permissions-policy-getter',
     marker: 'bypassdevicepermissioncontrols'
+  ),
+  (
+    name: 'http-auth-never-bypassed',
+    marker: 'never bypasses http-auth / login-form challenge denial'
+  ),
+  (
+    name: 'http-auth-policy-getter',
+    marker: 'bypasshttpauthchallengedenial'
   ),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
@@ -1139,6 +1150,20 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('device-permissions-never-bypassed'));
       expect(missing, contains('device-permissions-policy-getter'));
+    });
+
+    test('RED: dropping the no-http-auth prompt-spoofing hard-invariant box '
+        'fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutHttpAuth = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses http-auth / login-form challenge denial|bypasshttpauthchallengedenial')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutHttpAuth);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('http-auth-never-bypassed'));
+      expect(missing, contains('http-auth-policy-getter'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

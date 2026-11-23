@@ -599,6 +599,57 @@ class KvmWebViewPolicy {
   /// granted to page content. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassDevicePermissionControls => false;
 
+  /// Always `false`: HTTP-auth / login-form credential-prompt spoofing is NEVER
+  /// enabled — every native authentication challenge is denied by default and
+  /// never auto-answered, not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let attacker-influenced console content — or
+  /// a cross-origin subresource returning 401 — induce the operator to enter BMC
+  /// credentials into a spoofed native authentication prompt, nor silently
+  /// auto-answer a challenge with stored credentials for an unintended origin:
+  /// no `onReceivedHttpAuthRequest` / `onReceivedLoginRequest` `proceed()` or
+  /// `useHttpAuthUsernamePassword()`, no `setHttpAuthUsernamePassword`
+  /// pre-seeding and no `WebStorage` autocomplete of console credentials, and on
+  /// iOS/macOS no `URLSession` / WKWebView authentication-challenge handler may
+  /// auto-answer with saved credentials or present an unlabelled dialog. Every
+  /// challenge is cancelled by default on every target, in strict mode and with
+  /// the flag both off and on. Tolerating the test BMC's untrusted server leaf
+  /// relaxes ONLY that leaf's trust; it must never present a spoofed credential
+  /// prompt or auto-answer a challenge just to make a console render or to debug
+  /// it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that auto-answers an
+  /// authentication challenge or shows an unlabelled credential prompt. It
+  /// governs the platform's native authentication-challenge path, so it is
+  /// distinct from the server-side certificate checks — hostname verification
+  /// ([bypassHostnameVerification]), pinning ([bypassCertificatePinning]),
+  /// revocation ([bypassCertificateRevocationCheck]) and platform trust-store
+  /// integrity ([bypassPlatformTrustStoreIntegrity]) — the TLS floor
+  /// ([bypassTlsProtocolFloor]), HTTPS-only transport
+  /// ([bypassHttpsOnlyTransport]) and validated-origin binding
+  /// ([bypassValidatedOriginBinding]) (the handshake, cleartext sockets and
+  /// resolved address), client-certificate validation
+  /// ([bypassClientCertificateValidation]) (the client TLS credential), the
+  /// strict Referrer-Policy ([bypassStrictReferrerPolicy]) (the app's outbound
+  /// `Referer` header), CSP / mixed-content enforcement
+  /// ([bypassMixedContentBlocking]) (which subresources the page may load),
+  /// sensitive URL / token log redaction ([bypassLogRedaction]) (diagnostic
+  /// output), sensitive data at rest ([bypassSensitiveDataAtRestProtection])
+  /// (on-disk persistence and screen capture), native bridge isolation
+  /// ([bypassNativeBridgeIsolation]) (code injected into the page),
+  /// private-network egress protection
+  /// ([bypassPrivateNetworkEgressProtection]) (the destinations of subresource
+  /// requests), cross-site cookie isolation ([bypassCookieIsolation]) (the
+  /// session cookie's attachment / script readability), WebView remote debugging
+  /// ([bypassWebViewRemoteDebugging]) (the debug / inspect surface) and device
+  /// capabilities ([bypassDevicePermissionControls]) (host capabilities granted
+  /// to page content): those govern the connection, its credentials, its
+  /// requests, its other outputs, the WebView's debug surface or the device
+  /// capabilities, not the native authentication-challenge path. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassHttpAuthChallengeDenial => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
