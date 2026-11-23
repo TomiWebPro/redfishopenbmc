@@ -14859,3 +14859,20 @@
 - Push the single commit (never force-push). AUDIT FIRST for a genuinely new unguarded seam, never churn; a future EP-T pass only if new guards land. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:rf-gate — MERGED build/rf-platform (no input-capture guard, check#12016)
+
+**Done:**
+- rf-gate sole-merger: `python3 ~/opencode-scheduler/scheduler.py state rf-platform-check` → latest run#12016 `SUCCESS exit=0`; explicit `CHECK: PASS` for exact branch tip `4b9b94c` (started 22:02:50 UTC, ~1 min after the 22:02:02 UTC builder commit; analyze 0, targeted 168 passed, no production-TLS weakening, 4 allowlisted paths). Merged `build/rf-platform` into `main` via `git merge --no-ff` → merge `ec27bba` (parents `c45a60a` / `4b9b94c`), clean ort auto-merge, 4 files (+197/-7): RP-1 no pointer-lock / keyboard-lock / fullscreen input-capture acceptance box + hard `bypassInputCaptureProtection == false` getter + RED guards.
+- Tracked in `FUTUREWORK.md` (new Gate line) + `automation-tracking.md` (rf-gate MERGED section).
+
+**Verification:**
+- Post-merge in-tree at `ec27bba`: `flutter analyze` 0 (No issues found!); full `flutter test --coverage --concurrency=4` GREEN — 2731 passed / 1 skipped; all four coverage gates PASS overall 90.6% (6100/6731) / redfish+power+sensors 90.4% (2119/2345) / kvm 97.7% (1377/1410) / kvm-platform 97.6% (492/504), exit 0; `asset_guard` OK; `unattended_guard` OK; `issues.py validate` OK; first-parent `git diff --check` clean; deps unchanged; TLS-weakening + secret scan clean. DMTF 85-test emulator skipped (doc + policy getter/test only, no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:**
+- Verdict source is the explicit `CHECK: PASS` in the latest check run, cross-checked against the unchanged branch tip and merge-base before merging. No issue closed (#009 P3 / #021 P2 stay human-gated on platform WebView + BMC TLS validation). No force-push, history rewrite, `git clean`, or file deletion; no new stash (clean tree); five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Next rf-gate run: re-check `rf-platform-check` latest verdict first; `--no-ff` merge only a PASS branch, skip + report otherwise; NO-OP if no new commits. Builder continues audit-first dept heads; close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
