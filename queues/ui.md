@@ -5,6 +5,31 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 22:45 UTC: another fresh, display-only, unblocked slice of the still-open
+     #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U22 pins bidi/RTL control
+     CHARACTERS inside display strings, EP-U23/EP-U25 pin long-name/Primary-badge text, but nothing
+     renders both real operator cards AND the viewer under a widget RTL `Directionality`
+     (`TextDirection.rtl`) locale: a physical-order chip reflow, a mirrored split a11y node or a
+     duplicate announcement could slip past every LTR-only surface suite. Display-only; the human-gated
+     WebView/TLS rendering stays gated and is NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine
+     divergence, never churn. No code touched. -->
+
+- [ ] EP-U28 RTL-locale rendering agreement across both cards and the viewer:
+       render one manager (secure graphical console + distinct connect-type chips + a connection URI)
+       through both real operator cards and `KvmConsoleViewerPage` under both `Directionality.ltr` and
+       RTL `Directionality` (`TextDirection.rtl`), at 320/800/1300 px, pinning that each surface keeps
+       exactly one merged `excludeSemantics` node with visible text == announced label, the chip/badge/
+       URI set is identical between LTR and RTL (logical order preserved, no chip loss or duplicate /
+       screen-reader-only node), the same control-safe URI is copied, and no surface overflows.
+       AUDIT FIRST: if the widgets already build labels from one model string in logical order under both
+       directions, record the audit and add nothing; RED->GREEN only on a genuine divergence, never
+       churn. Display-only; no WebView/protocol import, no URL opened, no production TLS weakening.
+       Dept: rf-ui
+       Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_capability_card_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/views/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+               pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 18:43 UTC: another fresh, display-only, unblocked slice of the still-open
      #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U24 pins ONE long unbreakable
      connect-type chip and EP-U11/EP-U23 pin card/viewer agreement for a small console set, but nothing

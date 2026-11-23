@@ -5,6 +5,34 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 22:45 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open #009/#021 manager-walk epic. EP-S12/S13/S17/S20 pin malformed `Members`/root shapes,
+     cross-surface manager-skip and transport agreement, RM-20 pins hostile OEM enrichment at the model
+     layer, but nothing drives HOSTILE OEM CONSOLE SHAPES (case-variant `KVM`/`WebConsole` keys, nested
+     maps, non-map/list values, empty/duplicate keys, numeric/bool leaves) through the real `/Managers`
+     walk and asserts `fetchConsoles()` / `fetchCapabilities()` / `fetchCapability(id)` agree
+     field-for-field and never throw. Pure read-only service characterization; the credentialed-Primary
+     decision (EP-S8) and RM-11 stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a
+     genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-S21 Hostile OEM console-shape cross-surface agreement across the `/Managers` walk:
+       over an in-temp mock client whose manager bodies carry hostile `Oem.*` console hints (mixed-case
+       `KVM`/`WebConsole`/vendor keys, nested `Oem` maps, non-map and list values, empty/duplicate keys,
+       numeric/bool leaves) plus a valid OEM console control, pin that `fetchConsoles()`,
+       `fetchCapabilities()` and `fetchCapability(id)` surface the same survivor set, agree on
+       `managerId` / connect-URI / enablement / limit field-for-field, never throw on a malformed OEM
+       value, and leave the valid control byte-exact — so no one-sided OEM assumption blanks one gated
+       surface while the other stays populated. AUDIT FIRST: if both discovery surfaces already share
+       one OEM enricher and derive identical flags by construction, record the audit and add nothing;
+       RED->GREEN only on a genuine divergence, never churn. Read-only service work; no wire/transport/
+       TLS change, no dependency, no WebView/protocol import, no behaviour decision folded in.
+       Dept: rf-service
+       Verify: `flutter test test/features/kvm/kvm_service_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/kvm_service.dart` + `test/features/kvm/**`; `git diff --exit-code --
+               pubspec.yaml pubspec.lock`; no wire/TLS change, no WebView/protocol import, no production
+               TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 18:43 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 manager-walk epic. EP-S12 pins malformed `Members` ENTRIES and RS-7 pins
      non-map manager BODIES, but nothing sweeps the TOP-LEVEL `/Managers` DOCUMENT SHAPE (bare JSON list,

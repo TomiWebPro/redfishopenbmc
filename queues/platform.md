@@ -6,6 +6,36 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 22:45 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open (human-gated) WebView/TLS closeout of #009/#021. Authority spellings, scheme spellings,
+     path/query/fragment controls, userinfo, ports, separators and IPv6 literals are heavily pinned
+     (EP-P9/P11/P13/P14/P16/P17/P18/P19/P20/P21/P22), but nothing sweeps DEGENERATE HIERARCHICAL URI
+     FORMS — opaque `https:opaque`, single-slash `https:/x`, triple-slash `https:///x`, empty-authority
+     `https://?q` / `https://#f`, scheme-only `https:` — through the fail-closed classifier,
+     `planConsoleLaunch`, `allowsInAppNavigation` and the model at once, where Dart `Uri.tryParse`
+     authority/route handling can disagree with the classifier. Test-only; the human WebView/TLS
+     validation (EP-P1/P2/P4) stays gated and is NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine
+     divergence, never churn. No code touched. -->
+
+- [ ] EP-P23 Degenerate hierarchical-URI form fail-closed cross-layer agreement:
+       over a matrix of otherwise-HTTPS values in degenerate hierarchical forms (opaque `https:opaque`,
+       single-slash `https:/x`, triple-slash `https:///x`, empty-authority-with-query `https://?q`,
+       empty-authority-with-fragment `https://#f`, scheme-only `https:`, plus a clean `https://host/x`
+       control), pin that the shared fail-closed classifier, `planConsoleLaunch`, `allowsInAppNavigation`
+       and the model `KvmConsole.hasSecureLaunchUri` / `launchPlan` ALL agree: every degenerate form fails
+       closed (no in-app eligibility, no self-signed, copyOnly/null target, never navigable) while the
+       clean control stays consistent on every layer, recording the per-value `Uri.tryParse` parse for
+       each case. AUDIT FIRST: if the shared whole-URI fail-closed core already classifies the whole
+       family uniformly by construction, record the audit and add nothing; RED->GREEN only on a genuine
+       divergence, never churn. Test-only; no WebView/protocol import, no URL opened, no production TLS
+       weakening.
+       Dept: rf-platform
+       Verify: `flutter test test/features/kvm/platform/ && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/platform/**` + `test/features/kvm/platform/**`; `git diff --exit-code --
+               pubspec.yaml pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS
+               weakening.
+
 <!-- rf-ideate split 2026-11-23 18:43 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open (human-gated) WebView/TLS closeout of #009/#021. Hostile authorities, scheme spellings,
      path/query/fragment controls, ports, separators and IPv6 literals are heavily pinned

@@ -4,6 +4,35 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 22:45 UTC: carves another fresh, machine-checkable, unblocked slice of
+     the still-open #009/#021 model epic (never-empty-well hostile-payload tolerance, MULTI_DEPT hard
+     rule 10). RM-24 pins hostile non-boolean SERVICE ENABLED scalars and RS-10/EP-U19 pin the session
+     limit at the service/render layers, but nothing drives a NON-INTEGER `MaxConcurrentSessions` scalar
+     (numeric string "3"/" 3 "/"3.0"/"-1"/"1e3"/huge, double 2.5/5.0, null, list, map) through BOTH
+     `fromManager` factories at once: a one-sided `kvmSessionLimit` coercion could flip
+     `maxConcurrentSessions`/`maxSessions` on one card while the other stays GREEN. Read-only model
+     characterization; the two deliberate behaviour decisions (RM-11 mixed regime, EP-S8 credentialed
+     Primary) stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence,
+     never churn. No code touched. -->
+
+- [ ] RM-25 Non-integer MaxConcurrentSessions scalar coercion agreement across both `fromManager` factories:
+       over a matrix of `Manager` bodies whose Graphical/Remote/Serial console blocks carry
+       `MaxConcurrentSessions` as hostile non-integer JSON scalars (numeric strings "3"/" 3 "/"3.0"/
+       "-1"/"1e3"/huge, doubles 2.5/5.0, null, list, map) plus a valid-integer `2`/`0` control, pin
+       that `KvmConsole.fromManager` and `KvmCapability.fromManager` (and the shared `kvmSessionLimit`
+       helper) resolve the identical fail-closed boundary value — never throw on a non-map/list value,
+       agree field-for-field on `maxConcurrentSessions`/`maxSessions` for the same body, and never emit
+       a negative/fractional/overflow session limit while the valid controls stay byte-exact.
+       AUDIT FIRST: if both factories already route every limit read through one shared helper and
+       derive the same value, record the audit and add nothing; RED->GREEN only on a genuine divergence,
+       never churn. Read-only model work; no wire/transport/TLS change, no dependency, no WebView/protocol
+       import, no behaviour decision folded in.
+       Dept: rf-model
+       Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/models/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+               pubspec.lock`; no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 18:43 UTC: carves another fresh, machine-checkable, unblocked slice of
      the still-open #009/#021 model epic (never-empty-well malformed-payload tolerance, MULTI_DEPT hard
      rule 10). RM-4/RM-5/RM-15/RM-18/RM-19/RM-20/RM-21/RM-22/RM-23 pin control-safety, query/fragment,
