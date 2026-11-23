@@ -729,6 +729,41 @@ class KvmWebViewPolicy {
   /// See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassOutboundEgressAllowlist => false;
 
+  /// Always `false`: cross-origin form submission / data exfiltration is NEVER
+  /// bypassed, not even by the test-only self-signed opt-in.
+  ///
+  /// The console page is served by the BMC and is therefore attacker-influenced,
+  /// so the embedded WebView must never let it exfiltrate operator credentials,
+  /// session tokens or KVM frame data through an HTML form: no `<form action>`
+  /// (GET query or POST body) targeting any origin other than the approved
+  /// same-origin HTTPS console, no auto-submit-on-load or scripted
+  /// `form.submit()` that silently sends console DOM data to an attacker origin,
+  /// and no browser autofill of saved console credentials into an
+  /// attacker-controlled form. A form is a distinct navigation and data channel
+  /// from a link's top-level navigation, a subresource fetch and a programmatic
+  /// connection: a `POST` carries a body that can smuggle session tokens or KVM
+  /// frames out of the trusted frame without any visible URL change. Tolerating
+  /// the test BMC's untrusted server leaf relaxes ONLY that leaf's trust; it
+  /// must never permit a cross-origin form submission just to make a console
+  /// render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits a form
+  /// to send privileged console data to a non-approved origin. It governs the
+  /// form-submission / POST-body data channel, so it is distinct from origin /
+  /// navigation confinement (where the top-level frame may go), the outbound
+  /// egress allowlist ([bypassOutboundEgressAllowlist]) (the destinations of
+  /// the page's programmatic fetch / WebSocket / WebRTC connections) and
+  /// private-network egress protection ([bypassPrivateNetworkEgressProtection])
+  /// (the address class of subresources) — those govern other navigation or
+  /// request surfaces, not HTML form submissions or their request bodies. It is
+  /// also distinct from the strict Referrer-Policy ([bypassStrictReferrerPolicy])
+  /// and log redaction ([bypassLogRedaction]) (the app's own URL header and
+  /// diagnostic output) and every server-side certificate / TLS / transport
+  /// check: those govern the connection, its credentials and its other outputs,
+  /// not the form POST path. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassCrossOriginFormSubmission => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

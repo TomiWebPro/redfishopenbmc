@@ -82,8 +82,11 @@
 // configuration-independent invariant; the opt-in never relaxes the CSP
 // connect-src allowlist, so attacker-influenced console content cannot open a
 // programmatic fetch / WebSocket / WebRTC / sendBeacon connection to a
-// non-approved origin), flag-off fallback, human sign-off) so a future edit
-// cannot silently erase the
+// non-approved origin), no-cross-origin-form-submission (hard configuration-
+// independent invariant; the opt-in never permits an HTML form GET/POST,
+// auto-submit or scripted form.submit() to send console DOM data / session
+// tokens / KVM frames to a non-approved origin), flag-off fallback, human
+// sign-off) so a future edit cannot silently erase the
 // evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
@@ -147,6 +150,14 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-form-action-exfil', marker: 'form action'),
   (name: 'no-form-auto-submit', marker: 'auto-submit'),
   (name: 'no-form-post-body-exfil', marker: 'post body'),
+  (
+    name: 'form-submission-never-bypassed',
+    marker: 'never bypasses cross-origin form submission'
+  ),
+  (
+    name: 'form-submission-policy-getter',
+    marker: 'bypasscrossoriginformsubmission'
+  ),
   (name: 'no-cross-site-cookie-leak', marker: 'cross-site cookie'),
   (name: 'samesite-scoping', marker: 'samesite'),
   (name: 'third-party-cookie-blocking', marker: 'third-party cookie'),
@@ -690,6 +701,22 @@ void main() {
       expect(missing, contains('no-form-action-exfil'));
       expect(missing, contains('no-form-auto-submit'));
       expect(missing, contains('no-form-post-body-exfil'));
+    });
+
+    test(
+        'RED: dropping the cross-origin form-submission hard-invariant box '
+        'fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutFormInvariant = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses cross-origin form submission|bypasscrossoriginformsubmission')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutFormInvariant);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('form-submission-never-bypassed'));
+      expect(missing, contains('form-submission-policy-getter'));
     });
 
     test('RED: dropping the no-arbitrary/drive-by download box fails closed',
