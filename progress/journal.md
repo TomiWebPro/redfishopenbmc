@@ -13909,3 +13909,22 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept head EP-M7 (body `@odata.id` resource-path normalization agreement) — audit-first, RED→GREEN only on a genuine divergence, never churn; optionally register this new EP-S14 guard in the liveness registry under a fresh epoch (EP-T34). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-M7)
+
+**Done:**
+- FEATURE — EP-M7 (test-only, dependency-free, TLS-safe): added `test/features/kvm/kvm_manager_body_path_normalization_agreement_test.dart` (16 tests) pinning body `@odata.id` resource-path normalization agreement across both real `fromManager` factories. A 15-shape matrix covers dot-segments (`.`/`..`), percent-encoded separators (`%2F`/`%5C`), repeated `//`, space-padded, trailing CRLF, trailing NUL, embedded CRLF header injection, percent-encoded control octet (`%00`), and non-string int/list/map/bool. Each shape pins identical trimmed `sourceManagerUri` + manager identity on both views, field-for-field agreement with `kvmManagerSourceUri`, identical control-safe `safeManagerUri` (no raw control code point / backslash), console clipboard fallback == capability sanitized source, and a load-bearing gate/classifier tie.
+- AUDIT FIRST: both factories already share `kvmManagerSourceUri` + the same `safeManagerUri` gate, so agreement holds by construction — no live divergence, characterization / regression lock, not churn. Distinct from RM-15 (bidi/format/confusable path marks), RM-18/RM-19 (hostile managerId DERIVED fallback), RS-5 (3-level precedence), `launch_plan_test` (CONNECT-URI authorities).
+- Real-file RED: a one-sided dot-segment collapse in `KvmCapability.fromManager` → exactly 3 named failures (`+13 -3`, dot-segment cases; the other 13 GREEN); source restored byte-clean (SHA `533ed545…` unchanged, 0 residue, empty `lib/` diff), 600-perm backup shredded → 16/16 GREEN.
+- Queue `model.md` EP-M7 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed (next heads EP-S12 / EP-U22 / EP-P17 / EP-T34). Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. `flutter test --concurrency=4`: 2417 passed / 1 skipped (baseline 2401 +16). `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Emulator: SKIPPED (test-only, <7 days since last green 85/85 at 21:43). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Regression lock for a construction-time invariant, not a live fix or churn. Test-only change with an empty `lib/` diff and no dependency change. The one-sided RED mutation proves the guard is non-vacuous; source restored byte-clean. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next heads EP-S12 / EP-U22 / EP-P17 / EP-T34 — audit-first, RED→GREEN only on a genuine divergence, never churn; optionally register this EP-M7 guard in the liveness registry under a fresh epoch. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
