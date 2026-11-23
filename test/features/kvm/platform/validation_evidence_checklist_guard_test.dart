@@ -68,8 +68,12 @@
 // browser — no session-theft / account-takeover path), no-remote-debugging /
 // WebView-inspectability (hard configuration-independent invariant; the opt-in
 // never enables web-contents debugging or exposes a DevTools/inspect endpoint in
-// production — no CWE-489 active-debug-code / DOM-and-token-theft path), flag-off
-// fallback, human sign-off) so a future edit cannot silently erase the
+// production — no CWE-489 active-debug-code / DOM-and-token-theft path),
+// no-dangerous-device-capability / permission access (hard configuration-
+// independent invariant; the opt-in never grants geolocation / camera /
+// microphone / clipboard / notification / Bluetooth / NFC / download capability
+// or auto-answers a permission prompt for attacker-influenced console content),
+// flag-off fallback, human sign-off) so a future edit cannot silently erase the
 // evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
@@ -392,6 +396,14 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'remote-debugging-policy-getter',
     marker: 'bypasswebviewremotedebugging'
+  ),
+  (
+    name: 'device-permissions-never-bypassed',
+    marker: 'never bypasses device-capability / permission access'
+  ),
+  (
+    name: 'device-permissions-policy-getter',
+    marker: 'bypassdevicepermissioncontrols'
   ),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
@@ -1111,6 +1123,22 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('remote-debugging-never-bypassed'));
       expect(missing, contains('remote-debugging-policy-getter'));
+    });
+
+    test(
+        'RED: dropping the no-device-permission hard-invariant box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutDevicePermissions = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses device-capability / permission access|bypassdevicepermissioncontrols')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutDevicePermissions);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('device-permissions-never-bypassed'));
+      expect(missing, contains('device-permissions-policy-getter'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

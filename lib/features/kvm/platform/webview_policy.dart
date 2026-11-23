@@ -548,6 +548,57 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassWebViewRemoteDebugging => false;
 
+  /// Always `false`: dangerous device-capability / permission access is NEVER
+  /// granted to the remote console page, not even by the test-only self-signed
+  /// opt-in.
+  ///
+  /// The embedded WebView must not grant attacker-influenced console content
+  /// access to host device capabilities or native/WebKit permission prompts: no
+  /// geolocation (`setGeolocationEnabled(true)`, a WKWebView/WebKit location
+  /// entitlement), no camera / microphone capture (`onPermissionRequest`,
+  /// `getUserMedia`, camera/mic entitlements), no notifications, vibration,
+  /// clipboard read, Bluetooth/NFC or file-download capability, and no
+  /// auto-granting of any Android runtime permission or WebKit permission to the
+  /// page. Console content is served by the BMC and is therefore
+  /// attacker-influenced (a compromised/spoofed BMC or script running in the
+  /// page): any granted device capability is a privacy / remote-code-execution-
+  /// class escalation from that content into the host device. Every console
+  /// page runs with all such capabilities denied by default and every
+  /// permission request rejected by default, on every target, in strict mode
+  /// and with the flag both off and on. Tolerating the test BMC's untrusted
+  /// server leaf relaxes ONLY that leaf's trust; it must never grant a device
+  /// capability or auto-answer a permission prompt just to make a console
+  /// render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that grants device
+  /// capabilities to the console page. It governs host-device capabilities
+  /// exposed to page content, so it is distinct from the server-side
+  /// certificate checks — hostname verification ([bypassHostnameVerification]),
+  /// pinning ([bypassCertificatePinning]), revocation
+  /// ([bypassCertificateRevocationCheck]) and platform trust-store integrity
+  /// ([bypassPlatformTrustStoreIntegrity]) — the TLS floor
+  /// ([bypassTlsProtocolFloor]), HTTPS-only transport
+  /// ([bypassHttpsOnlyTransport]) and validated-origin binding
+  /// ([bypassValidatedOriginBinding]) (the handshake, cleartext sockets and
+  /// resolved address), client-certificate validation
+  /// ([bypassClientCertificateValidation]) (the client credential), the strict
+  /// Referrer-Policy ([bypassStrictReferrerPolicy]) (the app's outbound `Referer`
+  /// header), CSP / mixed-content enforcement ([bypassMixedContentBlocking])
+  /// (which subresources the page may load), sensitive URL / token log redaction
+  /// ([bypassLogRedaction]) (diagnostic output), sensitive data at rest
+  /// ([bypassSensitiveDataAtRestProtection]) (on-disk persistence and screen
+  /// capture), native bridge isolation ([bypassNativeBridgeIsolation]) (code
+  /// injected into the page), private-network egress protection
+  /// ([bypassPrivateNetworkEgressProtection]) (the destinations of subresource
+  /// requests), cross-site cookie isolation ([bypassCookieIsolation]) (the
+  /// session cookie's attachment / script readability) and WebView remote
+  /// debugging ([bypassWebViewRemoteDebugging]) (the debug / inspect surface):
+  /// those govern the connection, its credentials, its requests, its other
+  /// outputs or the WebView's own debug surface — not the device capabilities
+  /// granted to page content. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassDevicePermissionControls => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
