@@ -22,6 +22,10 @@
 // independent invariant; the opt-in never lets attacker-influenced console
 // content seize pointer/keyboard focus or hide the app chrome to trap input or
 // spoof a credential prompt),
+// no-picture-in-picture / floating secondary-window escape (hard configuration-
+// independent invariant; the opt-in never lets attacker-influenced console
+// content open a browser-native PiP window that renders outside the secure
+// console frame, floats above other apps or outlives the console session),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -407,6 +411,22 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'opt-in-keeps-input-capture-denied',
     marker: 'never grant an input-capture'
   ),
+  (name: 'no-picture-in-picture', marker: 'picture-in-picture'),
+  (name: 'no-pip-request', marker: 'requestpictureinpicture'),
+  (
+    name: 'pip-never-bypassed',
+    marker: 'never bypasses picture-in-picture'
+  ),
+  (name: 'pip-policy-getter', marker: 'bypasspictureinpictureescape'),
+  (
+    name: 'pip-distinct-from-fullscreen',
+    marker: 'distinct from fullscreen'
+  ),
+  (
+    name: 'opt-in-keeps-pip-denied',
+    marker: 'never grant a picture-in-picture'
+  ),
+  (name: 'pip-outlives-session', marker: 'outlives the console'),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
   (name: 'mixed-content', marker: 'mixed-content'),
@@ -1129,6 +1149,26 @@ void main() {
       expect(missing, contains('input-capture-policy-getter'));
       expect(missing, contains('input-capture-distinct-from-js-dialog'));
       expect(missing, contains('opt-in-keeps-input-capture-denied'));
+    });
+
+    test('RED: dropping the no-picture-in-picture box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutPip = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'picture-in-picture|requestpictureinpicture|'
+              r'bypasspictureinpictureescape|distinct from fullscreen|'
+              r'never grant a picture-in-picture|outlives the console')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutPip);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-picture-in-picture'));
+      expect(missing, contains('no-pip-request'));
+      expect(missing, contains('pip-never-bypassed'));
+      expect(missing, contains('pip-policy-getter'));
+      expect(missing, contains('pip-distinct-from-fullscreen'));
+      expect(missing, contains('opt-in-keeps-pip-denied'));
+      expect(missing, contains('pip-outlives-session'));
     });
 
     test(
