@@ -14808,3 +14808,20 @@
 - Push the single commit (never force-push). Next AUDIT FIRST for a genuinely new unguarded seam (fresh heads EP-U27 dense hostile chip set / EP-S20 top-level `/Managers` document shape; never churn); a future EP-T liveness pass only if new guards land. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — rf-gate (MERGED build/rf-platform check#11993)
+
+**Done:**
+- rf-gate sole-merger: `python3 ~/opencode-scheduler/scheduler.py state rf-platform-check` → latest run#11993 `SUCCESS exit=0`; explicit `CHECK: PASS` in log `rf-platform-check-20261123-215823.log` for exact branch tip `553c348` (started 20:58:23 UTC, ~1 min after the 20:57 UTC builder commit; analyze 0, targeted 164/164, no production-TLS weakening, 4 allowlisted paths). Merged `build/rf-platform` into `main` via `git merge --no-ff` → merge `517be86` (parents `a6394c6` / `553c348`), clean ort auto-merge, no conflicts; one branch-unique commit on merge-base `38c805d` (already in `main` via `7f6cbaf`). The merge gates no print / save-to-PDF data exfiltration on the RP-1 matrix: hard always-`false` `bypassPrintExfiltration` invariant; test-only self-signed opt-in relaxes only the expected host's untrusted leaf via a scoped verifier and never exposes a print adapter or honours a scripted print. First-parent diff = 4 allowlisted files (+167/-0): `WEBVIEW_TLS_MATRIX.md` (+34), `webview_policy.dart` (+37), `validation_evidence_checklist_guard_test.dart` (+38), `webview_policy_test.dart` (+58).
+- Tracked in `FUTUREWORK.md` (new Gate line) + `automation-tracking.md` (rf-gate MERGED section).
+
+**Verification:**
+- Post-merge in-tree at `517be86`: `flutter analyze` 0 (No issues found!); full `flutter test --coverage --concurrency=4` GREEN — 2723 passed / 1 skipped; all coverage gates PASS overall 90.6% (6099/6730) / redfish+power+sensors 90.4% (2119/2345) / kvm 97.7% (1376/1409) / kvm-platform 97.6% (491/503), exit 0; `asset_guard` OK; `unattended_guard` OK; `issues.py validate` OK; first-parent `git diff --check` clean; deps unchanged; no TLS weakening. DMTF 85-test emulator skipped (doc + policy getter + tests only — no wire/fixture/tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:**
+- Verdict source is the explicit `CHECK: PASS` in the latest check log, cross-checked against the unchanged branch tip and merge-base before merging. No issue closed (#009 P3 / #021 P2 stay human-gated on platform WebView + BMC TLS validation). No force-push, history rewrite, `git clean`, or file deletion; no new stash (clean tree); five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Next rf-gate run: re-check `rf-platform-check` latest verdict first; `--no-ff` merge only a PASS branch, skip + report otherwise; NO-OP if no new commits. Builder continues audit-first dept heads; close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
