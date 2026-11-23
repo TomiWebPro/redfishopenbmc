@@ -1289,6 +1289,42 @@ flag stays off for that target.
       access (host capabilities granted to page content): those govern other
       input and prompt surfaces, not content-initiated pointer/keyboard lock and
       fullscreen input capture. Verified per target before the flag is flipped.
+* [ ] **No picture-in-picture / floating secondary-window escape** — the embedded
+      WebView must not let attacker-influenced console content escape the secure
+      console frame through a browser-native Picture-in-Picture (PiP) window or
+      an equivalent floating / secondary rendering surface: no
+      `requestPictureInPicture()` / `documentPictureInPicture` (nor the `webkit` /
+      `moz` prefixed variants), no scripted or auto-enter PiP on a `<video>` / KVM
+      frame and no browser/embedded-widget floating-video overlay. A PiP window
+      renders content OUTSIDE the app's secure console surface, can float above
+      other apps and outlives the console session, so attacker-influenced content
+      shown there is a UI-spoof / session-persistence surface wholly independent
+      of JavaScript modal dialogs, fullscreen / pointer-lock input capture,
+      overlay / tapjacking and device-capability prompts (which govern in-frame
+      modals, input, app overlays and host capabilities, not a browser-native
+      floating window). Every such PiP / floating-window request from console
+      content must be denied at the WebView (PiP refused, no secondary rendering
+      surface created), on every target, in strict mode and with the flag both off
+      and on. Operator/app-initiated fullscreen of the console view is a separate
+      functional path (see the Fullscreen box) and is unaffected. Verified per
+      target (inspect the WebView PiP / fullscreen / secondary-window callbacks
+      and confirm console content cannot open a floating window) before the flag
+      is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassPictureInPictureEscape`,
+      always `false`): the test-only opt-in never bypasses picture-in-picture /
+      floating-window escape — no browser-native PiP window is granted to
+      attacker-influenced console content, it cannot float above other apps and
+      it never outlives the console session, in strict mode and with the flag both
+      off and on. The opt-in relaxes ONLY the test BMC's untrusted server leaf for
+      the expected host, via a scoped per-connection verifier; it must never grant
+      a picture-in-picture request just to make a console render or to debug it.
+      This box is distinct from fullscreen input capture (`requestFullscreen` /
+      `requestPointerLock` / `requestKeyboardLock`) and from tapjacking /
+      UI-overlay / clickjacking (a co-resident app drawing an obscuring overlay or
+      delivering an obscured touch): those govern in-frame input and app overlays,
+      not a browser-native PiP / floating secondary window. Verified per target
+      before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

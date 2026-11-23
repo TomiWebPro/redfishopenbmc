@@ -1611,6 +1611,67 @@ void main() {
     });
   });
 
+  group('KvmWebViewPolicy — picture-in-picture escape is never allowed', () {
+    test('production default never permits picture-in-picture escape', () {
+      expect(KvmWebViewPolicy.productionDefault.bypassPictureInPictureEscape,
+          isFalse);
+    });
+
+    test('test-only self-signed opt-in still denies picture-in-picture', () {
+      // Tolerating the test BMC's untrusted server leaf relaxes ONLY leaf trust
+      // for the expected host (via a scoped verifier): it must never let
+      // attacker-influenced console content open a browser-native PiP window
+      // that renders outside the secure console frame, floats above other apps
+      // or outlives the console session just to make a console render or to
+      // debug it. Hard invariant, independent of the flag, TLS mode or signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassPictureInPictureEscape, isFalse);
+    });
+
+    test('no policy configuration can permit picture-in-picture escape', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassPictureInPictureEscape, isFalse);
+      expect(enabledSelfSigned.bypassPictureInPictureEscape, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Every other hard invariant stays independent of the PiP / secondary-
+      // window surface: the test-only opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.bypassStrictReferrerPolicy, isFalse);
+      expect(enabledSelfSigned.bypassMixedContentBlocking, isFalse);
+      expect(enabledSelfSigned.bypassLogRedaction, isFalse);
+      expect(enabledSelfSigned.bypassSensitiveDataAtRestProtection, isFalse);
+      expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
+      expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
+      expect(enabledSelfSigned.bypassCookieIsolation, isFalse);
+      expect(enabledSelfSigned.bypassWebViewRemoteDebugging, isFalse);
+      expect(enabledSelfSigned.bypassDevicePermissionControls, isFalse);
+      expect(enabledSelfSigned.bypassHttpAuthChallengeDenial, isFalse);
+      expect(enabledSelfSigned.bypassLocalFileAccess, isFalse);
+      expect(enabledSelfSigned.bypassOutboundEgressAllowlist, isFalse);
+      expect(enabledSelfSigned.bypassCrossOriginFormSubmission, isFalse);
+      expect(enabledSelfSigned.bypassSslErrorRejection, isFalse);
+      expect(enabledSelfSigned.bypassTopLevelNavigationConfinement, isFalse);
+      expect(enabledSelfSigned.bypassArbitraryFileDownload, isFalse);
+      expect(enabledSelfSigned.bypassAutofillCredentialCapture, isFalse);
+      expect(enabledSelfSigned.bypassFileChooserAccess, isFalse);
+      expect(enabledSelfSigned.bypassTapjackingProtection, isFalse);
+      expect(enabledSelfSigned.bypassJavaScriptDialogDenial, isFalse);
+      expect(enabledSelfSigned.bypassServiceWorkerRegistration, isFalse);
+      expect(enabledSelfSigned.bypassPrintExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassInputCaptureProtection, isFalse);
+    });
+  });
+
   group('resolveRenderRoute — fallback works with the flag off', () {
     test('flag off routes valid HTTPS HTML5 to the external browser', () {
       expect(

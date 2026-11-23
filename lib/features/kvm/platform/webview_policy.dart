@@ -1153,6 +1153,48 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassInputCaptureProtection => false;
 
+  /// Always `false`: the console WebView never lets attacker-influenced console
+  /// content open a browser-native Picture-in-Picture / floating secondary
+  /// window that renders outside the secure console frame, not even by the
+  /// test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content escape the
+  /// trusted frame through a page-initiated Picture-in-Picture (PiP) window or
+  /// an equivalent floating / secondary rendering surface: no
+  /// `HTMLVideoElement.requestPictureInPicture()` / `documentPictureInPicture`
+  /// (nor the `webkit` / `moz` prefixed variants), no scripted or auto-enter PiP
+  /// on a `<video>`/KVM frame, and no browser/embedded-widget floating-video
+  /// overlay. A PiP window renders content OUTSIDE the app's secure console
+  /// surface, can float above other apps and can outlive the console session,
+  /// so attacker-influenced content shown there is a UI-spoof / session-
+  /// persistence surface. Every such PiP / floating-window request from console
+  /// content is denied at the WebView (PiP refused, no secondary rendering
+  /// surface created), on every target, in strict mode and with the flag both
+  /// off and on. Console content is served by the BMC and is therefore
+  /// attacker-influenced (a compromised/spoofed BMC or script in the page).
+  /// Tolerating the test BMC's untrusted server leaf relaxes ONLY that leaf's
+  /// trust for the expected host (via a scoped per-connection verifier); it
+  /// must never grant a picture-in-picture request just to make a console
+  /// render or to debug it.
+  ///
+  /// Operator/app-initiated fullscreen of the console view is a separate
+  /// functional path (see the Fullscreen box in `WEBVIEW_TLS_MATRIX.md`) and is
+  /// unaffected: only console-content-initiated PiP / floating windows are
+  /// forbidden.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content escape the secure frame via a floating window. It governs the
+  /// secondary / out-of-frame presentation surface, so it is distinct from
+  /// fullscreen / pointer-lock / keyboard-lock input capture
+  /// ([bypassInputCaptureProtection]) (content-initiated lock and fullscreen
+  /// inside the frame) and tapjacking / UI-overlay / clickjacking
+  /// ([bypassTapjackingProtection]) (a co-resident app drawing an obscuring
+  /// overlay or delivering an obscured touch): those govern other input and
+  /// presentation surfaces, not a browser-native PiP window. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassPictureInPictureEscape => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
