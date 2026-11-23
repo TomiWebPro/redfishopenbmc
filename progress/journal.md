@@ -14489,3 +14489,21 @@
 - Push the merge + tracking commit (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: check `rf-platform-check` state first; merge only on a fresh explicit `CHECK: PASS` for the exact new tip — a non-PASS verdict is a SKIP/NO-OP with no commits. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — EP-U25
+
+**Done:**
+- FEATURE EP-U25 for open #009/#021: AUDIT found the "Primary" badge is rendered in exactly ONE place — the `_ConsoleCard` header in `lib/features/kvm/views/kvm_view.dart`, gated solely by `identical(console, ui.primaryConsole)` (the single `KvmService.pickPrimary(consoles)` result); the capability card and viewer render no marker, and the badge sits inside the header's single merged `excludeSemantics` node — no live divergence. Genuine unguarded seam: existing tests pin one badge on the openable card and EP-U15 pins launch-target agreement, but only at a fixed width and only on the winner; nothing pinned the single-merged-signal agreement across surfaces and 320/800/1300 px.
+- Added `test/features/kvm/kvm_card_primary_badge_single_merged_a11y_test.dart` (5 tests) driving one manager's secure-HTTPS Graphical (pickPrimary winner) + SSH Serial (non-Primary peer) through the real `KvmView` at 320/800/1300 px: exactly one visible "Primary", on the winner card and none on the peer; one merged `excludeSemantics` header per console; badge inside the winner's merged node; no split/screen-reader-only "Primary" semantics node; no competing capability/viewer marker; no overflow.
+
+**Verification:**
+- Real-file RED #1: `isPrimary: identical(console, ui.primaryConsole)` → `isPrimary: true` under a 600-perm backup → exactly the 3 width tests fail (count/peer assertions), model+viewer GREEN; restored byte-clean. RED #2: header `excludeSemantics: true` → `false` → exactly the 3 width tests fail on the split-announcement assertion, model+viewer GREEN; source restored byte-clean (SHA `7359effb5ba6b963e6c2d0584bf507f1093c29ca408352cbd48a85100d7efabf` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 5/5 targeted GREEN.
+- `dart format` clean; `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2590 passed / 1 skipped (baseline 2585 +5); emulator skipped (test-only, <7 days since last green 85/85); `issues.py validate` OK; `git diff --check` clean; deps unchanged; no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Test-only characterization guard at a genuine unguarded seam; no live divergence, no behaviour change; the a11y/overflow failure proofs stay entirely in the badge wiring (`isPrimary` gate + header `excludeSemantics`), both restored production files byte-clean. Display-only, no production UI churn per §5. Never force-push, rewrite history, `git clean`, or delete user files; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-P15 (disabled-console fail-closed branch liveness) then EP-S8-port — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn. Register the new EP-U25 guard in a future EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

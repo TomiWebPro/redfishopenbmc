@@ -13,7 +13,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
      suite stays GREEN. Display-only; the human-gated WebView/TLS rendering stays gated and is NOT
      re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
 
-- [ ] EP-U25 Primary-badge single merged a11y agreement across both cards and the viewer:
+- [x] EP-U25 LANDED 2026-11-23 (run `auto: FEATURE #009/#021 EP-U25 Primary-badge single merged a11y agreement + RED->GREEN tests`, test-only) — Primary-badge single merged a11y agreement across both cards and the viewer:
        pump one manager with a deterministic Primary console (a secure-HTTPS graphical that wins
        `pickPrimary`) plus a non-Primary console through both real operator cards and the viewer at
        320/800/1300 px, pinning that exactly one "Primary" marker is rendered on the Primary console's
@@ -27,6 +27,19 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
                (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
                `lib/features/kvm/views/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
                pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS weakening.
+       LANDED 2026-11-23: added `test/features/kvm/kvm_card_primary_badge_single_merged_a11y_test.dart`
+       (5 tests) driving one manager's secure-HTTPS Graphical (pickPrimary winner) + SSH Serial peer through
+       the real `KvmView` at 320/800/1300 px: exactly one visible 'Primary' globally, on the winner card and
+       NONE on the peer; one merged `excludeSemantics` header per console; the badge inside the winner's merged
+       node; no split/screen-reader-only 'Primary' semantics node; no competing capability-card or viewer marker;
+       no overflow. AUDIT: badge lives only in `_ConsoleCard`, gated by `identical(console, ui.primaryConsole)`;
+       capability card + viewer render no marker — no live divergence; genuine unguarded cross-surface/three-width
+       seam. Real-file RED #1: `isPrimary: true` → 3 width tests fail (count/peer), model+viewer GREEN; RED #2:
+       header `excludeSemantics: true`→`false` → 3 width tests fail on the split-announcement assertion, model+viewer
+       GREEN; source restored byte-clean (SHA `7359effb5ba6b963e6c2d0584bf507f1093c29ca408352cbd48a85100d7efabf`
+       unchanged, 0 residue, empty `lib/` diff, 600-perm backup shredded) → 5/5 GREEN; analyze 0; full suite 2590
+       passed / 1 skipped (baseline 2585 +5); issues validate OK; diff --check clean; deps unchanged; emulator
+       skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no TLS change.
 
 <!-- rf-ideate split 2026-11-23 06:31 UTC: another fresh, display-only, unblocked slice of the still-open
      #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U20 pins an EXTREME NUMBER of
