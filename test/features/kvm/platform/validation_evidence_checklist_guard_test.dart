@@ -200,6 +200,19 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'obscured-window-touch', marker: 'flag_window_is_obscured'),
   (name: 'cwe-1021', marker: 'cwe-1021'),
   (name: 'filter-touches-obscured', marker: 'filtertoucheswhenobscured'),
+  (
+    name: 'tapjacking-never-bypassed',
+    marker: 'never bypasses tapjacking / ui-overlay / clickjacking protection'
+  ),
+  (name: 'tapjacking-policy-getter', marker: 'bypasstapjackingprotection'),
+  (
+    name: 'tapjacking-distinct-from-js-dialog',
+    marker: 'distinct from javascript dialog'
+  ),
+  (
+    name: 'opt-in-keeps-tapjacking-denied',
+    marker: 'never accept an obscured-window touch'
+  ),
   (name: 'tls-protocol-floor', marker: 'tls 1.2'),
   (name: 'tls-modern-version', marker: 'tls 1.3'),
   (name: 'no-legacy-tls', marker: 'tls 1.0'),
@@ -951,6 +964,22 @@ void main() {
       expect(missing, contains('obscured-window-touch'));
       expect(missing, contains('cwe-1021'));
       expect(missing, contains('filter-touches-obscured'));
+    });
+
+    test('RED: dropping the tapjacking hard-invariant box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutTapjackingInvariant = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses tapjacking|bypasstapjackingprotection|distinct from javascript dialog|never accept an obscured-window touch')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutTapjackingInvariant);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('tapjacking-never-bypassed'));
+      expect(missing, contains('tapjacking-policy-getter'));
+      expect(missing, contains('tapjacking-distinct-from-js-dialog'));
+      expect(missing, contains('opt-in-keeps-tapjacking-denied'));
     });
 
     test(
