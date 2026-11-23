@@ -1023,6 +1023,59 @@ void main() {
       expect(enabledSelfSigned.bypassHttpAuthChallengeDenial, isFalse);
       expect(enabledSelfSigned.bypassLocalFileAccess, isFalse);
       expect(enabledSelfSigned.bypassOutboundEgressAllowlist, isFalse);
+      expect(enabledSelfSigned.bypassSslErrorRejection, isFalse);
+    });
+  });
+
+  group('KvmWebViewPolicy — SSL certificate-error rejection is never bypassed',
+      () {
+    test('production default never blanket-accepts a certificate error', () {
+      expect(KvmWebViewPolicy.productionDefault.bypassSslErrorRejection,
+          isFalse);
+    });
+
+    test('test-only self-signed opt-in still fails closed on certificate '
+        'errors', () {
+      // Tolerating the test BMC's untrusted server leaf relaxes ONLY leaf trust
+      // for the expected host (via a scoped verifier): it must never install a
+      // blanket `proceed()` / `badCertificateCallback => true` that would make
+      // the privileged console accept any rejected certificate. Hard invariant,
+      // independent of the flag, TLS mode or console signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassSslErrorRejection, isFalse);
+    });
+
+    test('no policy configuration can bypass certificate-error rejection', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassSslErrorRejection, isFalse);
+      expect(enabledSelfSigned.bypassSslErrorRejection, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Every other hard invariant stays independent of the error-handler
+      // surface: the test-only opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.bypassStrictReferrerPolicy, isFalse);
+      expect(enabledSelfSigned.bypassMixedContentBlocking, isFalse);
+      expect(enabledSelfSigned.bypassLogRedaction, isFalse);
+      expect(enabledSelfSigned.bypassSensitiveDataAtRestProtection, isFalse);
+      expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
+      expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
+      expect(enabledSelfSigned.bypassCookieIsolation, isFalse);
+      expect(enabledSelfSigned.bypassWebViewRemoteDebugging, isFalse);
+      expect(enabledSelfSigned.bypassDevicePermissionControls, isFalse);
+      expect(enabledSelfSigned.bypassHttpAuthChallengeDenial, isFalse);
+      expect(enabledSelfSigned.bypassLocalFileAccess, isFalse);
+      expect(enabledSelfSigned.bypassOutboundEgressAllowlist, isFalse);
+      expect(enabledSelfSigned.bypassCrossOriginFormSubmission, isFalse);
     });
   });
 

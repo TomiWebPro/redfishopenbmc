@@ -141,6 +141,40 @@ flag stays off for that target.
       is a reversible, test-profile-only opt-in that never touches production
       TLS. No blanket `proceed()` / `badCertificateCallback => true` on a
       production profile.
+* [ ] **Certificate-error callback rejects by default (never bypassed)** — when
+      the platform TLS stack rejects the BMC certificate for ANY reason
+      (expired, untrusted/self-signed on a production profile, hostname /
+      identity mismatch, revoked, weak signature), the WebView's certificate-
+      error callback must fail closed: Android
+      `WebViewClient.onReceivedSslError` must `cancel()` (never `proceed()`),
+      WKWebView / `URLSession` must cancel the challenge / `URLSession` delegate
+      must reject, Dart `HttpClient.badCertificateCallback` must stay `false`
+      on a production profile, and no override may resume the load. Console
+      content is served by the BMC and is therefore attacker-influenced: a
+      single blanket-accept error handler would silently defeat hostname
+      verification, pinning, revocation and the TLS floor at once, so the
+      error-handling path is a control surface of its own. Verified per target
+      (inject an invalid/expired/revoked/hostname-mismatched BMC certificate,
+      observe the console fails closed with the flag both off and on) before
+      the flag is flipped. This is a hard, configuration-independent invariant
+      that a future WebView consumer can consult
+      (`KvmWebViewPolicy.bypassSslErrorRejection`, always `false`): the opt-in
+      never bypasses SSL certificate-error rejection — every certificate error
+      fails closed, in strict mode and with the flag both off and on. The
+      test-only self-signed opt-in relaxes ONLY the test BMC's untrusted server
+      leaf for the expected host, through a scoped per-connection verifier; it
+      must never install a blanket `proceed()` / `badCertificateCallback =>
+      true` that would make the privileged console session accept any
+      certificate just to make a console render or to debug it. This box
+      governs the WebView's reaction path when certificate validation fails,
+      so it is distinct from hostname verification (which binds certificate
+      identity to the console host), pinning (which binds the expected key),
+      revocation (which checks certificate status), platform trust-store
+      integrity (device-wide anchors), the TLS floor and HTTPS-only transport
+      (the handshake and cleartext sockets) and client-certificate validation
+      (the client credential): those decide whether a certificate/connection
+      is acceptable, whereas this box governs the fail-closed handler when any
+      of them rejects. Verified per target before the flag is flipped.
 * [ ] **Hostname verification (never bypassed by the opt-in)** — even under the
       test-only self-signed acceptance path, the certificate's identity is still
       matched against the console's hostname. Accepting a self-signed leaf must

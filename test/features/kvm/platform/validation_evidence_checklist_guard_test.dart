@@ -85,7 +85,12 @@
 // non-approved origin), no-cross-origin-form-submission (hard configuration-
 // independent invariant; the opt-in never permits an HTML form GET/POST,
 // auto-submit or scripted form.submit() to send console DOM data / session
-// tokens / KVM frames to a non-approved origin), flag-off fallback, human
+// tokens / KVM frames to a non-approved origin), no-certificate-error-blanket-
+// acceptance (hard configuration-independent invariant; the WebView's TLS
+// certificate-error callback rejects by default on every SSL error — expired,
+// untrusted, hostname mismatch, revoked — never a blanket proceed() /
+// badCertificateCallback => true that would silently defeat all the other
+// certificate checks), flag-off fallback, human
 // sign-off) so a future edit cannot silently erase the
 // evidence boxes that gate that decision.
 //
@@ -157,6 +162,14 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'form-submission-policy-getter',
     marker: 'bypasscrossoriginformsubmission'
+  ),
+  (
+    name: 'ssl-error-rejection-never-bypassed',
+    marker: 'never bypasses ssl certificate-error rejection'
+  ),
+  (
+    name: 'ssl-error-rejection-policy-getter',
+    marker: 'bypasssslerrorrejection'
   ),
   (name: 'no-cross-site-cookie-leak', marker: 'cross-site cookie'),
   (name: 'samesite-scoping', marker: 'samesite'),
@@ -717,6 +730,22 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('form-submission-never-bypassed'));
       expect(missing, contains('form-submission-policy-getter'));
+    });
+
+    test(
+        'RED: dropping the certificate-error rejection hard-invariant box '
+        'fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutSslError = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses ssl certificate-error rejection|bypasssslerrorrejection')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutSslError);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('ssl-error-rejection-never-bypassed'));
+      expect(missing, contains('ssl-error-rejection-policy-getter'));
     });
 
     test('RED: dropping the no-arbitrary/drive-by download box fails closed',
