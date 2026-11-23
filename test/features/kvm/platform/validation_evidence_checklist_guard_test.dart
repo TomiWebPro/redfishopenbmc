@@ -13,7 +13,9 @@
 // no-private-network/loopback subresource egress (SSRF pivot),
 // no-remote-debugging/WebView-inspectability (active debug code),
 // no-service-worker/persistent-background-script (session-scoped execution),
-// no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload),
+// no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
+// configuration-independent invariant; the opt-in never permits an unlabelled
+// JavaScript dialog or a blocking beforeunload for attacker-influenced content),
 // no-cross-origin-form-submission (form action POST / auto-submit / post body
 // exfiltration), no-arbitrary/drive-by file download (APK / executable /
 // auto-open / content-disposition; hard configuration-independent invariant;
@@ -333,6 +335,19 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'js-dialog-suppressed-or-labelled',
     marker: 'suppressed or clearly attributed'
+  ),
+  (
+    name: 'js-dialog-never-bypassed',
+    marker: 'never bypasses javascript dialog'
+  ),
+  (name: 'js-dialog-policy-getter', marker: 'bypassjavascriptdialogdenial'),
+  (
+    name: 'js-dialog-distinct-from-tapjacking',
+    marker: 'distinct from tapjacking'
+  ),
+  (
+    name: 'opt-in-keeps-js-dialog-denied',
+    marker: 'never allow an unlabelled javascript dialog'
   ),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
@@ -980,6 +995,23 @@ void main() {
       expect(missing, contains('tapjacking-policy-getter'));
       expect(missing, contains('tapjacking-distinct-from-js-dialog'));
       expect(missing, contains('opt-in-keeps-tapjacking-denied'));
+    });
+
+    test('RED: dropping the no-JavaScript-dialog hard-invariant box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutJsDialogInvariant = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses javascript dialog|bypassjavascriptdialogdenial|distinct from tapjacking|never allow an unlabelled javascript dialog')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutJsDialogInvariant);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('js-dialog-never-bypassed'));
+      expect(missing, contains('js-dialog-policy-getter'));
+      expect(missing, contains('js-dialog-distinct-from-tapjacking'));
+      expect(missing, contains('opt-in-keeps-js-dialog-denied'));
     });
 
     test(

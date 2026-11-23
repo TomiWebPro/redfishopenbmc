@@ -739,6 +739,20 @@ flag stays off for that target.
       target (inspect the WebView client / UIDelegate dialog callbacks and
       confirm dialogs are denied or labelled and `beforeunload` is
       non-blocking) before the flag is flipped.
+      Hard configuration-independent invariant: the console WebView never
+      bypasses JavaScript dialog denial — no policy configuration (not even the
+      test-only self-signed opt-in) may permit an unlabelled JavaScript dialog
+      or a blocking `beforeunload`. The `KvmWebViewPolicy`
+      `bypassJavaScriptDialogDenial` getter is always `false`, so a future
+      WebView consumer can consult it and can never relax this control. This is
+      distinct from tapjacking / UI-overlay / clickjacking input hijack
+      (obscured-window touches and overlays covering the console) and from
+      native bridge, local file and device-capability checks: those govern
+      input delivery, injected code, local reads or host capabilities, not a
+      modal raised by the untrusted page. Tolerating the test BMC's untrusted
+      server leaf relaxes ONLY that leaf's trust for the expected host; it must
+      never allow an unlabelled JavaScript dialog just to make a console render
+      or to debug it. Verified per target before the flag is flipped.
 * [ ] **No cross-origin form submission / data exfiltration** — the embedded
       WebView must not let attacker-influenced console content exfiltrate
       operator credentials, session tokens or KVM frame data through an HTML
