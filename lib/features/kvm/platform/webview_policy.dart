@@ -1074,6 +1074,43 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassServiceWorkerRegistration => false;
 
+  /// Always `false`: the console WebView never lets attacker-influenced console
+  /// content print or save the privileged console DOM to a printed / PDF copy,
+  /// not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not turn the remote BMC console into a durable
+  /// printed or saved-to-PDF document: no `window.print()` / scripted print
+  /// request, no Android `PrintManager` / `WebView.createPrintDocumentAdapter()`
+  /// / `ACTION_PRINT` hand-off, no WKWebView `UIPrintInteractionController` /
+  /// print renderer, and no auto-print or console-controlled print destination.
+  /// Every print request is denied at the WebView (no print adapter exposed,
+  /// print callbacks cancelled), with no auto-print and no console-controlled
+  /// destination, on every target, in strict mode and with the flag both off
+  /// and on. Console content is served by the BMC and is therefore
+  /// attacker-influenced (a compromised/spoofed BMC or script in the page): the
+  /// console DOM holds session tokens, credentials, KVM frames and managed-host
+  /// inventory, so a printed / saved-to-PDF copy is a durable, exfiltratable
+  /// channel that escapes the on-screen-only confinement — a data-exfiltration
+  /// surface wholly independent of network downloads, form POST bodies and
+  /// on-disk cache/storage. Tolerating the test BMC's untrusted server leaf
+  /// relaxes ONLY that leaf's trust for the expected host (via a scoped
+  /// per-connection verifier); it must never enable printing just to make a
+  /// console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits a
+  /// print / save-to-PDF copy of the privileged console DOM. It governs the
+  /// print / PDF output channel, so it is distinct from arbitrary / drive-by
+  /// file download ([bypassArbitraryFileDownload]) (a file written to the
+  /// device via a network response), cross-origin form submission
+  /// ([bypassCrossOriginFormSubmission]) (the form POST body), sensitive data at
+  /// rest ([bypassSensitiveDataAtRestProtection]) (automatic on-disk
+  /// cache/storage and background snapshot) and outbound egress
+  /// ([bypassOutboundEgressAllowlist]) (programmatic network connections):
+  /// those govern other output surfaces, not a rendered print / PDF copy of
+  /// the console DOM. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassPrintExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
