@@ -866,6 +866,27 @@ flag stays off for that target.
       target (inspect the WebView auth callbacks and confirm challenges are
       cancelled and no credential store is pre-seeded) before the flag is
       flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassHttpAuthChallengeDenial`,
+      always `false`): the test-only opt-in never bypasses http-auth / login-form
+      challenge denial — every native HTTP-auth / login-form authentication
+      challenge is cancelled by default and never auto-answered with stored
+      credentials, and no spoofed unlabelled prompt is shown for the console
+      origin, in strict mode and with the flag both off and on. The opt-in
+      relaxes ONLY the test BMC's untrusted server leaf for the expected host;
+      it must never present a credential-prompt spoofing surface or auto-answer
+      a challenge just to make a console render or to debug it. This box governs
+      the platform's native authentication-challenge path, so it is distinct
+      from the JavaScript-dialog / modal-spoofing box (page `alert` / `confirm`
+      / `prompt` / `beforeunload`), cross-origin form submission (form POST
+      bodies), the strict Referrer-Policy (the app's outbound `Referer` header),
+      cross-site cookie isolation (session-cookie attachment / script
+      readability), and every server-side certificate / TLS / transport check
+      (certificate identity, key, status, device anchors, handshake strength,
+      cleartext sockets and the validated resolved address): those govern the
+      connection, its credentials, its requests, page modals, URL headers,
+      cookies or other outputs, not the native authentication-challenge path.
+      Verified per target before the flag is flipped.
 * [ ] **Certificate revocation checking (CRL / OCSP) never bypassed** — the
       embedded WebView must reject a certificate that has been revoked (e.g.
       because the BMC's private key was compromised) even when it still chains
