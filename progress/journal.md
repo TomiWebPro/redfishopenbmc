@@ -14347,3 +14347,21 @@
 - Push this tracking commit (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: check `rf-platform-check` state first; merge only on a fresh explicit `CHECK: PASS` for the exact new tip. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-T37)
+
+**Done:**
+- FEATURE — EP-T37 (test/tool-only, dependency-free, TLS-safe): extended `test/tool/guard_suite_liveness_test.dart` (+152 lines) to register the four newest agreement guards (EP-P19 query/fragment control fail-closed, RM-21 body-id query/fragment/userinfo agreement, EP-S17 malformed-body/transport skip-vs-propagate, EP-U24 unbreakable chip no-overflow) in the guard-suite liveness registry for #009/#021. Added the 4 paths to `canonicalGuardFiles`, a fresh pinned `epT37AddedGuards` epoch (length 4, pairwise-disjoint from all 25 earlier designations incl. EP-T36) in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test and +1 temp-root RED→GREEN liveness proof (deleted / emptied / test-stripped → violation, intact → clean) per guard.
+- AUDIT FIRST: all four guards are live + CI-reachable from verify.yml whole-tree `flutter test --coverage` yet absent from BOTH `canonicalGuardFiles` and every pinned epoch (last = EP-T36), so deleting / emptying / test-stripping any stayed GREEN — CONFIRMED "who guards the guards" gap, no live divergence, no behaviour change, not churn. Distinct from earlier EP-T-style passes (EP-T35/EP-T36 registered prior quartets).
+- Real-file RED: dropped only the EP-U24 canonical path (epoch designation kept) under a 600-perm backup → exactly 3 named failures (EP-T37 pin, EP-T20 completeness, EP-T37 temp-root liveness), the other 57 GREEN; source restored byte-clean (SHA `6b20ba4240f45339ce5a50408e0607309651ae008e36b46487d72b41474185c6` unchanged, 0 residue, backup shredded) → 60/60 targeted GREEN. Queue `tooling.md` EP-T37 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed. Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. Full `flutter test --concurrency=4`: 2541 passed / 1 skipped (baseline 2539 +2 mine). Targeted 60/60 (pre / RED / restore / GREEN). `dart format --output=none --set-exit-if-changed`: clean. `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Empty `lib/` diff. Emulator: SKIPPED (test/tool-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Guard-suite liveness registration ("who guards the guards"), not a live fix or churn. Test/tool-only change with empty `lib/` diff and no dependency change. A one-canonical-path-drop mutation proves the registry fails closed and the guard non-vacuous/isolated; source restored byte-clean. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); this also lands the 2 already-ahead legitimate rf-platform/rf-gate commits; leave the five pre-existing stashes untouched. Next dept head EP-P15 (disabled-console fail-closed branch liveness) — AUDIT FIRST (EP-P6/EP-P8 may already mutation-pin the branch), RED→GREEN only on a genuine divergence, never churn. RM-11 / EP-S8 stay deliberately blocked; EP-T4 already closed via EP-T10. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
