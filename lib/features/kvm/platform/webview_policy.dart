@@ -1040,6 +1040,40 @@ class KvmWebViewPolicy {
   /// page itself. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassJavaScriptDialogDenial => false;
 
+  /// Always `false`: the console WebView never lets attacker-influenced console
+  /// content register a Service Worker or any persistent background script that
+  /// outlives the page or session, not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content install a
+  /// Service Worker or any persistent background script: no
+  /// `navigator.serviceWorker.register(...)`, no background sync / periodic
+  /// background sync, no push subscription and no persistent `Cache Storage` /
+  /// Cache API entries beyond the session. A Service Worker runs independently
+  /// of the page, survives navigation and restarts, and can intercept / modify
+  /// every request for the console origin — a request-interception /
+  /// background-persistence surface. Console content is served by the BMC and
+  /// is therefore attacker-influenced (a compromised/spoofed BMC or script in
+  /// the page): a compromised console page could install one that keeps running
+  /// after the operator closes the console, silently intercepting console
+  /// traffic or exfiltrating KVM frames and session tokens in the background.
+  /// Every service-worker registration must be denied, existing registrations
+  /// unregistered and Cache Storage cleared at session teardown, on every
+  /// target, in strict mode and with the flag both off and on. Tolerating the
+  /// test BMC's untrusted server leaf relaxes ONLY that leaf's trust for the
+  /// expected host (via a scoped per-connection verifier); it must never allow
+  /// a Service Worker just to make a console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits
+  /// persistent background script execution. It governs background execution
+  /// that outlives the page, so it is distinct from WebView remote debugging
+  /// ([bypassWebViewRemoteDebugging]) (the debug / inspect surface) and
+  /// sensitive data at rest ([bypassSensitiveDataAtRestProtection]) (on-disk
+  /// persistence / screen capture): those govern the debug surface and stored
+  /// data, not a background script running inside the page. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassServiceWorkerRegistration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
