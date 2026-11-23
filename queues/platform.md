@@ -16,7 +16,7 @@ platform validation evidence.
      validation (EP-P1/P2/P4) stays gated and is NOT re-split. AUDIT FIRST; RED->GREEN only on a
      genuine divergence, never churn. No code touched. -->
 
-- [ ] EP-P20 Backslash / mixed-separator authority-confusion fail-closed cross-layer agreement:
+- [x] EP-P20 LANDED 2026-11-23 (run `auto: FEATURE #009/#021 EP-P20 backslash/mixed-separator authority-confusion cross-layer agreement guard + RED->GREEN tests`, test-only, dependency-free, TLS-safe) — Backslash / mixed-separator authority-confusion fail-closed cross-layer agreement:
        over a matrix of otherwise-canonical secure-HTTPS `ConnectUri` values whose authority mixes `/`
        and `\` (e.g. `https://trusted.example\@evil.example/x`, `https:\/\/evil.example/x`,
        `https://evil.example\@trusted.example/x`, `%5C`-encoded separators, plus a clean HTTPS control),

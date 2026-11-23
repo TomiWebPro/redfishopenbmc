@@ -14400,3 +14400,21 @@
 - Next gate cycle: check `rf-platform-check` state first; merge only on a fresh explicit `CHECK: PASS` for the exact new tip — a non-PASS verdict is a SKIP/NO-OP with no commits. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-P20)
+
+**Done:**
+- FEATURE — EP-P20 (test-only, dependency-free, TLS-safe): added `test/features/kvm/platform/backslash_mixed_separator_agreement_test.dart` (6 tests) over an 11-case mixed-separator `ConnectUri` matrix (2 clean / 9 hostile) pinning that classifier, launch plan, nav gate, stale-flag TLS boundary and model signals ALL fail closed uniformly on raw `\` / `%5C` authority-confusion shapes while clean HTTPS controls stay external-browser launchable and same-origin navigable.
+- AUDIT FIRST: the shared whole-URI fail-closed core rejects raw backslashes and authority-encoded delimiters by construction, but EP-P13 pins only two backslash-vs-`@` spellings on platform layers — no test swept the full family through all five layers at once. Genuine unguarded agreement seam, no live divergence, no behaviour change, not churn.
+- Real-file RED: removed raw-backslash rejection from the shared `_rawUriForbiddenChars` core under a 600-perm backup → exactly 5 named failures (classification / stale-flag plan / opt-in eligibility / same-origin nav / hostile-vs-clean nav), premise GREEN; source restored byte-clean (SHA `74887e619129209ef622400a3396edc2ef76bfc8694ddaf96574e4126962ee01` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 6/6 targeted + 442/442 platform GREEN. Queue `platform.md` EP-P20 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed. Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. Full `flutter test` GREEN (see final run report). Targeted 6/6 (pre / RED / restore / GREEN) + 442/442 platform suite. `dart format --output=none --set-exit-if-changed`: clean (my file). `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Empty `lib/` diff. Emulator: SKIPPED (test-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Cross-layer agreement guard ("one parser, five call sites"), not a live fix or churn. Test-only change with empty `lib/` diff and no dependency change. A one-regex-alternative mutation proves the guard fails closed and is isolated to the separator-confusion seam; source restored byte-clean. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head RM-22 (mixed-case + Unicode-confusable connect-type normalization) then EP-S18 / EP-U25 / EP-P15 — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
