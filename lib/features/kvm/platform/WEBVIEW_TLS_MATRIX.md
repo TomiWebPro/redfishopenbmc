@@ -329,6 +329,23 @@ flag stays off for that target.
       page content are inspected for `Content-Security-Policy` frame rules and
       mixed-content (HTTPS page loading HTTP subresources); a console that is
       blocked by CSP framing or mixed-content must not be silently downgraded.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassMixedContentBlocking`, always
+      `false`): the test-only opt-in never bypasses mixed-content blocking or
+      CSP enforcement — an HTTPS console is never reloaded under a relaxed
+      Content-Security-Policy and never permitted to load cleartext HTTP
+      subresources, in strict mode and with the flag both off and on. The opt-in
+      relaxes ONLY the test BMC's untrusted server leaf for the expected host.
+      This box governs which subresources the trusted console page may load, so
+      it is distinct from the server-side certificate checks (hostname
+      verification, pinning, revocation, platform trust-store integrity), the
+      TLS floor, HTTPS-only transport and validated-origin binding (the
+      handshake, cleartext platform sockets and resolved address), and
+      client-certificate validation and the strict Referrer-Policy (the client
+      credential and the app's own outbound Referer header), all of which
+      govern the connection and its credentials. Verified per target (inspect
+      the enforced CSP and observed subresource schemes) before the flag is
+      flipped.
 * [ ] **No local / private-network subresource egress (SSRF / loopback / link-local
       pivot)** — the embedded WebView must not let attacker-influenced console
       content turn the in-app frame into a confused-deputy network pivot: no

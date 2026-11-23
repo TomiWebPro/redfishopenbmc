@@ -259,6 +259,41 @@ class KvmWebViewPolicy {
   /// (RP-1).
   bool get bypassStrictReferrerPolicy => false;
 
+  /// Always `false`: Content-Security-Policy enforcement and mixed-content
+  /// blocking are NEVER bypassed, not even by the test-only self-signed opt-in.
+  ///
+  /// The BMC console is an HTTPS page that may load subresources (scripts,
+  /// styles, images, fonts, XHR/fetch, WebSockets). A Content-Security-Policy
+  /// that restricts frame/load sources and a strict mixed-content policy (an
+  /// `https://` console must never load `http://` subresources) must stay in
+  /// force: allowing active or passive mixed content would let an on-path
+  /// attacker or an attacker-influenced console page downgrade a subresource to
+  /// cleartext, read or tamper with privileged console data, or inject script
+  /// into the trusted frame — a TLS-downgrade / content-injection surface. A
+  /// console whose CSP or mixed-content policy blocks it must never be silently
+  /// downgraded or reloaded under a relaxed policy just to "make it render".
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that disables CSP or
+  /// mixed-content blocking. The test-only self-signed opt-in tolerates ONLY the
+  /// test BMC's untrusted server leaf for the expected host; it must never relax
+  /// CSP or permit mixed content. It is distinct from every server-side
+  /// certificate check — hostname verification ([bypassHostnameVerification])
+  /// and pinning ([bypassCertificatePinning]) bind server identity/key,
+  /// revocation ([bypassCertificateRevocationCheck]) checks certificate status,
+  /// and platform trust-store integrity ([bypassPlatformTrustStoreIntegrity])
+  /// governs device-wide anchors — from the TLS floor ([bypassTlsProtocolFloor]),
+  /// HTTPS-only transport ([bypassHttpsOnlyTransport]) and validated-origin
+  /// binding ([bypassValidatedOriginBinding]) (the handshake, cleartext sockets
+  /// and resolved address), and from client-certificate validation
+  /// ([bypassClientCertificateValidation]) and the strict referrer policy
+  /// ([bypassStrictReferrerPolicy]) (the client credential and the app's own
+  /// outbound `Referer` header): those govern the connection, its credentials
+  /// and the app's own requests, whereas this box governs which subresources
+  /// the trusted console page is allowed to load. See `WEBVIEW_TLS_MATRIX.md`
+  /// (RP-1).
+  bool get bypassMixedContentBlocking => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
