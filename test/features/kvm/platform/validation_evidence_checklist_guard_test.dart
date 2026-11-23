@@ -61,7 +61,11 @@
 // / loopback subresource egress protection (no SSRF / link-local-metadata /
 // private-LAN pivot; hard configuration-independent invariant; the opt-in never
 // lets console subresource requests reach loopback, link-local or private
-// addresses other than the approved console origin), flag-off
+// addresses other than the approved console origin), cross-site cookie /
+// session-token isolation (hard configuration-independent invariant; the opt-in
+// never relaxes Secure/HttpOnly/SameSite cookie scoping, never permits
+// third-party cookies and never shares the console cookie jar with the system
+// browser — no session-theft / account-takeover path), flag-off
 // fallback, human sign-off) so a future edit cannot silently erase the
 // evidence boxes that gate that decision.
 //
@@ -373,6 +377,11 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'private-egress-policy-getter',
     marker: 'bypassprivatenetworkegressprotection'
   ),
+  (
+    name: 'cookie-never-bypassed',
+    marker: 'never bypasses cross-site cookie / session-token isolation'
+  ),
+  (name: 'cookie-policy-getter', marker: 'bypasscookieisolation'),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -1059,6 +1068,22 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('private-egress-never-bypassed'));
       expect(missing, contains('private-egress-policy-getter'));
+    });
+
+    test(
+        'RED: dropping the cross-site cookie / session-token isolation '
+        'hard-invariant box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutCookieIsolation = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses cross-site cookie|bypasscookieisolation')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutCookieIsolation);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('cookie-never-bypassed'));
+      expect(missing, contains('cookie-policy-getter'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

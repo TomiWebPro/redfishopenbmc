@@ -692,6 +692,29 @@ flag stays off for that target.
       per target (inspect the WebView cookie manager / SameSite handling and confirm session
       cookies are Secure/HttpOnly/SameSite-scoped and third-party cookies are blocked) before
       the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassCookieIsolation`, always
+      `false`): the test-only opt-in never bypasses cross-site cookie / session-token
+      isolation — console session cookies stay `Secure` + `HttpOnly` + `SameSite`-scoped,
+      third-party cookies stay blocked and the WebView cookie store stays isolated from the
+      system browser, so an attacker-influenced console page can neither attach the BMC
+      session cookie to a cross-site request nor read it via `document.cookie`, in strict
+      mode and with the flag both off and on. The opt-in relaxes ONLY the test BMC's
+      untrusted server leaf for the expected host; it must never relax cookie scoping,
+      never permit third-party cookies or script-readable session cookies, and never share
+      the console cookie jar with the system browser just to make a console render or to
+      debug it. This box governs cookie-attachment and script-readability semantics for
+      the console session, so it is distinct from the strict Referrer-Policy (the app's
+      own outbound `Referer` header), sensitive URL / token log redaction (diagnostic /
+      telemetry output), sensitive data at rest (on-disk persistence / screen capture),
+      CSP / mixed-content enforcement (which subresources the page may load),
+      private-network egress protection (the network destinations of subresource
+      requests), native bridge isolation (code injected into the page), client-certificate
+      validation (the client TLS credential), and every server-side certificate / TLS /
+      transport check (certificate identity, key, status, device anchors, handshake
+      strength, cleartext sockets and the validated resolved address): those govern the
+      connection, its credentials, its requests or its other outputs, not cookie
+      attachment or script readability. Verified per target before the flag is flipped.
 * [ ] **No tapjacking / UI-overlay / clickjacking (obscured-window touch, CWE-1021)** —
       the embedded WebView must not let an attacker-influenced console page or a
       malicious co-resident app hijack the operator's input through a UI-overlay / tapjacking /

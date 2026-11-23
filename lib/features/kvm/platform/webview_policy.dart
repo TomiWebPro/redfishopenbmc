@@ -456,6 +456,53 @@ class KvmWebViewPolicy {
   /// injected into the page). See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassPrivateNetworkEgressProtection => false;
 
+  /// Always `false`: cross-site cookie / session-token isolation is NEVER
+  /// bypassed, not even by the test-only self-signed opt-in.
+  ///
+  /// The console URI carries the operator's privileged management-session
+  /// handle, and the BMC console typically establishes a session cookie/token
+  /// that authorises KVM frames and management actions. The embedded WebView
+  /// must keep that session credential bound to the console origin: console
+  /// session cookies must be `Secure` + `HttpOnly` + `SameSite`-scoped (never
+  /// `SameSite=None`), third-party cookies must be blocked, the console cookie
+  /// jar must be isolated from the system browser, and the script-readable
+  /// `document.cookie` view must never expose the session token. Console
+  /// content is served by the BMC and is therefore attacker-influenced: without
+  /// this isolation a scripted cross-origin subresource request could attach
+  /// the BMC session cookie (CSRF / session theft), or page script could read
+  /// `document.cookie` and exfiltrate the token — an account-takeover surface.
+  /// Tolerating the test BMC's untrusted server leaf relaxes ONLY that leaf's
+  /// trust; it must never relax cookie scoping, permit third-party cookies,
+  /// allow script reads of the session cookie, or share the cookie jar just to
+  /// make a console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that leaks the
+  /// privileged session via cookies. It governs cookie-attachment and
+  /// script-readability semantics for the console session, so it is distinct
+  /// from every server-side certificate check — hostname verification
+  /// ([bypassHostnameVerification]), pinning ([bypassCertificatePinning]),
+  /// revocation ([bypassCertificateRevocationCheck]) and platform trust-store
+  /// integrity ([bypassPlatformTrustStoreIntegrity]) — the TLS floor
+  /// ([bypassTlsProtocolFloor]), HTTPS-only transport
+  /// ([bypassHttpsOnlyTransport]) and validated-origin binding
+  /// ([bypassValidatedOriginBinding]) (the handshake, cleartext sockets and
+  /// resolved address), client-certificate validation
+  /// ([bypassClientCertificateValidation]) (the client credential), the strict
+  /// Referrer-Policy ([bypassStrictReferrerPolicy]) (the app's outbound
+  /// `Referer` header), CSP / mixed-content enforcement
+  /// ([bypassMixedContentBlocking]) (which subresources the page may load),
+  /// sensitive URL / token log redaction ([bypassLogRedaction]) (diagnostic
+  /// output), sensitive data at rest ([bypassSensitiveDataAtRestProtection])
+  /// (on-disk persistence and screen capture), native bridge isolation
+  /// ([bypassNativeBridgeIsolation]) (code injected into the page) and
+  /// private-network egress protection ([bypassPrivateNetworkEgressProtection])
+  /// (the network destinations of subresource requests): those govern the
+  /// connection, its credentials, its requests or its other outputs, not
+  /// whether the session cookie is attached cross-site or readable by script.
+  /// See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassCookieIsolation => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
