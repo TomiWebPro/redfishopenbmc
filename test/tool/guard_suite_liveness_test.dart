@@ -258,6 +258,18 @@
 // EP-T20 completeness arithmetic, keeping the registry fail-closed against a
 // future silent drop.
 //
+// EP-T35 (epic #009/#021) closes the same CONFIRMED gap for the THREE newest
+// agreement guards that landed after EP-T33: EP-M7
+// `kvm_manager_body_path_normalization_agreement_test.dart`, EP-S12
+// `kvm_service_malformed_members_agreement_test.dart` and EP-P17
+// `userinfo_authority_fail_closed_agreement_test.dart`. All three are live +
+// reachable from the whole-tree CI run yet were absent from BOTH
+// `canonicalGuardFiles` and every pinned epoch, so deleting / emptying /
+// test-stripping any of them stayed GREEN. EP-T35 registers all three under a
+// fresh pinned `epT35AddedGuards` epoch (disjoint from every earlier
+// designation) with a pin test, a temp-root RED→GREEN proof and the updated
+// EP-T20 completeness arithmetic, keeping the registry fail-closed.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -390,6 +402,13 @@ const List<String> canonicalGuardFiles = <String>[
   // 2.0 text scale on 320 px, one merged node per signal, no RenderFlex
   // overflow) — live + CI-reachable but unpinned until this run.
   'test/features/kvm/kvm_large_font_cross_surface_a11y_test.dart',
+  // EP-T35 extension: the three newest agreement guards that landed after
+  // EP-T33 unpinned (EP-M7 body-path normalization, EP-S12 malformed Members,
+  // EP-P17 encoded userinfo fail-closed) — all live + CI-reachable but absent
+  // from the registry until this run.
+  'test/features/kvm/kvm_manager_body_path_normalization_agreement_test.dart',
+  'test/features/kvm/kvm_service_malformed_members_agreement_test.dart',
+  'test/features/kvm/platform/userinfo_authority_fail_closed_agreement_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -658,6 +677,18 @@ const Set<String> epT33AddedGuards = <String>{
   'test/features/kvm/kvm_large_font_cross_surface_a11y_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-T35: the three newest
+/// agreement guards (EP-M7 body-path normalization, EP-S12 malformed Members,
+/// EP-P17 encoded userinfo fail-closed). All three landed unpinned, live +
+/// CI-reachable but absent from the registry, so deleting / emptying /
+/// test-stripping any of them stayed GREEN. Pinned separately so a future edit
+/// cannot drop them back out of the canonical set (issues #009/#021 closeout).
+const Set<String> epT35AddedGuards = <String>{
+  'test/features/kvm/kvm_manager_body_path_normalization_agreement_test.dart',
+  'test/features/kvm/kvm_service_malformed_members_agreement_test.dart',
+  'test/features/kvm/platform/userinfo_authority_fail_closed_agreement_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -689,6 +720,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT30AddedGuards,
   ...epT32AddedGuards,
   ...epT33AddedGuards,
+  ...epT35AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -1593,6 +1625,48 @@ void main() {
       expect(epT33AddedGuards.intersection(epT32AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-T35: the three newest agreement guards are in the canonical '
+        'liveness set', () {
+      expect(epT35AddedGuards, isNotEmpty);
+      expect(epT35AddedGuards.length, 3);
+      for (final String path in epT35AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T35 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epT35AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(rm15AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epP13AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(sec010AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT26AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT28AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT29AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT30AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT32AddedGuards), isEmpty);
+      expect(epT35AddedGuards.intersection(epT33AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -1644,7 +1718,8 @@ void main() {
             epT29AddedGuards.length +
             epT30AddedGuards.length +
             epT32AddedGuards.length +
-            epT33AddedGuards.length,
+            epT33AddedGuards.length +
+            epT35AddedGuards.length,
       );
     });
   });
@@ -3064,6 +3139,73 @@ void main() {
         // The newly-registered EP-U21 large-font cross-surface a11y guard
         // must fail closed when deleted, emptied or stripped of tests.
         for (final String addedGuard in epT33AddedGuards) {
+          File(p(addedGuard)).deleteSync();
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'MISSING: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when deleted',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('  \n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'EMPTY: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when emptied',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when test-stripped',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+        }
+
+        // GREEN again once every guard is restored.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test(
+        'EP-T35: newly-registered newest agreement guards are '
+        'liveness-checked', () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_t35_guards_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        // Populate every canonical guard with a live synthetic case.
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        // Each newly-registered guard must fail closed when deleted, emptied
+        // or stripped of tests (EP-M7 body-path, EP-S12 malformed-members,
+        // EP-P17 encoded-userinfo).
+        for (final String addedGuard in epT35AddedGuards) {
           File(p(addedGuard)).deleteSync();
           expect(
             evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
