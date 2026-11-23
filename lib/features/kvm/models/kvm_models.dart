@@ -6,6 +6,8 @@
 /// [KvmConsole] so the UI can list them uniformly.
 library;
 
+import 'package:redfishopenbmc/features/kvm/models/kvm_connect_type.dart'
+    show kvmConnectTypeEquals;
 import 'package:redfishopenbmc/features/kvm/models/kvm_manager_source.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_registry.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart'
@@ -183,9 +185,11 @@ class KvmConsole {
   /// Redfish canonically spells the value `HTML5`, but some BMCs emit a
   /// different case or surrounding whitespace; matching case-insensitively
   /// after trimming keeps the in-app HTML5 launch path from silently skipping
-  /// such consoles (issue #021).
+  /// such consoles (issue #021). The fold is ASCII-only, so a Unicode
+  /// confusable token never collapses onto the canonical `HTML5` spelling
+  /// (RM-22).
   bool get supportsHtml5 => connectTypesSupported.any(
-        (String type) => type.trim().toUpperCase() == 'HTML5',
+        (String type) => kvmConnectTypeEquals(type, 'HTML5'),
       );
 
   /// Whether the console card should show the "HTML5 console — open via BMC
@@ -634,7 +638,7 @@ List<String> _normalizedConnectTypes(dynamic value) {
     final String type = entry.trim();
     if (type.isEmpty) continue;
     final bool duplicate = result.any(
-      (String existing) => existing.toUpperCase() == type.toUpperCase(),
+      (String existing) => kvmConnectTypeEquals(existing, type),
     );
     if (!duplicate) result.add(type);
   }

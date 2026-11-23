@@ -11,6 +11,8 @@
 /// #009 / #021).
 library;
 
+import 'package:redfishopenbmc/features/kvm/models/kvm_connect_type.dart'
+    show kvmConnectTypeEquals;
 import 'package:redfishopenbmc/features/kvm/models/kvm_manager_source.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_registry.dart';
 import 'package:redfishopenbmc/features/kvm/models/kvm_oem_uri.dart'
@@ -192,11 +194,13 @@ class KvmCapability {
   /// graphical console). Reading the aggregate [connectTypes] here would
   /// wrongly report KVMIP support for a manager that only lists `KVMIP` on a
   /// serial/OEM block. Matching is case-insensitive and trimmed because some
-  /// BMCs emit a different case or surrounding whitespace.
+  /// BMCs emit a different case or surrounding whitespace. The fold is
+  /// ASCII-only, so a Unicode confusable token never collapses onto the
+  /// canonical `KVMIP` spelling (RM-22).
   bool get supportsKvmIp =>
       graphicalKvmIp ??
       connectTypes.any(
-        (String type) => type.trim().toUpperCase() == 'KVMIP',
+        (String type) => kvmConnectTypeEquals(type, 'KVMIP'),
       );
 
   /// Builds a capability summary from a Redfish manager [body].
@@ -456,7 +460,7 @@ class KvmCapability {
     final dynamic value = block['ConnectTypesSupported'];
     if (value is! List<dynamic>) return false;
     return value.any(
-      (dynamic e) => e is String && e.trim().toUpperCase() == type,
+      (dynamic e) => e is String && kvmConnectTypeEquals(e, type),
     );
   }
 
@@ -510,7 +514,7 @@ class KvmCapability {
     // renders two case-different OEM chips where the per-console card shows one
     // — keeping the documented case-insensitive dedup contract (issue #009).
     if (oemConsole &&
-        !types.any((String type) => type.toUpperCase() == 'OEM')) {
+        !types.any((String type) => kvmConnectTypeEquals(type, 'OEM'))) {
       types.add('Oem');
     }
     return types;
@@ -534,7 +538,7 @@ class KvmCapability {
       final String type = entry.trim();
       if (type.isEmpty) continue;
       final bool duplicate = target.any(
-        (String existing) => existing.toUpperCase() == type.toUpperCase(),
+        (String existing) => kvmConnectTypeEquals(existing, type),
       );
       if (!duplicate) target.add(type);
     }

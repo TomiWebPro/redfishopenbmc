@@ -15,7 +15,7 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
      Primary) stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence,
      never churn. No code touched. -->
 
-- [ ] RM-22 Mixed-case + Unicode-confusable connect-type normalization agreement across both factories:
+- [x] RM-22 LANDED 2026-11-23 (run `auto: FEATURE #009/#021 RM-22 connect-type Unicode-confusable collapse fix + cross-factory agreement guard`, analyze 0 / full suite 2576 passed / 1 skipped / emulator 85/85; +12 new tests, lib+test) — Mixed-case + Unicode-confusable connect-type normalization agreement across both factories:
        over a matrix of `Manager` bodies whose `ConnectTypesSupported` carries mixed-case ASCII plus
        Unicode confusables and fullwidth forms (dotted/dotless I, Kelvin sign, fullwidth K/V/M/I)
        alongside a real `KVMIP`/`HTML5`, pin that `KvmConsole.fromManager` and

@@ -14435,3 +14435,22 @@
 - Push the merge + tracking commit (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: check `rf-platform-check` state first; merge only on a fresh explicit `CHECK: PASS` for the exact new tip — a non-PASS verdict is a SKIP/NO-OP with no commits. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — RM-22
+
+**Done:**
+- FEATURE RM-22 for open #009/#021: AUDIT found a genuine live defect — both `fromManager` factories shared `ConnectTypesSupported` trim + case-insensitive dedup, but every canonical-token classifier used `String.toUpperCase()`, whose Unicode mapping folds the dotless-i (`ı` U+0131 → ASCII I) and long-s (`ſ` U+017F → ASCII S) onto canonical letters. A hostile graphical console advertising `['KVMıP']` therefore passed the `KVMIP` check and flipped `KvmCapability.supported` / `supportsKvmIp` while the chip rendered a confusable token.
+- Added shared ASCII-only `kvmConnectTypeKey` / `kvmConnectTypeEquals` (`lib/features/kvm/models/kvm_connect_type.dart`, barrel-exported), wired all six canonical-comparison + dedup sites in `kvm_models.dart` / `kvm_capability.dart`, and refreshed the affected doc comments. ASCII case/whitespace behaviour unchanged; non-ASCII/fullwidth/compatibility tokens stay distinct by construction.
+- Added `test/features/kvm/kvm_connect_type_confusable_agreement_test.dart` (12 tests): pure-helper fold, a 7-token confusable matrix (dotless-i ×2, Kelvin, fullwidth ＫＶＭＩ５, dotted-I, near-HTML5 ×2) pinning byte-identical normalized lists and fail-closed `supported`/`supportsKvmIp`/`supportsHtml5` on both factories, padded/mixed-case ASCII dedup agreement, confusable+real chip coexistence, and a source-level liveness pin against reverting to `toUpperCase() == '<canonical>'`.
+
+**Verification:**
+- Real-file RED: reintroduced `value.toUpperCase()` in the shared key under a 600-perm backup → exactly 4 named failures (non-ASCII key survival, both dotless-i factory cases, confusable+real chip merge); ASCII + Kelvin/fullwidth/near-HTML5 cases stayed GREEN. Source restored byte-clean (SHA `cf2579a40046e8b456d1408003e81078126fe512fcd295e24a92afa98fa680fa` unchanged, 0 residue, backup shredded) → 12/12 targeted + 282/282 model/parity files GREEN.
+- `dart format` clean (5 files); `flutter analyze` 0 issues; full `flutter test --concurrency=4` 2576 passed / 1 skipped (baseline 2564 +12); DMTF emulator re-run 85/85 GREEN (lib changed, pinned `23d21f9`, self-signed test-only, trap cleanup); `issues.py validate` OK; `git diff --check` clean; deps unchanged; no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- A hardening fix was warranted here (unlike pure characterization guards): RM-22's own acceptance criterion requires that no confusable collapse onto a canonical token, and the dotless-i case violated it on both views. The fix is a single shared ASCII-only fold, so the two factories cannot drift; no blocked behaviour decision (RM-11 mixed regime / EP-S8 credentialed Primary) was folded in. Never force-push, rewrite history, `git clean`, or delete user files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-S18 (same-tier secure-console Primary tie-break determinism) then EP-U25 / EP-P15 — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn. Consider an EP-T-style guard-suite liveness epoch for this newly-landed confusable guard. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
