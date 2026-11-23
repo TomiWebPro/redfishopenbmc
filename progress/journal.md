@@ -14711,3 +14711,20 @@
 - Next rf-gate run: re-check `rf-platform-check` latest verdict first; merge `--no-ff` only a PASS branch, skip + report otherwise. Continue audit-first dept heads EP-S19 / EP-U26 for the builder; #021 / #009 stay human-gated on WebView + BMC TLS validation.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-U26-residual SnackBar guard)
+
+**Done:**
+- FEATURE EP-U26-residual for open #009/#021: added `test/features/kvm/kvm_card_copy_confirmation_snackbar_agreement_test.dart` (12 tests). AUDIT FIRST confirmed the console card's copy-confirmation SnackBar text is asserted NOWHERE (viewer's is pinned in `kvm_viewer_uri_surface_agreement_test.dart:202`; EP-U12 checks only the clipboard channel), while the pre-flagged dept heads EP-S19/EP-P15/EP-U26/RM-1/RM-2 are defeated/stale and all agreement guards are already registered. Genuine unguarded seam: a one-sided refactor to the card's confirmation could re-surface the raw CRLF/injection-bearing endpoint while the clipboard stays fail-closed and every existing suite stays GREEN. Pins card SnackBar == clipboard == `clipboardTargetUri` == model single source over a 6-case hostile matrix, never raw control/injected marker; clean-secure byte-exact target; card↔viewer confirmation byte-identical; merged copy-affordance a11y; no overflow at 320/800/1300 px. Test-only, dependency-free, TLS-safe.
+- Real-file RED: `lib/features/kvm/views/kvm_view.dart:673` `Text('Copied: $targetUri')` → `Text('Copied: ${console.launchUri ?? ''}')` under a 600-perm backup → exactly 7 named failures (`+5 -7`), 5 controls GREEN; restored byte-clean (SHA `7359effb5ba6b963e6c2d0584bf507f1093c29ca408352cbd48a85100d7efabf` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 12/12 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2672 passed / 1 skipped (baseline 2660 +12 mine); sibling suites 40/40; `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test-only regression guard closing a confirmed unguarded seam; no live divergence, no behaviour change, no product code per §5. A registry audit found no remaining unregistered guard, so this new guard is deferred to the next EP-T liveness pass. Never force-push, rewrite history, `git clean`, or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push). Next: an EP-T liveness pass to register the new guard under a fresh pinned epoch; then AUDIT FIRST for a genuinely new unguarded seam (previous heads defeated/stale — never churn). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
