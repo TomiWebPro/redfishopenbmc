@@ -14295,3 +14295,21 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-U24 (long unbreakable connect-type chip no-overflow) — audit-first, RED→GREEN only on a genuine divergence, never churn; register the new EP-S17 guard in a future EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-U24)
+
+**Done:**
+- FEATURE — EP-U24 (test-only, dependency-free, TLS-safe): added `test/features/kvm/kvm_card_unbreakable_chip_agreement_test.dart` (4 tests) pinning long unbreakable connect-type chip token no-overflow + single merged a11y agreement across both KVM operator cards for #009/#021. A 400-char whitespace-free vendor token plus a short control is pumped through BOTH real cards at 320/800/1300 px, pinning byte-identical full chip values, one merged `excludeSemantics` node per card announcing the FULL token (visible clipped, announcement untruncated), exactly one visible token instance per card (no screen-reader-only duplicate), and no overflow; a fourth case drives the token alone at 320 px.
+- AUDIT FIRST: both cards already render chips through `Wrap(children:[Chip(label:Text(type))])`; `RenderChip._labelConstraintsFrom` bounds each label to a finite max width and the Chip `DefaultTextStyle` clips via `maxLines:1 / softWrap:false / overflow:fade`, so an unbreakable token is clipped to one visible instance — no live divergence. Genuine unguarded seam: no test drove a single long unbreakable token through BOTH cards at once (EP-U19 modest matrix, EP-U20 20+ SHORT chips, EP-U23 long MANAGER NAME). Characterization / regression lock, not churn. Distinct from EP-U20 (many short chips) and EP-U23 (long manager name).
+- Real-file RED: one-sided truncation of long chip labels in `lib/features/kvm/views/kvm_capability_card.dart` only under a 600-perm backup → exactly the 4 new EP-U24 tests failed, 12 short-chip sibling tests (EP-U19 + EP-U20) GREEN; source restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) → 4/4 targeted GREEN. Queue `ui.md` EP-U24 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed. Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. Full `flutter test --concurrency=4`: 2531 passed / 1 skipped (baseline 2527 +4 mine). Targeted 4/4 + 12/12 short-chip sibling suites. `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Empty `lib/` diff. Emulator: SKIPPED (test-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Cross-card UI characterization / regression guard, not a live fix or churn. Test-only change with empty `lib/` diff and no dependency change. A one-sided 'cap long vendor labels' truncation mutation proves the guard non-vacuous and isolated to the unbreakable-token seam (12 short-chip siblings stayed GREEN); source restored byte-clean. The existing Wrap/Chip layout already clips the token cleanly, so no production UI fix was warranted. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads: RM-11 / EP-P15 / EP-S8 / EP-T4 from the 06:31 split — audit-first, RED→GREEN only on a genuine divergence, never churn; register accumulating newly-landed guards in an EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

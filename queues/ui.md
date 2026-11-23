@@ -13,16 +13,29 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
      chip suite stays GREEN. Display-only; the human-gated WebView/TLS rendering stays gated and is NOT re-split.
      AUDIT FIRST; RED→GREEN only on a genuine divergence, never churn. No code touched. -->
 
-- [ ] EP-U24 Long unbreakable connect-type chip token no-overflow + single merged a11y agreement across both
-       KVM operator cards: build one manager into both real cards whose enabled console block carries a single
-       very long, whitespace-free vendor connect-type token (plus a short control), and pin that neither card
-       overflows at 320/800/1300 px, that the token is rendered/clipped to a single visible instance inside one
-       merged `excludeSemantics` node per chip with visible text == announced label (no duplicate/screen-reader-
-       only copy), and that the two cards keep byte-identical chip values regardless of their intentionally
-       different Semantics prefixes. AUDIT FIRST: if both cards already wrap/clip an unbreakable token cleanly
-       with byte-identical output and no overflow, record the audit and add nothing; RED→GREEN only on a genuine
-       divergence, never churn. Display-only; no WebView/protocol import, no URL opened, no dependency, no
-       production TLS weakening.
+- [x] EP-U24 LANDED 2026-11-23 (run `auto: FEATURE #009/#021 EP-U24 long unbreakable connect-type chip no-overflow + single merged a11y agreement + RED->GREEN tests`, test-only) — Long unbreakable connect-type chip token
+       no-overflow + single merged a11y agreement across both KVM operator cards: added
+       `test/features/kvm/kvm_card_unbreakable_chip_agreement_test.dart` (4 tests) pumping one manager whose
+       enabled GraphicalConsole carries a single 400-char whitespace-free vendor token plus a short control
+       through both real cards at 320/800/1300 px, pinning byte-identical full chip values on both cards,
+       one merged `excludeSemantics` node per card announcing the FULL token (visible clipped, announcement
+       untruncated), exactly one visible token instance per card (no screen-reader-only duplicate), and no
+       overflow. A fourth case drives the unbreakable token alone at 320 px. AUDIT FIRST: both cards already
+       render chips through `Wrap(children:[Chip(label:Text(type))])` and `RenderChip._labelConstraintsFrom`
+       gives each label a FINITE max width (bounded by the Wrap) while the Chip's `DefaultTextStyle` clips via
+       `maxLines:1 / softWrap:false / overflow:fade`, so an unbreakable token is clipped to one visible instance
+       rather than overflowing; both cards read the same normalized model list — no live divergence, no
+       behaviour change. Genuine unguarded seam: no existing test drove a single long unbreakable token through
+       BOTH cards at once (EP-U19 modest matrix, EP-U20 20+ SHORT chips, EP-U23 long MANAGER NAME).
+       Characterization / regression lock, not churn. Real-file RED: one-sided truncation of long chip labels
+       in `lib/features/kvm/views/kvm_capability_card.dart` only (`Text(type.length > 12 ? substring(0,12)+'…'
+       : type)`, the plausible 'cap long vendor labels' refactor) under a 600-perm backup → exactly the 4 new
+       EP-U24 tests failed, 12 short-chip sibling tests (EP-U19 + EP-U20) GREEN; source restored byte-clean
+       (SHA `c6c4b09abeca88169859b85a6dc3999c963c9acd50b3ffd9716a1018d74d9b00` unchanged, 0 residue, empty
+       `lib/` diff, backup shredded) → 4/4 targeted GREEN; analyze 0; full suite 2531 passed / 1 skipped
+       (baseline 2527 +4 mine); issues validate OK; diff --check clean; deps unchanged; empty `lib/` diff;
+       emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened,
+       no production TLS weakening. Original item:
        Dept: rf-ui
        Verify: `flutter test test/features/kvm/kvm_card_chip_session_agreement_test.dart test/features/kvm/kvm_card_cross_surface_agreement_test.dart && flutter analyze`
                (0 issues), RED→GREEN proof + 320 px no-overflow + visible==announced only on a genuine
