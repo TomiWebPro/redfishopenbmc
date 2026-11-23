@@ -15,7 +15,7 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
      EP-S8 credentialed Primary) stay blocked and are NOT re-split. AUDIT FIRST; RED→GREEN only on a genuine
      divergence, never churn. No code touched. -->
 
-- [ ] RM-21 Body `@odata.id` query / fragment / userinfo normalization agreement across both `fromManager`
+- [x] RM-21 LANDED 2026-11-23 (run `auto: FEATURE #009/#021 RM-21 body @odata.id query/fragment/userinfo normalization agreement + RED->GREEN tests`, analyze 0 / full suite 2521 passed / 1 skipped; +19 new tests) — Body `@odata.id` query / fragment / userinfo normalization agreement across both `fromManager`
        factories: over an in-temp matrix of `Manager` bodies whose `@odata.id` carries a query string, a fragment,
        embedded userinfo, and control/CRLF-bearing variants of each (plus a clean canonical control), pin that
        `KvmConsole.fromManager` and `KvmCapability.fromManager` resolve the SAME control-safe `safeManagerUri` and
@@ -30,6 +30,28 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
                (0 issues), RED→GREEN proof only on a genuine divergence; writes limited to
                `lib/features/kvm/models/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
                no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+
+      **LANDED**: AUDIT FIRST — both factories already route the body `@odata.id` through the shared
+      trims-only `kvmManagerSourceUri` helper and both expose a control-safe `safeManagerUri` gated by
+      `isControlSafeConsoleUri`, so the query/fragment/userinfo matrix is normalized and classified
+      uniformly by construction — no live divergence, no behaviour change. Genuine unguarded seam: no
+      test drove a body `@odata.id` carrying a query, fragment or embedded userinfo (plus CRLF/NUL/
+      encoded-control/encoded-`@` variants) through BOTH factories at once (EP-M7 pins the resource
+      path, RM-15 bidi, RM-18/19 derived fallback; EP-P17/EP-P19 pin userinfo/query on the CONNECT-URI
+      layers only). Added `test/features/kvm/kvm_manager_body_query_fragment_userinfo_agreement_test.dart`
+      (19 tests): 18-case matrix (12 path query/fragment + 6 userinfo) pinning identical trimmed source,
+      manager identity, control-safe source, clipboard fallback and agreement with the shared helper +
+      load-bearing classifier on both views; legal encoded space/percent query controls stay
+      byte-for-byte; hostile CRLF/NUL/encoded-control/encoded-delimiter userinfo variants fail closed
+      to the derived path with no credential-shaped substring in either safe source. Real-file RED:
+      stripped query+fragment from the capability factory's body fallback only (plausible 'OData source
+      is just the resource path' refactor) under a 600-perm backup → exactly 13 named failures (all
+      query/fragment cases), 6 userinfo-only + classifier tests GREEN; source restored byte-clean (SHA
+      `533ed545ee344726ceb84de5e131cfc3bfb2aa7f56bb3a2c74bde08e22a2f559` unchanged, 0 residue, empty
+      `lib/` diff, backup shredded) → 19/19 targeted + 230/230 sibling model suites GREEN. Test-only;
+      no `lib/`, dependency, wire/TLS change, no WebView/protocol import, no URL opened, no production
+      TLS weakening.
+
 
 <!-- rf-ideate split 2026-11-23 02:27 UTC: carves another fresh, machine-checkable, unblocked slice of
      the still-open #009/#021 model epic (never-empty-well OEM-enrichment agreement, MULTI_DEPT hard

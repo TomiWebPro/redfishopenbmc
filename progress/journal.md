@@ -14259,3 +14259,21 @@
 - Push this tracking commit (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: check `rf-platform-check` state first; merge only on a fresh explicit `CHECK: PASS` for the exact new tip. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (RM-21)
+
+**Done:**
+- FEATURE — RM-21 (test-only, dependency-free, TLS-safe): added `test/features/kvm/kvm_manager_body_query_fragment_userinfo_agreement_test.dart` (19 tests) pinning body `@odata.id` query / fragment / userinfo normalization agreement across both `fromManager` factories for #009/#021. An 18-case matrix (12 path query/fragment + 6 userinfo, incl. CRLF/NUL/encoded-control/encoded-`@` variants) is fed through real `KvmConsole.fromManager` + `KvmCapability.fromManager`, pinning identical trimmed source, manager identity, control-safe source and clipboard fallback, agreement with the shared `kvmManagerSourceUri` helper and load-bearing classifier, legal encoded space/percent query controls staying byte-for-byte, and hostile userinfo variants failing closed to the derived path with no credential-shaped substring in either safe source.
+- AUDIT FIRST: both factories already route the body id through the shared trims-only normalizer and gate both `safeManagerUri` getters with `isControlSafeConsoleUri`, so the matrix is normalized and classified uniformly by construction — no live divergence. Genuine unguarded seam: no test drove a body query/fragment/userinfo through BOTH factories at once (EP-M7 resource path, RM-15 bidi, RM-18/19 derived fallback; EP-P17/EP-P19 userinfo/query on CONNECT-URI layers only); characterization / regression lock, not churn. Distinct from EP-M7 (resource path), EP-P17 (encoded userinfo on launch URIs), EP-P19 (query/fragment controls on launch URIs).
+- Real-file RED: stripped query+fragment from the capability factory's body fallback only under a 600-perm backup → exactly 13 named failures (all query/fragment cases), 6 userinfo-only + classifier GREEN; source restored byte-clean (SHA `533ed545…` unchanged, empty `lib/` diff, backup shredded) → 19/19 targeted + 230/230 sibling model suites GREEN. Queue `model.md` RM-21 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed. Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. Full `flutter test --concurrency=4`: 2521 passed / 1 skipped (baseline 2502 +19 mine). Targeted 19/19 + sibling model suites 230/230. `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Empty `lib/` diff. Emulator: SKIPPED (test-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Cross-factory characterization / regression guard, not a live fix or churn. Test-only change with empty `lib/` diff and no dependency change. A one-sided 'resource path only' normalization mutation proves the guard is non-vacuous and isolated to the query/fragment seam (userinfo-only + classifier cases stayed GREEN); source restored byte-clean. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-S17 (malformed-body / transport-exception skip-vs-propagate) then EP-U24 (long unbreakable connect-type chip no-overflow) — audit-first, RED→GREEN only on a genuine divergence, never churn; register the new RM-21 guard in a future EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
