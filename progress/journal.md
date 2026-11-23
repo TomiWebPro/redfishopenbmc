@@ -14454,3 +14454,21 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-S18 (same-tier secure-console Primary tie-break determinism) then EP-U25 / EP-P15 — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn. Consider an EP-T-style guard-suite liveness epoch for this newly-landed confusable guard. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — EP-S18
+
+**Done:**
+- FEATURE EP-S18 for open #009/#021: AUDIT found the individual seams pinned but a genuine unguarded combination — EP-S2 pins tier precedence + CRLF at the picker, EP-S6 capability<->primary for a manager whose graphical block is DISABLED, EP-S7 pure-model multi-block URI agreement, EP-S11 first-in-BMC-order across three SINGLE-block managers; nothing drove ONE all-secure GraphicalConsole + RemoteConsole + SerialConsole manager with DISTINCT session limits through the real `/Managers` walk in both declaration orders.
+- Added `test/features/kvm/kvm_service_same_tier_primary_agreement_test.dart` (5 tests) over two in-temp `/Managers` mockups differing only in member order: A-first / B-first first-secure-graphical winner with `fetchCapability(id)` resolved URI + session-limit agreement over 3 repeated walks, reversed console-BLOCK insertion order (fixed `graphical -> serial -> remote` type order; graphical still wins with its own limit), non-mutating `pickPrimary`, and a CRLF-bearing "secure" graphical that fails closed and never wins.
+
+**Verification:**
+- Real-file RED: `firstSecureGraphical ??= console; break` → `firstSecureGraphical = console` (last-secure-graphical-wins refactor) in `KvmService.pickPrimary` under a 600-perm backup → exactly 2 named failures (A-first / B-first winner tests), the other 3 GREEN; source restored byte-clean (SHA `653e64a63a52b8d2741a438daf7e77a0291c559393e5328877d41e5e8091ddd0` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 5/5 targeted GREEN.
+- `dart format` clean; `flutter analyze` 0 issues; full `flutter test` GREEN — 2581 passed / 1 skipped (baseline 2576 +5); emulator skipped (test-only, <7 days since last green 85/85); `issues.py validate` OK; `git diff --check` clean; deps unchanged; no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Test-only characterization guard at a genuine unguarded seam, no live divergence, no behaviour change; the tie-break failure proof stays entirely inside `KvmService.pickPrimary` (the service-scoped write allowance). The capability aggregation of a hostile-URI console's session limit is owned by `KvmCapability` and deliberately NOT changed here (out of EP-S18 scope). Never force-push, rewrite history, `git clean`, or delete user files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-U25 (Primary-badge single merged a11y agreement) then EP-P15 — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn. Register the new EP-S18 guard in a future EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
