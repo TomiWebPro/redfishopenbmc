@@ -1285,6 +1285,43 @@ flag stays off for that target.
       (programmatic network connections): those govern other output surfaces,
       not a rendered print / PDF copy of the console DOM. Verified per target
       before the flag is flipped.
+* [ ] **No pointer-lock / keyboard-lock / fullscreen input capture (input trap
+      / UI spoof)** — the embedded WebView must not let attacker-influenced
+      console content seize the operator's local input or hide the privileged
+      app UI: no scripted `requestPointerLock()` / `Element.requestFullscreen()`
+      / `requestKeyboardLock()` (nor the `webkit` / `moz` prefixed variants), and
+      no console-content-initiated fullscreen, pointer-lock or keyboard-lock
+      that traps keyboard/mouse focus, conceals the app chrome or presents a
+      look-alike credential prompt. Console content is served by the BMC and is
+      therefore attacker-influenced (a compromised or spoofed BMC, or script in
+      the page): a page that captures the pointer/keyboard and goes fullscreen
+      can obscure the trusted frame, trap operator input and spoof a system or
+      BMC login dialog to harvest the operator's credentials or session token —
+      a UI-spoof / input-trap surface wholly independent of JavaScript modal
+      dialogs, overlay/tapjacking and device-capability prompts. Every such
+      input-capture request from console content must be denied at the WebView
+      (pointer/keyboard lock refused, content-initiated fullscreen refused,
+      focus never hijacked), on every target, in strict mode and with the flag
+      both off and on. Operator/app-initiated fullscreen of the console view is
+      a separate functional path (see the Fullscreen box) and is unaffected.
+      Verified per target (inspect the WebView fullscreen / pointer-lock /
+      keyboard-lock callbacks and confirm console content cannot trap input or
+      hide the app chrome) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassInputCaptureProtection`,
+      always `false`): the test-only opt-in never bypasses input-capture
+      protection — console content never seizes pointer/keyboard focus and never
+      hides the app chrome to spoof a prompt, in strict mode and with the flag
+      both off and on. The opt-in relaxes ONLY the test BMC's untrusted server
+      leaf for the expected host, via a scoped per-connection verifier; it must
+      never grant an input-capture or fullscreen request just to make a console
+      render or to debug it. This box is distinct from JavaScript dialog / modal
+      spoofing (`alert` / `confirm` / `prompt` / `beforeunload`), tapjacking /
+      UI-overlay / clickjacking (a co-resident app drawing an obscuring overlay
+      or delivering an obscured touch) and device-capability / permission
+      access (host capabilities granted to page content): those govern other
+      input and prompt surfaces, not content-initiated pointer/keyboard lock and
+      fullscreen input capture. Verified per target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

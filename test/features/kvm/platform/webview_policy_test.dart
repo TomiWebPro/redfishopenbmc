@@ -1425,14 +1425,16 @@ void main() {
     });
   });
 
-  group('KvmWebViewPolicy — service worker / persistent background script never '
+  group(
+      'KvmWebViewPolicy — service worker / persistent background script never '
       'allowed', () {
     test('production default never permits service worker registration', () {
       expect(KvmWebViewPolicy.productionDefault.bypassServiceWorkerRegistration,
           isFalse);
     });
 
-    test('test-only self-signed opt-in still denies persistent background '
+    test(
+        'test-only self-signed opt-in still denies persistent background '
         'scripts', () {
       // Tolerating the test BMC's untrusted server leaf relaxes ONLY leaf trust
       // for the expected host (via a scoped verifier): it must never let
@@ -1440,7 +1442,8 @@ void main() {
       // persistent background script that outlives the page/session just to
       // make a console render or to debug it. Hard invariant, independent of
       // the flag, TLS mode or console signals.
-      expect(KvmWebViewPolicy.testOptIn.bypassServiceWorkerRegistration, isFalse);
+      expect(
+          KvmWebViewPolicy.testOptIn.bypassServiceWorkerRegistration, isFalse);
     });
 
     test('no policy configuration can permit a persistent background script',
@@ -1486,9 +1489,11 @@ void main() {
     });
   });
 
-  group('KvmWebViewPolicy — print / save-to-PDF exfiltration never allowed', () {
+  group('KvmWebViewPolicy — print / save-to-PDF exfiltration never allowed',
+      () {
     test('production default never permits print exfiltration', () {
-      expect(KvmWebViewPolicy.productionDefault.bypassPrintExfiltration, isFalse);
+      expect(
+          KvmWebViewPolicy.productionDefault.bypassPrintExfiltration, isFalse);
     });
 
     test('test-only self-signed opt-in still denies printing', () {
@@ -1541,6 +1546,68 @@ void main() {
       expect(enabledSelfSigned.bypassTapjackingProtection, isFalse);
       expect(enabledSelfSigned.bypassJavaScriptDialogDenial, isFalse);
       expect(enabledSelfSigned.bypassServiceWorkerRegistration, isFalse);
+    });
+  });
+
+  group(
+      'KvmWebViewPolicy — pointer/keyboard/fullscreen input capture never allowed',
+      () {
+    test('production default never permits input capture', () {
+      expect(KvmWebViewPolicy.productionDefault.bypassInputCaptureProtection,
+          isFalse);
+    });
+
+    test('test-only self-signed opt-in still denies input capture', () {
+      // Tolerating the test BMC's untrusted server leaf relaxes ONLY leaf trust
+      // for the expected host (via a scoped verifier): it must never let
+      // attacker-influenced console content seize pointer/keyboard focus or
+      // hide the app chrome to trap input or spoof a credential prompt just to
+      // make a console render or to debug it. Hard invariant, independent of
+      // the flag, TLS mode or console signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassInputCaptureProtection, isFalse);
+    });
+
+    test('no policy configuration can enable input capture', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassInputCaptureProtection, isFalse);
+      expect(enabledSelfSigned.bypassInputCaptureProtection, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Every other hard invariant stays independent of input capture: the
+      // test-only opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.bypassStrictReferrerPolicy, isFalse);
+      expect(enabledSelfSigned.bypassMixedContentBlocking, isFalse);
+      expect(enabledSelfSigned.bypassLogRedaction, isFalse);
+      expect(enabledSelfSigned.bypassSensitiveDataAtRestProtection, isFalse);
+      expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
+      expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
+      expect(enabledSelfSigned.bypassCookieIsolation, isFalse);
+      expect(enabledSelfSigned.bypassWebViewRemoteDebugging, isFalse);
+      expect(enabledSelfSigned.bypassDevicePermissionControls, isFalse);
+      expect(enabledSelfSigned.bypassHttpAuthChallengeDenial, isFalse);
+      expect(enabledSelfSigned.bypassLocalFileAccess, isFalse);
+      expect(enabledSelfSigned.bypassOutboundEgressAllowlist, isFalse);
+      expect(enabledSelfSigned.bypassCrossOriginFormSubmission, isFalse);
+      expect(enabledSelfSigned.bypassSslErrorRejection, isFalse);
+      expect(enabledSelfSigned.bypassTopLevelNavigationConfinement, isFalse);
+      expect(enabledSelfSigned.bypassArbitraryFileDownload, isFalse);
+      expect(enabledSelfSigned.bypassAutofillCredentialCapture, isFalse);
+      expect(enabledSelfSigned.bypassFileChooserAccess, isFalse);
+      expect(enabledSelfSigned.bypassTapjackingProtection, isFalse);
+      expect(enabledSelfSigned.bypassJavaScriptDialogDenial, isFalse);
+      expect(enabledSelfSigned.bypassServiceWorkerRegistration, isFalse);
+      expect(enabledSelfSigned.bypassPrintExfiltration, isFalse);
     });
   });
 

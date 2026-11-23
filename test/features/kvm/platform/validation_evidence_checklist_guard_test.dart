@@ -18,6 +18,10 @@
 // no-print/save-to-PDF exfiltration (hard configuration-independent invariant;
 // the opt-in never exposes a print adapter nor honours a scripted window.print()
 // so the privileged console DOM cannot be rendered to a durable print/PDF copy),
+// no-pointer-lock/keyboard-lock/fullscreen input capture (hard configuration-
+// independent invariant; the opt-in never lets attacker-influenced console
+// content seize pointer/keyboard focus or hide the app chrome to trap input or
+// spoof a credential prompt),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -384,6 +388,25 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'distinct from arbitrary / drive-by file download'
   ),
   (name: 'opt-in-keeps-print-denied', marker: 'never enable printing'),
+  (
+    name: 'no-input-capture',
+    marker: 'pointer-lock / keyboard-lock / fullscreen input capture'
+  ),
+  (name: 'no-pointer-lock', marker: 'requestpointerlock'),
+  (name: 'no-keyboard-lock', marker: 'requestkeyboardlock'),
+  (
+    name: 'input-capture-never-bypassed',
+    marker: 'never bypasses input-capture protection'
+  ),
+  (name: 'input-capture-policy-getter', marker: 'bypassinputcaptureprotection'),
+  (
+    name: 'input-capture-distinct-from-js-dialog',
+    marker: 'distinct from javascript dialog / modal spoofing'
+  ),
+  (
+    name: 'opt-in-keeps-input-capture-denied',
+    marker: 'never grant an input-capture'
+  ),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
   (name: 'mixed-content', marker: 'mixed-content'),
@@ -1032,7 +1055,8 @@ void main() {
       expect(missing, contains('opt-in-keeps-tapjacking-denied'));
     });
 
-    test('RED: dropping the no-JavaScript-dialog hard-invariant box fails '
+    test(
+        'RED: dropping the no-JavaScript-dialog hard-invariant box fails '
         'closed', () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutJsDialogInvariant = section
@@ -1062,7 +1086,8 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('service-worker-never-bypassed'));
       expect(missing, contains('service-worker-policy-getter'));
-      expect(missing, contains('service-worker-distinct-from-debug-and-at-rest'));
+      expect(
+          missing, contains('service-worker-distinct-from-debug-and-at-rest'));
       expect(missing, contains('opt-in-keeps-service-workers-denied'));
     });
 
@@ -1085,6 +1110,25 @@ void main() {
       expect(missing, contains('print-policy-getter'));
       expect(missing, contains('print-distinct-from-download'));
       expect(missing, contains('opt-in-keeps-print-denied'));
+    });
+
+    test('RED: dropping the no-input-capture box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutInputCapture = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'input.capture|requestpointerlock|requestkeyboardlock|bypassinputcaptureprotection|distinct from javascript dialog')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutInputCapture);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-input-capture'));
+      expect(missing, contains('no-pointer-lock'));
+      expect(missing, contains('no-keyboard-lock'));
+      expect(missing, contains('input-capture-never-bypassed'));
+      expect(missing, contains('input-capture-policy-getter'));
+      expect(missing, contains('input-capture-distinct-from-js-dialog'));
+      expect(missing, contains('opt-in-keeps-input-capture-denied'));
     });
 
     test(
