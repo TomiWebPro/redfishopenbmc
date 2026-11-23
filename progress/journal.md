@@ -14678,3 +14678,20 @@
 - Push the single commit (never force-push). Next audit-first dept heads EP-S19 (overlapping-load stale-result — premise defeated by `if (state.loading) return` serialization pinned in kvm_controller_test, AUDIT before adding) / EP-U26 (copy-affordance fail-closed a11y — LARGELY PINNED by EP-U18, AUDIT before adding) — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn; a fresh EP-T41 liveness pass may register newer rf-gate-merge guards (RP-1 file-chooser / autofill-capture / navigation-confinement) if still unregistered. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-T41 liveness registration)
+
+**Done:**
+- FEATURE EP-T41 for open #009/#021: guard-suite liveness registration of FOUR more live, unpinned agreement guards (RM-18 derived-fallback manager-id control-safety, RM-20 registered-OEM hostile-enrichment normalization, EP-S13 cross-surface manager-skip, EP-S14 zero-usable-console surfacing). AUDIT FIRST enumerated every `test/**/*_test.dart` with live cases against `canonicalGuardFiles` + all pinned epochs: all four are live + CI-reachable (verify.yml whole-tree `flutter test --coverage`) with real test cases yet absent from BOTH the registry and every epoch — deleting / emptying / test-stripping any stayed GREEN, a CONFIRMED "who guards the guards" gap, no live divergence, no behaviour change, not churn. The rf-gate RP-1 matrix guards were found ALREADY registered, so no new registration there. Extended `test/tool/guard_suite_liveness_test.dart`: +4 canonical paths, fresh pinned `epT41AddedGuards` epoch (length 4, pairwise-disjoint from all 31 earlier designations incl. EP-T40) in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation, intact → clean) per guard. Test/tool-only, dependency-free, TLS-safe.
+- Real-file RED: dropped only the EP-S13 canonical path (epoch kept) under a 600-perm backup → exactly 3 named failures (EP-T41 pin, EP-T20 completeness, EP-T41 temp-root liveness; `+63 -3`), other 63 GREEN; source restored byte-clean (SHA `e2bc77372e968952f7cc3c6f34926b6609ca22664d4a94e3f76a4657486ba935` unchanged, 0 residue, backup shredded) → 66/66 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2656 passed / 1 skipped (baseline 2654 +2 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure registry/liveness guard closing a confirmed unguarded invariant; no live divergence, no behaviour change, no product code per §5. Audit confirmed no KVM agreement guard remains unregistered after EP-T41. Never force-push, rewrite history, `git clean` or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push). Next audit-first dept heads EP-S19 (overlapping-load stale-result — premise defeated by `if (state.loading) return` serialization pinned in kvm_controller_test, AUDIT before adding) / EP-U26 (copy-affordance fail-closed a11y — LARGELY PINNED by EP-U18, AUDIT before adding) — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn; a further EP-T liveness pass is needed only if new guards land. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

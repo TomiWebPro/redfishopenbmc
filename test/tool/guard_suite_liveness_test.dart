@@ -320,6 +320,19 @@
 // pin test, a temp-root RED→GREEN proof and the updated EP-T20 completeness
 // arithmetic, keeping the registry fail-closed.
 //
+// EP-T41 (epic #009/#021) closes the same CONFIRMED gap for FOUR more live
+// agreement guards that landed unpinned: RM-18 (derived-fallback manager-id
+// control-safety cross-factory agreement), RM-20 (registered-OEM hostile
+// enrichment normalization cross-factory agreement), EP-S13 (cross-surface
+// manager-skip agreement under a 404/retryable matrix) and EP-S14 (cross-surface
+// zero-usable-console surfacing agreement). All four are live + CI-reachable
+// (verify.yml whole-tree `flutter test --coverage`) yet absent from BOTH
+// `canonicalGuardFiles` and every pinned epoch, so deleting / emptying /
+// test-stripping any of them stayed GREEN. EP-T41 registers all four under a
+// fresh pinned `epT41AddedGuards` epoch (disjoint from every earlier
+// designation) with a pin test, a temp-root RED→GREEN proof and the updated
+// EP-T20 completeness arithmetic, keeping the registry fail-closed.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -494,6 +507,15 @@ const List<String> canonicalGuardFiles = <String>[
   'test/features/kvm/kvm_copy_only_browser_open_route_agreement_test.dart',
   'test/features/kvm/kvm_connect_uri_raw_preservation_agreement_test.dart',
   'test/features/kvm/platform/ipv6_literal_authority_agreement_test.dart',
+  // EP-T41 extension: four more agreement guards that landed after EP-T40
+  // unpinned (RM-18 derived-fallback manager-id control-safety, RM-20
+  // registered-OEM hostile-enrichment normalization, EP-S13 cross-surface
+  // manager-skip, EP-S14 zero-usable-console surfacing) — all live +
+  // CI-reachable but absent from the registry until this run.
+  'test/features/kvm/kvm_manager_id_control_safety_agreement_test.dart',
+  'test/features/kvm/kvm_oem_hostile_enrichment_agreement_test.dart',
+  'test/features/kvm/kvm_service_manager_skip_agreement_test.dart',
+  'test/features/kvm/kvm_service_zero_usable_console_agreement_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -832,6 +854,20 @@ const Set<String> epT40AddedGuards = <String>{
   'test/features/kvm/platform/ipv6_literal_authority_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-T41: four more agreement
+/// guards that landed unpinned (RM-18 derived-fallback manager-id control-safety,
+/// RM-20 registered-OEM hostile-enrichment normalization, EP-S13 cross-surface
+/// manager-skip, EP-S14 zero-usable-console surfacing). All four landed live +
+/// CI-reachable but absent from the registry, so deleting / emptying /
+/// test-stripping any of them stayed GREEN. Pinned separately so a future edit
+/// cannot drop them back out of the canonical set (issues #009/#021 closeout).
+const Set<String> epT41AddedGuards = <String>{
+  'test/features/kvm/kvm_manager_id_control_safety_agreement_test.dart',
+  'test/features/kvm/kvm_oem_hostile_enrichment_agreement_test.dart',
+  'test/features/kvm/kvm_service_manager_skip_agreement_test.dart',
+  'test/features/kvm/kvm_service_zero_usable_console_agreement_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -868,6 +904,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT37AddedGuards,
   ...epT39AddedGuards,
   ...epT40AddedGuards,
+  ...epT41AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -1992,6 +2029,53 @@ void main() {
       expect(epT40AddedGuards.intersection(epT39AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-T41: the four newer agreement guards are in the canonical '
+        'liveness set', () {
+      expect(epT41AddedGuards, isNotEmpty);
+      expect(epT41AddedGuards.length, 4);
+      for (final String path in epT41AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T41 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epT41AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(rm15AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epP13AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(sec010AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT26AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT28AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT29AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT30AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT32AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT33AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT35AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT36AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT37AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT39AddedGuards), isEmpty);
+      expect(epT41AddedGuards.intersection(epT40AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -2048,7 +2132,8 @@ void main() {
             epT36AddedGuards.length +
             epT37AddedGuards.length +
             epT39AddedGuards.length +
-            epT40AddedGuards.length,
+            epT40AddedGuards.length +
+            epT41AddedGuards.length,
       );
     });
   });
@@ -3807,6 +3892,74 @@ void main() {
         // hostile ConnectUri raw-preservation, EP-P21 IPv6-literal / zone-id
         // authority cross-layer agreement).
         for (final String addedGuard in epT40AddedGuards) {
+          File(p(addedGuard)).deleteSync();
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'MISSING: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when deleted',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('  \n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'EMPTY: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when emptied',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when test-stripped',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+        }
+
+        // GREEN again once every guard is restored.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test(
+        'EP-T41: newly-registered newer agreement guards are '
+        'liveness-checked', () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_t41_guards_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        // Populate every canonical guard with a live synthetic case.
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        // Each newly-registered guard must fail closed when deleted, emptied
+        // or stripped of tests (RM-18 derived-fallback manager-id control-safety,
+        // RM-20 registered-OEM hostile-enrichment normalization, EP-S13
+        // cross-surface manager-skip, EP-S14 zero-usable-console surfacing).
+        for (final String addedGuard in epT41AddedGuards) {
           File(p(addedGuard)).deleteSync();
           expect(
             evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
