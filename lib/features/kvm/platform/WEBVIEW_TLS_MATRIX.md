@@ -472,6 +472,27 @@ flag stays off for that target.
       persistence disabled and secure (non-capturable) presentation on every
       target. Verified per target (inspect the WebView configuration and the
       hosting activity/window flags) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassSensitiveDataAtRestProtection`,
+      always `false`): the test-only opt-in never bypasses sensitive data at rest
+      protection — it never persists the privileged console's cache/storage to
+      disk and never exposes an unprotected background snapshot — in strict mode
+      and with the flag both off and on. The opt-in relaxes ONLY the test BMC's
+      untrusted server leaf for the expected host; it must never disable cache /
+      storage isolation or clear `FLAG_SECURE` (or its iOS/macOS equivalent) just
+      to make a console render or to debug it. This box governs the app's own
+      local persistence and screen-capture surface, so it is distinct from the
+      server-side certificate checks (hostname verification, pinning,
+      revocation, platform trust-store integrity), the TLS floor, HTTPS-only
+      transport and validated-origin binding (the handshake, cleartext sockets
+      and resolved address), client-certificate validation (the client
+      credential), the strict Referrer-Policy (the app's own outbound `Referer`
+      header), CSP / mixed-content enforcement (which subresources the page may
+      load) and sensitive console URL / session-token log redaction (the app's
+      diagnostic / telemetry output) — all of which govern the connection, its
+      credentials, its requests or its other local outputs, not on-disk
+      persistence or screen capture. Verified per target before the flag is
+      flipped.
 * [ ] **No remote debugging / WebView inspectability (no active debug code in
       production)** — the embedded WebView must not be remotely debuggable or
       inspectable in production: no `WebView.setWebContentsDebuggingEnabled(true)`
