@@ -5,6 +5,29 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 10:35 UTC: another fresh, display-only, unblocked slice of the still-open
+     #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U15 pins a Primary badge on
+     one card and EP-U8 pins the open-affordance gate, but nothing pins the "Primary" badge as a single
+     merged, announced signal across BOTH operator cards AND the viewer: a one-sided edit could render
+     it twice, on a non-Primary card, or as a screen-reader-only duplicate while every launch-target
+     suite stays GREEN. Display-only; the human-gated WebView/TLS rendering stays gated and is NOT
+     re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-U25 Primary-badge single merged a11y agreement across both cards and the viewer:
+       pump one manager with a deterministic Primary console (a secure-HTTPS graphical that wins
+       `pickPrimary`) plus a non-Primary console through both real operator cards and the viewer at
+       320/800/1300 px, pinning that exactly one "Primary" marker is rendered on the Primary console's
+       card, NONE on the non-Primary card, visible text == announced label inside a single merged
+       `excludeSemantics` node, no screen-reader-only duplicate or split label, and no `RenderFlex`
+       overflow. AUDIT FIRST: if all three surfaces already derive the badge from the same model signal
+       with merged semantics, record the audit and add nothing; RED->GREEN only on a genuine divergence,
+       never churn. Display-only; test-only writes.
+       Dept: rf-ui
+       Verify: `flutter test test/features/kvm/kvm_card_cross_surface_agreement_test.dart test/features/kvm/kvm_capability_card_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/views/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+               pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 06:31 UTC: another fresh, display-only, unblocked slice of the still-open
      #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U20 pins an EXTREME NUMBER of
      connect-type chips at a fixed font and EP-U23 pins a long (visually-wrapping) MANAGER NAME, but nothing pins

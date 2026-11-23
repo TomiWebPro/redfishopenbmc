@@ -4,6 +4,34 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 10:35 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open #009/#021 model epic (never-empty-well hostile-payload tolerance, MULTI_DEPT hard rule 10).
+     RM-21 pins body-id query/fragment/userinfo, RM-20 hostile OEM enrichment and RM-15 bidi in the
+     resource path, and ASCII connect-type dedup is pinned — but nothing pins mixed-case plus Unicode
+     confusable / fullwidth `ConnectTypesSupported` tokens (dotted/dotless I, Kelvin sign, fullwidth
+     K/V/M/I) through BOTH `fromManager` factories: a case-fold that accidentally normalized a
+     confusable into a real `KVMIP`/`HTML5` token could flip `supported` on one card only. Read-only
+     model characterization; the two behaviour decisions (RM-11 mixed regime, EP-S8 credentialed
+     Primary) stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence,
+     never churn. No code touched. -->
+
+- [ ] RM-22 Mixed-case + Unicode-confusable connect-type normalization agreement across both factories:
+       over a matrix of `Manager` bodies whose `ConnectTypesSupported` carries mixed-case ASCII plus
+       Unicode confusables and fullwidth forms (dotted/dotless I, Kelvin sign, fullwidth K/V/M/I)
+       alongside a real `KVMIP`/`HTML5`, pin that `KvmConsole.fromManager` and
+       `KvmCapability.fromManager` resolve byte-identical normalized connect-type lists, that neither a
+       confusable nor a fullwidth token ever collapses into a real `KVMIP`/`HTML5` token to flip
+       `supported`/`hasUri`, and that a padded/mixed-case real token is trimmed and case-insensitively
+       deduped identically on both views. AUDIT FIRST: if the shared ASCII-`toLowerCase` dedup already
+       keeps confusables distinct and both factories share it, record the audit and add nothing;
+       RED->GREEN only on a genuine divergence, never churn. Read-only model work; no wire/transport/TLS
+       change, no dependency, no WebView/protocol import, no behaviour decision folded in.
+       Dept: rf-model
+       Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/models/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+               pubspec.lock`; no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 06:31 UTC: carves another fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 model epic (never-empty-well hostile-payload tolerance, MULTI_DEPT hard rule 10).
      EP-M7 pins the body `@odata.id` RESOURCE PATH (dot-segments / encoded separators / repeated slashes), RM-15

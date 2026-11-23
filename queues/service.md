@@ -5,6 +5,34 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 10:35 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open #009/#021 manager-walk epic. EP-S2 pins secure-HTTPS tier precedence, EP-S10 pins
+     all-unsafe first-graphical determinism and EP-S6/EP-S7 pin capability<->Primary URI agreement —
+     but none pins `pickPrimary`'s tie-break DETERMINISM when a single manager exposes SEVERAL same-tier
+     secure-HTTPS consoles (graphical + secure remote + SSH serial) with distinct URIs, across BMC
+     member order and its reverse. A one-sided sort/reorder could badge an arbitrary secure endpoint
+     Primary while `fetchCapability(id)` resolved another, with every single-tier suite staying GREEN.
+     Pure service characterization; the credentialed-Primary decision (EP-S8) and RM-11 stay blocked
+     and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn.
+     No code touched. -->
+
+- [ ] EP-S18 Same-tier secure-console Primary tie-break determinism and capability agreement:
+       over in-temp `/Managers` payloads where ONE manager exposes multiple secure-HTTPS consoles of the
+       top tier (a GraphicalConsole `ConnectUri`, a secure RemoteConsole and an SSH/serial block) with
+       distinct endpoints, in BMC-declared order and reversed order, pin that `KvmService.pickPrimary`
+       selects a single stable winner by the documented first-in-BMC-order tie-break, that repeated
+       walks are deterministic and non-mutating, that `fetchCapability(id)`'s resolved URI + session
+       limit agree with the badged Primary, and that a control/CRLF-bearing "secure" console can never
+       win. AUDIT FIRST: if the tier pass already returns the first secure console in declaration order
+       and both surfaces agree by construction, record the audit and add nothing; RED->GREEN only on a
+       genuine divergence, never churn. Test-only; no WebView/protocol import, no production TLS
+       weakening.
+       Dept: rf-service
+       Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_service_primary_secure_tier_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/kvm_service.dart` + `test/features/kvm/**`; `git diff --exit-code --
+               pubspec.yaml pubspec.lock`; no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 06:31 UTC: carves a fresh, machine-checkable, unblocked slice of the still-open
      #009/#021 manager-walk epic. RS-2 pins per-manager skip-vs-propagate over HTTP STATUS codes and EP-S13 pins
      skip agreement when a sibling fetch fails, but nothing pins the NON-STATUS failure matrix — malformed JSON,

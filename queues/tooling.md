@@ -5,6 +5,31 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 10:35 UTC: another concrete "who guards the guards" gap in the still-open
+     #009/#021 epic. EP-T31 pins all four coverage gates are WIRED into CLI+CI and EP-T34 pins the
+     threshold FLOORS, but nothing pins that the enforced SCOPES stay coherent: that the dedicated kvm and
+     kvm-platform scope prefixes both name real directories, that kvm-platform is strictly narrower than
+     kvm, and that a synthetic new product file under each scope is actually captured by its gate (so a
+     future file cannot silently fall outside every enforced scope while the four gates stay GREEN).
+     AUDIT FIRST; skip anything already pinned and add only the genuinely-unguarded remainder; RED->GREEN
+     only on a genuine gap, never churn. Pure test/tool, dependency-free, never writes product code.
+     No code touched. -->
+
+- [ ] EP-T38 Coverage-gate scope-coherence liveness guard: add pure-Dart checks to
+       `test/tool/coverage_gate_test.dart` pinning that every enforced KVM scope prefix resolves to an
+       existing directory, that the dedicated kvm-platform scope is a strict subset of the kvm scope and
+       is non-empty, and that `CoverageSummary.scope()` attributes a synthetic file under
+       `lib/features/kvm/models/` to the kvm gate and a synthetic file under `lib/features/kvm/platform/`
+       to the kvm-platform gate (and that a file outside both is attributed to neither). RED->GREEN via a
+       temp-root mutation (e.g. repoint the kvm-platform prefix at a non-existent path or widen it to the
+       whole kvm tree) — named failure when drifted, clean when intact. AUDIT FIRST: if the scope prefixes
+       and their scoping behaviour are already pinned elsewhere, record the audit and add nothing;
+       RED->GREEN only on a genuine gap, never churn. Pure test/tool; never writes product lib code.
+       Dept: rf-tooling
+       Verify: `flutter test test/tool/coverage_gate_test.dart && flutter analyze` (0 issues), RED->GREEN
+               proof only on a genuine gap; test/tool-only, never writes product code; no dependency,
+               no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 10:11 UTC: another concrete "who guards the guards" gap in the still-open
      #009/#021 epic. EP-T36 registered the four then-newest agreement guards, but FOUR more guards have landed
      since and are live + reachable from verify.yml whole-tree `flutter test --coverage` yet absent from BOTH

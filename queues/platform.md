@@ -6,6 +6,34 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 10:35 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open (human-gated) WebView/TLS closeout of #009/#021. Hostility, scheme spelling, port,
+     userinfo, query/fragment controls and canonical-tricky authorities are heavily pinned
+     (EP-P9/P11/P13/P14/P16/P17/P18/P19), but nothing sweeps BACKSLASH / mixed-separator authority
+     confusion (`https://trusted.example\@evil.example`, `https:\/\/evil.example`, `%5C`-encoded
+     separators) through all four platform decision layers at once, where Dart `Uri.tryParse`
+     normalization can disagree with the fail-closed classifier. Test-only; the human WebView/TLS
+     validation (EP-P1/P2/P4) stays gated and is NOT re-split. AUDIT FIRST; RED->GREEN only on a
+     genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-P20 Backslash / mixed-separator authority-confusion fail-closed cross-layer agreement:
+       over a matrix of otherwise-canonical secure-HTTPS `ConnectUri` values whose authority mixes `/`
+       and `\` (e.g. `https://trusted.example\@evil.example/x`, `https:\/\/evil.example/x`,
+       `https://evil.example\@trusted.example/x`, `%5C`-encoded separators, plus a clean HTTPS control),
+       pin that `isSecureHttpsConsoleUri`, `planConsoleLaunch`, `allowsInAppNavigation`, the stale-flag
+       TLS boundary and the model `KvmConsole.launchPlan`/`hasSecureLaunchUri` ALL agree — every hostile
+       shape fails closed uniformly (no in-app eligibility, no self-signed, null/non-copyable target,
+       never navigable) while the clean control stays external-browser launchable and same-origin
+       navigable. AUDIT FIRST: if the shared whole-URI fail-closed core already classifies the whole
+       matrix identically on every layer, record the audit and add nothing; RED->GREEN only on a
+       genuine divergence, never churn. Test-only; writes limited to `test/features/kvm/platform/**`;
+       no WebView/protocol import, no URL opened, no dependency, no production TLS weakening.
+       Dept: rf-platform
+       Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues), RED->GREEN
+               proof only on a genuine divergence; test-only, writes limited to
+               `test/features/kvm/platform/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+               no WebView/protocol dependency, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 06:31 UTC: another machine-checkable half of the still-open (human-gated)
      WebView/TLS closeout of #009/#021. Authority (EP-P9/P16/P17/P18), scheme spelling (EP-P14) and path/fragment
      control chars on the NAVIGATION gate (EP-P11) are heavily pinned, but the QUERY and FRAGMENT components of an
