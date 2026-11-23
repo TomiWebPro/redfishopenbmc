@@ -65,7 +65,10 @@
 // session-token isolation (hard configuration-independent invariant; the opt-in
 // never relaxes Secure/HttpOnly/SameSite cookie scoping, never permits
 // third-party cookies and never shares the console cookie jar with the system
-// browser — no session-theft / account-takeover path), flag-off
+// browser — no session-theft / account-takeover path), no-remote-debugging /
+// WebView-inspectability (hard configuration-independent invariant; the opt-in
+// never enables web-contents debugging or exposes a DevTools/inspect endpoint in
+// production — no CWE-489 active-debug-code / DOM-and-token-theft path), flag-off
 // fallback, human sign-off) so a future edit cannot silently erase the
 // evidence boxes that gate that decision.
 //
@@ -382,6 +385,14 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'never bypasses cross-site cookie / session-token isolation'
   ),
   (name: 'cookie-policy-getter', marker: 'bypasscookieisolation'),
+  (
+    name: 'remote-debugging-never-bypassed',
+    marker: 'never bypasses webview remote debugging'
+  ),
+  (
+    name: 'remote-debugging-policy-getter',
+    marker: 'bypasswebviewremotedebugging'
+  ),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -1084,6 +1095,22 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('cookie-never-bypassed'));
       expect(missing, contains('cookie-policy-getter'));
+    });
+
+    test(
+        'RED: dropping the no-remote-debugging/inspectability hard-invariant '
+        'box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutRemoteDebugging = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses webview remote debugging|bypasswebviewremotedebugging')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutRemoteDebugging);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('remote-debugging-never-bypassed'));
+      expect(missing, contains('remote-debugging-policy-getter'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
