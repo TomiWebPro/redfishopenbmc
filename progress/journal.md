@@ -14524,3 +14524,21 @@
 - Push the merge + tracking commit (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: check `rf-platform-check` state first; merge only on a fresh explicit `CHECK: PASS` for the exact new tip — a non-PASS verdict is a SKIP/NO-OP with no commits. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-U22)
+
+**Done:**
+- FEATURE EP-U22 for open #009/#021: AUDIT FIRST confirmed EP-P15 (the named next head) is ALREADY PINNED by existing disabled-console render-route tests, so no churn was added there. Picked the next fresh dept head EP-U22 from `queues/ui.md`. AUDIT found the model keeps manager ids BYTE-EXACT (no display sanitisation in models/views) and all three surfaces build their visible Text + merged `excludeSemantics` label from the raw `${managerId}` string, so bidi/RTL display names reach the widgets verbatim — no live divergence. Genuine unguarded seam: nothing drove an RLO/LRO/isolate/word-joiner DISPLAY NAME through both real cards + the viewer at 320/800/1300 px pinning byte-exact full-name merged nodes, one visible instance, no mirror-induced split/duplicate node and no overflow.
+- Added `test/features/kvm/kvm_card_bidi_display_text_a11y_agreement_test.dart` (7 tests): fixture-liveness pin (RLO/LRO/PDF/LRI/RLI/PDI/word-joiner all present, model byte-exact), 3 card-width tests (two bidi spellings + plain control, byte-exact merged labels, one visible instance, exactly one console + one capability name node, no overflow at 320/800/1300) and 3 viewer-width tests (byte-exact merged + visible header, one name node, no overflow). Display-only, dependency-free, TLS-safe.
+
+**Verification:**
+- Real-file RED: sanitised bidi controls in the capability-card merged label ONLY under a 600-perm backup → exactly the 3 card width tests failed, the fixture + 3 viewer tests stayed GREEN (`+4 -3`); source restored byte-clean (SHA `c6c4b09abeca88169859b85a6dc3999c963c9acd50b3ffd9716a1018d74d9b00` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 7/7 targeted GREEN.
+- `dart format --output=none --set-exit-if-changed` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2601 passed / 1 skipped (baseline 2594 +7); emulator skipped (test-only, <7 days since last green 85/85); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Characterization guard at a genuine unguarded bidi-display-text seam; no live divergence, no behaviour change; display-only, no production UI churn per §5. The RED proof mutates only the merged label wiring, restored byte-clean. A concurrent rf-gate run pushed legitimate commits mid-run; at commit time `main` == `origin/main` at `db597cf`, tree clean except this run's test. Never force-push, rewrite history, `git clean`, or delete user files; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-U18 (copy-only vs browser-open route agreement across three surfaces) then EP-P12 / EP-M2 / EP-M1 — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn; EP-P15 record-only (already pinned). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
