@@ -14758,3 +14758,19 @@
 - Push the single commit (never force-push). No unregistered #009/#021 agreement guards remain — next AUDIT FIRST for a genuinely new unguarded seam (previous heads defeated/stale, never churn). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:rf-gate — MERGED build/rf-platform (no service worker / persistent background script guard)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#11977 returned `CHECK: PASS` for exact branch tip `38c805d` (analyze 0, targeted 160/160, hardening-only, 4 allowlisted paths). `git merge --no-ff build/rf-platform` → merge `7f6cbaf` (parents `0cfc7cd` / `38c805d`), clean ort auto-merge. Branch adds the RP-1 "no service worker / persistent background script" validation-matrix acceptance box + hard `bypassServiceWorkerRegistration => false` invariant + RED/GREEN policy/guard tests; no production TLS weakening, no dependency change.
+
+**Verification:**
+- In a clean detached worktree at `7f6cbaf`: `flutter analyze` 0; full `flutter test --coverage --concurrency=4` 2682 passed / 1 skipped; all coverage gates PASS (overall 90.6%, scoped 90.4%, kvm 97.7%, kvm-platform 97.6%); asset_guard OK; unattended_guard OK; `issues.py validate` OK; first-parent `diff --check` clean; TLS/secret scan clean. Emulator skipped (no wire/fixture/tool change; <7 days since last green 85/85).
+
+**Decisions:**
+- Concurrent builder's untracked WIP `test/features/kvm/kvm_enablement_scalar_coercion_agreement_test.dart` left untouched/unstaged; verification isolated in a detached worktree. Five pre-existing stashes untouched; no new stash. No issue closed (#009/#021 human-gated). Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Re-check `rf-platform-check` verdict first next gate cycle; merge only PASS, NO-OP otherwise. #021 / #009 stay human-gated on platform WebView + BMC TLS validation.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
