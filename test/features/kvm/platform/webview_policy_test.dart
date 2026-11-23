@@ -786,7 +786,8 @@ void main() {
       // content — a privacy / RCE-class escalation from page content into the
       // host device. This is a hard invariant, independent of the flag, TLS mode
       // or signals.
-      expect(KvmWebViewPolicy.testOptIn.bypassDevicePermissionControls, isFalse);
+      expect(
+          KvmWebViewPolicy.testOptIn.bypassDevicePermissionControls, isFalse);
     });
 
     test('no policy configuration can grant device capabilities', () {
@@ -823,8 +824,7 @@ void main() {
 
   group('KvmWebViewPolicy — HTTP-auth challenges are never auto-answered', () {
     test('production default denies every HTTP-auth / login challenge', () {
-      expect(
-          KvmWebViewPolicy.productionDefault.bypassHttpAuthChallengeDenial,
+      expect(KvmWebViewPolicy.productionDefault.bypassHttpAuthChallengeDenial,
           isFalse);
     });
 
@@ -869,6 +869,54 @@ void main() {
       expect(enabledSelfSigned.bypassCookieIsolation, isFalse);
       expect(enabledSelfSigned.bypassWebViewRemoteDebugging, isFalse);
       expect(enabledSelfSigned.bypassDevicePermissionControls, isFalse);
+    });
+  });
+
+  group(
+      'KvmWebViewPolicy — local file / content-provider access is never '
+      'bypassed', () {
+    test('production default never enables local file/content access', () {
+      expect(KvmWebViewPolicy.productionDefault.bypassLocalFileAccess, isFalse);
+    });
+
+    test('test-only self-signed opt-in still denies local file/content access',
+        () {
+      // Tolerating the test BMC's untrusted server leaf relaxes ONLY leaf trust:
+      // it must never flip setAllowFileAccess/ContentAccess or load a file:// /
+      // content:// URL just to make a console render or to debug it. This is a
+      // hard invariant, independent of the flag, TLS mode or console signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassLocalFileAccess, isFalse);
+    });
+
+    test('no policy configuration can enable local file/content access', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassLocalFileAccess, isFalse);
+      expect(enabledSelfSigned.bypassLocalFileAccess, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Every other hard invariant stays independent of local-file access: the
+      // test-only opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.bypassStrictReferrerPolicy, isFalse);
+      expect(enabledSelfSigned.bypassMixedContentBlocking, isFalse);
+      expect(enabledSelfSigned.bypassLogRedaction, isFalse);
+      expect(enabledSelfSigned.bypassSensitiveDataAtRestProtection, isFalse);
+      expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
+      expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
+      expect(enabledSelfSigned.bypassCookieIsolation, isFalse);
+      expect(enabledSelfSigned.bypassWebViewRemoteDebugging, isFalse);
+      expect(enabledSelfSigned.bypassDevicePermissionControls, isFalse);
+      expect(enabledSelfSigned.bypassHttpAuthChallengeDenial, isFalse);
     });
   });
 

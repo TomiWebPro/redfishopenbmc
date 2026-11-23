@@ -76,6 +76,8 @@
 // no-http-auth / login-form credential-prompt spoofing (hard configuration-
 // independent invariant; the opt-in never presents a spoofed native auth prompt
 // nor auto-answers an HTTP-auth / login challenge with stored credentials),
+// no-local-file / content-provider access (hard configuration-independent
+// invariant; the opt-in never enables file:// / content:// local file access),
 // flag-off fallback, human sign-off) so a future edit cannot silently erase the
 // evidence boxes that gate that decision.
 //
@@ -245,6 +247,11 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'local file / content-provider access'
   ),
   (
+    name: 'local-file-never-bypassed',
+    marker: 'never bypasses local file / content-provider access'
+  ),
+  (name: 'local-file-policy-getter', marker: 'bypasslocalfileaccess'),
+  (
     name: 'no-device-permissions',
     marker: 'device-capability / permission access'
   ),
@@ -412,10 +419,7 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'http-auth-never-bypassed',
     marker: 'never bypasses http-auth / login-form challenge denial'
   ),
-  (
-    name: 'http-auth-policy-getter',
-    marker: 'bypasshttpauthchallengedenial'
-  ),
+  (name: 'http-auth-policy-getter', marker: 'bypasshttpauthchallengedenial'),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -850,6 +854,21 @@ void main() {
           missingEvidenceMarkers(neutered), contains('no-local-file-access'));
     });
 
+    test(
+        'RED: dropping the no-local-file-access hard-invariant box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutLocalFile = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses local file / content-provider access|bypasslocalfileaccess')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutLocalFile);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('local-file-never-bypassed'));
+      expect(missing, contains('local-file-policy-getter'));
+    });
+
     test('RED: dropping the no-device-permissions box fails closed', () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutPermissions = section
@@ -1152,7 +1171,8 @@ void main() {
       expect(missing, contains('device-permissions-policy-getter'));
     });
 
-    test('RED: dropping the no-http-auth prompt-spoofing hard-invariant box '
+    test(
+        'RED: dropping the no-http-auth prompt-spoofing hard-invariant box '
         'fails closed', () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutHttpAuth = section
