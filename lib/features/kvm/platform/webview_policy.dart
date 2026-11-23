@@ -650,6 +650,56 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassHttpAuthChallengeDenial => false;
 
+  /// Always `false`: local file / content-provider access is NEVER enabled for
+  /// the remote console page, not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must render the remote BMC console with local file and
+  /// content access disabled: no `setAllowFileAccess(true)`,
+  /// `setAllowContentAccess(true)`, `setAllowFileAccessFromFileURLs(true)` or
+  /// `setAllowUniversalAccessFromFileURLs(true)` on Android `WebSettings`, no
+  /// WKWebView `loadFileURL` / local file loading or file-read entitlement on
+  /// iOS/macOS, and no load of or navigation to a `file://` / `content://` URL
+  /// (whether by the initial load, a redirect, a link or script). Console
+  /// content is served by the BMC and is therefore attacker-influenced (a
+  /// compromised/spoofed BMC or script running in the page): with local/content
+  /// access a console script could read app-private data or local files and
+  /// exfiltrate them — a data-theft / remote-code-execution-class escalation.
+  /// Tolerating the test BMC's untrusted server leaf relaxes ONLY that leaf's
+  /// trust; it must never enable a local file/content read just to make a
+  /// console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that grants local
+  /// file/content access. It governs the host files / content providers the
+  /// remote page may read, so it is distinct from every server-side certificate
+  /// check — hostname verification ([bypassHostnameVerification]), pinning
+  /// ([bypassCertificatePinning]), revocation
+  /// ([bypassCertificateRevocationCheck]) and platform trust-store integrity
+  /// ([bypassPlatformTrustStoreIntegrity]) — the TLS floor
+  /// ([bypassTlsProtocolFloor]), HTTPS-only transport
+  /// ([bypassHttpsOnlyTransport]) and validated-origin binding
+  /// ([bypassValidatedOriginBinding]) (the handshake, cleartext sockets and
+  /// resolved address), client-certificate validation
+  /// ([bypassClientCertificateValidation]) (the client credential), the strict
+  /// Referrer-Policy ([bypassStrictReferrerPolicy]) (the app's outbound
+  /// `Referer` header), CSP / mixed-content enforcement
+  /// ([bypassMixedContentBlocking]) (which subresources the page may load),
+  /// sensitive URL / token log redaction ([bypassLogRedaction]) and data at rest
+  /// ([bypassSensitiveDataAtRestProtection]) (the app's diagnostic output and
+  /// on-disk persistence), native bridge isolation
+  /// ([bypassNativeBridgeIsolation]) (code injected into the page),
+  /// private-network egress protection ([bypassPrivateNetworkEgressProtection])
+  /// (the destinations of subresource requests), cookie isolation
+  /// ([bypassCookieIsolation]) (session-cookie attachment / script
+  /// readability), WebView remote debugging ([bypassWebViewRemoteDebugging])
+  /// (the debug / inspect surface), device-capability / permission access
+  /// ([bypassDevicePermissionControls]) (host capabilities granted to page
+  /// content) and HTTP-auth challenge denial ([bypassHttpAuthChallengeDenial])
+  /// (the native authentication-challenge path): those govern the connection,
+  /// its credentials, its requests, its outputs or host capabilities, not local
+  /// file/content reads by the remote page. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassLocalFileAccess => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

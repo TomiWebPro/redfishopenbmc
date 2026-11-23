@@ -477,6 +477,36 @@ flag stays off for that target.
       navigation is blocked, on every target. Verified per target (inspect the
       WebView controller construction and scheme-navigation callback) before the
       flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassLocalFileAccess`, always
+      `false`): the test-only opt-in never bypasses local file / content-provider
+      access — local/content access stays disabled and every `file://` /
+      `content://` load or navigation stays blocked, in strict mode and with the
+      flag both off and on. The opt-in relaxes ONLY the test BMC's untrusted
+      server leaf for the expected host; it must never flip
+      `setAllowFileAccess` / `setAllowContentAccess` /
+      `setAllowFileAccessFromFileURLs` / `setAllowUniversalAccessFromFileURLs`
+      or load a local/content URL just to make a console render or to debug it.
+      This box governs the host files / content providers the remote page may
+      READ, so it is distinct from every server-side certificate check
+      (hostname verification, pinning, revocation, platform trust-store
+      integrity), the TLS floor, HTTPS-only transport and validated-origin
+      binding (the handshake, cleartext sockets and resolved address),
+      client-certificate validation (the client credential), the strict
+      Referrer-Policy (the app's outbound `Referer` header), CSP /
+      mixed-content enforcement (which subresources the page may load),
+      sensitive URL / token log redaction and sensitive data at rest (the
+      app's diagnostic output and on-disk persistence), native bridge
+      isolation (code injected into the page), private-network egress
+      protection (the destinations of subresource requests), cross-site cookie
+      isolation (session-cookie attachment / script readability), WebView
+      remote debugging (the debug / inspect surface), device-capability /
+      permission access (host capabilities granted to page content) and
+      HTTP-auth / login-form challenge denial (the native
+      authentication-challenge path): those govern the connection, its
+      credentials, its requests, its outputs or host capabilities, not local
+      file/content reads by the remote page. Verified per target before the
+      flag is flipped.
 * [ ] **No dangerous device-capability / permission access** — the embedded
       WebView must not grant the remote BMC console page access to device
       capabilities or native permission prompts: no geolocation
