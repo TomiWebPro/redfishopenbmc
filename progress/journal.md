@@ -14119,3 +14119,21 @@
 - Push the merge + tracking commits (never force-push); leave the five pre-existing stashes and the concurrent builder's untracked WIP untouched. Next gate cycle: check `rf-platform-check` state first; merge only on a fresh explicit `CHECK: PASS` for the exact new tip. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-P18)
+
+**Done:**
+- FEATURE — EP-P18 (test-only, dependency-free, TLS-safe): added `test/features/kvm/platform/canonical_tricky_authority_agreement_test.dart` (6 tests) pinning canonical-tricky authority-spelling classification + cross-layer agreement across the platform classifier, launch plan, navigation gate and model layer. A 10-entry matrix (trailing-dot FQDN, IPv4-mapped quad/hex, IPv6 zone-id, compressed/expanded/uppercase-hex IPv6, uppercase-hex integer host, uppercase DNS, clean control) pins per-shape classification (6 secure / 4 fail-closed), cross-layer classifier/`canOpenConsole`/`launchStrategy` agreement, production invariants + model plan agreement, opt-in eligibility, navigation-gate same/cross-origin behavior, and IPv6 spelling equivalence.
+- AUDIT FIRST: all four layers already share the fail-closed `_controlSafeTrimmedUri` core plus numeric/IPv6 authority checks, so the matrix is uniformly classified by construction — no live divergence. Genuine unguarded seam: nothing drove the canonical-tricky spelling family through all layers at once while pinning per-shape classification; characterization / regression lock, not churn. Distinct from EP-P9 (generic hostile authorities), EP-P16 (port family), EP-P17 (userinfo family).
+- Real-file RED: mutated `KvmConsole.hasSecureLaunchUri` to a bare `Uri.tryParse` scheme check under a 600-perm backup → exactly `+1 -1` (model classified the IPv4-mapped authority secure while the platform core failed closed), other 5 GREEN; source restored byte-clean (SHA `85af8a1c…` unchanged, empty `lib/` diff, backup shredded) → 6/6 targeted + 41/41 sibling platform agreement suites GREEN. Queue `platform.md` EP-P18 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed. Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. `flutter test --concurrency=4`: 2472 passed / 1 skipped (baseline 2466 incl. concurrent rf-gate merge `cc6f041` +4, +6 mine). Targeted 6/6 + 41/41 sibling. `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Empty `lib/` diff. Emulator: SKIPPED (test-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Regression lock for a shared fail-closed invariant, not a live fix or churn. Test-only change with empty `lib/` diff and no dependency change. One-sided bare-`Uri.tryParse` mutation proves the guard is non-vacuous and wired to the documented divergence class; source restored byte-clean. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-U23 / EP-U22 / EP-S10 — audit-first, RED→GREEN only on a genuine divergence, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

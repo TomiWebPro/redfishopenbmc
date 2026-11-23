@@ -17,7 +17,7 @@ platform validation evidence.
      WebView/TLS validation (EP-P1/P2/P4) stays gated and is NOT re-split. AUDIT FIRST; RED->GREEN only
      on a genuine divergence, never churn. No code touched. -->
 
-- [ ] EP-P18 Canonical-tricky authority spellings fail-closed cross-layer agreement: over a matrix of
+- [x] EP-P18 LANDED 2026-11-23 (run `auto: FEATURE #009/#021 EP-P18 canonical-tricky authority spellings fail-closed cross-layer agreement guard + RED->GREEN tests`, analyze 0 / 2472 passed / 1 skipped; +6 new tests) — Canonical-tricky authority spellings fail-closed cross-layer agreement. AUDIT FIRST: all four layers already share the fail-closed `_controlSafeTrimmedUri` core plus the numeric/IPv6 authority checks, so the authority-spelling matrix is classified uniformly by construction — no live divergence. Genuine unguarded seam: no guard drove the canonical-tricky spelling family (single-trailing-dot FQDN, IPv4-mapped quad/hex, IPv6 zone-id, compressed/expanded/uppercase-hex IPv6, uppercase-hex integer host, uppercase DNS) through all four layers at once while pinning per-shape classification. Added `test/features/kvm/platform/canonical_tricky_authority_agreement_test.dart` (6 tests): pins per-shape expected classification (6 secure / 4 fail-closed), cross-layer classifier + `canOpenConsole` + `launchStrategy` agreement, production plan invariants + model agreement, opt-in eligibility (only secure spellings in-app-eligible), navigation-gate agreement on same/cross origin, and IPv6 spelling equivalence. Real-file RED: mutated `KvmConsole.hasSecureLaunchUri` to a bare `Uri.tryParse` scheme check (the documented divergence class) under a 600-perm backup → exactly `+1 -1` (model classification drift caught on the IPv4-mapped shape), other 5 GREEN; source restored byte-clean (SHA `85af8a1c…` unchanged, empty `lib/` diff, backup shredded) → 6/6 targeted + 41/41 sibling platform agreement suites GREEN. Test-only, no `lib/`, no dependency, no WebView/protocol import, no URL opened, no production TLS weakening. Original item: Canonical-tricky authority spellings fail-closed cross-layer agreement: over a matrix of
        secure-HTTPS targets whose authority is a trailing-dot host, IPv4-mapped / IPv6 zone-id / compressed
        vs expanded IPv6 / uppercase-hex host (plus a clean control), pin that `isSecureHttpsConsoleUri`,
        `planConsoleLaunch`, `allowsInAppNavigation` and the stale-flag TLS boundary ALL agree — each
@@ -27,7 +27,7 @@ platform validation evidence.
        the whole matrix, record the audit and add nothing; RED->GREEN only on a genuine divergence,
        never churn. Test-only; no WebView/protocol import, no URL opened, no production TLS weakening.
        Dept: rf-platform
-       Verify: `flutter test test/features/kvm/platform/cross_layer_authority_agreement_test.dart test/features/kvm/platform/navigation_launch_route_agreement_test.dart && flutter analyze`
+       Verify: `flutter test test/features/kvm/platform/canonical_tricky_authority_agreement_test.dart test/features/kvm/platform/cross_layer_authority_agreement_test.dart test/features/kvm/platform/navigation_launch_route_agreement_test.dart && flutter analyze`
                (0 issues), RED->GREEN proof only on a genuine divergence; test-only, writes limited to
                `test/features/kvm/platform/**`; no WebView/protocol import, no URL opened, no dependency,
                no production TLS weakening.
