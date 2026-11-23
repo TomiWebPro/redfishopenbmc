@@ -13996,3 +13996,21 @@
 - Push the merge + tracking commits (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: check `rf-platform-check` state first, merge only on a fresh explicit `CHECK: PASS` for the exact new tip. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-S12)
+
+**Done:**
+- FEATURE — EP-S12 (test-only, dependency-free, TLS-safe): added `test/features/kvm/kvm_service_malformed_members_agreement_test.dart` (3 tests) pinning malformed-`Members` tolerance as a cross-surface agreement contract between `KvmService.fetchConsoles()` / `fetchCapabilities()` and `fetchCapability(id)`. An in-temp `/Managers` matrix over two healthy survivors (secure-HTTPS graphical + SSH serial): (1) non-list `Members` (string/map/int/null) -> both surfaces empty + no phantom lookup; (2) hostile entries (blank / whitespace / non-string scalar+list / map-without-link / non-string link / 404-dead / padded-duplicate) -> both surfaces surface exactly the two survivors once with RS-6/RS-8 identity, no duplicate/phantom/control-bearing id, `fetchCapability(id)` agrees field-for-field, padded lookup resolves, ghost never resolves; (3) control-bearing/padded refs normalize identically on both surfaces with no phantom id.
+- AUDIT FIRST: the shared `_fetchManagerBodies()` walk already tolerates the whole matrix end-to-end — agreement holds by construction, no live divergence, characterization / regression lock not churn. Distinct from RS-7 (hostile BODY tolerance, `fetchConsoles()` only) and the malformed fixture (non-list -> empty only).
+- Real-file RED: one-sided strict walk in `fetchCapabilities()` (rethrow 404/retryable members) -> exactly `+1 -2` (the two cross-surface agreement tests fail with `RedfishException(404)`, the non-list test GREEN); source restored byte-clean (SHA `653e64a6…` unchanged, 0 residue, empty `lib/` diff), 600-perm backup shredded -> 3/3 GREEN. Queue `service.md` EP-S12 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed (next head EP-U22). Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. `flutter test --concurrency=4`: 2441 passed / 1 skipped (baseline 2438 +3). EP-S12 verify-target siblings 67/67. `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Empty `lib/` diff. Emulator: SKIPPED (test-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Regression lock for a construction-time cross-surface invariant, not a live fix or churn. Test-only change with an empty `lib/` diff and no dependency change. The one-sided RED mutation proves the guard is non-vacuous; source restored byte-clean. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-U22 (ui RTL/bidi display agreement) — audit-first, RED->GREEN only on a genuine divergence, never churn; optionally register this new EP-S12 guard in the liveness registry under a fresh epoch. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

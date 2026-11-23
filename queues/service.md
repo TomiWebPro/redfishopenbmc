@@ -67,7 +67,7 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
                emulator 85/85 only if `lib/` wire changes; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
                no WebView/protocol import, no production TLS weakening.
 
-- [ ] EP-S12 Malformed `Members` collection tolerance at the manager walk: over in-temp `/Managers` payloads
+- [x] EP-S12 LANDED 2026-11-23 (run `auto: FEATURE #009/#021 EP-S12 malformed Members cross-surface agreement guard + RED->GREEN tests`, test-only) — Malformed `Members` collection tolerance at the manager walk: over in-temp `/Managers` payloads
        whose `Members` is a non-list (string / map / int / null) and lists containing blank / non-string /
        control-bearing / padded / case-variant duplicate member references, pin that `KvmService.fetchConsoles()`
        / `fetchCapabilities()` fail closed (skip unusable refs, no throw, no duplicated or phantom manager),
@@ -82,6 +82,27 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
                (+ `lib/features/kvm/kvm_service.dart` only on a genuine divergence); emulator 85/85 only if
                `lib/` wire changes; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no WebView/protocol
                import, no production TLS weakening.
+
+        **LANDED** 2026-11-23: AUDIT first — the shared `KvmService._fetchManagerBodies()` walk already
+        tolerates the whole hostile `Members` matrix end-to-end (non-list -> no managers; blank/non-string/
+        missing-link/control-bearing refs skipped; padded/duplicate refs deduplicated; dead 404 links skipped),
+        so console/capability agreement holds BY CONSTRUCTION — no live divergence, no behaviour change.
+        Genuine unguarded seam: RS-7's hostile-members case checks only `fetchConsoles()`, and the malformed
+        fixture checks only non-list -> empty, so NOTHING drove the matrix through BOTH surfaces + the
+        `fetchCapability(id)` lookup in ONE walk. Added
+        `test/features/kvm/kvm_service_malformed_members_agreement_test.dart` (3 tests): (1) non-list Members
+        (string/map/int/null) -> both surfaces empty + no phantom lookup; (2) hostile entries (blank/
+        whitespace/non-string/missing-link/non-string-link/404-dead/padded-duplicate) -> both surfaces surface
+        exactly the two survivors once with RS-6/RS-8 identity, no duplicate/phantom/control-bearing id,
+        `fetchCapability(id)` agrees field-for-field, padded lookup resolves, ghost never does; (3)
+        control-bearing/padded refs normalize identically on both surfaces with no phantom id. Real-file RED:
+        a one-sided strict walk in `fetchCapabilities()` (rethrow dead links) -> exactly `+1 -2` (the two
+        cross-surface agreement tests fail with `RedfishException(404)`, the non-list test stays GREEN),
+        proving the guard is live and non-vacuous; source restored byte-clean (SHA `653e64a6...` unchanged,
+        0 residue, empty `lib/` diff, 600-perm backup shredded) -> 3/3 targeted GREEN. `dart format` clean;
+        analyze 0; full suite 2441 passed / 1 skipped (baseline 2438 +3 mine); issues validate OK;
+        diff --check clean; deps unchanged; emulator skipped (test-only, <7 days since last green 85/85);
+        no WebView/protocol import, no URL opened, no production TLS weakening.
 
 <!-- rf-ideate split 2026-11-22 10:12 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 manager-walk epic. RS-6/RS-8 pin manager-set identity, dedup and duplicate-Id
