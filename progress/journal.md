@@ -14910,3 +14910,20 @@
 - Next rf-gate run: re-check `rf-platform-check` latest verdict first; `--no-ff` merge only a PASS branch, skip + report otherwise; NO-OP if no new commits. Builder continues audit-first dept heads; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-T45)
+
+**Done:**
+- FEATURE EP-T45 for open #009/#021: extended `test/tool/guard_suite_liveness_test.dart` to register the post-EP-T44 newly-landed agreement guard — the EP-P22 userinfo-edge authority guard `userinfo_edge_authority_agreement_test.dart` (degenerate empty credential pairs `https://:@host` / `https://user:@host` and uppercase-hex escapes across classifier / launch plan / navigation gate / model, 6 live tests). AUDIT FIRST confirmed it is live + CI-reachable via verify.yml whole-tree `flutter test --coverage` yet absent from BOTH `canonicalGuardFiles` and every pinned epoch (0 registry references), so deleting / emptying / test-stripping it stayed GREEN — a genuine "who guards the guards" gap, no live divergence, no behaviour change, not churn. Added +1 canonical path, a fresh pinned `epT45AddedGuards` epoch (length 1, pairwise-disjoint from all 35 earlier designations incl. EP-T44) wired into `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test and +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation, intact → clean).
+- Real-file RED: dropped only the canonical entry (epoch kept) under a 600-perm backup → exactly 3 named failures (EP-T45 pin, EP-T20 completeness, EP-T45 temp-root liveness; `+71 -3`), 71 GREEN; source restored byte-clean (SHA `1685fd81153b28becfcd5a60a438592006937626e582bb9704c1d21e6982d1bf`, 0 residue, empty diff against edited state, backup shredded) → 74/74 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2743 passed / 1 skipped (baseline 2741 +2 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool registry guard closing a genuine "who guards the guards" gap; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). No unregistered #009/#021 agreement guards remain after EP-T45. Never force-push, rewrite history, `git clean`, or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push). AUDIT FIRST for a genuinely new unguarded seam from the fresh dept heads (RM-25 non-integer session-limit, EP-P23 degenerate hierarchical URI, EP-S21 hostile OEM console shapes, EP-U28 RTL-locale rendering), never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
