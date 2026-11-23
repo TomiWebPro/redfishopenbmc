@@ -877,6 +877,46 @@ class KvmWebViewPolicy {
   /// (RP-1).
   bool get bypassArbitraryFileDownload => false;
 
+  /// Always `false`: browser/password-manager autofill capture of BMC console
+  /// credentials is NEVER enabled, not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must never let attacker-influenced console content or
+  /// a platform autofill / password-manager service capture, save, persist or
+  /// re-inject the operator's BMC credentials through the console login form:
+  /// no password-manager saving of a typed BMC username/password or session
+  /// token, no `Android Autofill` / `AutofillManager` /
+  /// `setImportantForAutofill` / iOS `AutoFill` / `textContentType` credential
+  /// capture or credential export, no pre-seeding of saved credentials into an
+  /// attacker-influenced or spoofed login form and no autofill suggestion that
+  /// one origin can read from another. Autofill is denied by default on every
+  /// target (e.g. `IMPORTANT_FOR_AUTOFILL_NO` / `NO_EXCLUDES_DESCENDANTS`,
+  /// `isAutofillEnabled = false`, no autofill `AccessibilityService`, no
+  /// credential provider bound to the console). Console content is served by
+  /// the BMC and is therefore attacker-influenced (a compromised/spoofed BMC or
+  /// script in the page): an open credential-autofill channel can silently
+  /// exfiltrate the BMC login on form submit or auto-fill a spoofed form. It is
+  /// closed on every target, in strict mode and with the flag both off and on.
+  /// Tolerating the test BMC's untrusted server leaf relaxes ONLY that leaf's
+  /// trust for the expected host (via a scoped per-connection verifier); it must
+  /// never enable autofill to make a console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that enables
+  /// autofill / password-manager credential capture. It governs the credential
+  /// autofill channel, so it is distinct from HTTP-auth / login-form challenge
+  /// denial ([bypassHttpAuthChallengeDenial]) and its stored credentials /
+  /// WebStorage autocomplete, cross-site cookie isolation
+  /// ([bypassCookieIsolation]) (session-cookie attachment and script
+  /// readability), cross-origin form submission ([bypassCrossOriginFormSubmission])
+  /// (the form POST body), sensitive data at rest
+  /// ([bypassSensitiveDataAtRestProtection]) (on-disk persistence / screen
+  /// capture) and outbound egress / private-network egress
+  /// ([bypassOutboundEgressAllowlist], [bypassPrivateNetworkEgressProtection])
+  /// (request destinations): those govern the challenge dialog, cookies, the
+  /// POST body, storage or destinations, not browser autofill of credential
+  /// fields. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassAutofillCredentialCapture => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

@@ -857,6 +857,43 @@ flag stays off for that target.
       load) and local file / content access (local file reads): those govern
       navigation, requests or local reads, not a file written to the device.
       Verified per target before the flag is flipped.
+* [ ] **No autofill / password-manager credential capture (autofill is denied by
+      default)** — the embedded WebView must never let attacker-influenced console content
+      or a platform autofill / password-manager service capture, save, persist or re-inject
+      the operator's BMC credentials through the console login form: no password-manager
+      saving of typed BMC username/password or session token, no `Android Autofill` /
+      `AutofillManager` / `setImportantForAutofill` / iOS `AutoFill` / `textContentType`
+      credential capture or `Secure/HttpOnly` value export, no pre-seeding of saved
+      credentials into an attacker-influenced or spoofed login form, and no autofill
+      suggestion that one origin can read from another. Autofill is denied by default on
+      every target (e.g. `IMPORTANT_FOR_AUTOFILL_NO` / `NO_EXCLUDES_DESCENDANTS`,
+      `isAutofillEnabled = false`, no autofill `AccessibilityService`, no credential
+      provider bound to the console): there is no password manager saving of console
+      credentials and no pre-seed / injection of saved credentials into the privileged
+      form. The console is an operator management session and the page content is
+      attacker-influenced (a compromised/spoofed BMC or script in the page): a credential
+      autofill channel can silently exfiltrate the BMC login on form submit or auto-fill a
+      spoofed form, so it is closed on every target in strict mode and with the flag both
+      off and on.
+      This is a hard, configuration-independent invariant that a future WebView consumer
+      can consult (`KvmWebViewPolicy.bypassAutofillCredentialCapture`, always `false`):
+      the opt-in never bypasses autofill / password-manager credential capture — it never
+      enables password-manager saving of console credentials, never pre-seeds saved
+      credentials into a form and never turns on autofill just to make a console render or
+      to debug it: the opt-in never enables autofill for the privileged console. The
+      opt-in relaxes ONLY the test BMC's untrusted server leaf for the
+      expected host, via a scoped per-connection verifier; it never relaxes this autofill
+      control. This box governs the credential autofill / password-manager channel, so it
+      is distinct from HTTP-auth / login-form challenge denial (the native
+      authentication-challenge dialog and its stored credentials — distinct from
+      http-auth stored credentials and WebStorage autocomplete), cross-site cookie /
+      session-token isolation (session-cookie attachment and script readability),
+      cross-origin form submission (the form POST body channel), sensitive data at rest
+      (on-disk persistence and screen capture) and outbound egress / form POST rules
+      (request destinations): those govern the challenge dialog, cookies, the POST body,
+      storage or destinations, not the browser/password-manager autofill of credential
+      fields. Verified per target (inspect the WebView autofill configuration and confirm
+      no credential can be saved, suggested or pre-seeded) before the flag is flipped.
 * [ ] **No cross-site cookie / session-token leakage (SameSite + third-party-cookie
       blocking + Secure/HttpOnly scoping)** — the embedded WebView must not let
       attacker-influenced console content leak the operator's BMC session cookie/token to

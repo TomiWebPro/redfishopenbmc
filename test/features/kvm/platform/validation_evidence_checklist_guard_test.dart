@@ -257,6 +257,32 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'arbitrary-download-policy-getter',
     marker: 'bypassarbitraryfiledownload'
   ),
+  (
+    name: 'no-autofill-credential-capture',
+    marker: 'password-manager credential capture'
+  ),
+  (
+    name: 'autofill-denied-by-default',
+    marker: 'autofill is denied by default'
+  ),
+  (name: 'no-autofill-save', marker: 'no password manager saving'),
+  (name: 'no-autofill-injection', marker: 'never pre-seed'),
+  (
+    name: 'autofill-never-bypassed',
+    marker: 'never bypasses autofill / password-manager credential capture'
+  ),
+  (
+    name: 'autofill-policy-getter',
+    marker: 'bypassautofillcredentialcapture'
+  ),
+  (
+    name: 'autofill-distinct-from-http-auth',
+    marker: 'distinct from http-auth stored credentials'
+  ),
+  (
+    name: 'opt-in-keeps-autofill-denied',
+    marker: 'opt-in never enables autofill'
+  ),
   (name: 'no-remote-debugging', marker: 'remote debugging'),
   (name: 'no-webcontents-debugging', marker: 'webcontentsdebuggingenabled'),
   (name: 'no-webview-inspectable', marker: 'inspectable'),
@@ -817,6 +843,53 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('arbitrary-download-never-bypassed'));
       expect(missing, contains('arbitrary-download-policy-getter'));
+    });
+
+    test('RED: dropping the no-autofill/password-manager box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutAutofill = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'password-manager credential capture|autofill is denied by default|no password manager saving|never pre-seed')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutAutofill);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-autofill-credential-capture'));
+      expect(missing, contains('autofill-denied-by-default'));
+      expect(missing, contains('no-autofill-save'));
+      expect(missing, contains('no-autofill-injection'));
+    });
+
+    test(
+        'RED: dropping the autofill-capture hard-invariant box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutAutofillInvariant = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses autofill / password-manager credential capture|bypassautofillcredentialcapture')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutAutofillInvariant);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('autofill-never-bypassed'));
+      expect(missing, contains('autofill-policy-getter'));
+    });
+
+    test(
+        'RED: dropping the autofill distinctness / opt-in box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutAutofillDistinct = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'distinct from http-auth stored credentials|opt-in never enables autofill')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutAutofillDistinct);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('autofill-distinct-from-http-auth'));
+      expect(missing, contains('opt-in-keeps-autofill-denied'));
     });
 
     test('RED: dropping the no-cross-site-cookie/session-leak box fails closed',
