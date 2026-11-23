@@ -719,6 +719,19 @@ flag stays off for that target.
       target. Verified per target (inspect the WebView configuration / settings,
       confirm Service Workers are disabled and cleared at teardown) before the
       flag is flipped.
+      Hard configuration-independent invariant: the console WebView never
+      bypasses service worker registration — no policy configuration (not even
+      the test-only self-signed opt-in) may let attacker-influenced console
+      content register a Service Worker or a persistent background script that
+      outlives the page or session. The `KvmWebViewPolicy`
+      `bypassServiceWorkerRegistration` getter is always `false`, so a future
+      WebView consumer can consult it and can never relax this control. This is
+      distinct from webview remote debugging and data at rest: those govern the
+      debug / inspect surface and on-disk persistence, not persistent background
+      script execution inside the page. Tolerating the test BMC's untrusted
+      server leaf relaxes ONLY that leaf's trust for the expected host; it must
+      never allow a service worker registration just to make a console render or
+      to debug it. Verified per target before the flag is flipped.
 * [ ] **No JavaScript dialog / modal spoofing (alert / confirm / prompt /
       beforeunload)** — the embedded WebView must not let attacker-influenced
       console content present spoofed or blocking native-style modals: no

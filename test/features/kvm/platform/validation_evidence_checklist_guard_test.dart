@@ -12,7 +12,9 @@
 // no-popup/secondary-window/iframe navigation bypass,
 // no-private-network/loopback subresource egress (SSRF pivot),
 // no-remote-debugging/WebView-inspectability (active debug code),
-// no-service-worker/persistent-background-script (session-scoped execution),
+// no-service-worker/persistent-background-script (session-scoped execution;
+// hard configuration-independent invariant; the opt-in never permits console
+// content to register a Service Worker or persistent background script),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -348,6 +350,22 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'opt-in-keeps-js-dialog-denied',
     marker: 'never allow an unlabelled javascript dialog'
+  ),
+  (
+    name: 'service-worker-never-bypassed',
+    marker: 'never bypasses service worker registration'
+  ),
+  (
+    name: 'service-worker-policy-getter',
+    marker: 'bypassserviceworkerregistration'
+  ),
+  (
+    name: 'service-worker-distinct-from-debug-and-at-rest',
+    marker: 'distinct from webview remote debugging'
+  ),
+  (
+    name: 'opt-in-keeps-service-workers-denied',
+    marker: 'never allow a service worker'
   ),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
@@ -1012,6 +1030,23 @@ void main() {
       expect(missing, contains('js-dialog-policy-getter'));
       expect(missing, contains('js-dialog-distinct-from-tapjacking'));
       expect(missing, contains('opt-in-keeps-js-dialog-denied'));
+    });
+
+    test('RED: dropping the no-service-worker hard-invariant box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutServiceWorkerInvariant = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses service worker registration|bypassserviceworkerregistration|distinct from webview remote debugging|never allow a service worker')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutServiceWorkerInvariant);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('service-worker-never-bypassed'));
+      expect(missing, contains('service-worker-policy-getter'));
+      expect(missing, contains('service-worker-distinct-from-debug-and-at-rest'));
+      expect(missing, contains('opt-in-keeps-service-workers-denied'));
     });
 
     test(
