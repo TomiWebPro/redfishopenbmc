@@ -5,6 +5,34 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 14:39 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open #009/#021 manager-walk epic. EP-S4 pins `mounted` guards so a fetch settling after
+     DISPOSE cannot write a dead notifier, and EP-S11/EP-S18 pin selection determinism across repeat
+     walks, but nothing pins a second, overlapping `KvmController.load()` (reload / retries after a
+     failure / two fire-and-forget calls in flight): a slower earlier fetch settling last could
+     overwrite the newer result, badge a stale Primary and blank or corrupt the gated screen while
+     every single-load suite stays GREEN. Pure controller state-machine characterization; the
+     credentialed-Primary decision (EP-S8) and RM-11 stay blocked and are NOT re-split. AUDIT FIRST;
+     RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-S19 Overlapping `KvmController.load()` stale-result-overwrite guard:
+       over in-temp `/Managers` payloads with a gated, controllable mock client, pin that an earlier
+       in-flight `load()` settling AFTER a later `load()` cannot overwrite the newer state: the
+       controller ends on the latest-issued walk's consoles/capabilities/Primary, repeated/retry loads
+       are idempotent and deterministic, no stale manager set is surfaced exactly once out of order,
+       and disposing mid-flight still cannot write a dead notifier (EP-S4 unchanged). Drive the
+       success / `RedfishException` / generic-error branches in both issue orders and assert the final
+       published state matches the last issued load on every branch. AUDIT FIRST: if the load path
+       already serializes requests or carries a generation/epoch token so only the newest result
+       wins, record the audit and add nothing; RED->GREEN only on a genuine divergence, never churn.
+       Test-only service characterization; no WebView/protocol import, no production TLS weakening.
+       Dept: rf-service
+       Verify: `flutter test test/features/kvm/kvm_controller_test.dart test/features/kvm/kvm_controller_dispose_guard_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `test/features/kvm/**` (+ `lib/features/kvm/kvm_service.dart` only on a genuine divergence);
+               `git diff --exit-code -- pubspec.yaml pubspec.lock`; no WebView/protocol import, no
+               production TLS weakening; emulator 85/85 only if `lib/` wire changes.
+
 <!-- rf-ideate split 2026-11-23 10:35 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 manager-walk epic. EP-S2 pins secure-HTTPS tier precedence, EP-S10 pins
      all-unsafe first-graphical determinism and EP-S6/EP-S7 pin capability<->Primary URI agreement —

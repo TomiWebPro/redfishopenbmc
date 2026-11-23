@@ -5,6 +5,32 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 14:39 UTC: another fresh, display-only, unblocked slice of the still-open
+     #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U8 pins the copy affordance
+     on the card, EP-U14 pins the viewer URI-row/clipboard and EP-U12 pins cross-surface clipboard
+     targets, but nothing drives ONE control-unsafe / launch-unsafe `ConnectUri` through BOTH operator
+     cards AND the viewer at once: a one-sided edit could hide "Copy connect info" on one surface, or
+     split/duplicate its merged a11y node, while every launch-target suite stays GREEN. Display-only;
+     the human-gated WebView/TLS rendering stays gated and is NOT re-split. AUDIT FIRST; RED->GREEN only
+     on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-U26 Copy-affordance fail-closed single-merged a11y agreement across both cards and the viewer:
+       pump one manager whose only console carries a control-unsafe `ConnectUri` (CRLF/NUL/bidi) through
+       both real operator cards and the viewer at 320/800/1300 px, pinning that the "Copy connect info"
+       affordance is present and actionable (fail closed — never hidden because the URI is launch-unsafe)
+       on all three surfaces, its visible text == announced label inside ONE merged `excludeSemantics`
+       node per surface (no screen-reader-only duplicate or split label), no launch/"Open console"
+       affordance is offered for the unsafe target, and no `RenderFlex` overflow. Include a clean
+       secure-HTTPS control proving the copy affordance stays present there too. AUDIT FIRST: if all
+       three surfaces derive the copy affordance from the same fail-closed source with merged semantics,
+       record the audit and add nothing; RED->GREEN only on a genuine divergence, never churn.
+       Display-only; test-only writes.
+       Dept: rf-ui
+       Verify: `flutter test test/features/kvm/kvm_card_cross_surface_agreement_test.dart test/features/kvm/kvm_widget_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/views/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+               pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 10:35 UTC: another fresh, display-only, unblocked slice of the still-open
      #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U15 pins a Primary badge on
      one card and EP-U8 pins the open-affordance gate, but nothing pins the "Primary" badge as a single

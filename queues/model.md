@@ -4,6 +4,36 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 14:39 UTC: carves another fresh, machine-checkable, unblocked slice of
+     the still-open #009/#021 model epic (never-empty-well hostile-payload tolerance, MULTI_DEPT hard
+     rule 10). RM-4/RM-5/RM-18/RM-21/EP-M7 pin the body `@odata.id` manager-source normalization and
+     RM-22/EP-M5 pin connect-type token handling, but nothing pins the raw `ConnectUri` VALUE through
+     BOTH `fromManager` factories: a one-sided trim/unescape/percent-normalization of a hostile
+     Graphical/Remote `ConnectUri` (CRLF/NUL/raw controls/padding, bidi marks, scheme-relative
+     `//host/x`, `data:`/`javascript:`/`file:` schemes) could hand a different raw string to the
+     downstream fail-closed launch classifier from each card while both model suites stay GREEN.
+     Read-only model characterization; the two deliberate behaviour decisions (RM-11 mixed regime,
+     EP-S8 credentialed Primary) stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a
+     genuine divergence, never churn. No code touched. -->
+
+- [ ] RM-23 Hostile `ConnectUri` raw-preservation cross-factory agreement:
+       over a matrix of `Manager` bodies whose GraphicalConsole/RemoteConsole `ConnectUri` carries
+       CRLF/NUL/raw-control and padding, bidi format marks, scheme-relative (`//host/x`) and
+       non-HTTPS schemes (`data:`, `javascript:`, `file:`) plus a clean secure-HTTPS control, pin that
+       `KvmConsole.fromManager` and `KvmCapability.fromManager` preserve the raw value byte-identically
+       in their `connectUri`/`uri` field (no one-sided trim/unescape/percent-normalization divergence),
+       agree on `hasUri`/`launchUri`/`hasSecureLaunchUri`/`launchPlan` derived from it, and leave the
+       clean control unchanged — so the platform fail-closed classifier sees the same raw input
+       regardless of which card produced it. AUDIT FIRST: if both factories route the raw string
+       through one shared helper and derive the same launch fields, record the audit and add nothing;
+       RED->GREEN only on a genuine divergence, never churn. Read-only model work; no wire/transport/TLS
+       change, no dependency, no WebView/protocol import, no behaviour decision folded in.
+       Dept: rf-model
+       Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/models/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+               pubspec.lock`; no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 10:35 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 model epic (never-empty-well hostile-payload tolerance, MULTI_DEPT hard rule 10).
      RM-21 pins body-id query/fragment/userinfo, RM-20 hostile OEM enrichment and RM-15 bidi in the
