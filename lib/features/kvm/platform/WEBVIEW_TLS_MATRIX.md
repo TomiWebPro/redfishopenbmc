@@ -954,6 +954,22 @@ flag stays off for that target.
       target. Verified per target (inspect the WebView / host-activity touch filtering and
       window flags, and confirm no overlay can cover the secure surface) before the flag is
       flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassTapjackingProtection`, always
+      `false`): the test-only opt-in never bypasses tapjacking / UI-overlay /
+      clickjacking protection — the console WebView rejects obscured-window
+      touches and disallows overlays in strict mode and with the flag both off
+      and on. The opt-in relaxes ONLY the test BMC's untrusted server leaf for
+      the expected host (via a scoped per-connection verifier); it must never
+      disable touch filtering, never accept an obscured-window touch, and never
+      allow a UI overlay over the secure console surface just to make a console
+      render or to debug it. This box governs operator input delivery to the
+      privileged console, so it is distinct from JavaScript dialog / modal
+      spoofing (which governs untrusted modals raised by the page), native
+      bridge isolation, local file access, device capabilities, data at rest
+      and log redaction: those govern other page or app surfaces, not
+      obscured-window touch / overlay input hijack. Verified per target before
+      the flag is flipped.
 * [ ] **No sensitive console URL / session token in logs, telemetry or crash
       reports (CWE-532)** — the WebView-hosting layer and the app's launch / fallback
       code must never write the console URI — or any session token, credential or BMC

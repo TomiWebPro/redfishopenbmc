@@ -957,6 +957,47 @@ class KvmWebViewPolicy {
   /// the page. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassFileChooserAccess => false;
 
+  /// Always `false`: the console WebView never lets an obscured-window touch or
+  /// a UI overlay hijack operator input, so attacker-influenced console content
+  /// or a malicious co-resident app cannot capture taps on the privileged
+  /// console, not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must reject every touch delivered through an obscured
+  /// window and must never let another window draw over the secure console
+  /// surface: on Android `filterTouchesWhenObscured="true"` /
+  /// `setFilterTouchesWhenObscured(true)` and rejection of touches carrying
+  /// `MotionEvent.FLAG_WINDOW_IS_OBSCURED` stay on, and no
+  /// `SYSTEM_ALERT_WINDOW` / `TYPE_APPLICATION_OVERLAY` window may cover the
+  /// console; on iOS/macOS no overlay view may sit above the WebView. Console
+  /// content is served by the BMC and is therefore attacker-influenced, but
+  /// above all it is the operator's privileged management session: an invisible
+  /// overlay or obscured-window touch could capture credential-field taps,
+  /// confirm destructive KVM actions or approve prompts on the operator's
+  /// behalf — a UI-redressing / input-hijack surface (CWE-1021) wholly
+  /// independent of TLS, hostname, origin, native-bridge, local-file, device-
+  /// capability and data-at-rest checks, which govern other page or app
+  /// surfaces, not obscured-window input. Every console page runs with
+  /// obscured-window touches rejected and overlays disallowed on every target,
+  /// in strict mode and with the flag both off and on. Tolerating the test BMC's
+  /// untrusted server leaf relaxes ONLY that leaf's trust for the expected host
+  /// (via a scoped per-connection verifier); it must never disable touch
+  /// filtering, never accept an obscured-window touch, and never allow a UI
+  /// overlay just to make a console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits
+  /// tapjacking / UI-overlay / clickjacking input hijack. It governs operator
+  /// input delivery to the privileged console, so it is distinct from
+  /// JavaScript dialog / modal spoofing (which governs untrusted modals raised
+  /// by the page), native bridge isolation ([bypassNativeBridgeIsolation]),
+  /// local file access ([bypassLocalFileAccess]), device capabilities
+  /// ([bypassDevicePermissionControls]), sensitive data at rest
+  /// ([bypassSensitiveDataAtRestProtection]) and log redaction
+  /// ([bypassLogRedaction]): those govern other page or app surfaces, not
+  /// obscured-window touch / overlay input hijack. See `WEBVIEW_TLS_MATRIX.md`
+  /// (RP-1).
+  bool get bypassTapjackingProtection => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
