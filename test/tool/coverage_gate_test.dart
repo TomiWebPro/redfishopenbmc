@@ -29,6 +29,18 @@ const List<String> kAllGateBuilderTokens = <String>[
   'evaluateKvmPlatformGate(',
 ];
 
+/// Documented minimum thresholds for the four enforced coverage gates
+/// (EP-T34). These floors mirror issue #010 (overall ≥75%, high-value scoped
+/// ≥80%) and issue #009 (kvm ≥75%, kvm-platform ≥75%). A silent lowering below
+/// a floor would keep every gate "wired" (EP-T31) and every test file "live"
+/// (EP-T12..T33) while erasing the hard invariant.
+const Map<String, double> kCoverageThresholdFloors = <String, double>{
+  'overall': 0.75,
+  'scoped': 0.80,
+  'kvm': 0.75,
+  'kvm-platform': 0.75,
+};
+
 /// Pure evaluator for the coverage-gate CLI/CI wiring invariant (EP-T31).
 ///
 /// [cliSource] is the text of `tool/coverage_gate.dart`; [verifySource] is the
@@ -87,6 +99,117 @@ List<String> evaluateCoverageGateWiring(String cliSource, String verifySource) {
 
   return violations;
 }
+
+/// First numeric literal captured by [pattern] in [src], or null when absent.
+double? _firstNumericMatch(String src, String pattern) {
+  final RegExpMatch? match = RegExp(pattern).firstMatch(src);
+  if (match == null) return null;
+  return double.tryParse(match.group(1)!);
+}
+
+/// Resolves the default `threshold` of one KVM gate builder in [src].
+///
+/// Both KVM builders default to the shared `kKvmThreshold` constant; a
+/// hardcoded literal is resolved directly. Absence is reported as a violation.
+double? _builderThresholdDefault(
+  String src,
+  String builder,
+  double? kvmConstant,
+  String label,
+  List<String> violations,
+) {
+  final int start = src.indexOf('GateResult $builder(');
+  if (start < 0) {
+    violations.add('$label: $builder definition missing');
+    return null;
+  }
+  // Slice up to the body opener `}) {` — the earlier `{` after `summary,` is
+  // just the named-parameters opener and precedes the default we need.
+  final int body = src.indexOf('}) {', start);
+  final String signature =
+      body > start ? src.substring(start, body) : src.substring(start);
+  final RegExpMatch? match = RegExp(
+    r'\bthreshold\s*=\s*([A-Za-z_][A-Za-z0-9_.]*|[0-9]+(?:\.[0-9]+)?)',
+  ).firstMatch(signature);
+  if (match == null) {
+    violations.add('$label: $builder threshold default not found');
+    return null;
+  }
+  final String expression = match.group(1)!;
+  if (expression == 'kKvmThreshold') return kvmConstant;
+  return double.tryParse(expression);
+}
+
+/// Pure source-text evaluator for the coverage threshold floors (EP-T34).
+///
+/// [cliSource] is the text of `tool/coverage_gate.dart`. Returns concrete
+/// drift diagnostics; empty means all four enforced thresholds honour their
+/// documented floors. No I/O and no Flutter bindings — callers supply the text.
+List<String> evaluateCoverageThresholdFloors(String cliSource) {
+  final String src = cliSource.replaceAll('\r', '');
+  final List<String> violations = <String>[];
+
+  final double? overall = _firstNumericMatch(
+    src,
+    r'\boverallThreshold\s*=\s*([0-9]+(?:\.[0-9]+)?)',
+  );
+  final double? scoped = _firstNumericMatch(
+    src,
+    r'\bscopedThreshold\s*=\s*([0-9]+(?:\.[0-9]+)?)',
+  );
+  final double? kvmConstant = _firstNumericMatch(
+    src,
+    r'\bconst\s+double\s+kKvmThreshold\s*=\s*([0-9]+(?:\.[0-9]+)?)',
+  );
+  if (overall == null) violations.add('overall: threshold default not found');
+  if (scoped == null) violations.add('scoped: threshold default not found');
+  if (kvmConstant == null) {
+    violations.add('kvm: kKvmThreshold constant not found');
+  }
+
+  final double? kvm = _builderThresholdDefault(
+      src, 'evaluateKvmGate', kvmConstant, 'kvm', violations);
+  final double? platform = _builderThresholdDefault(
+      src, 'evaluateKvmPlatformGate', kvmConstant, 'kvm-platform', violations);
+
+  void checkFloor(String label, double? value) {
+    if (value == null) return; // absence already reported above
+    final double floor = kCoverageThresholdFloors[label]!;
+    if (value < floor) {
+      violations.add('$label threshold $value below floor $floor');
+    }
+  }
+
+  checkFloor('overall', overall);
+  checkFloor('scoped', scoped);
+  checkFloor('kvm', kvm);
+  checkFloor('kvm-platform', platform);
+  return violations;
+}
+
+/// Minimal, genuinely threshold-floored synthetic CLI source for EP-T34 tests.
+const String syntheticThresholdCliSource = '''
+CoverageGateReport evaluateGates(
+  CoverageSummary summary, {
+  double overallThreshold = 0.75,
+  double scopedThreshold = 0.80,
+  Iterable<String> scopedPrefixes = kDefaultScopedPrefixes,
+}) { ... }
+
+const double kKvmThreshold = 0.75;
+
+GateResult evaluateKvmGate(
+  CoverageSummary summary, {
+  double threshold = kKvmThreshold,
+  Iterable<String> prefixes = kKvmScopePrefixes,
+}) { ... }
+
+GateResult evaluateKvmPlatformGate(
+  CoverageSummary summary, {
+  double threshold = kKvmThreshold,
+  Iterable<String> prefixes = kKvmPlatformScopePrefixes,
+}) { ... }
+''';
 
 /// Minimal, genuinely wired synthetic sources for the pure evaluator tests.
 const String syntheticCliSource = '''
@@ -703,6 +826,126 @@ void main() {
         isEmpty,
         reason: 'coverage-gate wiring drift: ${violations.join(', ')}',
       );
+    });
+  });
+
+  group('coverage-gate threshold floors (EP-T34)', () {
+    test('a floor-respecting source has no drift', () {
+      expect(evaluateCoverageThresholdFloors(syntheticThresholdCliSource),
+          isEmpty);
+    });
+
+    test('a lowered overall threshold fails closed', () {
+      final String lowered = syntheticThresholdCliSource.replaceFirst(
+        'double overallThreshold = 0.75',
+        'double overallThreshold = 0.40',
+      );
+      expect(
+        evaluateCoverageThresholdFloors(lowered),
+        contains('overall threshold 0.4 below floor 0.75'),
+      );
+    });
+
+    test('a lowered scoped threshold fails closed', () {
+      final String lowered = syntheticThresholdCliSource.replaceFirst(
+        'double scopedThreshold = 0.80',
+        'double scopedThreshold = 0.50',
+      );
+      expect(
+        evaluateCoverageThresholdFloors(lowered),
+        contains('scoped threshold 0.5 below floor 0.8'),
+      );
+    });
+
+    test('a lowered shared KVM constant fails closed for both KVM gates', () {
+      final String lowered = syntheticThresholdCliSource.replaceFirst(
+        'const double kKvmThreshold = 0.75',
+        'const double kKvmThreshold = 0.50',
+      );
+      expect(
+        evaluateCoverageThresholdFloors(lowered),
+        contains('kvm threshold 0.5 below floor 0.75'),
+      );
+      expect(
+        evaluateCoverageThresholdFloors(lowered),
+        contains('kvm-platform threshold 0.5 below floor 0.75'),
+      );
+    });
+
+    test('a KVM builder hardcoding a sub-floor literal fails closed', () {
+      final String lowered = syntheticThresholdCliSource.replaceFirst(
+        'GateResult evaluateKvmPlatformGate(\n'
+            '  CoverageSummary summary, {\n'
+            '  double threshold = kKvmThreshold,',
+        'GateResult evaluateKvmPlatformGate(\n'
+            '  CoverageSummary summary, {\n'
+            '  double threshold = 0.50,',
+      );
+      expect(
+        evaluateCoverageThresholdFloors(lowered),
+        contains('kvm-platform threshold 0.5 below floor 0.75'),
+      );
+      // The sibling kvm gate still resolves the shared constant.
+      expect(
+        evaluateCoverageThresholdFloors(lowered),
+        isNot(contains('kvm threshold 0.5 below floor 0.75')),
+      );
+    });
+
+    test('a missing threshold default fails closed', () {
+      final String removed = syntheticThresholdCliSource.replaceFirst(
+        '  double overallThreshold = 0.75,\n',
+        '',
+      );
+      expect(
+        evaluateCoverageThresholdFloors(removed),
+        contains('overall: threshold default not found'),
+      );
+    });
+
+    test('temp-root RED→GREEN proves threshold-floor liveness', () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_t34_floors_');
+      try {
+        final File cli =
+            File('${temp.path}${Platform.pathSeparator}coverage_gate.dart');
+        cli.writeAsStringSync(syntheticThresholdCliSource);
+        expect(
+            evaluateCoverageThresholdFloors(cli.readAsStringSync()), isEmpty);
+
+        // Lower the overall threshold on disk: fails closed.
+        cli.writeAsStringSync(syntheticThresholdCliSource.replaceFirst(
+          'double overallThreshold = 0.75',
+          'double overallThreshold = 0.40',
+        ));
+        expect(
+          evaluateCoverageThresholdFloors(cli.readAsStringSync()),
+          contains('overall threshold 0.4 below floor 0.75'),
+        );
+
+        // Restore: clean once more.
+        cli.writeAsStringSync(syntheticThresholdCliSource);
+        expect(
+            evaluateCoverageThresholdFloors(cli.readAsStringSync()), isEmpty);
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test('real repository: all four thresholds honour their floors', () {
+      final File cli = File('tool/coverage_gate.dart');
+      expect(cli.existsSync(), isTrue);
+      final String source = cli.readAsStringSync();
+      final List<String> violations = evaluateCoverageThresholdFloors(source);
+      expect(
+        violations,
+        isEmpty,
+        reason: 'threshold-floor drift: ${violations.join(', ')}',
+      );
+      // Pin the current values explicitly, not just the >= floors.
+      expect(source, contains('double overallThreshold = 0.75'));
+      expect(source, contains('double scopedThreshold = 0.80'));
+      expect(source, contains('const double kKvmThreshold = 0.75'));
     });
   });
 }

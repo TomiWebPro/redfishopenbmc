@@ -13943,3 +13943,21 @@
 - Push the merge + tracking commits (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: merge only on a fresh explicit `CHECK: PASS` for the exact new tip. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-T34)
+
+**Done:**
+- FEATURE — EP-T34 (test/tool-only, dependency-free, TLS-safe): added pure-Dart `evaluateCoverageThresholdFloors(source)` + `kCoverageThresholdFloors` + 8 tests to `test/tool/coverage_gate_test.dart`. Reads all four effective coverage thresholds from `tool/coverage_gate.dart` source text and fails closed if any falls below its documented floor (overall 0.75, scoped 0.80, kvm 0.75, kvm-platform 0.75). Covers lowered overall/scoped literals, a lowered shared `kKvmThreshold` (both kvm gates), a hardcoded sub-floor builder default, a missing default, temp-root RED->GREEN, and a real-repo invariant pinning current values.
+- AUDIT FIRST: EP-T31 pins gate WIRING and `kKvmThreshold == 0.75` is pinned for kvm/kvm-platform, but the overall/scoped default floors were unguarded — a silent lowering stayed GREEN. Genuine gap, regression lock, not churn.
+- Real-file RED: lowered `overallThreshold` 0.75->0.40 under a 600-perm backup -> exactly the named EP-T34 real-repo failure; source restored byte-clean (SHA `f93a2e14…` unchanged, 0 residue, empty `tool/` diff), backup shredded -> 45/45 GREEN. Queue `tooling.md` EP-T34 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed (next heads EP-S12 / EP-U22 / EP-P17). Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. `flutter test --concurrency=4`: 2429 passed / 1 skipped (baseline 2421 +8). `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Emulator: SKIPPED (test-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Regression lock for a source-level threshold invariant, not a live fix or churn. Test/tool-only change with an empty `lib/` diff and no dependency change. The one-sided RED mutation proves the guard is non-vacuous; source restored byte-clean. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next heads EP-S12 / EP-U22 / EP-P17 — audit-first, RED->GREEN only on a genuine divergence, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
