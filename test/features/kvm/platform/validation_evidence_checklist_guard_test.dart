@@ -78,7 +78,12 @@
 // nor auto-answers an HTTP-auth / login challenge with stored credentials),
 // no-local-file / content-provider access (hard configuration-independent
 // invariant; the opt-in never enables file:// / content:// local file access),
-// flag-off fallback, human sign-off) so a future edit cannot silently erase the
+// no-covert-outbound-egress / cross-origin data-exfiltration (hard
+// configuration-independent invariant; the opt-in never relaxes the CSP
+// connect-src allowlist, so attacker-influenced console content cannot open a
+// programmatic fetch / WebSocket / WebRTC / sendBeacon connection to a
+// non-approved origin), flag-off fallback, human sign-off) so a future edit
+// cannot silently erase the
 // evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
@@ -420,6 +425,21 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'never bypasses http-auth / login-form challenge denial'
   ),
   (name: 'http-auth-policy-getter', marker: 'bypasshttpauthchallengedenial'),
+  (
+    name: 'no-covert-outbound-egress',
+    marker: 'covert outbound egress'
+  ),
+  (name: 'connect-src-allowlist', marker: 'connect-src'),
+  (name: 'no-cross-origin-exfil', marker: 'cross-origin data exfiltration'),
+  (name: 'no-websocket-beacon-exfil', marker: 'sendbeacon'),
+  (
+    name: 'outbound-egress-never-bypassed',
+    marker: 'never bypasses the outbound egress allowlist'
+  ),
+  (
+    name: 'outbound-egress-policy-getter',
+    marker: 'bypassoutboundegressallowlist'
+  ),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -1184,6 +1204,22 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('http-auth-never-bypassed'));
       expect(missing, contains('http-auth-policy-getter'));
+    });
+
+    test(
+        'RED: dropping the no-covert-outbound-egress hard-invariant box '
+        'fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutOutboundEgress = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses the outbound egress allowlist|bypassoutboundegressallowlist')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutOutboundEgress);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('outbound-egress-never-bypassed'));
+      expect(missing, contains('outbound-egress-policy-getter'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

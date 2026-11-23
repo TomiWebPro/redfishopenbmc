@@ -959,6 +959,46 @@ flag stays off for that target.
       that a missing, invalid or expired client certificate is rejected and the
       private key is not exposed to page content, with the flag both off and on)
       before the flag is flipped.
+* [ ] **No covert outbound egress / cross-origin data exfiltration
+      (connect-src allowlist)** — the embedded WebView must confine every
+      programmatic network connection the console page can initiate (fetch /
+      XHR / WebSocket / WebRTC / `sendBeacon` / `EventSource` / media `src`) to
+      the approved console origin, via a CSP `connect-src 'self'` allowlist plus
+      WebView request interception. Console content is served by the BMC and is
+      therefore attacker-influenced (a compromised/spoofed BMC, or script
+      running in the page): without this allowlist a script could exfiltrate
+      privileged material (KVM frames, session tokens, credentials, managed-host
+      inventory) to an attacker-controlled EXTERNAL host, or hold a covert
+      command-and-control channel open, wholly independent of TLS, hostname,
+      top-level-navigation origin confinement, form-POST and subresource
+      address-class checks. This box does NOT restrict the approved console's
+      own origin even when it is a private BMC address; it restricts every
+      OTHER destination origin, public or private. On every target the WebView
+      must enforce `connect-src 'self'` and intercept/block any WebSocket,
+      WebRTC, `sendBeacon`, `EventSource` or fetch/XHR connection to a
+      non-approved origin. Verified per target (inspect the enforced CSP
+      connect directive and the WebView request-interception configuration, and
+      observe that a programmatic connection to an external origin is blocked)
+      before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassOutboundEgressAllowlist`,
+      always `false`): the test-only opt-in never bypasses the outbound egress
+      allowlist — console content can never open a programmatic connection to a
+      non-approved origin, in strict mode and with the flag both off and on.
+      The opt-in relaxes ONLY the test BMC's untrusted server leaf for the
+      expected host; it must never widen `connect-src` or add a network
+      exception just to make a console render or to debug it. This box governs
+      the DESTINATION ORIGIN of the page's programmatic connections, so it is
+      distinct from private-network egress protection (the destination address
+      class — loopback / link-local / private LAN — of subresources), CSP /
+      mixed-content enforcement (framing rules and cleartext subresources),
+      origin / navigation confinement (where the top-level frame may go),
+      cross-origin form submission (the `<form>` POST path), the strict
+      Referrer-Policy (the app's own outbound `Referer` header), sensitive URL /
+      token log redaction (diagnostic output) and native bridge isolation (code
+      injected into the page): those govern other connection, request or output
+      surfaces, not the destinations of the page's programmatic connections.
+      Verified per target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
