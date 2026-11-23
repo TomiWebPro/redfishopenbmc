@@ -13928,3 +13928,18 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next heads EP-S12 / EP-U22 / EP-P17 / EP-T34 — audit-first, RED→GREEN only on a genuine divergence, never churn; optionally register this EP-M7 guard in the liveness registry under a fresh epoch. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:rf-gate — #009/#021 (platform merge)
+
+**Done:**
+- Sole-merger GATE: verified `rf-platform-check` run#11595 returned explicit `CHECK: PASS` (exit 0, SUCCESS, 44.0 s) for the exact current `build/rf-platform` tip `1c13c93`, then merged that tip into `main` via `--no-ff` (merge `96ffca2`, parents `0506350` / `1c13c93`). Clean ort auto-merge, no conflicts.
+- Pre-merge invariants: tip unchanged `== 1c13c93ef…`; merge-base `3cf3b3c` ancestor of main (already in main via `663d735`); exactly one branch-unique commit; tip not previously merged; 4 allowlisted files only; production change is hardening-only (new `bypassMixedContentBlocking => false` getter — CSP enforcement + mixed-content blocking never bypassed by the test-only self-signed opt-in); no dependency change, no production-TLS weakening.
+- Post-merge verify in-tree at `96ffca2` (five pre-existing stashes untouched): analyze 0; full `flutter test --coverage` 2421 passed / 1 skipped (baseline 2417 +4 merged); all four coverage gates PASS overall 90.6% (6070/6703) / scoped 90.4% (2119/2345) / kvm 97.5% (1347/1382) / kvm-platform 97.1% (469/483), exit 0; asset_guard OK; unattended_guard OK; issues validate OK; first-parent diff --check clean; first-parent diff = 4 allowlisted files; TLS-weakening + secret scan clean.
+
+**Decisions:**
+- Merged ONLY because the check returned an explicit `CHECK: PASS` for this exact tip; a stale/non-PASS verdict would have been SKIPPED. DMTF 85-test emulator skipped (no lib wire/transport/fixture/tool change — policy getter + docs only; <7 days since last green 85/85). No issue closed (#009 P3 / #021 P2 stay human-gated on platform WebView + BMC TLS validation). Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the merge + tracking commits (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: merge only on a fresh explicit `CHECK: PASS` for the exact new tip. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
