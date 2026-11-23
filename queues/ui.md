@@ -5,6 +5,31 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 02:27 UTC: another fresh, display-only, unblocked slice of the still-open
+     #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U19/U20/U21/U22 pin
+     chip/session, extreme-content, large-font and bidi RENDERED agreement, but none pins that a manager
+     name long enough to be visually ELLIPSIZED / clipped at 320 px is still announced in FULL and
+     byte-identically inside the single merged `excludeSemantics` node on both operator cards and the
+     viewer: a one-sided edit that feeds the clipped/ellipsized text (or a second copy) into the Semantics
+     label could give screen-reader users a truncated or duplicated manager identity while every
+     short-name suite stays GREEN. Display-only; the human-gated WebView/TLS rendering stays gated and is
+     NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-U23 Full-name announcement agreement under visual truncation across both KVM operator cards and
+       the viewer: pump one manager with a long display name (ellipsized/clipped at 320 px) plus a short
+       control through both real cards and the viewer at 320/800/1300 px, pinning that the merged
+       `excludeSemantics` label carries the FULL untruncated name byte-for-byte on every surface, visible
+       text remains a single rendered instance with no duplicate/screen-reader-only node, and no RenderFlex
+       overflow occurs. AUDIT FIRST: if every surface already announces the full model string while only
+       visually clipping, record the audit and add nothing; RED->GREEN only on a genuine divergence,
+       never churn. Display-only; no WebView/protocol import, no URL opened, no production TLS weakening.
+       Dept: rf-ui
+       Verify: `flutter test test/features/kvm/kvm_card_cross_surface_agreement_test.dart test/features/kvm/kvm_widget_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof + 320 px no-overflow + visible==announced only on a genuine
+               divergence; writes limited to `lib/features/kvm/views/**` + `test/features/kvm/**`; no WebView/
+               protocol import, no URL opened, no dependency, no production TLS weakening;
+               `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-22 22:24 UTC: another fresh, display-only, unblocked slice of the still-open
      #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U19/U20/U21 pin chip/session,
      extreme-content and large-font RENDERED agreement, and RM-15 pins bidi/RTL fail-closed at the MODEL

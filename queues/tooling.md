@@ -5,6 +5,32 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 02:27 UTC: another machine-checkable slice of the still-open #009/#021
+     epic's tool hygiene. Guard-suite liveness (EP-T12..T34) pins that TEST files stay in
+     `canonicalGuardFiles`, but the three newest agreement guards — EP-M7
+     `kvm_manager_body_path_normalization_agreement_test.dart`, EP-S12
+     `kvm_service_malformed_members_agreement_test.dart` and EP-P17
+     `userinfo_authority_fail_closed_agreement_test.dart` — landed after the last registration
+     (EP-T33) and are live + reachable from verify.yml whole-tree `flutter test --coverage` yet absent
+     from BOTH `canonicalGuardFiles` and every pinned epoch, so deleting / emptying / test-stripping any
+     of them stays GREEN. Confirmed "who guards the guards" gap, no live divergence, not churn. Pure
+     test/tool, dependency-free, never writes `lib/`. AUDIT FIRST; RED->GREEN only on a genuine gap,
+     never churn. No code touched. -->
+
+- [ ] EP-T35 Guard-suite liveness registration of the three newest agreement guards (EP-M7 body-path,
+       EP-S12 malformed-members, EP-P17 encoded-userinfo): extend `test/tool/guard_suite_liveness_test.dart`
+       so all three files are in `canonicalGuardFiles` and a fresh pinned epoch (disjoint from every
+       earlier designation) is included in `allDesignatedGuards` + the completeness arithmetic, with a
+       containment/disjointness pin test and a temp-root RED->GREEN proof (deleted / emptied / test-stripped
+       -> violation, intact -> clean) for each. AUDIT FIRST: if any guard is already registered in a
+       canonical set or pinned epoch, skip it and register only the genuinely-unguarded remainder;
+       RED->GREEN only on a genuine gap, never churn. Pure test/tool, dependency-free, never writes `lib/`;
+       no WebView/protocol import, no production TLS weakening.
+       Dept: rf-tooling
+       Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues),
+               RED->GREEN proof only on a genuine gap; test/tool-only, never writes `lib/`; no dependency,
+               no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-22 22:24 UTC: another machine-checkable slice of the still-open #009/#021
      epic's tool hygiene. EP-T31 pins that ALL FOUR coverage gates (overall / scoped redfish+power+sensors /
      kvm / kvm-platform) are actually WIRED into the CLI `main` + CI verify, but nothing pins that the four

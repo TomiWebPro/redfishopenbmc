@@ -5,6 +5,31 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 02:27 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open #009/#021 manager-walk epic. RS-6/RS-8/RS-9 and EP-S5 pin dedup, collision determinism,
+     padded lookup and hostile ASCII `Id` resolution, but all over EXACT-case ASCII ids — nothing pins
+     that two manager ids differing only by UNICODE NORMALIZATION FORM or CASE (NFC vs NFD, dotted/dotless
+     I `İ`/`I`/`ı`, Kelvin sign `K` vs `K`, uppercase/lowercase hex in a derived id) remain DISTINCT
+     physical managers: a `toLowerCase()` / Unicode-normalizing key in the walk could silently merge two
+     real BMCs into one card while every ASCII identity/collision suite stays GREEN. Pure service
+     characterization; the credentialed-Primary decision (EP-S8) stays blocked and is NOT re-split.
+     AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-S16 Unicode/case-variant manager-id distinctness across the service surfaces: over an in-temp
+       `/Managers` mockup whose `Members`/`Id` values are pairwise NFC/NFD, dotted-vs-dotless-I,
+       Kelvin-sign-vs-K and case variants of one base id, pin that `fetchConsoles()` / `fetchCapabilities()`
+       surface each as a DISTINCT physical manager (no accidental merge or dedup) with stable RS-6/RS-8
+       identity, that `fetchCapability(id)` resolves each by its exact byte key, and that no raw control
+       or normalized-away code point becomes a key. AUDIT FIRST: if the walk already keys ids byte-exactly
+       with no case folding or normalization, record the audit and add nothing; RED->GREEN only on a
+       genuine divergence, never churn. No wire/TLS change, no WebView/protocol import, no dependency.
+       Dept: rf-service
+       Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_service_manager_identity_test.dart test/features/kvm/kvm_service_lookup_key_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/kvm_service.dart`, controllers/providers + `test/features/kvm/**`;
+               `git diff --exit-code -- pubspec.yaml pubspec.lock`; no wire/TLS change, no WebView/protocol
+               import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-22 22:24 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 manager-walk epic. RS-7 pins hostile-body tolerance when a manager FETCH SUCCEEDS
      but still yields usable consoles, EP-S13 pins SAME-manager skip when a sibling fetch FAILS

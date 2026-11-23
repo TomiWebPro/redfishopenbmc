@@ -4,6 +4,36 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 02:27 UTC: carves another fresh, machine-checkable, unblocked slice of
+     the still-open #009/#021 model epic (never-empty-well OEM-enrichment agreement, MULTI_DEPT hard
+     rule 10). RM-3 pins registered-parser FAULT isolation (a throwing parser is skipped) and RM-7 pins
+     registered-parser URI agreement across both factories, but neither drives a registered
+     `KvmOemConsoleParser` that RETURNS hostile enrichment (control/CRLF-bearing URI, non-canonical /
+     duplicate connect types, non-bool `enabled`, padded id) through BOTH `fromManager` factories at
+     once: a one-sided "trust the parser output" edit could make the per-console card advertise a
+     launchable/secure target while the capability card fails closed (the exact #009 divergence the
+     shared helpers exist to prevent), with every throw/URI-agreement suite staying GREEN. Read-only
+     model characterization; the two deliberate behaviour decisions (RM-11 mixed regime, EP-S8
+     credentialed Primary) stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine
+     divergence, never churn. No code touched. -->
+
+- [ ] RM-20 Registered-OEM-parser hostile-enrichment normalization agreement across both `fromManager`
+       factories: over a registered `KvmOemConsoleParser` whose `parse` returns hostile enrichment
+       (control/CRLF-bearing URI, non-canonical / duplicate connect types, non-bool enabled, padded id),
+       pin that `KvmConsole.fromManager` and `KvmCapability.fromManager` normalize the vendor output
+       through the SAME shared control-safe URI / connect-type / enablement helpers, so both cards
+       agree on supported / serviceEnabled / resolved launch URI / chips / session limit and never let
+       a registered vendor leak a raw control code point or badge an unsafe/secure-mismatched target.
+       A clean parser keeps its documented enrichment byte-for-byte. AUDIT FIRST: if both factories
+       already route vendor enrichment through one shared normalizer over the whole matrix, record the
+       audit and add nothing; RED->GREEN only on a genuine divergence, never churn. No WebView/protocol
+       import, no dependency, no production TLS weakening.
+       Dept: rf-model
+       Verify: `flutter test test/features/kvm/kvm_oem_registry_test.dart test/features/kvm/kvm_model_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/models/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
+               no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-22 22:24 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 model epic (never-empty-well malformed-payload tolerance, MULTI_DEPT hard
      rule 10). RM-15 pins bidi/control in the `@odata.id` RESOURCE PATH and EP-M5 pins `ConnectTypesSupported`

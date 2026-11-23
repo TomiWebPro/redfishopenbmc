@@ -6,6 +6,32 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 02:27 UTC: another machine-checkable slice of the still-open (human-gated)
+     WebView/TLS closeout of #009/#021. Authority hostility, port, userinfo, scheme spelling and
+     scheme-relative/encoded-authority confusion are heavily pinned (EP-P9/P11/P13/P14/P16/P17) — but
+     nothing sweeps the CANONICAL-BUT-TRICKY authority spellings (`https://host./`, IPv4-mapped
+     `[::ffff:127.0.0.1]`, IPv6 zone-id `[fe80::1%25eth0]`, compressed vs expanded IPv6, uppercase hex)
+     through the classifier / `planConsoleLaunch` / `allowsInAppNavigation` / stale-flag TLS boundary
+     together: a `Uri.origin` differential could treat one spelling as same-origin-secure/in-app-eligible
+     while another fails closed, with the hostile-authority suites staying GREEN. Test-only; the human
+     WebView/TLS validation (EP-P1/P2/P4) stays gated and is NOT re-split. AUDIT FIRST; RED->GREEN only
+     on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-P18 Canonical-tricky authority spellings fail-closed cross-layer agreement: over a matrix of
+       secure-HTTPS targets whose authority is a trailing-dot host, IPv4-mapped / IPv6 zone-id / compressed
+       vs expanded IPv6 / uppercase-hex host (plus a clean control), pin that `isSecureHttpsConsoleUri`,
+       `planConsoleLaunch`, `allowsInAppNavigation` and the stale-flag TLS boundary ALL agree — each
+       target is either uniformly control-safe same-origin-secure (in-app-eligible under opt-in, never
+       under production) or uniformly fails closed — and that `KvmConsole.launchPlan` reports the same
+       route/target on the model side. AUDIT FIRST: if all layers already share the fail-closed core over
+       the whole matrix, record the audit and add nothing; RED->GREEN only on a genuine divergence,
+       never churn. Test-only; no WebView/protocol import, no URL opened, no production TLS weakening.
+       Dept: rf-platform
+       Verify: `flutter test test/features/kvm/platform/cross_layer_authority_agreement_test.dart test/features/kvm/platform/navigation_launch_route_agreement_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; test-only, writes limited to
+               `test/features/kvm/platform/**`; no WebView/protocol import, no URL opened, no dependency,
+               no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-22 22:24 UTC: another machine-checkable slice of the still-open (human-gated)
      WebView/TLS closeout of #009/#021. Authority, port, scheme spelling and same-origin navigation are heavily
      pinned (EP-P9/P11/P13/P14/P16), and EP-P11/EP-S9 pin the plain-userinfo navigation exception and the
