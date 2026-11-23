@@ -1251,6 +1251,40 @@ flag stays off for that target.
       read, write, capability or request surfaces, not a native file picker
       handing a chosen local file to the page. Verified per target before the
       flag is flipped.
+* [ ] **No print / save-to-PDF / print-spooler data exfiltration** — the embedded
+      WebView must not let attacker-influenced console content render the
+      privileged console DOM (session tokens, credentials, KVM frames, managed
+      host inventory) into a durable printed or saved-to-PDF copy: no
+      `window.print()` / scripted print request, no Android `PrintManager` /
+      `WebView.createPrintDocumentAdapter()` / `ACTION_PRINT` hand-off, no
+      WKWebView `UIPrintInteractionController` / print renderer, and no
+      auto-print or console-controlled print destination. Console content is
+      served by the BMC and is therefore attacker-influenced (a compromised or
+      spoofed BMC, or script running in the page): a printed / saved-to-PDF copy
+      of the console DOM is a durable, exfiltratable channel that escapes the
+      on-screen-only confinement — wholly independent of network downloads,
+      form POST bodies and on-disk cache/storage. Every print request must be
+      denied at the WebView (no print adapter exposed, print callbacks
+      cancelled), with no auto-print and no console-controlled destination, on
+      every target, in strict mode and with the flag both off and on. Verified
+      per target (inspect the WebView print callbacks / print-adapter exposure
+      and confirm a scripted `window.print()` cannot emit a PDF or spool a
+      print) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassPrintExfiltration`, always
+      `false`): the test-only opt-in never bypasses print / save-to-PDF
+      exfiltration — no print adapter is exposed and no print request from
+      attacker-influenced console content is honoured, in strict mode and with
+      the flag both off and on. The opt-in relaxes ONLY the test BMC's untrusted
+      server leaf for the expected host, via a scoped per-connection verifier;
+      it must never enable printing just to make a console render or to debug
+      it. This box is distinct from arbitrary / drive-by file download (a file
+      written to the device via a network response), cross-origin form
+      submission (the form POST body), sensitive data at rest (automatic
+      on-disk cache/storage and background snapshot) and outbound egress
+      (programmatic network connections): those govern other output surfaces,
+      not a rendered print / PDF copy of the console DOM. Verified per target
+      before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

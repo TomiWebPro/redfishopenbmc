@@ -15,6 +15,9 @@
 // no-service-worker/persistent-background-script (session-scoped execution;
 // hard configuration-independent invariant; the opt-in never permits console
 // content to register a Service Worker or persistent background script),
+// no-print/save-to-PDF exfiltration (hard configuration-independent invariant;
+// the opt-in never exposes a print adapter nor honours a scripted window.print()
+// so the privileged console DOM cannot be rendered to a durable print/PDF copy),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -367,6 +370,20 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'opt-in-keeps-service-workers-denied',
     marker: 'never allow a service worker'
   ),
+  (name: 'no-print-exfiltration', marker: 'print / save-to-pdf'),
+  (name: 'no-print-window-print', marker: 'window.print'),
+  (name: 'no-print-spooler', marker: 'printmanager'),
+  (name: 'no-print-adapter', marker: 'createprintdocumentadapter'),
+  (
+    name: 'print-never-bypassed',
+    marker: 'never bypasses print / save-to-pdf exfiltration'
+  ),
+  (name: 'print-policy-getter', marker: 'bypassprintexfiltration'),
+  (
+    name: 'print-distinct-from-download',
+    marker: 'distinct from arbitrary / drive-by file download'
+  ),
+  (name: 'opt-in-keeps-print-denied', marker: 'never enable printing'),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
   (name: 'mixed-content', marker: 'mixed-content'),
@@ -1047,6 +1064,27 @@ void main() {
       expect(missing, contains('service-worker-policy-getter'));
       expect(missing, contains('service-worker-distinct-from-debug-and-at-rest'));
       expect(missing, contains('opt-in-keeps-service-workers-denied'));
+    });
+
+    test('RED: dropping the no-print/save-to-PDF exfiltration box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutPrint = section
+          .split('\n')
+          .where((String line) => !line
+              .toLowerCase()
+              .contains(RegExp(r'print|distinct from arbitrary')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutPrint);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-print-exfiltration'));
+      expect(missing, contains('no-print-window-print'));
+      expect(missing, contains('no-print-spooler'));
+      expect(missing, contains('no-print-adapter'));
+      expect(missing, contains('print-never-bypassed'));
+      expect(missing, contains('print-policy-getter'));
+      expect(missing, contains('print-distinct-from-download'));
+      expect(missing, contains('opt-in-keeps-print-denied'));
     });
 
     test(
