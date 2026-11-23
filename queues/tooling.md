@@ -16,7 +16,7 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
      register only the genuinely-unguarded remainder; RED→GREEN only on a genuine gap, never churn. Pure test/tool,
      dependency-free, never writes `lib/`. No code touched. -->
 
-- [ ] EP-T36 Guard-suite liveness registration of the four newest agreement guards (EP-U23 full-name
+- [x] EP-T36 LANDED 2026-11-23 (run `auto: FEATURE #009/#021 EP-T36 guard-suite liveness registration of the four newest agreement guards + RED->GREEN tests`, test/tool-only) — Guard-suite liveness registration of the four newest agreement guards (EP-U23 full-name
        announcement, EP-S10 all-unsafe primary, EP-S16 Unicode-id distinctness, EP-P18 canonical-tricky
        authority): extend `test/tool/guard_suite_liveness_test.dart` so each unregistered guard is in
        `canonicalGuardFiles` and a fresh pinned epoch (disjoint from every earlier designation) is included in
@@ -29,6 +29,23 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
        Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues),
                RED→GREEN proof only on a genuine gap; test/tool-only, never writes `lib/`; no dependency,
                no WebView/protocol import, no production TLS weakening.
+      LANDED: AUDIT FIRST confirmed all four guards — EP-U23 `kvm_card_full_name_announcement_agreement_test.dart`,
+               EP-S10 `kvm_service_all_unsafe_primary_agreement_test.dart`, EP-S16 `kvm_service_unicode_id_distinctness_test.dart`
+               and EP-P18 `canonical_tricky_authority_agreement_test.dart` — are live + CI-reachable (verify.yml
+               whole-tree `flutter test --coverage`) yet absent from BOTH `canonicalGuardFiles` and every pinned epoch
+               (EP-T35 registered only the EP-M7/EP-S12/EP-P17 trio), so deleting / emptying / test-stripping any of
+               them stayed GREEN — a genuine "who guards the guards" gap, no live divergence, not churn. Extended
+               `test/tool/guard_suite_liveness_test.dart` (+150 lines): +4 canonical paths, pinned `epT36AddedGuards`
+               epoch (length 4, pairwise-disjoint from all 24 earlier designations incl. EP-T35) in
+               `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test +1
+               temp-root RED→GREEN (deleted / emptied / test-stripped → violation, intact → clean) for each.
+               Real-file RED: dropped only the EP-U23 canonical path (epoch kept) under a 600-perm backup → exactly
+               `+55 -3` (EP-T36 pin, EP-T20 completeness, EP-T36 temp-root liveness), the other 55 GREEN; source
+               restored byte-clean (SHA `6b20ba42...` unchanged, 0 residue, backup shredded) → 58/58 targeted GREEN.
+               test/tool-only, empty `lib/` diff, deps unchanged; analyze 0; full suite 2495 passed / 1 skipped
+               (baseline 2489 incl. 2 concurrent rf-platform tests, +2 mine); issues validate OK; diff --check clean;
+               emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL
+               opened, no production TLS weakening.
 
 <!-- rf-ideate split 2026-11-23 02:27 UTC: another machine-checkable slice of the still-open #009/#021
      epic's tool hygiene. Guard-suite liveness (EP-T12..T34) pins that TEST files stay in

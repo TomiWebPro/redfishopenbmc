@@ -14190,3 +14190,20 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-U22 (bidirectional/RTL display-text rendering agreement) — audit-first, RED→GREEN only on a genuine divergence, never churn; register this new EP-U23 guard in a future EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-T36)
+
+**Done:**
+- FEATURE — EP-T36 (test/tool-only, dependency-free, TLS-safe): extended `test/tool/guard_suite_liveness_test.dart` (+149 / -1) to liveness-register the four newest agreement guards that landed after EP-T35 — EP-U23 `kvm_card_full_name_announcement_agreement_test.dart`, EP-S10 `kvm_service_all_unsafe_primary_agreement_test.dart`, EP-S16 `kvm_service_unicode_id_distinctness_test.dart` and EP-P18 `canonical_tricky_authority_agreement_test.dart`. All four were live + CI-reachable (verify.yml whole-tree `flutter test --coverage`) yet absent from BOTH `canonicalGuardFiles` and every pinned epoch, so deleting / emptying / test-stripping any stayed GREEN — a confirmed "who guards the guards" safety gap, no live divergence, no behaviour change.
+- Added +4 canonical paths, a pinned `epT36AddedGuards` epoch (length 4, pairwise-disjoint from all 24 earlier designations incl. EP-T35) in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test and +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation, intact → clean) for each. Real-file RED: dropped only the EP-U23 canonical path (epoch kept) under a 600-perm backup → exactly `+55 -3` (EP-T36 pin, EP-T20 completeness, EP-T36 temp-root liveness), other 55 GREEN; source restored byte-clean (SHA `6b20ba42…` unchanged, 0 residue, backup shredded) → 58/58 targeted GREEN. Queue `tooling.md` EP-T36 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed. Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. Full `flutter test --concurrency=4`: 2495 passed / 1 skipped (baseline 2489 incl. 2 concurrent rf-platform tests, +2 mine). Targeted 58/58. `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Empty `lib/` diff. Emulator: SKIPPED (test/tool-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Registry-liveness hardening for four existing agreement guards, not a live fix or churn. Test/tool-only change with empty `lib/` diff and no dependency change. Dropping one canonical path (epoch kept) proves the registration is non-vacuous and isolated (the other 55 tests stayed GREEN); source restored byte-clean. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept heads from the 06:31 rf-ideate split: EP-P19 / RM-21 / EP-S17 / EP-U24 — audit-first, RED→GREEN only on a genuine divergence, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
