@@ -14542,3 +14542,21 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-U18 (copy-only vs browser-open route agreement across three surfaces) then EP-P12 / EP-M2 / EP-M1 — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn; EP-P15 record-only (already pinned). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-U18)
+
+**Done:**
+- FEATURE EP-U18 for open #009/#021: AUDIT FIRST confirmed the named dept head is a genuine unguarded seam — EP-U8 pins the list-card open gate on one CRLF console, EP-U17 pins no-render/TLS + generic copy guidance on all three surfaces only for CLEAN targets, and EP-U15 pins three-surface launch target agreement, but none drove ONE control-bearing graphical manager through the console card + capability card + viewer together pinning the copy-only route. Added `test/features/kvm/kvm_copy_only_browser_open_route_agreement_test.dart` (8 tests): 2 model route-agreement pins + 3×2 rendered tests at 320/800/1300 px. Control-unsafe target → copy-only on all three (no browser-open/render affordance, merged "Resolved URI"/"No direct console URI"/fail-closed status nodes, no copy on viewer); clean secure-HTTPS target → merged copy + browser guidance preserved. Display-only, dependency-free, TLS-safe.
+- Capability card is display-only (no browser guidance for a clean secure target by design), so the positive route half was honestly narrowed per the EP-U16 precedent; documented in the test header and queue entry.
+
+**Verification:**
+- Real-file RED: added an "Open in browser" affordance to the capability card under a 600-perm backup → exactly the 3 control-unsafe rendered tests failed (`+5 -3`), 2 model + 3 clean-target tests GREEN, 57 sibling guard tests GREEN; source restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) → 8/8 targeted GREEN.
+- `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2609 passed / 1 skipped (baseline 2601 +8); emulator skipped (test-only, <7 days since last green 85/85); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Characterization guard at a genuine unguarded three-surface copy-only/browser-open seam; no live divergence, no behaviour change; display-only, no production UI churn per §5. RED proof mutates only one view's browser-open wiring, restored byte-clean. A concurrent rf-ideate commit `e419332` added five fresh dept heads to the queues mid-run (no code/test conflict — my file is untracked). Never force-push, rewrite history, `git clean`, or delete user files; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-U26 / EP-P21 / RM-23 / EP-S19 / EP-T39 — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn; register the new EP-U18 guard in a future EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

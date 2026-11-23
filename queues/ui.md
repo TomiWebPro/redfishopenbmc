@@ -240,7 +240,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
      stays GREEN. Display-only; the human-gated WebView/TLS rendering stays gated and is NOT re-split.
      AUDIT FIRST; RED→GREEN only on a genuine divergence, never churn. No code touched. -->
 
-- [ ] EP-U18 Copy-only vs browser-open route agreement across the three KVM surfaces for a
+- [x] EP-U18 LANDED 2026-11-23 (run, agent:redfish-automation — FEATURE #009/#021, analyze 0 / 2609 passed / 1 skipped) — Copy-only vs browser-open route agreement across the three KVM surfaces for a
       control-unsafe resolved target: over one manager whose graphical `ConnectUri` is control/bidi-
       bearing so `planConsoleLaunch` degrades to copyOnly, pin that the viewer, the per-console card
       and the capability card all expose copy guidance and NEVER a browser-open / render affordance,
@@ -256,6 +256,32 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
               genuine divergence; writes limited to `lib/features/kvm/views/**` + those named test
               files; no WebView/protocol import, no URL opened, no dependency, no production TLS
               weakening; `git diff --exit-code -- pubspec.yaml`.
+       LANDED 2026-11-23: AUDIT FIRST — EP-U8 pins the gated-list card's "Open console" gate on a
+       single CRLF console, EP-U17 pins no-render/TLS + generic copy guidance on all three surfaces
+       but only for CLEAN targets, and EP-U15 pins the three-surface launch target; nothing drove ONE
+       control-bearing graphical manager through the per-console card + capability card + viewer
+       together pinning the copy-only route. Genuine unguarded seam, no live divergence, no churn.
+       The capability card is display-only and prints no browser guidance for a clean secure target
+       by design, so the positive half is honestly narrowed (EP-U16 precedent): the viewer's
+       single-source `kvmLaunchStatusText` + the console card's "open via BMC web UI" hint carry the
+       browser-open guidance, the capability card keeps its merged resolved-URI copy row. Added
+       `test/features/kvm/kvm_copy_only_browser_open_route_agreement_test.dart` (8 tests): 2 model
+       route-agreement pins (unsafe→copyOnly/targetUri null on console+capability; safe→browser-open
+       + openable) + 3×2 rendered tests at 320/800/1300 px. For the control-unsafe target: no
+       browser-open/render affordance on any surface, console card has no "Open console" but keeps
+       "Copy connect info", capability card keeps the merged "Resolved URI" row, viewer keeps the
+       merged "No direct console URI" + fail-closed status and no copy affordance. For the clean
+       target: merged copy + browser guidance preserved on all three. Real-file RED: added a
+       "Open in browser" Semantics+Text to the capability card for any resolved URI (a plausible
+       one-sided edit no existing guard forbids) under a 600-perm backup → exactly the 3
+       control-unsafe rendered tests failed (`+5 -3`: browser-open guidance caught), 2 model + 3
+       clean-target tests GREEN, and all 57 sibling guard tests in
+       `kvm_open_affordance_gating_test.dart` / `kvm_three_surface_launch_target_agreement_test.dart`
+       / `kvm_capability_card_test.dart` stayed GREEN; source restored byte-clean (SHA
+       `c6c4b09abeca88169859b85a6dc3999c963c9acd50b3ffd9716a1018d74d9b00` unchanged, empty `lib/`
+       diff, backup shredded) → 8/8 targeted GREEN. Test-only, dependency-free, TLS-safe; no
+       WebView/protocol import, no URL opened, no production TLS weakening. Needs a future EP-T-style
+       liveness registration.
 
 <!-- rf-ideate split 2026-11-22 02:06 UTC: splits the display half of the human-gated WebView/TLS
      rendering closeout (blocked on platform validation) of #009/#021 into one unblocked,
