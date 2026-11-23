@@ -14365,3 +14365,21 @@
 - Push the single commit (never force-push); this also lands the 2 already-ahead legitimate rf-platform/rf-gate commits; leave the five pre-existing stashes untouched. Next dept head EP-P15 (disabled-console fail-closed branch liveness) — AUDIT FIRST (EP-P6/EP-P8 may already mutation-pin the branch), RED→GREEN only on a genuine divergence, never churn. RM-11 / EP-S8 stay deliberately blocked; EP-T4 already closed via EP-T10. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-T38)
+
+**Done:**
+- FEATURE — EP-T38 (test/tool-only, dependency-free, TLS-safe): added pure-Dart `evaluateCoverageScopeCoherence(cliSource, directoryExists)` + 10 tests to `test/tool/coverage_gate_test.dart`, reading the enforced KVM scope-prefix constants from source text and failing closed on a non-existent prefix directory, a kvm-platform prefix not nested under the kvm tree, a kvm-platform scope that is not strictly narrower than kvm, or a missing declaration; plus a synthetic `CoverageSummary.scope()` attribution pin (models→kvm, platform→kvm-platform, power→neither), a temp-root RED→GREEN, and a real-repo invariant.
+- AUDIT FIRST: EP-T31 (all four gates wired into CLI+CI) + EP-T34 (threshold floors) left scope-prefix existence and the strict kvm⊃kvm-platform relationship entirely unpinned — a repoint-to-missing-dir or widen-to-whole-kvm edit kept every existing guard GREEN, silently masking the dedicated decision-layer gate. Genuine gap, no live divergence, no behaviour change, not churn. Distinct from EP-T31/T34 (wiring / floors).
+- Real-file RED: widened real `kKvmPlatformScopePrefixes` to `lib/features/kvm/` under a 600-perm backup → exactly 2 named failures (scope-attribution + real-repo `kvm-platform: scope is not strictly narrower than kvm`), other 52 GREEN; source restored byte-clean (SHA `f93a2e1489307ad42a06a6f8e39748664abae0986c2cb698b4f204eb91f6aaf5` unchanged, 0 residue, backup shredded) → 54/54 targeted GREEN. Queue `tooling.md` EP-T38 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed. Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. Full `flutter test --concurrency=4`: 2554 passed / 1 skipped (baseline 2545 +10 mine, -1 net concurrent). Targeted 54/54 (pre / RED / restore / GREEN). `dart format --output=none --set-exit-if-changed`: clean (my file). `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Empty `lib/` diff. Emulator: SKIPPED (test/tool-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Scope-coherence liveness guard ("who guards the gates"), not a live fix or churn. Test/tool-only change with empty `lib/` diff and no dependency change. A one-prefix-widen mutation proves the invariant fails closed and is isolated to the scope-coherence seam; source restored byte-clean. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); this also lands the 3 already-ahead legitimate rf-ideate/rf-platform/rf-gate commits; leave pre-existing stashes untouched. Next dept head EP-P20 (backslash/mixed-separator authority-confusion cross-layer agreement) — AUDIT FIRST (EP-P13 pins scheme-relative / encoded-authority confusion), RED→GREEN only on a genuine divergence, never churn. RM-22 / EP-S18 / EP-U25 / EP-P15 stay audit-first. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

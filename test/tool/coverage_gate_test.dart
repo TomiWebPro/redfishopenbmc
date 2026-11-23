@@ -187,6 +187,96 @@ List<String> evaluateCoverageThresholdFloors(String cliSource) {
   return violations;
 }
 
+/// Reads the string literals of a `const List<String> <name> = <String>[ ... ];`
+/// declaration out of [src]. Returns an empty list when the declaration is
+/// missing or malformed, so callers can report it as drift (EP-T38).
+List<String> _parseScopePrefixes(String src, String name) {
+  final int start = src.indexOf('const List<String> $name');
+  if (start < 0) return const <String>[];
+  final int open = src.indexOf('[', start);
+  if (open < 0) return const <String>[];
+  final int close = src.indexOf('];', open);
+  if (close < 0) return const <String>[];
+  return RegExp(r"'([^']*)'")
+      .allMatches(src.substring(open + 1, close))
+      .map((RegExpMatch m) => m.group(1)!)
+      .toList(growable: false);
+}
+
+/// Pure evaluator for coverage scope coherence (EP-T38).
+///
+/// EP-T31 pins that all four gates are WIRED and EP-T34 pins their threshold
+/// FLOORS, but neither pins that the dedicated kvm-platform scope stays a real,
+/// strictly-narrower sub-scope of the wide kvm scope. If a future edit repointed
+/// the kvm-platform prefix at a non-existent directory (empty scope -> 0%) or
+/// widened it to the whole kvm tree (identical to the kvm gate -> the dedicated
+/// decision-layer gate silently masked), every existing guard stayed GREEN.
+///
+/// [cliSource] is the text of `tool/coverage_gate.dart`; [directoryExists]
+/// resolves a normalized prefix to an on-disk directory. No I/O in the
+/// evaluator itself — callers supply both. Empty violations = coherent scopes.
+List<String> evaluateCoverageScopeCoherence(
+  String cliSource, {
+  required bool Function(String normalizedPrefix) directoryExists,
+}) {
+  final String src = cliSource.replaceAll('\r', '');
+  final List<String> violations = <String>[];
+
+  List<String> normalize(Iterable<String> prefixes) => prefixes
+      .map((String p) => p.replaceAll(r'\', '/'))
+      .toList(growable: false);
+
+  final List<String> kvm =
+      normalize(_parseScopePrefixes(src, 'kKvmScopePrefixes'));
+  final List<String> platform =
+      normalize(_parseScopePrefixes(src, 'kKvmPlatformScopePrefixes'));
+  if (kvm.isEmpty) {
+    violations.add('kvm: no scope prefixes declared');
+  }
+  if (platform.isEmpty) {
+    violations.add('kvm-platform: no scope prefixes declared');
+  }
+
+  // (1) every enforced prefix must resolve to an existing directory, else the
+  // gate scopes nothing and silently reports 0%.
+  for (final String prefix in kvm) {
+    if (!directoryExists(prefix)) {
+      violations
+          .add('kvm: scope prefix "$prefix" is not an existing directory');
+    }
+  }
+  for (final String prefix in platform) {
+    if (!directoryExists(prefix)) {
+      violations.add(
+          'kvm-platform: scope prefix "$prefix" is not an existing directory');
+    }
+  }
+
+  // (2) kvm-platform must stay nested inside the kvm tree and strictly narrower
+  // than it; an equal/wider scope would let the wide aggregate mask it.
+  for (final String prefix in platform) {
+    if (!kvm.any((String k) => prefix.startsWith(k))) {
+      violations.add(
+          'kvm-platform: prefix "$prefix" is not nested under any kvm prefix');
+    }
+  }
+  if (kvm.isNotEmpty && platform.isNotEmpty && kvm.every(platform.contains)) {
+    violations.add('kvm-platform: scope is not strictly narrower than kvm');
+  }
+
+  return violations;
+}
+
+/// Minimal, genuinely coherent synthetic scope declarations for EP-T38 tests.
+const String syntheticScopeCliSource = '''
+const List<String> kKvmScopePrefixes = <String>[
+  'lib/features/kvm/',
+];
+const List<String> kKvmPlatformScopePrefixes = <String>[
+  'lib/features/kvm/platform/',
+];
+''';
+
 /// Minimal, genuinely threshold-floored synthetic CLI source for EP-T34 tests.
 const String syntheticThresholdCliSource = '''
 CoverageGateReport evaluateGates(
@@ -946,6 +1036,172 @@ void main() {
       expect(source, contains('double overallThreshold = 0.75'));
       expect(source, contains('double scopedThreshold = 0.80'));
       expect(source, contains('const double kKvmThreshold = 0.75'));
+    });
+  });
+
+  group('coverage-gate scope coherence (EP-T38)', () {
+    // Every prefix "exists" for the pure subset/presence drift cases; the
+    // directory-existence dimension is exercised by the temp-root test below.
+    bool allDirsExist(String _) => true;
+
+    test('coherent synthetic scopes have no drift', () {
+      expect(
+        evaluateCoverageScopeCoherence(
+          syntheticScopeCliSource,
+          directoryExists: allDirsExist,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('a non-existent kvm prefix fails closed', () {
+      expect(
+        evaluateCoverageScopeCoherence(
+          syntheticScopeCliSource,
+          directoryExists: (String p) => !p.contains('features/kvm'),
+        ),
+        contains('kvm: scope prefix "lib/features/kvm/" is not an existing '
+            'directory'),
+      );
+    });
+
+    test('a non-existent kvm-platform prefix fails closed', () {
+      final String mutated = syntheticScopeCliSource.replaceFirst(
+        'lib/features/kvm/platform/',
+        'lib/features/kvm/missing/',
+      );
+      expect(
+        evaluateCoverageScopeCoherence(
+          mutated,
+          directoryExists: (String p) => !p.contains('missing'),
+        ),
+        contains(
+            'kvm-platform: scope prefix "lib/features/kvm/missing/" is not '
+            'an existing directory'),
+      );
+    });
+
+    test('a kvm-platform prefix outside the kvm tree fails closed', () {
+      final String mutated = syntheticScopeCliSource.replaceFirst(
+        'lib/features/kvm/platform/',
+        'lib/features/other/',
+      );
+      expect(
+        evaluateCoverageScopeCoherence(
+          mutated,
+          directoryExists: allDirsExist,
+        ),
+        contains(
+            'kvm-platform: prefix "lib/features/other/" is not nested under '
+            'any kvm prefix'),
+      );
+    });
+
+    test('widening kvm-platform to the whole kvm tree fails closed', () {
+      final String mutated = syntheticScopeCliSource.replaceFirst(
+        'lib/features/kvm/platform/',
+        'lib/features/kvm/',
+      );
+      expect(
+        evaluateCoverageScopeCoherence(
+          mutated,
+          directoryExists: allDirsExist,
+        ),
+        contains('kvm-platform: scope is not strictly narrower than kvm'),
+      );
+    });
+
+    test('a missing scope declaration fails closed', () {
+      final String mutated = syntheticScopeCliSource.replaceFirst(
+        RegExp(r"const List<String> kKvmPlatformScopePrefixes = "
+            r"<String>\[[\s\S]*?\];"),
+        '',
+      );
+      expect(
+        evaluateCoverageScopeCoherence(
+          mutated,
+          directoryExists: allDirsExist,
+        ),
+        contains('kvm-platform: no scope prefixes declared'),
+      );
+    });
+
+    test('temp-root RED→GREEN proves scope-coherence liveness', () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_t38_scopes_');
+      try {
+        Directory('${temp.path}/lib/features/kvm/platform')
+            .createSync(recursive: true);
+        final File source =
+            File('${temp.path}${Platform.pathSeparator}scopes.txt');
+        source.writeAsStringSync(syntheticScopeCliSource);
+        bool evaluate() => evaluateCoverageScopeCoherence(
+              source.readAsStringSync(),
+              directoryExists: (String p) =>
+                  Directory('${temp.path}/$p').existsSync(),
+            ).isEmpty;
+
+        expect(evaluate(), isTrue);
+
+        // RED: repoint kvm-platform at a non-existent directory on disk.
+        source.writeAsStringSync(syntheticScopeCliSource.replaceFirst(
+          'lib/features/kvm/platform/',
+          'lib/features/kvm/gone/',
+        ));
+        expect(evaluate(), isFalse);
+
+        // Restore: clean once more.
+        source.writeAsStringSync(syntheticScopeCliSource);
+        expect(evaluate(), isTrue);
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test('CoverageSummary.scope attributes files to kvm vs platform vs neither',
+        () {
+      final CoverageSummary summary = parseLcov([
+        record('lib/features/kvm/models/kvm_capability.dart', 10, 8),
+        record('lib/features/kvm/platform/launch_plan.dart', 10, 8),
+        record('lib/features/power/power_service.dart', 10, 8),
+      ].join('\n'));
+
+      final List<String> kvmPaths = summary
+          .scope(kKvmScopePrefixes)
+          .files
+          .map((CoverageFile f) => f.path)
+          .toList();
+      expect(
+        kvmPaths,
+        containsAll(<String>[
+          'lib/features/kvm/models/kvm_capability.dart',
+          'lib/features/kvm/platform/launch_plan.dart',
+        ]),
+      );
+      expect(kvmPaths, hasLength(2)); // power/** is outside the kvm tree
+
+      expect(
+        summary
+            .scope(kKvmPlatformScopePrefixes)
+            .files
+            .map((CoverageFile f) => f.path)
+            .toList(),
+        <String>['lib/features/kvm/platform/launch_plan.dart'],
+      );
+    });
+
+    test('real repository: enforced KVM scopes exist and stay coherent', () {
+      final File cli = File('tool/coverage_gate.dart');
+      expect(cli.existsSync(), isTrue);
+      final List<String> violations = evaluateCoverageScopeCoherence(
+        cli.readAsStringSync(),
+        directoryExists: (String p) => Directory(p).existsSync(),
+      );
+      expect(
+        violations,
+        isEmpty,
+        reason: 'coverage scope drift: ${violations.join(', ')}',
+      );
     });
   });
 }
