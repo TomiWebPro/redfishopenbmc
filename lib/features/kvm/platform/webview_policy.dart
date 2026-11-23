@@ -1111,6 +1111,48 @@ class KvmWebViewPolicy {
   /// the console DOM. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassPrintExfiltration => false;
 
+  /// Always `false`: the console WebView never lets attacker-influenced console
+  /// content seize the operator's local input or hide the app chrome, not even
+  /// by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let the remote BMC console capture pointer or
+  /// keyboard focus or hide the trusted app UI: no scripted
+  /// `requestPointerLock()` / `Element.requestFullscreen()` /
+  /// `requestKeyboardLock()` (nor the `webkit` / `moz` prefixed variants), no
+  /// console-content-initiated fullscreen, pointer-lock or keyboard-lock that
+  /// traps operator input, conceals the app chrome or presents a look-alike
+  /// credential prompt. Every such input-capture request from console content
+  /// is denied at the WebView (pointer/keyboard lock refused, content-initiated
+  /// fullscreen refused, focus never hijacked), on every target, in strict mode
+  /// and with the flag both off and on. Console content is served by the BMC and
+  /// is therefore attacker-influenced (a compromised/spoofed BMC or script in
+  /// the page): a page that captures the pointer/keyboard and goes fullscreen
+  /// can obscure the trusted frame, trap operator input and spoof a system or
+  /// BMC login dialog to harvest the operator's credentials or session token —
+  /// a UI-spoof / input-trap surface wholly independent of JavaScript modal
+  /// dialogs, overlay/tapjacking and device-capability prompts. Tolerating the
+  /// test BMC's untrusted server leaf relaxes ONLY that leaf's trust for the
+  /// expected host (via a scoped per-connection verifier); it must never grant
+  /// an input-capture or fullscreen request just to make a console render or to
+  /// debug it.
+  ///
+  /// Operator/app-initiated fullscreen of the console view is a separate
+  /// functional path (see the Fullscreen box in `WEBVIEW_TLS_MATRIX.md`) and is
+  /// unaffected: only console-content-initiated input capture is forbidden.
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content trap input or spoof a prompt. It governs the local input / UI
+  /// presentation surface, so it is distinct from JavaScript dialog / modal
+  /// spoofing ([bypassJavaScriptDialogDenial]) (`alert`/`confirm`/`prompt`/
+  /// `beforeunload`), tapjacking / UI-overlay / clickjacking
+  /// ([bypassTapjackingProtection]) (a co-resident app drawing an obscuring
+  /// overlay or delivering an obscured touch) and device-capability / permission
+  /// access ([bypassDevicePermissionControls]) (host capabilities granted to
+  /// page content): those govern other input and prompt surfaces, not
+  /// content-initiated pointer/keyboard lock and fullscreen input capture. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassInputCaptureProtection => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
