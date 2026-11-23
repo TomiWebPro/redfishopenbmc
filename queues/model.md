@@ -17,7 +17,7 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
      credentialed Primary) stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine
      divergence, never churn. No code touched. -->
 
-- [ ] RM-20 Registered-OEM-parser hostile-enrichment normalization agreement across both `fromManager`
+- [x] RM-20 LANDED 2026-11-23 (run `auto: FEATURE #009/#021 RM-20 registered-OEM hostile-enrichment normalization agreement + RED->GREEN tests`, analyze 0 / targeted 8/8 / full 2462 passed / 1 skipped, test-only) — Registered-OEM-parser hostile-enrichment normalization agreement across both `fromManager`
        factories: over a registered `KvmOemConsoleParser` whose `parse` returns hostile enrichment
        (control/CRLF-bearing URI, non-canonical / duplicate connect types, non-bool enabled, padded id),
        pin that `KvmConsole.fromManager` and `KvmCapability.fromManager` normalize the vendor output
@@ -33,6 +33,25 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
                (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
                `lib/features/kvm/models/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
                no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+       **LANDED** 2026-11-23: AUDIT FIRST — both factories already normalize parsed vendor enrichment through the same
+       shared helpers (`_uriString` / `_nonEmptyString` trim, `_normalizedConnectTypes` / `_appendTypes` dedup), and
+       RM-7 already pins launch-URI/classification agreement over a scheme matrix while `_MessyVendorParser` pins
+       console-side normalization — so there is no live divergence. Genuine unguarded seam: nothing drove the full
+       hostile-enrichment matrix (padded / blank / CRLF-bearing URI, duplicate / blank / mixed-case vendor types,
+       enablement flips, padded manager id) through BOTH factories while pinning the normalized STORED fields.
+       Added `test/features/kvm/kvm_oem_hostile_enrichment_agreement_test.dart` (8 tests): both factories store the
+       same normalized vendor URI and agree on `launchUri` / `hasUri` / all transport classifiers (a CRLF target is
+       stored verbatim yet never badged secure); the console card trims/drops-blank/case-insensitive-dedups vendor
+       connect types keeping the first spelling, with a blank-only list yielding no chips; parsed `serviceEnabled`
+       drives `supported` / `serviceEnabled` / `canOpenConsole` identically on both cards; a clean parser keeps its
+       enrichment byte-for-byte; and a padded `managerId` stays byte-exact on both surfaces.
+       Real-file RED: dropped `_normalizedConnectTypes(...)` on the parsed vendor path in `kvm_models.dart` under a
+       600-perm backup → exactly the 2 new connect-type tests failed (6 others GREEN), plus the 2 pre-existing sibling
+       OEM normalization tests in `kvm_oem_registry_test.dart` failed — proving the guard is live and non-vacuous;
+       source restored byte-clean (SHA `85af8a1c…` unchanged, empty `lib/` diff, backup shredded) → 8/8 GREEN.
+       `dart format` clean; analyze 0; full suite 2462 passed / 1 skipped (baseline 2454 +8 mine); issues validate OK;
+       diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green
+       85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
 
 <!-- rf-ideate split 2026-11-22 22:24 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 model epic (never-empty-well malformed-payload tolerance, MULTI_DEPT hard

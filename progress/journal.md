@@ -14084,3 +14084,21 @@
 - Push the merge + tracking commits (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: check `rf-platform-check` state first; merge only on a fresh explicit `CHECK: PASS` for the exact new tip. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (RM-20)
+
+**Done:**
+- FEATURE — RM-20 (test-only, dependency-free, TLS-safe): added `test/features/kvm/kvm_oem_hostile_enrichment_agreement_test.dart` (8 tests) pinning registered-OEM hostile-enrichment normalization agreement across both `KvmConsole.fromManager` and `KvmCapability.fromManager`. A registered parser is third-party data, not a trusted shortcut: both factories store the same normalized vendor URI (padded trimmed, blank -> null) and agree on `launchUri` / `hasUri` / all transport classifiers over a padded / blank / CRLF-bearing matrix (a CRLF target is stored verbatim yet never badged secure); the console card trims / drops-blank / case-insensitive-dedups vendor connect types keeping the first BMC spelling; parsed `serviceEnabled` drives `supported` / `serviceEnabled` / `canOpenConsole` identically on both cards; a clean parser keeps its enrichment byte-for-byte; a padded manager id stays byte-exact on both surfaces.
+- AUDIT FIRST: both factories already normalize parsed vendor enrichment through the same shared helpers and RM-7 + `_MessyVendorParser` already pin URI/classification + console-side normalization — no live divergence, no behaviour change. Genuine unguarded seam: nothing drove the full hostile-enrichment matrix through BOTH factories while pinning the normalized STORED fields — characterization / regression lock, not churn.
+- Real-file RED: dropped `_normalizedConnectTypes(...)` on the parsed vendor path under a 600-perm backup → exactly the 2 new connect-type tests failed (6 others GREEN), plus the 2 pre-existing sibling OEM normalization tests failed; source restored byte-clean (SHA `85af8a1c…` unchanged, empty `lib/` diff, backup shredded) → 8/8 targeted GREEN. Queue `model.md` RM-20 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed (next heads EP-U23 / EP-U22 / EP-P18 / EP-S10). Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. `flutter test --concurrency=4`: 2462 passed / 1 skipped (baseline 2454 +8). Targeted 8/8. `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Empty `lib/` diff. Emulator: SKIPPED (test-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Regression lock for a shared-normalizer invariant, not a live fix or churn. Test-only change with empty `lib/` diff and no dependency change. One-sided removal of `_normalizedConnectTypes` proves the guard is non-vacuous and wired to the documented cross-view contract; source restored byte-clean. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-U23 / EP-U22 / EP-P18 / EP-S10 — audit-first, RED->GREEN only on a genuine divergence, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
