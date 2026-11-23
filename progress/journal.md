@@ -14893,3 +14893,20 @@
 - Push the single commit (never force-push). AUDIT FIRST for a genuinely new unguarded seam (EP-P15 disabled-console branch liveness, then EP-S19 / RM-11), never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:rf-gate — MERGED build/rf-platform (no picture-in-picture escape guard, check#12056)
+
+**Done:**
+- rf-gate sole-merger: `python3 ~/opencode-scheduler/scheduler.py state rf-platform-check` → latest run#12056 `SUCCESS exit=0`; explicit `CHECK: PASS` for exact branch tip `8fac77c` (report started 22:53:40 UTC, analyze 0, targeted 172 passed, no production-TLS weakening, 4 allowlisted paths). Branch HEAD cross-checked unchanged; merge-base `4b9b94c` ancestor of `main` via `ec27bba`; `git merge-tree` conflict-free. Merged `build/rf-platform` into `main` via `git merge --no-ff` → merge `f9664ae` (parents `ab548fb` / `8fac77c`), clean ort auto-merge, 4 files (+179/-0): RP-1 no picture-in-picture / floating secondary-window escape acceptance box + hard `bypassPictureInPictureEscape == false` getter + RED guards.
+- Tracked in `FUTUREWORK.md` (new Gate line) + `automation-tracking.md` (rf-gate MERGED section).
+
+**Verification:**
+- Post-merge in-tree at `f9664ae`: `flutter analyze` 0 (No issues found!); full `flutter test --coverage --concurrency=4` GREEN — 2741 passed / 1 skipped; all four coverage gates PASS overall 90.6% (6101/6732) / redfish+power+sensors 90.4% (2119/2345) / kvm 97.7% (1378/1411) / kvm-platform 97.6% (493/505), exit 0; `asset_guard` OK; `unattended_guard` OK; `issues.py validate` OK; first-parent `git diff --check` clean; deps unchanged; TLS-weakening + secret scan clean. DMTF 85-test emulator skipped (doc + policy getter/test only, no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:**
+- Verdict source is the explicit `CHECK: PASS` in the latest check run, cross-checked against the unchanged branch tip, merge-base ancestry and a conflict-free `git merge-tree` before merging. `main` was ahead 1 of `origin/main` (un-pushed rf-ideate commit `ab548fb` preserved — normal fast-forward push only, no force-push). No issue closed (#009 P3 / #021 P2 stay human-gated on platform WebView + BMC TLS validation). No force-push, history rewrite, `git clean`, or file deletion; no new stash (clean tree); five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Next rf-gate run: re-check `rf-platform-check` latest verdict first; `--no-ff` merge only a PASS branch, skip + report otherwise; NO-OP if no new commits. Builder continues audit-first dept heads; close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
