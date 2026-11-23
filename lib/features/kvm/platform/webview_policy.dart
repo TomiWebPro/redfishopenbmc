@@ -839,6 +839,44 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassTopLevelNavigationConfinement => false;
 
+  /// Always `false`: arbitrary / drive-by file download is NEVER enabled, not
+  /// even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let attacker-influenced console content
+  /// trigger a file download that escapes the trusted frame or lands a runnable
+  /// file on the device: no `<a download>`, scripted `window.location`, redirect
+  /// or `Content-Disposition: attachment` download, no auto-open via Android
+  /// `DownloadManager` / `setDownloadListener` handing an `.apk` / `.exe` / `.dmg`
+  /// / `.sh` to an install / launch intent, no auto-install and no
+  /// console-controlled destination or filename. Console content is served by
+  /// the BMC and is therefore attacker-influenced (a compromised/spoofed BMC or
+  /// script in the page): a drive-by download is a distinct response / intent
+  /// channel from top-level navigation, subresource fetch and form POST, so an
+  /// attacker-chosen executable delivered through the trusted console frame and
+  /// then opened is a code-execution / malware-installation surface. Every
+  /// download is blocked at the WebView (a canceling `setDownloadListener` that
+  /// at most hands the HTTPS URI to the external secure browser), with no
+  /// auto-open, no auto-install and no console-controlled destination, on every
+  /// target, in strict mode and with the flag both off and on. Tolerating the
+  /// test BMC's untrusted server leaf relaxes ONLY that leaf's trust; it must
+  /// never permit a drive-by download just to make a console render or to debug
+  /// it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits an
+  /// arbitrary / drive-by file download. It governs the download / intent
+  /// channel, so it is distinct from top-level navigation confinement
+  /// ([bypassTopLevelNavigationConfinement]) (where the frame may go), the
+  /// outbound egress allowlist ([bypassOutboundEgressAllowlist]) (destinations
+  /// of programmatic connections), cross-origin form submission
+  /// ([bypassCrossOriginFormSubmission]) (the form POST body channel), CSP /
+  /// mixed-content blocking ([bypassMixedContentBlocking]) (which subresources
+  /// the page may load) and local file / content access ([bypassLocalFileAccess])
+  /// (local file reads): those govern navigation, connections, requests or local
+  /// reads, not the download of a file to the device. See `WEBVIEW_TLS_MATRIX.md`
+  /// (RP-1).
+  bool get bypassArbitraryFileDownload => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

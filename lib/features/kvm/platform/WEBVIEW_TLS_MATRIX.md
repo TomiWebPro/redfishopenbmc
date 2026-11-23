@@ -807,6 +807,23 @@ flag stays off for that target.
       (inspect the WebView download listener / navigation-response callbacks
       and confirm downloads are blocked and nothing is auto-opened) before the
       flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassArbitraryFileDownload`,
+      always `false`): the test-only opt-in never bypasses arbitrary / drive-by
+      file download — every download is blocked at the WebView with no auto-open,
+      no auto-install and no console-controlled destination or filename, in
+      strict mode and with the flag both off and on. The opt-in relaxes ONLY the
+      test BMC's untrusted server leaf for the expected host; it must never allow
+      an `<a download>`, a `Content-Disposition: attachment` response, a
+      scripted download or a drive-by APK / executable install just to make a
+      console render or to debug it. This box governs the download / intent
+      channel, so it is distinct from top-level navigation confinement (where
+      the frame may go), the outbound egress allowlist (destinations of
+      programmatic connections), cross-origin form submission (the form POST
+      body), CSP / mixed-content enforcement (which subresources the page may
+      load) and local file / content access (local file reads): those govern
+      navigation, requests or local reads, not a file written to the device.
+      Verified per target before the flag is flipped.
 * [ ] **No cross-site cookie / session-token leakage (SameSite + third-party-cookie
       blocking + Secure/HttpOnly scoping)** — the embedded WebView must not let
       attacker-influenced console content leak the operator's BMC session cookie/token to
