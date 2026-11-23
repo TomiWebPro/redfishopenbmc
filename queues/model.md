@@ -16,7 +16,7 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
      EP-S8 credentialed Primary) stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a
      genuine divergence, never churn. No code touched. -->
 
-- [ ] RM-23 Hostile `ConnectUri` raw-preservation cross-factory agreement:
+- [x] RM-23 LANDED 2026-11-23 (run, agent:redfish-automation — FEATURE #009/#021, analyze 0 / full suite green) — Hostile `ConnectUri` raw-preservation cross-factory agreement:
        over a matrix of `Manager` bodies whose GraphicalConsole/RemoteConsole `ConnectUri` carries
        CRLF/NUL/raw-control and padding, bidi format marks, scheme-relative (`//host/x`) and
        non-HTTPS schemes (`data:`, `javascript:`, `file:`) plus a clean secure-HTTPS control, pin that
@@ -33,6 +33,18 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
                (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
                `lib/features/kvm/models/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
                pubspec.lock`; no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+      LANDED: AUDIT FIRST confirmed both factories route the raw value through mirrored trim-only
+              helpers (`KvmConsole._uriString` / `KvmCapability._nonEmptyString`) and shared transport
+              classifiers, but NO existing test swept a hostile raw matrix (embedded C0/DEL, bidi/format
+              marks, scheme-relative / data: / javascript: / file:) through BOTH factories pinning byte
+              equality + derived-flag agreement — a genuine unguarded desync seam, no live divergence.
+              Added `test/features/kvm/kvm_connect_uri_raw_preservation_agreement_test.dart` (21 tests).
+              Real-file RED: stripped only bidi RLO in the capability `_nonEmptyString` under a 600-perm
+              backup -> exactly `+19 -2` (RLO raw-agreement + bidi-rlo embedded-preservation), other 19
+              GREEN; source restored byte-clean (SHA `53ab173201fb430fa47f73fb29b4b7e33622ca28cde0e5516c0e43407ca5195d`
+              unchanged, 0 residue, empty `lib/` diff, backup shredded) -> 21/21 targeted GREEN. Empty deps
+              diff; no WebView/protocol import, no URL opened, no production TLS weakening. This guard is
+              NOT yet epoch-registered in `guard_suite_liveness_test.dart` — deferred to a future EP-T pass.
 
 <!-- rf-ideate split 2026-11-23 10:35 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 model epic (never-empty-well hostile-payload tolerance, MULTI_DEPT hard rule 10).

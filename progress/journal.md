@@ -14611,3 +14611,20 @@
 - Push the merge + tracking commit (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: check `rf-platform-check` state first; merge only on a fresh explicit `CHECK: PASS` for the exact new tip — a non-PASS verdict is a SKIP/NO-OP with no commits. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (RM-23)
+
+**Done:**
+- FEATURE RM-23 for open #009/#021: hostile `ConnectUri` raw-preservation cross-factory agreement guard. AUDIT FIRST confirmed both `fromManager` factories route the raw value through mirrored trim-only helpers (`KvmConsole._uriString` / `KvmCapability._nonEmptyString`) and share the fail-closed transport classifiers, but no existing test swept a hostile raw matrix through BOTH factories pinning byte-identical raw preservation + derived-flag agreement. Added `test/features/kvm/kvm_connect_uri_raw_preservation_agreement_test.dart` (21 tests): fixture liveness, a 14-case cross-factory raw-byte / `launchUri` / transport-classifier / `hasUri` agreement matrix (embedded C0/DEL + bidi/format marks + scheme-relative / `data:` / `javascript:` / `file:` + clean HTTPS control), 4-case embedded-byte survival (neither factory sanitises), and fail-closed launch-plan + clean-control agreement. Test-only, dependency-free, TLS-safe.
+- Real-file RED: stripped only bidi RLO in capability `_nonEmptyString` under a 600-perm backup → exactly `+19 -2` (RLO raw-agreement + bidi-rlo embedded-preservation), other 19 GREEN; source restored byte-clean (SHA `53ab173201fb430fa47f73fb29b4b7e33622ca28cde0e5516c0e43407ca5195d` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 21/21 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN (exact count in automation-tracking); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Read-only model characterization guard at a genuine unguarded cross-factory seam; no live divergence, no behaviour change, no product code per §5. RED proof mutates only one mirrored helper, restored byte-clean. This guard is NOT yet epoch-registered in `guard_suite_liveness_test.dart` — deferred to a future EP-T pass (as with EP-U18). Never force-push, rewrite history, `git clean`, or delete user files; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next audit-first dept heads EP-P21 (IPv6-literal / zone-id authority) / EP-S19 (overlapping-load stale-result) / EP-U26 (copy-affordance fail-closed a11y — largely pinned by EP-U18, audit before adding) — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn; register the unregistered EP-U18 + RM-23 guards in a future EP-T liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
