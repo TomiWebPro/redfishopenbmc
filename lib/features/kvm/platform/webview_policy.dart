@@ -331,6 +331,50 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassLogRedaction => false;
 
+  /// Always `false`: protection of the privileged console session against
+  /// sensitive data at rest is NEVER bypassed, not even by the test-only
+  /// self-signed opt-in.
+  ///
+  /// The embedded WebView must not persist the remote BMC console's sensitive
+  /// content (operator credentials, session cookies/tokens, KVM screen frames,
+  /// managed-host inventory) to disk — no on-device WebView HTTP/disk cache of
+  /// console responses, no DOM local/session storage or IndexedDB retention
+  /// beyond the session, no `setDatabaseEnabled` / `setDomStorageEnabled`
+  /// persistence, no WebView cookie jar shared with the system browser, and no
+  /// autofill/password-manager saving of console credentials — and must not
+  /// expose the live console to an OS background snapshot / recent-apps
+  /// thumbnail (Android `FLAG_SECURE`, or the iOS/macOS equivalent). Any such
+  /// on-disk copy or capture is a durable, local data-theft / shoulder-surfing
+  /// surface for the operator's privileged management session. Every console
+  /// page is rendered with cache/storage persistence disabled and secure,
+  /// non-capturable presentation on every target, in strict mode and with the
+  /// flag both off and on. Tolerating the test BMC's untrusted server leaf
+  /// relaxes ONLY that leaf's trust; it must never disable cache/storage
+  /// isolation or clear the secure-presentation flag just to make a console
+  /// render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that leaves the
+  /// privileged console session persisted to disk or exposed to a background
+  /// snapshot. It governs the app's own local persistence / screen-capture
+  /// surface, so it is distinct from the server-side certificate checks —
+  /// hostname verification ([bypassHostnameVerification]), pinning
+  /// ([bypassCertificatePinning]), revocation ([bypassCertificateRevocationCheck])
+  /// and platform trust-store integrity ([bypassPlatformTrustStoreIntegrity]) —
+  /// the TLS floor ([bypassTlsProtocolFloor]), HTTPS-only transport
+  /// ([bypassHttpsOnlyTransport]) and validated-origin binding
+  /// ([bypassValidatedOriginBinding]) (the handshake, cleartext sockets and
+  /// resolved address), client-certificate validation
+  /// ([bypassClientCertificateValidation]) (the client credential), the strict
+  /// Referrer-Policy ([bypassStrictReferrerPolicy]) (the app's outbound
+  /// `Referer` header), CSP / mixed-content enforcement
+  /// ([bypassMixedContentBlocking]) (which subresources the page may load) and
+  /// sensitive console URL / session-token log redaction ([bypassLogRedaction])
+  /// (the app's diagnostic / telemetry output): those govern the connection,
+  /// its credentials, its requests or its other local outputs, not on-disk
+  /// persistence or screen capture. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassSensitiveDataAtRestProtection => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

@@ -51,7 +51,10 @@
 // console URL / session-token log redaction never bypassed (hard configuration-
 // independent invariant; the opt-in never emits the privileged console URL or
 // any token derived from it to logs / telemetry / crash reports, CWE-532),
-// flag-off fallback, human sign-off) so a future edit cannot silently erase the
+// sensitive data-at-rest protection never bypassed (hard configuration-
+// independent invariant; the opt-in never persists console cache/storage or
+// exposes an unprotected background snapshot, so the privileged session is not
+// left on disk), flag-off fallback, human sign-off) so a future edit cannot silently erase the
 // evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
@@ -341,6 +344,14 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'never bypasses sensitive console url / session-token log redaction'
   ),
   (name: 'log-redaction-policy-getter', marker: 'bypasslogredaction'),
+  (
+    name: 'data-at-rest-never-bypassed',
+    marker: 'never bypasses sensitive data at rest protection'
+  ),
+  (
+    name: 'data-at-rest-policy-getter',
+    marker: 'bypasssensitivedataatrestprotection'
+  ),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -981,6 +992,21 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('log-redaction-never-bypassed'));
       expect(missing, contains('log-redaction-policy-getter'));
+    });
+
+    test(
+        'RED: dropping the sensitive data-at-rest hard-invariant box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutDataAtRest = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses sensitive data at rest protection|bypasssensitivedataatrestprotection')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutDataAtRest);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('data-at-rest-never-bypassed'));
+      expect(missing, contains('data-at-rest-policy-getter'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
