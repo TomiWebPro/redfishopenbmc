@@ -18,7 +18,10 @@
 // exfiltration), no-arbitrary/drive-by file download (APK / executable /
 // auto-open / content-disposition; hard configuration-independent invariant;
 // the opt-in never permits a console-controlled download or drive-by install to
-// land a runnable file on the device), no-cross-site-cookie/session-leak (SameSite /
+// land a runnable file on the device), no-file-chooser/file-upload exfiltration
+// (native file picker / <input type=file> local-file selection; hard
+// configuration-independent invariant; the opt-in never opens a file chooser
+// for attacker-influenced console content), no-cross-site-cookie/session-leak (SameSite /
 // third-party-cookie / HttpOnly), no-tapjacking/UI-overlay/clickjacking
 // (CWE-1021 obscured-window touch), no-TLS-version/cipher-suite downgrade
 // (TLS 1.2+ floor, no weak/export suites, no silent fallback),
@@ -261,20 +264,14 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'no-autofill-credential-capture',
     marker: 'password-manager credential capture'
   ),
-  (
-    name: 'autofill-denied-by-default',
-    marker: 'autofill is denied by default'
-  ),
+  (name: 'autofill-denied-by-default', marker: 'autofill is denied by default'),
   (name: 'no-autofill-save', marker: 'no password manager saving'),
   (name: 'no-autofill-injection', marker: 'never pre-seed'),
   (
     name: 'autofill-never-bypassed',
     marker: 'never bypasses autofill / password-manager credential capture'
   ),
-  (
-    name: 'autofill-policy-getter',
-    marker: 'bypassautofillcredentialcapture'
-  ),
+  (name: 'autofill-policy-getter', marker: 'bypassautofillcredentialcapture'),
   (
     name: 'autofill-distinct-from-http-auth',
     marker: 'distinct from http-auth stored credentials'
@@ -282,6 +279,20 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'opt-in-keeps-autofill-denied',
     marker: 'opt-in never enables autofill'
+  ),
+  (name: 'no-file-chooser-upload', marker: 'file chooser'),
+  (name: 'no-file-input-exfil', marker: 'file input'),
+  (name: 'no-native-file-picker', marker: 'onshowfilechooser'),
+  (name: 'no-file-upload-exfil', marker: 'file upload'),
+  (name: 'file-chooser-never-bypassed', marker: 'never bypasses file chooser'),
+  (name: 'file-chooser-policy-getter', marker: 'bypassfilechooseraccess'),
+  (
+    name: 'file-chooser-distinct-from-local-file',
+    marker: 'distinct from local file access'
+  ),
+  (
+    name: 'opt-in-keeps-file-chooser-denied',
+    marker: 'never enable the file chooser'
   ),
   (name: 'no-remote-debugging', marker: 'remote debugging'),
   (name: 'no-webcontents-debugging', marker: 'webcontentsdebuggingenabled'),
@@ -498,10 +509,7 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'never bypasses http-auth / login-form challenge denial'
   ),
   (name: 'http-auth-policy-getter', marker: 'bypasshttpauthchallengedenial'),
-  (
-    name: 'no-covert-outbound-egress',
-    marker: 'covert outbound egress'
-  ),
+  (name: 'no-covert-outbound-egress', marker: 'covert outbound egress'),
   (name: 'connect-src-allowlist', marker: 'connect-src'),
   (name: 'no-cross-origin-exfil', marker: 'cross-origin data exfiltration'),
   (name: 'no-websocket-beacon-exfil', marker: 'sendbeacon'),
@@ -790,14 +798,14 @@ void main() {
           .where((String line) => !line.toLowerCase().contains(RegExp(
               r'never bypasses ssl certificate-error rejection|bypasssslerrorrejection')))
           .join('\n');
-      final String neutered =
-          matrixWithSection(realMatrix, withoutSslError);
+      final String neutered = matrixWithSection(realMatrix, withoutSslError);
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('ssl-error-rejection-never-bypassed'));
       expect(missing, contains('ssl-error-rejection-policy-getter'));
     });
 
-    test('RED: dropping the top-level navigation confinement hard-invariant '
+    test(
+        'RED: dropping the top-level navigation confinement hard-invariant '
         'box fails closed', () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutNav = section
@@ -860,8 +868,7 @@ void main() {
       expect(missing, contains('no-autofill-injection'));
     });
 
-    test(
-        'RED: dropping the autofill-capture hard-invariant box fails closed',
+    test('RED: dropping the autofill-capture hard-invariant box fails closed',
         () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutAutofillInvariant = section
@@ -876,8 +883,7 @@ void main() {
       expect(missing, contains('autofill-policy-getter'));
     });
 
-    test(
-        'RED: dropping the autofill distinctness / opt-in box fails closed',
+    test('RED: dropping the autofill distinctness / opt-in box fails closed',
         () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutAutofillDistinct = section
@@ -890,6 +896,25 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('autofill-distinct-from-http-auth'));
       expect(missing, contains('opt-in-keeps-autofill-denied'));
+    });
+
+    test('RED: dropping the no-file-chooser/upload box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutFileChooser = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'file chooser|file input|onshowfilechooser|file upload|never bypasses file chooser|bypassfilechooseraccess|distinct from local file access|never enable the file chooser')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutFileChooser);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-file-chooser-upload'));
+      expect(missing, contains('no-file-input-exfil'));
+      expect(missing, contains('no-native-file-picker'));
+      expect(missing, contains('no-file-upload-exfil'));
+      expect(missing, contains('file-chooser-never-bypassed'));
+      expect(missing, contains('file-chooser-policy-getter'));
+      expect(missing, contains('file-chooser-distinct-from-local-file'));
+      expect(missing, contains('opt-in-keeps-file-chooser-denied'));
     });
 
     test('RED: dropping the no-cross-site-cookie/session-leak box fails closed',

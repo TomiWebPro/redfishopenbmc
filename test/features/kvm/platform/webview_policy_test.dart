@@ -920,15 +920,14 @@ void main() {
     });
   });
 
-  group(
-      'KvmWebViewPolicy — outbound egress allowlist is never bypassed', () {
+  group('KvmWebViewPolicy — outbound egress allowlist is never bypassed', () {
     test('production default never relaxes the outbound egress allowlist', () {
-      expect(
-          KvmWebViewPolicy.productionDefault.bypassOutboundEgressAllowlist,
+      expect(KvmWebViewPolicy.productionDefault.bypassOutboundEgressAllowlist,
           isFalse);
     });
 
-    test('test-only self-signed opt-in still confines connections to the '
+    test(
+        'test-only self-signed opt-in still confines connections to the '
         'approved origin', () {
       // Tolerating the test BMC's untrusted server leaf relaxes ONLY leaf trust:
       // it must never let attacker-influenced console content open a
@@ -975,12 +974,12 @@ void main() {
   group('KvmWebViewPolicy — cross-origin form submission is never bypassed',
       () {
     test('production default never permits cross-origin form submission', () {
-      expect(
-          KvmWebViewPolicy.productionDefault.bypassCrossOriginFormSubmission,
+      expect(KvmWebViewPolicy.productionDefault.bypassCrossOriginFormSubmission,
           isFalse);
     });
 
-    test('test-only self-signed opt-in still confines forms to the console '
+    test(
+        'test-only self-signed opt-in still confines forms to the console '
         'origin', () {
       // Tolerating the test BMC's untrusted server leaf relaxes ONLY leaf trust:
       // it must never let attacker-influenced console content exfiltrate
@@ -1030,11 +1029,12 @@ void main() {
   group('KvmWebViewPolicy — SSL certificate-error rejection is never bypassed',
       () {
     test('production default never blanket-accepts a certificate error', () {
-      expect(KvmWebViewPolicy.productionDefault.bypassSslErrorRejection,
-          isFalse);
+      expect(
+          KvmWebViewPolicy.productionDefault.bypassSslErrorRejection, isFalse);
     });
 
-    test('test-only self-signed opt-in still fails closed on certificate '
+    test(
+        'test-only self-signed opt-in still fails closed on certificate '
         'errors', () {
       // Tolerating the test BMC's untrusted server leaf relaxes ONLY leaf trust
       // for the expected host (via a scoped verifier): it must never install a
@@ -1080,15 +1080,20 @@ void main() {
     });
   });
 
-  group('KvmWebViewPolicy — top-level navigation confinement is never '
+  group(
+      'KvmWebViewPolicy — top-level navigation confinement is never '
       'bypassed', () {
-    test('production default never lets the top-level frame navigate off the '
+    test(
+        'production default never lets the top-level frame navigate off the '
         'approved console', () {
-      expect(KvmWebViewPolicy.productionDefault.bypassTopLevelNavigationConfinement,
+      expect(
+          KvmWebViewPolicy
+              .productionDefault.bypassTopLevelNavigationConfinement,
           isFalse);
     });
 
-    test('test-only self-signed opt-in still confines top-level navigation', () {
+    test('test-only self-signed opt-in still confines top-level navigation',
+        () {
       // Tolerating the test BMC's untrusted server leaf relaxes ONLY leaf trust
       // for the expected host (via a scoped verifier): it must never let the
       // privileged console frame navigate to a different origin, a plaintext
@@ -1191,7 +1196,8 @@ void main() {
     });
   });
 
-  group('KvmWebViewPolicy — autofill / password-manager capture is never allowed',
+  group(
+      'KvmWebViewPolicy — autofill / password-manager capture is never allowed',
       () {
     test('production default never permits credential autofill capture', () {
       expect(KvmWebViewPolicy.productionDefault.bypassAutofillCredentialCapture,
@@ -1204,8 +1210,8 @@ void main() {
       // password-manager saving, pre-seeding of saved credentials or an autofill
       // suggestion just to make a console render or to debug it. Hard invariant,
       // independent of the flag, TLS mode or console signals.
-      expect(KvmWebViewPolicy.testOptIn.bypassAutofillCredentialCapture,
-          isFalse);
+      expect(
+          KvmWebViewPolicy.testOptIn.bypassAutofillCredentialCapture, isFalse);
     });
 
     test('no policy configuration can enable autofill credential capture', () {
@@ -1243,6 +1249,61 @@ void main() {
       expect(enabledSelfSigned.bypassSslErrorRejection, isFalse);
       expect(enabledSelfSigned.bypassTopLevelNavigationConfinement, isFalse);
       expect(enabledSelfSigned.bypassArbitraryFileDownload, isFalse);
+    });
+  });
+
+  group('KvmWebViewPolicy — file chooser / file-upload access is never allowed',
+      () {
+    test('production default never opens a file chooser', () {
+      expect(
+          KvmWebViewPolicy.productionDefault.bypassFileChooserAccess, isFalse);
+    });
+
+    test('test-only self-signed opt-in still denies the file chooser', () {
+      // Tolerating the test BMC's untrusted server leaf relaxes ONLY leaf trust
+      // for the expected host (via a scoped verifier): it must never open an
+      // <input type="file"> / native file picker that lets attacker-influenced
+      // console content make the operator select a local file to upload.
+      // Hard invariant, independent of the flag, TLS mode or console signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassFileChooserAccess, isFalse);
+    });
+
+    test('no policy configuration can enable the file chooser', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassFileChooserAccess, isFalse);
+      expect(enabledSelfSigned.bypassFileChooserAccess, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Every other hard invariant stays independent of the file-picker
+      // channel: the test-only opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.bypassStrictReferrerPolicy, isFalse);
+      expect(enabledSelfSigned.bypassMixedContentBlocking, isFalse);
+      expect(enabledSelfSigned.bypassLogRedaction, isFalse);
+      expect(enabledSelfSigned.bypassSensitiveDataAtRestProtection, isFalse);
+      expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
+      expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
+      expect(enabledSelfSigned.bypassCookieIsolation, isFalse);
+      expect(enabledSelfSigned.bypassWebViewRemoteDebugging, isFalse);
+      expect(enabledSelfSigned.bypassDevicePermissionControls, isFalse);
+      expect(enabledSelfSigned.bypassHttpAuthChallengeDenial, isFalse);
+      expect(enabledSelfSigned.bypassLocalFileAccess, isFalse);
+      expect(enabledSelfSigned.bypassOutboundEgressAllowlist, isFalse);
+      expect(enabledSelfSigned.bypassCrossOriginFormSubmission, isFalse);
+      expect(enabledSelfSigned.bypassSslErrorRejection, isFalse);
+      expect(enabledSelfSigned.bypassTopLevelNavigationConfinement, isFalse);
+      expect(enabledSelfSigned.bypassArbitraryFileDownload, isFalse);
+      expect(enabledSelfSigned.bypassAutofillCredentialCapture, isFalse);
     });
   });
 
