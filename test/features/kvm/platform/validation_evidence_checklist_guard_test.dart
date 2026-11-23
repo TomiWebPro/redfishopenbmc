@@ -90,7 +90,12 @@
 // certificate-error callback rejects by default on every SSL error — expired,
 // untrusted, hostname mismatch, revoked — never a blanket proceed() /
 // badCertificateCallback => true that would silently defeat all the other
-// certificate checks), flag-off fallback, human
+// certificate checks), no-top-level-navigation-confinement-bypass (hard
+// configuration-independent invariant; the WebView's top-level frame must never
+// navigate off the approved same-origin HTTPS console to a different origin,
+// plaintext page, non-http(s) scheme or spoofed/phishing page — attacker-
+// influenced console content cannot redirect the privileged session),
+// flag-off fallback, human
 // sign-off) so a future edit cannot silently erase the
 // evidence boxes that gate that decision.
 //
@@ -170,6 +175,14 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'ssl-error-rejection-policy-getter',
     marker: 'bypasssslerrorrejection'
+  ),
+  (
+    name: 'top-level-navigation-never-bypassed',
+    marker: 'never bypasses top-level navigation confinement'
+  ),
+  (
+    name: 'top-level-navigation-policy-getter',
+    marker: 'bypasstoplevelnavigationconfinement'
   ),
   (name: 'no-cross-site-cookie-leak', marker: 'cross-site cookie'),
   (name: 'samesite-scoping', marker: 'samesite'),
@@ -746,6 +759,20 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('ssl-error-rejection-never-bypassed'));
       expect(missing, contains('ssl-error-rejection-policy-getter'));
+    });
+
+    test('RED: dropping the top-level navigation confinement hard-invariant '
+        'box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutNav = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses top-level navigation confinement|bypasstoplevelnavigationconfinement')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutNav);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('top-level-navigation-never-bypassed'));
+      expect(missing, contains('top-level-navigation-policy-getter'));
     });
 
     test('RED: dropping the no-arbitrary/drive-by download box fails closed',
