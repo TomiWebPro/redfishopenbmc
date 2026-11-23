@@ -14628,3 +14628,20 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next audit-first dept heads EP-P21 (IPv6-literal / zone-id authority) / EP-S19 (overlapping-load stale-result) / EP-U26 (copy-affordance fail-closed a11y — largely pinned by EP-U18, audit before adding) — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn; register the unregistered EP-U18 + RM-23 guards in a future EP-T liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-P21)
+
+**Done:**
+- FEATURE EP-P21 for open #009/#021: IPv6-literal / zone-id authority cross-layer fail-closed agreement guard. AUDIT FIRST confirmed the shared whole-URI fail-closed core already classifies the special-use IPv6 matrix identically on all four platform layers + the model (no live divergence), but the dept-head premise was PARTLY WRONG — pure-hex loopback `[::1]`, unique-local `[fd00::1]` and unspecified `[::]` stay SECURE by design, while IPv4-mapped `::ffff:127.0.0.1` / `::ffff:7f00:1` and pct-encoded-zone-id `fe80::1%25eth0` fail closed. The unguarded seam was the cross-layer sweep of this family (single shapes pinned in launch_plan_test, EP-P18 covered canonical-tricky spellings, but never all layers at once for loopback/mapped-loopback/ULA/unspecified/zone-id). Added `test/features/kvm/platform/ipv6_literal_authority_agreement_test.dart` (6 tests): 9-case matrix with per-URI `Uri.tryParse` host characterizations, per-shape classifier/model/nav agreement, production stale-flag + model-plan field-for-field agreement, opt-in eligibility, cross-origin + mapped/zone-id nav fail-closed, equivalent-spelling agreement. Test-only, dependency-free, TLS-safe.
+- Real-file RED: one-line `_hasSpoofedIpv6Host` rejection of unspecified `::` under a 600-perm backup → exactly 3 named failures (only the `ipv6-unspecified` shape), other 3 GREEN; source restored byte-clean (SHA `74887e619129209ef622400a3396edc2ef76bfc8694ddaf96574e4126962ee01` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 6/6 targeted GREEN, 470/470 sibling platform GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2648 passed / 1 skipped (baseline 2642 +6 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Read-only cross-layer authority-agreement guard at a genuine unguarded IPv6-family seam; no live divergence, no behaviour change, no product code per §5. RED proof mutates only one host-classification line, restored byte-clean. The dept-head "all special-use IPv6 fails closed" premise was refined by the audit to the actual contract (mapped/zone-id fail closed; pure-hex loopback/ULA/unspecified stay launchable) — no production change made. This guard is NOT yet epoch-registered in `guard_suite_liveness_test.dart` (deferred to a future EP-T pass, as with EP-U18 / RM-23). Never force-push, rewrite history, `git clean`, or delete user files; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next audit-first dept heads EP-S19 (overlapping-load stale-result — premise defeated by `if (state.loading) return` serialization pinned in kvm_controller_test, AUDIT before adding) / EP-U26 (copy-affordance fail-closed a11y — LARGELY PINNED by EP-U18, AUDIT before adding) — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn; register the unregistered EP-U18 / RM-23 / EP-P21 guards in a future EP-T liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

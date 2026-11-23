@@ -17,7 +17,7 @@ platform validation evidence.
      human WebView/TLS validation (EP-P1/P2/P4) stays gated and is NOT re-split. AUDIT FIRST;
      RED->GREEN only on a genuine divergence, never churn. No code touched. -->
 
-- [ ] EP-P21 IPv6-literal / zone-id authority cross-layer fail-closed agreement:
+- [x] EP-P21 LANDED 2026-11-23 (run, agent:redfish-automation — FEATURE #009/#021, analyze 0 / full suite green) — IPv6-literal / zone-id authority cross-layer fail-closed agreement:
        over a matrix of otherwise-canonical secure-HTTPS `ConnectUri` values whose authority is an
        IPv6 literal — loopback `[::1]`, IPv4-mapped loopback `[::ffff:127.0.0.1]`, link-local with a
        pct-encoded zone id `[fe80::1%25eth0]`, unique-local `[fd00::1]`, unspecified `[::]`, plus
@@ -37,6 +37,27 @@ platform validation evidence.
                proof only on a genuine divergence; test-only, writes limited to
                `test/features/kvm/platform/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
                no WebView/protocol dependency, no URL opened, no production TLS weakening.
+      LANDED: AUDIT FIRST confirmed the shared whole-URI fail-closed core classifies the whole
+              special-use IPv6 matrix identically on all four platform layers + the model (no live
+              divergence) — but the dept-head premise was PARTLY WRONG: pure-hex loopback `[::1]`,
+              unique-local `[fd00::1]` and unspecified `[::]` stay SECURE by design (real test-profile
+              / legitimate IPv6 targets), while IPv4-mapped `[::ffff:127.0.0.1]` / `[::ffff:7f00:1]`
+              and pct-encoded-zone-id `[fe80::1%25eth0]` fail closed. The unguarded seam was the
+              cross-layer sweep of the loopback / mapped-loopback / ULA / unspecified / zone-id family
+              (single shapes were pinned in launch_plan_test and EP-P18 covered the canonical-tricky
+              spellings, but never all layers at once for this family). Added
+              `test/features/kvm/platform/ipv6_literal_authority_agreement_test.dart` (6 tests): 9-case
+              matrix with per-URI `Uri.tryParse` host characterizations, per-shape classifier/model/nav
+              agreement, production stale-flag + model-plan field-for-field agreement, opt-in
+              eligibility, cross-origin + mapped/zone-id nav fail-closed and equivalent-spelling
+              agreement. Real-file RED: one-line `_hasSpoofedIpv6Host` rejection of unspecified `::`
+              under a 600-perm backup → exactly 3 named failures (only the `ipv6-unspecified` shape),
+              other 3 GREEN; source restored byte-clean (SHA
+              `74887e619129209ef622400a3396edc2ef76bfc8694ddaf96574e4126962ee01` unchanged, 0 residue,
+              empty `lib/` diff, backup shredded) → 6/6 targeted GREEN; analyze 0; full suite green;
+              emulator skipped (test-only, <7 days since last green 85/85). Test-only, dependency-free,
+              no WebView/protocol import, no URL opened, no production TLS weakening. NOT yet
+              epoch-registered in `guard_suite_liveness_test.dart` — deferred to a future EP-T pass.
 
 <!-- rf-ideate split 2026-11-23 10:35 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open (human-gated) WebView/TLS closeout of #009/#021. Hostility, scheme spelling, port,
