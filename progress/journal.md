@@ -14049,3 +14049,21 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next fresh dept heads RM-20 / EP-U23 / EP-U22 / EP-S16 / EP-P18 — audit-first, RED→GREEN only on a genuine divergence, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-S16)
+
+**Done:**
+- FEATURE — EP-S16 (test-only, dependency-free, TLS-safe): added `test/features/kvm/kvm_service_unicode_id_distinctness_test.dart` (3 tests) pinning byte-exact manager-id distinctness across `KvmService.fetchConsoles()` / `fetchCapabilities()` / `fetchCapability(id)`. A 9-variant in-temp `/Managers` (ASCII member segments, variants in body `Id`: base case pair, NFC/NFD, dotted/dotless I, Kelvin sign, uppercase/lowercase hex-style variants) asserts (1) one distinct card per variant on both surfaces with byte-exact keys, (2) exact-byte lookup for every variant with no case-fold / NFC bleed between twins, (3) no normalized-away / case-folded key and the Kelvin code point preserved.
+- AUDIT FIRST: the walk already keys ids byte-exactly (`_managerId` trims only) and `fetchCapability` compares with `==` after the same trim — distinctness holds by construction, no live divergence; characterization / regression lock over a genuinely unguarded matrix, not churn. Distinct from EP-S5 (hostile non-string/blank `Id`, exact-case ASCII), RS-9 (padded lookup), RM-17 (case-variant console-block keys within one manager body).
+- Real-file RED: one-sided `.toLowerCase()` on both sides of the `fetchCapability` comparison under a 600-perm backup → exactly `+2 -1` (exact-byte-key lookup test failed `Expected: 'bmc' Actual: 'BMC'`), other 2 new tests GREEN, 3 sibling service lookup suites 8/8 GREEN; source restored byte-clean (SHA `653e64a6…` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 3/3 targeted GREEN. Queue `service.md` EP-S16 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed (next heads RM-20 / EP-U23 / EP-U22 / EP-P18). Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. `flutter test --concurrency=4`: 2450 passed / 1 skipped (baseline 2447 +3); first full run had one unrelated concurrency flake in `power_view_test.dart` (isolated 26/26, clean full rerun 2450/0-fail). Targeted 11/11. `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Empty `lib/` diff. Emulator: SKIPPED (test-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Regression lock for a byte-exact identity invariant, not a live fix or churn. Test-only change with empty `lib/` diff and no dependency change. One-sided `.toLowerCase()` RED mutation proves the guard is non-vacuous and isolated; source restored byte-clean. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads RM-20 / EP-U23 / EP-U22 / EP-P18 — audit-first, RED->GREEN only on a genuine divergence, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
