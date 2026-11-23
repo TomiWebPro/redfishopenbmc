@@ -294,6 +294,43 @@ class KvmWebViewPolicy {
   /// (RP-1).
   bool get bypassMixedContentBlocking => false;
 
+  /// Always `false`: redaction of the privileged console URL / session token from
+  /// logs, telemetry and crash reports (CWE-532) is NEVER bypassed, not even by
+  /// the test-only self-signed opt-in.
+  ///
+  /// The console URI is the operator's privileged management-session handle and
+  /// may carry a session token, credential or BMC identity in its userinfo, path
+  /// or query. The WebView-hosting layer and the app's launch / fallback code
+  /// must never emit that URI or any token derived from it to Android `Logcat`,
+  /// `NSLog` / `os_log`, Flutter `debugPrint`, analytics events, crash reports /
+  /// breadcrumbs or any other telemetry sink: doing so leaves a durable,
+  /// exfiltratable copy of the handle on the device or in a third-party sink.
+  /// Every console URL and derived token must be redacted on every target, in
+  /// strict mode and with the flag both off and on. Tolerating the test BMC's
+  /// untrusted server leaf relaxes ONLY leaf trust; it must never relax this
+  /// diagnostic redaction just to make a console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that logs the
+  /// privileged console handle. It is distinct from the referrer policy
+  /// ([bypassStrictReferrerPolicy]) (which governs the app's own outbound
+  /// `Referer` header on subresource loads), from page-level CSP / mixed-content
+  /// enforcement ([bypassMixedContentBlocking]) (which governs which
+  /// subresources the console page may load), and from every server-side
+  /// certificate check — hostname verification ([bypassHostnameVerification]),
+  /// pinning ([bypassCertificatePinning]), revocation
+  /// ([bypassCertificateRevocationCheck]) and platform trust-store integrity
+  /// ([bypassPlatformTrustStoreIntegrity]) — the TLS floor
+  /// ([bypassTlsProtocolFloor]), HTTPS-only transport
+  /// ([bypassHttpsOnlyTransport]) and validated-origin binding
+  /// ([bypassValidatedOriginBinding]) (the handshake, cleartext sockets and
+  /// resolved address), and client-certificate validation
+  /// ([bypassClientCertificateValidation]) (the client credential): those
+  /// govern the connection, its credentials and its requests, whereas this box
+  /// governs the app's own local diagnostic / telemetry output. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassLogRedaction => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

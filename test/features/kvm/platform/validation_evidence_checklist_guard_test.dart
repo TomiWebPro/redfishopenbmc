@@ -47,9 +47,12 @@
 // privileged URL / session token is never emitted in a cross-origin Referer
 // header), CSP / mixed-content blocking never bypassed (hard configuration-
 // independent invariant; the opt-in never relaxes Content-Security-Policy or
-// permits an HTTPS console to load cleartext HTTP subresources), flag-off
-// fallback, human sign-off) so a future edit cannot silently erase the evidence
-// boxes that gate that decision.
+// permits an HTTPS console to load cleartext HTTP subresources), sensitive
+// console URL / session-token log redaction never bypassed (hard configuration-
+// independent invariant; the opt-in never emits the privileged console URL or
+// any token derived from it to logs / telemetry / crash reports, CWE-532),
+// flag-off fallback, human sign-off) so a future edit cannot silently erase the
+// evidence boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -333,6 +336,11 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'never bypasses mixed-content blocking'
   ),
   (name: 'mixed-content-policy-getter', marker: 'bypassmixedcontentblocking'),
+  (
+    name: 'log-redaction-never-bypassed',
+    marker: 'never bypasses sensitive console url / session-token log redaction'
+  ),
+  (name: 'log-redaction-policy-getter', marker: 'bypasslogredaction'),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -957,6 +965,22 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('mixed-content-never-bypassed'));
       expect(missing, contains('mixed-content-policy-getter'));
+    });
+
+    test(
+        'RED: dropping the sensitive console URL log-redaction hard-invariant '
+        'box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutLogRedaction = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses sensitive console url|bypasslogredaction')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutLogRedaction);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('log-redaction-never-bypassed'));
+      expect(missing, contains('log-redaction-policy-getter'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
