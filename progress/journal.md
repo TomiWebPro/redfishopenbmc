@@ -14791,3 +14791,20 @@
 - Push the single commit (never force-push). Next: audit-first EP-U27 (dense chip set, ui) / EP-S20 (top-level `/Managers` shape, service); register the RM-24 guard in the next EP-T liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-T43 RM-24 guard liveness registration)
+
+**Done:**
+- FEATURE EP-T43 for open #009/#021: extended `test/tool/guard_suite_liveness_test.dart` to register the one agreement guard that was live + CI-reachable but absent from both `canonicalGuardFiles` and every pinned epoch — `kvm_enablement_scalar_coercion_agreement_test.dart` (RM-24 non-boolean enablement-scalar coercion agreement across both `fromManager` factories + the shared OEM enablement helper, landed 20:00). AUDIT FIRST over every `test/**/*_test.dart` with live cases confirmed it is the ONLY post-EP-T42 #009/#021 guard in that state; all other agreement/guard files are registered. Added a fresh pinned `epT43AddedGuards` epoch (length 1, pairwise-disjoint from all 33 earlier designations incl. EP-T42) wired into `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test, +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation, intact → clean). Test/tool-only, dependency-free, TLS-safe.
+- Real-file RED: dropped only the canonical entry (epoch kept) under a 600-perm backup → exactly 3 named failures (`+67 -3`: EP-T43 pin, EP-T20 completeness, EP-T43 temp-root liveness), other 67 GREEN; restored byte-clean (SHA `6e9d68f4103b6bc83b06ba3d2b1571a251b8c6bd0ecbb23b58cdd8db37f7c11f` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 70/70 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2719 passed / 1 skipped (baseline 2717 +2 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool registry guard closing a confirmed "who guards the guards" gap; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). No unregistered epic guards remain after EP-T43. Never force-push, rewrite history, `git clean`, or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push). Next AUDIT FIRST for a genuinely new unguarded seam (fresh heads EP-U27 dense hostile chip set / EP-S20 top-level `/Managers` document shape; never churn); a future EP-T liveness pass only if new guards land. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
