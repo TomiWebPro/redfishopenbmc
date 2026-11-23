@@ -917,6 +917,46 @@ class KvmWebViewPolicy {
   /// fields. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassAutofillCredentialCapture => false;
 
+  /// Always `false`: the console WebView never opens a native file chooser /
+  /// file-input picker, so attacker-influenced console content cannot make the
+  /// operator select a local file and upload / exfiltrate it, not even by the
+  /// test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must never let remote BMC console content invoke a
+  /// local-file selection surface: no HTML `<input type="file">` picker, no
+  /// Android `WebChromeClient.onShowFileChooser` / `showFileChooser` /
+  /// `ACTION_OPEN_DOCUMENT` / `ACTION_GET_CONTENT` / camera-capture intent, and
+  /// no WKWebView / WebKit file-upload panel or file-read entitlement may be
+  /// shown or answered for the page. Console content is served by the BMC and
+  /// is therefore attacker-influenced (a compromised/spoofed BMC or script
+  /// running in the page): an attacker-chosen file input can socially engineer
+  /// the operator into selecting an on-device document, SSH key, token file or
+  /// credential store which is then uploaded into the trusted frame and sent
+  /// to the BMC or an attacker origin — a local-file-exfiltration surface
+  /// wholly independent of direct `file://` reads, downloads and device
+  /// permissions. Every file-chooser / file-upload request is denied by default
+  /// on every target, in strict mode and with the flag both off and on.
+  /// Tolerating the test BMC's untrusted server leaf relaxes ONLY that leaf's
+  /// trust for the expected host (via a scoped per-connection verifier); it
+  /// must never open a file chooser just to make a console render or to debug
+  /// it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that enables a file
+  /// chooser / file-upload picker. It governs the operator-mediated local-file
+  /// SELECTION / upload channel, so it is distinct from local file / content
+  /// access ([bypassLocalFileAccess]) (the page's own direct `file://` /
+  /// `content://` reads), arbitrary / drive-by file download
+  /// ([bypassArbitraryFileDownload]) (a file written TO the device), device
+  /// capabilities ([bypassDevicePermissionControls]) (host capabilities such as
+  /// camera / clipboard), cross-origin form submission
+  /// ([bypassCrossOriginFormSubmission]) (the form POST body channel) and the
+  /// outbound egress allowlist ([bypassOutboundEgressAllowlist]) (connection
+  /// destinations): those govern other local-read, write, capability or
+  /// request surfaces, not a native file picker handing a chosen local file to
+  /// the page. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassFileChooserAccess => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

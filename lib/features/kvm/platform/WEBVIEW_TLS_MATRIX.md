@@ -1140,6 +1140,41 @@ flag stays off for that target.
       injected into the page): those govern other connection, request or output
       surfaces, not the destinations of the page's programmatic connections.
       Verified per target before the flag is flipped.
+* [ ] **No native file chooser / file-input upload exfiltration** — the embedded
+      WebView must never let attacker-influenced console content open a native
+      file chooser or file-input picker to select a local file for upload: no
+      HTML `<input type="file">` file input, no Android
+      `WebChromeClient.onShowFileChooser` / `showFileChooser` /
+      `ACTION_OPEN_DOCUMENT` / `ACTION_GET_CONTENT` / camera-capture intent,
+      and no WKWebView / WebKit file upload panel or file-read entitlement may
+      be shown or answered for the page. Console content is served by the BMC
+      and is therefore attacker-influenced (a compromised/spoofed BMC or script
+      running in the page): an attacker-chosen file input can socially engineer
+      the operator into selecting an on-device document, SSH key, token file or
+      credential store which is then uploaded into the trusted frame and sent
+      to the BMC or an attacker origin — a local-file-exfiltration surface
+      wholly independent of direct `file://` reads, downloads and device
+      permissions. Every file chooser / file upload request is denied by default
+      on every target, in strict mode and with the flag both off and on.
+      Verified per target (inspect the WebView client / UIDelegate file-chooser
+      callbacks and confirm no file chooser or file upload is ever shown) before
+      the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassFileChooserAccess`, always
+      `false`): the test-only opt-in never bypasses file chooser / file-upload
+      access — every file chooser / file input request is denied and no local
+      file can be selected or uploaded, in strict mode and with the flag both
+      off and on. The opt-in relaxes ONLY the test BMC's untrusted server leaf
+      for the expected host (via a scoped per-connection verifier); it must
+      never enable the file chooser just to make a console render or to debug
+      it. This box governs the operator-mediated local-file selection / file
+      upload channel, so it is distinct from local file access (the page's own
+      direct `file://` / `content://` reads), arbitrary / drive-by file download
+      (a file written TO the device), device capabilities, cross-origin form
+      submission and the outbound egress allowlist: those govern other local
+      read, write, capability or request surfaces, not a native file picker
+      handing a chosen local file to the page. Verified per target before the
+      flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
