@@ -14842,3 +14842,20 @@
 - Push the single commit (never force-push). Register the new guard in the next EP-T liveness pass (EP-T44); AUDIT FIRST for a genuinely new unguarded seam, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — EP-T44 (#009/#021)
+
+**Done:**
+- FEATURE EP-T44 for open #009/#021: registered the EP-S20 top-level `/Managers` document-shape agreement guard in `test/tool/guard_suite_liveness_test.dart` so deleting / emptying / test-stripping it no longer stays GREEN. AUDIT FIRST confirmed `kvm_service_top_level_shape_agreement_test.dart` (2 live tests) is CI-reachable via verify.yml whole-tree `flutter test --coverage` yet absent from BOTH `canonicalGuardFiles` and every pinned epoch — a "who guards the guards" gap, no live divergence. Added +1 canonical path, a fresh pinned `epT44AddedGuards` epoch (length 1, disjoint from all 34 earlier designations incl. EP-T43) in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 disjointness pin test +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation, intact → clean). Test-only, dependency-free, TLS-safe.
+- Real-file RED: dropped only the canonical entry (epoch kept) under a 600-perm backup → exactly 3 named failures (`+69 -3`: EP-T44 pin, EP-T20 completeness, EP-T44 temp-root liveness), 69 GREEN; source restored byte-clean (SHA `a05c20af83b1aa082a75fec8ffe0a5ba327bfd81768a0127f720924561ef7515` unchanged, 0 residue, backup shredded) → 72/72 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2727 passed / 1 skipped (baseline 2725 +2 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool registry guard closing a genuine "who guards the guards" gap; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). No unregistered #009/#021 agreement guards remain after EP-T44. Never force-push, rewrite history, `git clean`, or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push). AUDIT FIRST for a genuinely new unguarded seam, never churn; a future EP-T pass only if new guards land. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
