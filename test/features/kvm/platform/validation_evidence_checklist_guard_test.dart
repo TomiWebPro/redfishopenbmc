@@ -45,8 +45,11 @@
 // strict Referrer-Policy / no URL-token leakage (hard configuration-independent
 // invariant; the opt-in never relaxes the referrer policy, so the console's
 // privileged URL / session token is never emitted in a cross-origin Referer
-// header), flag-off fallback, human sign-off) so a future edit cannot silently
-// erase the evidence boxes that gate that decision.
+// header), CSP / mixed-content blocking never bypassed (hard configuration-
+// independent invariant; the opt-in never relaxes Content-Security-Policy or
+// permits an HTTPS console to load cleartext HTTP subresources), flag-off
+// fallback, human sign-off) so a future edit cannot silently erase the evidence
+// boxes that gate that decision.
 //
 // Deliberately TEST-only, dependency-free, opens no network, grants no human
 // approval, imports no plugin, and never touches production TLS (#009/#021).
@@ -325,6 +328,11 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'never bypasses the strict referrer policy'
   ),
   (name: 'referrer-policy-getter', marker: 'bypassstrictreferrerpolicy'),
+  (
+    name: 'mixed-content-never-bypassed',
+    marker: 'never bypasses mixed-content blocking'
+  ),
+  (name: 'mixed-content-policy-getter', marker: 'bypassmixedcontentblocking'),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -933,6 +941,22 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('referrer-never-bypassed'));
       expect(missing, contains('referrer-policy-getter'));
+    });
+
+    test(
+        'RED: dropping the CSP/mixed-content-blocking hard-invariant box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutMixedContentInvariant = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'never bypasses mixed-content blocking|bypassmixedcontentblocking')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutMixedContentInvariant);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('mixed-content-never-bypassed'));
+      expect(missing, contains('mixed-content-policy-getter'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

@@ -455,6 +455,49 @@ void main() {
     });
   });
 
+  group('KvmWebViewPolicy — CSP / mixed-content blocking is never bypassed',
+      () {
+    test('production default always enforces CSP and mixed-content blocking',
+        () {
+      expect(KvmWebViewPolicy.productionDefault.bypassMixedContentBlocking,
+          isFalse);
+    });
+
+    test(
+        'test-only self-signed opt-in still enforces CSP and mixed-content '
+        'blocking', () {
+      // Tolerating the test BMC's untrusted SERVER leaf relaxes ONLY server leaf
+      // trust. It must never relax CSP or permit an HTTPS console to load
+      // cleartext HTTP subresources, or an on-path attacker could downgrade a
+      // subresource and inject into / read from the privileged console frame.
+      // This is a hard invariant, independent of the flag, TLS mode or signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassMixedContentBlocking, isFalse);
+    });
+
+    test('no policy configuration can bypass CSP / mixed-content blocking', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassMixedContentBlocking, isFalse);
+      expect(enabledSelfSigned.bypassMixedContentBlocking, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Every server/transport/client-credential/referrer invariant is
+      // independent of the page-level CSP / mixed-content control: the opt-in
+      // can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.bypassStrictReferrerPolicy, isFalse);
+    });
+  });
+
   group('resolveRenderRoute — fallback works with the flag off', () {
     test('flag off routes valid HTTPS HTML5 to the external browser', () {
       expect(
