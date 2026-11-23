@@ -13961,3 +13961,21 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next heads EP-S12 / EP-U22 / EP-P17 — audit-first, RED->GREEN only on a genuine divergence, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-P17)
+
+**Done:**
+- FEATURE — EP-P17 (test-only, dependency-free, TLS-safe): added `test/features/kvm/platform/userinfo_authority_fail_closed_agreement_test.dart` (5 tests) pinning a 15-shape encoded/embedded userinfo matrix across all four RP-1 decision layers (classifier, launch plan with stale/lying secure flag, navigation gate, model-layer plan). Encoded/control userinfo fails closed everywhere (no in-app route, no self-signed, null copy target, never navigable); multiple-`@` fails the secure classifier yet stays a control-safe copy target; clean userinfo keeps its documented navigation-only exception (valid initial load under test opt-in, never navigable, never in-app/self-signed under production).
+- AUDIT FIRST: all four layers already share the fail-closed `_controlSafeTrimmedUri` gate, so the matrix fails closed by construction — no live divergence, regression lock not churn. Genuine gap: no guard swept the encoded/embedded userinfo family through all four layers together.
+- Real-file RED: scoped one-sided mutation of `_authorityHasEncodedDelimiter` to ignore userinfo under a 600-perm backup -> exactly the named EP-P17 failure (`+4 -1`, classifier accepted `user%40x:pass@…`); source restored byte-clean (SHA `74887e619…` unchanged, 0 residue, empty `lib/` diff), backup shredded -> 20/20 targeted GREEN. Queue `platform.md` EP-P17 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed (next heads EP-S12 / EP-U22). Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. `flutter test --concurrency=4`: 2434 passed / 1 skipped (baseline 2429 +5). `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged, empty `lib/` diff. Emulator: SKIPPED (test-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening. Whole-tree `dart format` drift on two unrelated pre-existing files reverted to HEAD (only the new test remains in the diff).
+
+**Decisions:**
+- Regression guard for a cross-layer fail-closed contract, not a live fix or churn. Test-only change with an empty `lib/` diff and no dependency change. The one-sided RED mutation proves the guard is non-vacuous; source restored byte-clean. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next heads EP-S12 / EP-U22 — audit-first, RED->GREEN only on a genuine divergence, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
