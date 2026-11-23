@@ -998,6 +998,48 @@ class KvmWebViewPolicy {
   /// (RP-1).
   bool get bypassTapjackingProtection => false;
 
+  /// Always `false`: the console WebView never lets attacker-influenced console
+  /// content raise a JavaScript dialog / unlabelled modal that spoofs a system
+  /// or app credential prompt, not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must never present an unlabelled or blocking
+  /// native-style modal raised by the remote page: no `alert()` / `confirm()` /
+  /// `prompt()` dialog (Android `WebChromeClient.onJsAlert` / `onJsConfirm` /
+  /// `onJsPrompt`, WKWebView `runJavaScriptAlertPanelWithMessage` /
+  /// `runJavaScriptConfirmPanelWithMessage` /
+  /// `runJavaScriptTextInputPanelWithPrompt`) shown without a clear attribution
+  /// to the untrusted console origin, and no `beforeunload` handler that traps
+  /// the operator or blocks closing / navigating the console. Console content
+  /// is served by the BMC and is therefore attacker-influenced (a compromised
+  /// or spoofed BMC, or script running in the page): an unlabelled JavaScript
+  /// dialog can imitate an OS / app credential or system prompt and trick the
+  /// operator into disclosing BMC credentials or approving a destructive KVM
+  /// action, and a `beforeunload` loop can pin the frame and block teardown —
+  /// a UI-spoofing / denial-of-control surface. Every JavaScript dialog must be
+  /// denied or clearly attributed to the untrusted console origin, and
+  /// `beforeunload` must never block teardown, on every target, in strict mode
+  /// and with the flag both off and on. Tolerating the test BMC's untrusted
+  /// server leaf relaxes ONLY that leaf's trust for the expected host (via a
+  /// scoped per-connection verifier); it must never allow an unlabelled
+  /// JavaScript dialog or a blocking `beforeunload` just to make a console
+  /// render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits an
+  /// unlabelled JavaScript dialog / modal. It governs the untrusted modal /
+  /// dialog surface,
+  /// so it is distinct from tapjacking / UI-overlay / clickjacking input hijack
+  /// ([bypassTapjackingProtection]) (obscured-window touches and overlays
+  /// covering the console), native bridge isolation
+  /// ([bypassNativeBridgeIsolation]), local file / content access
+  /// ([bypassLocalFileAccess]) and device capabilities
+  /// ([bypassDevicePermissionControls]) (host capabilities granted to page
+  /// content), HTTPS-only transport ([bypassHttpsOnlyTransport]) and every
+  /// server-side certificate check: those govern input delivery, injected code,
+  /// local reads, capabilities or the connection, not a modal raised by the
+  /// page itself. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassJavaScriptDialogDenial => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
