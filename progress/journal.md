@@ -14277,3 +14277,21 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-S17 (malformed-body / transport-exception skip-vs-propagate) then EP-U24 (long unbreakable connect-type chip no-overflow) — audit-first, RED→GREEN only on a genuine divergence, never churn; register the new RM-21 guard in a future EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-S17)
+
+**Done:**
+- FEATURE — EP-S17 (test-only, dependency-free, TLS-safe): added `test/features/kvm/kvm_service_malformed_body_transport_agreement_test.dart` (6 tests) pinning malformed-body / transport-exception skip-vs-propagate agreement across both KVM service surfaces for #009/#021. A private test-only localhost HTTP fault server drives: malformed JSON propagating the same normalized `RedfishException` on both `fetchConsoles()` / `fetchCapabilities()` (no raw FormatException, no one-sided swallow); a dropped transport connection skipped by BOTH with the same survivor surfaced exactly once, deterministic repeated walks and primary/`fetchCapability` agreement; wrong/blank Content-Type and empty body degrading to a raw-string map on both while keeping the gated screen alive with no raw body leak; and a mixed non-status matrix keeping propagation identical.
+- AUDIT FIRST: both surfaces already share `KvmService._fetchManagerBodies()` with one catch/filter, so the decision agrees by construction — no live divergence. Genuine unguarded seam: no test drove the NON-STATUS failure matrix through BOTH surfaces at once (RS-2 / EP-S13 are status-code based). Distinct from EP-S13 (status-code multi-manager skip) and RS-2 (per-manager status decision). Characterization / regression lock, not churn.
+- Real-file RED: one-sided graceful-degradation swallow added to `fetchCapabilities()` only under a 600-perm backup → exactly 2 named failures (malformed-JSON propagate + mixed matrix), other 4 GREEN; source restored byte-clean (SHA `653e64a6…` unchanged, empty `lib/` diff, backup shredded) → 6/6 targeted + 77/77 sibling service suites GREEN. Queue `service.md` EP-S17 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed. Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. Full `flutter test --concurrency=4`: 2527 passed / 1 skipped (baseline 2521 +6 mine). Targeted 6/6 + sibling service suites 77/77. `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Empty `lib/` diff. Emulator: SKIPPED (test-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Cross-surface characterization / regression guard, not a live fix or churn. Test-only change with empty `lib/` diff and no dependency change. A one-sided 'keep the capability card populated' swallow proves the guard is non-vacuous and isolated to the decision-agreement seam (the 4 skip/degrade cases stayed GREEN); source restored byte-clean. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-U24 (long unbreakable connect-type chip no-overflow) — audit-first, RED→GREEN only on a genuine divergence, never churn; register the new EP-S17 guard in a future EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
