@@ -14172,3 +14172,21 @@
 - Push the merge + tracking commits (never force-push); leave the five pre-existing stashes untouched. Next gate cycle: check `rf-platform-check` state first; merge only on a fresh explicit `CHECK: PASS` for the exact new tip. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-U23)
+
+**Done:**
+- FEATURE — EP-U23 (test-only, dependency-free, TLS-safe): added `test/features/kvm/kvm_card_full_name_announcement_agreement_test.dart` (6 tests) pinning full-name announcement agreement under visual truncation across both real KVM operator cards and the viewer. A long hyphenated rack id + a short control manager are pumped through the real `KvmView` (capability card + per-console cards) and the viewer at 320/800/1300 px; pins that each merged `excludeSemantics` node announces the FULL name byte-for-byte (console "Manager: <id>", capability "Manager capability <id>, enabled, KVM supported", viewer "<type>, manager <id>"), the same full name is visible exactly once per surface, no second screen-reader-only Semantics node carries it, and no RenderFlex overflow.
+- AUDIT FIRST: all three surfaces already build label + visible Text from the same full `${managerId}` model string — a long name that visually wraps at 320 px is never truncated in the model, no live divergence. Genuine unguarded seam: no test drove a long, visually-wrapping name through all three surfaces at once pinning full-byte name + single visible instance + no duplicate node + no overflow at all three widths; characterization / regression lock, not churn. Distinct from EP-U21 (large-font a11y at 320 px), EP-U20 (extreme content fixed font), EP-U11 (short-name cross-surface agreement).
+- Real-file RED: clipped the capability-card merged label to a 16-char ellipsized prefix under a 600-perm backup → exactly `+3 -3` (the 3 card tests failed on all widths, 3 viewer tests GREEN); source restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) → 6/6 targeted GREEN + 121/121 sibling surface suites GREEN. Queue `ui.md` EP-U23 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed. Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. `flutter test --concurrency=4`: 2489 passed / 1 skipped (baseline 2483 +6 mine). Targeted 6/6 + sibling surface suites 121/121. `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Empty `lib/` diff. Emulator: SKIPPED (test-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Regression lock for a shared full-name announcement contract, not a live fix or churn. Test-only change with empty `lib/` diff and no dependency change. A one-sided clipped-label mutation proves the guard is non-vacuous and isolated (viewer tests stayed GREEN); source restored byte-clean. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept head EP-U22 (bidirectional/RTL display-text rendering agreement) — audit-first, RED→GREEN only on a genuine divergence, never churn; register this new EP-U23 guard in a future EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

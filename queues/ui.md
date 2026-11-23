@@ -15,7 +15,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
      short-name suite stays GREEN. Display-only; the human-gated WebView/TLS rendering stays gated and is
      NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
 
-- [ ] EP-U23 Full-name announcement agreement under visual truncation across both KVM operator cards and
+- [x] EP-U23 LANDED 2026-11-23 (run `auto: FEATURE #009/#021 EP-U23 full-name announcement under visual truncation agreement + RED->GREEN tests`, test-only) — Full-name announcement agreement under visual truncation across both KVM operator cards and
        the viewer: pump one manager with a long display name (ellipsized/clipped at 320 px) plus a short
        control through both real cards and the viewer at 320/800/1300 px, pinning that the merged
        `excludeSemantics` label carries the FULL untruncated name byte-for-byte on every surface, visible
@@ -29,6 +29,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
                divergence; writes limited to `lib/features/kvm/views/**` + `test/features/kvm/**`; no WebView/
                protocol import, no URL opened, no dependency, no production TLS weakening;
                `git diff --exit-code -- pubspec.yaml`.
+      LANDED: added `test/features/kvm/kvm_card_full_name_announcement_agreement_test.dart` (6 tests) — a long hyphenated rack id + short control pumped through BOTH real cards (KvmView) and the viewer at 320/800/1300 px, pinning each merged `excludeSemantics` node carries the FULL name byte-for-byte (console "Manager: <id>", capability "Manager capability <id>, enabled, KVM supported", viewer "<type>, manager <id>"), the same full name visible exactly once per surface, no second screen-reader-only node, and no RenderFlex overflow. AUDIT — all three surfaces already build label + visible Text from the same full `${managerId}` model string (no live divergence, no behaviour change); the unguarded seam was that no test drove a long, visually-wrapping name through all three surfaces at once pinning full-byte name + single visible instance + no duplicate node + no overflow. Real-file RED: clipped the capability-card merged label to a 16-char ellipsized prefix in `lib/features/kvm/views/kvm_capability_card.dart` under a 600-perm backup → exactly `+3 -3` (the 3 "both operator cards" cases failed on all widths, the 3 viewer cases GREEN); source restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) → 6/6 targeted + 121/121 sibling surface suites (Verify line + EP-U11/EP-U20/EP-U21/notice guards) GREEN. Display-only; no WebView/protocol import, no URL opened, no dependency, no production TLS weakening.
 
 <!-- rf-ideate split 2026-11-22 22:24 UTC: another fresh, display-only, unblocked slice of the still-open
      #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U19/U20/U21 pin chip/session,
