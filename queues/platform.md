@@ -6,6 +6,33 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 06:31 UTC: another machine-checkable half of the still-open (human-gated)
+     WebView/TLS closeout of #009/#021. Authority (EP-P9/P16/P17/P18), scheme spelling (EP-P14) and path/fragment
+     control chars on the NAVIGATION gate (EP-P11) are heavily pinned, but the QUERY and FRAGMENT components of an
+     otherwise-canonical secure-HTTPS `ConnectUri` are not swept through ALL platform decision layers at once:
+     a raw-control / CRLF / raw-space or encoded delimiter (`%0A`/`%0D`/`%00`/`%25`) in the query/fragment — where
+     EP-P17's authority-scoped encoded-delimiter check does NOT apply — could be badged secure/in-app-eligible on
+     one layer while another fails closed, with every authority suite staying GREEN. Audit first; RED→GREEN only
+     on a genuine divergence, never churn. Test-only; the human WebView/TLS validation (EP-P1/P2/P4) stays gated
+     and is NOT re-split. No code touched. -->
+
+- [ ] EP-P19 Query/fragment control + encoded-delimiter fail-closed cross-layer agreement: over a matrix of
+       otherwise-canonical secure-HTTPS connect URIs whose QUERY (`?x=…`) and FRAGMENT (`#…`) carry raw C0/C1
+       controls, CRLF, raw space and encoded delimiters (`%0A`/`%0D`/`%00`/`%25`) plus a clean control, pin that
+       `isSecureHttpsConsoleUri`, `planConsoleLaunch`, `allowsInAppNavigation` and the stale-flag TLS boundary ALL
+       agree — every hostile query/fragment target is uniformly fail-closed (no in-app eligibility, no self-signed,
+       null/non-copyable target, never navigable) while the clean control stays external-browser launchable — and
+       that `KvmConsole.launchPlan` reports the same route/target on the model side. AUDIT FIRST: EP-P11 pins
+       path/fragment control chars on the navigation gate in isolation and EP-P17's encoded-delimiter check is
+       authority-scoped; if all layers already share a whole-URI fail-closed core over the whole matrix, record the
+       audit and add nothing; RED→GREEN only on a genuine divergence, never churn. Test-only; writes limited to
+       `test/features/kvm/platform/**`; no WebView/protocol import, no URL opened, no dependency, no production TLS
+       weakening.
+       Dept: rf-platform
+       Verify: `flutter test test/features/kvm/platform/ && flutter analyze` (0 issues), RED→GREEN proof only on
+               a genuine divergence; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no WebView/protocol
+               dependency, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 02:27 UTC: another machine-checkable slice of the still-open (human-gated)
      WebView/TLS closeout of #009/#021. Authority hostility, port, userinfo, scheme spelling and
      scheme-relative/encoded-authority confusion are heavily pinned (EP-P9/P11/P13/P14/P16/P17) — but

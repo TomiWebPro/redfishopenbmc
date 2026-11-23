@@ -5,6 +5,31 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 06:31 UTC: another concrete "who guards the guards" gap in the still-open
+     #009/#021 epic. EP-T35 registered the three then-newest agreement guards, but FOUR guards have landed since
+     and are live + reachable from verify.yml whole-tree `flutter test --coverage` yet absent from BOTH
+     `canonicalGuardFiles` and every pinned epoch: EP-U23 `kvm_card_full_name_announcement_agreement_test.dart`
+     and EP-S10 `kvm_service_all_unsafe_primary_agreement_test.dart` are both explicitly flagged in their own
+     queue entries as "NOT yet liveness-registered, a future EP-T-style head", plus EP-S16
+     `kvm_service_unicode_id_distinctness_test.dart` and EP-P18 `canonical_tricky_authority_agreement_test.dart`.
+     Deleting / emptying / test-stripping any of them stays GREEN. AUDIT FIRST; skip any already registered and
+     register only the genuinely-unguarded remainder; RED→GREEN only on a genuine gap, never churn. Pure test/tool,
+     dependency-free, never writes `lib/`. No code touched. -->
+
+- [ ] EP-T36 Guard-suite liveness registration of the four newest agreement guards (EP-U23 full-name
+       announcement, EP-S10 all-unsafe primary, EP-S16 Unicode-id distinctness, EP-P18 canonical-tricky
+       authority): extend `test/tool/guard_suite_liveness_test.dart` so each unregistered guard is in
+       `canonicalGuardFiles` and a fresh pinned epoch (disjoint from every earlier designation) is included in
+       `allDesignatedGuards` + the completeness arithmetic, with a containment/disjointness pin test and a
+       temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation, intact → clean) for each.
+       AUDIT FIRST: if any guard is already registered in a canonical set or pinned epoch, skip it and register
+       only the genuinely-unguarded remainder; RED→GREEN only on a genuine gap, never churn. Pure test/tool,
+       dependency-free, never writes `lib/`; no WebView/protocol import, no production TLS weakening.
+       Dept: rf-tooling
+       Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues),
+               RED→GREEN proof only on a genuine gap; test/tool-only, never writes `lib/`; no dependency,
+               no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 02:27 UTC: another machine-checkable slice of the still-open #009/#021
      epic's tool hygiene. Guard-suite liveness (EP-T12..T34) pins that TEST files stay in
      `canonicalGuardFiles`, but the three newest agreement guards — EP-M7

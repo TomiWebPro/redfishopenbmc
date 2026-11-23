@@ -5,6 +5,32 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 06:31 UTC: carves a fresh, machine-checkable, unblocked slice of the still-open
+     #009/#021 manager-walk epic. RS-2 pins per-manager skip-vs-propagate over HTTP STATUS codes and EP-S13 pins
+     skip agreement when a sibling fetch fails, but nothing pins the NON-STATUS failure matrix — malformed JSON,
+     wrong/blank Content-Type, empty/EOF body, and a socket/connection exception — at BOTH service surfaces: a
+     one-sided catch/filter could throw from `fetchCapabilities()` while `fetchConsoles()` skips (or vice versa),
+     blanking one gated card surface. Pure service characterization; the credentialed-Primary decision (EP-S8)
+     stays blocked and is NOT re-split. AUDIT FIRST; RED→GREEN only on a genuine divergence, never churn.
+     No code touched. -->
+
+- [ ] EP-S17 Malformed-body / transport-exception skip-vs-propagate agreement across both service surfaces:
+       over in-temp `/Managers` payloads where one manager's `/Managers/{id}` fetch returns a malformed JSON body,
+       a wrong/blank Content-Type, an empty body, or a transport-level exception (while a healthy sibling stays
+       valid), pin that `fetchConsoles()` and `fetchCapabilities()` apply the SAME skip/propagate decision to that
+       manager, surface the SAME surviving manager-id set exactly once (RS-6/RS-8 identity unchanged), resolve the
+       SAME primary and `fetchCapability(id)` results on the survivors, and never throw a raw parse/socket error
+       out of one surface while the other skips, nor blank the whole gated screen. AUDIT FIRST: if both surfaces
+       already share one walk result with one catch/filter, record the audit and add nothing; RED→GREEN only on a
+       genuine divergence, never churn. No behaviour change folded in (auth/TLS failures must still propagate per
+       RS-2); no WebView/protocol import, no production TLS weakening.
+       Dept: rf-service
+       Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_service_manager_skip_agreement_test.dart && flutter analyze`
+               (0 issues), RED→GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/kvm_service.dart` + `test/features/kvm/**` (+ emulator 85/85 only if `lib/`
+               wire changes); `git diff --exit-code -- pubspec.yaml pubspec.lock`; no WebView/protocol import,
+               no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 02:27 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 manager-walk epic. RS-6/RS-8/RS-9 and EP-S5 pin dedup, collision determinism,
      padded lookup and hostile ASCII `Id` resolution, but all over EXACT-case ASCII ids — nothing pins

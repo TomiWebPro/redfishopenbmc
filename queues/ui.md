@@ -5,6 +5,31 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 06:31 UTC: another fresh, display-only, unblocked slice of the still-open
+     #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U20 pins an EXTREME NUMBER of
+     connect-type chips at a fixed font and EP-U23 pins a long (visually-wrapping) MANAGER NAME, but nothing pins
+     a single long UNBREAKABLE connect-type chip token (e.g. a 400-char vendor string with no spaces) at 320 px:
+     the chip Wrap/Expanded layout could overflow the Row or split a merged a11y node while every normal-length
+     chip suite stays GREEN. Display-only; the human-gated WebView/TLS rendering stays gated and is NOT re-split.
+     AUDIT FIRST; RED→GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-U24 Long unbreakable connect-type chip token no-overflow + single merged a11y agreement across both
+       KVM operator cards: build one manager into both real cards whose enabled console block carries a single
+       very long, whitespace-free vendor connect-type token (plus a short control), and pin that neither card
+       overflows at 320/800/1300 px, that the token is rendered/clipped to a single visible instance inside one
+       merged `excludeSemantics` node per chip with visible text == announced label (no duplicate/screen-reader-
+       only copy), and that the two cards keep byte-identical chip values regardless of their intentionally
+       different Semantics prefixes. AUDIT FIRST: if both cards already wrap/clip an unbreakable token cleanly
+       with byte-identical output and no overflow, record the audit and add nothing; RED→GREEN only on a genuine
+       divergence, never churn. Display-only; no WebView/protocol import, no URL opened, no dependency, no
+       production TLS weakening.
+       Dept: rf-ui
+       Verify: `flutter test test/features/kvm/kvm_card_chip_session_agreement_test.dart test/features/kvm/kvm_card_cross_surface_agreement_test.dart && flutter analyze`
+               (0 issues), RED→GREEN proof + 320 px no-overflow + visible==announced only on a genuine
+               divergence; writes limited to `lib/features/kvm/views/**` + `test/features/kvm/**`; no WebView/
+               protocol import, no URL opened, no dependency, no production TLS weakening;
+               `git diff --exit-code -- pubspec.yaml`.
+
 <!-- rf-ideate split 2026-11-23 02:27 UTC: another fresh, display-only, unblocked slice of the still-open
      #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U19/U20/U21/U22 pin
      chip/session, extreme-content, large-font and bidi RENDERED agreement, but none pins that a manager
