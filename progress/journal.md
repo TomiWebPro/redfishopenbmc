@@ -14645,3 +14645,19 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next audit-first dept heads EP-S19 (overlapping-load stale-result — premise defeated by `if (state.loading) return` serialization pinned in kvm_controller_test, AUDIT before adding) / EP-U26 (copy-affordance fail-closed a11y — LARGELY PINNED by EP-U18, AUDIT before adding) — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn; register the unregistered EP-U18 / RM-23 / EP-P21 guards in a future EP-T liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:rf-gate — #009/#021 (build/rf-platform merge, check#11912)
+
+**Done:**
+- rf-gate (sole merger to main): latest `rf-platform-check` verdict run#11912 = `SUCCESS` (exit 0, 83.5 s, started 2026-11-23 17:00:04 UTC — ~1.5 min after tip commit `08fbd33` authored 16:58:29 UTC) → PASS branch. Merged `build/rf-platform` tip `08fbd33` into `main` via `--no-ff` (merge `a23da11`, parents `9208242` / `08fbd33`), clean ort auto-merge (no conflicts). Single branch-unique commit on merge-base `ce16ff9` (already in main via `da564db`); 4 allowlisted paths under `lib/features/kvm/platform/**` + `test/**`. Production change hardening-only: new always-`false` `bypassFileChooserAccess` getter closing the native file-chooser / file-upload exfiltration seam in the test-only self-signed opt-in; no dependency change, no production-TLS weakening.
+
+**Verification:**
+- `flutter analyze` 0 (No issues found!); full `flutter test --coverage --concurrency=4` GREEN — 2652 passed / 1 skipped (baseline 2648 +4 merged tests); all coverage gates PASS overall 90.6% (6095/6726) / scoped redfish+power+sensors 90.4% (2119/2345) / kvm 97.7% (1372/1405) / kvm-platform 97.6% (487/499), gate exit 0; `dart run tool/asset_guard.dart` OK; `dart run tool/unattended_guard.dart` OK; `python3 issues/issues.py validate` OK; `git diff --check` clean; first-parent diff = 4 allowlisted files (199 insertions / 38 deletions); deps unchanged; TLS-weakening + secret scan clean. DMTF 85-test emulator skipped (no lib-wire / fixture / tool-runtime change — platform policy dart + doc + 2 guard tests only).
+
+**Decisions:**
+- PASS verdict only → `--no-ff` merge; skip otherwise. Never force-push, rewrite history, `git clean` or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Next rf-gate run: re-check `rf-platform-check` latest verdict first; merge `--no-ff` only a PASS branch, skip + report otherwise. Continue audit-first dept heads EP-S19 / EP-U26 for the builder; #021 / #009 stay human-gated on WebView + BMC TLS validation.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
