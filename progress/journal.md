@@ -14137,3 +14137,21 @@
 - Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-U23 / EP-U22 / EP-S10 — audit-first, RED→GREEN only on a genuine divergence, never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-S10)
+
+**Done:**
+- FEATURE — EP-S10 (test-only, dependency-free, TLS-safe): added `test/features/kvm/kvm_service_all_unsafe_primary_agreement_test.dart` (7 tests) pinning primary-selection fail-closed determinism over an ALL-UNSAFE candidate set. A 4-manager in-temp `/Managers` mockup (non-graphical serial CRLF-injected "HTTPS" console listed first, two control-/bidi-bearing graphical consoles, one all-disabled manager) is exercised in BMC + reversed order; pins both primary entry points agreeing on the same first-in-BMC-order graphical winner, repeated-call determinism, never-badged secure/browser/in-app/self-signed, both discovery surfaces surfacing every manager once, and `fetchCapability(id)` field-for-field agreement.
+- AUDIT FIRST: the shared fail-closed `_controlSafeTrimmedUri` classifier and launch plan already refuse every control/bidi-bearing URI, and the model classifiers agree — no live divergence. Genuine unguarded seam: the final `firstGraphical ?? consoles.first` fallback in `KvmService.pickPrimary` had no pin of its first-in-BMC-order winner when nothing is secure/openable; characterization / regression lock, not churn. Distinct from EP-S14 (healthy secure sibling), EP-S11 (secure graphical tie), EP-S2 (secure-vs-plaintext tier precedence).
+- Real-file RED: `if (graphical) firstGraphical ??= console;` → `= console` (the documented "last graphical wins" iteration refactor) in `KvmService.pickPrimary` under a 600-perm backup → exactly `+4 -3` (the 3 winner/determinism tests fail, other 4 GREEN); source restored byte-clean (SHA `653e64a6…` unchanged, empty `lib/` diff, backup shredded) → 7/7 targeted GREEN + 90/90 sibling service suites GREEN. Queue `service.md` EP-S10 marked LANDED; FUTUREWORK `Last updated` + `Current focus` refreshed. Both issues remain OPEN.
+
+**Verification:**
+- `flutter analyze`: 0 issues. `flutter test --concurrency=4`: 2479 passed / 1 skipped (baseline 2472 +7 mine). Targeted 7/7 + sibling service 90/90. `python3 issues/issues.py validate`: OK. `git diff --check`: clean. deps unchanged. Empty `lib/` diff. Emulator: SKIPPED (test-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Regression lock for a shared fail-closed contract, not a live fix or churn. Test-only change with empty `lib/` diff and no dependency change. A one-sided "last-wins" iteration mutation proves the guard is non-vacuous and wired to the documented divergence class; source restored byte-clean. Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push); leave the five pre-existing stashes untouched. Next dept heads EP-U23 / EP-U22 — audit-first, RED→GREEN only on a genuine divergence, never churn; register the new EP-S10 guard in a future EP-T-style liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

@@ -164,7 +164,9 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
      (EP-S8) stays blocked and is NOT re-split. AUDIT FIRST; RED→GREEN only on a genuine divergence,
      never churn. No code touched. -->
 
-- [ ] EP-S10 Primary-selection fail-closed determinism over an all-unsafe candidate set: over in-temp
+- [x] EP-S10 LANDED 2026-11-23 (run `auto: FEATURE #009/#021 EP-S10 all-unsafe primary-selection fail-closed
+      determinism guard + RED->GREEN tests`, test-only) — Primary-selection fail-closed determinism over an
+      all-unsafe candidate set: over in-temp
       multi-manager bodies where every healthy manager's only openable console carries a control- or
       bidi-bearing secure-HTTPS `ConnectUri`, plus one manager whose blocks are all disabled / URI-less,
       pin that `KvmService.fetchPrimaryConsole()` and `pickPrimary()` return the SAME deterministic,
@@ -179,6 +181,21 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
               `test/features/kvm/**` (+ `lib/features/kvm/kvm_service.dart` only on a genuine
               divergence); emulator 85/85 only if `lib/` wire changes; `git diff --exit-code -- pubspec.yaml pubspec.lock`;
               no WebView/protocol import, no production TLS weakening.
+      LANDED: added `test/features/kvm/kvm_service_all_unsafe_primary_agreement_test.dart` (7 tests) over
+      a 4-manager in-temp mockup (non-graphical CRLF console FIRST, two control/bidi-bearing graphical
+      consoles, one all-disabled manager) in BMC + reversed order. AUDIT — the fail-closed classifier/plan
+      layers already refuse every control/bidi URI by construction (shared `_controlSafeTrimmedUri`), so no
+      live divergence, no behaviour change; the unguarded seam was the final `firstGraphical ?? consoles.first`
+      fallback with NO pin of its first-in-BMC-order winner when nothing is secure/openable. Pins: both
+      primary entry points agree on the same first-graphical winner, repeated-call determinism, never-badged
+      secure/browser/in-app/self-signed, both discovery surfaces surface every manager once, and
+      `fetchCapability(id)` field-for-field agreement. Real-file RED: `firstGraphical ??= console` →
+      `= console` (last-wins iteration refactor) under a 600-perm backup → exactly `+4 -3` (the 3
+      winner/determinism tests fail, other 4 GREEN); source restored byte-clean (SHA `653e64a6…` unchanged,
+      empty `lib/` diff, backup shredded) → 7/7 targeted GREEN. Sibling service suites 90/90 GREEN;
+      emulator skipped (test-only, <7 days since last green 85/85). No WebView/protocol import, no URL
+      opened, no production TLS weakening, no dependency change. This guard is NOT yet liveness-registered
+      in `test/tool/guard_suite_liveness_test.dart` — a future EP-T-style head.
 
 <!-- rf-ideate split 2026-11-22 02:06 UTC: splits the BLOCKED behaviour-change head EP-S8
      (credential-bearing secure-HTTPS Primary badge vs in-app navigability) of the #009/#021 epic
