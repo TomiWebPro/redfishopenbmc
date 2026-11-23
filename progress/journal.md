@@ -14661,3 +14661,20 @@
 - Next rf-gate run: re-check `rf-platform-check` latest verdict first; merge `--no-ff` only a PASS branch, skip + report otherwise. Continue audit-first dept heads EP-S19 / EP-U26 for the builder; #021 / #009 stay human-gated on WebView + BMC TLS validation.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-T40 liveness registration)
+
+**Done:**
+- FEATURE EP-T40 for open #009/#021: guard-suite liveness registration of the three newest agreement guards (EP-U18 copy-only vs browser-open route, RM-23 hostile ConnectUri raw-preservation, EP-P21 IPv6-literal / zone-id authority). AUDIT FIRST confirmed all three `test` files are live + CI-reachable (verify.yml whole-tree `flutter test --coverage`) with real test cases yet absent from BOTH `canonicalGuardFiles` and every pinned epoch — deleting / emptying / test-stripping any stayed GREEN, a CONFIRMED "who guards the guards" gap, no live divergence, no behaviour change, not churn. Extended `test/tool/guard_suite_liveness_test.dart`: +3 canonical paths, a fresh pinned `epT40AddedGuards` epoch (length 3, pairwise-disjoint from all 30 earlier designations incl. EP-T39) in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation, intact → clean) per guard. Test/tool-only, dependency-free, TLS-safe.
+- Real-file RED: dropped only the RM-23 canonical path while keeping its epoch designation under a 600-perm backup → exactly 3 named failures (EP-T40 pin, EP-T20 completeness, EP-T40 temp-root liveness; `+61 -3`), other 61 GREEN; source restored byte-clean (SHA `b0cd5c5386bbb05dee28f210b28fbb5a82a79d2893c1ad4a18bc793735e95993` unchanged, 0 residue, backup shredded) → 64/64 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2654 passed / 1 skipped (baseline 2652 +2 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure registry/liveness guard closing a confirmed unguarded invariant; no live divergence, no behaviour change, no product code per §5. RED proof mutates only one canonical path entry, restored byte-clean. Never force-push, rewrite history, `git clean`, or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push). Next audit-first dept heads EP-S19 (overlapping-load stale-result — premise defeated by `if (state.loading) return` serialization pinned in kvm_controller_test, AUDIT before adding) / EP-U26 (copy-affordance fail-closed a11y — LARGELY PINNED by EP-U18, AUDIT before adding) — AUDIT FIRST, RED→GREEN only on a genuine divergence, never churn; a fresh EP-T41 liveness pass may register newer rf-gate-merge guards (RP-1 file-chooser / autofill-capture / navigation-confinement) if still unregistered. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
