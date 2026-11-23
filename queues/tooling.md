@@ -5,6 +5,34 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 18:43 UTC: another recurring "who guards the guards" gap in the still-open
+     #009/#021 epic. EP-T41 registered RM-18/RM-20/EP-S13/EP-S14, but several agreement guards have
+     landed since (and more are landing) that are live + CI-reachable (verify.yml whole-tree
+     `flutter test --coverage`) yet absent from BOTH `canonicalGuardFiles` and every pinned epoch, so
+     deleting / emptying / test-stripping any of them stays GREEN. AUDIT FIRST; enumerate every
+     `test/**/*_test.dart` with live cases against the registry + all pinned epochs, skip any already
+     registered and register only the genuinely-unguarded remainder. Pure test/tool, dependency-free,
+     never writes `lib/`. No code touched. -->
+
+- [ ] EP-T42 Guard-suite liveness registration of the post-EP-T41 newly-landed agreement guards:
+       enumerate every `test/**/*_test.dart` carrying live `test(...)`/`testWidgets(...)` cases and
+       reachable from verify.yml's whole-tree `flutter test --coverage`, and compare against
+       `canonicalGuardFiles` in `test/tool/guard_suite_liveness_test.dart` plus every pinned epoch set;
+       identify the guards that landed after EP-T41 but are in NEITHER, and register only those under a
+       fresh pinned `epT42AddedGuards` set (pairwise-disjoint from every earlier designation, including
+       EP-T40/EP-T41), wired into `allDesignatedGuards` and the EP-T20 registry-completeness arithmetic,
+       with +1 containment/disjointness pin test and a temp-root RED->GREEN proof per guard (deleted /
+       emptied / test-stripped -> violation, intact -> clean) plus one real-file RED proof restoring a
+       dropped canonical entry byte-clean. AUDIT FIRST: if every live guard is already registered in the
+       canonical set and some pinned epoch, record the audit and add nothing; RED->GREEN only on a
+       genuine gap, never churn. Pure test/tool work; no `lib/` write, no dependency, no production TLS
+       weakening.
+       Dept: rf-tooling
+       Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine gap; writes limited to
+               `test/tool/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no `lib/` product
+               code, no dependency, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 14:39 UTC: another concrete "who guards the guards" gap in the still-open
      #009/#021 epic. EP-T36 registered the EP-U23/EP-S10/EP-S16/EP-P18 quartet and EP-T37 registered
      EP-P19/RM-21/EP-S17/EP-U24, but FIVE agreement guards have landed since EP-T37 and are live +

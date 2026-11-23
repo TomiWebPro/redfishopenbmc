@@ -4,6 +4,35 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 18:43 UTC: carves another fresh, machine-checkable, unblocked slice of
+     the still-open #009/#021 model epic (never-empty-well malformed-payload tolerance, MULTI_DEPT hard
+     rule 10). RM-4/RM-5/RM-15/RM-18/RM-19/RM-20/RM-21/RM-22/RM-23 pin control-safety, query/fragment,
+     confusables and raw `ConnectUri` preservation, but nothing drives a NON-BOOLEAN `ServiceEnabled` /
+     `Enabled` JSON scalar (string "true"/"false"/"1"/"0"/"yes"/"no", numeric 1/0/2, null, list, map)
+     alongside a valid-boolean control through BOTH `fromManager` factories: a one-sided coercion could
+     flip `supported`/`serviceEnabled`/`canOpenConsole` on one card while the other stays GREEN. Read-only
+     model characterization; the two deliberate behaviour decisions (RM-11 mixed regime, EP-S8
+     credentialed Primary) stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine
+     divergence, never churn. No code touched. -->
+
+- [ ] RM-24 Non-boolean enablement-scalar coercion agreement across both `fromManager` factories:
+       over a matrix of `Manager` bodies whose Graphical/Remote/Serial console blocks carry
+       `ServiceEnabled`/`Enabled` as hostile non-boolean JSON scalars (string "true"/"false"/"1"/"0"/
+       "yes"/"no", numeric 1/0/2, null, list, map, padded variants) plus a valid-boolean `true`/`false`
+       control, pin that `KvmConsole.fromManager` and `KvmCapability.fromManager` coerce them
+       identically (no one-sided truthiness flip), never throw on a non-map/list value, agree on
+       `serviceEnabled` / `supported` / `canOpenConsole` / `supported` connect-type chips for the same
+       body, and fail closed (never "enabled") on an unrecognized encoding while the valid controls
+       stay byte-exact. AUDIT FIRST: if both factories already route every enablement read through one
+       shared helper and derive the same flags, record the audit and add nothing; RED->GREEN only on a
+       genuine divergence, never churn. Read-only model work; no wire/transport/TLS change, no
+       dependency, no WebView/protocol import, no behaviour decision folded in.
+       Dept: rf-model
+       Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/models/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+               pubspec.lock`; no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 14:39 UTC: carves another fresh, machine-checkable, unblocked slice of
      the still-open #009/#021 model epic (never-empty-well hostile-payload tolerance, MULTI_DEPT hard
      rule 10). RM-4/RM-5/RM-18/RM-21/EP-M7 pin the body `@odata.id` manager-source normalization and

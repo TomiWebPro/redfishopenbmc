@@ -5,6 +5,33 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 18:43 UTC: another fresh, display-only, unblocked slice of the still-open
+     #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U24 pins ONE long unbreakable
+     connect-type chip and EP-U11/EP-U23 pin card/viewer agreement for a small console set, but nothing
+     pumps a DENSE set of 12+ hostile / fullwidth / confusable `ConnectTypesSupported` tokens through BOTH
+     real operator cards AND the viewer at once: a one-sided chip cap, a wrap reflow, or a split a11y
+     node could overflow or announce a different chip set while every launch-target suite stays GREEN.
+     Display-only; the human-gated WebView/TLS rendering stays gated and is NOT re-split. AUDIT FIRST;
+     RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-U27 Dense hostile-connect-type chip-set no-overflow + single-merged a11y agreement across both
+       cards and the viewer:
+       pump one manager whose console(s) expose 12+ `ConnectTypesSupported` tokens (mixed-case ASCII,
+       fullwidth forms, Unicode confusables, padded/duplicate/empty tokens) through both real operator
+       cards and the viewer at 320/800/1300 px, pinning that no `RenderFlex` overflow occurs, each card's
+       chip row is one merged `excludeSemantics` node whose visible text == announced label (no
+       screen-reader-only or split chip), the rendered chip count/content agrees across both cards and
+       the model, and no chip silently collapses into a canonical `KVMIP`/`HTML5` token. Include a small
+       clean control proving the normal chip row is unchanged. AUDIT FIRST: if all three surfaces render
+       the same model-derived chip list with merged semantics and already handle 12+ tokens, record the
+       audit and add nothing; RED->GREEN only on a genuine divergence, never churn. Display-only;
+       test-only writes.
+       Dept: rf-ui
+       Verify: `flutter test test/features/kvm/kvm_card_cross_surface_agreement_test.dart test/features/kvm/kvm_widget_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/views/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+               pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 14:39 UTC: another fresh, display-only, unblocked slice of the still-open
      #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U8 pins the copy affordance
      on the card, EP-U14 pins the viewer URI-row/clipboard and EP-U12 pins cross-surface clipboard

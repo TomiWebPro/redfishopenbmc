@@ -5,6 +5,35 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 18:43 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open #009/#021 manager-walk epic. EP-S12 pins malformed `Members` ENTRIES and RS-7 pins
+     non-map manager BODIES, but nothing sweeps the TOP-LEVEL `/Managers` DOCUMENT SHAPE (bare JSON list,
+     `{'value': [...]}`, `{'Members': [...]}` at root, `{'value': <non-list>}`, empty map, non-list
+     scalar) through BOTH `fetchConsoles()` and `fetchCapabilities()` at once: a one-sided shape assumption
+     could blank one gated surface while the other stays populated, or throw a `RedfishException` on a
+     shape the peer tolerates. Pure read-only service characterization; the credentialed-Primary decision
+     (EP-S8) and RM-11 stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine
+     divergence, never churn. No code touched. -->
+
+- [ ] EP-S20 Top-level `/Managers` document-shape agreement across `fetchConsoles()` /
+       `fetchCapabilities()` / `fetchCapability(id)`:
+       over an in-temp mock client returning `/Managers` as each of a bare JSON list, a `value`-wrapped
+       list, a root `Members` list, a `value`-wrapped non-list, an empty map and a non-list scalar (each
+       with one otherwise-healthy manager behind the valid shapes), pin that BOTH discovery surfaces
+       agree field-for-field: both empty on the invalid/empty shapes (no phantom card, no throw), both
+       surface the same survivor set once on the valid shapes, the Primary stays deterministic and
+       launch-safe, and `fetchCapability(id)` resolves a survivor and never a ghost. AUDIT FIRST: if the
+       shared `RedfishClient.getJson` normalization already routes every shape through one walk shared
+       by both surfaces, record the audit and add nothing; RED->GREEN only on a genuine divergence,
+       never churn. Pure read-only service work; no wire-shape/fixture/TLS change, no WebView/protocol
+       import, no behaviour decision folded in.
+       Dept: rf-service
+       Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_service_malformed_members_agreement_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/kvm_service.dart`, `lib/redfish/client/**` + `test/features/kvm/**`;
+               `git diff --exit-code -- pubspec.yaml pubspec.lock`; no wire/TLS change, no WebView/protocol
+               import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 14:39 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 manager-walk epic. EP-S4 pins `mounted` guards so a fetch settling after
      DISPOSE cannot write a dead notifier, and EP-S11/EP-S18 pin selection determinism across repeat

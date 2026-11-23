@@ -6,6 +6,36 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-23 18:43 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open (human-gated) WebView/TLS closeout of #009/#021. Hostile authorities, scheme spellings,
+     path/query/fragment controls, ports, separators and IPv6 literals are heavily pinned
+     (EP-P9/P11/P13/P14/P16/P17/P18/P19/P20/P21), but nothing sweeps the USERINFO EDGE family —
+     `https://user@host`, `https://user:@host`, `https://:@host`, `https://user:pass@host`, plus
+     pct-encoded / uppercase userinfo and a bare-host control — through all four platform decision
+     layers at once, where Dart `Uri.tryParse` userinfo handling can disagree with the fail-closed
+     classifier. Test-only; the human WebView/TLS validation (EP-P1/P2/P4) stays gated and is NOT
+     re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-P22 Userinfo-edge authority cross-layer fail-closed agreement:
+       drive a matrix of userinfo-bearing HTTPS authorities (user-only, empty password `user:@`,
+       empty credentials `:@`, user:pass, pct-encoded credentials, uppercase-escaped credentials, plus
+       a clean bare HTTPS host control) through the shared fail-closed classifier, `planConsoleLaunch`,
+       `allowsInAppNavigation` and the model `KvmConsole.hasSecureLaunchUri` / `launchPlan`, pinning that
+       all layers classify and route each shape identically (same secure/fail-closed verdict, same
+       route/target/acceptSelfSigned, no credential-bearing target rendered as a copyable launch target
+       unless the existing documented userinfo navigation exception applies), that production-default
+       never navigates in-app or accepts self-signed, and that the clean control stays secure and
+       external-browser. AUDIT FIRST: if all layers already delegate to the single fail-closed core and
+       the userinfo family is uniformly classified by construction, record the audit and add nothing;
+       RED->GREEN only on a genuine divergence, never churn. Test-only; no WebView/protocol import, no
+       URL opened, no production TLS weakening.
+       Dept: rf-platform
+       Verify: `flutter test test/features/kvm/platform/userinfo_authority_fail_closed_agreement_test.dart test/features/kvm/platform/launch_plan_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/platform/**` + `test/features/kvm/platform/**`; `git diff --exit-code --
+               pubspec.yaml pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS
+               weakening.
+
 <!-- rf-ideate split 2026-11-23 14:39 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open (human-gated) WebView/TLS closeout of #009/#021. Authority spellings, scheme spelling,
      path/query/fragment controls, userinfo, port and separator confusion are heavily pinned
