@@ -527,6 +527,32 @@ flag stays off for that target.
       default** and permission requests **rejected by default** on every target
       (inspect the WebView configuration and `WebChromeClient` / permission
       callbacks) before the flag is flipped. Verified per target.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassDevicePermissionControls`,
+      always `false`): the test-only opt-in never bypasses device-capability /
+      permission access — every device capability (geolocation, camera,
+      microphone, clipboard, notifications, Bluetooth/NFC, downloads) stays
+      denied by default and every permission request is rejected by default, in
+      strict mode and with the flag both off and on. The opt-in relaxes ONLY the
+      test BMC's untrusted server leaf for the expected host; it must never grant
+      a device capability or auto-answer a permission prompt just to make a
+      console render or to debug it. This box governs the host-device
+      capabilities exposed to page content, so it is distinct from every
+      server-side certificate check (hostname verification, pinning, revocation,
+      platform trust-store integrity), the TLS floor, HTTPS-only transport and
+      validated-origin binding (the handshake, cleartext sockets and resolved
+      address), client-certificate validation (the client credential), the strict
+      Referrer-Policy (the app's outbound Referer header), CSP / mixed-content
+      enforcement (which subresources the page may load), sensitive URL / token
+      log redaction (diagnostic output), sensitive data at rest (on-disk
+      persistence and screen capture), native bridge isolation (code injected
+      into the page), private-network egress protection (the destinations of
+      subresource requests), cross-site cookie isolation (the session cookie's
+      attachment / script readability) and WebView remote debugging (the debug /
+      inspect surface): those govern the connection, its credentials, its
+      requests, its other outputs or the WebView's own debug surface, not the
+      device capabilities granted to page content. Verified per target before the
+      flag is flipped.
 * [ ] **No sensitive data at rest (WebView cache / storage / background snapshot)** —
       the embedded WebView must not persist the remote BMC console's sensitive
       content (operator credentials, session cookies/tokens, KVM screen frames,

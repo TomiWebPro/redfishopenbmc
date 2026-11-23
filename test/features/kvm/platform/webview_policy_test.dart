@@ -722,6 +722,7 @@ void main() {
       expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
       expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
       expect(enabledSelfSigned.bypassWebViewRemoteDebugging, isFalse);
+      expect(enabledSelfSigned.bypassDevicePermissionControls, isFalse);
     });
   });
 
@@ -768,6 +769,54 @@ void main() {
       expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
       expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
       expect(enabledSelfSigned.bypassCookieIsolation, isFalse);
+    });
+  });
+
+  group('KvmWebViewPolicy — device capabilities are never granted', () {
+    test('production default never grants device capabilities', () {
+      expect(KvmWebViewPolicy.productionDefault.bypassDevicePermissionControls,
+          isFalse);
+    });
+
+    test('test-only self-signed opt-in grants no device capability', () {
+      // Tolerating the test BMC's untrusted SERVER leaf relaxes ONLY server leaf
+      // trust. It must never grant geolocation / camera / microphone / clipboard
+      // / notification / Bluetooth / NFC / download capability, nor auto-answer
+      // a native/WebKit permission prompt, for attacker-influenced console
+      // content — a privacy / RCE-class escalation from page content into the
+      // host device. This is a hard invariant, independent of the flag, TLS mode
+      // or signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassDevicePermissionControls, isFalse);
+    });
+
+    test('no policy configuration can grant device capabilities', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassDevicePermissionControls, isFalse);
+      expect(enabledSelfSigned.bypassDevicePermissionControls, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Every other server/transport/client-credential/referrer/page-content/
+      // diagnostic/persistence/bridge/egress/cookie/debug invariant is
+      // independent of device permissions: the opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.bypassStrictReferrerPolicy, isFalse);
+      expect(enabledSelfSigned.bypassMixedContentBlocking, isFalse);
+      expect(enabledSelfSigned.bypassLogRedaction, isFalse);
+      expect(enabledSelfSigned.bypassSensitiveDataAtRestProtection, isFalse);
+      expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
+      expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
+      expect(enabledSelfSigned.bypassCookieIsolation, isFalse);
+      expect(enabledSelfSigned.bypassWebViewRemoteDebugging, isFalse);
     });
   });
 
