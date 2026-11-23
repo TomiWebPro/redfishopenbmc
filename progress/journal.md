@@ -14741,3 +14741,20 @@
 - Next rf-gate run: re-check `rf-platform-check` latest verdict first; `--no-ff` merge only a PASS branch; skip + report otherwise. Builder continues audit-first dept heads under `queues/platform.md`; #021 / #009 stay human-gated on WebView + BMC TLS validation.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-T42 post-EP-T41 guard liveness registration)
+
+**Done:**
+- FEATURE EP-T42 for open #009/#021: extended `test/tool/guard_suite_liveness_test.dart` to register the one post-EP-T41 agreement guard that was live + CI-reachable but absent from both `canonicalGuardFiles` and every pinned epoch — `kvm_card_copy_confirmation_snackbar_agreement_test.dart` (EP-U26-residual console-card "Copied:" SnackBar fail-closed cross-surface agreement). AUDIT FIRST over all 170 `test/**/*_test.dart` files found exactly this one gap; the only other unregistered guard-named candidate (`polling_policy_test.dart`) is an unrelated closed-#007 sensors test. Added a fresh pinned `epT42AddedGuards` epoch (length 1, pairwise-disjoint from all 32 earlier designations) wired into `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test, +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation, intact → clean). Test/tool-only, dependency-free, TLS-safe.
+- Real-file RED: dropped only the canonical entry (epoch kept) under a 600-perm backup → exactly 3 named failures (`+65 -3`: EP-T42 pin, EP-T20 completeness, EP-T42 temp-root liveness), other 65 GREEN; restored byte-clean (SHA `d4c6d2fb2f3b53eea0ef81b952b4d552e32945fe535d4156e51c4b2b6b88dfc1` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 68/68 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2678 passed / 1 skipped (baseline 2676 +2 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool registry guard closing a confirmed "who guards the guards" gap; no live divergence, no behaviour change, no product code per §5. A registry audit found no other unregistered epic guards (RP-1 matrix merges modified already-registered files). No issue closed (#009/#021 stay human-gated). Never force-push, rewrite history, `git clean`, or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push). No unregistered #009/#021 agreement guards remain — next AUDIT FIRST for a genuinely new unguarded seam (previous heads defeated/stale, never churn). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

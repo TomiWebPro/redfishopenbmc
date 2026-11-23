@@ -333,6 +333,20 @@
 // designation) with a pin test, a temp-root RED→GREEN proof and the updated
 // EP-T20 completeness arithmetic, keeping the registry fail-closed.
 //
+// EP-T42 (epic #009/#021) closes the same CONFIRMED gap for the one agreement
+// guard that landed after EP-T41: EP-U26-residual (console-card "Copied:"
+// SnackBar fail-closed cross-surface agreement). It is live + CI-reachable
+// (verify.yml whole-tree `flutter test --coverage`) yet absent from BOTH
+// `canonicalGuardFiles` and every pinned epoch, so deleting / emptying /
+// test-stripping it stayed GREEN. A registry audit confirmed it is the ONLY
+// post-EP-T41 #009/#021 guard in that state (the one other unregistered
+// `*_test.dart` candidate, sensors `polling_policy_test.dart`, belongs to the
+// closed #007 domain and is not part of this epic's guard family). EP-T42
+// registers it under a fresh pinned `epT42AddedGuards` epoch (length 1,
+// disjoint from every earlier designation) with a pin test, a temp-root
+// RED→GREEN proof and the updated EP-T20 completeness arithmetic, keeping the
+// registry fail-closed.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -516,6 +530,11 @@ const List<String> canonicalGuardFiles = <String>[
   'test/features/kvm/kvm_oem_hostile_enrichment_agreement_test.dart',
   'test/features/kvm/kvm_service_manager_skip_agreement_test.dart',
   'test/features/kvm/kvm_service_zero_usable_console_agreement_test.dart',
+  // EP-T42 extension: the one agreement guard that landed after EP-T41
+  // unpinned (EP-U26-residual console-card "Copied:" SnackBar fail-closed
+  // cross-surface agreement) — live + CI-reachable but absent from the
+  // registry until this run.
+  'test/features/kvm/kvm_card_copy_confirmation_snackbar_agreement_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -868,6 +887,16 @@ const Set<String> epT41AddedGuards = <String>{
   'test/features/kvm/kvm_service_zero_usable_console_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-T42: the one agreement
+/// guard that landed after EP-T41 unpinned (EP-U26-residual console-card
+/// "Copied:" SnackBar fail-closed cross-surface agreement). It landed live +
+/// CI-reachable but absent from the registry, so deleting / emptying /
+/// test-stripping it stayed GREEN. Pinned separately so a future edit cannot
+/// drop it back out of the canonical set (issues #009/#021 closeout).
+const Set<String> epT42AddedGuards = <String>{
+  'test/features/kvm/kvm_card_copy_confirmation_snackbar_agreement_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -905,6 +934,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT39AddedGuards,
   ...epT40AddedGuards,
   ...epT41AddedGuards,
+  ...epT42AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -2076,6 +2106,54 @@ void main() {
       expect(epT41AddedGuards.intersection(epT40AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-T42: the post-EP-T41 agreement guard is in the canonical '
+        'liveness set', () {
+      expect(epT42AddedGuards, isNotEmpty);
+      expect(epT42AddedGuards.length, 1);
+      for (final String path in epT42AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T42 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epT42AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(rm15AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epP13AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(sec010AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT26AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT28AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT29AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT30AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT32AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT33AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT35AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT36AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT37AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT39AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT40AddedGuards), isEmpty);
+      expect(epT42AddedGuards.intersection(epT41AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -2133,7 +2211,8 @@ void main() {
             epT37AddedGuards.length +
             epT39AddedGuards.length +
             epT40AddedGuards.length +
-            epT41AddedGuards.length,
+            epT41AddedGuards.length +
+            epT42AddedGuards.length,
       );
     });
   });
@@ -3960,6 +4039,73 @@ void main() {
         // RM-20 registered-OEM hostile-enrichment normalization, EP-S13
         // cross-surface manager-skip, EP-S14 zero-usable-console surfacing).
         for (final String addedGuard in epT41AddedGuards) {
+          File(p(addedGuard)).deleteSync();
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'MISSING: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when deleted',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('  \n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'EMPTY: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when emptied',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when test-stripped',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+        }
+
+        // GREEN again once every guard is restored.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test(
+        'EP-T42: newly-registered post-EP-T41 agreement guard is '
+        'liveness-checked', () {
+      final Directory temp =
+          Directory.systemTemp.createTempSync('ep_t42_guards_');
+      String p(String rel) => '${temp.path}${Platform.pathSeparator}'
+          '${rel.replaceAll('/', Platform.pathSeparator)}';
+      final String verifyLine = '  run: flutter test --coverage\n';
+      try {
+        // Populate every canonical guard with a live synthetic case.
+        for (final String path in canonicalGuardFiles) {
+          final File file = File(p(path));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(syntheticGuardSource);
+        }
+        final File verify = File(p('.github/workflows/verify.yml'));
+        verify.parent.createSync(recursive: true);
+        verify.writeAsStringSync(verifyLine);
+
+        // GREEN: all guards present + live.
+        expect(
+          evaluateGuardSuite(readSuite(temp), verify.readAsStringSync()),
+          isEmpty,
+        );
+
+        // The newly-registered guard must fail closed when deleted, emptied
+        // or stripped of tests (EP-U26-residual console-card "Copied:"
+        // SnackBar fail-closed cross-surface agreement).
+        for (final String addedGuard in epT42AddedGuards) {
           File(p(addedGuard)).deleteSync();
           expect(
             evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
