@@ -14876,3 +14876,20 @@
 - Next rf-gate run: re-check `rf-platform-check` latest verdict first; `--no-ff` merge only a PASS branch, skip + report otherwise; NO-OP if no new commits. Builder continues audit-first dept heads; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:redfish-automation — #009/#021 (EP-P22)
+
+**Done:**
+- FEATURE EP-P22 for open #009/#021: added `test/features/kvm/platform/userinfo_edge_authority_agreement_test.dart` (6 tests) pinning the userinfo-EDGE family that EP-P17 did not drive — degenerate empty credentials (`https://:@host`, userInfo `':'`, and `https://user:@host`, userInfo `'user:'`) fail closed at the in-session navigation gate across the classifier, launch plan (incl. stale secure flag), navigation gate and production fallback; uppercase-hex escapes (`%4A`/`%4a`) agree across all layers; clean bare-HTTPS-host stays same-origin-navigable; model field-for-field agreement. AUDIT FIRST confirmed the encoded/control/multiple-`@` userinfo family is uniform by construction (single fail-closed core), so only the genuinely unguarded degenerate-credential edges were added — no churn, no live divergence, test-only.
+- Real-file RED: `target.userInfo.isNotEmpty` -> `target.userInfo.split(':').first.isNotEmpty` in `launch_plan.dart:allowsInAppNavigation` under a 600-perm backup -> exactly 2 named failures (both new EP-P22 empty-credential nav tests), 222 sibling tests GREEN; source restored byte-clean (SHA `74887e619129209ef622400a3396edc2ef76bfc8694ddaf96574e4126962ee01`, 0 residue, empty `lib/` diff, backup shredded) -> 6/6 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2737 passed / 1 skipped (baseline 2731 +6 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test-only agreement guard closing a genuine unguarded edge; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). New guard deferred to the next EP-T liveness registration pass. Never force-push, rewrite history, `git clean`, or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push). AUDIT FIRST for a genuinely new unguarded seam (EP-P15 disabled-console branch liveness, then EP-S19 / RM-11), never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
