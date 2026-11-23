@@ -14728,3 +14728,16 @@
 - Push the single commit (never force-push). Next: an EP-T liveness pass to register the new guard under a fresh pinned epoch; then AUDIT FIRST for a genuinely new unguarded seam (previous heads defeated/stale — never churn). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-23 — agent:rf-gate — RP-1 no-JS-dialog / modal-spoofing guard merge
+
+**Done:**
+- Sole-merger gate. `python3 ~/opencode-scheduler/scheduler.py state rf-platform-check` → latest run#11951 `SUCCESS exit=0` (PASS), started 18:49:10 UTC ~1 min after builder tip `32c0d27` (18:48:07 UTC); one branch-unique commit beyond merge-base `9f84878` (already merged via `3b19ef0`). Merged `build/rf-platform` into `main` via `--no-ff` → merge `7a14974` (parents `df0a55d` / `32c0d27`), clean ort auto-merge (no conflicts). First-parent diff = 4 allowlisted files (+146/-1): `WEBVIEW_TLS_MATRIX.md` + RP-1 no-JavaScript-dialog / modal-spoofing acceptance box, `webview_policy.dart` + hard `bypassJavaScriptDialogDenial == false` invariant getter, `validation_evidence_checklist_guard_test.dart` + 5 markers + 1 RED guard, `webview_policy_test.dart` + 3 policy tests. Post-merge verify: `flutter analyze` 0; full `flutter test --coverage --concurrency=4` 2676 passed / 1 skipped; four coverage gates PASS overall 90.6% (6097/6728) / scoped 90.4% (2119/2345) / kvm 97.7% (1374/1407) / kvm-platform 97.6% (489/501), exit 0; `issues.py validate` OK; `git diff --check` clean.
+
+**Decisions:**
+- PASS verdict only → `--no-ff` merge; NO-OP/none to merge otherwise. Never force-push, rewrite history, `git clean` or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed. No production TLS weakening; no WebView activation. DMTF emulator skipped (doc + policy-getter/test only, no wire/fixture/tool-runtime change; <7 days since last green 85/85).
+
+**Next:**
+- Next rf-gate run: re-check `rf-platform-check` latest verdict first; `--no-ff` merge only a PASS branch; skip + report otherwise. Builder continues audit-first dept heads under `queues/platform.md`; #021 / #009 stay human-gated on WebView + BMC TLS validation.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
