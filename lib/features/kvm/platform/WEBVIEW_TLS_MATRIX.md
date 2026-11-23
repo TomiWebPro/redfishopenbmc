@@ -553,6 +553,30 @@ flag stays off for that target.
       the opt-in flag. Verified per target (inspect the WebView construction and
       platform configuration for any debugging/inspectable flag or debugging
       port) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassWebViewRemoteDebugging`,
+      always `false`): the test-only opt-in never bypasses WebView remote
+      debugging / inspectability — web-contents debugging stays disabled and no
+      DevTools / inspect endpoint is exposed in production, in strict mode and
+      with the flag both off and on. The opt-in relaxes ONLY the test BMC's
+      untrusted server leaf for the expected host; it must never turn on remote
+      debugging or inspectability, nor expose a debugging port, just to make a
+      console render or to debug it. This box governs the debug / inspect surface
+      of the WebView itself, so it is distinct from every server-side certificate
+      check (hostname verification, pinning, revocation, platform trust-store
+      integrity), the TLS floor, HTTPS-only transport and validated-origin
+      binding (the handshake, cleartext sockets and resolved address),
+      client-certificate validation (the client credential), the strict
+      Referrer-Policy (the app's outbound Referer header), CSP / mixed-content
+      enforcement (which subresources the page may load), sensitive URL / token
+      log redaction (diagnostic output), sensitive data at rest (on-disk
+      persistence and screen capture), native bridge isolation (code injected
+      into the page), private-network egress protection (the destinations of
+      subresource requests) and cross-site cookie isolation (the session cookie's
+      attachment / script readability): those govern the connection, its
+      credentials, its requests or its other outputs, not the WebView's own
+      remote-debugging / inspectability surface. Verified per target before the
+      flag is flipped.
 * [ ] **No service worker / persistent background script (session-scoped
       execution only)** — the embedded WebView must not let attacker-influenced
       console content install a Service Worker or any persistent background

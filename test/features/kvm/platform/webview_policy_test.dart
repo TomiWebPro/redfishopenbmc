@@ -721,6 +721,53 @@ void main() {
       expect(enabledSelfSigned.bypassSensitiveDataAtRestProtection, isFalse);
       expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
       expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
+      expect(enabledSelfSigned.bypassWebViewRemoteDebugging, isFalse);
+    });
+  });
+
+  group('KvmWebViewPolicy — WebView remote debugging is never enabled', () {
+    test('production default never enables WebView remote debugging', () {
+      expect(KvmWebViewPolicy.productionDefault.bypassWebViewRemoteDebugging,
+          isFalse);
+    });
+
+    test('test-only self-signed opt-in stays non-inspectable', () {
+      // Tolerating the test BMC's untrusted SERVER leaf relaxes ONLY server leaf
+      // trust. It must never enable web-contents debugging / inspectability or
+      // expose a DevTools / remote-debugging endpoint in production — a CWE-489
+      // active-debug-code path to the operator's DOM, session tokens and KVM
+      // frames. This is a hard invariant, independent of the flag, TLS mode or
+      // signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassWebViewRemoteDebugging, isFalse);
+    });
+
+    test('no policy configuration can enable WebView remote debugging', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassWebViewRemoteDebugging, isFalse);
+      expect(enabledSelfSigned.bypassWebViewRemoteDebugging, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Every other server/transport/client-credential/referrer/page-content/
+      // diagnostic/persistence/bridge/egress/cookie invariant is independent of
+      // remote debugging: the opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.bypassStrictReferrerPolicy, isFalse);
+      expect(enabledSelfSigned.bypassMixedContentBlocking, isFalse);
+      expect(enabledSelfSigned.bypassLogRedaction, isFalse);
+      expect(enabledSelfSigned.bypassSensitiveDataAtRestProtection, isFalse);
+      expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
+      expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
+      expect(enabledSelfSigned.bypassCookieIsolation, isFalse);
     });
   });
 

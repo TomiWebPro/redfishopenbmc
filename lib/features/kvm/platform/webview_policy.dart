@@ -503,6 +503,51 @@ class KvmWebViewPolicy {
   /// See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassCookieIsolation => false;
 
+  /// Always `false`: WebView remote debugging / inspectability is NEVER enabled,
+  /// not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must never be remotely debuggable or inspectable in
+  /// production: no Android `WebView.setWebContentsDebuggingEnabled(true)`, no
+  /// WKWebView `isInspectable = true` / web-inspector entitlement on iOS/macOS,
+  /// and no DevTools / `webkit.Debugger` / remote-debugging endpoint or port
+  /// exposed to ADB, another app or a nearby device (CWE-489: active debug code).
+  /// A remotely debuggable WebView lets an attacker with local/ADB access, or a
+  /// malicious co-resident app, attach a debugger, read the DOM, inject script
+  /// and exfiltrate the operator's session tokens, credentials and KVM frames —
+  /// a credential/session-theft surface. Web-contents debugging and
+  /// inspectability must stay disabled in production on every target; the only
+  /// place they may be enabled is a test-only validation spike behind the flag,
+  /// never to make a console render or to debug a production profile.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that turns on remote
+  /// debugging / inspectability. Tolerating the test BMC's untrusted server leaf
+  /// relaxes ONLY that leaf's trust; it must never expose the privileged console
+  /// to a debugger or inspector. It governs the debug/inspect surface of the
+  /// WebView itself, so it is distinct from every server-side certificate check
+  /// — hostname verification ([bypassHostnameVerification]), pinning
+  /// ([bypassCertificatePinning]), revocation ([bypassCertificateRevocationCheck])
+  /// and platform trust-store integrity ([bypassPlatformTrustStoreIntegrity]) —
+  /// the TLS floor ([bypassTlsProtocolFloor]), HTTPS-only transport
+  /// ([bypassHttpsOnlyTransport]) and validated-origin binding
+  /// ([bypassValidatedOriginBinding]) (the handshake, cleartext sockets and
+  /// resolved address), client-certificate validation
+  /// ([bypassClientCertificateValidation]) (the client credential), the strict
+  /// Referrer-Policy ([bypassStrictReferrerPolicy]) (the app's outbound `Referer`
+  /// header), CSP / mixed-content enforcement ([bypassMixedContentBlocking])
+  /// (which subresources the page may load), sensitive URL / token log redaction
+  /// ([bypassLogRedaction]) (diagnostic output), sensitive data at rest
+  /// ([bypassSensitiveDataAtRestProtection]) (on-disk persistence and screen
+  /// capture), native bridge isolation ([bypassNativeBridgeIsolation]) (code
+  /// injected into the page), private-network egress protection
+  /// ([bypassPrivateNetworkEgressProtection]) (the destinations of subresource
+  /// requests) and cross-site cookie isolation ([bypassCookieIsolation]) (the
+  /// session cookie's attachment / script readability): those govern the
+  /// connection, its credentials, its requests or its other outputs, not the
+  /// WebView's own remote-debugging / inspectability surface. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassWebViewRemoteDebugging => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
