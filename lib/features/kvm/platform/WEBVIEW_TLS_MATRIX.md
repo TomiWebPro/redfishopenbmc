@@ -665,6 +665,23 @@ flag stays off for that target.
       every target. Verified per target (inspect the WebView load / error callbacks and the
       app's logging and telemetry configuration, and confirm no console URL or token is
       emitted) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassLogRedaction`, always `false`):
+      the test-only opt-in never bypasses sensitive console URL / session-token log
+      redaction — it never emits the privileged console URL or any token derived
+      from it to logs, telemetry or crash reports (CWE-532), in strict mode and with
+      the flag both off and on. The opt-in relaxes ONLY the test BMC's untrusted
+      server leaf for the expected host. This box governs the app's own local
+      diagnostic / telemetry output, so it is distinct from the strict Referrer-Policy
+      (the app's own outbound Referer header), CSP / mixed-content enforcement (which
+      subresources the console page may load), every server-side certificate check
+      (hostname verification, pinning, revocation, platform trust-store integrity),
+      the TLS floor, HTTPS-only transport and validated-origin binding (the handshake,
+      cleartext platform sockets and resolved address), and client-certificate
+      validation (the client credential), all of which govern the connection, its
+      credentials or its requests. Verified per target (inspect the WebView load /
+      error callbacks and the app's logging and telemetry configuration) before the
+      flag is flipped.
 * [ ] **Operator-session auto-lock / session timeout (no unattended privileged
       console)** — the embedded WebView must not leave the operator's privileged
       BMC/KVM session live and visible when the operator walks away: a bounded
