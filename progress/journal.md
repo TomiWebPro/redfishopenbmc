@@ -15575,6 +15575,7 @@
 
 **Decisions:**
 - Sole-merger protocol: merged ONLY because the latest check verdict was PASS on the exact current tip, with a clean `merge-tree`; no force-push, no history rewrite. No concurrent WIP, so verification ran in-tree. Never weakened production TLS or activated WebView. Remote URL carries a PAT — never echoed, staged or committed.
+- Push attempted once via the sanctioned Basic-header method (temp 600-perm credential file, shredded) → exit 128: `Invalid username or token` / `Authentication failed` — embedded PAT stale; local commits kept, no force-push, no retry.
 
 **Next:**
 - Push by fast-forward only when valid credentials are available (never force-push; preserve all prior unpushed automation + rf-gate merge commits). Next `rf-platform-check` PASS tip merges the same way. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
