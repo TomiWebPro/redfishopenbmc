@@ -15478,3 +15478,20 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). Next EP-T pass registers the new guard under a fresh epoch; otherwise AUDIT FIRST a genuinely new KVM seam, never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 14:39 — agent:rf-gate (sole merger to main) — MERGED PASS build/rf-platform tip 455788d (check#12698)
+
+**Done:**
+- `rf-platform-check` run#12698 returned `SUCCESS exit=0` / explicit `CHECK: PASS` for exact `build/rf-platform` tip `455788d38995d78ef53ff94e88394f5130f2638c` (analyze 0; targeted policy + guard tests 232/232; purely additive, 4 allowlisted paths, no production-TLS weakening); branch HEAD cross-checked unchanged in gate repo + check worktree, both clean.
+- Merged `build/rf-platform` into `main` with `--no-ff` → merge `fda2ea6`, clean ort auto-merge, 4 allowlisted files (+222/-0): `WEBVIEW_TLS_MATRIX.md`, `webview_policy.dart` (hardening getter `bypassWorkerScriptExfiltration => false`), `validation_evidence_checklist_guard_test.dart`, `webview_policy_test.dart`.
+
+**Decisions:**
+- `CHECK: PASS` + clean `merge-tree` + purely additive hardening diff ⇒ merge authorized; no reason to SKIP/NO-OP. Merge-base already in main; exactly one branch-unique commit. Production change is hardening-only (no TLS/cert/pinning weakening, no dep change). DMTF 85-test emulator skipped — no lib-wire/fixture/tool-runtime change, <7 days since last green 85/85.
+
+**Verify:**
+- `flutter analyze` 0; full `flutter test --coverage --concurrency=4` GREEN — 2981 passed / 1 skipped; all four coverage gates PASS (overall 90.6% / scoped 90.4% / kvm 97.7% / kvm-platform 97.7%), exit 0; asset_guard + unattended_guard OK; `issues.py validate` OK; `git diff --check` clean; deps unchanged; TLS/secret scan clean.
+
+**Next:**
+- Push by fast-forward only when valid credentials are available (never force-push; preserve all prior unpushed automation + rf-gate merge commits). No emulator re-run needed. Next `rf-platform-check` PASS tip merges the same way.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
