@@ -2170,6 +2170,44 @@ flag stays off for that target.
       module loads): those govern other script, markup or request surfaces, not
       dynamic ES-module imports. Verified per target before the flag is
       flipped.
+* [ ] **No Web MIDI API local-hardware exfiltration** — the embedded WebView
+      must not let attacker-influenced console content use the Web MIDI API to
+      enumerate attached MIDI devices or open a local MIDI byte stream: no
+      `navigator.requestMIDIAccess()` / `MIDIAccess` grant, no `MIDIOutput.send()`
+      of privileged management-session data (KVM frame handles, session tokens,
+      operator credentials, managed-host inventory) encoded as MIDI messages to
+      a physically attached synthesizer, DAW or MIDI interface, and no
+      `MIDIInput` / `onmidimessage` receive path used to feed attacker-chosen
+      commands back into the trusted frame. This is a script-driven local-
+      hardware channel that bypasses every network egress control and needs no
+      socket, form POST, navigation or subresource request. Console content is
+      served by the BMC and is therefore attacker-influenced: a compromised /
+      spoofed BMC or injected script must never obtain a MIDI access object or
+      send a MIDI byte stream, on every target, in strict mode and with the flag
+      both off and on. Verified per target (attempt to enumerate devices, open
+      outputs and send messages with the flag both off and on; observe the
+      Console app grants no MIDI access) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult
+      (`KvmWebViewPolicy.bypassWebMidiExfiltration`, always `false`): the opt-in
+      never bypasses web midi exfiltration — console content can never open a
+      MIDI stream carrying privileged session data, in strict mode and with the
+      flag both off and on. The test-only self-signed opt-in relaxes ONLY the
+      test BMC's untrusted server leaf for the expected host, via a scoped
+      per-connection verifier; it must never grant a web midi stream just to
+      make a console render or to debug it. Operator/app-initiated MIDI use is
+      a separate functional path and stays unaffected. This box governs the
+      real-time musical-instrument byte-stream channel with its own
+      `MIDIAccess` permission and port/message model, so it is distinct from
+      the peripheral I/O box (`bypassPeripheralIoExfiltration`) — distinct from
+      webusb / WebSerial / WebHID bulk USB, serial and HID streams, which are
+      named there — and is distinct from device-permission controls
+      (`bypassDevicePermissionControls`), which govern camera / microphone /
+      geolocation / Bluetooth / NFC grants and native permission prompts rather
+      than a specific local MIDI byte stream. It is also distinct from the
+      outbound egress allowlist (`bypassOutboundEgressAllowlist`) (HTTP(S)
+      network destinations, not a physically attached device). Verified per
+      target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

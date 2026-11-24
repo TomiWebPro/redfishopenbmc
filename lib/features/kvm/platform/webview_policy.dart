@@ -2085,6 +2085,46 @@ class KvmWebViewPolicy {
   /// See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassDynamicModuleImportExfiltration => false;
 
+  /// Always `false`: the Web MIDI API is NEVER available to
+  /// attacker-influenced console content, not even by the test-only
+  /// self-signed opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content use the Web
+  /// MIDI API to enumerate attached MIDI devices or open a local MIDI byte
+  /// stream: no `navigator.requestMIDIAccess()` / `MIDIAccess` grant, no
+  /// `MIDIOutput.send()` of privileged management-session data (KVM frame
+  /// handles, session tokens, operator credentials, managed-host inventory)
+  /// encoded as MIDI messages to a physically attached synthesizer, DAW or
+  /// MIDI interface, and no `MIDIInput` / `onmidimessage` receive path used to
+  /// feed attacker-chosen commands back into the trusted frame. This is a
+  /// script-driven local-hardware channel that bypasses every network egress
+  /// control and needs no socket, form POST, navigation or subresource request.
+  /// Console content is served by the BMC and is therefore attacker-influenced:
+  /// a compromised/spoofed BMC or injected script must never obtain a MIDI
+  /// access object or send a MIDI byte stream, on every target, in strict mode
+  /// and with the flag both off and on.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content open a MIDI stream. The test-only self-signed opt-in relaxes ONLY
+  /// that leaf's trust for the expected host via a scoped per-connection
+  /// verifier; it must never grant a web midi stream just to make a console
+  /// render or to debug it. Operator/app-initiated MIDI use is a separate
+  /// functional path and stays unaffected.
+  ///
+  /// This box governs the real-time musical-instrument byte-stream channel with
+  /// its own `MIDIAccess` permission and port/message model, so it is distinct
+  /// from the peripheral I/O box (`bypassPeripheralIoExfiltration`) — distinct
+  /// from webusb / WebSerial / WebHID bulk USB, serial and HID streams, which
+  /// are named there — and from generic device-permission controls
+  /// (`bypassDevicePermissionControls`), which govern camera / microphone /
+  /// geolocation / Bluetooth / NFC grants and native permission prompts rather
+  /// than a specific local MIDI byte stream. It is also distinct from the
+  /// outbound egress allowlist ([bypassOutboundEgressAllowlist]) (HTTP(S)
+  /// network destinations, not a physically attached device). See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassWebMidiExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

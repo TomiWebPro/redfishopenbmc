@@ -162,6 +162,13 @@
 // attacker-influenced console content import a cross-origin module — distinct
 // from worker scripts, HTML <script src> beacons, CSS subresources and
 // programmatic egress),
+// no-Web-MIDI-API local-hardware exfiltration (navigator.requestMIDIAccess /
+// MIDIOutput.send / onmidimessage; a script-driven local MIDI byte stream to a
+// physically attached device that bypasses network egress; hard configuration-
+// independent invariant; the opt-in never lets attacker-influenced console
+// content open a MIDI stream — distinct from the WebUSB/WebSerial/WebHID
+// peripheral-I/O box, generic device-permission prompts and programmatic
+// egress),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -1258,6 +1265,23 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'opt-in-keeps-dynamic-import-denied',
     marker: 'never grant a dynamic module import'
   ),
+  // No Web MIDI API local-hardware exfiltration: a script-driven MIDI byte
+  // stream to a physically attached device (navigator.requestMIDIAccess /
+  // MIDIOutput.send / onmidimessage), distinct from the enumerated WebUSB /
+  // WebSerial / WebHID peripheral I/O box, generic device-permission prompts
+  // and the HTTP(S) outbound egress allowlist.
+  (name: 'no-web-midi-exfil', marker: 'web midi api'),
+  (name: 'no-request-midi-access', marker: 'requestmidiaccess'),
+  (name: 'no-midi-output-send', marker: 'midioutput.send'),
+  (name: 'midi-local-hardware', marker: 'midi byte stream'),
+  (name: 'midi-never-bypassed', marker: 'never bypasses web midi'),
+  (name: 'midi-policy-getter', marker: 'bypasswebmidiexfiltration'),
+  (name: 'midi-distinct-from-peripheral-io', marker: 'distinct from webusb'),
+  (
+    name: 'midi-distinct-from-device-perms',
+    marker: 'distinct from device-permission controls'
+  ),
+  (name: 'opt-in-keeps-midi-denied', marker: 'never grant a web midi'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -2785,6 +2809,29 @@ void main() {
       expect(missing, contains('dynamic-import-policy-getter'));
       expect(missing, contains('dynamic-import-distinct-from-worker'));
       expect(missing, contains('opt-in-keeps-dynamic-import-denied'));
+    });
+
+    test('RED: dropping the no-Web-MIDI-API box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutMidi = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'web midi|requestmidiaccess|midioutput|midi byte stream|'
+              r'never bypasses web midi|bypasswebmidiexfiltration|'
+              r'distinct from webusb|distinct from device-permission|'
+              r'never grant a web midi')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutMidi);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-web-midi-exfil'));
+      expect(missing, contains('no-request-midi-access'));
+      expect(missing, contains('no-midi-output-send'));
+      expect(missing, contains('midi-local-hardware'));
+      expect(missing, contains('midi-never-bypassed'));
+      expect(missing, contains('midi-policy-getter'));
+      expect(missing, contains('midi-distinct-from-peripheral-io'));
+      expect(missing, contains('midi-distinct-from-device-perms'));
+      expect(missing, contains('opt-in-keeps-midi-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
