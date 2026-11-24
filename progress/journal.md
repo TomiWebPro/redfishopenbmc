@@ -15804,3 +15804,19 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U27 LANDED but NOT epoch-registered — next EP-T pass must register its guard under a fresh pinned epoch; otherwise AUDIT FIRST a genuinely new KVM seam (never churn, RED→GREEN only on a genuine divergence); cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-T70)
+
+**Done:**
+- FEATURE EP-T70 (test/tool-only): registered the deferred EP-U27 dense connect-type chip-set a11y guard under a fresh pinned `epT70AddedGuards` epoch in `test/tool/guard_suite_liveness_test.dart` (+117/−1). AUDIT FIRST confirmed it was the sole unregistered KVM agreement/guard file (116 registry paths, zero drift, 0 references to the guard) — a genuine 'who guards the guards' gap, no live divergence, no behaviour change.
+
+**Verification:**
+- REAL RED→GREEN: drop only the canonical entry (epoch kept) -> exactly 2 named failures (EP-T70 pin + EP-T20 completeness); restore byte-clean (SHA `5082c330…`) -> 105/105 GREEN. Reverse RED: drop only the epoch spread -> exactly 1 named failure (EP-T20 completeness); restore byte-clean -> 105/105 GREEN. Analyze 0; full `flutter test --concurrency=4` 3122 passed / 1 skipped (baseline 3121 +1 pin); issues validate OK; diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Registry-only liveness registration per §4; no product code per §5. No issue closed (#009/#021 stay human-gated). No manufactured UI churn. Tree clean at preflight — no concurrent WIP touched, no new stash, no `git clean`, no history rewrite; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-T70 LANDED; no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM seam (never churn, RED→GREEN only on a genuine divergence); cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

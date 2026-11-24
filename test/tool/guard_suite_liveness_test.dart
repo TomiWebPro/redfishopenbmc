@@ -709,6 +709,24 @@
 // dependency, no WebView/protocol import, no URL opened, no production TLS
 // weakening.
 //
+// EP-T70 registers the post-EP-T69 newly-landed EP-U27 dense connect-type
+// chip-set a11y agreement guard (`kvm_dense_connect_type_chip_set_a11y_agreement_test.dart`
+// — 13 distinct hostile / fullwidth / confusable `ConnectTypesSupported`
+// tokens byte-exact on both `fromManager` factories and on both real operator
+// cards at 320/800/1300 px, one merged `excludeSemantics` chip-row node each,
+// visible == model chips, no screen-reader-only split chip, no RenderFlex
+// overflow, small clean control). A programmatic audit of every KVM
+// agreement/guard test file against the registry confirmed it was the sole
+// guard live + CI-reachable via verify.yml whole-tree `flutter test --coverage`
+// yet absent from BOTH `canonicalGuardFiles` and every pinned epoch (0 registry
+// references), so deleting / emptying / test-stripping it stayed GREEN — a
+// genuine "who guards the guards" gap deferred by its owner run's
+// `test/features/kvm/**` write scope. Registered under a fresh pinned
+// `epT70AddedGuards` epoch (length 1, pairwise-disjoint from every earlier
+// designation incl. EP-T69) with a pin test + updated EP-T20 completeness
+// arithmetic, so it now fails closed. No product code, no dependency, no
+// WebView/protocol import, no URL opened, no production TLS weakening.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -1062,6 +1080,11 @@ const List<String> canonicalGuardFiles = <String>[
   // CI-reachable but absent from the registry until now. Registering it makes
   // deleting / emptying / test-stripping it fail closed.
   'test/features/kvm/kvm_manager_source_row_rtl_scale_a11y_agreement_test.dart',
+  // EP-T70 extension: the EP-U27 dense connect-type chip-set single-merged a11y
+  // agreement guard, landed immediately before this run; live + CI-reachable
+  // but absent from the registry until now. Registering it makes deleting /
+  // emptying / test-stripping it fail closed.
+  'test/features/kvm/kvm_dense_connect_type_chip_set_a11y_agreement_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -1765,6 +1788,21 @@ const Set<String> epT69AddedGuards = <String>{
   'test/features/kvm/kvm_manager_source_row_rtl_scale_a11y_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-T70: the one compound a11y
+/// agreement guard that landed immediately before this run but was left
+/// unpinned (EP-U27 — a 13-token dense hostile / fullwidth / confusable
+/// `ConnectTypesSupported` set byte-exact on both `fromManager` factories and
+/// on both real operator cards at 320/800/1300 px, one merged
+/// `excludeSemantics` chip-row node each, visible == model chips, no
+/// screen-reader-only split chip, no RenderFlex overflow, small clean control).
+/// It landed live + CI-reachable but absent from the registry, so deleting /
+/// emptying / test-stripping it stayed GREEN. Pinned separately so a future
+/// edit cannot drop it back out of the canonical set (issues #009/#021
+/// closeout).
+const Set<String> epT70AddedGuards = <String>{
+  'test/features/kvm/kvm_dense_connect_type_chip_set_a11y_agreement_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -1830,6 +1868,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT67AddedGuards,
   ...epT68AddedGuards,
   ...epT69AddedGuards,
+  ...epT70AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -4722,6 +4761,82 @@ void main() {
       expect(epT69AddedGuards.intersection(epT68AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-T70: the EP-U27 dense connect-type chip-set a11y guard is in '
+        'the canonical liveness set', () {
+      expect(epT70AddedGuards, isNotEmpty);
+      expect(epT70AddedGuards.length, 1);
+      for (final String path in epT70AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T70 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epT70AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(rm15AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epP13AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(sec010AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT26AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT28AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT29AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT30AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT32AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT33AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT35AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT36AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT37AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT39AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT40AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT41AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT42AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT43AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT44AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT45AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT46AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT47AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT48AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT49AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT50AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT51AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT52AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT53AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT54AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT55AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT56AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT57AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT58AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT59AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT60AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT61AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT62AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT63AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT64AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT65AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT66AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT67AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT68AddedGuards), isEmpty);
+      expect(epT70AddedGuards.intersection(epT69AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -4807,7 +4922,8 @@ void main() {
             epT66AddedGuards.length +
             epT67AddedGuards.length +
             epT68AddedGuards.length +
-            epT69AddedGuards.length,
+            epT69AddedGuards.length +
+            epT70AddedGuards.length,
       );
     });
   });
