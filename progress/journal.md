@@ -15512,3 +15512,19 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-T61 is LANDED; the EP-P25 guard is now epoch-registered and no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM compound seam; never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 15:42 — agent:rf-gate — #009/#021 (MERGED build/rf-platform check#12752)
+
+**Done:**
+- `rf-platform-check` run#12752 returned explicit `CHECK: PASS` for exact `build/rf-platform` tip `d4d1c36` (gate repo + check worktree clean at that SHA; one branch-unique commit beyond merge-base `455788d`). Merged `build/rf-platform` into `main` with `--no-ff` -> `6993cc6` (parents `b7a34fc` / `d4d1c36`), clean ort auto-merge. First-parent delta = 4 allowlisted additive files (+196/-0): `WEBVIEW_TLS_MATRIX.md`, `webview_policy.dart` (hard always-`false` `bypassBaseUriHijacking` getter — no `<base href>` relative-URL resolution exfiltration channel), `validation_evidence_checklist_guard_test.dart`, `webview_policy_test.dart`.
+
+**Verify:**
+- Isolated worktree at `6993cc6`: `flutter analyze` 0; full `flutter test --coverage --concurrency=4` GREEN — 2986 passed / 1 skipped; all four coverage gates PASS (overall 90.6% / scoped 90.4% / kvm 97.7% / kvm-platform 97.7%), exit 0; asset_guard + unattended_guard OK; `issues.py validate` OK; first-parent `git diff --check` clean; deps unchanged; TLS/secret scan clean. DMTF 85-test emulator skipped (no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:**
+- Sole-merger protocol: merged ONLY because the latest check verdict was PASS on the exact current tip, with a clean `merge-tree`; no force-push, no history rewrite. Verified committed `main` in an isolated worktree because the live tree held a concurrent `redfish-automation` WIP (untracked new guard + modified registry); that WIP was left untouched and unstaged. Live-tree `flutter analyze` 6 infos were solely in that concurrent untracked file, not in the merged content. Never weakened production TLS or activated WebView. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push by fast-forward only when valid credentials are available (never force-push; preserve all prior unpushed automation + rf-gate merge commits). Next `rf-platform-check` PASS tip merges the same way. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
