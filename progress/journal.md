@@ -15370,3 +15370,21 @@
 - **Next:** push by fast-forward only (preserve all prior unpushed commits); next PASS tip merges the same way; DMTF emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-U36 + EP-T57)
+
+**Done:**
+- FEATURE EP-U36 + EP-T57 for open #009/#021. AUDIT FIRST: EP-U7 pins the two shared notices as one merged `excludeSemantics` node (visible==announced) on the gated list, capability card and viewer at 320/800/1300 px — but only LTR/1.0x; EP-U21 pins 2.0x (long names, LTR), EP-U28/U31/U32..U35 pin RTL with chips/display names. Nothing drove the shared notices through RTL x 2.0x. Added `test/features/kvm/kvm_notice_rtl_scale_a11y_agreement_test.dart` (10 tests): both notices byte-exact + single-merged on all three surfaces under RTL/2.0x at 320/800/1300 px, no duplicate / screen-reader-only node, no overflow; LTR/1.0x control GREEN.
+- Real-file RED (guard): one-sided compound-gated truncation of the capability card's announced notice (600-perm backup) → exactly 6 named failures (`+4 -6`, 3 capability-card + 3 gated-list RTL/2.0x cases), viewer + LTR controls GREEN; restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) → 10/10 GREEN.
+- EP-T57 registration: fresh pinned `epT57AddedGuards` epoch (length 1, pairwise-disjoint from all 47 earlier designations incl. EP-T56) in `test/tool/guard_suite_liveness_test.dart` (+canonical path, +`allDesignatedGuards`, +EP-T20 completeness term, +disjointness pin test, +temp-root RED→GREEN proof). Registry real-file RED: dropped only the canonical entry → exactly 3 failures (EP-T57 pin, EP-T20 completeness, epT57 temp-root liveness); restored byte-clean (SHA `6a6ff3f0…` unchanged, backup shredded).
+
+**Verification:**
+- targeted 102/102 (10 guard + 92 registry); `dart format` clean (my files); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2938 passed / 1 skipped (baseline 2923 +10 guard +1 registry pin +4 concurrent rf-gate merge tests); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool display-layer agreement guard + its liveness registration at a genuinely unguarded compound seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). Two concurrent rf-gate commits (+4 tests) landed mid-run and were preserved; my `dart format` sweep churn on three concurrently-committed files was inspected (pure formatting) and reverted to HEAD — not staged. Never force-push, rewrite history, `git clean`, or delete files. Five pre-existing stashes untouched; no new stash (clean baseline). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U36 + EP-T57 are LANDED; no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM compound seam; never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

@@ -17,7 +17,7 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
      and is NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code
      touched. -->
 
-- [ ] EP-U36 Session-note / disabled-helper merged a11y agreement across both cards and the viewer
+- [x] EP-U36 Session-note / disabled-helper merged a11y agreement across both cards and the viewer
        under RTL x 2.0x:
        pump one manager with an explicitly disabled console and one with an enabled console through
        both real operator cards and `KvmConsoleViewerPage` under `Directionality.rtl` with
@@ -835,6 +835,8 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 - 2026-11-19 14:11 — EP-U4 LANDED (agent:redfish-automation, FEATURE #009/#021): `KvmConsoleViewerPage` now owns the pure-UI session lifecycle — `ConsumerStatefulWidget` connects on enter (with `maxConcurrentSessions` eviction), a merged-a11y active/idle disclosure + "Disconnect console" button end it on demand, and `PopScope.onPopInvokedWithResult` ends it on back/pop. +5 RED→GREEN viewer widget tests, 320 px no-overflow; analyze 0 / 1231 passed / 1 skipped, emulator 85/85. No WebView/protocol dependency, no TLS change.
 
 ## Latest landings
+
+- [x] EP-U36 Compound RTL x 2.0x shared-notice a11y agreement — **LANDED (run 2026-11-24 11:23 UTC, agent:redfish-automation, test-only)**: AUDIT FIRST — EP-U7 pins both shared notices as one merged node with visible==announced on list/capability card/viewer at 320/800/1300 px but LTR/1.0x only; EP-U21 pins 2.0x (long names, LTR), EP-U28/U31/U32..U35 pin RTL with chips/display names — none drove the shared notices through RTL x 2.0x. Added `test/features/kvm/kvm_notice_rtl_scale_a11y_agreement_test.dart` (10 tests): both notices byte-exact + single-merged on all three surfaces under RTL/2.0x at 320/800/1300 px, no duplicate, no overflow; LTR/1.0x control GREEN. Real-file RED: one-sided compound-gated truncation of the capability card's announced notice (600-perm backup) → exactly 6 named failures (`+4 -6`, 3 card + 3 list RTL/2.0x cases), viewer + LTR controls GREEN; restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) → 10/10 GREEN. Display-only, dependency-free, TLS-safe; guard registered under EP-T57 epoch.
 
 - [x] EP-U35 Control/bidi-bearing connect-type chip a11y agreement — **LANDED (run 2026-11-24 10:35 UTC, agent:redfish-automation, test-only)**: AUDIT FIRST — all prior connect-type chip guards use control-safe ASCII tokens and every bidi/control guard targets the manager DISPLAY NAME, so nothing drove bidi Cf / C0 Cc / Zl-bearing CONNECT-TYPE tokens through both cards' merged "connection types" announcements under RTL x 2.0x. Added `test/features/kvm/kvm_connect_type_control_rtl_scale_a11y_agreement_test.dart` (7 tests): byte-exact chip sequence + full merged announced value on both real cards at 320/800/1300 px under RTL/2.0x, no duplicate, no overflow; LTR/1.0x control GREEN. Real-file RED (one-sided control strip of capability-card announcement, 600-perm backup) → exactly 3 named failures (`+4 -3`), restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) → 7/7 GREEN. Display-only, dependency-free, TLS-safe; guard registered under EP-T56 epoch.
 
