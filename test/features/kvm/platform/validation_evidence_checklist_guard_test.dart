@@ -169,6 +169,14 @@
 // content open a MIDI stream — distinct from the WebUSB/WebSerial/WebHID
 // peripheral-I/O box, generic device-permission prompts and programmatic
 // egress),
+// no-short-range-radio (Web Bluetooth / Web NFC) exfiltration
+// (navigator.bluetooth.requestDevice / GATT writeValue / NDEFReader.write; a
+// script-driven proximity-wireless local-hardware byte stream to a physically
+// nearby device that bypasses network egress; hard configuration-independent
+// invariant; the opt-in never lets attacker-influenced console content open a
+// short-range radio stream — distinct from the wired USB/serial/HID peripheral
+// I/O box, the MIDI byte-stream box, generic device-permission prompts and
+// programmatic egress),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -1282,6 +1290,29 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'distinct from device-permission controls'
   ),
   (name: 'opt-in-keeps-midi-denied', marker: 'never grant a web midi'),
+  // No short-range radio (Web Bluetooth / Web NFC) exfiltration: a script-
+  // driven proximity-wireless local-hardware byte stream to a physically nearby
+  // device (navigator.bluetooth.requestDevice / GATT characteristic writeValue /
+  // NDEFReader.write), distinct from the wired USB/serial/HID and MIDI boxes,
+  // generic device-permission prompts and the HTTP(S) outbound egress allowlist.
+  (name: 'no-short-range-radio-exfil', marker: 'short-range radio'),
+  (name: 'no-web-bluetooth-device', marker: 'requestdevice'),
+  (name: 'no-web-nfc-write', marker: 'ndefreader'),
+  (name: 'short-range-gatt-write', marker: 'gatt characteristic'),
+  (name: 'short-range-nearby-hardware', marker: 'physically nearby'),
+  (name: 'short-range-never-bypassed', marker: 'never bypasses short-range radio'),
+  (
+    name: 'short-range-policy-getter',
+    marker: 'bypassshortrangeradioexfiltration'
+  ),
+  (
+    name: 'short-range-distinct-from-peripheral-io',
+    marker: 'wired usb/serial/hid'
+  ),
+  (
+    name: 'opt-in-keeps-short-range-denied',
+    marker: 'never grant a short-range radio'
+  ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -2832,6 +2863,31 @@ void main() {
       expect(missing, contains('midi-distinct-from-peripheral-io'));
       expect(missing, contains('midi-distinct-from-device-perms'));
       expect(missing, contains('opt-in-keeps-midi-denied'));
+    });
+
+    test('RED: dropping the no-short-range-radio box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutShortRange = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'short-range radio|requestdevice|ndefreader|'
+              r'gatt characteristic|physically nearby|'
+              r'never bypasses short-range radio|'
+              r'bypassshortrangeradioexfiltration|wired usb/serial/hid|'
+              r'never grant a short-range radio')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutShortRange);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-short-range-radio-exfil'));
+      expect(missing, contains('no-web-bluetooth-device'));
+      expect(missing, contains('no-web-nfc-write'));
+      expect(missing, contains('short-range-gatt-write'));
+      expect(missing, contains('short-range-nearby-hardware'));
+      expect(missing, contains('short-range-never-bypassed'));
+      expect(missing, contains('short-range-policy-getter'));
+      expect(missing, contains('short-range-distinct-from-peripheral-io'));
+      expect(missing, contains('opt-in-keeps-short-range-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
