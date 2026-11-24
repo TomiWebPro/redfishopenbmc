@@ -14944,3 +14944,20 @@
 - Push the single commit (never force-push). AUDIT FIRST for a genuinely new unguarded seam (EP-P23 degenerate hierarchical URI, EP-S21 hostile OEM console shapes, EP-U28 RTL-locale rendering), never churn. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:rf-gate — MERGED build/rf-platform (no Web Share / remote-cast exfiltration guard, check#12116)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#12116 explicit `CHECK: PASS` for exact tip `6e66db2` (analyze 0, targeted 176/176, no TLS weakening, 4 allowlisted paths). Verified branch HEAD unchanged, merge-base `8fac77c` ancestor of `main`, conflict-free, clean tree; merged `build/rf-platform` into `main` via `--no-ff` → `60d3f85` (parents `df3a61d` / `6e66db2`).
+- Merged guard adds the RP-1 no-Web-Share / remote-cast / external-display exfiltration acceptance box (`WEBVIEW_TLS_MATRIX.md`) + evidence markers + RED guard, with hard `bypassShareCastExfiltration == false` getter and policy tests; no dependency change, no production TLS weakening.
+
+**Verification:**
+- `flutter analyze` 0 issues; full `flutter test --coverage --concurrency=4` 2777 passed / 1 skipped (baseline 2773 +4 merged tests); coverage gates PASS overall 90.6% / scoped 90.4% / kvm 97.7% / kvm-platform 97.6%, exit 0; asset + unattended guards OK; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; first-parent diff = 4 allowlisted files (194 insertions); deps unchanged; TLS-weakening + secret scan clean.
+
+**Decisions:**
+- DMTF 85-test emulator skipped (policy getter + doc + tests only; no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85). No issue closed (#009/#021 stay human-gated). No new stash; five pre-existing stashes untouched; no force-push, history rewrite, `git clean`, or file deletion. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Next rf-gate run: re-check `rf-platform-check` verdict first; `--no-ff` merge only a PASS branch; NO-OP if no new commits. Builder continues audit-first dept heads; close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
