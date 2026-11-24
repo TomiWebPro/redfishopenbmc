@@ -2125,6 +2125,45 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassWebMidiExfiltration => false;
 
+  /// Always `false`: the short-range radio (Web Bluetooth / Web NFC) channel is
+  /// NEVER available to attacker-influenced console content, not even by the
+  /// test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content use a
+  /// proximity-wireless local-hardware channel to move privileged
+  /// management-session data (KVM frame handles, session tokens, operator
+  /// credentials, managed-host inventory) to a physically nearby attacker
+  /// device: no `navigator.bluetooth.requestDevice()` grant, no
+  /// `GATT characteristic writeValue()` / `startNotifications()` stream and no
+  /// `NDEFReader.write()` / Web NFC tag write. This is a script-driven,
+  /// short-range radio byte stream that bypasses every network egress control
+  /// and needs no socket, form POST, navigation or subresource request, so a
+  /// `connect-src 'self'` allowlist alone does not confine it. Console content
+  /// is served by the BMC and is therefore attacker-influenced: a compromised /
+  /// spoofed BMC or injected script must never obtain a short-range radio
+  /// handle or push a byte stream to a nearby device, on every target, in
+  /// strict mode and with the flag both off and on.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content open a short-range radio stream. The test-only self-signed opt-in
+  /// relaxes ONLY that leaf's trust for the expected host via a scoped
+  /// per-connection verifier; it must never grant a short-range radio stream
+  /// just to make a console render or to debug it. Operator/app-initiated use
+  /// of Bluetooth / NFC is a separate functional path and stays unaffected.
+  ///
+  /// This box governs the short-range radio byte stream, so it is distinct from
+  /// the wired USB/serial/HID peripheral I/O box ([bypassPeripheralIoExfiltration])
+  /// and the musical-instrument MIDI byte stream ([bypassWebMidiExfiltration]) —
+  /// both physically attached wired devices — and from generic device-permission
+  /// controls ([bypassDevicePermissionControls]), which govern the camera /
+  /// microphone / geolocation capability grants and native permission prompts
+  /// rather than a specific short-range radio byte stream. It is also distinct
+  /// from the outbound egress allowlist ([bypassOutboundEgressAllowlist]) (HTTP(S)
+  /// network destinations, not a nearby radio peer). See `WEBVIEW_TLS_MATRIX.md`
+  /// (RP-1).
+  bool get bypassShortRangeRadioExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

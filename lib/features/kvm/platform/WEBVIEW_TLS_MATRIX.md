@@ -2241,6 +2241,47 @@ flag stays off for that target.
       outbound egress allowlist (`bypassOutboundEgressAllowlist`) (HTTP(S)
       network destinations, not a physically attached device). Verified per
       target before the flag is flipped.
+* [ ] **No short-range radio (Web Bluetooth / Web NFC) exfiltration** — the
+      embedded WebView must not let attacker-influenced console content use a
+      proximity-wireless local-hardware channel to move privileged
+      management-session data (KVM frame handles, session tokens, operator
+      credentials, managed-host inventory) to a physically nearby attacker
+      device: no `navigator.bluetooth.requestDevice()` / Bluetooth device grant,
+      no `GATT characteristic writeValue()` / `startNotifications()` stream, no
+      `NDEFReader.write()` / Web NFC tag write and no paired-device data push
+      induced by console content. This is a script-driven, short-range radio
+      byte stream to a physically nearby device that bypasses every network
+      egress control and needs no socket, form POST, navigation or subresource
+      request — `connect-src 'self'` does not confine it because no HTTP(S)
+      connection is opened. Console content is served by the BMC and is
+      therefore attacker-influenced: a compromised / spoofed BMC or injected
+      script must never obtain a short-range radio handle or push a byte stream
+      to a nearby device, on every target, in strict mode and with the flag both
+      off and on. Verified per target (attempt to request a Bluetooth device,
+      write a GATT characteristic and push an NDEF record with the flag both off
+      and on; observe the Console app grants no short-range radio access) before
+      the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult
+      (`KvmWebViewPolicy.bypassShortRangeRadioExfiltration`, always `false`): the
+      opt-in never bypasses short-range radio exfiltration — console content can
+      never open a Web Bluetooth / Web NFC stream carrying privileged session
+      data, in strict mode and with the flag both off and on. The test-only
+      self-signed opt-in relaxes ONLY the test BMC's untrusted server leaf for
+      the expected host, via a scoped per-connection verifier; it must never
+      grant a short-range radio stream just to make a console render or to debug
+      it. Operator/app-initiated use of Bluetooth / NFC is a separate functional
+      path and stays unaffected. This box governs the short-range radio
+      byte-stream channel, so it is distinct from the wired USB/serial/HID
+      peripheral I/O box (`bypassPeripheralIoExfiltration`) and the musical-
+      instrument MIDI byte stream (`bypassWebMidiExfiltration`) — both are
+      physically attached wired devices — from generic device-permission
+      controls (`bypassDevicePermissionControls`), which govern the camera /
+      microphone / geolocation capability grants and native permission prompts
+      rather than a specific short-range radio byte stream, and from the
+      outbound egress allowlist (`bypassOutboundEgressAllowlist`) (HTTP(S)
+      network destinations, not a nearby radio peer). Verified per target before
+      the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
