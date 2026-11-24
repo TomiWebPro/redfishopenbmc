@@ -5,6 +5,34 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 02:50 UTC: another fresh, display-only, unblocked slice of the
+     still-open #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U24 pins ONE
+     long unbreakable chip, EP-U27 (queued) pins a DENSE 12+ chip set, and EP-U22/EP-U23 pin bidi/long
+     display strings, but nothing renders the DEGENERATE EMPTY extreme — zero `ConnectTypesSupported`
+     tokens plus blank / whitespace-only labels — through both real operator cards AND the viewer at
+     once: a one-sided "emit an empty chip" edit, an empty merged `excludeSemantics` node (screen-reader
+     announcement with no visible text), or a crash on the blank label could slip past every populated
+     surface suite. Display-only; the human-gated WebView/TLS rendering stays gated and is NOT re-split.
+     AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-U29 Degenerate-empty connect-type / blank-label render agreement across both cards and the
+        viewer:
+        pump one manager whose console(s) expose ZERO `ConnectTypesSupported` tokens and blank /
+        whitespace-only display labels through both real operator cards and `KvmConsoleViewerPage` at
+        320/800/1300 px, pinning that no surface emits an empty chip or an empty screen-reader-only
+        announcement node, every rendered merged `excludeSemantics` node has visible text == announced
+        label (or is absent consistently on all three surfaces), the rendered chip / label / link set
+        agrees across both cards and the model, no overflow occurs, and copy / URI affordances stay in
+        their fail-closed state unchanged. Include a small populated control proving the normal chip
+        row is unchanged. AUDIT FIRST: if all three surfaces already collapse the empty set identically
+        with merged-node parity and no empty announcement, record the audit and add nothing; RED->GREEN
+        only on a genuine divergence, never churn. Display-only; test-only writes.
+        Dept: rf-ui
+        Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_capability_card_test.dart && flutter analyze`
+                (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+                `lib/features/kvm/views/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+                pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 22:45 UTC: another fresh, display-only, unblocked slice of the still-open
      #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U22 pins bidi/RTL control
      CHARACTERS inside display strings, EP-U23/EP-U25 pin long-name/Primary-badge text, but nothing

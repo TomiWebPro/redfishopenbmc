@@ -5,6 +5,34 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 02:50 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open #009/#021 manager-walk epic. EP-S12/S13/S17/S20/S21 pin malformed `Members` entries,
+     cross-surface manager-skip, transport agreement, top-level document shapes and hostile OEM console
+     shapes, and RS-7 pins non-map manager BODIES — but nothing drives a PER-MANAGER FETCH FAILURE (a
+     member whose `/Managers/{id}` GET throws / times out / returns a non-success while sibling members
+     stay healthy) through the real walk and asserts `fetchConsoles()` / `fetchCapabilities()` /
+     `fetchCapability(id)` agree on the survivor set and never propagate one bad member. Pure read-only
+     service characterization; the credentialed-Primary decision (EP-S8) and RM-11 stay blocked and are
+     NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-S22 Per-manager fetch-failure tolerance cross-surface agreement across the `/Managers` walk:
+       over an in-temp mock client where one or more `Members` resolve to a GET that throws / returns a
+       non-success / times out while sibling members stay healthy (plus an all-healthy control and an
+       all-failing control), pin that `fetchConsoles()` and `fetchCapabilities()` surface the SAME
+       healthy survivor set once, agree on `managerId` / connect-URI / enablement / limit field-for-field,
+       `fetchCapability(id)` resolves only a survivor and never a ghost or a failed member, and NO single
+       failed member aborts the whole walk or throws — with deterministic Primary and byte-exact healthy
+       controls. AUDIT FIRST: if both discovery surfaces already share one failure-tolerant walk that
+       skips bad members identically by construction, record the audit and add nothing; RED->GREEN only
+       on a genuine divergence, never churn. Read-only service work; no wire/transport/TLS change, no
+       dependency, no WebView/protocol import, no behaviour decision folded in.
+       Dept: rf-service
+       Verify: `flutter test test/features/kvm/kvm_service_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/kvm_service.dart` + `test/features/kvm/**`; `git diff --exit-code --
+               pubspec.yaml pubspec.lock`; no wire/TLS change, no WebView/protocol import, no production
+               TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 22:45 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 manager-walk epic. EP-S12/S13/S17/S20 pin malformed `Members`/root shapes,
      cross-surface manager-skip and transport agreement, RM-20 pins hostile OEM enrichment at the model

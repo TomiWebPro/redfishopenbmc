@@ -4,6 +4,36 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 02:50 UTC: carves a fresh, machine-checkable, unblocked slice of
+     the still-open #009/#021 model epic (never-empty-well malformed-payload tolerance, MULTI_DEPT
+     hard rule 10). RM-5/RM-22 pin VALID connect-type token lists (trim/dedup/confusables) and RM-24/
+     RM-25 pin non-boolean / non-integer enablement and session scalars, but nothing drives a HOSTILE
+     CONTAINER SHAPE for `ConnectTypesSupported` itself (bare string, numeric, bool, map, null, or a
+     list mixing non-string members) through BOTH `fromManager` factories at once: a one-sided
+     "string -> single token" coercion could populate one card's chip list while the other stays
+     empty, or throw on a map/list member, with every single-factory suite GREEN. Read-only model
+     characterization; the two deliberate behaviour decisions (RM-11 mixed regime, EP-S8 credentialed
+     Primary) stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence,
+     never churn. No code touched. -->
+
+- [ ] RM-26 Hostile `ConnectTypesSupported` container-shape cross-factory agreement:
+       over a matrix of `Manager` bodies whose Graphical/Serial/Remote console blocks carry
+       `ConnectTypesSupported` as hostile non-list JSON values (scalar string `"KVMIP"`, numeric, bool,
+       map, null) AND as lists mixing non-string members (int, bool, null, nested list/map) alongside a
+       valid `["KVMIP", "HTML5"]` control, pin that `KvmConsole.fromManager` and
+       `KvmCapability.fromManager` derive the identical fail-closed connect-type set, never throw on a
+       non-list / non-string member, agree field-for-field on the rendered chip tokens / `connectTypes`
+       / `supported` flags for the same body, and leave the valid control byte-exact. AUDIT FIRST: if
+       both factories already route every read through one shared normalizer and derive the same set by
+       construction, record the audit and add nothing; RED->GREEN only on a genuine divergence, never
+       churn. Read-only model work; no wire/transport/TLS change, no dependency, no WebView/protocol
+       import, no behaviour decision folded in.
+       Dept: rf-model
+       Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/models/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+               pubspec.lock`; no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-23 22:45 UTC: carves another fresh, machine-checkable, unblocked slice of
      the still-open #009/#021 model epic (never-empty-well hostile-payload tolerance, MULTI_DEPT hard
      rule 10). RM-24 pins hostile non-boolean SERVICE ENABLED scalars and RS-10/EP-U19 pin the session
