@@ -2006,6 +2006,52 @@ flag stays off for that target.
       data-transfer gesture): those govern other message, request, output or input
       surfaces, not the browsing context name / opener channel. Verified per
       target before the flag is flipped.
+* [ ] **No DNS-based / hostname-encoding exfiltration** — the embedded WebView
+      must not let attacker-influenced console content leak privileged
+      management-session data (KVM frame handles, session tokens, operator
+      credentials, managed-host inventory) through the Domain Name System: no
+      encoding of a secret into DNS hostname labels / subdomains of an
+      attacker-controlled hostname (e.g. `<token>.attacker.example`) followed
+      by a lookup via a subresource load, a DNS-prefetch hint or a websocket
+      handshake, so that the query reaches the attacker's authoritative DNS
+      resolver and is recoverable from its logs even when no HTTP response is
+      returned and `connect-src 'self'` is intact. Console content is served by
+      the BMC and is therefore attacker-influenced: DNS exfiltration is a
+      distinct resolution-time data channel, not a network response body, so a
+      programmatic HTTP egress allowlist alone does not confine it. Every DNS
+      lookup induced by console content must resolve only approved origins:
+      hostname-encoding of session data must be stripped, DNS-prefetch to
+      non-approved hosts must be denied, and resolution must be confined at the
+      network layer to the approved console hostname on every target, in strict
+      mode and with the flag both off and on. Verified per target (inspect DNS
+      resolution / prefetch behaviour and confirm no console-induced lookup
+      carries privileged data to a non-approved resolver) before the flag is
+      flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassDnsExfiltration`, always
+      `false`): the test-only opt-in never bypasses DNS exfiltration — console
+      content can never encode privileged data into hostname labels or resolve
+      a non-approved hostname, in strict mode and with the flag both off and
+      on. The opt-in relaxes ONLY the test BMC's untrusted server leaf for the
+      expected host, via a scoped per-connection verifier; it must never grant
+      a DNS lookup to a non-approved hostname just to make a console render or
+      to debug it. Operator/app-initiated resolution of the approved console
+      hostname is a separate functional path and stays unaffected. This box
+      governs the DNS resolution channel itself, so it is distinct from the
+      outbound egress allowlist (`bypassOutboundEgressAllowlist`) (the
+      destination of programmatic HTTP(S) connections, not the resolver), from
+      HTML-driven subresource beacons (`bypassHtmlSubresourceExfiltration`) and
+      CSS-driven requests (`bypassCssExfiltration`) (element/style attributes,
+      not the hostname resolution they trigger), from speculative prefetch
+      (`bypassSpeculationRulesEgress`) (browser-generated navigation fetches),
+      from private-network egress protection
+      (`bypassPrivateNetworkEgressProtection`) (the address class of a resolved
+      destination) and from validated-origin binding
+      (`bypassValidatedOriginBinding`) (the resolved address of the validated
+      top-level console origin at connect time): those govern HTTP requests,
+      element attributes, navigation or the top-level address, not DNS encoding
+      of privileged data into hostname labels. Verified per target before the
+      flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
