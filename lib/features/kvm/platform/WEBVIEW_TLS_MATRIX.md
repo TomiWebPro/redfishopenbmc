@@ -1547,6 +1547,42 @@ flag stays off for that target.
       channels: those govern the connection, its other credentials and its
       outputs, not the page's access to the credential-management API. Verified
       per target before the flag is flipped.
+* [ ] **No speculative prefetch / prerender (Speculation Rules API)
+      exfiltration** — the embedded WebView must not let attacker-influenced
+      console content trigger a browser-generated speculative request that leaks
+      the privileged console handle / session token to a non-approved origin:
+      no `<script type="speculationrules">` `prefetch` / `prerender` rule, no
+      `<link rel="prefetch">` / `<link rel="prerender">` and no scripted
+      `SpeculationRules` insertion making the browser speculatively fetch or
+      render a crafted URL. The console URI may carry a session token, so a
+      speculative prefetch/prerender can hand it to an attacker origin with no
+      user activation, visible navigation or script-opened socket. Console
+      content is served by the BMC and is therefore attacker-influenced:
+      speculative requests are a browser-generated speculative request channel
+      governed by the CSP `prefetch-src` directive (or `default-src`), NOT
+      `connect-src`, so a `connect-src 'self'` egress allowlist alone does not
+      confine them. Speculative prefetch/prerender must be disabled at the
+      WebView (speculation rules ignored, speculative requests denied at request
+      interception, CSP `prefetch-src 'none'`) on every target, in strict mode
+      and with the flag both off and on. Operator/app-initiated navigation is a
+      separate functional path and stays unaffected.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassSpeculationRulesEgress`,
+      always `false`): it never bypasses speculative prefetch / prerender
+      exfiltration — console content can never leak privileged session data via
+      a browser-generated speculative request, in strict mode and with the flag
+      both off and on. The opt-in relaxes ONLY the test BMC's untrusted server
+      leaf for the expected host, via a scoped per-connection verifier; it must
+      never grant a speculative request just to make a console render or to
+      debug it. This box governs the browser-generated speculative request
+      channel, so it is distinct from hyperlink auditing (`<a ping>`) (a
+      background auditing POST fired on link activation), the outbound egress
+      allowlist (programmatic fetch / XHR / WebSocket / WebRTC / sendBeacon
+      connections), top-level navigation confinement (where the main frame
+      navigates) and cross-origin form submission (an HTML form POST body):
+      those govern other request, navigation or output surfaces, not a
+      browser-initiated speculative fetch/prerender. Verified per target before
+      the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

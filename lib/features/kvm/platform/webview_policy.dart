@@ -1429,6 +1429,46 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassCredentialManagementApiAccess => false;
 
+  /// Always `false`: speculative prefetch / prerender (the Speculation Rules
+  /// API) exfiltration is NEVER enabled, not even by the test-only self-signed
+  /// opt-in.
+  ///
+  /// The embedded WebView must not let attacker-influenced console content
+  /// trigger a browser-generated speculative request: no `<script
+  /// type="speculationrules">` `prefetch` / `prerender` rule, no
+  /// `<link rel="prefetch">` / `<link rel="prerender">` and no scripted
+  /// `SpeculationRules` insertion that makes the browser speculatively fetch or
+  /// render a non-approved origin. The privileged console handle may be carried
+  /// in a URL (userinfo, path or query), so a speculative fetch/prerender of a
+  /// crafted relative or absolute URL can hand that session token to an
+  /// attacker origin without any user activation, visible navigation or
+  /// script-opened socket. Console content is served by the BMC and is
+  /// therefore attacker-influenced: speculative requests are a browser-
+  /// generated request channel governed by the CSP `prefetch-src` directive (or
+  /// `default-src`), NOT `connect-src`, so a `connect-src 'self'` egress
+  /// allowlist alone does not confine them. Speculative prefetch/prerender must
+  /// be disabled at the WebView (speculation rules stripped/ignored, speculative
+  /// requests denied at request interception, CSP `prefetch-src 'none'`), on
+  /// every target, in strict mode and with the flag both off and on. Tolerating
+  /// the test BMC's untrusted server leaf relaxes ONLY that leaf's trust for the
+  /// expected host, via a scoped per-connection verifier; it must never grant a
+  /// speculative request just to make a console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content leak privileged session data via a speculative prefetch/prerender.
+  /// It governs the browser-generated speculative request channel, so it is
+  /// distinct from hyperlink auditing ([bypassHyperlinkAuditingExfiltration])
+  /// (a background auditing POST fired on link activation), the outbound egress
+  /// allowlist ([bypassOutboundEgressAllowlist]) (programmatic fetch / XHR /
+  /// WebSocket / WebRTC / sendBeacon connections), top-level navigation
+  /// confinement ([bypassTopLevelNavigationConfinement]) (where the main frame
+  /// navigates) and cross-origin form submission
+  /// ([bypassCrossOriginFormSubmission]) (an HTML form POST body): those govern
+  /// other request, navigation or output surfaces, not a browser-initiated
+  /// speculative fetch/prerender. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassSpeculationRulesEgress => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
