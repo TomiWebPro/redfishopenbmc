@@ -1744,6 +1744,49 @@ class KvmWebViewPolicy {
   /// See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassHtmlSubresourceExfiltration => false;
 
+  /// Always `false`: worker-script exfiltration is NEVER available to
+  /// attacker-influenced console content, not even by the test-only self-signed
+  /// opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content open a script
+  /// execution context that runs off the main thread and can load further
+  /// scripts/modules from a non-approved origin: no `new Worker(...)` (dedicated
+  /// worker), no `new SharedWorker(...)` (shared worker), no module worker
+  /// (`new Worker(url, { type: 'module' })`) and no `importScripts(...)` inside a
+  /// worker. A worker is a distinct off-main-thread script/module-loading
+  /// channel: its worker-script request is governed by the CSP `worker-src` /
+  /// `child-src` / `script-src` directives (not `connect-src`), and a same-origin
+  /// worker can still run script that reads privileged console DOM (KVM frame
+  /// handles, session tokens, operator credentials, managed-host inventory) and
+  /// hand it to a programmatic egress path. Console content is served by the BMC
+  /// and is therefore attacker-influenced: a compromised/spoofed BMC or injected
+  /// script must never turn the trusted frame into a worker-based script-loading
+  /// and exfiltration channel. Every worker-script load must be denied at the
+  /// WebView (worker creation refused, worker-src pinned to the approved
+  /// same-origin HTTPS console, requests denied at interception) on every
+  /// target, in strict mode and with the flag both off and on.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits a worker
+  /// script or imported module to be loaded from a non-approved origin.
+  /// Tolerating the test BMC's untrusted server leaf relaxes ONLY that leaf's
+  /// trust for the expected host, via a scoped per-connection verifier; it must
+  /// never grant a worker script just to make a console render or to debug it.
+  ///
+  /// This box governs the off-main-thread worker script/module-loading channel,
+  /// so it is distinct from service worker registration
+  /// ([bypassServiceWorkerRegistration]) (a persistent, request-intercepting
+  /// background script that outlives the page), from HTML `<script src>` markup
+  /// loads inside the HTML-driven subresource box
+  /// ([bypassHtmlSubresourceExfiltration]) (a document-element beacon), from
+  /// CSS-driven subresource exfiltration ([bypassCssExfiltration]) (stylesheet
+  /// `@import` / `url()` / `@font-face` rules) and from the programmatic outbound
+  /// egress allowlist ([bypassOutboundEgressAllowlist]) (main-thread fetch / XHR
+  /// / WebSocket / sendBeacon confined by `connect-src`): those govern other
+  /// script, request or output surfaces, not worker script/module loading. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassWorkerScriptExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
