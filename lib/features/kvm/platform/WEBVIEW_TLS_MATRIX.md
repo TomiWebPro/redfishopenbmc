@@ -1699,6 +1699,45 @@ flag stays off for that target.
       web-messaging isolation (in-process postMessage): those govern other
       connection, capture or messaging surfaces, not a peer-to-peer UDP data
       channel. Verified per target before the flag is flipped.
+* [ ] **No File System Access API local-file read / write exfiltration** — the
+      embedded WebView must not let attacker-influenced console content use the
+      browser's File System Access API to read local files into the trusted
+      frame or write privileged console data (KVM frames, session tokens,
+      operator credentials, managed-host inventory) to a durable,
+      console-chosen file path: no `window.showOpenFilePicker()` /
+      `showSaveFilePicker()` / `showDirectoryPicker()`, no
+      `FileSystemFileHandle.createWritable()` /
+      `FileSystemDirectoryHandle` traversal and no Origin Private File System
+      (OPFS) `navigator.storage.getDirectory()` write induced by console
+      content. Console content is served by the BMC and is therefore
+      attacker-influenced: unlike a passive `<input type=file>` upload, this API
+      returns live file handles the script can both read (local secrets into the
+      console frame) and write (an attacker-chosen durable file readable by any
+      co-resident app), a local-file read/write channel independent of the
+      outbound network egress allowlist. Every File System Access API call from
+      console content must be denied at the WebView on every target, in strict
+      mode and with the flag both off and on.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassFileSystemAccessApi`,
+      always `false`): the test-only opt-in never bypasses File System Access
+      API local-file read/write — console content can never read a local file
+      via a file handle nor write a durable file to disk, in strict mode and
+      with the flag both off and on. The opt-in relaxes ONLY the test BMC's
+      untrusted server leaf for the expected host, via a scoped per-connection
+      verifier; it must never grant a file system handle just to make a console
+      render or to debug it. This box governs the script-driven File System
+      Access API read/write channel, so it is distinct from the file chooser
+      (`bypassFileChooserAccess`) (the operator-mediated `<input type=file>` /
+      `onShowFileChooser` selection uploaded to the page), local file / content
+      access (`bypassLocalFileAccess`) (the page loading `file://` / `content://`
+      URLs), distinct from sensitive data at rest
+      (`bypassSensitiveDataAtRestProtection`)
+      (the WebView's own automatic cache/storage and background snapshot) and
+      arbitrary file download (`bypassArbitraryFileDownload`) (a network-
+      response file written to a download destination): those govern other
+      local-read, automatic-storage or network-response surfaces, not a direct
+      script-driven filesystem read/write via a file handle. Verified per target
+      before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
