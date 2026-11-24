@@ -1620,6 +1620,40 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassWebTransportExfiltration => false;
 
+  /// Always `false`: direct peripheral I/O (WebUSB / WebSerial / WebHID) is
+  /// NEVER available to attacker-influenced console content, not even by the
+  /// test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content enumerate or
+  /// open a connection to a locally attached USB device, serial port or HID
+  /// peripheral through WebUSB (`navigator.usb.*`), WebSerial
+  /// (`navigator.serial.*`) or WebHID (`navigator.hid.*`) to smuggle privileged
+  /// KVM frames, session tokens, operator credentials or managed-host inventory
+  /// to a physically attached device — a local-hardware data channel that
+  /// bypasses every network egress control — nor to relay that data off the
+  /// host through a connected peripheral. Console content is served by the BMC
+  /// and is therefore attacker-influenced: a compromised/spoofed BMC or script
+  /// in the page must never obtain a peripheral I/O stream, on every target, in
+  /// strict mode and with the flag both off and on.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content open a peripheral I/O channel. It governs the script-driven local
+  /// hardware I/O data channel, so it is distinct from device-permission
+  /// controls ([bypassDevicePermissionControls]) (generic capability grants /
+  /// native permission prompts such as camera, microphone, geolocation,
+  /// Bluetooth / NFC — not a direct USB/serial/HID byte stream), the File System
+  /// Access API ([bypassFileSystemAccessApi]) (filesystem handles / durable file
+  /// reads and writes, not peripheral I/O) and the outbound egress allowlist
+  /// ([bypassOutboundEgressAllowlist]) (HTTP(S) network destinations, not a
+  /// physically attached device). Tolerating the test BMC's untrusted server
+  /// leaf relaxes ONLY that leaf's trust for the expected host via a scoped
+  /// per-connection verifier; it must never grant a peripheral I/O stream just
+  /// to make a console render or to debug it. See `WEBVIEW_TLS_MATRIX.md`
+  /// (RP-1). This invariant never bypasses peripheral I/O, and the opt-in must
+  /// never grant a peripheral I/O stream to console content.
+  bool get bypassPeripheralIoExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
