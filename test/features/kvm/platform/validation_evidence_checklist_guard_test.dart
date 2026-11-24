@@ -29,6 +29,11 @@
 // no-web-share / remote-cast / external-display exfiltration (hard config-
 // uration-independent invariant; the opt-in never lets attacker-influenced
 // console content hand privileged data out via a share sheet or cast receiver),
+// no-cross-origin web-messaging exfiltration (postMessage / BroadcastChannel /
+// MessageChannel; hard configuration-independent invariant; the opt-in never
+// lets attacker-influenced console content post privileged session data to a
+// foreign-origin context — an in-process channel distinct from a native bridge,
+// network egress, form POST or the system clipboard),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -668,6 +673,31 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'not the clipboard permission-prompt surface'
   ),
   (name: 'opt-in-keeps-clipboard-denied', marker: 'never grant a clipboard'),
+  // No cross-origin web-messaging exfiltration (postMessage/BroadcastChannel):
+  // an in-process cross-origin data channel, not a network request, clipboard
+  // write or app-injected native bridge.
+  (
+    name: 'no-cross-origin-messaging',
+    marker: 'cross-origin web-messaging exfiltration'
+  ),
+  (name: 'no-postmessage', marker: 'postmessage'),
+  (name: 'no-broadcast-channel', marker: 'broadcastchannel'),
+  (
+    name: 'cross-origin-messaging-never-bypassed',
+    marker: 'never bypasses cross-origin web-messaging isolation'
+  ),
+  (
+    name: 'cross-origin-messaging-policy-getter',
+    marker: 'bypasscrossoriginmessagingisolation'
+  ),
+  (
+    name: 'cross-origin-messaging-distinct-from-native-bridge',
+    marker: 'distinct from native bridge isolation'
+  ),
+  (
+    name: 'opt-in-keeps-messaging-denied',
+    marker: 'never grant a cross-origin messaging'
+  ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -1728,6 +1758,26 @@ void main() {
       expect(missing, contains('clipboard-policy-getter'));
       expect(missing, contains('clipboard-distinct-from-device-perms'));
       expect(missing, contains('opt-in-keeps-clipboard-denied'));
+    });
+
+    test('RED: dropping the no-cross-origin web-messaging exfiltration box '
+        'fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutMessaging = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'cross-origin web-messaging|bypasscrossoriginmessagingisolation|postmessage|broadcastchannel|distinct from native bridge isolation|never grant a cross-origin messaging')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutMessaging);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-cross-origin-messaging'));
+      expect(missing, contains('no-postmessage'));
+      expect(missing, contains('no-broadcast-channel'));
+      expect(missing, contains('cross-origin-messaging-never-bypassed'));
+      expect(missing, contains('cross-origin-messaging-policy-getter'));
+      expect(missing, contains('cross-origin-messaging-distinct-from-native-bridge'));
+      expect(missing, contains('opt-in-keeps-messaging-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

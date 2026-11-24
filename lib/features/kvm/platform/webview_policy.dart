@@ -1273,6 +1273,45 @@ class KvmWebViewPolicy {
   /// the system clipboard. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassClipboardIsolation => false;
 
+  /// Always `false`: cross-origin web-messaging isolation is NEVER bypassed,
+  /// not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let attacker-influenced console content hand
+  /// privileged session data (session tokens, credentials, KVM frames, managed-
+  /// host inventory) to another browsing context or same-device origin through
+  /// the HTML5 web-messaging APIs: no `window.postMessage()` to a foreign-origin
+  /// target, no `BroadcastChannel` / `MessageChannel` message to a different
+  /// origin and no scripted cross-frame message carrying console data outside
+  /// the validated same-origin HTTPS console. Console content is served by the
+  /// BMC and is therefore attacker-influenced (a compromised/spoofed BMC or
+  /// script running in the page): cross-origin messaging is an in-process data
+  /// channel that needs no network request, clipboard write or native bridge,
+  /// so it is invisible to the outbound egress allowlist, clipboard isolation
+  /// and native-bridge checks. Every cross-origin message from console content
+  /// is denied by default on every target, in strict mode and with the flag
+  /// both off and on. Tolerating the test BMC's untrusted server leaf relaxes
+  /// ONLY that leaf's trust for the expected host, via a scoped per-connection
+  /// verifier; it must never grant a cross-origin messaging channel just to
+  /// make a console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content exfiltrate privileged data to a foreign-origin context via
+  /// `postMessage` / `BroadcastChannel` / `MessageChannel`. It governs the
+  /// in-process cross-origin messaging data channel itself, so it is distinct
+  /// from native bridge isolation ([bypassNativeBridgeIsolation]) (an
+  /// app-injected bridge exposed to the page, not web-standard messaging
+  /// between origins), outbound egress allowlist
+  /// ([bypassOutboundEgressAllowlist]) (programmatic network connections),
+  /// cross-origin form submission ([bypassCrossOriginFormSubmission]) (an HTML
+  /// form POST), top-level navigation confinement
+  /// ([bypassTopLevelNavigationConfinement]) (where the main frame navigates)
+  /// and clipboard isolation ([bypassClipboardIsolation]) (the cross-app system
+  /// clipboard): those govern other code-execution, request, output or storage
+  /// surfaces, not the web-messaging data channel. See `WEBVIEW_TLS_MATRIX.md`
+  /// (RP-1).
+  bool get bypassCrossOriginMessagingIsolation => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

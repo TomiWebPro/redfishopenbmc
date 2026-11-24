@@ -1431,6 +1431,40 @@ flag stays off for that target.
       remote-cast exfiltration (a receiver outside the app) and outbound egress
       (programmatic network connections). Verified per target before the flag
       is flipped.
+* [ ] **No cross-origin web-messaging exfiltration (`postMessage` /
+      `BroadcastChannel` / `MessageChannel`)** — the embedded WebView must not
+      let attacker-influenced console content hand privileged session data
+      (session tokens, credentials, KVM frames, managed-host inventory) to
+      another browsing context or same-device origin through the HTML5 web
+      messaging APIs: no `window.postMessage()` to a foreign-origin target,
+      no `BroadcastChannel` / `MessageChannel` message to a different origin,
+      and no scripted cross-frame message that carries console data to any
+      context outside the validated same-origin HTTPS console. Console content
+      is served by the BMC and is therefore attacker-influenced: cross-origin
+      messaging is an in-process data channel that needs no network request,
+      clipboard write or native bridge, so it is invisible to the outbound
+      egress allowlist, clipboard isolation and native-bridge checks. Every
+      cross-origin message from console content must be denied by default at
+      the WebView on every target, in strict mode and with the flag both off and
+      on. Verified per target (inspect the WebView message / frame callbacks and
+      confirm console content cannot post a message to any foreign-origin
+      context) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassCrossOriginMessagingIsolation`,
+      always `false`): the test-only opt-in never bypasses cross-origin
+      web-messaging isolation — console content can never exfiltrate privileged
+      session data through `postMessage` / `BroadcastChannel` / `MessageChannel`
+      to a foreign-origin context, in strict mode and with the flag both off
+      and on. The opt-in relaxes ONLY the test BMC's untrusted server leaf for
+      the expected host, via a scoped per-connection verifier; it must never
+      grant a cross-origin messaging channel just to make a console render or
+      to debug it. This box governs the in-process cross-origin messaging data
+      channel itself, so it is distinct from native bridge isolation (an
+      app-injected bridge exposed to the page, not web-standard messaging
+      between origins), outbound egress (programmatic network connections),
+      cross-origin form submission (an HTML form POST), top-level navigation
+      (where the main frame navigates) and clipboard isolation (the cross-app
+      system clipboard). Verified per target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
