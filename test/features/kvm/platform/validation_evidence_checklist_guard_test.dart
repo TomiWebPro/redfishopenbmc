@@ -111,6 +111,13 @@
 // console content spawn a worker or import a cross-origin script to smuggle
 // privileged session data — distinct from service-worker registration, HTML
 // <script src> markup, CSS subresources and programmatic egress),
+// no-base-uri-hijacking / relative-URL resolution exfiltration (<base href>
+// retargets every relative subresource / form / link URL to a non-approved
+// origin; a declarative URL-resolution channel governed by CSP base-uri, not
+// connect-src; hard configuration-independent invariant; the opt-in never lets
+// attacker-influenced console content inject a base element — distinct from
+// HTML subresource beacons, CSS rules, programmatic egress, form POST and
+// navigation confinement),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -1071,6 +1078,22 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'opt-in-keeps-worker-script-denied',
     marker: 'never grant a worker'
   ),
+  // No base-URI hijacking / relative-URL resolution exfiltration: injecting a
+  // <base href> element retargets every relative subresource / form / link URL
+  // to a non-approved origin — a declarative URL-resolution channel governed by
+  // the CSP base-uri directive, NOT connect-src — distinct from HTML subresource
+  // beacons, programmatic egress, form submission and navigation confinement.
+  (name: 'no-base-uri-hijacking', marker: 'base-uri hijacking'),
+  (name: 'no-base-href-element', marker: '<base href'),
+  (name: 'base-uri-csp-directive', marker: 'base-uri directive'),
+  (name: 'relative-url-retargeting', marker: 'relative url'),
+  (name: 'base-uri-never-bypassed', marker: 'never bypasses base-uri hijacking'),
+  (name: 'base-uri-policy-getter', marker: 'bypassbaseurihijacking'),
+  (
+    name: 'base-uri-distinct-from-subresource',
+    marker: 'distinct from html-driven subresource'
+  ),
+  (name: 'opt-in-keeps-base-uri-denied', marker: 'never grant a base uri'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -2440,6 +2463,27 @@ void main() {
       expect(missing, contains('worker-script-policy-getter'));
       expect(missing, contains('worker-script-distinct-from-service-worker'));
       expect(missing, contains('opt-in-keeps-worker-script-denied'));
+    });
+
+    test('RED: dropping the no-base-URI-hijacking box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutBaseUri = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'base-uri hijacking|<base href|base-uri directive|'
+              r'relative url|never bypasses base-uri|bypassbaseurihijacking|'
+              r'distinct from html-driven subresource|never grant a base uri')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutBaseUri);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-base-uri-hijacking'));
+      expect(missing, contains('no-base-href-element'));
+      expect(missing, contains('base-uri-csp-directive'));
+      expect(missing, contains('relative-url-retargeting'));
+      expect(missing, contains('base-uri-never-bypassed'));
+      expect(missing, contains('base-uri-policy-getter'));
+      expect(missing, contains('base-uri-distinct-from-subresource'));
+      expect(missing, contains('opt-in-keeps-base-uri-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

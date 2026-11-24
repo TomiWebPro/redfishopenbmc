@@ -1925,6 +1925,40 @@ flag stays off for that target.
       `connect-src`): those govern other script, request or output surfaces, not
       worker script/module loading. Verified per target before the flag is
       flipped.
+* [ ] **No base-URI hijacking / relative-URL resolution exfiltration** — the
+      embedded WebView must not let attacker-influenced console content retarget
+      the resolution of relative URLs to a non-approved origin by injecting an
+      HTML `<base href=...>` element. A base element silently rewrites the base
+      URL against which EVERY relative subresource, form action, hyperlink and
+      frame URL resolves, so a trusted path-relative reference in the console can
+      become a cross-origin beacon carrying privileged KVM frame handles, session
+      tokens, operator credentials or managed-host inventory. This is a
+      declarative URL-resolution hijacking channel governed by the CSP base-uri
+      directive (or default-src), NOT connect-src — a connect-src 'self' egress
+      allowlist alone does not confine it. No `<base href` element may be injected
+      or honoured from console content: base elements must be stripped at load and
+      the base-uri directive pinned to 'none'/'self' at the WebView on every
+      target, in strict mode and with the flag both off and on.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassBaseUriHijacking`, always
+      `false`): the test-only opt-in never bypasses base-uri hijacking — console
+      content can never retarget relative URLs to a non-approved origin, in strict
+      mode and with the flag both off and on. The opt-in relaxes ONLY the test
+      BMC's untrusted server leaf for the expected host, via a scoped
+      per-connection verifier; it must never grant a base uri just to make a
+      console render or to debug it. Operator/app-initiated navigation of the
+      console is a separate functional path and stays unaffected. This box governs
+      declarative relative-URL resolution and is distinct from html-driven
+      subresource beacons (`bypassHtmlSubresourceExfiltration`) (explicit src
+      attributes on elements), from CSS-driven subresource exfiltration
+      (`bypassCssExfiltration`) (stylesheet rules), from the programmatic outbound
+      egress allowlist (`bypassOutboundEgressAllowlist`) (fetch / XHR / WebSocket
+      confined by connect-src), from cross-origin form submission
+      (`bypassCrossOriginFormSubmission`) (the form action / POST body) and from
+      top-level navigation confinement (`bypassTopLevelNavigationConfinement`)
+      (where the main frame navigates): those govern other request or navigation
+      surfaces, not the base URL used to resolve relative references. Verified per
+      target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
