@@ -5,6 +5,39 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 10:58 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open #009/#021 manager-walk epic. EP-S12/S13/S17/S20/S21 pin malformed `Members` entries,
+     manager-skip, transport failures, top-level document shapes and hostile OEM shapes, EP-S22 pins
+     per-manager GET failures and EP-S23 pins `@odata.nextLink` pages — but nothing drives a HOSTILE
+     MEMBER `@odata.id` (CRLF / NUL / control, userinfo, plaintext-`http` downgrade, spoofed or
+     confusable authority, relative / scheme-relative forms) through the real `/Managers` walk and
+     asserts `fetchConsoles()` / `fetchCapabilities()` / `fetchCapability(id)` agree on the survivor
+     set, fail closed to the approved origin, and never issue a GET to a non-approved host. Pure
+     read-only service characterization; the credentialed-Primary decision (EP-S8) and RM-11 stay
+     blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never
+     churn. No code touched. -->
+
+- [ ] EP-S24 Hostile member `@odata.id` fail-closed agreement across the `/Managers` walk:
+       over an in-temp mock client whose `/Managers` `Members` carry hostile `@odata.id` values
+       (control / CRLF / NUL, userinfo, plaintext-`http` downgrade, spoofed / confusable authority,
+       relative and scheme-relative forms) alongside a clean absolute control, pin that
+       `fetchConsoles()` and `fetchCapabilities()` take the SAME path with the SAME survivor set and
+       never disagree on manager set / count / `managerId` / connect-URI / enablement / limit
+       field-for-field, that no bad member triggers a GET outside the approved BMC origin (fail
+       closed, never throw), and that `fetchCapability(id)` resolves only an id from the adopted
+       set. Whatever the current contract is (sanitize-and-skip or strict reject) must be identical
+       on both surfaces. AUDIT FIRST: if both discovery surfaces already share one
+       `_fetchManagerBodies()` walk that applies the same fail-closed resolver by construction,
+       record the audit and add nothing; RED->GREEN only on a genuine divergence, never churn.
+       Read-only service work; no wire/transport/TLS change, no dependency, no WebView/protocol
+       import, no behaviour decision folded in.
+       Dept: rf-service
+       Verify: `flutter test test/features/kvm/kvm_service_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/kvm_service.dart` + `lib/redfish/client/**` + `test/features/kvm/**`;
+               `git diff --exit-code -- pubspec.yaml pubspec.lock`; no wire/TLS change, no WebView/protocol
+               import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 06:53 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 manager-walk epic. EP-S12/S13/S17/S20/S21 pin malformed Members entries,
      manager-skip, transport failures, top-level document shapes and hostile OEM shapes, RS-4 pins

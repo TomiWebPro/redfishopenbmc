@@ -5,6 +5,35 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 10:58 UTC: another fresh, display-only, unblocked slice of the
+     still-open #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U21/U31-U34
+     cover display names / chips under RTL x 2.0x, EP-U26 pins copy-affordance merged a11y and RU-2
+     pins session-note / disabled-helper copy consistency at LTR/1.0x — but nothing pumps the two
+     longer static operator strings (the "console persists until manager timeout" session note and
+     the "KVM disabled on BMC" helper) through both real cards AND the viewer under
+     `Directionality.rtl` with `MediaQuery.textScaler` 2.0x at 320/800/1300 px, where a one-sided
+     copy edit or a split merged `excludeSemantics` node could desync one surface while every
+     single-axis suite stayed GREEN. Display-only; the human-gated WebView/TLS rendering stays gated
+     and is NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code
+     touched. -->
+
+- [ ] EP-U36 Session-note / disabled-helper merged a11y agreement across both cards and the viewer
+       under RTL x 2.0x:
+       pump one manager with an explicitly disabled console and one with an enabled console through
+       both real operator cards and `KvmConsoleViewerPage` under `Directionality.rtl` with
+       `MediaQuery.textScaler` 2.0x, at 320/800/1300 px, pinning that the session-note and the
+       "KVM disabled on BMC" helper each keep ONE merged `excludeSemantics` node with visible text
+       == announced label, the same byte-exact copy on all three surfaces, no duplicate /
+       screen-reader-only node, no overflow, and unchanged LTR / 1.0x controls. AUDIT FIRST: if all
+       three surfaces already source both strings from one shared constant in a single merged node
+       with no direction- or width-specific branch, record the audit and add nothing; RED->GREEN
+       only on a genuine divergence, never churn. Display-only; test-only writes.
+       Dept: rf-ui
+       Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_capability_card_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/views/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+               pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS weakening.
+
 - [x] EP-U34 Compound long unbreakable display-name × RTL × 2.0x a11y agreement — **LANDED (run 2026-11-24 09:48 UTC, agent:redfish-automation)**: AUDIT FIRST — EP-U23 pins a long WORD-BREAKABLE (hyphenated) name at LTR/1.0x, EP-U21 pins a long word-breakable name at 2.0x but LTR only, EP-U31 pins a long unbreakable CONNECT-TYPE CHIP under RTL×2.0x with a clean short name, EP-U32/EP-U33 use short bidi/control names under RTL×2.0x — none drove a long unbreakable manager DISPLAY NAME through RTL×2.0x at 320/800/1300 px. Added `test/features/kvm/kvm_long_unbreakable_name_rtl_scale_a11y_agreement_test.dart` (10 tests): 180-char control-safe unbreakable name byte-exact in visible Text + one merged `excludeSemantics` node on both real cards + the viewer, no split/duplicate, no overflow; LTR/1.0x control GREEN. Real-file RED: one-sided RTL+2.0x-gated ellipsis of the capability card's announced name (600-perm backup) → exactly 3 named failures (`+7 -3`), viewer + controls GREEN; restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) → 10/10 GREEN. Test-only, dependency-free, TLS-safe; no `lib/` diff.
 
 - [x] EP-U33 Compound C0/separator display-name × RTL × 2.0x a11y agreement — **LANDED (run 2026-11-24,

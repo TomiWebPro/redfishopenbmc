@@ -6,6 +6,37 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 10:58 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open (human-gated) WebView/TLS closeout of #009/#021. Authority spellings, IPv4/IPv6
+     literals, alternate IPv4 notation, userinfo, separators, structural-boundary controls (EP-P21/
+     P22/P24/P25) and path/query/fragment controls (EP-P19) are heavily pinned, but nothing sweeps a
+     NON-STANDARD / MALFORMED PORT component (`:0`, `:65536`, `:99999`, `:-1`, empty `:`, padded
+     `: 443 `, fullwidth digits, percent-encoded digits) on an otherwise-secure HTTPS console URI
+     through the fail-closed classifier, `planConsoleLaunch`, `allowsInAppNavigation` and the model
+     at once, where `Uri.tryParse` may accept / normalise a port that a browser launcher treats
+     differently. Test-only; the human WebView/TLS validation (EP-P1/P2/P4) stays gated and is NOT
+     re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-P26 Non-standard / malformed HTTPS port cross-layer fail-closed agreement:
+       over a matrix of otherwise-secure `https://host/x` values with a hostile or non-standard
+       port component (`:0`, `:65536`, `:99999`, `:-1`, empty `:`, `: 443 `, fullwidth `:４４３`,
+       percent-encoded port digits, plus a clean `:443` and a no-port control), pin that the shared
+       fail-closed classifier, `planConsoleLaunch`, `allowsInAppNavigation` and the model
+       `KvmConsole.hasSecureLaunchUri` / `launchPlan` ALL agree per value: one uniform secure /
+       fail-closed verdict, route, target and `acceptSelfSigned` across every layer (never in-app
+       eligibility or self-signed on an ambiguous port, never navigable when the classifier fails
+       closed), production default copy-only with no self-signed under a stale secure flag, and
+       identical opt-in eligibility on all layers. AUDIT FIRST: if the shared whole-URI fail-closed
+       core already classifies the whole port family uniformly by construction, record the audit
+       and add nothing; RED->GREEN only on a genuine divergence, never churn. Test-only; no
+       WebView/protocol import, no URL opened, no production TLS weakening.
+       Dept: rf-platform
+       Verify: `flutter test test/features/kvm/platform/ && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/platform/**` + `test/features/kvm/platform/**`; `git diff --exit-code --
+               pubspec.yaml pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS
+               weakening.
+
 <!-- rf-ideate split 2026-11-24 06:53 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open (human-gated) WebView/TLS closeout of #009/#021. Authority spellings, scheme spellings,
      userinfo, ports, separators, IPv6 literals (EP-P21), alternate IPv4 notation (EP-P24), path/query
