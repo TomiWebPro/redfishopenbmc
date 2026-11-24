@@ -15164,3 +15164,20 @@
 - **Next:** push this tracking commit (never force-push; preserve all prior unpushed commits); next PASS tip merges the same way; DMTF emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-U29)
+
+**Done:**
+- FEATURE EP-U29 for open #009/#021: degenerate-empty connect-type / blank-label render agreement across both KVM operator cards and the viewer. AUDIT FIRST found no existing widget test pumped a real card with ZERO usable `ConnectTypesSupported` tokens (every fixture carries at least one), leaving both `.isNotEmpty` chip-row guards unguarded — a one-sided guard drop renders an empty `excludeSemantics` node on ONE card while its sibling collapses cleanly, every existing suite GREEN. No live divergence, no behaviour change, not churn. Added `test/features/kvm/kvm_degenerate_empty_connect_type_render_agreement_test.dart` (10 tests): model agreement on blank/malformed-token collapse; both cards + viewer at 320/800/1300 px with no connect-type node / empty announcement / blank chip for the degenerate body, a byte-identical populated chip-row control on both cards, viewer fail-closed `Console URI:` affordance unchanged, no overflow.
+- Real-file RED: dropped only the per-console-card `.isNotEmpty` guard in `kvm_view.dart` under a 600-perm backup → exactly 3 named failures (`+7 -3`: degenerate-body card tests at 320/800/1300 px; all controls + viewer + model GREEN); source restored byte-clean (SHA `7359effb5ba6b963e6c2d0584bf507f1093c29ca408352cbd48a85100d7efabf` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 10/10 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2837 passed / 1 skipped (baseline 2827 +10 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test-only display-layer regression guard at a genuinely unguarded seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). Never force-push, rewrite history, `git clean`, or delete files. Five pre-existing stashes untouched; no new stash (clean baseline). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve prior unpushed commits). AUDIT FIRST the two remaining dept heads EP-S22 (audit only) and EP-P24 (audit only); register the new EP-U29 guard in a future EP-T liveness epoch. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
