@@ -1738,6 +1738,33 @@ flag stays off for that target.
       local-read, automatic-storage or network-response surfaces, not a direct
       script-driven filesystem read/write via a file handle. Verified per target
       before the flag is flipped.
+* [ ] **No WebTransport / QUIC datagram exfiltration** — the embedded WebView
+      must not let attacker-influenced console content open a WebTransport
+      session (`new WebTransport(url)`) and use its QUIC `datagrams` (`send()`
+      / `datagrams.readable`) or streams (`createBidirectionalStream()` /
+      `createUnidirectionalStream()`) to smuggle privileged KVM frames, session
+      tokens, operator credentials or managed-host inventory to a non-approved
+      origin, nor leak the device's private/public IPs. Console content is
+      served by the BMC and is therefore attacker-influenced: WebTransport is a
+      client/server QUIC transport with its own datagram/stream channels at the
+      WebView layer and must be denied on every target, in strict mode and with
+      the flag both off and on. It is distinct from WebRTC
+      (`bypassWebRtcDataChannelExfiltration`), which is a peer-to-peer UDP data
+      channel driven by ICE/STUN/TURN offer/answer signalling, and it is
+      distinct from programmatic HTTP egress (`bypassOutboundEgressAllowlist`)
+      (fetch / XHR / WebSocket / sendBeacon), a different transport surface that
+      must be denied independently. Verified per target (inspect the WebView
+      network stack and confirm no WebTransport session can be opened by
+      console content) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassWebTransportExfiltration`,
+      always `false`): the test-only opt-in never bypasses WebTransport / QUIC
+      exfiltration — console content can never open a WebTransport session or
+      datagram/stream channel, in strict mode and with the flag both off and on.
+      The opt-in relaxes ONLY the test BMC's untrusted server leaf for the
+      expected host, via a scoped per-connection verifier; it must never grant
+      a WebTransport just to make a console render or to debug it. No
+      QUIC-exfiltration path. Verified per target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

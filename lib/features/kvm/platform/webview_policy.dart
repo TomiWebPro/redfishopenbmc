@@ -1592,6 +1592,34 @@ class KvmWebViewPolicy {
   /// (RP-1).
   bool get bypassFileSystemAccessApi => false;
 
+  /// Always `false`: the WebTransport / QUIC API is NEVER available to
+  /// attacker-influenced console content, not even by the test-only self-signed
+  /// opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content open a
+  /// WebTransport session (`new WebTransport(url)`) or use its QUIC `datagrams`
+  /// (`send()` / `datagrams.readable`) or streams
+  /// (`createBidirectionalStream()` / `createUnidirectionalStream()`) to smuggle
+  /// privileged KVM frames, session tokens, operator credentials or managed-host
+  /// inventory to a non-approved origin, nor leak the device's private/public
+  /// IPs. Console content is served by the BMC and is therefore
+  /// attacker-influenced: WebTransport is a client/server QUIC transport with
+  /// its own datagram/stream channels at the WebView layer and must be denied on
+  /// every target, in strict mode and with the flag both off and on.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content open a WebTransport session. Tolerating the test BMC's untrusted
+  /// server leaf relaxes ONLY that leaf's trust for the expected host, via a
+  /// scoped per-connection verifier; it must never grant a WebTransport just to
+  /// make a console render or to debug it. It governs a distinct QUIC transport
+  /// surface, so it is distinct from WebRTC ([bypassWebRtcDataChannelExfiltration])
+  /// (a peer-to-peer UDP data channel driven by ICE/STUN/TURN signalling) and
+  /// from programmatic HTTP egress ([bypassOutboundEgressAllowlist]) (fetch /
+  /// XHR / WebSocket / sendBeacon), which must be denied independently. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassWebTransportExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
