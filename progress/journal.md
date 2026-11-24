@@ -15341,3 +15341,21 @@
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
 
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-U35 + EP-T56)
+
+**Done:**
+- FEATURE EP-U35 + EP-T56 for open #009/#021. AUDIT FIRST: every prior connect-type chip guard uses control-safe ASCII tokens (EP-U19/EP-U20/EP-U24/EP-U31); RM-22 pins confusables at the model layer only; EP-U22/U32/U33/U34 drive bidi/control values through the DISPLAY NAME. Nothing drove bidi Cf / C0 Cc / Zl-bearing CONNECT-TYPE tokens through both cards' merged "connection types" announcements under RTL × 2.0x. Added `test/features/kvm/kvm_connect_type_control_rtl_scale_a11y_agreement_test.dart` (7 tests): bidi LRM/RLM + C0 TAB + U+2028 LINE SEPARATOR tokens byte-exact on both projections, never collapse onto a canonical type; at 320/800/1300 px under RTL+2.0x both real cards render the same byte-exact chip sequence and each merged node announces the full joined value, no duplicate, no overflow; LTR/1.0x control GREEN.
+- Real-file RED (guard): one-sided strip of Cf/Cc/Zl from the capability-card announcement (600-perm backup) → exactly 3 named failures (`+4 -3`), model + LTR controls GREEN; restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) → 7/7 GREEN.
+- EP-T56 registration: fresh pinned `epT56AddedGuards` epoch (length 1, pairwise-disjoint from all 46 earlier designations incl. EP-T55) in `test/tool/guard_suite_liveness_test.dart` (+canonical path, +`allDesignatedGuards`, +EP-T20 completeness term, +disjointness pin test, +temp-root RED→GREEN proof). Registry real-file RED: dropped only the canonical entry → exactly 3 failures (EP-T56 pin, EP-T20 completeness, epT56 temp-root liveness); restored byte-clean (SHA `6d3edd6c…` unchanged, backup shredded).
+
+**Verification:**
+- targeted 98/98 (7 guard + 91 registry); `dart format` clean (my files); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2923 passed / 1 skipped (baseline 2915 +7 guard +1 registry pin); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool display-layer agreement guard + its liveness registration at a genuinely unguarded compound seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). Never force-push, rewrite history, `git clean`, or delete files. Five pre-existing stashes untouched; no new stash (clean baseline). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U35 + EP-T56 are LANDED; no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM compound seam; never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
