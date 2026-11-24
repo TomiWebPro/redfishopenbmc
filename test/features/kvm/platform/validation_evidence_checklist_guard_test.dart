@@ -96,6 +96,14 @@
 // console content emit a stylesheet-driven request carrying privileged session
 // data to a non-approved origin — distinct from programmatic HTTP egress,
 // speculation-rule prefetch and <a ping> hyperlink auditing),
+// no-HTML-driven/markup subresource exfiltration (<img src> / <iframe src> /
+// <script src> / <object data> / <embed src> / <source src> beacons; a markup-
+// driven declarative request channel governed by CSP frame-src / object-src /
+// media-src / img-src / script-src, not CSS rules or connect-src; hard config-
+// uration-independent invariant; the opt-in never lets attacker-influenced
+// console content emit a markup-driven subresource beacon carrying privileged
+// session data to a non-approved origin — distinct from CSS-driven stylesheet
+// requests, programmatic egress, speculation rules and <a ping> auditing),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -997,6 +1005,38 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'css-policy-getter', marker: 'bypasscssexfiltration'),
   (name: 'css-distinct-from-connect-src', marker: 'not connect-src'),
   (name: 'opt-in-keeps-css-denied', marker: 'never grant a css'),
+  // No HTML-driven (markup) cross-origin subresource exfiltration: plain HTML
+  // element src/href beacons (<img>, <iframe>, <script src>, <object>, media),
+  // a declarative markup-driven request channel governed by frame-src /
+  // object-src / media-src / img-src / script-src, NOT CSS rules or connect-src
+  // programmatic egress — distinct from stylesheet requests, speculation rules
+  // and <a ping> auditing.
+  (
+    name: 'no-html-subresource-exfil',
+    marker: 'html-driven subresource exfiltration'
+  ),
+  (name: 'html-subresource-markup-driven', marker: 'markup-driven'),
+  (name: 'no-html-img-src-beacon', marker: 'img src'),
+  (name: 'no-html-frame-src-beacon', marker: 'frame-src'),
+  (name: 'no-html-script-src-beacon', marker: 'script src'),
+  (name: 'no-html-object-src-beacon', marker: 'object-src'),
+  (name: 'no-html-media-src-beacon', marker: 'media-src'),
+  (
+    name: 'html-subresource-never-bypassed',
+    marker: 'never bypasses html-driven subresource exfiltration'
+  ),
+  (
+    name: 'html-subresource-policy-getter',
+    marker: 'bypasshtmlsubresourceexfiltration'
+  ),
+  (
+    name: 'html-subresource-distinct-from-css',
+    marker: 'distinct from css-driven'
+  ),
+  (
+    name: 'opt-in-keeps-html-subresource-denied',
+    marker: 'never grant an html-driven'
+  ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -2313,6 +2353,33 @@ void main() {
       expect(missing, contains('css-policy-getter'));
       expect(missing, contains('css-distinct-from-connect-src'));
       expect(missing, contains('opt-in-keeps-css-denied'));
+    });
+
+    test('RED: dropping the no-HTML-driven-subresource-exfiltration box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutHtmlSubresource = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'html-driven subresource exfiltration|markup-driven|img src|'
+              r'frame-src|script src|object-src|media-src|distinct from css-driven|'
+              r'never bypasses html-driven subresource exfiltration|'
+              r'bypasshtmlsubresourceexfiltration|never grant an html-driven')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutHtmlSubresource);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-html-subresource-exfil'));
+      expect(missing, contains('html-subresource-markup-driven'));
+      expect(missing, contains('no-html-img-src-beacon'));
+      expect(missing, contains('no-html-frame-src-beacon'));
+      expect(missing, contains('no-html-script-src-beacon'));
+      expect(missing, contains('no-html-object-src-beacon'));
+      expect(missing, contains('no-html-media-src-beacon'));
+      expect(missing, contains('html-subresource-never-bypassed'));
+      expect(missing, contains('html-subresource-policy-getter'));
+      expect(missing, contains('html-subresource-distinct-from-css'));
+      expect(missing, contains('opt-in-keeps-html-subresource-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

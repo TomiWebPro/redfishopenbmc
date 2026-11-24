@@ -1838,6 +1838,54 @@ flag stays off for that target.
       (a `ping`-directive POST fired on link activation): those govern other
       request surfaces, not stylesheet-driven subresource loads. Verified per
       target before the flag is flipped.
+* [ ] **No HTML-driven (markup) cross-origin subresource exfiltration** — the
+      embedded WebView must not let attacker-influenced console content smuggle
+      privileged management-session data (KVM frame handles, session tokens,
+      operator credentials, managed-host inventory) out through a plain HTML
+      element whose `src` / `href` / `poster` attribute makes the browser issue a
+      request to a non-approved origin carrying that data in the URL. This is the
+      markup-driven subresource channel: an `<img src=...>` / `<image>` /
+      `<input type=image src=...>` image beacon, an `<iframe src=...>` /
+      `<frame src=...>` cross-origin frame load, a `<script src=...>` load, an
+      `<object data=...>` / `<embed src=...>` plugin load, and `<video>` /
+      `<audio>` / `<source src=...>` / `<track src=...>` / `<link rel=preload>`
+      media or preload loads. Each issues a real browser request from an HTML
+      attribute, with no script-opened socket, no CSS rule, no form submission,
+      no navigation and no visible change — so a `connect-src 'self'` outbound
+      egress allowlist alone does not confine it. These declarative markup loads
+      are governed by the CSP source directives `frame-src` / `child-src`,
+      `object-src`, `media-src`, `img-src` and `script-src` (or `default-src`),
+      which must pin them to the approved same-origin HTTPS console and be denied
+      at WebView request interception on every target, in strict mode and with
+      the flag both off and on. Console content is served by the BMC and is
+      therefore attacker-influenced: a compromised/spoofed BMC or injected markup
+      must never turn the trusted frame into a markup-driven exfiltration beacon.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassHtmlSubresourceExfiltration`,
+      always `false`): the test-only opt-in never bypasses HTML-driven subresource
+      exfiltration — console content can never emit a markup-driven subresource
+      request to a non-approved origin, in strict mode and with the flag both off
+      and on. The opt-in relaxes ONLY the test BMC's untrusted server leaf for the
+      expected host, via a scoped per-connection verifier; it must never grant an
+      HTML-driven subresource request just to make a console render or to debug
+      it. Operator/app-initiated loads of the console's own approved-origin
+      subresources are a separate functional path and stay unaffected. No
+      HTML-driven-subresource exfiltration path. This box governs the markup-driven
+      declarative request channel and is distinct from CSS-driven subresource
+      exfiltration (`bypassCssExfiltration`) (stylesheet `@import` / `url()` /
+      `@font-face` / attribute-selector rules confined by `style-src` /
+      `font-src`), programmatic outbound egress (`bypassOutboundEgressAllowlist`)
+      (fetch / XHR / WebSocket / sendBeacon confined by `connect-src`), speculative
+      prefetch / prerender (`bypassSpeculationRulesEgress`) (a browser-generated
+      `prefetch-src` request) and hyperlink auditing
+      (`bypassHyperlinkAuditingExfiltration`) (a `ping`-directive POST fired on
+      link activation). It is also distinct from mixed-content blocking
+      (`bypassMixedContentBlocking`) (cleartext `http://` subresources on an HTTPS
+      page) and private-network egress protection
+      (`bypassPrivateNetworkEgressProtection`) (the loopback / link-local / private
+      address class of a subresource destination): those govern other request
+      surfaces, not cross-origin markup-element subresource beacons. Verified per
+      target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

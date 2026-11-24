@@ -1694,6 +1694,56 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassCssExfiltration => false;
 
+  /// Always `false`: HTML-driven (markup) cross-origin subresource exfiltration
+  /// is NEVER available to attacker-influenced console content, not even by the
+  /// test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content smuggle
+  /// privileged management-session data — KVM frame handles, session tokens,
+  /// operator credentials or managed-host inventory — out through a plain HTML
+  /// element whose `src` / `href` / `poster` attribute makes the browser issue a
+  /// request to a non-approved origin carrying that data in the URL: no
+  /// `<img src=...>` / `<image>` / `<input type=image src=...>` image beacon, no
+  /// `<iframe src=...>` / `<frame src=...>` cross-origin frame load, no
+  /// `<script src=...>` load, no `<object data=...>` / `<embed src=...>` plugin
+  /// load and no `<video>` / `<audio>` / `<source src=...>` / `<track src=...>`
+  /// / `<link rel=preload>` media or preload load. Console content is served by
+  /// the BMC and is therefore attacker-influenced: a compromised/spoofed BMC or
+  /// injected markup must never turn the trusted frame into a markup-driven
+  /// subresource exfiltration beacon. These declarative markup loads are
+  /// governed by the CSP source directives `frame-src` / `child-src`,
+  /// `object-src`, `media-src`, `img-src` and `script-src` (or `default-src`),
+  /// which must pin them to the approved same-origin HTTPS console and be
+  /// denied at WebView request interception on every target, in strict mode and
+  /// with the flag both off and on.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits a
+  /// markup-driven subresource request to a non-approved origin. Tolerating the
+  /// test BMC's untrusted server leaf relaxes ONLY that leaf's trust for the
+  /// expected host, via a scoped per-connection verifier; it must never grant an
+  /// HTML-driven subresource request just to make a console render or to debug
+  /// it. Operator/app-initiated loads of the console's own approved-origin
+  /// subresources are a separate functional path and stay unaffected.
+  ///
+  /// This box governs the markup-driven declarative subresource request channel
+  /// and is therefore distinct from CSS-driven subresource exfiltration
+  /// ([bypassCssExfiltration]) (stylesheet `@import` / `url()` / `@font-face`
+  /// / attribute-selector rules confined by `style-src` / `font-src`), from
+  /// programmatic outbound egress ([bypassOutboundEgressAllowlist]) (fetch /
+  /// XHR / WebSocket / sendBeacon confined by `connect-src`), from speculative
+  /// prefetch / prerender ([bypassSpeculationRulesEgress]) (a browser-generated
+  /// `prefetch-src` request) and from hyperlink auditing
+  /// ([bypassHyperlinkAuditingExfiltration]) (a `ping`-directive POST fired on
+  /// link activation). It is also distinct from mixed-content blocking
+  /// ([bypassMixedContentBlocking]) (cleartext `http://` subresources on an
+  /// HTTPS page) and private-network egress protection
+  /// ([bypassPrivateNetworkEgressProtection]) (the loopback / link-local /
+  /// private address class of a subresource destination): those govern other
+  /// request surfaces, not cross-origin markup-element subresource beacons.
+  /// See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassHtmlSubresourceExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
