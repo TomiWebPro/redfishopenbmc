@@ -15728,3 +15728,19 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-T68 LANDED; no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM seam (never churn, RED→GREEN only on a genuine divergence); cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-U42)
+
+**Done:**
+- FEATURE EP-U42 (test-only): new `test/features/kvm/kvm_manager_source_row_rtl_scale_a11y_agreement_test.dart` (10 widget tests) pins the three no-URI manager-source fallback rows — per-console card (`No console connect URI available. Open externally: …`), capability card (`No console URI resolved. Source: …`) and viewer (`No direct console URI. Manager source: …`) — to one merged `excludeSemantics` node per row whose announced label equals the visible Text with the FULL byte-exact `safeManagerUri`, no split / duplicate / screen-reader-only node, no overflow at 320/800/1300 px under RTL + 2.0x, plus an LTR/1.0x control and a model byte-exactness fixture. AUDIT FIRST: EP-U6 pins these source rows only at LTR/1.0x and the RTL x 2.0x family never drove them — a genuine unguarded cross-surface seam. GUARD NOT EPOCH-REGISTERED this run (write scope limited to `test/features/kvm/**`); registration deferred to the next EP-T pass (EP-T69).
+
+**Verification:**
+- REAL RED→GREEN: one-sided RTL+2.0x-gated shortening of the capability card's announced source to its last path segment (600-perm backup) → exactly 3 named failures (3 RTL/2.0x card widths), all 3 viewer tests + 3 LTR controls + fixture GREEN, and 105 existing `kvm_capability_card_test.dart` / `kvm_widget_test.dart` source tests GREEN under mutation; source restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) → 10/10 GREEN. Analyze 0; full-suite result recorded in automation-tracking.md; `issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Read-only display-only a11y agreement guard at a genuinely unguarded seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). No manufactured UI churn. Tree was clean at preflight — no concurrent WIP touched, no new stash, no `git clean`, no history rewrite; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U42 LANDED but NOT epoch-registered — next EP-T pass (EP-T69) must register it under a fresh pinned epoch disjoint from all earlier incl. EP-T68; then AUDIT FIRST a genuinely new KVM seam. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
