@@ -655,6 +655,19 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'bypassoutboundegressallowlist'
   ),
   (name: 'flag-off-fallback', marker: 'flag-off fallback'),
+  // No clipboard read / write exfiltration (system-clipboard isolation): a
+  // distinct cross-app data channel, not the host permission-prompt surface.
+  (name: 'no-clipboard-exfil', marker: 'clipboard read / write exfiltration'),
+  (name: 'no-clipboard-writetext', marker: 'navigator.clipboard.writetext'),
+  (name: 'no-clipboard-readtext', marker: 'navigator.clipboard.readtext'),
+  (name: 'clipboard-cross-app', marker: 'cross-app clipboard data channel'),
+  (name: 'clipboard-never-bypassed', marker: 'never bypasses clipboard isolation'),
+  (name: 'clipboard-policy-getter', marker: 'bypassclipboardisolation'),
+  (
+    name: 'clipboard-distinct-from-device-perms',
+    marker: 'not the clipboard permission-prompt surface'
+  ),
+  (name: 'opt-in-keeps-clipboard-denied', marker: 'never grant a clipboard'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -1696,6 +1709,25 @@ void main() {
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('outbound-egress-never-bypassed'));
       expect(missing, contains('outbound-egress-policy-getter'));
+    });
+
+    test('RED: dropping the no-clipboard read/write exfiltration box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutClipboard = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains('clipboard'))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutClipboard);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-clipboard-exfil'));
+      expect(missing, contains('no-clipboard-writetext'));
+      expect(missing, contains('no-clipboard-readtext'));
+      expect(missing, contains('clipboard-cross-app'));
+      expect(missing, contains('clipboard-never-bypassed'));
+      expect(missing, contains('clipboard-policy-getter'));
+      expect(missing, contains('clipboard-distinct-from-device-perms'));
+      expect(missing, contains('opt-in-keeps-clipboard-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

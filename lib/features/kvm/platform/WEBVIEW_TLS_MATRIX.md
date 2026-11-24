@@ -1362,6 +1362,42 @@ flag stays off for that target.
       copy) and cross-origin form submission (an HTML form POST): those govern
       other request or output surfaces, not a native share sheet or a cast /
       external-display receiver. Verified per target before the flag is flipped.
+* [ ] **No clipboard read / write exfiltration (system-clipboard isolation)** —
+      the embedded WebView must not let attacker-influenced console content read
+      or write the system clipboard: no `navigator.clipboard.writeText()` /
+      `navigator.clipboard.readText()` / `ClipboardItem` write, no
+      `document.execCommand('copy')` / `paste` and no auto-copy of the privileged
+      console DOM (session tokens, credentials, KVM frames, managed-host
+      inventory) into a clipboard that any co-resident app or OS clipboard
+      history can read, and no reading of a clipboard the operator populated in
+      another context. Console content is served by the BMC and is therefore
+      attacker-influenced: a clipboard write hands privileged session data to
+      any other app on the device, and a clipboard read captures operator
+      credentials — a cross-app clipboard data channel wholly independent of
+      TLS, hostname, origin/navigation confinement, outbound egress, print /
+      save-to-PDF, share / cast and on-disk data-at-rest checks (which govern
+      the connection, other output channels or storage, not the system
+      clipboard). Every clipboard read and write must be denied by default at
+      the WebView on every target, in strict mode and with the flag both off and
+      on. Verified per target (inspect the WebView clipboard / paste callbacks
+      and confirm console content can neither write to nor read from the
+      clipboard) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassClipboardIsolation`, always
+      `false`): the test-only opt-in never bypasses clipboard isolation — console
+      content can never place privileged session data on a cross-app clipboard
+      and never read operator credentials from it, in strict mode and with the
+      flag both off and on. The opt-in relaxes ONLY the test BMC's untrusted
+      server leaf for the expected host, via a scoped per-connection verifier;
+      it must never grant a clipboard read or write just to make a console
+      render or to debug it. This box governs the cross-app clipboard data
+      channel itself, not the clipboard permission-prompt surface (which is one
+      host capability among the device-capability / permission-access box): it
+      is distinct from device capabilities (host permission prompts), sensitive
+      data at rest (on-disk persistence / background snapshot), Web Share /
+      remote-cast exfiltration (a receiver outside the app) and outbound egress
+      (programmatic network connections). Verified per target before the flag
+      is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
