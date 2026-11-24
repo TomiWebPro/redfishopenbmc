@@ -65,6 +65,12 @@
 // shade / lock screen outside the secure frame, nor coerce a permission prompt —
 // a content-output channel distinct from generic device-permission prompts, in-page
 // JS dialogs, PiP windows and screen capture),
+// no-webrtc peer-to-peer / data-channel exfiltration (RTCPeerConnection /
+// RTCDataChannel / ICE candidates / STUN / TURN; a peer-to-peer UDP channel that
+// evades the HTTP(S) connect-src egress allowlist and leaks private/public IPs;
+// hard configuration-independent invariant; the opt-in never lets attacker-
+// influenced console content open a peer connection or data channel — distinct
+// from programmatic HTTP egress and getUserMedia camera/mic capture),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -863,6 +869,22 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'opt-in-keeps-notification-denied',
     marker: 'never grant a notification'
   ),
+  // No WebRTC peer-to-peer / data-channel exfiltration: a peer-to-peer UDP
+  // channel (RTCPeerConnection / RTCDataChannel / ICE / STUN / TURN) that evades
+  // the HTTP(S) connect-src egress allowlist and leaks private/public IPs —
+  // distinct from programmatic HTTP egress and from getUserMedia capture.
+  (name: 'no-webrtc-exfil', marker: 'webrtc peer-to-peer'),
+  (name: 'no-rtc-peer-connection', marker: 'rtcpeerconnection'),
+  (name: 'no-rtc-data-channel', marker: 'rtcdatachannel'),
+  (name: 'no-ice-candidate-leak', marker: 'ice candidate'),
+  (name: 'no-stun-turn', marker: 'stun / turn'),
+  (name: 'webrtc-never-bypassed', marker: 'never bypasses webrtc'),
+  (name: 'webrtc-policy-getter', marker: 'bypasswebrtcdatachannelexfiltration'),
+  (
+    name: 'webrtc-distinct-from-egress',
+    marker: 'not a peer-to-peer udp data channel'
+  ),
+  (name: 'opt-in-keeps-webrtc-denied', marker: 'never grant a webrtc'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -2051,6 +2073,27 @@ void main() {
       expect(missing, contains('notification-distinct-from-device-perms'));
       expect(missing, contains('notification-distinct-from-js-dialog'));
       expect(missing, contains('opt-in-keeps-notification-denied'));
+    });
+
+    test('RED: dropping the no-WebRTC peer-to-peer/data-channel box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutWebRtc = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'webrtc|rtcpeerconnection|rtcdatachannel|createchannel|ice candidate|onicecandidate|stun / turn|stun/turn|never bypasses webrtc|bypasswebrtcdatachannelexfiltration|peer-to-peer|never grant a webrtc')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutWebRtc);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-webrtc-exfil'));
+      expect(missing, contains('no-rtc-peer-connection'));
+      expect(missing, contains('no-rtc-data-channel'));
+      expect(missing, contains('no-ice-candidate-leak'));
+      expect(missing, contains('no-stun-turn'));
+      expect(missing, contains('webrtc-never-bypassed'));
+      expect(missing, contains('webrtc-policy-getter'));
+      expect(missing, contains('webrtc-distinct-from-egress'));
+      expect(missing, contains('opt-in-keeps-webrtc-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

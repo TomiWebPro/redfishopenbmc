@@ -1512,6 +1512,46 @@ class KvmWebViewPolicy {
   /// not an OS notification. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassNotificationApiAccess => false;
 
+  /// Always `false`: WebRTC peer-to-peer / data-channel exfiltration is NEVER
+  /// permitted, not even by the test-only self-signed opt-in.
+  ///
+  /// Attacker-influenced console content must never open a WebRTC peer
+  /// connection (`RTCPeerConnection` / `webkitRTCPeerConnection`, including
+  /// prefixed variants), create an `RTCDataChannel` / `createDataChannel()`,
+  /// drive offer/answer signalling (`createOffer` / `createAnswer` /
+  /// `setRemoteDescription`), gather/emit ICE candidates (`onicecandidate`) or
+  /// contact STUN / TURN servers to smuggle privileged KVM frames, session
+  /// tokens, operator credentials or managed-host inventory to a non-approved
+  /// peer, nor disclose the device's private / public IP addresses via ICE.
+  ///
+  /// This is a data-exfiltration + IP-leak surface distinct from the outbound
+  /// egress allowlist ([bypassOutboundEgressAllowlist]): that box confines
+  /// programmatic HTTP(S) destinations (fetch / XHR / WebSocket / sendBeacon)
+  /// governed by CSP `connect-src`, whereas a WebRTC data channel sends data
+  /// peer-to-peer over UDP/ICE with no HTTP request and no visible navigation,
+  /// using its own STUN/TURN negotiation that `connect-src 'self'` alone does
+  /// not confine. It is also distinct from private-network egress protection
+  /// ([bypassPrivateNetworkEgressProtection]) (loopback / link-local / private
+  /// subresource requests), device-capability / permission access
+  /// ([bypassDevicePermissionControls]) (camera / microphone capture via
+  /// `getUserMedia`, not a data channel) and cross-origin web-messaging
+  /// isolation ([bypassCrossOriginMessagingIsolation]) (in-process postMessage):
+  /// those govern other connection, capture or messaging surfaces, not a
+  /// peer-to-peer UDP data channel.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content open a peer connection or data channel. Every WebRTC peer
+  /// connection, data channel, ICE gathering and STUN/TURN contact from console
+  /// content must be denied at the WebView on every target, in strict mode and
+  /// with the flag both off and on. Operator/app-initiated connections are a
+  /// separate functional path and stay unaffected. Tolerating the test BMC's
+  /// untrusted server leaf relaxes ONLY that leaf's trust for the expected host,
+  /// via a scoped per-connection verifier; it must never grant a WebRTC peer
+  /// connection just to make a console render or to debug it. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassWebRtcDataChannelExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
