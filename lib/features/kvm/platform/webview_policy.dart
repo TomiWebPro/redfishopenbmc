@@ -1866,6 +1866,54 @@ class KvmWebViewPolicy {
   /// data store. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassDragAndDropExfiltration => false;
 
+  /// Always `false`: `window.name` / reverse-tabnabbing / `window.opener`
+  /// cross-context browsing-state exfiltration is NEVER available to
+  /// attacker-influenced console content, not even by the test-only self-signed
+  /// opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content hand
+  /// privileged management-session data (KVM frame handles, session tokens,
+  /// operator credentials, managed-host inventory) out of the secure frame
+  /// through a persistent browsing context name or a live opener back-reference:
+  /// no writing a token into `window.name` and then navigating so that a
+  /// different origin reads that persistent browsing context name, no
+  /// `window.open` pop-up that keeps a live `window.opener` back-reference used
+  /// for reverse tabnabbing and redirection of the trusted frame, no
+  /// `target=_blank` link without `rel=noopener noreferrer`, and no named-context
+  /// navigation that carries console data across an origin boundary. The
+  /// `window.name` string is scoped to a browsing context and persists across
+  /// same-context navigations, and it can be read by a different origin after
+  /// navigation, so it is a cross-origin data channel that needs no socket from
+  /// the trusted frame, no `postMessage`, no clipboard write and no native
+  /// bridge — a `connect-src 'self'` egress allowlist alone does not confine it.
+  /// Console content is served by the BMC and is therefore attacker-influenced:
+  /// a compromised/spoofed BMC or injected script/markup must never turn the
+  /// trusted frame into a window.name exfiltration channel. Pop-up creation and
+  /// named-context navigation from console content must be denied or stripped
+  /// (opener nulled, `rel=noopener`, window.name cleared at navigation and
+  /// teardown) on every target, in strict mode and with the flag both off and
+  /// on. Tolerating the test BMC's untrusted server leaf relaxes ONLY that
+  /// leaf's trust for the expected host, via a scoped per-connection verifier;
+  /// it must never grant a window.name / opener channel just to make a console
+  /// render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content exfiltrate privileged data through a persistent browsing-context
+  /// name or an opener back-reference. It governs the cross-context state
+  /// channel, so it is distinct from cross-origin web messaging
+  /// ([bypassCrossOriginMessagingIsolation]) (`postMessage` / `BroadcastChannel`
+  /// between contexts — a message API, not persistent browsing-context state),
+  /// from top-level navigation confinement ([bypassTopLevelNavigationConfinement])
+  /// (where the main frame navigates, not the data carried across the boundary),
+  /// from clipboard isolation ([bypassClipboardIsolation]) (the system clipboard),
+  /// from native bridge isolation ([bypassNativeBridgeIsolation]) (app-injected
+  /// code) and from drag-and-drop exfiltration ([bypassDragAndDropExfiltration])
+  /// (a user-driven data-transfer gesture): those govern other message, request,
+  /// output or input surfaces, not the browsing-context name / opener channel.
+  /// See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassWindowNameExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

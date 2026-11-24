@@ -124,6 +124,13 @@
 // no socket, form POST or navigation; hard configuration-independent invariant;
 // the opt-in never lets attacker-influenced console content drag session data
 // out — distinct from clipboard, web-messaging, egress and navigation surfaces),
+// no-window.name / reverse-tabnabbing exfiltration (a persistent browsing-context
+// name / window.opener back-reference that survives navigation and is readable
+// cross-origin; a cross-context state channel needing no socket, postMessage,
+// clipboard write or native bridge; hard configuration-independent invariant;
+// the opt-in never lets attacker-influenced console content place privileged
+// session data in window.name or keep a tabnabbing opener — distinct from
+// cross-origin web messaging and navigation surfaces),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -1116,6 +1123,23 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'distinct from clipboard'
   ),
   (name: 'opt-in-keeps-drag-and-drop-denied', marker: 'never grant a drag'),
+  // No window.name / reverse-tabnabbing / window.opener exfiltration: a
+  // persistent browsing-context name / opener back-reference readable across
+  // origins after navigation — a cross-context state channel needing no socket,
+  // postMessage, clipboard write or native bridge, distinct from cross-origin
+  // web messaging (a message API) and navigation confinement (where the frame
+  // goes, not the data carried in window.name).
+  (name: 'no-window-name-exfil', marker: 'window.name exfiltration'),
+  (name: 'no-window-opener', marker: 'window.opener'),
+  (name: 'reverse-tabnabbing', marker: 'reverse tabnabbing'),
+  (name: 'browsing-context-name', marker: 'browsing context name'),
+  (name: 'window-name-never-bypassed', marker: 'never bypasses window.name'),
+  (name: 'window-name-policy-getter', marker: 'bypasswindownameexfiltration'),
+  (
+    name: 'window-name-distinct-from-messaging',
+    marker: 'distinct from cross-origin web messaging'
+  ),
+  (name: 'opt-in-keeps-window-name-denied', marker: 'never grant a window.name'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -2526,6 +2550,27 @@ void main() {
       expect(missing, contains('drag-and-drop-policy-getter'));
       expect(missing, contains('drag-and-drop-distinct-from-clipboard'));
       expect(missing, contains('opt-in-keeps-drag-and-drop-denied'));
+    });
+
+    test('RED: dropping the no-window.name/tabnabbing box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutWindowName = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'window\.name|window\.opener|reverse tabnabbing|'
+              r'browsing context name|bypasswindownameexfiltration|'
+              r'bypasscrossoriginmessagingisolation')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutWindowName);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-window-name-exfil'));
+      expect(missing, contains('no-window-opener'));
+      expect(missing, contains('reverse-tabnabbing'));
+      expect(missing, contains('browsing-context-name'));
+      expect(missing, contains('window-name-never-bypassed'));
+      expect(missing, contains('window-name-policy-getter'));
+      expect(missing, contains('window-name-distinct-from-messaging'));
+      expect(missing, contains('opt-in-keeps-window-name-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
