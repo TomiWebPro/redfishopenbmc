@@ -15311,3 +15311,21 @@
 - **Next:** push the tracking commit by fast-forward only (preserve all prior unpushed commits); next PASS tip merges the same way; DMTF emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-U34 + EP-T55)
+
+**Done:**
+- FEATURE EP-U34 + EP-T55 for open #009/#021. AUDIT FIRST: EP-U23 long WORD-BREAKABLE name (LTR/1.0x), EP-U21 long word-breakable name (2.0x, LTR only), EP-U31 long unbreakable CONNECT-TYPE CHIP under RTL×2.0x with a clean short name, EP-U32 bidi Cf / EP-U33 Cc/Zl/Zp/Zs short names under RTL×2.0x — none drove a long unbreakable manager DISPLAY NAME through RTL×2.0x at 320/800/1300 px. Added `test/features/kvm/kvm_long_unbreakable_name_rtl_scale_a11y_agreement_test.dart` (10 tests): 180-char control-safe unbreakable name byte-exact in visible Text + one merged `excludeSemantics` node on both cards + viewer, no split/duplicate, no overflow; LTR/1.0x control GREEN.
+- Real-file RED (guard): one-sided RTL+2.0x-gated ellipsis of the capability card's announced name (600-perm backup) → exactly 3 named failures (`+7 -3`), viewer + controls + fixture GREEN; restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) → 10/10 GREEN.
+- EP-T55 registration: fresh pinned `epT55AddedGuards` epoch (length 1, pairwise-disjoint from all 45 earlier designations incl. EP-T54) in `test/tool/guard_suite_liveness_test.dart` (+canonical path, +`allDesignatedGuards`, +EP-T20 completeness term, +disjointness pin test, +temp-root RED→GREEN proof). Registry real-file RED: dropped only the canonical entry → exactly 3 named failures (EP-T55 pin, EP-T20 completeness, temp-root liveness); restored byte-clean (SHA `24d7bd68…` unchanged, backup shredded).
+
+**Verification:**
+- targeted 100/100 (10 guard + 90 registry); `dart format` clean (my files); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2911 passed / 1 skipped (baseline 2900 +10 guard +1 registry pin); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool display-layer agreement guard + its liveness registration at a genuinely unguarded compound seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). Never force-push, rewrite history, `git clean`, or delete files. Five pre-existing stashes untouched; no new stash (clean baseline). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U34 + EP-T55 are LANDED; no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM seam; never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

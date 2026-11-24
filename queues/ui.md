@@ -5,6 +5,8 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+- [x] EP-U34 Compound long unbreakable display-name × RTL × 2.0x a11y agreement — **LANDED (run 2026-11-24 09:48 UTC, agent:redfish-automation)**: AUDIT FIRST — EP-U23 pins a long WORD-BREAKABLE (hyphenated) name at LTR/1.0x, EP-U21 pins a long word-breakable name at 2.0x but LTR only, EP-U31 pins a long unbreakable CONNECT-TYPE CHIP under RTL×2.0x with a clean short name, EP-U32/EP-U33 use short bidi/control names under RTL×2.0x — none drove a long unbreakable manager DISPLAY NAME through RTL×2.0x at 320/800/1300 px. Added `test/features/kvm/kvm_long_unbreakable_name_rtl_scale_a11y_agreement_test.dart` (10 tests): 180-char control-safe unbreakable name byte-exact in visible Text + one merged `excludeSemantics` node on both real cards + the viewer, no split/duplicate, no overflow; LTR/1.0x control GREEN. Real-file RED: one-sided RTL+2.0x-gated ellipsis of the capability card's announced name (600-perm backup) → exactly 3 named failures (`+7 -3`), viewer + controls GREEN; restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) → 10/10 GREEN. Test-only, dependency-free, TLS-safe; no `lib/` diff.
+
 - [x] EP-U33 Compound C0/separator display-name × RTL × 2.0x a11y agreement — **LANDED (run 2026-11-24,
         agent:redfish-automation)**: AUDIT FIRST — EP-U30 pins the Cc/Zl/Zp/Zs display-name family (LTR/1.0x),
         EP-U28 RTL (short clean names/1.0x), EP-U21 2.0x (clean names), EP-U31 unbreakable×RTL×2.0x (clean

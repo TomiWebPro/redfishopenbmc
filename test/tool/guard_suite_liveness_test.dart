@@ -503,6 +503,15 @@
 // RED→GREEN proof and the updated EP-T20 completeness arithmetic, so deleting
 // / emptying / test-stripping it fails closed (issues #009/#021 closeout).
 //
+// EP-T55 registers the one agreement guard landed this run (EP-U34 compound
+// long-unbreakable-display-name x RTL x 2.0x text-scaler a11y agreement across
+// both operator cards AND the viewer, `kvm_long_unbreakable_name_rtl_scale_a11y_agreement_test.dart`,
+// 10 live tests) under a fresh pinned `epT55AddedGuards` epoch (length 1,
+// pairwise-disjoint from every earlier designation incl. EP-T54) with a pin
+// test, a temp-root RED→GREEN proof and the updated EP-T20 completeness
+// arithmetic, so deleting / emptying / test-stripping it fails closed (issues
+// #009/#021 closeout).
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -771,6 +780,13 @@ const List<String> canonicalGuardFiles = <String>[
   // node, no duplicate, no overflow), live + CI-reachable but absent from the
   // registry until this run.
   'test/features/kvm/kvm_control_separator_rtl_scale_a11y_agreement_test.dart',
+  // EP-T55 extension: the compound long-unbreakable-name a11y agreement guard
+  // landed this run (EP-U34 — a 180-char control-safe unbreakable manager
+  // DISPLAY NAME under RTL AND a 2.0x text scaler on both operator cards + the
+  // viewer at 320/800/1300 px, full byte-exact name announced + visible in one
+  // merged node, no duplicate, no overflow), live + CI-reachable but absent
+  // from the registry until this run.
+  'test/features/kvm/kvm_long_unbreakable_name_rtl_scale_a11y_agreement_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -1280,6 +1296,19 @@ const Set<String> epT54AddedGuards = <String>{
   'test/features/kvm/kvm_control_separator_rtl_scale_a11y_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-T55: the one agreement guard
+/// landed this run after EP-T54 (EP-U34 compound long-unbreakable-display-name
+/// x RTL x 2.0x text-scaler a11y agreement — a 180-char control-safe unbreakable
+/// manager DISPLAY NAME under RTL AND a 2.0x text scaler on both operator cards
+/// + the viewer at 320/800/1300 px, full byte-exact name announced + visible in
+/// one merged node per surface, no duplicate, no overflow). It landed live +
+/// CI-reachable but absent from the registry, so deleting / emptying /
+/// test-stripping it stayed GREEN. Pinned separately so a future edit cannot
+/// drop it back out of the canonical set (issues #009/#021 closeout).
+const Set<String> epT55AddedGuards = <String>{
+  'test/features/kvm/kvm_long_unbreakable_name_rtl_scale_a11y_agreement_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -1330,6 +1359,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT52AddedGuards,
   ...epT53AddedGuards,
   ...epT54AddedGuards,
+  ...epT55AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -3203,6 +3233,67 @@ void main() {
       expect(epT54AddedGuards.intersection(epT53AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-T55: the compound long-unbreakable-name a11y agreement guard is in '
+        'the canonical liveness set', () {
+      expect(epT55AddedGuards, isNotEmpty);
+      expect(epT55AddedGuards.length, 1);
+      for (final String path in epT55AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T55 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epT55AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(rm15AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epP13AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(sec010AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT26AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT28AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT29AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT30AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT32AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT33AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT35AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT36AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT37AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT39AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT40AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT41AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT42AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT43AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT44AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT45AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT46AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT47AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT48AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT49AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT50AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT51AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT52AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT53AddedGuards), isEmpty);
+      expect(epT55AddedGuards.intersection(epT54AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -3273,7 +3364,8 @@ void main() {
             epT51AddedGuards.length +
             epT52AddedGuards.length +
             epT53AddedGuards.length +
-            epT54AddedGuards.length,
+            epT54AddedGuards.length +
+            epT55AddedGuards.length,
       );
     });
   });
@@ -5885,6 +5977,41 @@ void main() {
         // viewer at 320/800/1300 px, full byte-exact name announced + visible
         // in one merged node per surface, no duplicate, no overflow).
         for (final String addedGuard in epT54AddedGuards) {
+          File(p(addedGuard)).deleteSync();
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'MISSING: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when deleted',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('  \n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'EMPTY: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when emptied',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when test-stripped',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+        }
+
+        // The newly-registered guard must fail closed when deleted, emptied
+        // or stripped of tests (EP-U34 compound long-unbreakable-display-name x
+        // RTL x 2.0x a11y agreement — a 180-char unbreakable manager DISPLAY
+        // NAME under RTL AND a 2.0x text scaler on both operator cards + the
+        // viewer at 320/800/1300 px, full byte-exact name announced + visible
+        // in one merged node per surface, no duplicate, no overflow).
+        for (final String addedGuard in epT55AddedGuards) {
           File(p(addedGuard)).deleteSync();
           expect(
             evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
