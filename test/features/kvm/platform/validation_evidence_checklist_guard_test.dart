@@ -154,6 +154,14 @@
 // never lets attacker-influenced console content speak session data — distinct
 // from pixel capture, OS notifications, share/cast, clipboard and device
 // capability grants),
+// no-dynamic-import/cross-origin ES-module import exfiltration (the ES-module
+// dynamic import() operator loads a module whose URL carries privileged console
+// DOM from a non-approved origin; a main-thread script/module-loading channel
+// governed by CSP script-src, not connect-src egress and not worker-src Worker
+// loads; hard configuration-independent invariant; the opt-in never lets
+// attacker-influenced console content import a cross-origin module — distinct
+// from worker scripts, HTML <script src> beacons, CSS subresources and
+// programmatic egress),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -1225,6 +1233,31 @@ const List<({String name, String marker})> evidenceChecks =
   ),
   (name: 'speech-distinct-from-capture', marker: 'audio output channel'),
   (name: 'opt-in-keeps-speech-denied', marker: 'never grant a speech'),
+  // No dynamic import() / cross-origin ES-module import exfiltration: a
+  // main-thread script/module-loading channel governed by CSP script-src (not
+  // connect-src egress, not worker-src Worker loads); an out-of-allowlist way
+  // for attacker-influenced console content to pull a non-approved origin in.
+  (name: 'no-dynamic-import-exfil', marker: 'dynamic module import'),
+  (name: 'no-dynamic-import-operator', marker: 'import()'),
+  (name: 'no-cross-origin-es-module', marker: 'cross-origin es module'),
+  (name: 'dynamic-import-module-graph', marker: 'module-graph'),
+  (name: 'dynamic-import-csp-surface', marker: 'es-module loading'),
+  (
+    name: 'dynamic-import-never-bypassed',
+    marker: 'never bypasses dynamic module import exfiltration'
+  ),
+  (
+    name: 'dynamic-import-policy-getter',
+    marker: 'bypassdynamicmoduleimportexfiltration'
+  ),
+  (
+    name: 'dynamic-import-distinct-from-worker',
+    marker: 'distinct from worker-script exfiltration'
+  ),
+  (
+    name: 'opt-in-keeps-dynamic-import-denied',
+    marker: 'never grant a dynamic module import'
+  ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -2729,6 +2762,29 @@ void main() {
       expect(missing, contains('speech-policy-getter'));
       expect(missing, contains('speech-distinct-from-capture'));
       expect(missing, contains('opt-in-keeps-speech-denied'));
+    });
+
+    test('RED: dropping the no-dynamic-import/ES-module box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutDynamicImport = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'dynamic|import\(|cross-origin es module|module-graph|'
+              r'es-module loading|worker-script exfiltration|'
+              r'bypassdynamicmoduleimportexfiltration')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutDynamicImport);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-dynamic-import-exfil'));
+      expect(missing, contains('no-dynamic-import-operator'));
+      expect(missing, contains('no-cross-origin-es-module'));
+      expect(missing, contains('dynamic-import-module-graph'));
+      expect(missing, contains('dynamic-import-csp-surface'));
+      expect(missing, contains('dynamic-import-never-bypassed'));
+      expect(missing, contains('dynamic-import-policy-getter'));
+      expect(missing, contains('dynamic-import-distinct-from-worker'));
+      expect(missing, contains('opt-in-keeps-dynamic-import-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

