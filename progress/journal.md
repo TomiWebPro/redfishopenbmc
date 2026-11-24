@@ -15359,3 +15359,14 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U35 + EP-T56 are LANDED; no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM compound seam; never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:rf-gate — MERGED build/rf-platform (no WebUSB/WebSerial/WebHID peripheral-I/O exfiltration guard, check#12567)
+
+- **Verdict:** `rf-platform-check` run#12567 `SUCCESS exit=0` / explicit `CHECK: PASS` for `build/rf-platform` tip `6bf70c7` (full `6bf70c75f8b5c80ad03df850007c5be43d49839b`), 61.3 s, report started 2026-11-24 11:11:30 UTC; analyze 0, targeted guard + policy tests 220/220, purely additive 4-allowlisted-path diff, no production-TLS weakening.
+- **Merge:** `--no-ff` into `main` → merge `6f6d9d7` (parents `9f84caa` / `6bf70c7`); clean ort auto-merge, no conflicts; merge-base `c2e839e` already in `main` via `183e6a2`; one branch-unique commit; first-parent diff = 4 allowlisted files (+207/-0). Hardening-only `bypassPeripheralIoExfiltration => false` getter (no WebUSB/WebSerial/WebHID local-hardware byte-stream exfiltration of privileged KVM frames / session tokens / credentials / host inventory from attacker-influenced console content; operator-initiated access unaffected; no production TLS weakening).
+- **Verify:** `flutter analyze` 0; full `flutter test --coverage --concurrency=4` 2937 passed / 1 skipped; coverage gates PASS overall 90.6% (6113/6744) / scoped 90.4% (2119/2345) / kvm 97.7% (1390/1423) / kvm-platform 97.7% (505/517), exit 0; asset_guard OK; unattended_guard OK; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; deps unchanged; TLS-weakening + secret scan clean.
+- **Emulator:** skipped — policy getter + matrix doc + guard/policy tests only (no lib-wire / fixture / tool-runtime change; <7 days since last green 85/85).
+- **Decisions:** sole merger to `main`; merged only a verified PASS tip for the exact branch HEAD. Concurrent `redfish-automation` WIP left untouched (no stash, no `git clean`, no file deletion). Five pre-existing stashes untouched; no force-push / history rewrite. Remote URL carries a PAT — never echoed, staged or committed.
+- **Next:** push by fast-forward only (preserve all prior unpushed commits); next PASS tip merges the same way; DMTF emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
