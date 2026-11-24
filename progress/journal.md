@@ -15528,3 +15528,21 @@
 - Push by fast-forward only when valid credentials are available (never force-push; preserve all prior unpushed automation + rf-gate merge commits). Next `rf-platform-check` PASS tip merges the same way. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-U40 + EP-T62)
+
+**Done:**
+- FEATURE EP-U40: new `test/features/kvm/kvm_nonpopulated_state_rtl_scale_a11y_agreement_test.dart` (21 widget tests) pins the five non-populated KvmView states (system-not-found, discovery-pending, hard error, initial loading, empty) to ONE merged `excludeSemantics` node with visible==announced, no duplicate/screen-reader-only node, no false ready header, no overflow at 320/800/1300 px under RTL + 2.0x, with LTR/1.0x + populated controls. A genuine unguarded compound seam (no RTL test touched these states; EP-U13 covers only the populated half at LTR/1.0x).
+- FEATURE EP-T62: registered the new guard under a fresh pinned `epT62AddedGuards` epoch in `test/tool/guard_suite_liveness_test.dart` (canonical path, disjointness pin, temp-root RED→GREEN, completeness arithmetic). Full enumeration confirmed every other live guard already registered — no pre-existing gap.
+
+**Verification:**
+- Two REAL RED→GREEN proofs: guard — compound-gated empty-label reword → exactly 3 RTL/2.0x failures / restore 21/21 (SHA `7359effb…` byte-clean); registry — dropped canonical entry → EP-T62 pin + completeness + real-repo invariant failures / restore 97/97 (SHA `c9771744…` byte-clean). analyze 0; full `flutter test --concurrency=4` 3008 passed / 1 skipped; issues validate OK; diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Display-only + test/tool guards at genuinely untested compound/liveness seams; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). No manufactured UI churn. Concurrent rf-gate merge `1dcce22` landed mid-run and was preserved — no WIP touched, no stash, no `git clean`; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U40 + EP-T62 LANDED; next AUDIT FIRST the remaining fresh dept heads RM-29 / EP-P27 / EP-S25, never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

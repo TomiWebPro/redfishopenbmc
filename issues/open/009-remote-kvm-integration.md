@@ -336,3 +336,4 @@ Issue stays OPEN (embedded HTML5 rendering, fullscreen, input forwarding remain 
 - Resolution:
 - Closed reason:
 - Follow-ups:
+- 2026-11-24 15:45 UTC (run, agent:redfish-automation) — EP-U40 compound RTL x 2.0x a11y agreement for the five non-populated KvmView states + EP-T62 guard-suite liveness registration (test/tool-only, empty `lib/`, TLS-safe): new guard `kvm_nonpopulated_state_rtl_scale_a11y_agreement_test.dart` (21 tests, REAL RED 3 RTL/2.0x failures / restore GREEN), registered under fresh pinned `epT62AddedGuards` epoch (registry REAL RED 3 named failures / restore 97/97). analyze 0; full suite 3008 passed / 1 skipped; issues validate OK; no WebView/protocol import, no URL opened, no production TLS weakening. Issue stays OPEN — human-gated on platform WebView + BMC TLS validation.
