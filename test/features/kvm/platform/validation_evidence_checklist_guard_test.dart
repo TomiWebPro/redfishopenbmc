@@ -52,6 +52,12 @@
 // configuration-independent invariant; the opt-in never lets attacker-
 // influenced console content read saved credentials or coerce an authenticator
 // prompt — distinct from form autofill and the native HTTP-auth challenge),
+// no-speculative-prefetch/prerender exfiltration (Speculation Rules API /
+// <link rel=prefetch/prerender>; a browser-generated speculative request
+// governed by CSP prefetch-src not connect-src; hard configuration-independent
+// invariant; the opt-in never lets attacker-influenced console content leak a
+// session token via a speculative fetch — distinct from <a ping> auditing,
+// programmatic egress, form POST and top-level navigation),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -795,6 +801,30 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'opt-in-keeps-credential-api-denied',
     marker: 'never grant credential-management access'
+  ),
+  // No speculative prefetch / prerender (Speculation Rules API) exfiltration:
+  // a browser-generated speculative request (CSP prefetch-src, not connect-src),
+  // not a programmatic connection, an <a ping> activation POST or a navigation.
+  (name: 'no-speculation-rules-exfil', marker: 'speculation rules'),
+  (name: 'no-prefetch', marker: 'prefetch'),
+  (name: 'no-prerender', marker: 'prerender'),
+  (name: 'prefetch-src-csp-directive', marker: 'prefetch-src'),
+  (name: 'browser-generated-speculative', marker: 'browser-generated speculative'),
+  (
+    name: 'speculation-never-bypassed',
+    marker: 'never bypasses speculative prefetch'
+  ),
+  (
+    name: 'speculation-policy-getter',
+    marker: 'bypassspeculationrulesegress'
+  ),
+  (
+    name: 'speculation-distinct-from-ping',
+    marker: 'distinct from hyperlink auditing'
+  ),
+  (
+    name: 'opt-in-keeps-speculation-denied',
+    marker: 'never grant a speculative'
   ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -1939,6 +1969,29 @@ void main() {
       expect(missing, contains('credential-harvest-policy-getter'));
       expect(missing, contains('credential-harvest-distinct-from-autofill'));
       expect(missing, contains('opt-in-keeps-credential-api-denied'));
+    });
+
+    test(
+        'RED: dropping the no-speculative-prefetch/prerender box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutSpeculation = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'speculation rules|prefetch|prerender|prefetch-src|browser-generated speculative|never bypasses speculative prefetch|bypassspeculationrulesegress|distinct from hyperlink auditing|never grant a speculative')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutSpeculation);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-speculation-rules-exfil'));
+      expect(missing, contains('no-prefetch'));
+      expect(missing, contains('no-prerender'));
+      expect(missing, contains('prefetch-src-csp-directive'));
+      expect(missing, contains('browser-generated-speculative'));
+      expect(missing, contains('speculation-never-bypassed'));
+      expect(missing, contains('speculation-policy-getter'));
+      expect(missing, contains('speculation-distinct-from-ping'));
+      expect(missing, contains('opt-in-keeps-speculation-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
