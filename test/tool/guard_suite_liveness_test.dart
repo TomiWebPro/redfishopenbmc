@@ -658,6 +658,21 @@
 // arithmetic, so deleting / emptying / test-stripping it fails closed
 // (issues #009/#021 closeout).
 //
+// EP-T67 (issues #009/#021): "who guards the guards" AUDIT FIRST closeout of
+// two genuine regression guards that were live + CI-reachable but absent from
+// BOTH `canonicalGuardFiles` and every pinned epoch (0 registry references):
+// `test/features/kvm/kvm_service_member_order_tie_test.dart` (EP-S11 — the
+// first-in-BMC-order tie winner pinned field-for-field across fetchConsoles /
+// fetchPrimaryConsole / fetchCapabilities / fetchCapability) and
+// `test/features/kvm/kvm_viewer_session_limit_wiring_test.dart` (EP-U4 — the
+// real-viewer -> KvmSessionController maxConcurrentSessions pass-through that
+// makes a single-session BMC evict on a second console). Deleting / emptying /
+// test-stripping either stayed GREEN. Registered under a fresh pinned
+// `epT67AddedGuards` epoch (length 2, pairwise-disjoint from every earlier
+// designation incl. EP-T66) with a pin test + updated EP-T20 completeness
+// arithmetic, so each now fails closed. No product code, no dependency, no
+// WebView/protocol import, no URL opened, no production TLS weakening.
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -996,6 +1011,11 @@ const List<String> canonicalGuardFiles = <String>[
   // from the registry until now. Registering it makes deleting / emptying /
   // test-stripping it fail closed.
   'test/features/kvm/kvm_service_nextlink_page_agreement_test.dart',
+  // EP-T67 extension: two pre-existing regression guards audited live +
+  // CI-reachable but absent from the registry until now. Registering them
+  // makes deleting / emptying / test-stripping either fail closed.
+  'test/features/kvm/kvm_service_member_order_tie_test.dart',
+  'test/features/kvm/kvm_viewer_session_limit_wiring_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -1659,6 +1679,18 @@ const Set<String> epT66AddedGuards = <String>{
   'test/features/kvm/kvm_service_nextlink_page_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-T67: two pre-existing
+/// regression guards audited live + CI-reachable but absent from every earlier
+/// designation (a confirmed "who guards the guards" gap). EP-S11 pins
+/// first-in-BMC-order tie determinism across all four service surfaces; EP-U4
+/// pins the real-viewer maxConcurrentSessions pass-through to the shared
+/// session controller. Pinned separately so a future edit cannot drop either
+/// back out of the canonical set (issues #009/#021 closeout).
+const Set<String> epT67AddedGuards = <String>{
+  'test/features/kvm/kvm_service_member_order_tie_test.dart',
+  'test/features/kvm/kvm_viewer_session_limit_wiring_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -1721,6 +1753,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT64AddedGuards,
   ...epT65AddedGuards,
   ...epT66AddedGuards,
+  ...epT67AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -4390,6 +4423,80 @@ void main() {
       expect(epT66AddedGuards.intersection(epT65AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-T67: two pre-existing regression guards are in the canonical '
+        'liveness set (EP-S11 tie determinism + EP-U4 session-limit wiring)',
+        () {
+      expect(epT67AddedGuards, isNotEmpty);
+      expect(epT67AddedGuards.length, 2);
+      for (final String path in epT67AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T67 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epT67AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(rm15AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epP13AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(sec010AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT26AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT28AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT29AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT30AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT32AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT33AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT35AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT36AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT37AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT39AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT40AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT41AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT42AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT43AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT44AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT45AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT46AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT47AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT48AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT49AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT50AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT51AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT52AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT53AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT54AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT55AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT56AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT57AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT58AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT59AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT60AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT61AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT62AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT63AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT64AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT65AddedGuards), isEmpty);
+      expect(epT67AddedGuards.intersection(epT66AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -4472,7 +4579,8 @@ void main() {
             epT63AddedGuards.length +
             epT64AddedGuards.length +
             epT65AddedGuards.length +
-            epT66AddedGuards.length,
+            epT66AddedGuards.length +
+            epT67AddedGuards.length,
       );
     });
   });

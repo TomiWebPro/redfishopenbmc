@@ -15664,3 +15664,19 @@
 - Push by fast-forward only when valid credentials are available (never force-push; preserve all prior unpushed automation + rf-gate merge commits). Next `rf-platform-check` PASS tip merges the same way. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-T67)
+
+**Done:**
+- EP-T67: programmatic AUDIT FIRST (116 live KVM tests vs registry + all epochs) found two genuine regression guards live + CI-reachable but absent from BOTH `canonicalGuardFiles` and every pinned epoch (0 references): `kvm_service_member_order_tie_test.dart` (EP-S11 first-in-BMC-order tie winner across all four service surfaces) and `kvm_viewer_session_limit_wiring_test.dart` (EP-U4 real-viewer maxConcurrentSessions pass-through). Registered both under a fresh pinned `epT67AddedGuards` epoch (length 2, pairwise-disjoint from all 65 earlier designations incl. EP-T66): +2 canonical paths, `allDesignatedGuards` spread, EP-T20 completeness arithmetic term, header rationale, canonical-membership + disjointness pin test.
+
+**Verification:**
+- Registry REAL RED: dropped only the two canonical entries under a 600-perm backup → 2 named failures (EP-T67 pin "guard dropped from canonical set" + EP-T20 completeness "designated guard dropped from canonical set"); restored byte-clean (SHA `68245923c9e0…`, backup shredded). Targeted 102/102; `flutter analyze` 0; full `flutter test --concurrency=4` 3092 passed / 1 skipped (baseline 3083 +1 pin +8 concurrent EP-U41 WIP preserved/unstaged); issues validate OK; diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Registry-only liveness registration at a confirmed "who guards the guards" gap; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). No manufactured UI churn. Concurrent EP-U41 WIP left untouched and unstaged; no stash taken, no `git clean`, no history rewrite; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits and the concurrent EP-U41 WIP). EP-T67 LANDED; no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM seam. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
