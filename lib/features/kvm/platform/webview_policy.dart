@@ -1787,6 +1787,45 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassWorkerScriptExfiltration => false;
 
+  /// Always `false`: base-URI hijacking / relative-URL resolution exfiltration is
+  /// NEVER available to attacker-influenced console content, not even by the
+  /// test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content retarget the
+  /// resolution of relative URLs to a non-approved origin by injecting an HTML
+  /// `<base href=...>` element. A base element silently rewrites the base URL
+  /// against which EVERY relative subresource, form action, hyperlink and frame
+  /// URL resolves, so a trusted path-relative reference in the console can become
+  /// a cross-origin beacon carrying privileged KVM frame handles, session tokens,
+  /// operator credentials or managed-host inventory. Console content is served by
+  /// the BMC and is therefore attacker-influenced: a compromised/spoofed BMC or
+  /// injected markup must never turn the trusted frame into a base-URI-driven
+  /// exfiltration channel. Every injected `<base href` element must be stripped
+  /// and the base-uri directive pinned to the approved same-origin console (or
+  /// 'none') at the WebView on every target, in strict mode and with the flag
+  /// both off and on.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits relative
+  /// URLs to be resolved against a non-approved origin. Tolerating the test BMC's
+  /// untrusted server leaf relaxes ONLY that leaf's trust for the expected host,
+  /// via a scoped per-connection verifier; it must never grant a base uri just to
+  /// make a console render or to debug it.
+  ///
+  /// This box governs the declarative URL-resolution base and is confined by the
+  /// CSP `base-uri` directive (or `default-src`), NOT `connect-src`, so it is
+  /// distinct from programmatic outbound egress ([bypassOutboundEgressAllowlist])
+  /// (fetch / XHR / WebSocket / sendBeacon), from HTML-driven subresource beacons
+  /// ([bypassHtmlSubresourceExfiltration]) (explicit `src` attributes on elements
+  /// rather than the base those relative URLs resolve against), from CSS-driven
+  /// subresource exfiltration ([bypassCssExfiltration]) (stylesheet rules), from
+  /// cross-origin form submission ([bypassCrossOriginFormSubmission]) (the form
+  /// action / POST body) and from top-level navigation confinement
+  /// ([bypassTopLevelNavigationConfinement]) (where the main frame navigates):
+  /// those govern other request or navigation surfaces, not the base URL used to
+  /// resolve relative references. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassBaseUriHijacking => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
