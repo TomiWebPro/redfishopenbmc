@@ -1583,6 +1583,49 @@ flag stays off for that target.
       those govern other request, navigation or output surfaces, not a
       browser-initiated speculative fetch/prerender. Verified per target before
       the flag is flipped.
+* [ ] **No notification / notification-permission spoofing exfiltration
+      (Notifications API)** — the embedded WebView must not let
+      attacker-influenced console content render privileged management-session
+      data (KVM frames, session tokens, operator credentials, managed-host
+      inventory) into an OS notification shown outside the secure console frame,
+      nor coerce an OS notification-permission prompt: no
+      `Notification.requestPermission()` / `Notification.permission` prompt
+      induced by console content, no `new Notification(title, { body })` and no
+      `ServiceWorkerRegistration.showNotification()` carrying console DOM
+      content. Console content is served by the BMC and is therefore
+      attacker-influenced: a notification renders attacker-chosen text in the
+      OS notification shade / lock screen — outside the app's secure console
+      surface, visible while the console is backgrounded and clickable to
+      launch an attacker-controlled destination — a UI-spoof / data-
+      exfiltration surface wholly independent of the outbound egress allowlist
+      (network destinations), screen / window capture (pixels), print (a durable
+      paper/PDF copy) and downloads (a file on disk), which govern other output
+      surfaces. Every notification request and notification render from console
+      content must be denied at the WebView on every target, in strict mode and
+      with the flag both off and on. Operator/app-initiated notifications of the
+      app itself are a separate functional path and stay unaffected. Verified
+      per target (inspect the WebView notification / permission callbacks and
+      confirm console content cannot show a notification or raise a
+      notification-permission prompt) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassNotificationApiAccess`,
+      always `false`): the test-only opt-in never bypasses notification api
+      access — console content can never place privileged data in a
+      notification shown outside the secure frame nor coerce a
+      notification-permission prompt, in strict mode and with the flag both off
+      and on. The opt-in relaxes ONLY the test BMC's untrusted server leaf for
+      the expected host, via a scoped per-connection verifier; it must never
+      grant a notification request just to make a console render or to debug
+      it. This box governs the notification-content output channel, not the
+      notification permission-prompt surface (which is one host capability
+      among the device-capability / permission-access box): it is distinct from
+      device-capability / permission access ([bypassDevicePermissionControls])
+      (host permission prompts), JavaScript dialog / modal spoofing
+      ([bypassJavaScriptDialogDenial]) (in-page modals), picture-in-picture
+      ([bypassPictureInPictureEscape]) (a floating window) and screen / window
+      capture ([bypassScreenCaptureProtection]) (an active scrape of rendered
+      pixels): those govern other prompt, modal, window or capture surfaces,
+      not an OS notification. Verified per target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

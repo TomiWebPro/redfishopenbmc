@@ -58,6 +58,13 @@
 // invariant; the opt-in never lets attacker-influenced console content leak a
 // session token via a speculative fetch — distinct from <a ping> auditing,
 // programmatic egress, form POST and top-level navigation),
+// no-notification / notification-permission spoofing exfiltration (Notifications
+// API: Notification.requestPermission / new Notification / showNotification; hard
+// configuration-independent invariant; the opt-in never lets attacker-influenced
+// console content render privileged session data in an OS notification shown in the
+// shade / lock screen outside the secure frame, nor coerce a permission prompt —
+// a content-output channel distinct from generic device-permission prompts, in-page
+// JS dialogs, PiP windows and screen capture),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -825,6 +832,36 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'opt-in-keeps-speculation-denied',
     marker: 'never grant a speculative'
+  ),
+  // No notification / notification-permission spoofing exfiltration (Notifications
+  // API): a notification renders attacker-chosen console DOM in the OS shade / lock
+  // screen, outside the secure frame; a channel distinct from device-permission
+  // prompts, in-page JS dialogs, PiP windows and pixel capture.
+  (name: 'no-notification-exfil', marker: 'notification api'),
+  (name: 'no-notification-request-permission', marker: 'notification.requestpermission()'),
+  (name: 'no-notification-show', marker: 'new notification('),
+  (name: 'no-notification-shownotification', marker: 'shownotification()'),
+  (name: 'notification-outside-secure-frame', marker: 'notification shade'),
+  (name: 'notification-lock-screen', marker: 'lock screen'),
+  (
+    name: 'notification-never-bypassed',
+    marker: 'never bypasses notification api access'
+  ),
+  (
+    name: 'notification-policy-getter',
+    marker: 'bypassnotificationapiaccess'
+  ),
+  (
+    name: 'notification-distinct-from-device-perms',
+    marker: 'distinct from device-capability / permission access'
+  ),
+  (
+    name: 'notification-distinct-from-js-dialog',
+    marker: 'distinct from javascript dialog'
+  ),
+  (
+    name: 'opt-in-keeps-notification-denied',
+    marker: 'never grant a notification'
   ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -1992,6 +2029,28 @@ void main() {
       expect(missing, contains('speculation-policy-getter'));
       expect(missing, contains('speculation-distinct-from-ping'));
       expect(missing, contains('opt-in-keeps-speculation-denied'));
+    });
+
+    test('RED: dropping the no-notification exfiltration box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutNotification = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'notification api|notification.requestpermission|new notification\(|shownotification|notification shade|lock screen|never bypasses notification|bypassnotificationapiaccess|distinct from device-capability|distinct from javascript dialog|never grant a notification')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutNotification);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-notification-exfil'));
+      expect(missing, contains('no-notification-request-permission'));
+      expect(missing, contains('no-notification-show'));
+      expect(missing, contains('no-notification-shownotification'));
+      expect(missing, contains('notification-outside-secure-frame'));
+      expect(missing, contains('notification-lock-screen'));
+      expect(missing, contains('notification-never-bypassed'));
+      expect(missing, contains('notification-policy-getter'));
+      expect(missing, contains('notification-distinct-from-device-perms'));
+      expect(missing, contains('notification-distinct-from-js-dialog'));
+      expect(missing, contains('opt-in-keeps-notification-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
