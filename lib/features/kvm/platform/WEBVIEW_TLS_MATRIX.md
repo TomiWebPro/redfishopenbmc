@@ -1465,6 +1465,49 @@ flag stays off for that target.
       cross-origin form submission (an HTML form POST), top-level navigation
       (where the main frame navigates) and clipboard isolation (the cross-app
       system clipboard). Verified per target before the flag is flipped.
+* [ ] **No screen / window capture exfiltration (`getDisplayMedia` /
+      `MediaRecorder` / canvas `captureStream` / `toDataURL`)** — the embedded
+      WebView must not let attacker-influenced console content scrape the
+      privileged console's rendered frames — KVM screen frames, session tokens,
+      credentials, managed-host inventory — off the display and hand them to a
+      foreign origin through a scripted capture API: no
+      `navigator.mediaDevices.getDisplayMedia()` / `MediaRecorder` recording of
+      a captured surface, no `HTMLCanvasElement.captureStream()` stream capture
+      and no `canvas.toDataURL()` / `toBlob()` snapshot of the console DOM
+      (e.g. rendered via `html2canvas`) followed by an egress upload. Console
+      content is served by the BMC and is therefore attacker-influenced: a
+      capture API turns the trusted console frame into a screen-scraping
+      channel that reads whatever the operator sees — including KVM frames
+      rendered by other trusted UI and credential dialogs — wholly independent
+      of TLS, hostname, origin, native-bridge and outbound-egress checks (which
+      govern the connection, injected code and network destinations, not an
+      active capture of the rendered pixels). This box does not prohibit an
+      operator/app-initiated screenshot of the whole app (a separate functional
+      path); it forbids console-script-initiated capture of the privileged
+      display surface. Verified per target (inspect the WebView capability /
+      permission configuration and observe that no console script can start a
+      display capture or snapshot the console frame) before the flag is
+      flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassScreenCaptureProtection`,
+      always `false`): it never bypasses screen/window-capture protection —
+      console content can never script a display capture or frame snapshot of
+      the privileged console surface, in strict mode and with the flag both off
+      and on. The opt-in relaxes ONLY the test BMC's untrusted server leaf for
+      the expected host, via a scoped per-connection verifier; it never grants a capture capability
+      just to make a console render or to debug it. This box governs active,
+      page-script-driven capture of the rendered display, so it is distinct from
+      device-capability / permission access ([bypassDevicePermissionControls])
+      (camera / microphone / geolocation / clipboard / notification /
+      Bluetooth / NFC privilege — a display-capture grant is not a camera/mic grant),
+      from the OS background-snapshot surface inside sensitive data at rest
+      ([bypassSensitiveDataAtRestProtection]) — a passive OS capture, not an active page-script scrape —
+      from picture-in-picture ([bypassPictureInPictureEscape]) (a floating
+      window over the app, not a capture of pixels), from clipboard isolation
+      ([bypassClipboardIsolation]) (a cross-app data channel, not a screen
+      scrape) and from outbound egress ([bypassOutboundEgressAllowlist]) (the
+      destination of a connection, not the capture of the pixels it carries).
+      Verified per target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

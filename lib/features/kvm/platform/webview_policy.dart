@@ -1312,6 +1312,45 @@ class KvmWebViewPolicy {
   /// (RP-1).
   bool get bypassCrossOriginMessagingIsolation => false;
 
+  /// Always `false`: protection against scripted screen / window capture of the
+  /// privileged console is NEVER bypassed, not even by the test-only
+  /// self-signed opt-in.
+  ///
+  /// The embedded WebView must not let attacker-influenced console content
+  /// scrape the rendered privileged display — KVM screen frames, session
+  /// tokens, credentials, managed-host inventory — through a scripted capture
+  /// API: no `navigator.mediaDevices.getDisplayMedia()` /
+  /// `HTMLCanvasElement.captureStream()` / `MediaRecorder` recording of a
+  /// captured surface and no `canvas.toDataURL()` / `toBlob()` snapshot of the
+  /// console DOM (e.g. via `html2canvas`) followed by an egress upload. Console
+  /// content is served by the BMC and is therefore attacker-influenced: a page
+  /// script that can start a display capture or snapshot the console frame
+  /// turns the trusted frame into a screen-scraping channel that reads
+  /// whatever the operator sees, including KVM frames rendered by other
+  /// trusted UI and credential dialogs. Operator/app-initiated screenshots are
+  /// a separate functional path, unaffected by this invariant. Tolerating the
+  /// test BMC's untrusted server leaf relaxes ONLY that leaf's trust; it must
+  /// never grant a display-capture or frame-snapshot capability just to make a
+  /// console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits a
+  /// console script to capture the privileged display. It governs active,
+  /// page-script-driven capture of rendered pixels, so it is distinct from
+  /// device-capability / permission access ([bypassDevicePermissionControls])
+  /// (camera / microphone / geolocation / clipboard / notification / Bluetooth
+  /// / NFC privilege — a display-capture grant is not a camera/mic grant), the
+  /// passive OS background-snapshot / recent-apps-thumbnail surface inside
+  /// sensitive data at rest ([bypassSensitiveDataAtRestProtection]) (a passive
+  /// OS capture, not an active page-script scrape), picture-in-picture escape
+  /// ([bypassPictureInPictureEscape]) (a floating window, not capture of
+  /// pixels), clipboard isolation ([bypassClipboardIsolation]) (a cross-app
+  /// data channel, not a screen scrape) and outbound egress
+  /// ([bypassOutboundEgressAllowlist]) (the destination of a connection, not
+  /// the capture of the pixels it carries). See `WEBVIEW_TLS_MATRIX.md`
+  /// (RP-1).
+  bool get bypassScreenCaptureProtection => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

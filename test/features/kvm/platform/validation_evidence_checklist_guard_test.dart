@@ -34,6 +34,13 @@
 // lets attacker-influenced console content post privileged session data to a
 // foreign-origin context — an in-process channel distinct from a native bridge,
 // network egress, form POST or the system clipboard),
+// no-screen/window-capture exfiltration (getDisplayMedia / MediaRecorder / canvas
+// captureStream / toDataURL; hard configuration-independent invariant; the opt-in
+// never grants attacker-influenced console content a display-capture or
+// frame-snapshot capability to scrape privileged KVM frames / session tokens /
+// credentials off the rendered display — an active page-script capture surface
+// distinct from camera/mic device permissions, the passive OS background
+// snapshot at rest, picture-in-picture and outbound egress),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -697,6 +704,38 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'opt-in-keeps-messaging-denied',
     marker: 'never grant a cross-origin messaging'
+  ),
+  // No screen/window-capture exfiltration (getDisplayMedia / MediaRecorder /
+  // canvas captureStream / toDataURL): an active, page-script-driven scrape of
+  // the rendered privileged display, not a camera/mic grant, an OS snapshot, a
+  // floating window, a clipboard write or a network destination.
+  (
+    name: 'no-screen-capture-exfil',
+    marker: 'screen / window capture exfiltration'
+  ),
+  (name: 'no-get-display-media', marker: 'getdisplaymedia'),
+  (name: 'no-media-recorder', marker: 'mediarecorder'),
+  (name: 'no-canvas-capture-stream', marker: 'capturestream'),
+  (name: 'no-canvas-snapshot', marker: 'todataurl'),
+  (
+    name: 'screen-capture-never-bypassed',
+    marker: 'never bypasses screen/window-capture protection'
+  ),
+  (
+    name: 'screen-capture-policy-getter',
+    marker: 'bypassscreencaptureprotection'
+  ),
+  (
+    name: 'screen-capture-distinct-from-device-perms',
+    marker: 'display-capture grant is not a camera/mic grant'
+  ),
+  (
+    name: 'screen-capture-distinct-from-snapshot',
+    marker: 'a passive os capture, not an active page-script scrape'
+  ),
+  (
+    name: 'opt-in-keeps-capture-denied',
+    marker: 'never grants a capture capability'
   ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -1778,6 +1817,28 @@ void main() {
       expect(missing, contains('cross-origin-messaging-policy-getter'));
       expect(missing, contains('cross-origin-messaging-distinct-from-native-bridge'));
       expect(missing, contains('opt-in-keeps-messaging-denied'));
+    });
+
+    test('RED: dropping the no-screen/window-capture exfiltration box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutCapture = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'screen / window capture exfiltration|getdisplaymedia|mediarecorder|capturestream|todataurl|never bypasses screen/window-capture protection|bypassscreencaptureprotection|display-capture grant is not a camera/mic grant|passive os capture|never grants a capture capability')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutCapture);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-screen-capture-exfil'));
+      expect(missing, contains('no-get-display-media'));
+      expect(missing, contains('no-media-recorder'));
+      expect(missing, contains('no-canvas-capture-stream'));
+      expect(missing, contains('no-canvas-snapshot'));
+      expect(missing, contains('screen-capture-never-bypassed'));
+      expect(missing, contains('screen-capture-policy-getter'));
+      expect(missing, contains('screen-capture-distinct-from-device-perms'));
+      expect(missing, contains('screen-capture-distinct-from-snapshot'));
+      expect(missing, contains('opt-in-keeps-capture-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
