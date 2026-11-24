@@ -3094,6 +3094,95 @@ void main() {
     });
   });
 
+  group('KvmWebViewPolicy — SVG external-resource exfiltration is never '
+      'available', () {
+    test('production default never permits SVG external-resource exfiltration',
+        () {
+      expect(
+        KvmWebViewPolicy.productionDefault.bypassSvgExternalResourceExfiltration,
+        isFalse,
+      );
+    });
+
+    test('test-only self-signed opt-in still denies SVG external-resource '
+        'exfiltration', () {
+      // Tolerating the test BMC's untrusted server leaf relaxes ONLY that leaf's
+      // trust. It must never let attacker-influenced console content emit an
+      // SVG-driven subresource beacon (<image href> / <use href> / <feImage> /
+      // <font-face-uri> / <foreignObject>) to a non-approved origin — a
+      // declarative SVG-namespace request channel with no script-opened socket,
+      // CSS rule, form submission or navigation. Hard invariant, independent of
+      // flag / TLS.
+      expect(KvmWebViewPolicy.testOptIn.bypassSvgExternalResourceExfiltration,
+          isFalse);
+    });
+
+    test('no policy configuration can permit SVG external-resource exfiltration',
+        () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassSvgExternalResourceExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassSvgExternalResourceExfiltration, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Every other hard invariant stays independent of the SVG external-
+      // resource surface: the test-only opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.bypassStrictReferrerPolicy, isFalse);
+      expect(enabledSelfSigned.bypassMixedContentBlocking, isFalse);
+      expect(enabledSelfSigned.bypassLogRedaction, isFalse);
+      expect(enabledSelfSigned.bypassSensitiveDataAtRestProtection, isFalse);
+      expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
+      expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
+      expect(enabledSelfSigned.bypassCookieIsolation, isFalse);
+      expect(enabledSelfSigned.bypassWebViewRemoteDebugging, isFalse);
+      expect(enabledSelfSigned.bypassDevicePermissionControls, isFalse);
+      expect(enabledSelfSigned.bypassHttpAuthChallengeDenial, isFalse);
+      expect(enabledSelfSigned.bypassLocalFileAccess, isFalse);
+      expect(enabledSelfSigned.bypassOutboundEgressAllowlist, isFalse);
+      expect(enabledSelfSigned.bypassCrossOriginFormSubmission, isFalse);
+      expect(enabledSelfSigned.bypassSslErrorRejection, isFalse);
+      expect(enabledSelfSigned.bypassTopLevelNavigationConfinement, isFalse);
+      expect(enabledSelfSigned.bypassArbitraryFileDownload, isFalse);
+      expect(enabledSelfSigned.bypassAutofillCredentialCapture, isFalse);
+      expect(enabledSelfSigned.bypassFileChooserAccess, isFalse);
+      expect(enabledSelfSigned.bypassTapjackingProtection, isFalse);
+      expect(enabledSelfSigned.bypassJavaScriptDialogDenial, isFalse);
+      expect(enabledSelfSigned.bypassServiceWorkerRegistration, isFalse);
+      expect(enabledSelfSigned.bypassPrintExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassInputCaptureProtection, isFalse);
+      expect(enabledSelfSigned.bypassPictureInPictureEscape, isFalse);
+      expect(enabledSelfSigned.bypassShareCastExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassClipboardIsolation, isFalse);
+      expect(enabledSelfSigned.bypassCrossOriginMessagingIsolation, isFalse);
+      expect(enabledSelfSigned.bypassScreenCaptureProtection, isFalse);
+      expect(enabledSelfSigned.bypassHyperlinkAuditingExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassCredentialManagementApiAccess, isFalse);
+      expect(enabledSelfSigned.bypassSpeculationRulesEgress, isFalse);
+      expect(enabledSelfSigned.bypassNotificationApiAccess, isFalse);
+      expect(enabledSelfSigned.bypassWebRtcDataChannelExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassFileSystemAccessApi, isFalse);
+      expect(enabledSelfSigned.bypassWebTransportExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassPeripheralIoExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassCssExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassHtmlSubresourceExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassWorkerScriptExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassBaseUriHijacking, isFalse);
+      expect(enabledSelfSigned.bypassDragAndDropExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassWindowNameExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassDnsExfiltration, isFalse);
+    });
+  });
+
   group('resolveRenderRoute — fallback works with the flag off', () {
     test('flag off routes valid HTTPS HTML5 to the external browser', () {
       expect(

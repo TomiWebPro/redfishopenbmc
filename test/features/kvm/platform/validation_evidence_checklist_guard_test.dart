@@ -137,6 +137,15 @@
 // connect-src allowlist, including DNS-prefetch; a resolution-time data channel
 // distinct from HTTP egress, element/style beacons, speculative prefetch,
 // subresource address class and top-level origin binding),
+// no-SVG-external-resource / image-href exfiltration (<image href> / xlink:href,
+// <use href>, <feImage href>, external <pattern>/<mask>/<clipPath>,
+// <font-face-uri>, <script href>/<style href>, <foreignObject>; a declarative
+// SVG-namespace subresource-request channel governed by CSP img-src /
+// style-src / font-src / script-src / child-src, not connect-src; hard
+// configuration-independent invariant; the opt-in never lets attacker-
+// influenced console content emit an SVG-driven subresource beacon to a
+// non-approved origin — distinct from HTML-element src/href beacons, CSS
+// @import/url() rules, worker scripts and programmatic egress),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -1162,6 +1171,31 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'dns-policy-getter', marker: 'bypassdnsexfiltration'),
   (name: 'dns-distinct-surface', marker: 'dns resolution channel itself'),
   (name: 'opt-in-keeps-dns-denied', marker: 'never grant a dns lookup'),
+  // No SVG external-resource / image-href exfiltration: SVG-namespace
+  // declarative subresource references (<image href>, <use href>, <feImage>,
+  // <font-face-uri>, <foreignObject>), governed by CSP img-src / style-src /
+  // font-src / script-src / child-src, NOT connect-src programmatic egress —
+  // distinct from HTML src/href beacons, CSS url()/@import rules and workers.
+  (name: 'no-svg-external-resource-exfil', marker: 'svg external-resource'),
+  (name: 'no-svg-image-href', marker: 'image href'),
+  (name: 'no-svg-use-href', marker: 'use href'),
+  (name: 'no-svg-feimage', marker: 'feimage'),
+  (name: 'no-svg-font-face-uri', marker: 'font-face-uri'),
+  (name: 'no-svg-foreign-object', marker: 'foreignobject'),
+  (name: 'svg-src-csp-directives', marker: 'child-src'),
+  (
+    name: 'svg-exfil-never-bypassed',
+    marker: 'never bypasses svg external-resource exfiltration'
+  ),
+  (
+    name: 'svg-exfil-policy-getter',
+    marker: 'bypasssvgexternalresourceexfiltration'
+  ),
+  (name: 'svg-exfil-distinct-surface', marker: 'svg-namespace declarative'),
+  (
+    name: 'opt-in-keeps-svg-exfil-denied',
+    marker: 'never grant an svg external-resource'
+  ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -2616,6 +2650,32 @@ void main() {
       expect(missing, contains('dns-policy-getter'));
       expect(missing, contains('dns-distinct-surface'));
       expect(missing, contains('opt-in-keeps-dns-denied'));
+    });
+
+    test('RED: dropping the no-SVG-external-resource box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutSvg = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'svg external-resource|image href|use href|feimage|'
+              r'font-face-uri|foreignobject|child-src|img-src|'
+              r'bypasssvgexternalresourceexfiltration|'
+              r'never grant an svg|svg-namespace declarative|'
+              r'never bypasses svg')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutSvg);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-svg-external-resource-exfil'));
+      expect(missing, contains('no-svg-image-href'));
+      expect(missing, contains('no-svg-use-href'));
+      expect(missing, contains('no-svg-feimage'));
+      expect(missing, contains('no-svg-font-face-uri'));
+      expect(missing, contains('no-svg-foreign-object'));
+      expect(missing, contains('svg-src-csp-directives'));
+      expect(missing, contains('svg-exfil-never-bypassed'));
+      expect(missing, contains('svg-exfil-policy-getter'));
+      expect(missing, contains('svg-exfil-distinct-surface'));
+      expect(missing, contains('opt-in-keeps-svg-exfil-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
