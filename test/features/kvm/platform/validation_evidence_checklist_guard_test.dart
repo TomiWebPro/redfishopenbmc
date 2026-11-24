@@ -89,6 +89,13 @@
 // console content open a USB/serial/HID stream to smuggle or relay privileged
 // session data — distinct from generic device-permission grants, filesystem
 // handles and the network egress allowlist),
+// no-CSS-driven-subresource exfiltration (@import / background-image:url() /
+// @font-face / attribute-selector CSS injection; a declarative network-request
+// channel governed by CSP style-src / img-src / font-src, not connect-src; hard
+// configuration-independent invariant; the opt-in never lets attacker-influenced
+// console content emit a stylesheet-driven request carrying privileged session
+// data to a non-approved origin — distinct from programmatic HTTP egress,
+// speculation-rule prefetch and <a ping> hyperlink auditing),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -971,6 +978,25 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'opt-in-keeps-peripheral-io-denied',
     marker: 'never grant a peripheral i/o'
   ),
+  // No CSS-driven subresource exfiltration (CSS exfiltration via @import /
+  // url() / @font-face / attribute selectors): a declarative network-request
+  // channel governed by CSP style-src / img-src / font-src, NOT connect-src —
+  // distinct from programmatic egress, speculation rules and <a ping> auditing.
+  (name: 'no-css-exfil', marker: 'css-driven subresource exfiltration'),
+  (name: 'no-css-import', marker: '@import'),
+  (name: 'no-css-url', marker: 'background-image'),
+  (name: 'no-css-font-face', marker: '@font-face'),
+  (name: 'no-css-attribute-selector', marker: 'attribute selector'),
+  (name: 'css-src-csp-directives', marker: 'style-src'),
+  (name: 'css-img-src-csp', marker: 'img-src'),
+  (name: 'css-font-src-csp', marker: 'font-src'),
+  (
+    name: 'css-never-bypassed',
+    marker: 'never bypasses css-driven subresource exfiltration'
+  ),
+  (name: 'css-policy-getter', marker: 'bypasscssexfiltration'),
+  (name: 'css-distinct-from-connect-src', marker: 'not connect-src'),
+  (name: 'opt-in-keeps-css-denied', marker: 'never grant a css'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -2260,6 +2286,33 @@ void main() {
       expect(missing, contains('peripheral-io-distinct-from-device-perms'));
       expect(missing, contains('peripheral-io-distinct-from-egress'));
       expect(missing, contains('opt-in-keeps-peripheral-io-denied'));
+    });
+
+    test('RED: dropping the no-CSS-driven-subresource-exfiltration box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutCss = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'css-driven subresource exfiltration|@import|background-image|'
+              r'@font-face|attribute selector|style-src|img-src|font-src|'
+              r'never bypasses css-driven subresource exfiltration|'
+              r'bypasscssexfiltration|not connect-src|never grant a css')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutCss);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-css-exfil'));
+      expect(missing, contains('no-css-import'));
+      expect(missing, contains('no-css-url'));
+      expect(missing, contains('no-css-font-face'));
+      expect(missing, contains('no-css-attribute-selector'));
+      expect(missing, contains('css-src-csp-directives'));
+      expect(missing, contains('css-img-src-csp'));
+      expect(missing, contains('css-font-src-csp'));
+      expect(missing, contains('css-never-bypassed'));
+      expect(missing, contains('css-policy-getter'));
+      expect(missing, contains('css-distinct-from-connect-src'));
+      expect(missing, contains('opt-in-keeps-css-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
