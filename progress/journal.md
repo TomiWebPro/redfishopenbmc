@@ -15465,3 +15465,16 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U39 + EP-T60 are LANDED; no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM compound seam; never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — EP-P25 (for #009/#021)
+
+**Done:**
+- Landed EP-P25: `test/features/kvm/platform/structural_boundary_control_agreement_test.dart` (3 tests). A 12-case hostile matrix drives raw C0/C1/DEL controls wedged at URI structural boundaries (scheme↔`://`, userinfo `@`, port `:`, IPv6 `[...]`, trailing authority) plus 3 clean spellings through all four decision layers: the shared classifier + control-safety core, `planConsoleLaunch` (incl. stale-flag test-only opt-in), `allowsInAppNavigation` (both directions), and `KvmConsole.hasSecureLaunchUri`/`launchPlan`, field-for-field. The same-origin userinfo-NUL case pins the `Uri.tryParse` origin differential (an origin-only gate cannot defend it).
+
+**Decisions:**
+- AUDIT FIRST confirmed no live divergence — the shared `_controlSafeTrimmedUri` core rejects a raw control anywhere, so all layers agree by construction. Genuine unguarded seam: no single test swept the structural-boundary control family through every layer (EP-P19 covers query/fragment only), and the gate is one load-bearing check. RED proof: dropping the `_rawUriForbiddenChars` gate → `+1 -1` (hostile-case test fails, clean GREEN), restored byte-clean. Test-only, empty `lib/` diff, deps unchanged; not epoch-registered (write scope limited to `test/features/kvm/platform/**`) — defer to next EP-T pass. No issue closed (#009/#021 stay human-gated). Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). Next EP-T pass registers the new guard under a fresh epoch; otherwise AUDIT FIRST a genuinely new KVM seam, never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
