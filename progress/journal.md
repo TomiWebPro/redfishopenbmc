@@ -15237,3 +15237,20 @@
 - **Next:** push this tracking commit (never force-push; preserve all prior unpushed commits); next PASS tip merges the same way; DMTF emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-U31 + EP-T52)
+
+**Done:**
+- FEATURE EP-U31 + EP-T52 for open #009/#021. AUDIT FIRST defeated all five 06:54-split dept heads: RM-27 (managerId passed into both factories + shared source helper → agree by construction), EP-S23 (shared `_fetchManagerBodies()` walk), EP-T52 pre-audit (programmatic sweep found no prior unregistered guard), EP-P25 (shared whole-URI fail-closed core). Genuine unguarded COMPOUND seam: EP-U24 pins an unbreakable chip @1.0x/LTR, EP-U21 pins 2.0x with word-breakable chips, EP-U28 pins RTL with short chips @1.0x — none drove unbreakable × RTL × 2.0x, where a one-sided "unbreakable chip fits better in a Row at large fonts" edit could overflow the capability card while every single-axis suite stayed GREEN. Added `test/features/kvm/kvm_compound_extreme_a11y_agreement_test.dart` (7 tests) over both real cards at 320/800/1300 px: byte-exact chip sequence, one merged visible==announced node, one visible chip instance, no overflow, LTR/1.0x control GREEN. Registered the guard under a fresh pinned `epT52AddedGuards` epoch in `test/tool/guard_suite_liveness_test.dart`.
+- REAL RED (guard): one-sided RTL+2.0x-gated chip reversal on the capability card (600-perm backup) → exactly 3 named failures (`+4 -3`), controls GREEN; restored byte-clean (SHA `c6c4b09a…` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 7/7 GREEN. Registry REAL RED: dropped only the canonical entry → exactly 3 named failures (`+83 -3`: EP-T52 pin, EP-T20 completeness, EP-T52 temp-root liveness); restored byte-clean (SHA `c5b8e81c…` unchanged, backup shredded) → 94/94 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (2 files); `flutter analyze` 0 issues; full `flutter test` GREEN (count in automation-tracking); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool display-layer agreement guard + its liveness registration at a genuinely unguarded compound seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). Never force-push, rewrite history, `git clean`, or delete files. Five pre-existing stashes untouched; no new stash (clean baseline). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U31 + EP-T52 are LANDED; no unregistered #009/#021 agreement guards remain and all five 06:54-split dept heads defeated — next AUDIT FIRST a genuinely new KVM seam; never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
