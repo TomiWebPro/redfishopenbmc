@@ -41,6 +41,12 @@
 // credentials off the rendered display — an active page-script capture surface
 // distinct from camera/mic device permissions, the passive OS background
 // snapshot at rest, picture-in-picture and outbound egress),
+// no-hyperlink-auditing / <a ping> exfiltration (browser-generated background
+// POST on link activation, governed by the CSP ping directive not connect-src;
+// hard configuration-independent invariant; the opt-in never lets attacker-
+// influenced console content smuggle privileged session data to a non-approved
+// origin via the ping attribute, a channel distinct from programmatic egress,
+// form POST, top-level navigation, private-network egress and subresource CSP),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -736,6 +742,29 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'opt-in-keeps-capture-denied',
     marker: 'never grants a capture capability'
+  ),
+  // No hyperlink auditing / <a ping> exfiltration: a browser-generated
+  // background POST on link activation (CSP ping directive, not connect-src),
+  // not a programmatic connection, form POST, navigation or subresource load.
+  (name: 'no-hyperlink-auditing-exfil', marker: 'hyperlink auditing'),
+  (name: 'no-ping-attribute', marker: 'ping attribute'),
+  (name: 'no-ping-post', marker: 'ping-from'),
+  (name: 'no-ping-csp-directive', marker: 'ping directive'),
+  (
+    name: 'hyperlink-auditing-never-bypassed',
+    marker: 'never bypasses hyperlink-auditing exfiltration'
+  ),
+  (
+    name: 'hyperlink-auditing-policy-getter',
+    marker: 'bypasshyperlinkauditingexfiltration'
+  ),
+  (
+    name: 'hyperlink-auditing-distinct-surface',
+    marker: 'link-activation request channel'
+  ),
+  (
+    name: 'opt-in-keeps-hyperlink-auditing-denied',
+    marker: 'never allow hyperlink auditing'
   ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -1839,6 +1868,26 @@ void main() {
       expect(missing, contains('screen-capture-distinct-from-device-perms'));
       expect(missing, contains('screen-capture-distinct-from-snapshot'));
       expect(missing, contains('opt-in-keeps-capture-denied'));
+    });
+
+    test('RED: dropping the no-hyperlink-auditing / <a ping> box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutPing = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'hyperlink auditing|ping attribute|ping-from|ping directive|never bypasses hyperlink-auditing|bypasshyperlinkauditingexfiltration|link-activation request channel|never allow hyperlink auditing')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutPing);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-hyperlink-auditing-exfil'));
+      expect(missing, contains('no-ping-attribute'));
+      expect(missing, contains('no-ping-post'));
+      expect(missing, contains('no-ping-csp-directive'));
+      expect(missing, contains('hyperlink-auditing-never-bypassed'));
+      expect(missing, contains('hyperlink-auditing-policy-getter'));
+      expect(missing, contains('hyperlink-auditing-distinct-surface'));
+      expect(missing, contains('opt-in-keeps-hyperlink-auditing-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

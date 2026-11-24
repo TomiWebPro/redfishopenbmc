@@ -1351,6 +1351,49 @@ class KvmWebViewPolicy {
   /// (RP-1).
   bool get bypassScreenCaptureProtection => false;
 
+  /// Always `false`: hyperlink-auditing / `<a ping>` exfiltration is NEVER
+  /// bypassed, not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let attacker-influenced console content
+  /// exfiltrate privileged session data (session tokens, operator credentials,
+  /// KVM frame handles, managed-host inventory) through HTML hyperlink auditing:
+  /// no `ping` attribute on an `<a>` / `<area>` anchor, no scripted click or
+  /// auto-followed link that makes the browser issue a background `POST` (with
+  /// `Ping-From` / `Ping-To` headers) to a URL carrying console data, and no
+  /// third-party auditing endpoint reached on link activation. Console content
+  /// is served by the BMC and is therefore attacker-influenced: hyperlink
+  /// auditing is a browser-generated request fired when a link is followed and
+  /// is governed by the CSP ping directive (or `default-src`), NOT `connect-src`,
+  /// so a `connect-src 'self'` egress allowlist alone does not confine it. The
+  /// privileged console handle can be smuggled in the ping URL to an attacker
+  /// origin without any script-opened socket, form submission or visible
+  /// navigation change. Hyperlink auditing must be disabled at the WebView (ping
+  /// URLs stripped, ping requests denied at request interception, CSP ping
+  /// 'none') on every target, in strict mode and with the flag both off and on.
+  /// Operator/app-initiated navigation of the console is a separate functional
+  /// path and stays unaffected; only the hidden third-party auditing request
+  /// driven by console content is forbidden. Tolerating the test BMC's untrusted
+  /// server leaf relaxes ONLY that leaf's trust for the expected host, via a
+  /// scoped per-connection verifier; it must never allow hyperlink auditing just
+  /// to make a console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits a
+  /// console link to emit a background auditing POST carrying privileged data to
+  /// a non-approved origin. It governs the browser-generated link-activation
+  /// request channel, so it is distinct from the outbound egress allowlist
+  /// ([bypassOutboundEgressAllowlist]) (programmatic fetch / XHR / WebSocket /
+  /// WebRTC / sendBeacon connections), cross-origin form submission
+  /// ([bypassCrossOriginFormSubmission]) (an HTML form GET/POST body), top-level
+  /// navigation confinement ([bypassTopLevelNavigationConfinement]) (where the
+  /// main frame navigates), private-network egress protection
+  /// ([bypassPrivateNetworkEgressProtection]) (the address class of subresources)
+  /// and CSP / mixed-content blocking ([bypassMixedContentBlocking]) (which
+  /// subresources the page may load): those govern other connection, request or
+  /// output surfaces, not the `<a ping>` auditing request. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassHyperlinkAuditingExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
