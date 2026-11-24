@@ -14995,3 +14995,20 @@
 - Push the single commit (never force-push). AUDIT FIRST for a genuinely new unguarded seam (EP-S21 hostile OEM console shapes, EP-U28 RTL-locale rendering), never churn; a future EP-T liveness pass only if new guards land. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:rf-gate — MERGED build/rf-platform (no clipboard read/write exfiltration guard, check#12154)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` run#12154 explicit `CHECK: PASS` for exact tip `a24390e` (analyze 0, targeted +180, no TLS weakening, 4 allowlisted paths). Verified one branch-unique commit, merge-base `6e66db2` ancestor of `main`, clean tree; merged `build/rf-platform` into `main` via `--no-ff` → `cdc61d6` (parents `d1bf860` / `a24390e`), clean ort auto-merge. Branch adds the RP-1 "no clipboard read/write exfiltration" validation-matrix acceptance box + hard `bypassClipboardIsolation == false` invariant + RED/GREEN policy/guard tests; no production TLS weakening, no dependency change.
+- First-parent diff = 4 allowlisted files (+170/-0): `WEBVIEW_TLS_MATRIX.md` (+36), `webview_policy.dart` (+38), `validation_evidence_checklist_guard_test.dart` (+32), `webview_policy_test.dart` (+64).
+
+**Verification:**
+- `flutter analyze` 0; full `flutter test --coverage --concurrency=4` 2788 passed / 1 skipped (baseline 2784 +4 merged tests); all coverage gates PASS overall 90.6% (6103/6734) / scoped 90.4% (2119/2345) / kvm 97.7% (1380/1413) / kvm-platform 97.6% (495/507), exit 0; asset + unattended guards OK; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; deps unchanged; TLS-weakening + secret scan clean.
+
+**Decisions:**
+- DMTF 85-test emulator skipped (policy getter + doc + tests only; no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85). No issue closed (#009/#021 stay human-gated). No new stash (clean tree); five pre-existing stashes untouched; no force-push, history rewrite, `git clean`, or file deletion. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Next rf-gate run: re-check `rf-platform-check` verdict first; `--no-ff` merge only a PASS branch; NO-OP if no new commits. Builder continues audit-first dept heads; close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
