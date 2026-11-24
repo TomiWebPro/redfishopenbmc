@@ -599,6 +599,24 @@
 // RED→GREEN proof and the updated EP-T20 completeness arithmetic, so deleting /
 // emptying / test-stripping it fails closed (issues #009/#021 closeout).
 //
+// EP-T63 (queued audit-first head) registers the one cross-layer fail-closed
+// agreement guard landed this run:
+// `ipv6_zone_id_malformed_authority_agreement_test.dart` (EP-P27, 6 live tests —
+// a scoped-IPv6 zone id (`%25` / bare `%`), a zone carrying a control / bidi /
+// separator byte, a malformed bracket / percent spelling and IPv4-mapped forms
+// pinned field-for-field across the classifier, HTTP-family classifier,
+// `planConsoleLaunch`, `allowsInAppNavigation` and the `KvmConsole` model, with
+// clean IPv6 / IPv4 controls). It landed live + CI-reachable via verify.yml
+// whole-tree `flutter test --coverage` yet absent from BOTH `canonicalGuardFiles`
+// and every pinned epoch (0 registry references), so deleting / emptying /
+// test-stripping it stayed GREEN — a genuine "who guards the guards" gap, no
+// live divergence, no behaviour change, not churn (the guard's Verify write
+// scope is limited to `test/features/kvm/platform/**`). Registered under a fresh
+// pinned `epT63AddedGuards` epoch (length 1, pairwise-disjoint from every earlier
+// designation incl. EP-T62) with a pin test, a temp-root RED→GREEN proof and the
+// updated EP-T20 completeness arithmetic, so deleting / emptying /
+// test-stripping it fails closed (issues #009/#021 closeout).
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -917,6 +935,11 @@ const List<String> canonicalGuardFiles = <String>[
   // until now. Registering it makes deleting / emptying / test-stripping it
   // fail closed.
   'test/features/kvm/kvm_nonpopulated_state_rtl_scale_a11y_agreement_test.dart',
+  // EP-T63 extension: the IPv6 zone-id / malformed-authority cross-layer
+  // fail-closed agreement guard (EP-P27), landed this run; live + CI-reachable
+  // but absent from the registry until now. Registering it makes deleting /
+  // emptying / test-stripping it fail closed.
+  'test/features/kvm/platform/ipv6_zone_id_malformed_authority_agreement_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -1530,6 +1553,19 @@ const Set<String> epT62AddedGuards = <String>{
   'test/features/kvm/kvm_nonpopulated_state_rtl_scale_a11y_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-T63: the one cross-layer
+/// fail-closed agreement guard landed this run (EP-P27 IPv6 zone-id /
+/// malformed-authority — a scoped zone id, a control / bidi / separator-bearing
+/// zone, a malformed bracket / percent spelling and IPv4-mapped forms pinned
+/// field-for-field across the classifier / launch plan / navigation gate / model
+/// with clean IPv6 / IPv4 controls). It landed live + CI-reachable but absent
+/// from the registry, so deleting / emptying / test-stripping it stayed GREEN.
+/// Pinned separately so a future edit cannot drop it back out of the canonical
+/// set (issues #009/#021 closeout).
+const Set<String> epT63AddedGuards = <String>{
+  'test/features/kvm/platform/ipv6_zone_id_malformed_authority_agreement_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -1588,6 +1624,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT60AddedGuards,
   ...epT61AddedGuards,
   ...epT62AddedGuards,
+  ...epT63AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -3975,6 +4012,75 @@ void main() {
       expect(epT62AddedGuards.intersection(epT61AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-T63: the IPv6 zone-id / malformed-authority cross-layer agreement '
+        'guard is in the canonical liveness set', () {
+      expect(epT63AddedGuards, isNotEmpty);
+      expect(epT63AddedGuards.length, 1);
+      for (final String path in epT63AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T63 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epT63AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(rm15AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epP13AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(sec010AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT26AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT28AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT29AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT30AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT32AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT33AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT35AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT36AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT37AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT39AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT40AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT41AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT42AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT43AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT44AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT45AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT46AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT47AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT48AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT49AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT50AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT51AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT52AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT53AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT54AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT55AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT56AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT57AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT58AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT59AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT60AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT61AddedGuards), isEmpty);
+      expect(epT63AddedGuards.intersection(epT62AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -4053,7 +4159,8 @@ void main() {
             epT59AddedGuards.length +
             epT60AddedGuards.length +
             epT61AddedGuards.length +
-            epT62AddedGuards.length,
+            epT62AddedGuards.length +
+            epT63AddedGuards.length,
       );
     });
   });
@@ -6938,6 +7045,40 @@ void main() {
         // overflow at 320/800/1300 px under RTL + 2.0x, LTR/1.0x + populated
         // controls).
         for (final String addedGuard in epT62AddedGuards) {
+          File(p(addedGuard)).deleteSync();
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'MISSING: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when deleted',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('  \n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'EMPTY: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when emptied',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when test-stripped',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+        }
+
+        // EP-T63: IPv6 zone-id / malformed-authority cross-layer fail-closed
+        // agreement guard (EP-P27 — a scoped zone id, a control / bidi /
+        // separator-bearing zone, a malformed bracket / percent spelling and
+        // IPv4-mapped forms pinned field-for-field across the classifier / plan /
+        // navigation gate / model, with clean IPv6 / IPv4 controls).
+        for (final String addedGuard in epT63AddedGuards) {
           File(p(addedGuard)).deleteSync();
           expect(
             evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())

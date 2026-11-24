@@ -15546,3 +15546,21 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U40 + EP-T62 LANDED; next AUDIT FIRST the remaining fresh dept heads RM-29 / EP-P27 / EP-S25, never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-P27 + EP-T63)
+
+**Done:**
+- FEATURE EP-P27: new `test/features/kvm/platform/ipv6_zone_id_malformed_authority_agreement_test.dart` (6 unit tests, 13-case matrix) pins the scoped-IPv6 zone-id / malformed-authority family (bare `%` / `%25` zone, control / bidi / separator-bearing zone, malformed bracket / percent, IPv4-mapped forms + clean IPv6 / IPv4 controls) field-for-field across the fail-closed classifier, HTTP-family classifier, `planConsoleLaunch`, `allowsInAppNavigation` and the `KvmConsole` model — production copy-only under a stale secure flag, uniform opt-in eligibility, navigation fail-closed, byte-exact clean controls. A genuine unguarded cross-layer seam (EP-P21 covers only mapped-loopback / unique-local / unspecified / one `%25` zone id at the classifier family).
+- FEATURE EP-T63: registered the new guard under a fresh pinned `epT63AddedGuards` epoch in `test/tool/guard_suite_liveness_test.dart` (canonical path, disjointness pin vs all 53 earlier epochs, temp-root RED→GREEN, EP-T20 completeness arithmetic). Full enumeration confirmed every other live guard already registered — no pre-existing gap.
+
+**Verification:**
+- Two REAL RED→GREEN proofs: guard — dropped the shared `_authorityHasEncodedPercent` gate (600-perm backup) → 4 named failures / restore 6/6 (SHA `74887e61…` byte-clean, empty `lib/` diff, backup shredded); registry — dropped only the canonical entry → 2 named failures / restore 98/98 (SHA `de68ae9d…` byte-clean). analyze 0; full `flutter test --concurrency=4` 3015 passed / 1 skipped; issues validate OK; diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Read-only cross-layer characterization + test/tool liveness guards at genuinely untested seams; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). No manufactured UI churn. A blanket `dart format` reformatted 5 pre-existing unformatted tracked files; all reverted byte-clean and left unstaged. No WIP touched, no new stash, no `git clean`; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-P27 + EP-T63 LANDED; next AUDIT FIRST the two remaining dept heads RM-29 / EP-S25, never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
