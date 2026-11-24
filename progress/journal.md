@@ -15758,3 +15758,19 @@
 **Next:** push by fast-forward only when valid credentials exist (never force-push; `main` ahead of `origin/main`); next `rf-platform-check` PASS tip merges the same way; both open issues stay human-gated on WebView + BMC TLS validation.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-T69)
+
+**Done:**
+- FEATURE EP-T69 (test/tool-only): registered the previously unregistered EP-U42 `kvm_manager_source_row_rtl_scale_a11y_agreement_test.dart` guard (10 live widget tests) in `test/tool/guard_suite_liveness_test.dart` under a fresh pinned `epT69AddedGuards` epoch (+1 canonical path, `allDesignatedGuards` spread, EP-T20 completeness arithmetic term, +1 disjointness pin test vs every earlier epoch, header rationale). AUDIT FIRST: canonical == designated (116 == 116, zero drift); the guard is tracked + live + CI-reachable via whole-tree `flutter test --coverage` yet had 0 registry references — deleting / emptying / test-stripping it stayed GREEN. Deferred by the EP-U42 owner run (write scope limited to `test/features/kvm/**`).
+
+**Verification:**
+- REAL RED→GREEN: dropped only the canonical entry (epoch kept) under a 600-perm backup → exactly 2 named failures (EP-T69 pin + EP-T20 completeness); restored byte-clean (SHA `1f9c0a93…` unchanged, backup shredded) → 104/104 targeted GREEN. Analyze 0; full `flutter test --concurrency=4` 3112 passed / 1 skipped (baseline 3111 +1 pin); `issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Read-only registry liveness registration at a confirmed unguarded seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). No manufactured UI churn. Tree was clean at preflight — no concurrent WIP touched, no new stash, no `git clean`, no history rewrite; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-T69 LANDED; no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM seam (never churn, RED→GREEN only on a genuine divergence); cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
