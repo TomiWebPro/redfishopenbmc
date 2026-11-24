@@ -15680,3 +15680,19 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits and the concurrent EP-U41 WIP). EP-T67 LANDED; no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM seam. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-U41)
+
+**Done:**
+- FEATURE EP-U41: new `test/features/kvm/kvm_copy_affordance_rtl_scale_a11y_agreement_test.dart` (8 widget tests) pins the fail-closed "Copy connect info" console-card button and "Copy console URI" viewer button to exactly ONE merged `excludeSemantics` node whose announced label equals its visible Text (visible text inside the node), no split / reworded screen-reader-only `^Copy connection` node, no `RenderFlex` overflow at 320/800/1300 px under RTL + 2.0x, plus an LTR/1.0x control. AUDIT FIRST: every existing copy guard asserts only visible `find.text(...)`, and the RTL x 2.0x family never drove the copy buttons — a one-sided reworded-Semantics edit on one surface stayed GREEN everywhere else. GUARD NOT EPOCH-REGISTERED this run (a concurrent automation run owned `epT67AddedGuards` in the shared registry); registration deferred to next EP-T pass (EP-T68).
+
+**Verification:**
+- REAL RED→GREEN: one-sided reworded `Semantics(label: 'Copy connection info', excludeSemantics: true)` on the console card's copy button (600-perm backup) → exactly 4 named failures (3 RTL card widths + LTR control), 3 viewer tests GREEN; source restored byte-clean (SHA `7359effb…` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 8/8 GREEN. Final verify on current HEAD `b4bfd14` (concurrent EP-T67 commit included) in the live tree: analyze 0; full `flutter test --concurrency=4` 3092 passed / 1 skipped on final HEAD (baseline 3083 + 8 new guard + 1 concurrent EP-T67 pin; isolated-tree pre-merge check 3091 = baseline + 8); `issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Read-only compound a11y agreement guard at a genuinely unguarded seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). No manufactured UI churn. A concurrent `redfish-automation` run (EP-T67, commit `b4bfd14`) committed its tracking + registry work mid-run; its WIP was preserved, never staged by this run; no WIP touched, no new stash, no `git clean`; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U41 LANDED but NOT epoch-registered — next EP-T pass (EP-T68) must register it under a fresh pinned epoch disjoint from all earlier incl. EP-T67; then AUDIT FIRST a genuinely new KVM seam, never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
