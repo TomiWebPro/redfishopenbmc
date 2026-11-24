@@ -1853,6 +1853,45 @@ flag stays off for that target.
       address class of a subresource destination): those govern other request
       surfaces, not cross-origin markup-element subresource beacons. Verified per
       target before the flag is flipped.
+* [ ] **No worker-script exfiltration** — the embedded WebView must not let
+      attacker-influenced console content open a script execution context that
+      runs off the main thread and loads further scripts/modules from a
+      non-approved origin. This is the worker script/module-loading channel: no
+      `new Worker(...)` (dedicated worker), no `new SharedWorker(...)` (shared
+      worker), no module worker (`new Worker(url, { type: 'module' })`) and no
+      `importScripts(...)` inside a worker. A worker script request is governed
+      by the CSP `worker-src` / `child-src` / `script-src` source directives (or
+      `default-src`), NOT `connect-src`, and a same-origin worker can still read
+      privileged console DOM (KVM frame handles, session tokens, operator
+      credentials, managed-host inventory) and hand it to an egress path. Worker
+      creation and worker-script loads must be denied at the WebView (worker-src
+      pinned to the approved same-origin HTTPS console, requests denied at
+      interception) on every target, in strict mode and with the flag both off
+      and on. Console content is served by the BMC and is therefore
+      attacker-influenced: a compromised/spoofed BMC or injected script must
+      never turn the trusted frame into a worker-based exfiltration channel.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassWorkerScriptExfiltration`,
+      always `false`): the test-only opt-in never bypasses worker-script
+      exfiltration — console content can never load a worker script or imported
+      module from a non-approved origin, in strict mode and with the flag both
+      off and on. The opt-in relaxes ONLY the test BMC's untrusted server leaf for
+      the expected host, via a scoped per-connection verifier; it must never
+      grant a worker script just to make a console render or to debug it. Operator
+      / app-initiated use of workers in the trusted app is a separate functional
+      path and stays unaffected. No worker-script-exfiltration path. This box
+      governs the off-main-thread worker script/module-loading channel and is
+      distinct from service worker registration (`bypassServiceWorkerRegistration`)
+      (a persistent, request-intercepting background script that outlives the
+      page), from HTML `<script src>` markup loads inside the HTML-driven
+      subresource box (`bypassHtmlSubresourceExfiltration`) (a document-element
+      beacon), from CSS-driven subresource exfiltration (`bypassCssExfiltration`)
+      (stylesheet `@import` / `url()` / `@font-face` rules) and from the
+      programmatic outbound egress allowlist (`bypassOutboundEgressAllowlist`)
+      (main-thread fetch / XHR / WebSocket / sendBeacon confined by
+      `connect-src`): those govern other script, request or output surfaces, not
+      worker script/module loading. Verified per target before the flag is
+      flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

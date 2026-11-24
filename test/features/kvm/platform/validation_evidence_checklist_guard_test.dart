@@ -104,6 +104,13 @@
 // console content emit a markup-driven subresource beacon carrying privileged
 // session data to a non-approved origin — distinct from CSS-driven stylesheet
 // requests, programmatic egress, speculation rules and <a ping> auditing),
+// no-worker-script exfiltration (new Worker / SharedWorker / module worker /
+// importScripts; a distinct off-main-thread script/module-loading channel
+// governed by CSP worker-src / child-src / script-src, NOT connect-src; hard
+// configuration-independent invariant; the opt-in never lets attacker-influenced
+// console content spawn a worker or import a cross-origin script to smuggle
+// privileged session data — distinct from service-worker registration, HTML
+// <script src> markup, CSS subresources and programmatic egress),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -1036,6 +1043,33 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'opt-in-keeps-html-subresource-denied',
     marker: 'never grant an html-driven'
+  ),
+  // No worker-script exfiltration: dedicated / shared / module Worker and
+  // importScripts(), an off-main-thread script/module-loading channel governed
+  // by worker-src / child-src / script-src, NOT connect-src programmatic egress
+  // — distinct from service-worker registration, HTML <script src>, CSS and
+  // markup subresource beacons.
+  (name: 'no-worker-script-exfil', marker: 'worker-script exfiltration'),
+  (name: 'worker-new-worker', marker: 'new worker('),
+  (name: 'worker-shared-worker', marker: 'sharedworker'),
+  (name: 'worker-import-scripts', marker: 'importscripts'),
+  (name: 'worker-module', marker: 'module worker'),
+  (name: 'worker-src-csp-directive', marker: 'worker-src'),
+  (
+    name: 'worker-script-never-bypassed',
+    marker: 'never bypasses worker-script exfiltration'
+  ),
+  (
+    name: 'worker-script-policy-getter',
+    marker: 'bypassworkerscriptexfiltration'
+  ),
+  (
+    name: 'worker-script-distinct-from-service-worker',
+    marker: 'distinct from service worker'
+  ),
+  (
+    name: 'opt-in-keeps-worker-script-denied',
+    marker: 'never grant a worker'
   ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -2380,6 +2414,32 @@ void main() {
       expect(missing, contains('html-subresource-policy-getter'));
       expect(missing, contains('html-subresource-distinct-from-css'));
       expect(missing, contains('opt-in-keeps-html-subresource-denied'));
+    });
+
+    test('RED: dropping the no-worker-script-exfiltration box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutWorkerScript = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'worker-script exfiltration|new worker\(|sharedworker|'
+              r'importscripts|module worker|worker-src|'
+              r'never bypasses worker-script exfiltration|'
+              r'bypassworkerscriptexfiltration|distinct from service worker|'
+              r'never grant a worker')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutWorkerScript);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-worker-script-exfil'));
+      expect(missing, contains('worker-new-worker'));
+      expect(missing, contains('worker-shared-worker'));
+      expect(missing, contains('worker-import-scripts'));
+      expect(missing, contains('worker-module'));
+      expect(missing, contains('worker-src-csp-directive'));
+      expect(missing, contains('worker-script-never-bypassed'));
+      expect(missing, contains('worker-script-policy-getter'));
+      expect(missing, contains('worker-script-distinct-from-service-worker'));
+      expect(missing, contains('opt-in-keeps-worker-script-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
