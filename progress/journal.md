@@ -15108,3 +15108,14 @@
 - Push the single commit (never force-push; preserve prior unpushed commits). AUDIT FIRST the remaining four 02:50-split dept heads EP-S22 / RM-26 / EP-U29 / EP-P24 (never churn; RED→GREEN only on a genuine divergence). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:rf-gate — MERGED build/rf-platform (no hyperlink auditing / <a ping> exfiltration guard, check#12279)
+
+- **Verdict:** `rf-platform-check` run#12279 `SUCCESS` / explicit `CHECK: PASS` for `build/rf-platform` tip `2fb571d` (full `2fb571d02b27acebb7562ded9bda0d006a649de3`), exit 0, 49.1 s, report started 04:03:39 UTC; analyze 0, targeted `webview_policy_test.dart` + `validation_evidence_checklist_guard_test.dart` 192/192, no production-TLS weakening, allowlisted paths only.
+- **Merge:** `--no-ff` into `main` → merge `e50b44e` (parents `1eb86bd` / `2fb571d`); clean ort auto-merge, no conflicts; merge-base `41eed7e` already in `main` via `b3c218f`; one branch-unique commit; first-parent diff = 4 allowlisted files (+200/-0). Hardening-only `bypassHyperlinkAuditingExfiltration => false` getter (no `<a ping>` background-POST exfiltration of privileged console data to a non-approved origin); no dep change, no production TLS weakening.
+- **Verify:** `flutter analyze` 0; full `flutter test --coverage --concurrency=4` 2815 passed / 1 skipped; coverage gates PASS overall 90.6% (6106/6737) / scoped 90.4% (2119/2345) / kvm 97.7% (1383/1416) / kvm-platform 97.6% (498/510), exit 0; `asset_guard` OK; `unattended_guard` OK; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; deps unchanged; TLS-weakening + secret scan clean.
+- **Emulator:** skipped — policy getter + doc + tests only (no lib-wire / fixture / tool-runtime change; <7 days since last green 85/85).
+- **Decisions:** sole merger to `main`; merged only a verified PASS tip for the exact branch HEAD. Tree clean at gate start; five pre-existing stashes untouched; no new stash; no force-push / history rewrite / `git clean` / file deletion. Remote URL carries a PAT — never echoed, staged or committed.
+- **Next:** push this tracking commit (never force-push; preserve all prior unpushed commits); next PASS tip merges the same way; DMTF emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
