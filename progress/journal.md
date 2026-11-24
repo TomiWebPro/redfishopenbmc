@@ -15614,3 +15614,20 @@
 - Push by fast-forward only when valid credentials are available (never force-push; preserve all prior unpushed automation + rf-gate merge commits). Next `rf-platform-check` PASS tip merges the same way. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-P28 + EP-T65)
+
+**Done:**
+- FEATURE EP-P28: new `test/features/kvm/platform/console_userinfo_navigation_asymmetry_agreement_test.dart` (8 pure unit tests) pins that `allowsInAppNavigation` scopes its userinfo guard to the navigation TARGET only: a credentialed console (legal initial secure-HTTPS load) may navigate in-app to a credential-free same-origin target (direct / path+query / default-port), while a credentialed target, a cross-origin target, and a non-HTTPS console all fail closed; cross-checked against the `planConsoleLaunch` opt-in initial-load exception. Genuinely unguarded seam (every prior userinfo case put the credential in the target / both sides), no live divergence.
+- FEATURE EP-T65: registered the new guard under a fresh pinned `epT65AddedGuards` epoch in `test/tool/guard_suite_liveness_test.dart` (canonical path, disjointness pin vs all 54 earlier epochs, temp-root RED→GREEN, EP-T20 completeness arithmetic). Full enumeration confirmed every other live guard already registered — no pre-existing gap.
+
+**Verification:**
+- Two REAL RED→GREEN proofs: guard — one-sided `console.userInfo` guard in `launch_plan.dart` (600-perm backup) → 4 named failures / 4 controls GREEN, 20 related existing tests GREEN under mutation / restore 8/8 (SHA `74887e61…` byte-clean, empty `lib/` diff, backup shredded); registry — dropped only the canonical entry → 3 named failures / restore 100/100 (SHA `f2d36816…` byte-clean). analyze 0; full `flutter test --concurrency=4` 3070 passed / 1 skipped (baseline 3057 +9 mine +4 concurrent rf-gate merge, preserved); issues validate OK; diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Read-only cross-layer navigation-policy characterization + test/tool liveness guard at a genuinely untested seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). No manufactured UI churn. A concurrent rf-gate merge landed mid-run and was preserved untouched; no WIP touched, no new stash, no `git clean`; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-P28 + EP-T65 LANDED; next AUDIT FIRST a genuinely new KVM seam, never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
