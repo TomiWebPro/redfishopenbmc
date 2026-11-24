@@ -4,6 +4,37 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 06:53 UTC: carves a fresh, machine-checkable, unblocked slice of
+     the still-open #009/#021 model epic (never-empty-well malformed-payload tolerance, MULTI_DEPT
+     hard rule 10). RM-18 pins control-safety of the DERIVED manager-source fallback from a STRING
+     managerId, RM-21 pins @odata.id query/fragment/userinfo normalization and RM-26 pins hostile
+     ConnectTypesSupported container shapes, but nothing drives a HOSTILE Manager `Id` JSON SCALAR
+     TYPE matrix (numeric / bool / list / map / null, plus control / bidi / padded / oversized
+     strings) through BOTH `fromManager` factories at once: a one-sided "stringify the Id" coercion
+     could produce a different `managerId` / derived `/redfish/v1/Managers/<id>` fallback on one card
+     while the other stays GREEN, or encode a control code point into a visible / derived source.
+     Read-only model characterization; the two deliberate behaviour decisions (RM-11 mixed regime,
+     EP-S8 credentialed Primary) stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a
+     genuine divergence, never churn. No code touched. -->
+
+- [ ] RM-27 Hostile `Manager.Id` scalar-type / control-string cross-factory agreement:
+       over a matrix of `Manager` bodies whose top-level `Id` is a hostile non-string JSON scalar
+       (numeric int/double, bool, list, map, null) and a set of control / bidi / whitespace-padded /
+       oversized string values (plus a clean string `Id` control), pin that `KvmConsole.fromManager`
+       and `KvmCapability.fromManager` derive the identical fail-closed `managerId` and the identical
+       deterministic `/redfish/v1/Managers/<id>` source fallback field-for-field, never throw on a
+       non-string `Id`, never encode a C0/DEL/bidi control code point into the derived source, and
+       leave the clean control byte-exact. AUDIT FIRST: if both factories already route `Id` through
+       one shared pure normalizer / fail-closed source helper and agree by construction, record the
+       audit and add nothing; RED->GREEN only on a genuine divergence, never churn. Read-only model
+       work; no wire/transport/TLS change, no dependency, no WebView/protocol import, no behaviour
+       decision folded in.
+       Dept: rf-model
+       Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/models/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+               pubspec.lock`; no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 02:50 UTC: carves a fresh, machine-checkable, unblocked slice of
      the still-open #009/#021 model epic (never-empty-well malformed-payload tolerance, MULTI_DEPT
      hard rule 10). RM-5/RM-22 pin VALID connect-type token lists (trim/dedup/confusables) and RM-24/

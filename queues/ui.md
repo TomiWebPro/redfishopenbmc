@@ -5,6 +5,35 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 06:53 UTC: another fresh, display-only, unblocked slice of the
+     still-open #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U24 pins ONE
+     long unbreakable connect-type chip at a fixed font, EP-U28 pins LTR/RTL at a fixed font and the
+     large-font a11y suite pins extreme text scale separately, but nothing pumps the COMPOUND extreme
+     — a long unbreakable control-bearing chip under textScaler 2.0x AND RTL — through both real
+     operator cards AND the viewer at once: a one-sided Wrap / overflow edit or a split merged a11y
+     node could slip past every single-axis suite. Display-only; the human-gated WebView/TLS rendering
+     stays gated and is NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never
+     churn. No code touched. -->
+
+- [ ] EP-U31 Compound-extreme a11y agreement (unbreakable chip x textScaler 2.0x x RTL) across both
+        cards and the viewer:
+        pump one manager whose GraphicalConsole carries a long unbreakable control-bearing
+        ConnectTypes token and distinct chips through both real operator cards and `KvmConsoleViewerPage`
+        under `Directionality.rtl` with `MediaQuery.textScaler` 2.0x, at 320/800/1300 px, pinning that
+        every surface stays overflow-free, keeps exactly one merged `excludeSemantics` node per row with
+        visible text == announced label, keeps the same logical chip sequence and single visible chip
+        instance as an LTR / 1.0x control, and leaves the Primary / copied-URI / copy affordance
+        byte-identical. Include an LTR / 1.0x and a populated-normal control proving the compound
+        setting changes nothing on a well-formed card. AUDIT FIRST: if all three surfaces already use
+        `Wrap`/`Column` with one byte-exact model string and no width- or direction-specific branches,
+        record the audit and add nothing; RED->GREEN only on a genuine divergence, never churn.
+        Display-only; test-only writes.
+        Dept: rf-ui
+        Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_capability_card_test.dart && flutter analyze`
+                (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+                `lib/features/kvm/views/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+                pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 02:50 UTC: another fresh, display-only, unblocked slice of the
      still-open #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U24 pins ONE
      long unbreakable chip, EP-U27 (queued) pins a DENSE 12+ chip set, and EP-U22/EP-U23 pin bidi/long

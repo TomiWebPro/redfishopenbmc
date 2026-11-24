@@ -5,6 +5,36 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 06:53 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open #009/#021 manager-walk epic. EP-S12/S13/S17/S20/S21 pin malformed Members entries,
+     manager-skip, transport failures, top-level document shapes and hostile OEM shapes, RS-4 pins
+     member dedup and RS-9 pins lookup-key normalization — but the KVM walk reads only one
+     `/Managers` page and nothing characterizes a collection carrying a Redfish `@odata.nextLink`.
+     Pure read-only service characterization of whatever the current contract is (follow-and-dedupe
+     OR deterministic single-page ignore), pinned identically on both discovery surfaces; the
+     credentialed-Primary decision (EP-S8) and RM-11 stay blocked and are NOT re-split. AUDIT FIRST;
+     RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-S23 `@odata.nextLink` collection-page cross-surface agreement on the `/Managers` walk:
+       over an in-temp mock client whose `/Managers` root carries a `@odata.nextLink` (plus a
+       single-page no-link control and a malformed non-string link control), pin that
+       `fetchConsoles()` and `fetchCapabilities()` take the SAME page path with the SAME resulting
+       survivor set and never disagree on manager set / count / `managerId` / connect-URI / enablement
+       / limit field-for-field, that `fetchCapability(id)` resolves only an id present in whichever
+       page set the walk adopted (no ghost from the other side), and that no member is double-counted
+       when a second page repeats an id; whatever the contract is (both follow and dedupe, or both
+       deterministically ignore the link) must be identical on both surfaces and never throw.
+       AUDIT FIRST: if both surfaces already share one `_fetchManagerBodies()` walk and therefore
+       agree by construction, record the audit and add nothing; RED->GREEN only on a genuine
+       divergence, never churn. Read-only service work; no wire/transport/TLS change, no dependency,
+       no WebView/protocol import, no behaviour decision folded in.
+       Dept: rf-service
+       Verify: `flutter test test/features/kvm/kvm_service_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/kvm_service.dart` + `test/features/kvm/**`; `git diff --exit-code --
+               pubspec.yaml pubspec.lock`; no wire/TLS change, no WebView/protocol import, no production
+               TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 02:50 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 manager-walk epic. EP-S12/S13/S17/S20/S21 pin malformed `Members` entries,
      cross-surface manager-skip, transport agreement, top-level document shapes and hostile OEM console

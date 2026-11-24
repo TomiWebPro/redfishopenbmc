@@ -6,6 +6,38 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 06:53 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open (human-gated) WebView/TLS closeout of #009/#021. Authority spellings, scheme spellings,
+     userinfo, ports, separators, IPv6 literals (EP-P21), alternate IPv4 notation (EP-P24), path/query
+     controls (EP-P19) and degenerate hierarchical forms (EP-P23) are heavily pinned, but nothing sweeps
+     C0/C1 control characters and DEL/NBSP WEDGED AT URI STRUCTURAL BOUNDARIES (between scheme and
+     `://`, around the authority `@`/`:`/`[]` delimiters, trailing the authority, inside the
+     port/userinfo separators) through the fail-closed classifier, `planConsoleLaunch`,
+     `allowsInAppNavigation` and the model at once, where Dart `Uri.tryParse` may strip / retain a
+     control differently from a browser launcher. Test-only; the human WebView/TLS validation
+     (EP-P1/P2/P4) stays gated and is NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence,
+     never churn. No code touched. -->
+
+- [ ] EP-P25 Control-at-URI-structural-boundary cross-layer fail-closed agreement:
+       over a matrix of otherwise-secure HTTPS values with a C0/C1 control / DEL / NBSP wedged at a
+       structural boundary (scheme<->`://`, before/after `@`, around `:`, around `[...]`, trailing the
+       authority, before `/`), plus a clean `https://host/x` control and a control-in-path control, pin
+       that the shared fail-closed classifier, `planConsoleLaunch`, `allowsInAppNavigation` and the model
+       `KvmConsole.hasSecureLaunchUri` / `launchPlan` ALL agree per value: one uniform secure /
+       fail-closed verdict, route, target and `acceptSelfSigned` across every layer (never in-app
+       eligibility or self-signed on a control-bearing structural form, never navigable when the
+       classifier fails closed), production default copy-only with no self-signed under a stale secure
+       flag, and identical opt-in eligibility on all layers. AUDIT FIRST: if the shared whole-URI
+       fail-closed core already rejects the whole family uniformly by construction, record the audit
+       and add nothing; RED->GREEN only on a genuine divergence, never churn. Test-only; no
+       WebView/protocol import, no URL opened, no production TLS weakening.
+       Dept: rf-platform
+       Verify: `flutter test test/features/kvm/platform/ && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/platform/**` + `test/features/kvm/platform/**`; `git diff --exit-code --
+               pubspec.yaml pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS
+               weakening.
+
 <!-- rf-ideate split 2026-11-24 02:50 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open (human-gated) WebView/TLS closeout of #009/#021. Authority spellings, scheme spellings,
      userinfo, ports, separators, IPv6 literals (EP-P21), userinfo edges (EP-P22) and degenerate
