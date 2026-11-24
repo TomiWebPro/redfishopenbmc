@@ -15788,3 +15788,19 @@
 **Next:** push by fast-forward only when valid credentials exist (never force-push; `main` ahead of `origin/main`); next `rf-platform-check` PASS tip merges the same way; both open issues stay human-gated on WebView + BMC TLS validation.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-U27)
+
+**Done:**
+- FEATURE EP-U27 (test-only): added `test/features/kvm/kvm_dense_connect_type_chip_set_a11y_agreement_test.dart` (5 widget/model tests) pinning a 13-token dense hostile / fullwidth / confusable `ConnectTypesSupported` set byte-exact on both `fromManager` factories and on both real KVM operator cards at 320/800/1300 px — one merged `excludeSemantics` chip-row node each, visible chip labels == model, no screen-reader-only split chip, no RenderFlex overflow, small clean control unchanged. AUDIT FIRST: no live divergence (both cards already use merged nodes + `Wrap` reflow), but no existing chip suite exceeded 4 tokens, so a one-sided `.take(n)` cap / split node / canonicalisation was unguarded.
+
+**Verification:**
+- REAL RED→GREEN: one-sided `.take(4)` cap on the capability card chip row (600-perm backup) → exactly 3 named failures (dense-token width tests, `+2 -3`); 27 existing chip-suite tests stayed GREEN under the mutation; restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) → 5/5 GREEN. Analyze 0; full `flutter test --concurrency=4` 3121 passed / 1 skipped (baseline 3116 +5; re-verified on current HEAD `b1d1b96` after a concurrent rf-gate check#13170 merge landed mid-run); `issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Read-only regression guard at a confirmed unguarded cross-surface seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). No manufactured UI churn. Tree clean at preflight — no concurrent WIP touched, no new stash, no `git clean`, no history rewrite; five pre-existing stashes untouched (the three concurrent rf-gate commits left my untracked guard intact). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U27 LANDED but NOT epoch-registered — next EP-T pass must register its guard under a fresh pinned epoch; otherwise AUDIT FIRST a genuinely new KVM seam (never churn, RED→GREEN only on a genuine divergence); cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
