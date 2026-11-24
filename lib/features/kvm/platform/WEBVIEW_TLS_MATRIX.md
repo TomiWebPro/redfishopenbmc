@@ -1965,6 +1965,47 @@ flag stays off for that target.
       top-level navigation confinement (`bypassTopLevelNavigationConfinement`):
       those govern other request, message or navigation surfaces, not the drag
       data store. Verified per target before the flag is flipped.
+* [ ] **No window.name / reverse-tabnabbing exfiltration** — the embedded
+      WebView must not let attacker-influenced console content hand privileged
+      management-session data (KVM frame handles, session tokens, operator
+      credentials, managed-host inventory) out of the secure frame through a
+      cross-context state channel: writing a session token into `window.name`
+      and navigating so a different origin reads that persistent browsing context
+      name, or opening a pop-up that keeps a live `window.opener` back-reference
+      used for reverse tabnabbing and redirection of the trusted frame. The
+      `window.name` string persists across same-context navigations and can be
+      read by another origin after navigation, so it is a cross-origin data
+      channel needing no socket, no `postMessage`, no clipboard write and no
+      native bridge — a `connect-src 'self'` egress allowlist alone does not
+      confine it. Console content is served by the BMC and is therefore
+      attacker-influenced: a compromised/spoofed BMC or injected script/markup
+      must never turn the trusted frame into a window.name exfiltration channel.
+      Pop-up creation and named-context navigation from console content must be
+      denied or stripped (opener nulled, `rel=noopener`, window.name cleared at
+      navigation and teardown) on every target, in strict mode and with the flag
+      both off and on.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassWindowNameExfiltration`,
+      always `false`): the test-only opt-in never bypasses window.name exfiltration
+      — console content can never place privileged session data in a persistent
+      browsing context name or opener back-reference, in strict mode and with the
+      flag both off and on. The opt-in relaxes ONLY the test BMC's untrusted
+      server leaf for the expected host, via a scoped per-connection verifier; it
+      must never grant a window.name channel just to make a console render or to
+      debug it. Operator/app-initiated navigation of the console's own
+      approved-origin content is a separate functional path and stays unaffected.
+      This box governs the cross-context browsing-state channel and is distinct
+      from cross-origin web messaging (`bypassCrossOriginMessagingIsolation`)
+      (`postMessage` / `BroadcastChannel` between contexts — a message API, not
+      persistent browsing-context state), from top-level navigation confinement
+      (`bypassTopLevelNavigationConfinement`) (where the main frame navigates, not
+      the data carried across the boundary), from clipboard isolation
+      (`bypassClipboardIsolation`) (the system clipboard), from native bridge
+      isolation (`bypassNativeBridgeIsolation`) (app-injected code) and from
+      drag-and-drop exfiltration (`bypassDragAndDropExfiltration`) (a user-driven
+      data-transfer gesture): those govern other message, request, output or input
+      surfaces, not the browsing context name / opener channel. Verified per
+      target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
