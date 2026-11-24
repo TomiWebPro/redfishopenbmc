@@ -1654,6 +1654,46 @@ class KvmWebViewPolicy {
   /// never grant a peripheral I/O stream to console content.
   bool get bypassPeripheralIoExfiltration => false;
 
+  /// Always `false`: CSS-driven subresource exfiltration (CSS exfiltration) is
+  /// NEVER available to attacker-influenced console content, not even by the
+  /// test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content emit a
+  /// stylesheet-driven network request that carries privileged management-
+  /// session data — KVM frame handles, session tokens, operator credentials or
+  /// managed-host inventory — to a non-approved origin: no `<link
+  /// rel=stylesheet>` or `@import` rule, no CSS `url()` value such as
+  /// `background-image`, `image-set()` or `cursor`, no `@font-face` font load
+  /// and no CSS-injection `attribute selector` that leaks a secret form value a
+  /// character at a time by choosing a distinct background URL per guessed
+  /// prefix. Each of these issues a real network request from a stylesheet, with
+  /// no script-opened socket, form submission, navigation or visible change.
+  /// Console content is served by the BMC and is therefore attacker-influenced:
+  /// a compromised/spoofed BMC or injected CSS must never turn the trusted frame
+  /// into a stylesheet-driven exfiltration beacon.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits a
+  /// stylesheet-driven request to a non-approved origin. Tolerating the test
+  /// BMC's untrusted server leaf relaxes ONLY that leaf's trust for the expected
+  /// host, via a scoped per-connection verifier; it must never grant a
+  /// CSS-driven stylesheet request just to make a console render or to debug it.
+  ///
+  /// This box governs the declarative stylesheet request channel, confined by
+  /// the CSP source directives `style-src`, `img-src` and `font-src` (or
+  /// `default-src`), and is therefore **not connect-src** programmatic egress
+  /// ([bypassOutboundEgressAllowlist]) (fetch / XHR / WebSocket / sendBeacon).
+  /// It is also distinct from speculative prefetch / prerender
+  /// ([bypassSpeculationRulesEgress]) (a browser-generated `prefetch-src`
+  /// request) and hyperlink auditing ([bypassHyperlinkAuditingExfiltration]) (a
+  /// `ping`-directive POST fired on link activation), from CSP / mixed-content
+  /// blocking ([bypassMixedContentBlocking]) (cleartext subresources) and from
+  /// top-level navigation confinement ([bypassTopLevelNavigationConfinement])
+  /// (where the main frame goes): those govern other request, framing or
+  /// navigation surfaces, not stylesheet-driven subresource loads. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassCssExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

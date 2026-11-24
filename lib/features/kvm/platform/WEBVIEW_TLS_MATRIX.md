@@ -1765,6 +1765,46 @@ flag stays off for that target.
       allowlist (`bypassOutboundEgressAllowlist`) (HTTP(S) network destinations,
       not a physically attached device). Verified per target before the flag is
       flipped.
+* [ ] **No CSS-driven subresource exfiltration (CSS exfiltration)** — the
+      embedded WebView must not let attacker-influenced console content emit a
+      stylesheet-driven network request that carries privileged management-session
+      data (KVM frame handles, session tokens, operator credentials, managed-host
+      inventory) to a non-approved origin. This is the declarative CSS channel:
+      `<link rel=stylesheet>` and `@import` rules, CSS `url()` values such as
+      `background-image`, `image-set()` and `cursor`, `@font-face { src: url(...) }`
+      font loads, and CSS-injection `attribute selector` exfiltration that leaks a
+      secret form value character-by-character by choosing a distinct background
+      URL per guessed prefix. Each of these issues a real network request from a
+      stylesheet, with no script-opened socket, form submission, navigation or
+      visible change — so a `connect-src 'self'` outbound egress allowlist alone
+      does not confine it. It is governed by the CSP source directives `style-src`,
+      `img-src` and `font-src` (or `default-src`), which must pin those loads to
+      the approved same-origin HTTPS console and be denied at WebView request
+      interception on every target, in strict mode and with the flag both off and
+      on. Console content is served by the BMC and is therefore attacker-influenced:
+      a compromised/spoofed BMC or injected CSS must never turn the trusted frame
+      into a stylesheet-driven exfiltration beacon. Verified per target (inspect
+      the WebView's CSS-driven loads and confirm no non-approved-origin stylesheet,
+      image or font request carrying console data is issued) before the flag is
+      flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassCssExfiltration`, always
+      `false`): the test-only opt-in never bypasses CSS-driven subresource
+      exfiltration — console content can never emit a stylesheet-driven request
+      to a non-approved origin, in strict mode and with the flag both off and on.
+      The opt-in relaxes ONLY the test BMC's untrusted server leaf for the
+      expected host, via a scoped per-connection verifier; it must never grant a
+      CSS-driven stylesheet request just to make a console render or to debug it.
+      No CSS-exfiltration path. This box governs the declarative stylesheet
+      request channel, which is confined by `style-src` / `img-src` / `font-src`
+      and is therefore **not connect-src** programmatic egress
+      (`bypassOutboundEgressAllowlist`) (fetch / XHR / WebSocket / sendBeacon),
+      and is also distinct from speculative prefetch / prerender
+      (`bypassSpeculationRulesEgress`) (a browser-generated `prefetch-src`
+      request) and hyperlink auditing (`bypassHyperlinkAuditingExfiltration`)
+      (a `ping`-directive POST fired on link activation): those govern other
+      request surfaces, not stylesheet-driven subresource loads. Verified per
+      target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
