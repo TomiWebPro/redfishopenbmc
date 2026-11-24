@@ -5,6 +5,34 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 19:18 UTC: another fresh, display-only, unblocked slice of the
+     still-open #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U6 pins
+     control-safe manager-source DISPLAY on all three KVM surfaces and EP-U7 pins full merged
+     Semantics at LTR/1.0x, while EP-U31..U40 pump display names / chips / notices / URI / session
+     rows / states through RTL x 2.0x — but nothing drives the manager-SOURCE row through RTL x 2.0x
+     on both real cards AND the viewer at once: a one-sided source-string edit or a split merged
+     `excludeSemantics` node could desync one surface while every source/state suite stayed GREEN.
+     Display-only; the human-gated WebView/TLS rendering stays gated and is NOT re-split (the
+     concurrent EP-U41 copy-affordance RTL work is a separate in-flight item, not re-split here).
+     AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-U42 Manager-source row rendered agreement under RTL x 2.0x across both cards and the viewer:
+        pump one manager whose control-safe manager source (`safeManagerUri` derived fallback /
+        body source) is a long, control-free but visually wrapping string through both real operator
+        cards and `KvmConsoleViewerPage` under `Directionality.rtl` with `MediaQuery.textScaler`
+        2.0x at 320/800/1300 px, pinning that each surface's source row is ONE merged
+        `excludeSemantics` node with visible text == announced label, byte-identical source copy on
+        all three surfaces, no duplicate / screen-reader-only node, no overflow, and unchanged
+        LTR / 1.0x and clean-source controls. AUDIT FIRST: if all three surfaces already build the
+        source row from one shared control-safe string in a single merged node with no direction-
+        or width-specific branch, record the audit and add nothing; RED->GREEN only on a genuine
+        divergence, never churn. Display-only; test-only writes.
+        Dept: rf-ui
+        Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_capability_card_test.dart && flutter analyze`
+                (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+                `lib/features/kvm/views/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+                pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 15:10 UTC: another fresh, display-only, unblocked slice of the
      still-open #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U13 pins
      the four-state POPULATED ListView at LTR/1.0x, EP-U10 pins the flag-off viewer false-claim
@@ -878,3 +906,5 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 - [x] EP-U31 Compound-extreme a11y agreement — **LANDED (run 2026-11-24, agent:redfish-automation, test-only)**: AUDIT FIRST — EP-U24 pins one 400-char unbreakable token (LTR, 1.0x), EP-U21 pins 1.0/1.3/2.0x (word-breakable chips), EP-U28 pins LTR/RTL (short chips, 1.0x); NONE drove the CONJUNCTION (unbreakable x RTL x 2.0x), so a one-sided "an unbreakable chip fits better in a fixed Row at large fonts" edit on the capability card could overflow it under the compound setting while every single-axis suite stayed GREEN. Added `test/features/kvm/kvm_compound_extreme_a11y_agreement_test.dart` (7 tests): both real operator cards with a 400-char unbreakable control-bearing connect-type token under `Directionality.rtl` + `TextScaler.linear(2.0)` at 320/800/1300 px, byte-exact chip sequence on both cards, one merged `excludeSemantics` node with visible==announced, one visible chip instance, no overflow; LTR/1.0x control GREEN. REAL RED: one-sided RTL+2.0x-gated chip reversal on the capability card (600-perm backup) → exactly 3 named failures (`+4 -3`, the 3 compound cases), controls GREEN; restored byte-clean (SHA `c6c4b09a…` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 7/7 GREEN. Display-only, dependency-free, TLS-safe; guard registered under EP-T52 epoch.
 
 - 2026-11-24 15:45 UTC — EP-U40 LANDED (agent:redfish-automation, FEATURE #009/#021, test-only): added `test/features/kvm/kvm_nonpopulated_state_rtl_scale_a11y_agreement_test.dart` (21 widget tests) pinning the five NON-POPULATED KvmView states (system-not-found, discovery-pending, hard error, initial loading, empty) under RTL + 2.0x at 320/800/1300 px to ONE merged `excludeSemantics` node, visible==announced, no duplicate/screen-reader-only node, no false ready header, no other-state leak, no overflow; LTR/1.0x + populated controls. AUDIT FIRST: EP-U13 covers only the populated half at LTR/1.0x and no RTL test references these state labels — genuine unguarded compound seam, not churn. Note the 2.0x MediaQuery must sit inside `MaterialApp.home`. REAL RED: compound-gated empty-label reword → exactly 3 RTL/2.0x failures (320/800/1300), controls GREEN; restored byte-clean (SHA `7359effb…`, empty `lib/` diff, backup shredded) → 21/21 GREEN. Empty `lib/` diff, deps unchanged, no WebView/protocol import, no URL opened, no production TLS weakening.
+
+- 2026-11-24 19:20 UTC — EP-U41 LANDED (agent:redfish-automation, FEATURE #009/#021, test-only): added `test/features/kvm/kvm_copy_affordance_rtl_scale_a11y_agreement_test.dart` (8 widget tests) pinning the fail-closed "Copy connect info" console-card button and "Copy console URI" viewer button to exactly ONE merged `excludeSemantics` node (announced label == visible Text, visible text inside the node), no split / reworded `^Copy connection` screen-reader-only node and no overflow at 320/800/1300 px under RTL + 2.0x, plus an LTR/1.0x control. AUDIT FIRST: every existing copy guard (`kvm_clipboard_cross_surface_agreement_test.dart` EP-U12, `kvm_copy_only_browser_open_route_agreement_test.dart` EP-U18, `kvm_card_copy_confirmation_snackbar_agreement_test.dart` EP-U26-residual) asserts only VISIBLE `find.text(...)`; the compound RTL x 2.0x family (EP-U31..U40) never drove the copy buttons — a plausible one-sided reworded-`Semantics` edit on one surface stayed GREEN everywhere else. REAL RED: one-sided `Semantics(label: 'Copy connection info', excludeSemantics: true)` on the console card's copy button (600-perm backup) → exactly 4 named failures (3 RTL widths + LTR control), 3 viewer tests GREEN; source restored byte-clean (SHA `7359effb…` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 8/8 GREEN. Display-only, dependency-free, TLS-safe; no production UI change (cards + viewer byte-unchanged). Analyze 0; full `flutter test --concurrency=4` 3091 passed / 1 skipped (baseline 3083 + 8 new); issues validate OK; diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening. NOT epoch-registered this run — a concurrent automation run owned `epT67AddedGuards` in the shared registry; registration deferred to next EP-T pass (EP-T68).

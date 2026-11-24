@@ -5,6 +5,38 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 19:18 UTC: carves a fresh, machine-checkable, unblocked slice of
+     the still-open #009/#021 manager-walk epic. EP-S23 pinned that both `/Managers` surfaces take
+     the SAME single-page path when the root carries a `@odata.nextLink` (a second page that merely
+     repeats a member), but the HOSTILE SHAPE of the linked second page's `Members` payload is
+     uncharacterized. A one-sided "adopt page two on this surface only" edit could surface a ghost
+     manager on the capability card while the console list stayed GREEN, or throw on a non-list
+     page body. Read-only characterization of whatever the current contract is (deterministically
+     ignore the link OR follow-and-dedupe), pinned identically on both surfaces; the
+     credentialed-Primary decision (EP-S8) and RM-11 stay blocked and are NOT re-split. AUDIT FIRST;
+     RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-S26 Hostile linked-second-page `Members` body agreement on the `/Managers` walk:
+        over an in-temp mock client whose `/Managers` root carries a `@odata.nextLink` and whose
+        referenced second page carries a hostile `Members` value (non-list scalar/map, blank /
+        non-string / control-bearing / padded-duplicate member refs) — plus a no-link single-page
+        control and a clean second-page control — pin that `fetchConsoles()` and
+        `fetchCapabilities()` take the SAME page path with the SAME ordered survivor set, never
+        adopt a member from the linked page on one surface only (no ghost `fetchCapability(id)`,
+        no double-count of a repeated id), never throw on a non-list page body, and resolve
+        `fetchCapability(id)` only from the adopted set; record whether the walk deterministically
+        ignores the link or follows-and-dedupes, identically on both surfaces. AUDIT FIRST: if both
+        surfaces already share one stateless `_fetchManagerBodies()` that reads only the root
+        `Members` and never the linked page, record the audit and add nothing; RED->GREEN only on a
+        genuine divergence, never churn. Read-only service work; no wire/transport/TLS change, no
+        dependency, no WebView/protocol import, no behaviour decision folded in.
+        Dept: rf-service
+        Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_service_nextlink_page_agreement_test.dart && flutter analyze`
+                (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+                `lib/features/kvm/kvm_service.dart` + `test/features/kvm/**`; `git diff --exit-code --
+                pubspec.yaml pubspec.lock`; no wire/TLS change, no WebView/protocol import, no production
+                TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 15:10 UTC: carves a fresh, machine-checkable, unblocked slice of
      the still-open #009/#021 manager-walk epic. EP-S12/S13/S17/S20/S21/S22/S23/S24 pin malformed
      Members, manager-skip, transport failures, document / OEM / hostile-member shapes,

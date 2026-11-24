@@ -5,6 +5,32 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 19:18 UTC: recurring "who guards the guards" gap in the still-open
+     #009/#021 epic. EP-T67 registered two pre-existing regression guards, but every agreement /
+     a11y guard landed since (and any post-EP-T67 guard) is live + CI-reachable via verify.yml
+     whole-tree `flutter test --coverage` yet absent from BOTH `canonicalGuardFiles` and every pinned
+     epoch until registered, so deleting / emptying / test-stripping it stays GREEN. AUDIT FIRST:
+     enumerate every live `test/**/*_test.dart` against the registry + all epochs, skip any already
+     registered, and register only the genuinely-unguarded remainder under a fresh pinned epoch.
+     Pure test/tool, dependency-free, never writes `lib/`. No code touched. -->
+
+- [ ] EP-T68 Guard-suite liveness registration of the post-EP-T67 newly-landed agreement guards:
+        enumerate every live `test/**/*_test.dart` reachable from verify.yml whole-tree
+        `flutter test --coverage`, compare against `canonicalGuardFiles` + every pinned epoch, and
+        register only the genuinely-unguarded remainder under a fresh pinned `epT68AddedGuards` set
+        (pairwise-disjoint from every earlier designation incl. EP-T67) wired into
+        `allDesignatedGuards` + the EP-T20 completeness arithmetic, with +1 containment/disjointness
+        pin test and +1 temp-root RED->GREEN proof per guard (deleted / emptied / test-stripped ->
+        violation, intact -> clean) plus one real-file RED proof restoring a dropped canonical entry
+        byte-clean. AUDIT FIRST: if every live guard is already registered, record the audit and add
+        nothing; RED->GREEN only on a genuine gap, never churn. Pure test/tool, dependency-free,
+        never writes `lib/`; no WebView/protocol import, no production TLS weakening.
+        Dept: rf-tooling
+        Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze`
+                (0 issues), RED->GREEN proof only on a genuine gap; writes limited to
+                `test/tool/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no `lib/` product
+                code, no dependency, no production TLS weakening.
+
 - [x] EP-T67 Guard-suite liveness registration of two pre-existing unregistered regression guards — **LANDED (run 2026-11-24 19:17 UTC, agent:redfish-automation, test/tool-only)**: programmatic AUDIT FIRST over 116 live KVM tests vs `canonicalGuardFiles` + every pinned epoch found two genuine regression guards live + CI-reachable but absent from BOTH (0 registry references): `kvm_service_member_order_tie_test.dart` (EP-S11) + `kvm_viewer_session_limit_wiring_test.dart` (EP-U4). Registered under a fresh pinned `epT67AddedGuards` epoch (length 2, pairwise-disjoint from all 65 earlier designations incl. EP-T66) in `allDesignatedGuards` + EP-T20 completeness arithmetic, with +2 canonical paths, header rationale and a canonical-membership + disjointness pin test. Registry REAL RED: dropped only the two canonical entries under a 600-perm backup → 2 named failures (EP-T67 pin + EP-T20 completeness); restored byte-clean (SHA `68245923c9e0…`, backup shredded) → 102/102 targeted GREEN. Empty `lib/` diff, deps unchanged, no WebView/protocol import, no production TLS weakening.
 
 - [x] EP-T66 Guard-suite liveness registration of the newly-landed EP-S23 `@odata.nextLink` collection-page agreement guard — **LANDED (run 2026-11-24 18:30 UTC, agent:redfish-automation, test/tool-only)**: registered `kvm_service_nextlink_page_agreement_test.dart` under a fresh pinned `epT66AddedGuards` epoch (length 1, pairwise-disjoint from all 56 earlier designations incl. EP-T65) in `allDesignatedGuards` + EP-T20 completeness arithmetic, with +1 containment/disjointness pin test, +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation) and header rationale. Registry REAL RED: dropped only the canonical entry (epoch kept) under a 600-perm backup → 3 named failures (EP-T66 pin, EP-T20 completeness, temp-root liveness); restored byte-clean (SHA `8889cd39…`, backup shredded) → 101/101 targeted GREEN. Empty `lib/` diff, deps unchanged, no WebView/protocol import, no production TLS weakening.

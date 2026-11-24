@@ -6,6 +6,37 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 19:18 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open (human-gated) WebView/TLS closeout of #009/#021. EP-P19 sweeps raw C0/C1 controls and
+     encoded CONTROL octets (`%00`-`%1F`/`%7F`) in the QUERY/FRAGMENT, and EP-P17 sweeps ENCODED
+     STRUCTURAL delimiters in userinfo/AUTHORITY, but nothing sweeps percent-encoded STRUCTURAL
+     delimiters (`%2F`, `%5C`, `%3F`, `%23`, `%40`, `%3A`, uppercase-hex variants) in the QUERY /
+     FRAGMENT of an otherwise-secure HTTPS `ConnectUri`: a one-sided unescape could change the
+     copyable target or authority classification on one layer while every authority/control suite
+     stayed GREEN. Test-only; the human WebView/TLS validation (EP-P1/P2/P4) stays gated and is NOT
+     re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-P29 Encoded structural delimiter in query/fragment cross-layer fail-closed agreement:
+        over a matrix of otherwise-secure `https://host/x` values whose QUERY (`?x=...`) and
+        FRAGMENT (`#...`) carry percent-encoded structural delimiters (`%2F`, `%5C`, `%3F`, `%23`,
+        `%40`, `%3A`, and uppercase-hex variants), plus legal encoded-space / percent controls and
+        a clean control, pin that the shared fail-closed classifier, `planConsoleLaunch`,
+        `allowsInAppNavigation` and the model `KvmConsole.hasSecureLaunchUri` / `launchPlan` ALL
+        agree per value: one uniform secure / fail-closed verdict, route, target and
+        `acceptSelfSigned` across every layer (never in-app eligibility or self-signed on a
+        delimiter-bearing target, never navigable when the classifier fails closed), production
+        default copy-only with no self-signed under a stale secure flag, and identical opt-in
+        eligibility on all layers; clean controls stay byte-exact. AUDIT FIRST: if the shared
+        whole-URI fail-closed core already classifies the whole family uniformly by construction,
+        record the audit and add nothing; RED->GREEN only on a genuine divergence, never churn.
+        Test-only; no WebView/protocol import, no URL opened, no production TLS weakening.
+        Dept: rf-platform
+        Verify: `flutter test test/features/kvm/platform/ && flutter analyze`
+                (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+                `lib/features/kvm/platform/**` + `test/features/kvm/platform/**`; `git diff --exit-code --
+                pubspec.yaml pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS
+                weakening.
+
 <!-- rf-ideate split 2026-11-24 15:10 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open (human-gated) WebView/TLS closeout of #009/#021. EP-P18 / EP-P24 sweep canonical-tricky
      authorities and alternate IPv4 notation, EP-P9 pins cross-layer authority fail-closed and EP-P26
