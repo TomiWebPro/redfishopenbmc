@@ -5,6 +5,37 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 23:23 UTC: another fresh, display-only, unblocked slice of the
+     still-open #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). #021's
+     OEM/no-URI acceptance requires a clear, actionable "open externally" notice with the URI on
+     every operator surface; EP-U17 pins that notice's no-render/TLS + generic guidance at
+     LTR/1.0x, EP-U7 merges Semantics at LTR/1.0x, and the RTL x 2.0x family (EP-U31..U42) drives
+     names / chips / notices / URI / session rows / states / badge / copy / source row — but NEVER
+     the OEM no-URI "open externally" notice together with the viewer's copy + browser-open
+     guidance under RTL x 2.0x: a one-sided reworded / split `excludeSemantics` node on one surface
+     could desync the notice while every LTR and single-axis suite stayed GREEN. Display-only; the
+     human-gated WebView/TLS rendering (EP-P1/P2/P4) stays gated and is NOT re-split. AUDIT FIRST;
+     RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-U43 OEM/no-URI "open externally" notice single-merged a11y under RTL x 2.0x across both
+        cards and the viewer:
+        pump one manager whose OEM console has no usable `ConnectUri` (control-free but visually
+        wrapping source) through the per-console card, the capability card and `KvmConsoleViewerPage`
+        under `Directionality.rtl` with `MediaQuery.textScaler` 2.0x at 320/800/1300 px, pinning
+        that each surface's "open externally" notice + copy/browser-open guidance is ONE merged
+        `excludeSemantics` node with visible text == announced label, byte-identical notice copy on
+        all three surfaces, no duplicate / screen-reader-only / split node, no raw control or bidi
+        byte leaked into the announcement, no overflow, and unchanged LTR / 1.0x and clean-URI
+        controls. AUDIT FIRST: if all three surfaces already build the notice from one shared
+        control-safe string in a single merged node with no direction- or width-specific branch,
+        record the audit and add nothing; RED->GREEN only on a genuine divergence, never churn.
+        Display-only; test-only writes.
+        Dept: rf-ui
+        Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_capability_card_test.dart && flutter analyze`
+                (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+                `lib/features/kvm/views/**` + `test/features/kvm/**`; `git diff --exit-code --
+                pubspec.yaml pubspec.lock`; no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 19:18 UTC: another fresh, display-only, unblocked slice of the
      still-open #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U6 pins
      control-safe manager-source DISPLAY on all three KVM surfaces and EP-U7 pins full merged

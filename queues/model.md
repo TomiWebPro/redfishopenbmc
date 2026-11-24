@@ -4,6 +4,42 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 23:23 UTC: carves a fresh, machine-checkable, unblocked slice of
+     the still-open #009/#021 model epic (never-empty-well malformed-payload tolerance, MULTI_DEPT
+     hard rule 10). #021's OEM/no-URI acceptance ("OEM console placeholder with no URI yields a
+     non-actionable card") depends on both `fromManager` factories deriving the SAME control-safe
+     source fallback when the OEM console carries no `ConnectUri`; RM-21/EP-M7 pin `@odata.id`
+     RESOURCE-PATH normalization, RM-28 pins the console-BLOCK `@odata.id` fallback, RM-15 pins
+     bidi `@odata.id`, and EP-U42 pins the DISPLAY of the fallback rows — but nothing drives a
+     hostile OEM no-URI body (control/bidi/relative/non-string OEM URI leaves) through BOTH
+     factories at once. A one-sided "derive the fallback differently here" edit could make the
+     capability card's source disagree with the per-console card's while every single-surface
+     suite stayed GREEN. Read-only model characterization; the human-gated WebView/TLS rendering
+     (EP-P1/P2/P4) and the two behaviour decisions (RM-11 mixed regime, EP-S8 credentialed Primary)
+     stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence,
+     never churn. No code touched. -->
+
+- [ ] RM-31 OEM no-URI console source-fallback cross-factory fail-closed agreement:
+        over a matrix of `Manager` bodies whose OEM console exposes NO usable `ConnectUri` (only
+        `Oem.*.KVM.Uri` / `Oem.*.WebConsole.Uri` leaves that are absent, blank, non-string,
+        control/bidi-bearing, relative or scheme-relative), plus one clean absolute-HTTPS control
+        and one clean no-URI control, pin that `KvmConsole.fromManager` and
+        `KvmCapability.fromManager` derive the identical control-safe source fallback
+        (`safeManagerUri`), the identical `hasLaunchUri` / `launchPlan` / openability verdict and
+        the identical `managerId`, never throw on a non-map / non-string leaf, never emit a raw
+        control / bidi code point into a copyable or visible source, and agree field-for-field;
+        leave both clean controls byte-exact. AUDIT FIRST: if both factories already delegate to
+        the one shared control-safe source helper and agree by construction, record the audit and
+        add nothing; RED->GREEN only on a genuine divergence, never churn. Read-only model work;
+        no wire/transport/TLS change, no dependency, no WebView/protocol import, no behaviour
+        decision folded in.
+        Dept: rf-model
+        Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart test/features/kvm/kvm_oem_uri_test.dart && flutter analyze`
+                (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+                `lib/features/kvm/models/**` + `test/features/kvm/**`; `git diff --exit-code --
+                pubspec.yaml pubspec.lock`; no wire/TLS change, no WebView/protocol import, no
+                production TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 19:18 UTC: carves a fresh, machine-checkable, unblocked slice of
      the still-open #009/#021 model epic (never-empty-well malformed-payload tolerance, MULTI_DEPT
      hard rule 10). RM-25 pins hostile NON-INTEGER `MaxConcurrentSessions` scalars through both

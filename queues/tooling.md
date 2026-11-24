@@ -5,6 +5,35 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 23:23 UTC: addresses the Fixtures / large-assets half of the still
+     blocked #009/#021 epic. #009's task list still names "Fixtures: OpenBMC `Managers/{id}` sample
+     + DMTF mockup Manager with `GraphicalConsole`", while FUTUREWORK's "Large spec/binary assets"
+     item is human-gated (ask before committing; store links + hashes meanwhile). EP-T1 covers the
+     in-app-render/selection fixtures and EP-T4 the external-browser/copy fixture, but nothing pins
+     that the minimal spec-shaped `GraphicalConsole` body carrying `ConnectTypesSupported: [KVMIP,
+     HTML5]` used by the #009/#021 guards is assembled from ONE shared in-temp builder and parses
+     identically, nor that no large binary/spec asset is committed while that decision is deferred.
+     Pure test/tool, read-only; no asset download, no URL opened, no dependency, no WebView/protocol
+     import; the human-gated WebView/TLS rendering (EP-P1/P2/P4) stays gated and is NOT re-split.
+     AUDIT FIRST; RED->GREEN only on a genuine gap, never churn. No code touched. -->
+
+- [ ] EP-T71 In-temp HTML5 GraphicalConsole fixture contract guard (no committed binary asset):
+        pin that the minimal `/redfish/v1/Managers/{id}` body with a `GraphicalConsole` carrying
+        `ServiceEnabled: true`, `ConnectTypesSupported: [KVMIP, HTML5]` and
+        `MaxConcurrentSessions` is assembled from ONE shared in-temp fixture builder consumed by
+        the service/model/view guards, and that the same body parses to the identical
+        console/capability fields wherever it is used; separately assert that no spec PDF / binary
+        KVM asset is tracked under `test/fixtures/**` while the large-asset decision is human-gated,
+        and that any externally-referenced asset is represented only as a link + hash in a manifest
+        (no download, no URL opened). AUDIT FIRST: if the fixture contract is already shared and no
+        binary asset is tracked, record the audit and add nothing; RED->GREEN only on a genuine gap,
+        never churn. Pure test/tool; never writes `lib/` product code; no `pubspec` change.
+        Dept: rf-tooling
+        Verify: `flutter test test/features/kvm/kvm_openbmc_fixture_test.dart test/tool/queue_item_schema_guard_test.dart && flutter analyze`
+                (0 issues), RED->GREEN proof only on a genuine gap; writes limited to `test/fixtures/**`
+                + `test/tool/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no `lib/` product
+                code, no dependency, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 19:18 UTC: recurring "who guards the guards" gap in the still-open
      #009/#021 epic. EP-T67 registered two pre-existing regression guards, but every agreement /
      a11y guard landed since (and any post-EP-T67 guard) is live + CI-reachable via verify.yml

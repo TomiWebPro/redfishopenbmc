@@ -5,6 +5,41 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 23:23 UTC: carves a fresh, machine-checkable, unblocked slice of
+     the still-open #009/#021 service epic. #021 pins HTML5 among `ConnectTypesSupported` and
+     requires a discovered HTML5 console to be offered/primary-selected; EP-S2 pins tier precedence
+     and EP-S11 the first-in-BMC-order tie, while EP-M1/EP-M2 pin HTML5/transport classification at
+     the MODEL layer — but nothing drives a `/Managers` walk in which the same manager advertises
+     HTML5 alongside KVMIP/RFB/VNC/serial (with hostile casing / padding / control-bearing token
+     shapes plus a clean control) through BOTH `fetchConsoles()` and `fetchCapabilities()` at once:
+     a one-sided "treat HTML5 differently on this surface" edit could badge a different Primary or
+     resolve a different launch target on the capability card while the console list stayed GREEN.
+     Read-only characterization of the CURRENT contract — no new selection decision is folded in;
+     the credentialed-Primary decision (EP-S8) and the human-gated WebView/TLS rendering stay
+     blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never churn.
+     No code touched. -->
+
+- [ ] EP-S27 HTML5 connect-type primary-selection read-only agreement across the `/Managers` walk:
+        over one in-temp mock `/Managers` walk whose manager advertises `HTML5` in
+        `ConnectTypesSupported` together with KVMIP / RFB / VNC / serial tokens in hostile casing /
+        padding / control-bearing spellings (plus a clean ASCII control and a remote-console-disable
+        control), pin that `fetchConsoles()` and `fetchCapabilities()` classify the same token set
+        identically, resolve `fetchCapability(id)` field-for-field from the same adopted set, and
+        select the SAME Primary console with a byte-identical control-safe `launchPlan` target and
+        launch strategy on both surfaces; record whether HTML5 currently wins, loses or ties against
+        the co-advertised transports, identically on both surfaces, with no one-sided divergence,
+        no raw control byte into a copyable target, no throw, and clean controls byte-exact. AUDIT
+        FIRST: if both surfaces already share one classifier + one `pickPrimary` path and agree by
+        construction, record the audit and add nothing; RED->GREEN only on a genuine divergence,
+        never churn. Read-only service work; no wire/transport/TLS change, no dependency, no
+        WebView/protocol import, no behaviour decision folded in.
+        Dept: rf-service
+        Verify: `flutter test test/features/kvm/kvm_service_test.dart test/features/kvm/kvm_service_capability_primary_agreement_test.dart && flutter analyze`
+                (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+                `lib/features/kvm/kvm_service.dart` + `test/features/kvm/**`; `git diff --exit-code --
+                pubspec.yaml pubspec.lock`; no wire/TLS change, no WebView/protocol import, no
+                production TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 19:18 UTC: carves a fresh, machine-checkable, unblocked slice of
      the still-open #009/#021 manager-walk epic. EP-S23 pinned that both `/Managers` surfaces take
      the SAME single-page path when the root carries a `@odata.nextLink` (a second page that merely
