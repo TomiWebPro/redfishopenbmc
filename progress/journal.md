@@ -14961,3 +14961,20 @@
 - Next rf-gate run: re-check `rf-platform-check` verdict first; `--no-ff` merge only a PASS branch; NO-OP if no new commits. Builder continues audit-first dept heads; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-P23)
+
+**Done:**
+- FEATURE EP-P23 for open #009/#021: added `test/features/kvm/platform/degenerate_hierarchical_uri_agreement_test.dart` (5 tests) driving 6 degenerate hierarchical HTTPS forms (opaque `https:opaque`, single-slash `https:/x`, triple-slash `https:///x`, empty-authority `https://?q` / `https://#f`, scheme-only `https:`) plus a clean HTTPS control through all four platform layers (classifier / HTTP-family / launch plan / navigation gate) and the model. AUDIT FIRST confirmed the shared fail-closed core already classifies the whole family uniformly (no live divergence); the no-authority forms rest solely on the single `parsed.host.isEmpty` check — a genuine unguarded cross-layer seam, no behaviour change, not churn.
+- Real-file RED: dropped `parsed.host.isEmpty` in `_isHttpUriWithSchemes` under a 600-perm backup → exactly 3 named failures (per-form agreement / production plan / opt-in eligibility), 2 GREEN; source restored byte-clean (SHA `74887e61…`, 0 residue, empty `lib/` diff, backup shredded) → 5/5 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2782 passed / 1 skipped (baseline 2777 +5 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test-only cross-layer regression guard closing a genuine unguarded seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). New guard deferred to the next EP-T liveness pass for epoch registration. Never force-push, rewrite history, `git clean`, or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push). AUDIT FIRST for a genuinely new unguarded seam (EP-S21 hostile OEM console shapes, EP-U28 RTL-locale rendering), never churn; register the new guard in the next EP-T liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
