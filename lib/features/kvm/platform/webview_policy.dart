@@ -1235,6 +1235,44 @@ class KvmWebViewPolicy {
   /// or a cast / external-display receiver. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassShareCastExfiltration => false;
 
+  /// Always `false`: the console WebView never lets attacker-influenced console
+  /// content read or write the system clipboard, not even by the test-only
+  /// self-signed opt-in.
+  ///
+  /// The embedded WebView must deny every clipboard operation requested by the
+  /// remote BMC console: no `navigator.clipboard.writeText()` /
+  /// `navigator.clipboard.readText()` / `ClipboardItem` write, no
+  /// `document.execCommand('copy')` / `paste`, and no auto-copy of the
+  /// privileged console DOM (session tokens, credentials, KVM frames, managed-
+  /// host inventory) to a clipboard readable by any co-resident app or OS
+  /// clipboard history, and no reading of a clipboard the operator populated in
+  /// another context. Console content is served by the BMC and is therefore
+  /// attacker-influenced (a compromised/spoofed BMC or script running in the
+  /// page): a clipboard write hands privileged session data to any other app on
+  /// the device and a clipboard read captures operator credentials — a
+  /// cross-app data channel independent of the network egress allowlist, print
+  /// and share/cast outputs and on-disk data-at-rest protection. Every
+  /// clipboard read and write is denied by default on every target, in strict
+  /// mode and with the flag both off and on. Tolerating the test BMC's untrusted
+  /// server leaf relaxes ONLY that leaf's trust for the expected host, via a
+  /// scoped per-connection verifier; it must never grant a clipboard read or
+  /// write just to make a console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content place privileged data on a cross-app clipboard or read operator
+  /// credentials from it. It governs the cross-app clipboard data channel
+  /// itself, not the clipboard permission-prompt surface (one host capability
+  /// among [bypassDevicePermissionControls]), so it is distinct from device
+  /// capabilities (host permission prompts), sensitive data at rest
+  /// ([bypassSensitiveDataAtRestProtection]) (on-disk persistence / screen
+  /// capture), Web Share / remote-cast exfiltration
+  /// ([bypassShareCastExfiltration]) (a receiver outside the app) and outbound
+  /// egress ([bypassOutboundEgressAllowlist]) (programmatic network
+  /// connections): those govern other output, request or storage surfaces, not
+  /// the system clipboard. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassClipboardIsolation => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

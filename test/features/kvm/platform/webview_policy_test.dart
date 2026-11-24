@@ -1738,6 +1738,70 @@ void main() {
     });
   });
 
+  group('KvmWebViewPolicy — clipboard read/write isolation is never bypassed',
+      () {
+    test('production default never permits clipboard read/write', () {
+      expect(KvmWebViewPolicy.productionDefault.bypassClipboardIsolation,
+          isFalse);
+    });
+
+    test('test-only self-signed opt-in still denies clipboard access', () {
+      // Tolerating the test BMC's untrusted server leaf relaxes ONLY leaf trust
+      // for the expected host (via a scoped verifier): it must never let
+      // attacker-influenced console content copy session tokens / credentials /
+      // KVM frames to a cross-app clipboard or read operator credentials from
+      // it just to make a console render or to debug it. Hard invariant,
+      // independent of the flag, TLS mode or console signals.
+      expect(KvmWebViewPolicy.testOptIn.bypassClipboardIsolation, isFalse);
+    });
+
+    test('no policy configuration can permit clipboard read/write', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassClipboardIsolation, isFalse);
+      expect(enabledSelfSigned.bypassClipboardIsolation, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Every other hard invariant stays independent of the cross-app clipboard
+      // data channel: the test-only opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.bypassStrictReferrerPolicy, isFalse);
+      expect(enabledSelfSigned.bypassMixedContentBlocking, isFalse);
+      expect(enabledSelfSigned.bypassLogRedaction, isFalse);
+      expect(enabledSelfSigned.bypassSensitiveDataAtRestProtection, isFalse);
+      expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
+      expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
+      expect(enabledSelfSigned.bypassCookieIsolation, isFalse);
+      expect(enabledSelfSigned.bypassWebViewRemoteDebugging, isFalse);
+      expect(enabledSelfSigned.bypassDevicePermissionControls, isFalse);
+      expect(enabledSelfSigned.bypassHttpAuthChallengeDenial, isFalse);
+      expect(enabledSelfSigned.bypassLocalFileAccess, isFalse);
+      expect(enabledSelfSigned.bypassOutboundEgressAllowlist, isFalse);
+      expect(enabledSelfSigned.bypassCrossOriginFormSubmission, isFalse);
+      expect(enabledSelfSigned.bypassSslErrorRejection, isFalse);
+      expect(enabledSelfSigned.bypassTopLevelNavigationConfinement, isFalse);
+      expect(enabledSelfSigned.bypassArbitraryFileDownload, isFalse);
+      expect(enabledSelfSigned.bypassAutofillCredentialCapture, isFalse);
+      expect(enabledSelfSigned.bypassFileChooserAccess, isFalse);
+      expect(enabledSelfSigned.bypassTapjackingProtection, isFalse);
+      expect(enabledSelfSigned.bypassJavaScriptDialogDenial, isFalse);
+      expect(enabledSelfSigned.bypassServiceWorkerRegistration, isFalse);
+      expect(enabledSelfSigned.bypassPrintExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassInputCaptureProtection, isFalse);
+      expect(enabledSelfSigned.bypassPictureInPictureEscape, isFalse);
+      expect(enabledSelfSigned.bypassShareCastExfiltration, isFalse);
+    });
+  });
+
   group('resolveRenderRoute — fallback works with the flag off', () {
     test('flag off routes valid HTTPS HTML5 to the external browser', () {
       expect(
