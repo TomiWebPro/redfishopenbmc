@@ -15648,3 +15648,19 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-S23 + EP-T66 LANDED; next AUDIT FIRST a genuinely new KVM seam, never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 19:00 — agent:rf-gate — #009/#021 (MERGED build/rf-platform check#12900)
+
+**Done:**
+- `rf-platform-check` run#12900 returned explicit `CHECK: PASS` for exact `build/rf-platform` tip `e3cb760` (gate repo + check worktree clean at that SHA; one branch-unique commit beyond merge-base `92ff1db`). Merged `build/rf-platform` into `main` with `--no-ff` → `fab4a23` (parents `bcb61b1` / `e3cb760`), clean ort auto-merge. First-parent delta = 4 allowlisted additive files (+221/-0): `WEBVIEW_TLS_MATRIX.md`, `webview_policy.dart` (hard always-`false` `bypassDnsExfiltration` getter — no DNS-based / hostname-encoding exfiltration to an attacker resolver), `validation_evidence_checklist_guard_test.dart`, `webview_policy_test.dart`.
+
+**Verify:**
+- Post-merge on `main`: `flutter analyze` 0; full `flutter test --coverage --concurrency=4` GREEN — 3083 passed / 1 skipped; all four coverage gates PASS (overall 90.7% / scoped 90.4% / kvm 97.7% / kvm-platform 97.7%), exit 0; `issues.py validate` OK; first-parent `git diff --check` clean; deps unchanged; TLS/secret scan clean. DMTF 85-test emulator skipped (no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:**
+- Sole-merger protocol: merged ONLY because the latest check verdict was PASS on the exact current tip, with a clean merge; no force-push, no history rewrite. Never weakened production TLS or activated WebView. Remote URL carries a PAT — never echoed, staged or committed. Push attempted once via the sanctioned Basic-header method (600-perm temp credential file, shredded); exact result in the final run report.
+
+**Next:**
+- Push by fast-forward only when valid credentials are available (never force-push; preserve all prior unpushed automation + rf-gate merge commits). Next `rf-platform-check` PASS tip merges the same way. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
