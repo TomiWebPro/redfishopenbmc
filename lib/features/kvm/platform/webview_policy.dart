@@ -2000,6 +2000,47 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassSvgExternalResourceExfiltration => false;
 
+  /// Always `false`: Web Speech API / speech-synthesis audio exfiltration is
+  /// NEVER bypassed, not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let attacker-influenced console content use
+  /// the Web Speech API to move privileged management-session data (KVM frame
+  /// handles, session tokens, operator credentials, managed-host inventory) out
+  /// of the secure frame as synthesized speech: no
+  /// `speechSynthesis.speak(new SpeechSynthesisUtterance(secretText))` that
+  /// reads console DOM data aloud through the device speaker, and no
+  /// `SpeechRecognition` / `webkitSpeechRecognition` that captures operator
+  /// voice. Spoken audio leaves the on-screen console frame and can be
+  /// recorded by a co-resident app with microphone access, a nearby recording
+  /// device or the platform audio output, with no script-opened socket, form
+  /// POST, navigation, clipboard write, screen capture or subresource request —
+  /// a distinct out-of-frame audio output channel. Console content is served by
+  /// the BMC and is therefore attacker-influenced: a compromised/spoofed BMC or
+  /// injected script must never turn the trusted frame into a speech-driven
+  /// exfiltration channel. Every speech-synthesis speak and speech-recognition
+  /// request from console content is denied at the WebView on every target, in
+  /// strict mode and with the flag both off and on. Operator/app-initiated text
+  /// to speech (e.g. platform accessibility) is a separate functional path and
+  /// stays unaffected.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits console
+  /// content to speak privileged session data. It governs the out-of-frame
+  /// audio output channel, so it is distinct from screen/window capture
+  /// ([bypassScreenCaptureProtection]) (a scrape of rendered pixels),
+  /// notification ([bypassNotificationApiAccess]) (OS text in the shade), Web
+  /// Share / remote-cast ([bypassShareCastExfiltration]) (a receiver device),
+  /// clipboard isolation ([bypassClipboardIsolation]) (a cross-app text
+  /// channel) and device-capability / permission access
+  /// ([bypassDevicePermissionControls]) (a capability grant, not page-driven
+  /// playback of console DOM): those govern other output, storage or capability
+  /// surfaces, not speech synthesis of privileged console data. Tolerating the
+  /// test BMC's untrusted server leaf relaxes ONLY that leaf's trust for the
+  /// expected host, via a scoped per-connection verifier; it must never grant a
+  /// speech capability just to make a console render or to debug it. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassSpeechSynthesisExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
