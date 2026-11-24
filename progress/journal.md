@@ -15012,3 +15012,20 @@
 - Next rf-gate run: re-check `rf-platform-check` verdict first; `--no-ff` merge only a PASS branch; NO-OP if no new commits. Builder continues audit-first dept heads; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-U28)
+
+**Done:**
+- FEATURE EP-U28 for open #009/#021: added `test/features/kvm/kvm_rtl_rendering_agreement_test.dart` (5 tests) driving one manager's secure-HTTPS graphical Primary + SSH serial peer through BOTH real operator cards (`KvmView`) and `KvmConsoleViewerPage` under LTR and RTL `Directionality` at 320/800/1300 px, pinning byte-identical rendered chip sequences + merged `excludeSemantics` announcement sets across directions (no split/duplicate/reworded node), one visible chip instance per card + one Primary marker under RTL, unchanged copied/resolved URI and copy affordance, and no overflow. AUDIT FIRST confirmed all surfaces build from one byte-exact model string in logical order with `Wrap` layout (no live divergence); the genuine unguarded seam was zero RTL widget coverage (all LTR-only).
+- Real-file RED: reversed the capability-card chip loop under RTL under a 600-perm backup → exactly 3 named failures (the 3 RTL width tests), 2 GREEN; LTR-only sibling EP-U24 stayed 4/4 GREEN; source restored byte-clean (SHA `c6c4b09abeca88169859b85a6dc3999c963c9acd50b3ffd9716a1018d74d9b00`, 0 residue, backup shredded) → 5/5 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2793 passed / 1 skipped (baseline 2788 +5 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test-only RTL cross-surface regression guard closing a genuine unguarded seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). New guard deferred to the next EP-T liveness pass for epoch registration. Never force-push, rewrite history, `git clean`, or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve prior unpushed commits). AUDIT FIRST the last remaining 22:45 dept head EP-S21 (hostile OEM console shapes — RM-20 pins much at model layer, never churn). Register the EP-U28 guard in the next EP-T pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
