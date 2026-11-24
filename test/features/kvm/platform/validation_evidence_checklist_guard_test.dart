@@ -78,6 +78,11 @@
 // file handle to read local files into the frame or write a durable file —
 // distinct from the <input type=file> chooser, direct file:// reads, the
 // WebView's own cache/storage and a network-response download),
+// no-webtransport / QUIC datagram exfiltration (new WebTransport / datagrams /
+// createBidirectionalStream; a client/server QUIC datagram-stream channel, hard
+// configuration-independent invariant; the opt-in never lets attacker-influenced
+// console content open a WebTransport session — distinct from peer-to-peer
+// WebRTC and from programmatic HTTP egress),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -465,19 +470,10 @@ const List<({String name, String marker})> evidenceChecks =
   ),
   (name: 'no-picture-in-picture', marker: 'picture-in-picture'),
   (name: 'no-pip-request', marker: 'requestpictureinpicture'),
-  (
-    name: 'pip-never-bypassed',
-    marker: 'never bypasses picture-in-picture'
-  ),
+  (name: 'pip-never-bypassed', marker: 'never bypasses picture-in-picture'),
   (name: 'pip-policy-getter', marker: 'bypasspictureinpictureescape'),
-  (
-    name: 'pip-distinct-from-fullscreen',
-    marker: 'distinct from fullscreen'
-  ),
-  (
-    name: 'opt-in-keeps-pip-denied',
-    marker: 'never grant a picture-in-picture'
-  ),
+  (name: 'pip-distinct-from-fullscreen', marker: 'distinct from fullscreen'),
+  (name: 'opt-in-keeps-pip-denied', marker: 'never grant a picture-in-picture'),
   (name: 'pip-outlives-session', marker: 'outlives the console'),
   (
     name: 'no-share-cast-exfil',
@@ -491,10 +487,7 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'share-cast-never-bypassed',
     marker: 'never bypasses web share / remote-cast exfiltration'
   ),
-  (
-    name: 'share-cast-policy-getter',
-    marker: 'bypasssharecastexfiltration'
-  ),
+  (name: 'share-cast-policy-getter', marker: 'bypasssharecastexfiltration'),
   (
     name: 'share-cast-distinct-from-egress',
     marker: 'distinct from outbound egress'
@@ -710,7 +703,10 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-clipboard-writetext', marker: 'navigator.clipboard.writetext'),
   (name: 'no-clipboard-readtext', marker: 'navigator.clipboard.readtext'),
   (name: 'clipboard-cross-app', marker: 'cross-app clipboard data channel'),
-  (name: 'clipboard-never-bypassed', marker: 'never bypasses clipboard isolation'),
+  (
+    name: 'clipboard-never-bypassed',
+    marker: 'never bypasses clipboard isolation'
+  ),
   (name: 'clipboard-policy-getter', marker: 'bypassclipboardisolation'),
   (
     name: 'clipboard-distinct-from-device-perms',
@@ -829,15 +825,15 @@ const List<({String name, String marker})> evidenceChecks =
   (name: 'no-prefetch', marker: 'prefetch'),
   (name: 'no-prerender', marker: 'prerender'),
   (name: 'prefetch-src-csp-directive', marker: 'prefetch-src'),
-  (name: 'browser-generated-speculative', marker: 'browser-generated speculative'),
+  (
+    name: 'browser-generated-speculative',
+    marker: 'browser-generated speculative'
+  ),
   (
     name: 'speculation-never-bypassed',
     marker: 'never bypasses speculative prefetch'
   ),
-  (
-    name: 'speculation-policy-getter',
-    marker: 'bypassspeculationrulesegress'
-  ),
+  (name: 'speculation-policy-getter', marker: 'bypassspeculationrulesegress'),
   (
     name: 'speculation-distinct-from-ping',
     marker: 'distinct from hyperlink auditing'
@@ -851,7 +847,10 @@ const List<({String name, String marker})> evidenceChecks =
   // screen, outside the secure frame; a channel distinct from device-permission
   // prompts, in-page JS dialogs, PiP windows and pixel capture.
   (name: 'no-notification-exfil', marker: 'notification api'),
-  (name: 'no-notification-request-permission', marker: 'notification.requestpermission()'),
+  (
+    name: 'no-notification-request-permission',
+    marker: 'notification.requestpermission()'
+  ),
   (name: 'no-notification-show', marker: 'new notification('),
   (name: 'no-notification-shownotification', marker: 'shownotification()'),
   (name: 'notification-outside-secure-frame', marker: 'notification shade'),
@@ -860,10 +859,7 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'notification-never-bypassed',
     marker: 'never bypasses notification api access'
   ),
-  (
-    name: 'notification-policy-getter',
-    marker: 'bypassnotificationapiaccess'
-  ),
+  (name: 'notification-policy-getter', marker: 'bypassnotificationapiaccess'),
   (
     name: 'notification-distinct-from-device-perms',
     marker: 'distinct from device-capability / permission access'
@@ -906,10 +902,7 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'file-system-never-bypassed',
     marker: 'never bypasses file system access api'
   ),
-  (
-    name: 'file-system-policy-getter',
-    marker: 'bypassfilesystemaccessapi'
-  ),
+  (name: 'file-system-policy-getter', marker: 'bypassfilesystemaccessapi'),
   (
     name: 'file-system-distinct-from-file-chooser',
     marker: 'distinct from the file chooser'
@@ -921,6 +914,28 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'opt-in-keeps-file-system-denied',
     marker: 'never grant a file system'
+  ),
+  // No WebTransport / QUIC exfiltration: a client/server QUIC datagram / stream
+  // channel (new WebTransport / transport.datagrams), distinct from the
+  // peer-to-peer WebRTC channel and from the fetch/WebSocket connect-src
+  // egress allowlist.
+  (name: 'no-webtransport-exfil', marker: 'webtransport / quic'),
+  (name: 'no-webtransport-api', marker: 'new webtransport('),
+  (name: 'no-webtransport-datagrams', marker: 'datagrams'),
+  (name: 'no-webtransport-streams', marker: 'createbidirectionalstream'),
+  (name: 'webtransport-never-bypassed', marker: 'never bypasses webtransport'),
+  (
+    name: 'webtransport-policy-getter',
+    marker: 'bypasswebtransportexfiltration'
+  ),
+  (name: 'webtransport-distinct-from-webrtc', marker: 'distinct from webrtc'),
+  (
+    name: 'webtransport-distinct-from-egress',
+    marker: 'distinct from programmatic http egress'
+  ),
+  (
+    name: 'opt-in-keeps-webtransport-denied',
+    marker: 'never grant a webtransport'
   ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -1449,10 +1464,11 @@ void main() {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutPip = section
           .split('\n')
-          .where((String line) => !line.toLowerCase().contains(RegExp(
-              r'picture-in-picture|requestpictureinpicture|'
-              r'bypasspictureinpictureescape|distinct from fullscreen|'
-              r'never grant a picture-in-picture|outlives the console')))
+          .where((String line) => !line
+              .toLowerCase()
+              .contains(RegExp(r'picture-in-picture|requestpictureinpicture|'
+                  r'bypasspictureinpictureescape|distinct from fullscreen|'
+                  r'never grant a picture-in-picture|outlives the console')))
           .join('\n');
       final String neutered = matrixWithSection(realMatrix, withoutPip);
       final List<String> missing = missingEvidenceMarkers(neutered);
@@ -1475,8 +1491,7 @@ void main() {
               r'bypasssharecastexfiltration|distinct from outbound egress|'
               r'never grant a share / cast')))
           .join('\n');
-      final String neutered =
-          matrixWithSection(realMatrix, withoutShareCast);
+      final String neutered = matrixWithSection(realMatrix, withoutShareCast);
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('no-share-cast-exfil'));
       expect(missing, contains('no-web-share-api'));
@@ -1965,7 +1980,8 @@ void main() {
       expect(missing, contains('outbound-egress-policy-getter'));
     });
 
-    test('RED: dropping the no-clipboard read/write exfiltration box fails '
+    test(
+        'RED: dropping the no-clipboard read/write exfiltration box fails '
         'closed', () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutClipboard = section
@@ -1984,7 +2000,8 @@ void main() {
       expect(missing, contains('opt-in-keeps-clipboard-denied'));
     });
 
-    test('RED: dropping the no-cross-origin web-messaging exfiltration box '
+    test(
+        'RED: dropping the no-cross-origin web-messaging exfiltration box '
         'fails closed', () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutMessaging = section
@@ -1992,19 +2009,20 @@ void main() {
           .where((String line) => !line.toLowerCase().contains(RegExp(
               r'cross-origin web-messaging|bypasscrossoriginmessagingisolation|postmessage|broadcastchannel|distinct from native bridge isolation|never grant a cross-origin messaging')))
           .join('\n');
-      final String neutered =
-          matrixWithSection(realMatrix, withoutMessaging);
+      final String neutered = matrixWithSection(realMatrix, withoutMessaging);
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('no-cross-origin-messaging'));
       expect(missing, contains('no-postmessage'));
       expect(missing, contains('no-broadcast-channel'));
       expect(missing, contains('cross-origin-messaging-never-bypassed'));
       expect(missing, contains('cross-origin-messaging-policy-getter'));
-      expect(missing, contains('cross-origin-messaging-distinct-from-native-bridge'));
+      expect(missing,
+          contains('cross-origin-messaging-distinct-from-native-bridge'));
       expect(missing, contains('opt-in-keeps-messaging-denied'));
     });
 
-    test('RED: dropping the no-screen/window-capture exfiltration box fails '
+    test(
+        'RED: dropping the no-screen/window-capture exfiltration box fails '
         'closed', () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutCapture = section
@@ -2067,8 +2085,7 @@ void main() {
       expect(missing, contains('opt-in-keeps-credential-api-denied'));
     });
 
-    test(
-        'RED: dropping the no-speculative-prefetch/prerender box fails closed',
+    test('RED: dropping the no-speculative-prefetch/prerender box fails closed',
         () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutSpeculation = section
@@ -2076,8 +2093,7 @@ void main() {
           .where((String line) => !line.toLowerCase().contains(RegExp(
               r'speculation rules|prefetch|prerender|prefetch-src|browser-generated speculative|never bypasses speculative prefetch|bypassspeculationrulesegress|distinct from hyperlink auditing|never grant a speculative')))
           .join('\n');
-      final String neutered =
-          matrixWithSection(realMatrix, withoutSpeculation);
+      final String neutered = matrixWithSection(realMatrix, withoutSpeculation);
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('no-speculation-rules-exfil'));
       expect(missing, contains('no-prefetch'));
@@ -2097,7 +2113,8 @@ void main() {
           .where((String line) => !line.toLowerCase().contains(RegExp(
               r'notification api|notification.requestpermission|new notification\(|shownotification|notification shade|lock screen|never bypasses notification|bypassnotificationapiaccess|distinct from device-capability|distinct from javascript dialog|never grant a notification')))
           .join('\n');
-      final String neutered = matrixWithSection(realMatrix, withoutNotification);
+      final String neutered =
+          matrixWithSection(realMatrix, withoutNotification);
       final List<String> missing = missingEvidenceMarkers(neutered);
       expect(missing, contains('no-notification-exfil'));
       expect(missing, contains('no-notification-request-permission'));
@@ -2112,7 +2129,8 @@ void main() {
       expect(missing, contains('opt-in-keeps-notification-denied'));
     });
 
-    test('RED: dropping the no-WebRTC peer-to-peer/data-channel box fails '
+    test(
+        'RED: dropping the no-WebRTC peer-to-peer/data-channel box fails '
         'closed', () {
       final String section = rawEvidenceSection(realMatrix);
       final String withoutWebRtc = section
@@ -2157,6 +2175,31 @@ void main() {
       expect(missing, contains('file-system-distinct-from-file-chooser'));
       expect(missing, contains('file-system-distinct-from-data-at-rest'));
       expect(missing, contains('opt-in-keeps-file-system-denied'));
+    });
+
+    test('RED: dropping the no-WebTransport/QUIC box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutWebTransport = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(
+              RegExp(r'webtransport / quic|new webtransport\(|datagrams|'
+                  r'createbidirectionalstream|never bypasses webtransport|'
+                  r'bypasswebtransportexfiltration|distinct from webrtc|'
+                  r'distinct from programmatic http egress|'
+                  r'never grant a webtransport')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutWebTransport);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-webtransport-exfil'));
+      expect(missing, contains('no-webtransport-api'));
+      expect(missing, contains('no-webtransport-datagrams'));
+      expect(missing, contains('no-webtransport-streams'));
+      expect(missing, contains('webtransport-never-bypassed'));
+      expect(missing, contains('webtransport-policy-getter'));
+      expect(missing, contains('webtransport-distinct-from-webrtc'));
+      expect(missing, contains('webtransport-distinct-from-egress'));
+      expect(missing, contains('opt-in-keeps-webtransport-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

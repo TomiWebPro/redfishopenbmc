@@ -1672,9 +1672,11 @@ void main() {
     });
   });
 
-  group('KvmWebViewPolicy — Web Share / remote-cast exfiltration is never '
+  group(
+      'KvmWebViewPolicy — Web Share / remote-cast exfiltration is never '
       'allowed', () {
-    test('production default never permits Web Share / remote-cast exfiltration',
+    test(
+        'production default never permits Web Share / remote-cast exfiltration',
         () {
       expect(KvmWebViewPolicy.productionDefault.bypassShareCastExfiltration,
           isFalse);
@@ -1691,7 +1693,8 @@ void main() {
       expect(KvmWebViewPolicy.testOptIn.bypassShareCastExfiltration, isFalse);
     });
 
-    test('no policy configuration can permit Web Share / remote-cast exfiltration',
+    test(
+        'no policy configuration can permit Web Share / remote-cast exfiltration',
         () {
       const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
       const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
@@ -1741,8 +1744,8 @@ void main() {
   group('KvmWebViewPolicy — clipboard read/write isolation is never bypassed',
       () {
     test('production default never permits clipboard read/write', () {
-      expect(KvmWebViewPolicy.productionDefault.bypassClipboardIsolation,
-          isFalse);
+      expect(
+          KvmWebViewPolicy.productionDefault.bypassClipboardIsolation, isFalse);
     });
 
     test('test-only self-signed opt-in still denies clipboard access', () {
@@ -1810,7 +1813,8 @@ void main() {
       );
     });
 
-    test('test-only self-signed opt-in still denies cross-origin messaging', () {
+    test('test-only self-signed opt-in still denies cross-origin messaging',
+        () {
       // Tolerating the test BMC's untrusted server leaf relaxes ONLY leaf trust
       // for the expected host (via a scoped verifier): it must never let
       // attacker-influenced console content postMessage / BroadcastChannel
@@ -1939,9 +1943,11 @@ void main() {
   });
 
   group('KvmWebViewPolicy — hyperlink auditing never permitted', () {
-    test('production default never permits hyperlink auditing exfiltration', () {
+    test('production default never permits hyperlink auditing exfiltration',
+        () {
       expect(
-          KvmWebViewPolicy.productionDefault.bypassHyperlinkAuditingExfiltration,
+          KvmWebViewPolicy
+              .productionDefault.bypassHyperlinkAuditingExfiltration,
           isFalse);
     });
 
@@ -2009,7 +2015,8 @@ void main() {
   group('KvmWebViewPolicy — credential-management API is never exposed', () {
     test('production default never exposes credential-management APIs', () {
       expect(
-          KvmWebViewPolicy.productionDefault.bypassCredentialManagementApiAccess,
+          KvmWebViewPolicy
+              .productionDefault.bypassCredentialManagementApiAccess,
           isFalse);
     });
 
@@ -2092,7 +2099,8 @@ void main() {
       expect(KvmWebViewPolicy.testOptIn.bypassSpeculationRulesEgress, isFalse);
     });
 
-    test('no policy configuration can permit speculative prefetch/prerender', () {
+    test('no policy configuration can permit speculative prefetch/prerender',
+        () {
       const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
       const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
         enabled: true,
@@ -2150,7 +2158,8 @@ void main() {
           isFalse);
     });
 
-    test('test-only self-signed opt-in still denies notification API access', () {
+    test('test-only self-signed opt-in still denies notification API access',
+        () {
       // Tolerating the test BMC's untrusted server leaf relaxes ONLY that leaf's
       // trust. It must never let attacker-influenced console content render
       // privileged session data (KVM frames, tokens, credentials, host inventory)
@@ -2213,10 +2222,12 @@ void main() {
     });
   });
 
-  group('KvmWebViewPolicy — WebRTC peer-to-peer/data-channel never granted', () {
+  group('KvmWebViewPolicy — WebRTC peer-to-peer/data-channel never granted',
+      () {
     test('production default never permits WebRTC peer connections', () {
       expect(
-          KvmWebViewPolicy.productionDefault.bypassWebRtcDataChannelExfiltration,
+          KvmWebViewPolicy
+              .productionDefault.bypassWebRtcDataChannelExfiltration,
           isFalse);
     });
 
@@ -2289,8 +2300,8 @@ void main() {
 
   group('KvmWebViewPolicy — File System Access API is never exposed', () {
     test('production default never exposes the File System Access API', () {
-      expect(
-          KvmWebViewPolicy.productionDefault.bypassFileSystemAccessApi, isFalse);
+      expect(KvmWebViewPolicy.productionDefault.bypassFileSystemAccessApi,
+          isFalse);
     });
 
     test('test-only self-signed opt-in still denies file-system handles', () {
@@ -2358,6 +2369,81 @@ void main() {
       expect(enabledSelfSigned.bypassSpeculationRulesEgress, isFalse);
       expect(enabledSelfSigned.bypassNotificationApiAccess, isFalse);
       expect(enabledSelfSigned.bypassWebRtcDataChannelExfiltration, isFalse);
+    });
+  });
+
+  group('KvmWebViewPolicy — WebTransport / QUIC is never available', () {
+    test('production default never exposes WebTransport / QUIC', () {
+      expect(KvmWebViewPolicy.productionDefault.bypassWebTransportExfiltration,
+          isFalse);
+    });
+
+    test('test-only self-signed opt-in still denies WebTransport sessions', () {
+      // Tolerating the test BMC's untrusted server leaf relaxes ONLY that leaf's
+      // trust. It must never let attacker-influenced console content open a
+      // WebTransport session (`new WebTransport(url)`) or use its QUIC
+      // datagrams / streams to smuggle privileged KVM frames / session tokens /
+      // credentials / host inventory to a non-approved origin or leak the
+      // device IPs — a distinct client/server QUIC transport surface, not the
+      // peer-to-peer WebRTC channel, the programmatic HTTP egress allowlist or
+      // a device capability. Hard invariant, independent of flag / TLS mode.
+      expect(
+          KvmWebViewPolicy.testOptIn.bypassWebTransportExfiltration, isFalse);
+    });
+
+    test('no policy configuration can expose WebTransport / QUIC', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassWebTransportExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassWebTransportExfiltration, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Every other hard invariant stays independent of the WebTransport
+      // surface: the test-only opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.bypassStrictReferrerPolicy, isFalse);
+      expect(enabledSelfSigned.bypassMixedContentBlocking, isFalse);
+      expect(enabledSelfSigned.bypassLogRedaction, isFalse);
+      expect(enabledSelfSigned.bypassSensitiveDataAtRestProtection, isFalse);
+      expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
+      expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
+      expect(enabledSelfSigned.bypassCookieIsolation, isFalse);
+      expect(enabledSelfSigned.bypassWebViewRemoteDebugging, isFalse);
+      expect(enabledSelfSigned.bypassDevicePermissionControls, isFalse);
+      expect(enabledSelfSigned.bypassHttpAuthChallengeDenial, isFalse);
+      expect(enabledSelfSigned.bypassLocalFileAccess, isFalse);
+      expect(enabledSelfSigned.bypassOutboundEgressAllowlist, isFalse);
+      expect(enabledSelfSigned.bypassCrossOriginFormSubmission, isFalse);
+      expect(enabledSelfSigned.bypassSslErrorRejection, isFalse);
+      expect(enabledSelfSigned.bypassTopLevelNavigationConfinement, isFalse);
+      expect(enabledSelfSigned.bypassArbitraryFileDownload, isFalse);
+      expect(enabledSelfSigned.bypassAutofillCredentialCapture, isFalse);
+      expect(enabledSelfSigned.bypassFileChooserAccess, isFalse);
+      expect(enabledSelfSigned.bypassTapjackingProtection, isFalse);
+      expect(enabledSelfSigned.bypassJavaScriptDialogDenial, isFalse);
+      expect(enabledSelfSigned.bypassServiceWorkerRegistration, isFalse);
+      expect(enabledSelfSigned.bypassPrintExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassInputCaptureProtection, isFalse);
+      expect(enabledSelfSigned.bypassPictureInPictureEscape, isFalse);
+      expect(enabledSelfSigned.bypassShareCastExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassClipboardIsolation, isFalse);
+      expect(enabledSelfSigned.bypassCrossOriginMessagingIsolation, isFalse);
+      expect(enabledSelfSigned.bypassScreenCaptureProtection, isFalse);
+      expect(enabledSelfSigned.bypassHyperlinkAuditingExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassCredentialManagementApiAccess, isFalse);
+      expect(enabledSelfSigned.bypassSpeculationRulesEgress, isFalse);
+      expect(enabledSelfSigned.bypassNotificationApiAccess, isFalse);
+      expect(enabledSelfSigned.bypassWebRtcDataChannelExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassFileSystemAccessApi, isFalse);
     });
   });
 
