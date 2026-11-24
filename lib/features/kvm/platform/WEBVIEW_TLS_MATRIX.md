@@ -1548,6 +1548,38 @@ flag stays off for that target.
       those govern other connection, request or output surfaces, not the
       `<a ping>` auditing request. Verified per target before the flag is
       flipped.
+* [ ] **No credential-management / WebAuthn credential harvesting** — the
+      embedded WebView must not let attacker-influenced console content invoke
+      the browser's Credential Management API or WebAuthn to harvest the
+      operator's credentials: no `navigator.credentials.get({ password: true })`
+      to read saved passwords for the console origin, no
+      `navigator.credentials.create()` / `store()` to register or overwrite a
+      stored credential, and no WebAuthn `publicKey` `get()` / `create()` flow
+      that coerces a platform authenticator into producing an assertion or a
+      biometric / PIN prompt. Console content is served by the BMC and is
+      therefore attacker-influenced: a scripted credential retrieval or
+      authenticator prompt could silently read stored BMC passwords or produce a
+      signed assertion for an attacker-chosen challenge — a credential-theft /
+      account-takeover surface. No credential API may be called by the remote
+      page; the legitimate operator login flow is a separate app-level path and
+      stays unaffected. Tolerating the test BMC's untrusted server leaf relaxes
+      ONLY that leaf's trust for the expected host, via a scoped per-connection
+      verifier; it must never grant credential-management access just to make a
+      console render or to debug it.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassCredentialManagementApiAccess`,
+      always `false`): it never bypasses credential management api access —
+      console content can never read saved credentials or coerce an authenticator
+      assertion, in strict mode and with the flag both off and on. This box
+      governs the browser's stored-credential / authenticator API surface, so it
+      is distinct from autofill credential capture ([bypassAutofillCredentialCapture])
+      (the browser auto-filling a form field) and HTTP-auth challenge denial
+      ([bypassHttpAuthChallengeDenial]) (the native authentication-challenge
+      dialog), as well as every server-side certificate check, the TLS floor,
+      HTTPS-only transport, validated-origin binding and the other exfiltration
+      channels: those govern the connection, its other credentials and its
+      outputs, not the page's access to the credential-management API. Verified
+      per target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

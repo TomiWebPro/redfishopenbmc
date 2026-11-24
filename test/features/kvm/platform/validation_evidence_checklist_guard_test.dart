@@ -47,6 +47,11 @@
 // influenced console content smuggle privileged session data to a non-approved
 // origin via the ping attribute, a channel distinct from programmatic egress,
 // form POST, top-level navigation, private-network egress and subresource CSP),
+// no-credential-management / WebAuthn credential harvesting
+// (navigator.credentials password reads / WebAuthn publicKey assertions; hard
+// configuration-independent invariant; the opt-in never lets attacker-
+// influenced console content read saved credentials or coerce an authenticator
+// prompt — distinct from form autofill and the native HTTP-auth challenge),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -765,6 +770,31 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'opt-in-keeps-hyperlink-auditing-denied',
     marker: 'never allow hyperlink auditing'
+  ),
+  // No credential-management / WebAuthn credential harvesting: a JS API that
+  // reads saved passwords or coerces an authenticator assertion — a credential-
+  // theft surface distinct from form autofill and the native HTTP-auth prompt.
+  (
+    name: 'no-credential-management-harvest',
+    marker: 'credential management api'
+  ),
+  (name: 'no-webauthn-harvest', marker: 'webauthn'),
+  (name: 'no-navigator-credentials', marker: 'navigator.credentials'),
+  (
+    name: 'credential-harvest-never-bypassed',
+    marker: 'never bypasses credential management api access'
+  ),
+  (
+    name: 'credential-harvest-policy-getter',
+    marker: 'bypasscredentialmanagementapiaccess'
+  ),
+  (
+    name: 'credential-harvest-distinct-from-autofill',
+    marker: 'distinct from autofill'
+  ),
+  (
+    name: 'opt-in-keeps-credential-api-denied',
+    marker: 'never grant credential-management access'
   ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -1888,6 +1918,27 @@ void main() {
       expect(missing, contains('hyperlink-auditing-policy-getter'));
       expect(missing, contains('hyperlink-auditing-distinct-surface'));
       expect(missing, contains('opt-in-keeps-hyperlink-auditing-denied'));
+    });
+
+    test(
+        'RED: dropping the no-credential-management / WebAuthn harvesting box '
+        'fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutCredentialApi = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'credential management api|webauthn|navigator\.credentials|never bypasses credential management api access|bypasscredentialmanagementapiaccess|distinct from autofill|never grant credential-management access')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutCredentialApi);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-credential-management-harvest'));
+      expect(missing, contains('no-webauthn-harvest'));
+      expect(missing, contains('no-navigator-credentials'));
+      expect(missing, contains('credential-harvest-never-bypassed'));
+      expect(missing, contains('credential-harvest-policy-getter'));
+      expect(missing, contains('credential-harvest-distinct-from-autofill'));
+      expect(missing, contains('opt-in-keeps-credential-api-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

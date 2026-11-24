@@ -1394,6 +1394,41 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassHyperlinkAuditingExfiltration => false;
 
+  /// Always `false`: the Credential Management API / WebAuthn credential path is
+  /// NEVER exposed to attacker-influenced console content, not even by the
+  /// test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let console content invoke the browser's
+  /// credential-management / authentication APIs to harvest the operator's
+  /// credentials: no `navigator.credentials.get({ password: true })` to read
+  /// saved passwords for the console origin, no `navigator.credentials.create()`
+  /// / `store()` to register or overwrite a stored credential, and no WebAuthn
+  /// `publicKey` `get()` / `create()` flow that coerces a platform authenticator
+  /// into producing an assertion or a biometric / PIN prompt. Console content is
+  /// served by the BMC and is therefore attacker-influenced: a scripted
+  /// credential retrieval or authenticator prompt could silently read stored
+  /// BMC passwords or produce a signed assertion for an attacker-chosen
+  /// challenge — a credential-theft / account-takeover surface. No credential
+  /// API may be called by the remote page; the legitimate operator login flow is
+  /// a separate app-level path and stays unaffected. Tolerating the test BMC's
+  /// untrusted server leaf relaxes ONLY that leaf's trust for the expected host,
+  /// via a scoped per-connection verifier; it must never grant credential-
+  /// management access just to make a console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that exposes saved
+  /// credentials or an authenticator assertion to console content. It governs
+  /// the browser's stored-credential / authenticator API surface, so it is
+  /// distinct from autofill credential capture ([bypassAutofillCredentialCapture])
+  /// (the browser auto-filling a form field) and HTTP-auth challenge denial
+  /// ([bypassHttpAuthChallengeDenial]) (the native authentication-challenge
+  /// dialog), as well as every server-side certificate check, the TLS floor,
+  /// HTTPS-only transport, validated-origin binding and the other exfiltration
+  /// channels: those govern the connection, its other credentials and its
+  /// outputs, not the page's access to the credential-management API. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassCredentialManagementApiAccess => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
