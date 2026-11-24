@@ -15181,3 +15181,20 @@
 - Push the single commit (never force-push; preserve prior unpushed commits). AUDIT FIRST the two remaining dept heads EP-S22 (audit only) and EP-P24 (audit only); register the new EP-U29 guard in a future EP-T liveness epoch. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-T50)
+
+**Done:**
+- FEATURE EP-T50 for open #009/#021: guard-suite liveness registration of the post-EP-T49 newly-landed EP-U29 degenerate-empty connect-type / blank-label render agreement guard. AUDIT FIRST over `canonicalGuardFiles` (95 entries) + every pinned epoch found exactly ONE #009/#021 guard absent from BOTH: `kvm_degenerate_empty_connect_type_render_agreement_test.dart` (10 live tests, landed 05:35 unpinned) — live + CI-reachable via verify.yml whole-tree `flutter test --coverage` yet unregistered, so deleting / emptying / test-stripping it stayed GREEN. No live divergence, no behaviour change, not churn. Extended `test/tool/guard_suite_liveness_test.dart`: +1 canonical path, fresh pinned `epT50AddedGuards` epoch (length 1, pairwise-disjoint from all 39 earlier designations incl. EP-T49), `...epT50AddedGuards` in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation, intact → clean).
+- Real-file RED: dropped only the canonical entry (epoch designation kept) under a 600-perm backup → exactly 3 named failures (`+81 -3`: EP-T50 pin, EP-T20 completeness, EP-T50 temp-root liveness), 81 GREEN; source restored byte-clean (SHA `72a9959bac5c9dea54f9c3650e82b8a1551a744e67017e27b1c8eb2236e73429`, 0 residue, empty `lib/` diff, backup shredded) → 84/84 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test` GREEN — 2839 passed / 1 skipped (baseline 2837 +2 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool "who guards the guards" liveness registration; genuine unguarded guard, no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). Never force-push, rewrite history, `git clean`, or delete files. Five pre-existing stashes untouched; no new stash (clean baseline). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve prior unpushed commits). AUDIT FIRST the two remaining dept heads EP-S22 (audit only) and EP-P24 (audit only); the EP-U29 guard is now epoch-registered. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
