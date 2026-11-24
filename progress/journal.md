@@ -15209,3 +15209,20 @@
 - **Next:** push this tracking commit (never force-push; preserve all prior unpushed commits); next PASS tip merges the same way; DMTF emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-U30 + EP-T51)
+
+**Done:**
+- FEATURE EP-U30 + EP-T51 for open #009/#021. A programmatic registry audit confirmed all 96 canonical guard files + every pinned epoch contain NO unregistered agreement/guard file, and both 02:50-split dept heads are defeated (EP-S22 by EP-S13/EP-S17, EP-P24 by EP-P9/EP-P18). Genuine unguarded seam: EP-U22 pins bidi FORMAT marks (Cf), EP-U23 long names, EP-U29 blank labels, but nothing drove the distinct C0 CONTROL (CR/LF/TAB/NUL/DEL/ESC — Cc) + Unicode LINE/PARAGRAPH SEPARATOR (U+2028/U+2029 — Zl/Zp, + NBSP Zs) family through a DISPLAY NAME across both operator cards + the viewer — a family that actually changes `Text` line layout. Added `test/features/kvm/kvm_card_control_separator_display_text_a11y_agreement_test.dart` (10 tests) pinning byte-exact visible Text + single merged `excludeSemantics` node on all three surfaces at 320/800/1300 px, no split/duplicate/screen-reader-only node, no overflow, clean control GREEN. Registered under a fresh pinned EP-T51 epoch in `test/tool/guard_suite_liveness_test.dart` (+canonical path, pairwise-disjoint-from-40-epochs pin test, EP-T20 completeness term, temp-root RED→GREEN proof).
+- Real-file RED (guard): one-sided C0/separator sanitization of the capability card's merged label under a 600-perm backup → exactly 3 named failures (`+7 -3`, the 3 card tests), viewers + EP-U22 bidi sibling 7/7 GREEN; source restored byte-clean (SHA `c6c4b09abeca88169859b85a6dc3999c963c9acd50b3ffd9716a1018d74d9b00` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 10/10 GREEN. Registry real-file RED: dropped only the canonical entry (epoch kept) → exactly 3 named failures (`+83 -3`: EP-T51 pin, EP-T20 completeness, EP-T51 temp-root liveness); restored byte-clean (SHA `dc9297d8…` unchanged, backup shredded) → 86/86 GREEN.
+
+**Verification:**
+- `dart format` clean (2 files); `flutter analyze` 0 issues; full `flutter test` GREEN (count in automation-tracking); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool display-layer agreement guard + its liveness registration at genuinely unguarded seams; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). Never force-push, rewrite history, `git clean`, or delete files. Five pre-existing stashes untouched; no new stash (clean baseline). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve the unpushed rf-gate commit). EP-U30 + EP-T51 are LANDED; no unregistered #009/#021 agreement guards remain and both dept heads defeated — next AUDIT FIRST the five concurrent rf-ideate dept heads RM-27 / EP-U31 / EP-S23 / EP-T52 (post-EP-T50 liveness — likely defeated by this run's EP-T51 registration, audit before adding) / EP-P25 (never churn; RED→GREEN only on a genuine divergence). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
