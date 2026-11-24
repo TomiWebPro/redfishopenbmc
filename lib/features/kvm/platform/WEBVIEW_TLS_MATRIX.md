@@ -1626,6 +1626,46 @@ flag stays off for that target.
       capture ([bypassScreenCaptureProtection]) (an active scrape of rendered
       pixels): those govern other prompt, modal, window or capture surfaces,
       not an OS notification. Verified per target before the flag is flipped.
+* [ ] **No WebRTC peer-to-peer / data-channel exfiltration** — the embedded
+      WebView must not let attacker-influenced console content open a WebRTC
+      peer-to-peer connection or data channel that exfiltrates privileged
+      management-session data (KVM frames, session tokens, operator credentials,
+      managed-host inventory) to a non-approved peer, nor leak the host's real /
+      private IP addresses: no `RTCPeerConnection` / `webkitRTCPeerConnection`
+      (prefixed variant), no `RTCDataChannel` / `createDataChannel()`, no
+      `createOffer` / `createAnswer` / `setRemoteDescription` signalling, no
+      ICE candidate gathering / `onicecandidate` and no STUN / TURN server
+      contact induced by console content. Console content is served by the BMC
+      and is therefore attacker-influenced: a WebRTC data channel sends data
+      peer-to-peer over UDP/ICE with no HTTP request and no visible navigation,
+      and ICE candidate gathering discloses the device's private / public IPs —
+      a data-exfiltration + IP-leak surface NOT confined by the HTTP(S) egress
+      allowlist (fetch / XHR / WebSocket / sendBeacon governed by CSP
+      `connect-src`): WebRTC uses its own ICE/STUN/TURN negotiation over UDP and
+      is not confined by `connect-src 'self'`, so an egress allowlist alone does
+      not stop a data channel to an attacker-controlled peer. Every WebRTC peer
+      connection, data channel, ICE gathering and STUN/TURN contact from console
+      content must be denied at the WebView on every target, in strict mode and
+      with the flag both off and on. Operator/app-initiated connections are a
+      separate functional path and stay unaffected. Verified per target before
+      the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassWebRtcDataChannelExfiltration`,
+      always `false`): the test-only opt-in never bypasses WebRTC peer-to-peer /
+      data-channel exfiltration — console content can never open a peer
+      connection or data channel to exfiltrate privileged data or leak IPs, in
+      strict mode and with the flag both off and on. The opt-in relaxes ONLY the
+      test BMC's untrusted server leaf for the expected host, via a scoped
+      per-connection verifier; it must never grant a WebRTC peer connection just
+      to make a console render or to debug it. This box governs the WebRTC
+      peer-to-peer UDP data-channel + ICE surface, so it is distinct from the
+      outbound egress allowlist (programmatic HTTP(S) connections governed by
+      connect-src), private-network egress protection (loopback / link-local /
+      private-address subresource requests), device-capability / permission
+      access (camera / microphone capture via getUserMedia) and cross-origin
+      web-messaging isolation (in-process postMessage): those govern other
+      connection, capture or messaging surfaces, not a peer-to-peer UDP data
+      channel. Verified per target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
