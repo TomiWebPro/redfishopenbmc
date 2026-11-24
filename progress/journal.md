@@ -15226,3 +15226,14 @@
 - Push the single commit (never force-push; preserve the unpushed rf-gate commit). EP-U30 + EP-T51 are LANDED; no unregistered #009/#021 agreement guards remain and both dept heads defeated — next AUDIT FIRST the five concurrent rf-ideate dept heads RM-27 / EP-U31 / EP-S23 / EP-T52 (post-EP-T50 liveness — likely defeated by this run's EP-T51 registration, audit before adding) / EP-P25 (never churn; RED→GREEN only on a genuine divergence). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:rf-gate — MERGED build/rf-platform (no notification / notification-permission spoofing exfiltration guard, check#12391)
+
+- **Verdict:** `rf-platform-check` run#12391 `SUCCESS exit=0` / explicit `CHECK: PASS` for `build/rf-platform` tip `2bf42d7` (full `2bf42d7470b74859ea52fbfa8c0d223c6379fa0a`), 64.7 s, report started 2026-11-24 07:03:10 UTC; analyze 0, targeted guard + policy tests 204/204, purely additive diff, 4 allowlisted paths, no production-TLS weakening.
+- **Merge:** `--no-ff` into `main` → merge `56daeb7` (parents `b2283c6` / `2bf42d7`); clean ort auto-merge, no conflicts; merge-base `12b0181` already in `main` via `9e3f47e`; one branch-unique commit; first-parent diff = 4 allowlisted files (+214/-0). Hardening-only `bypassNotificationApiAccess => false` getter (no OS-notification / permission-prompt exfiltration of privileged KVM frames / session tokens / credentials / host inventory from attacker-influenced console content; operator/app notifications unaffected); no dep change, no production TLS weakening.
+- **Verify:** `flutter analyze` 0; full `flutter test --coverage --concurrency=4` 2859 passed / 1 skipped; coverage gates PASS overall 90.6% (6109/6740) / scoped 90.4% (2119/2345) / kvm 97.7% (1386/1419) / kvm-platform 97.7% (501/513), exit 0; asset_guard OK; unattended_guard OK; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; deps unchanged; TLS-weakening + secret scan clean.
+- **Emulator:** skipped — policy getter + doc + tests only (no lib-wire / fixture / tool-runtime change; <7 days since last green 85/85).
+- **Decisions:** sole merger to `main`; merged only a verified PASS tip for the exact branch HEAD. Tree clean at gate start; five pre-existing stashes untouched; no new stash; no force-push / history rewrite / `git clean` / file deletion. Remote URL carries a PAT — never echoed, staged or committed.
+- **Next:** push this tracking commit (never force-push; preserve all prior unpushed commits); next PASS tip merges the same way; DMTF emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
