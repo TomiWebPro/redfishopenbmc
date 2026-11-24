@@ -1358,6 +1358,43 @@ flag stays off for that target.
       delivering an obscured touch): those govern in-frame input and app overlays,
       not a browser-native PiP / floating secondary window. Verified per target
       before the flag is flipped.
+* [ ] **No Web Share / remote-cast / external-display exfiltration** — the
+      embedded WebView must not let attacker-influenced console content hand
+      privileged management-session data (KVM frames, session tokens, operator
+      credentials, managed-host inventory) to another app, another device or an
+      external display: no Web Share API (`navigator.share` /
+      `navigator.canShare`), no Presentation API (`navigator.presentation` /
+      `PresentationRequest`), no Remote Playback API (`HTMLMediaElement.remote`
+      / `remote.prompt()`), no Google Cast / AirPlay / DLNA / UPnP receiver
+      picker (`webkitShowPlaybackTargetPicker`, `cast.framework`,
+      `RemotePlayback`), and no page-script-driven screen-cast / mirroring
+      control. Console content is served by the BMC and is therefore
+      attacker-influenced: such a channel hands the privileged session to a
+      recipient outside the secure console frame and the app's network policy —
+      a data-exfiltration surface wholly independent of the outbound egress
+      allowlist (programmatic fetch / XHR / WebSocket / WebRTC connections),
+      print / save-to-PDF (a durable paper/PDF copy) and downloads (a file on
+      disk), which govern other output or request surfaces. Every such share /
+      cast / external-display request from console content must be denied at the
+      WebView (no share sheet, no presentation / cast session, no receiver
+      picker), on every target, in strict mode and with the flag both off and
+      on. Verified per target (inspect the WebView share / presentation / cast
+      / media-routing callbacks and confirm console content cannot open a share
+      sheet or cast receiver) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassShareCastExfiltration`,
+      always `false`): the test-only opt-in never bypasses Web Share / remote-cast
+      exfiltration — no privileged console data is handed to another app, device
+      or external display via a share sheet or a cast / AirPlay / Presentation /
+      Remote Playback receiver, in strict mode and with the flag both off and
+      on. The opt-in relaxes ONLY the test BMC's untrusted server leaf for the
+      expected host, via a scoped per-connection verifier; it must never grant
+      a share / cast request just to make a console render or to debug it. This
+      box is distinct from outbound egress allowlist (programmatic connections
+      to non-approved origins), print / save-to-PDF exfiltration (a durable
+      copy) and cross-origin form submission (an HTML form POST): those govern
+      other request or output surfaces, not a native share sheet or a cast /
+      external-display receiver. Verified per target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

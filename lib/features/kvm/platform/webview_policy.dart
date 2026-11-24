@@ -1195,6 +1195,46 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassPictureInPictureEscape => false;
 
+  /// Always `false`: the console WebView never lets attacker-influenced console
+  /// content exfiltrate privileged management-session data through a Web Share
+  /// sheet, a Presentation / Remote Playback session or a cast / AirPlay /
+  /// external-display receiver, not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content hand KVM
+  /// frames, session tokens, operator credentials or managed-host inventory to
+  /// another app, another device or an external display: no Web Share API
+  /// (`navigator.share` / `navigator.canShare`), no Presentation API
+  /// (`navigator.presentation` / `PresentationRequest`), no Remote Playback API
+  /// (`HTMLMediaElement.remote` / `remote.prompt()`), no Google Cast / AirPlay /
+  /// DLNA / UPnP receiver picker (`webkitShowPlaybackTargetPicker`,
+  /// `cast.framework`, `RemotePlayback`), and no screen-cast / mirroring control
+  /// driven by page script. Such a channel hands privileged console data to a
+  /// recipient OUTSIDE the secure console frame and the app's network policy —
+  /// a data-exfiltration surface independent of the programmatic network
+  /// egress allowlist (which governs fetch / XHR / WebSocket / WebRTC), the
+  /// print / save-to-PDF path (a durable paper/PDF copy) and downloads (a file
+  /// on disk). Every such share / cast / external-display request from console
+  /// content is denied at the WebView (no share sheet, no presentation or cast
+  /// session, no receiver picker), on every target, in strict mode and with the
+  /// flag both off and on. Console content is served by the BMC and is therefore
+  /// attacker-influenced (a compromised/spoofed BMC or script in the page).
+  /// Tolerating the test BMC's untrusted server leaf relaxes ONLY that leaf's
+  /// trust for the expected host (via a scoped per-connection verifier); it
+  /// must never grant a share / cast / external-display request just to make a
+  /// console render or to debug it.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content exfiltrate privileged data through a share sheet or external
+  /// display. It governs the out-of-app / receiver data channel, so it is
+  /// distinct from outbound egress allowlist ([bypassOutboundEgressAllowlist])
+  /// (programmatic connections to non-approved origins), print exfiltration
+  /// ([bypassPrintExfiltration]) (a durable print/PDF copy) and cross-origin
+  /// form submission ([bypassCrossOriginFormSubmission]) (an HTML form POST):
+  /// those govern other output or request surfaces, not a native share sheet
+  /// or a cast / external-display receiver. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassShareCastExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

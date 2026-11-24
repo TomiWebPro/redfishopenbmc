@@ -26,6 +26,9 @@
 // independent invariant; the opt-in never lets attacker-influenced console
 // content open a browser-native PiP window that renders outside the secure
 // console frame, floats above other apps or outlives the console session),
+// no-web-share / remote-cast / external-display exfiltration (hard config-
+// uration-independent invariant; the opt-in never lets attacker-influenced
+// console content hand privileged data out via a share sheet or cast receiver),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -427,6 +430,30 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'never grant a picture-in-picture'
   ),
   (name: 'pip-outlives-session', marker: 'outlives the console'),
+  (
+    name: 'no-share-cast-exfil',
+    marker: 'web share / remote-cast / external-display exfiltration'
+  ),
+  (name: 'no-web-share-api', marker: 'navigator.share'),
+  (name: 'no-presentation-api', marker: 'presentation api'),
+  (name: 'no-remote-playback', marker: 'remote playback'),
+  (name: 'no-airplay-cast', marker: 'airplay'),
+  (
+    name: 'share-cast-never-bypassed',
+    marker: 'never bypasses web share / remote-cast exfiltration'
+  ),
+  (
+    name: 'share-cast-policy-getter',
+    marker: 'bypasssharecastexfiltration'
+  ),
+  (
+    name: 'share-cast-distinct-from-egress',
+    marker: 'distinct from outbound egress'
+  ),
+  (
+    name: 'opt-in-keeps-share-cast-denied',
+    marker: 'never grant a share / cast request'
+  ),
   (name: 'test-profile-only-opt-in', marker: 'test-profile-only'),
   (name: 'csp', marker: 'content-security-policy'),
   (name: 'mixed-content', marker: 'mixed-content'),
@@ -1169,6 +1196,30 @@ void main() {
       expect(missing, contains('pip-distinct-from-fullscreen'));
       expect(missing, contains('opt-in-keeps-pip-denied'));
       expect(missing, contains('pip-outlives-session'));
+    });
+
+    test('RED: dropping the no-web-share / remote-cast box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutShareCast = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'web share / remote-cast|navigator\.share|presentation api|'
+              r'remote playback|airplay|never bypasses web share|'
+              r'bypasssharecastexfiltration|distinct from outbound egress|'
+              r'never grant a share / cast')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutShareCast);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-share-cast-exfil'));
+      expect(missing, contains('no-web-share-api'));
+      expect(missing, contains('no-presentation-api'));
+      expect(missing, contains('no-remote-playback'));
+      expect(missing, contains('no-airplay-cast'));
+      expect(missing, contains('share-cast-never-bypassed'));
+      expect(missing, contains('share-cast-policy-getter'));
+      expect(missing, contains('share-cast-distinct-from-egress'));
+      expect(missing, contains('opt-in-keeps-share-cast-denied'));
     });
 
     test(
