@@ -15080,3 +15080,14 @@
 - Push the single commit (never force-push; preserve prior unpushed commits). AUDIT FIRST the five fresh 02:50-split dept heads EP-S22 / RM-26 / EP-U29 / EP-T48 / EP-P24 (never churn; RED→GREEN only on a genuine divergence). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:rf-gate — MERGED build/rf-platform (no screen/window-capture exfiltration guard, check#12227)
+
+- **Verdict:** `rf-platform-check` run#12227 `SUCCESS` / `CHECK: PASS` for `build/rf-platform` tip `41eed7e` (full `41eed7ef807952f0d34e2f6095db6b249d5829c6`), exit 0, 46.3 s; analyze 0, targeted 188/188, no production-TLS weakening, allowlisted paths only.
+- **Merge:** `--no-ff` into `main` → merge `b3c218f` (parents `053f3a5` / `41eed7e`); clean ort auto-merge, no conflicts; merge-base `0286086` already in `main` via `e3a6fcf`; one branch-unique commit; first-parent diff = 4 allowlisted files (+210/-0). Hardening-only `bypassScreenCaptureProtection => false`; no dep change, no production TLS weakening.
+- **Verify:** `flutter analyze` 0; full `flutter test --coverage --concurrency=4` 2809 passed / 1 skipped; coverage gates PASS overall 90.6% (6104/6736) / scoped 90.4% (2119/2345) / kvm 97.7% (1382/1415) / kvm-platform 97.6% (497/509), exit 0; `asset_guard` OK; `unattended_guard` OK; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; deps unchanged; TLS-weakening + secret scan clean.
+- **Emulator:** skipped — policy getter + doc + tests only (no lib-wire / fixture / tool-runtime change; <7 days since last green 85/85).
+- **Decisions:** sole merger to `main`; merged only a verified PASS tip. Concurrent EP-S21 WIP did not overlap and committed as `ce6f323` after the merge; tree clean at tracking time. Five pre-existing stashes untouched; no new stash; no force-push / history rewrite / `git clean` / file deletion. Remote URL carries a PAT — never echoed, staged or committed.
+- **Next:** push this tracking commit (never force-push; preserve all prior unpushed commits); next PASS tip merges the same way; DMTF emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
