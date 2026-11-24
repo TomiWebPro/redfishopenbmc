@@ -636,6 +636,28 @@
 // updated EP-T20 completeness arithmetic, so deleting / emptying /
 // test-stripping it fails closed (issues #009/#021 closeout).
 //
+// EP-T66 (queued audit-first head EP-S23) registers the `@odata.nextLink`
+// collection-page cross-surface agreement guard landed this run:
+// `test/features/kvm/kvm_service_nextlink_page_agreement_test.dart` (8 live
+// tests — the root nextLink VALUE FAMILY (absolute/query/relative/scheme-
+// relative/blank/non-string, plus a second page repeating a member) pinned
+// across `fetchConsoles()` / `fetchCapabilities()` / `fetchCapability(id)` /
+// controller Primary: both surfaces adopt the same single page set, no ghost
+// lookup, no double-count). AUDIT FIRST: both surfaces share one stateless
+// `_fetchManagerBodies()` walk that never reads nextLink, so agreement holds by
+// construction — but NO existing guard drove a nextLink root through both
+// surfaces, so a one-sided page-adoption edit could ghost the capability card
+// while the console list stayed GREEN (REAL RED: 5 named failures, 3 controls
+// GREEN; 67 existing service tests GREEN under the mutation). It landed live +
+// CI-reachable via verify.yml whole-tree `flutter test --coverage` yet absent
+// from BOTH `canonicalGuardFiles` and every pinned epoch (0 registry
+// references), so deleting / emptying / test-stripping it stayed GREEN.
+// Registered under a fresh pinned `epT66AddedGuards` epoch (length 1,
+// pairwise-disjoint from every earlier designation incl. EP-T65) with a pin
+// test, a temp-root RED->GREEN proof and the updated EP-T20 completeness
+// arithmetic, so deleting / emptying / test-stripping it fails closed
+// (issues #009/#021 closeout).
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -969,6 +991,11 @@ const List<String> canonicalGuardFiles = <String>[
   // from the registry until now. Registering it makes deleting / emptying /
   // test-stripping it fail closed.
   'test/features/kvm/platform/console_userinfo_navigation_asymmetry_agreement_test.dart',
+  // EP-T66 extension: the @odata.nextLink collection-page cross-surface
+  // agreement guard (EP-S23), landed this run; live + CI-reachable but absent
+  // from the registry until now. Registering it makes deleting / emptying /
+  // test-stripping it fail closed.
+  'test/features/kvm/kvm_service_nextlink_page_agreement_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -1620,6 +1647,18 @@ const Set<String> epT65AddedGuards = <String>{
   'test/features/kvm/platform/console_userinfo_navigation_asymmetry_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-T66: the one cross-surface
+/// `@odata.nextLink` collection-page agreement guard landed this run (EP-S23 —
+/// both `/Managers` discovery surfaces adopt the same page set with no ghost
+/// `fetchCapability(id)` lookup and no double-count of a repeated member, over
+/// absolute/query/relative/scheme-relative/blank/non-string link roots). It
+/// landed live + CI-reachable but absent from the registry, so deleting /
+/// emptying / test-stripping it stayed GREEN. Pinned separately so a future edit
+/// cannot drop it back out of the canonical set (issues #009/#021 closeout).
+const Set<String> epT66AddedGuards = <String>{
+  'test/features/kvm/kvm_service_nextlink_page_agreement_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -1681,6 +1720,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT63AddedGuards,
   ...epT64AddedGuards,
   ...epT65AddedGuards,
+  ...epT66AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -4278,6 +4318,78 @@ void main() {
       expect(epT65AddedGuards.intersection(epT64AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-T66: the @odata.nextLink collection-page cross-surface agreement '
+        'guard is in the canonical liveness set', () {
+      expect(epT66AddedGuards, isNotEmpty);
+      expect(epT66AddedGuards.length, 1);
+      for (final String path in epT66AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T66 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epT66AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(rm15AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epP13AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(sec010AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT26AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT28AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT29AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT30AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT32AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT33AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT35AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT36AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT37AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT39AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT40AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT41AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT42AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT43AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT44AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT45AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT46AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT47AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT48AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT49AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT50AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT51AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT52AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT53AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT54AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT55AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT56AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT57AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT58AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT59AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT60AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT61AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT62AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT63AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT64AddedGuards), isEmpty);
+      expect(epT66AddedGuards.intersection(epT65AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -4359,7 +4471,8 @@ void main() {
             epT62AddedGuards.length +
             epT63AddedGuards.length +
             epT64AddedGuards.length +
-            epT65AddedGuards.length,
+            epT65AddedGuards.length +
+            epT66AddedGuards.length,
       );
     });
   });
@@ -7348,6 +7461,39 @@ void main() {
         // variants, default-port normalization, origin confinement, non-HTTPS
         // fail-closed and the launch-plan initial-load exception).
         for (final String addedGuard in epT65AddedGuards) {
+          File(p(addedGuard)).deleteSync();
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'MISSING: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when deleted',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('  \n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'EMPTY: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when emptied',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when test-stripped',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+        }
+
+        // EP-T66: @odata.nextLink collection-page cross-surface agreement
+        // guard (EP-S23 — both discovery surfaces adopt the same single page
+        // set with no ghost lookup / double-count over the full nextLink root
+        // value family).
+        for (final String addedGuard in epT66AddedGuards) {
           File(p(addedGuard)).deleteSync();
           expect(
             evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())

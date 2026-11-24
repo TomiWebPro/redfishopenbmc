@@ -15631,3 +15631,20 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-P28 + EP-T65 LANDED; next AUDIT FIRST a genuinely new KVM seam, never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-S23 + EP-T66)
+
+**Done:**
+- FEATURE EP-S23: new `test/features/kvm/kvm_service_nextlink_page_agreement_test.dart` (8 tests) pins that both `/Managers` discovery surfaces adopt the same single page set over the root `@odata.nextLink` value family (absolute/query/relative/scheme-relative/blank/non-string + second page repeating a member), with no ghost `fetchCapability(id)`, no double-count, deterministic repeated walk, console↔capability field agreement, controller Primary from the adopted set, and a source-liveness pin that neither public surface reads nextLink directly. AUDIT FIRST: one stateless shared `_fetchManagerBodies()` walk never reads nextLink (zero grep hits) — agreement by construction, but the nextLink value family was entirely unguarded.
+- FEATURE EP-T66: registered the new guard under a fresh pinned `epT66AddedGuards` epoch (pairwise-disjoint from all 56 earlier epochs) in `test/tool/guard_suite_liveness_test.dart` (canonical path, disjointness pin vs all earlier epochs, temp-root RED→GREEN, EP-T20 completeness arithmetic).
+
+**Verification:**
+- Two REAL RED→GREEN proofs: guard — one-sided ghost `GHOST_PAGE` page adoption in `fetchCapabilities()` (600-perm backup) → 5 named failures / 3 controls GREEN, 67 existing service tests GREEN under mutation / restore 8/8 (SHA `653e64a6…` byte-clean, empty `lib/` diff, backup shredded); registry — dropped only the canonical entry → 3 named failures / restore 101/101 (SHA `8889cd39…` byte-clean). analyze 0; full `flutter test --concurrency=4` 3079 passed / 1 skipped (baseline 3070 +8 guard +1 registry pin); issues validate OK; diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened outside the localhost mock, no production TLS weakening.
+
+**Decisions:**
+- Read-only cross-surface discovery-agreement guard + test/tool liveness registration at a genuinely unguarded seam (unlanded queue head EP-S23); no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). No manufactured UI churn. No WIP touched, no new stash, no `git clean`; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-S23 + EP-T66 LANDED; next AUDIT FIRST a genuinely new KVM seam, never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

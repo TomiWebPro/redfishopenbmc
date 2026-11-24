@@ -5,6 +5,8 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+- [x] EP-T66 Guard-suite liveness registration of the newly-landed EP-S23 `@odata.nextLink` collection-page agreement guard — **LANDED (run 2026-11-24 18:30 UTC, agent:redfish-automation, test/tool-only)**: registered `kvm_service_nextlink_page_agreement_test.dart` under a fresh pinned `epT66AddedGuards` epoch (length 1, pairwise-disjoint from all 56 earlier designations incl. EP-T65) in `allDesignatedGuards` + EP-T20 completeness arithmetic, with +1 containment/disjointness pin test, +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation) and header rationale. Registry REAL RED: dropped only the canonical entry (epoch kept) under a 600-perm backup → 3 named failures (EP-T66 pin, EP-T20 completeness, temp-root liveness); restored byte-clean (SHA `8889cd39…`, backup shredded) → 101/101 targeted GREEN. Empty `lib/` diff, deps unchanged, no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 15:10 UTC: recurring "who guards the guards" gap in the still-open
      #009/#021 epic. EP-T61 registered the EP-P25 structural-boundary agreement guard, but every
      subsequently landed agreement guard (and any post-EP-T61 guard) is live + CI-reachable via
