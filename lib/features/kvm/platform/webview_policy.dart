@@ -1962,6 +1962,44 @@ class KvmWebViewPolicy {
   /// (RP-1).
   bool get bypassDnsExfiltration => false;
 
+  /// Always `false`: SVG external-resource / image-href exfiltration is NEVER
+  /// bypassed, not even by the test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let attacker-influenced console content
+  /// smuggle privileged management-session data (KVM frame handles, session
+  /// tokens, operator credentials, managed-host inventory) out through external
+  /// resource references inside an SVG element: no `<image href>` /
+  /// `xlink:href`, `<use href>`, `<feImage href>`, external `<pattern>` /
+  /// `<mask>` / `<clipPath>` references, no `<font-face-uri>`, no
+  /// `<script href>` / `<style href>` and no `<foreignObject>` load pointing at a
+  /// non-approved origin. Each such SVG attribute makes the browser issue a
+  /// declarative subresource request carrying the data in the URL, with no
+  /// script-opened socket, CSS rule, form submission or navigation, so a
+  /// `connect-src 'self'` egress allowlist alone does not confine it. These
+  /// SVG-driven loads are governed by the CSP `img-src` / `style-src` /
+  /// `font-src` / `script-src` / `child-src` source directives (or
+  /// `default-src`), which must pin them to the approved same-origin HTTPS
+  /// console and be denied at WebView request interception. Console content is
+  /// served by the BMC and is therefore attacker-influenced: injected SVG
+  /// markup must never turn the trusted frame into an SVG-driven exfiltration
+  /// beacon. Operator/app-initiated loads of the console's own approved-origin
+  /// subresources are a separate functional path and stay unaffected.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits an SVG
+  /// external-resource request. It governs the SVG-namespace declarative
+  /// subresource channel, so it is distinct from HTML-driven subresource beacons
+  /// ([bypassHtmlSubresourceExfiltration]) (HTML-element `src` / `href` /
+  /// `poster` attributes), CSS-driven subresource exfiltration
+  /// ([bypassCssExfiltration]) (stylesheet `@import` / `url()` / `@font-face`
+  /// rules), worker-script exfiltration ([bypassWorkerScriptExfiltration]) (an
+  /// off-main-thread script/module load) and programmatic outbound egress
+  /// ([bypassOutboundEgressAllowlist]) (fetch / XHR / WebSocket / sendBeacon
+  /// confined by `connect-src`): those govern other markup, styling, script or
+  /// request surfaces, not SVG external-resource references. See
+  /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassSvgExternalResourceExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
