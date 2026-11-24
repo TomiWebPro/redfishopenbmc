@@ -6,6 +6,36 @@ platform validation evidence.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 15:10 UTC: carves a fresh, machine-checkable, unblocked slice of the
+     still-open (human-gated) WebView/TLS closeout of #009/#021. EP-P18 / EP-P24 sweep canonical-tricky
+     authorities and alternate IPv4 notation, EP-P9 pins cross-layer authority fail-closed and EP-P26
+     pins hostile ports, but nothing sweeps an IPv6 SCOPE / ZONE-ID authority (`[fe80::1%25eth0]`,
+     `[fe80::1%eth0]`, bracket / percent misspellings, zone-bearing control / bidi bytes) or an
+     IPv4-mapped IPv6 literal (`[::ffff:192.168.1.1]`) through the fail-closed classifier,
+     `planConsoleLaunch`, `allowsInAppNavigation` and the model at once, where `Uri.tryParse` may
+     normalise a zone id that a browser launcher treats differently. Test-only; the human
+     WebView/TLS validation (EP-P1/P2/P4) stays gated and is NOT re-split. AUDIT FIRST; RED->GREEN
+     only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-P27 IPv6 zone-id / IPv4-mapped authority cross-layer fail-closed agreement:
+       over a matrix of otherwise-secure HTTPS console URIs whose authority is a scoped IPv6 zone
+       (`[fe80::1%25eth0]`, `[fe80::1%eth0]`), a malformed bracket / percent spelling, a zone id
+       carrying a control / bidi byte, or an IPv4-mapped IPv6 literal, plus clean IPv6 and IPv4
+       controls, pin that the shared fail-closed classifier, `planConsoleLaunch`,
+       `allowsInAppNavigation` and the model `KvmConsole.hasSecureLaunchUri` / `launchPlan` ALL
+       agree per value: one uniform secure / fail-closed verdict, route and target across every
+       layer (never in-app eligibility or self-signed on an ambiguous authority, never navigable
+       when the classifier fails closed), production default copy-only with no self-signed under a
+       stale secure flag, identical opt-in eligibility on all layers, and byte-exact clean controls.
+       AUDIT FIRST: if the shared whole-URI fail-closed core already classifies this family
+       uniformly by construction, record the audit and add nothing; RED->GREEN only on a genuine
+       divergence, never churn. Test-only; no production TLS weakening.
+       Dept: rf-platform
+       Verify: `flutter test test/features/kvm/platform/ && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/platform/**` + `test/features/kvm/platform/**`; `git diff --exit-code --
+               pubspec.yaml pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 10:58 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open (human-gated) WebView/TLS closeout of #009/#021. Authority spellings, IPv4/IPv6
      literals, alternate IPv4 notation, userinfo, separators, structural-boundary controls (EP-P21/

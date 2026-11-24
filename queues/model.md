@@ -4,6 +4,38 @@ Owns: `lib/features/kvm/models/**`, `lib/redfish/discovery/**`. Verify: scoped `
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 15:10 UTC: carves a fresh, machine-checkable, unblocked slice of
+     the still-open #009/#021 model epic (never-empty-well malformed-payload tolerance, MULTI_DEPT
+     hard rule 10). RM-21 / EP-M7 pin `@odata.id` RESOURCE-PATH normalization and RM-28 pins the
+     console-BLOCK `@odata.id` fallback, but nothing drives a RELATIVE / SCHEME-RELATIVE / OPAQUE
+     console `ConnectUri` (the BMC-supplied launch target, not the source URI) through both
+     `fromManager` factories and the shared launch-plan resolver at once: a one-sided "resolve
+     against the manager base" edit could turn a relative `/kvm` into a different, possibly
+     cross-origin, target on one card while the other fails closed, with every single-surface
+     suite GREEN. Read-only model characterization; the two deliberate behaviour decisions
+     (RM-11 mixed regime, EP-S8 credentialed Primary) stay blocked and are NOT re-split. AUDIT
+     FIRST; RED->GREEN only on a genuine divergence, never churn. No code touched. -->
+
+- [ ] RM-29 Relative / opaque console `ConnectUri` resolution cross-factory agreement:
+       over a matrix of Graphical / Serial / Remote console blocks whose `ConnectUri` is a
+       relative path (`kvm`, `/kvm`, `./kvm`, `../kvm`), a scheme-relative form (`//host/kvm`),
+       an opaque / non-hierarchical form (`https:opaque`, `mailto:...`, `javascript:...`), a
+       query/fragment-only value, or a control / bidi-bearing string (plus a clean absolute
+       HTTPS control), pin that `KvmConsole.fromManager` and `KvmCapability.fromManager` derive
+       the identical fail-closed, control-safe launch URI and identical `launchPlan` / openability,
+       never throw on a non-string value, never emit a non-approved authority or control code
+       point into a visible / copyable target, agree field-for-field, and leave the clean control
+       byte-exact. AUDIT FIRST: if both factories already route `ConnectUri` through the one
+       shared fail-closed resolver / helper and agree by construction, record the audit and add
+       nothing; RED->GREEN only on a genuine divergence, never churn. Read-only model work; no
+       wire/transport/TLS change, no dependency, no WebView/protocol import, no behaviour decision
+       folded in.
+       Dept: rf-model
+       Verify: `flutter test test/features/kvm/kvm_model_test.dart test/features/kvm/kvm_capability_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/models/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+               pubspec.lock`; no wire/TLS change, no WebView/protocol import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 10:58 UTC: carves a fresh, machine-checkable, unblocked slice of
      the still-open #009/#021 model epic (never-empty-well malformed-payload tolerance, MULTI_DEPT
      hard rule 10). RM-18/RM-27 pin the DERIVED manager-source fallback from a string / hostile

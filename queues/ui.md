@@ -5,6 +5,34 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 15:10 UTC: another fresh, display-only, unblocked slice of the
+     still-open #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U13 pins
+     the four-state POPULATED ListView at LTR/1.0x, EP-U10 pins the flag-off viewer false-claim
+     firewall and EP-U11 pins RemoteConsole-only / disabled cards, while EP-U31..U39 pump display
+     payloads through RTL x 2.0x — but no suite drives the gated KVM surfaces' EMPTY / LOADING /
+     ERROR states (and the disabled helper) through both real cards and the viewer under
+     `Directionality.rtl` with `MediaQuery.textScaler` 2.0x at 320/800/1300 px, where a one-sided
+     state-message edit or a split merged `excludeSemantics` node could desync one surface while
+     every populated-state suite stayed GREEN. Display-only; the human-gated WebView/TLS rendering
+     stays gated and is NOT re-split. AUDIT FIRST; RED->GREEN only on a genuine divergence, never
+     churn. No code touched. -->
+
+- [ ] EP-U40 Empty / loading / error state a11y agreement of the gated KVM surfaces under RTL x 2.0x:
+       pump the capability-gated KVM list and `KvmConsoleViewerPage` with no managers, an in-flight
+       load and a failed load (plus an explicitly disabled console) under `Directionality.rtl` with
+       `MediaQuery.textScaler` 2.0x at 320/800/1300 px, pinning that each non-populated state renders
+       ONE merged `excludeSemantics` node with visible text == announced label, byte-exact shared
+       copy on all rendered surfaces, no duplicate / screen-reader-only node, no overflow, no false
+       "console ready" claim in a non-ready state, and unchanged populated-state + LTR/1.0x controls.
+       AUDIT FIRST: if every non-populated state already sources one shared constant into one merged
+       node on every surface with no direction- or width-specific branch, record the audit and add
+       nothing; RED->GREEN only on a genuine divergence, never churn. Display-only; test-only writes.
+       Dept: rf-ui
+       Verify: `flutter test test/features/kvm/kvm_widget_test.dart test/features/kvm/kvm_capability_card_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/views/**` + `test/features/kvm/**`; `git diff --exit-code -- pubspec.yaml
+               pubspec.lock`; no WebView/protocol import, no URL opened, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 10:58 UTC: another fresh, display-only, unblocked slice of the
      still-open #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U21/U31-U34
      cover display names / chips under RTL x 2.0x, EP-U26 pins copy-affordance merged a11y and RU-2

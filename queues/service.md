@@ -5,6 +5,38 @@ Verify: service tests + emulator 85/85 when `lib/` wire changes.
 
 ## Backlog (head first)
 
+<!-- rf-ideate split 2026-11-24 15:10 UTC: carves a fresh, machine-checkable, unblocked slice of
+     the still-open #009/#021 manager-walk epic. EP-S12/S13/S17/S20/S21/S22/S23/S24 pin malformed
+     Members, manager-skip, transport failures, document / OEM / hostile-member shapes,
+     per-manager GET failures and `@odata.nextLink` pages; RS-4 pins member dedup and EP-S11/S18
+     pin member order / same-tier tie determinism — but no test drives two CONCURRENT
+     `fetchConsoles()` / `fetchCapabilities()` calls over the same in-temp mockup and pins that
+     they observe the SAME ordered survivor set with no cross-call state bleed, no duplicate or
+     extra GET beyond the shared walk contract, and identical `fetchCapability(id)` resolution.
+     Read-only characterization of the shared `_fetchManagerBodies()` seam; the credentialed-Primary
+     decision (EP-S8) and RM-11 stay blocked and are NOT re-split. AUDIT FIRST; RED->GREEN only on
+     a genuine divergence, never churn. No code touched. -->
+
+- [ ] EP-S25 Concurrent-call determinism agreement across the `/Managers` discovery surfaces:
+       with one in-temp mock client serving a hostile-but-valid multi-manager collection (padded
+       duplicates, mixed enablement, one deliberate skip), start `fetchConsoles()` and
+       `fetchCapabilities()` interleaved (and two calls of each) and pin that every resolution
+       yields the SAME ordered manager set / count / `managerId` / connect-URI / enablement / limit
+       field-for-field, that `fetchCapability(id)` resolves only an id from that common set on
+       every call, and that no interleaving leaks one call's partial state into another or issues
+       a GET to a non-approved host. Whatever the current sharing contract is (one shared walk
+       per call or a cached walk), it must be identical on both surfaces and never throw.
+       AUDIT FIRST: if both surfaces already delegate to one stateless `_fetchManagerBodies()`
+       with no instance-level mutable state, record the audit and add nothing; RED->GREEN only on
+       a genuine divergence, never churn. Read-only service work; no wire/transport/TLS change,
+       no dependency, no WebView/protocol import, no behaviour decision folded in.
+       Dept: rf-service
+       Verify: `flutter test test/features/kvm/kvm_service_test.dart && flutter analyze`
+               (0 issues), RED->GREEN proof only on a genuine divergence; writes limited to
+               `lib/features/kvm/kvm_service.dart` + `lib/redfish/client/**` + `test/features/kvm/**`;
+               `git diff --exit-code -- pubspec.yaml pubspec.lock`; no wire/TLS change, no WebView/protocol
+               import, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 10:58 UTC: carves a fresh, machine-checkable, unblocked slice of the
      still-open #009/#021 manager-walk epic. EP-S12/S13/S17/S20/S21 pin malformed `Members` entries,
      manager-skip, transport failures, top-level document shapes and hostile OEM shapes, EP-S22 pins
