@@ -83,6 +83,12 @@
 // configuration-independent invariant; the opt-in never lets attacker-influenced
 // console content open a WebTransport session — distinct from peer-to-peer
 // WebRTC and from programmatic HTTP egress),
+// no-peripheral-I/O exfiltration (WebUSB / WebSerial / WebHID; a script-driven
+// local-hardware byte-stream channel that bypasses network egress; hard
+// configuration-independent invariant; the opt-in never lets attacker-influenced
+// console content open a USB/serial/HID stream to smuggle or relay privileged
+// session data — distinct from generic device-permission grants, filesystem
+// handles and the network egress allowlist),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -936,6 +942,34 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'opt-in-keeps-webtransport-denied',
     marker: 'never grant a webtransport'
+  ),
+  // No WebUSB / WebSerial / WebHID peripheral I/O exfiltration: a script-driven
+  // local-hardware byte-stream channel (navigator.usb / serial / hid) that
+  // bypasses network egress — distinct from generic device-permission grants,
+  // filesystem handles and the HTTP(S) outbound egress allowlist.
+  (name: 'no-peripheral-io-exfil', marker: 'peripheral i/o'),
+  (name: 'no-webusb', marker: 'webusb'),
+  (name: 'no-webserial', marker: 'webserial'),
+  (name: 'no-webhid', marker: 'webhid'),
+  (
+    name: 'peripheral-io-never-bypassed',
+    marker: 'never bypasses peripheral i/o'
+  ),
+  (
+    name: 'peripheral-io-policy-getter',
+    marker: 'bypassperipheralioexfiltration'
+  ),
+  (
+    name: 'peripheral-io-distinct-from-device-perms',
+    marker: 'distinct from device-permission controls'
+  ),
+  (
+    name: 'peripheral-io-distinct-from-egress',
+    marker: 'distinct from the outbound egress allowlist'
+  ),
+  (
+    name: 'opt-in-keeps-peripheral-io-denied',
+    marker: 'never grant a peripheral i/o'
   ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -2200,6 +2234,32 @@ void main() {
       expect(missing, contains('webtransport-distinct-from-webrtc'));
       expect(missing, contains('webtransport-distinct-from-egress'));
       expect(missing, contains('opt-in-keeps-webtransport-denied'));
+    });
+
+    test(
+        'RED: dropping the no-WebUSB/WebSerial/WebHID peripheral-I/O box '
+        'fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutPeripheralIo = section
+          .split('\n')
+          .where((String line) => !line
+              .toLowerCase()
+              .contains(RegExp(r'peripheral i/o|webusb|webserial|webhid|'
+                  r'bypassperipheralioexfiltration|device-permission controls|'
+                  r'outbound egress allowlist')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutPeripheralIo);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-peripheral-io-exfil'));
+      expect(missing, contains('no-webusb'));
+      expect(missing, contains('no-webserial'));
+      expect(missing, contains('no-webhid'));
+      expect(missing, contains('peripheral-io-never-bypassed'));
+      expect(missing, contains('peripheral-io-policy-getter'));
+      expect(missing, contains('peripheral-io-distinct-from-device-perms'));
+      expect(missing, contains('peripheral-io-distinct-from-egress'));
+      expect(missing, contains('opt-in-keeps-peripheral-io-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

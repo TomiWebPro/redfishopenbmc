@@ -1765,6 +1765,39 @@ flag stays off for that target.
       expected host, via a scoped per-connection verifier; it must never grant
       a WebTransport just to make a console render or to debug it. No
       QUIC-exfiltration path. Verified per target before the flag is flipped.
+* [ ] **No WebUSB / WebSerial / WebHID peripheral I/O exfiltration** — the
+      embedded WebView must not let attacker-influenced console content enumerate
+      or open a connection to a locally attached USB device, serial port or HID
+      peripheral through WebUSB (`navigator.usb.*`), WebSerial
+      (`navigator.serial.*`) or WebHID (`navigator.hid.*`) and use the byte-stream
+      / report channel to smuggle privileged KVM frames, session tokens,
+      operator credentials or managed-host inventory to a physically attached
+      device — a local-hardware data channel that bypasses every network egress
+      control — nor relay that data off-host through a connected peripheral.
+      Console content is served by the BMC and is therefore attacker-influenced:
+      a compromised/spoofed BMC or a script in the page must never obtain a
+      peripheral I/O stream, on every target, in strict mode and with the flag
+      both off and on. Verified per target (inspect the WebView permission /
+      USB-serial-HID callbacks and confirm console content cannot open a
+      peripheral I/O stream) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassPeripheralIoExfiltration`,
+      always `false`): the test-only opt-in never bypasses peripheral I/O
+      exfiltration — console content can never open a peripheral I/O stream, in
+      strict mode and with the flag both off and on. The opt-in relaxes ONLY the
+      test BMC's untrusted server leaf for the expected host, via a scoped
+      per-connection verifier; it must never grant a peripheral I/O stream just
+      to make a console render or to debug it. No local-hardware exfiltration
+      path. This box governs the script-driven local-hardware byte-stream
+      channel, so it is distinct from device-permission controls
+      (`bypassDevicePermissionControls`) (generic capability grants / native
+      permission prompts such as camera, microphone, geolocation, Bluetooth /
+      NFC — not a direct USB/serial/HID byte stream), the File System Access API
+      (`bypassFileSystemAccessApi`) (filesystem handles / durable file reads and
+      writes, not peripheral I/O) and it is distinct from the outbound egress
+      allowlist (`bypassOutboundEgressAllowlist`) (HTTP(S) network destinations,
+      not a physically attached device). Verified per target before the flag is
+      flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
