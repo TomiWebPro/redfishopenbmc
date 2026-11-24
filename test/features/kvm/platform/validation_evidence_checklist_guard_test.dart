@@ -71,6 +71,13 @@
 // hard configuration-independent invariant; the opt-in never lets attacker-
 // influenced console content open a peer connection or data channel — distinct
 // from programmatic HTTP egress and getUserMedia camera/mic capture),
+// no-file-system-access API read/write exfiltration (showOpenFilePicker /
+// showSaveFilePicker / showDirectoryPicker / createWritable / OPFS; a script-
+// driven local-file read/write channel, hard configuration-independent
+// invariant; the opt-in never lets attacker-influenced console content obtain a
+// file handle to read local files into the frame or write a durable file —
+// distinct from the <input type=file> chooser, direct file:// reads, the
+// WebView's own cache/storage and a network-response download),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -885,6 +892,36 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'not a peer-to-peer udp data channel'
   ),
   (name: 'opt-in-keeps-webrtc-denied', marker: 'never grant a webrtc'),
+  // No File System Access API exfiltration: a script-driven local-file read /
+  // write channel (showOpenFilePicker / showSaveFilePicker / OPFS), distinct
+  // from the operator-mediated <input type=file> chooser, direct file:// reads,
+  // the WebView's own cache/storage and a network-response download.
+  (name: 'no-file-system-access-api', marker: 'file system access api'),
+  (name: 'no-show-open-file-picker', marker: 'showopenfilepicker'),
+  (name: 'no-show-save-file-picker', marker: 'showsavefilepicker'),
+  (name: 'no-show-directory-picker', marker: 'showdirectorypicker'),
+  (name: 'no-fs-create-writable', marker: 'createwritable'),
+  (name: 'no-opfs', marker: 'origin private file system'),
+  (
+    name: 'file-system-never-bypassed',
+    marker: 'never bypasses file system access api'
+  ),
+  (
+    name: 'file-system-policy-getter',
+    marker: 'bypassfilesystemaccessapi'
+  ),
+  (
+    name: 'file-system-distinct-from-file-chooser',
+    marker: 'distinct from the file chooser'
+  ),
+  (
+    name: 'file-system-distinct-from-data-at-rest',
+    marker: 'distinct from sensitive data at rest'
+  ),
+  (
+    name: 'opt-in-keeps-file-system-denied',
+    marker: 'never grant a file system'
+  ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -2094,6 +2131,32 @@ void main() {
       expect(missing, contains('webrtc-policy-getter'));
       expect(missing, contains('webrtc-distinct-from-egress'));
       expect(missing, contains('opt-in-keeps-webrtc-denied'));
+    });
+
+    test('RED: dropping the no-File-System-Access-API box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutFileSystem = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'file system access api|showopenfilepicker|showsavefilepicker|'
+              r'showdirectorypicker|createwritable|origin private file system|'
+              r'never bypasses file system access api|'
+              r'bypassfilesystemaccessapi|distinct from the file chooser|'
+              r'distinct from sensitive data at rest|never grant a file system')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutFileSystem);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-file-system-access-api'));
+      expect(missing, contains('no-show-open-file-picker'));
+      expect(missing, contains('no-show-save-file-picker'));
+      expect(missing, contains('no-show-directory-picker'));
+      expect(missing, contains('no-fs-create-writable'));
+      expect(missing, contains('no-opfs'));
+      expect(missing, contains('file-system-never-bypassed'));
+      expect(missing, contains('file-system-policy-getter'));
+      expect(missing, contains('file-system-distinct-from-file-chooser'));
+      expect(missing, contains('file-system-distinct-from-data-at-rest'));
+      expect(missing, contains('opt-in-keeps-file-system-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

@@ -1552,6 +1552,46 @@ class KvmWebViewPolicy {
   /// `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassWebRtcDataChannelExfiltration => false;
 
+  /// Always `false`: the browser's File System Access API is NEVER exposed to
+  /// attacker-influenced console content, not even by the test-only self-signed
+  /// opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content use the File
+  /// System Access API to read local files into the trusted frame or write
+  /// privileged console data (KVM frames, session tokens, operator credentials,
+  /// managed-host inventory) to a durable, console-chosen file path: no
+  /// `window.showOpenFilePicker()` / `showSaveFilePicker()` /
+  /// `showDirectoryPicker()`, no `FileSystemFileHandle.createWritable()` /
+  /// `FileSystemDirectoryHandle` traversal and no Origin Private File System
+  /// (OPFS) `navigator.storage.getDirectory()` write induced by the page.
+  /// Console content is served by the BMC and is therefore attacker-influenced:
+  /// unlike a passive `<input type=file>` upload, this API returns live file
+  /// handles the script can both read (pulling local secrets into the console
+  /// frame) and write (an attacker-chosen durable file readable by any
+  /// co-resident app) — a local-file read/write channel independent of the
+  /// programmatic network egress allowlist. Every File System Access API call
+  /// from console content must be denied on every target, in strict mode and
+  /// with the flag both off and on.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content obtain a file handle. Tolerating the test BMC's untrusted server
+  /// leaf relaxes ONLY that leaf's trust for the expected host, via a scoped
+  /// per-connection verifier; it must never grant a file system handle just to
+  /// make a console render or to debug it. It governs the script-driven local-
+  /// file read/write channel, so it is distinct from the file chooser
+  /// ([bypassFileChooserAccess]) (the operator-mediated `<input type=file>` /
+  /// `onShowFileChooser` selection uploaded to the page), local file / content
+  /// access ([bypassLocalFileAccess]) (the page loading `file://` / `content://`
+  /// URLs), sensitive data at rest ([bypassSensitiveDataAtRestProtection]) (the
+  /// WebView's own automatic cache/storage and background snapshot) and
+  /// arbitrary file download ([bypassArbitraryFileDownload]) (a network-response
+  /// file written to a download destination): those govern other local-read,
+  /// automatic-storage or network-response surfaces, not a direct script-driven
+  /// filesystem read/write via a file handle. See `WEBVIEW_TLS_MATRIX.md`
+  /// (RP-1).
+  bool get bypassFileSystemAccessApi => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
