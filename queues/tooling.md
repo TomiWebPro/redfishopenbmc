@@ -5,6 +5,18 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- build audit 2026-11-24 02:22 UTC: recurring "who guards the guards" gap in the still-open
+     #009/#021 epic. EP-T46 registered the RM-25 + EP-P23 guards, but ONE agreement guard landed
+     after it unpinned — EP-U28 (`kvm_rtl_rendering_agreement_test.dart`, 01:44) — live + CI-reachable
+     via verify.yml whole-tree `flutter test --coverage` yet absent from BOTH `canonicalGuardFiles`
+     and every pinned epoch, so deleting / emptying / test-stripping it stayed GREEN. A full
+     `find test -name '*agreement_test.dart'` audit against the registry confirmed it is the ONLY
+     post-EP-T46 unregistered #009/#021 agreement guard. AUDIT FIRST, RED→GREEN only on a genuine
+     gap, never churn. Pure test/tool, dependency-free, never writes `lib/`. -->
+
+- [x] EP-T47 LANDED 2026-11-24 (run `auto: FEATURE #009/#021 EP-T47 guard-suite liveness registration of the EP-U28 RTL-rendering agreement guard + RED->GREEN tests`, test/tool-only) — AUDIT FIRST enumerated every `test/**/*_agreement_test.dart` against `canonicalGuardFiles` + every pinned epoch and found exactly ONE #009/#021 guard absent from BOTH (registry grep 0 references): `kvm_rtl_rendering_agreement_test.dart` (EP-U28 byte-identical chip sequences + merged `excludeSemantics` announcement sets across both operator cards and the viewer under LTR/RTL at 320/800/1300 px, 5 live tests). Deleting / emptying / test-stripping it stayed GREEN — a confirmed "who guards the guards" gap, no live divergence, no behaviour change, not churn. Registered under a fresh pinned `epT47AddedGuards` epoch (length 1, pairwise-disjoint from all 36 earlier designations incl. EP-T46) in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation, intact → clean). REAL RED: dropped only the canonical entry (epoch designation kept) under a 600-perm backup → exactly 3 named failures (`+75 -3`: EP-T47 pin, EP-T20 completeness, EP-T47 temp-root liveness), 75 GREEN; source restored byte-clean (SHA `91abb8c9121998fb95af20ea3d87ab912417ee0ca7816dbd5e449caf3c58bc2d` unchanged, 0 residue, backup shredded) → 78/78 targeted GREEN (baseline 76 +2 mine); analyze 0; full suite verified; issues validate OK; diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+       Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues); writes limited to `test/tool/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no `lib/` product code, no dependency, no production TLS weakening. Dept: rf-tooling.
+
 <!-- build audit 2026-11-24 00:57 UTC: recurring "who guards the guards" gap in the still-open
      #009/#021 epic. EP-T45 registered the EP-P22 userinfo-edge guard, but TWO agreement guards
      landed after it unpinned — RM-25 (`kvm_session_limit_coercion_agreement_test.dart`, 23:42) and

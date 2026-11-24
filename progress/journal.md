@@ -15046,3 +15046,20 @@
 - Next rf-gate run: re-check `rf-platform-check` verdict first; `--no-ff` merge only a PASS branch; NO-OP if no new commits. Builder continues audit-first dept heads; close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-T47)
+
+**Done:**
+- FEATURE EP-T47 for open #009/#021: registered the EP-U28 RTL-rendering agreement guard in `test/tool/guard_suite_liveness_test.dart` so it is now liveness-checked. AUDIT FIRST over every `test/**/*_agreement_test.dart` against `canonicalGuardFiles` + all pinned epochs found exactly ONE unregistered #009/#021 guard — `kvm_rtl_rendering_agreement_test.dart` (EP-U28, landed 01:44), live + CI-reachable via verify.yml but absent from the registry, so deleting / emptying / test-stripping it stayed GREEN. Added a fresh pinned `epT47AddedGuards` epoch (length 1, pairwise-disjoint from all 36 earlier designations incl. EP-T46), wired into `allDesignatedGuards` + the EP-T20 completeness arithmetic, +1 containment/disjointness pin test and +1 dedicated temp-root RED→GREEN proof.
+- Real-file RED: dropped only the EP-T47 canonical entry (epoch designation kept) under a 600-perm backup → exactly 3 named failures (`+75 -3`: EP-T47 pin, EP-T20 completeness, EP-T47 temp-root liveness), 75 GREEN; source restored byte-clean (SHA `91abb8c9121998fb95af20ea3d87ab912417ee0ca7816dbd5e449caf3c58bc2d`, 0 residue, backup shredded) → 78/78 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2799 passed / 1 skipped (baseline 2797 +2 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool "who guards the guards" registration closing a genuine unguarded seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). New epoch registration is self-contained; no further EP-T pass needed until new guards land. Never force-push, rewrite history, `git clean`, or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve prior unpushed commits). AUDIT FIRST the last remaining 22:45 dept head EP-S21 (hostile OEM console shapes — RM-20 pins much at the model layer, never churn; RED→GREEN only on a genuine divergence). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
