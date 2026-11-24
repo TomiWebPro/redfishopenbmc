@@ -15063,3 +15063,20 @@
 - Push the single commit (never force-push; preserve prior unpushed commits). AUDIT FIRST the last remaining 22:45 dept head EP-S21 (hostile OEM console shapes — RM-20 pins much at the model layer, never churn; RED→GREEN only on a genuine divergence). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-S21)
+
+**Done:**
+- FEATURE EP-S21 for open #009/#021: hostile OEM console-shape cross-surface agreement across the real `/Managers` walk. AUDIT FIRST confirmed both `KvmConsole.fromManager` and `KvmCapability.fromManager` resolve the generic OEM console through the same shared helpers (`FeatureRules.oemHasConsole` / `kvmOemConsoleEnabled` / `kvmOemConsoleUri`) — no live divergence — but no test drove the full hostile OEM-shape matrix (mixed-case / nested / duplicate / empty keys, non-map / list / numeric / bool leaves, explicit-disable + byte-exact control) through BOTH surfaces at once. Added `test/features/kvm/kvm_service_hostile_oem_shape_agreement_test.dart` (6 tests) pinning survivor set / manager id / resolved URI / enablement / limit agreement, never-throw and `fetchCapability(id)` field-for-field.
+- Real-file RED: one-sided `oemEnabled = true` in `KvmCapability.fromManager` under a 600-perm backup → exactly 1 named failure (`+5 -1`, explicit-disable agreement test), other 5 GREEN; source restored byte-clean (SHA `53ab173201fb430fa47f73fb29b4b7e33622ca28cde0e5516c0e43407ca5195d`, 0 residue, backup shredded) → 6/6 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2809 passed / 1 skipped (baseline 2799 +6 mine +4 concurrent rf-platform merges); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test-only "who guards the guards"-adjacent agreement guard for the shared OEM enricher; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). Two concurrent rf-platform commits landed mid-run and were preserved; five pre-existing stashes untouched; no new stash (clean tree). Never force-push, rewrite history, `git clean`, or delete files. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve prior unpushed commits). AUDIT FIRST the five fresh 02:50-split dept heads EP-S22 / RM-26 / EP-U29 / EP-T48 / EP-P24 (never churn; RED→GREEN only on a genuine divergence). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
