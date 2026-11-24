@@ -1914,6 +1914,54 @@ class KvmWebViewPolicy {
   /// See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassWindowNameExfiltration => false;
 
+  /// Always `false`: DNS-based / hostname-encoding exfiltration is NEVER
+  /// available to attacker-influenced console content, not even by the
+  /// test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content leak
+  /// privileged management-session data — KVM frame handles, session tokens,
+  /// operator credentials or managed-host inventory — through the Domain Name
+  /// System. A page script can encode a secret into DNS hostname labels /
+  /// subdomains of an attacker-controlled hostname (e.g.
+  /// `<token>.attacker.example`) and trigger a lookup via a subresource load,
+  /// a DNS-prefetch hint or a websocket handshake: the query reaches the
+  /// attacker's authoritative DNS resolver and is recoverable from its logs
+  /// even when no HTTP response is returned and the `connect-src 'self'`
+  /// programmatic egress allowlist is intact. DNS exfiltration is a distinct
+  /// resolution-time data channel, not a network response body. Console
+  /// content is served by the BMC and is therefore attacker-influenced: a
+  /// compromised/spoofed BMC or injected script/markup must never turn the
+  /// trusted frame into a DNS exfiltration beacon. Every DNS lookup induced by
+  /// console content must resolve only approved origins: hostname-encoding of
+  /// session data must be stripped, DNS-prefetch to non-approved hosts must be
+  /// denied, and resolution must be confined at the network layer to the
+  /// approved console hostname on every target, in strict mode and with the
+  /// flag both off and on.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits DNS
+  /// exfiltration. Tolerating the test BMC's untrusted server leaf relaxes ONLY
+  /// that leaf's trust, via a scoped per-connection verifier; it must never
+  /// grant a DNS lookup to a non-approved hostname just to make a console
+  /// render or to debug it.
+  ///
+  /// This box governs the DNS resolution channel itself, so it is distinct
+  /// from the outbound egress allowlist ([bypassOutboundEgressAllowlist]) (the
+  /// destination of programmatic HTTP(S) connections, not the resolver), from
+  /// HTML-driven subresource beacons ([bypassHtmlSubresourceExfiltration]) and
+  /// CSS-driven requests ([bypassCssExfiltration]) (element/style attributes,
+  /// not the hostname resolution they trigger), from speculative prefetch
+  /// ([bypassSpeculationRulesEgress]) (browser-generated navigation fetches),
+  /// from private-network egress protection
+  /// ([bypassPrivateNetworkEgressProtection]) (the address class of a resolved
+  /// destination) and from validated-origin binding
+  /// ([bypassValidatedOriginBinding]) (the resolved address of the validated
+  /// top-level console origin at connect time): those govern HTTP requests,
+  /// element attributes, navigation or the top-level address, not DNS encoding
+  /// of privileged data into hostname labels. See `WEBVIEW_TLS_MATRIX.md`
+  /// (RP-1).
+  bool get bypassDnsExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

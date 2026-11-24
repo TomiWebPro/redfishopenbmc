@@ -131,6 +131,12 @@
 // the opt-in never lets attacker-influenced console content place privileged
 // session data in window.name or keep a tabnabbing opener — distinct from
 // cross-origin web messaging and navigation surfaces),
+// no-DNS/hostname-encoding exfiltration (encoding privileged session data into
+// DNS hostname labels / subdomains of an attacker-controlled host, recovered at
+// the authoritative resolver even with no HTTP response and an intact
+// connect-src allowlist, including DNS-prefetch; a resolution-time data channel
+// distinct from HTTP egress, element/style beacons, speculative prefetch,
+// subresource address class and top-level origin binding),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -1140,6 +1146,22 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'distinct from cross-origin web messaging'
   ),
   (name: 'opt-in-keeps-window-name-denied', marker: 'never grant a window.name'),
+  // No DNS-based / hostname-encoding exfiltration: encoding privileged session
+  // data into DNS hostname labels / subdomains of an attacker-controlled host
+  // (recoverable at the authoritative resolver even with no HTTP response and
+  // an intact connect-src allowlist), including DNS-prefetch. A resolution-time
+  // data channel distinct from HTTP egress, element/style subresource beacons,
+  // speculative prefetch, subresource address class and top-level origin
+  // binding.
+  (name: 'no-dns-exfil', marker: 'dns exfiltration'),
+  (name: 'no-dns-prefetch', marker: 'dns-prefetch'),
+  (name: 'dns-subdomain-encoding', marker: 'subdomain'),
+  (name: 'dns-authoritative-resolver', marker: 'authoritative'),
+  (name: 'dns-hostname-label', marker: 'hostname label'),
+  (name: 'dns-never-bypassed', marker: 'never bypasses dns exfiltration'),
+  (name: 'dns-policy-getter', marker: 'bypassdnsexfiltration'),
+  (name: 'dns-distinct-surface', marker: 'dns resolution channel itself'),
+  (name: 'opt-in-keeps-dns-denied', marker: 'never grant a dns lookup'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -2571,6 +2593,29 @@ void main() {
       expect(missing, contains('window-name-policy-getter'));
       expect(missing, contains('window-name-distinct-from-messaging'));
       expect(missing, contains('opt-in-keeps-window-name-denied'));
+    });
+
+    test('RED: dropping the no-DNS/hostname-encoding exfiltration box fails '
+        'closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutDns = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'dns-based|dns exfiltration|dns-prefetch|subdomain|'
+              r'authoritative|hostname label|dns lookup|'
+              r'dns resolution channel|bypassdnsexfiltration')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutDns);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-dns-exfil'));
+      expect(missing, contains('no-dns-prefetch'));
+      expect(missing, contains('dns-subdomain-encoding'));
+      expect(missing, contains('dns-authoritative-resolver'));
+      expect(missing, contains('dns-hostname-label'));
+      expect(missing, contains('dns-never-bypassed'));
+      expect(missing, contains('dns-policy-getter'));
+      expect(missing, contains('dns-distinct-surface'));
+      expect(missing, contains('opt-in-keeps-dns-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
