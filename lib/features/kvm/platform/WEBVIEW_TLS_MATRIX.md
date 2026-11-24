@@ -1475,6 +1475,46 @@ flag stays off for that target.
       scrape) and from outbound egress ([bypassOutboundEgressAllowlist]) (the
       destination of a connection, not the capture of the pixels it carries).
       Verified per target before the flag is flipped.
+* [ ] **No hyperlink auditing / `<a ping>` exfiltration** — the embedded WebView
+      must not let attacker-influenced console content exfiltrate privileged
+      session data (session tokens, operator credentials, KVM frame handles,
+      managed-host inventory) through HTML hyperlink auditing. The HTML ping
+      attribute on an anchor (`<a ping=...>`) makes the browser issue a
+      background POST (with `Ping-From` / `Ping-To` headers) to each listed URL
+      when the link is followed, so a scripted click or auto-followed link can
+      smuggle the privileged console handle to an attacker origin in the ping
+      URL — no script-opened socket, form submission or visible navigation
+      change. Console content is served by the BMC and is therefore
+      attacker-influenced: hyperlink auditing is a browser-generated request
+      controlled by the CSP ping directive (or `default-src`), NOT `connect-src`,
+      so a `connect-src 'self'` egress allowlist alone does not confine it.
+      Hyperlink auditing must be disabled at the WebView (ping URLs stripped,
+      ping requests denied at request interception, CSP ping 'none') on every
+      target, in strict mode and with the flag both off and on. Operator/app-
+      initiated navigation of the console is a separate functional path and
+      stays unaffected; only the hidden third-party auditing request driven by
+      console content is forbidden. Tolerating the test BMC's untrusted server
+      leaf relaxes ONLY that leaf's trust for the expected host, via a scoped
+      per-connection verifier; it must never allow hyperlink auditing just to
+      make a console render or to debug it.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassHyperlinkAuditingExfiltration`,
+      always `false`): it never bypasses hyperlink-auditing exfiltration — console
+      content can never emit a background auditing POST carrying privileged
+      session data to a non-approved origin, in strict mode and with the flag
+      both off and on. This box governs the browser-generated
+      link-activation request channel, so it is distinct from the outbound
+      egress allowlist ([bypassOutboundEgressAllowlist]) (programmatic fetch /
+      XHR / WebSocket / WebRTC / sendBeacon connections), cross-origin form
+      submission ([bypassCrossOriginFormSubmission]) (an HTML form GET/POST
+      body), top-level navigation confinement
+      ([bypassTopLevelNavigationConfinement]) (where the main frame navigates),
+      private-network egress protection ([bypassPrivateNetworkEgressProtection])
+      (the address class of subresources) and CSP / mixed-content blocking
+      ([bypassMixedContentBlocking]) (which subresources the page may load):
+      those govern other connection, request or output surfaces, not the
+      `<a ping>` auditing request. Verified per target before the flag is
+      flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
