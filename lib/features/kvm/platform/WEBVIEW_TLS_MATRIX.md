@@ -2093,6 +2093,41 @@ flag stays off for that target.
       govern other markup, styling, script or request surfaces, not SVG
       external-resource references. Verified per target before the flag is
       flipped.
+* [ ] **No Web Speech API / speech-synthesis audio exfiltration** — the
+      embedded WebView must not let attacker-influenced console content use the
+      Web Speech API to move privileged management-session data (KVM frame
+      handles, session tokens, operator credentials, managed-host inventory)
+      out of the secure frame as speech synthesis output: no
+      `speechSynthesis.speak(new SpeechSynthesisUtterance(secretText))` reading
+      console DOM data aloud through the device speaker, and no
+      `SpeechRecognition` / `webkitSpeechRecognition` capturing operator voice.
+      Spoken audio leaves the on-screen console frame and can be recorded by a
+      co-resident app with microphone access, a nearby recording device or the
+      platform audio output, with no script-opened socket, form POST,
+      navigation, clipboard write, screen capture or subresource request — a
+      distinct out-of-frame audio output channel. Console content is served by
+      the BMC and is therefore attacker-influenced: injected script must never
+      turn the trusted frame into a speech-driven exfiltration channel. This is
+      a hard, configuration-independent invariant that a future WebView
+      consumer can consult
+      (`KvmWebViewPolicy.bypassSpeechSynthesisExfiltration`, always `false`):
+      the opt-in never bypasses speech synthesis exfiltration — console content
+      can never speak privileged session data, in strict mode and with the flag
+      both off and on. The opt-in relaxes ONLY the test BMC's untrusted server
+      leaf for the expected host, via a scoped per-connection verifier; it must
+      never grant a speech synthesis capability just to make a console render
+      or to debug it. Operator/app-initiated text to speech (e.g. platform
+      accessibility) is a separate functional path and stays unaffected. This
+      box governs the out-of-frame audio output channel and is distinct from
+      screen/window capture (`bypassScreenCaptureProtection`) (a scrape of
+      rendered pixels), notification (`bypassNotificationApiAccess`) (OS text in
+      the shade), Web Share / remote-cast (`bypassShareCastExfiltration`) (a
+      receiver device), clipboard isolation (`bypassClipboardIsolation`) (a
+      cross-app text channel) and device-capability / permission access
+      (`bypassDevicePermissionControls`) (a capability grant, not page-driven
+      playback of console DOM): those govern other output, storage or
+      capability surfaces, not speech synthesis of privileged console data.
+      Verified per target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

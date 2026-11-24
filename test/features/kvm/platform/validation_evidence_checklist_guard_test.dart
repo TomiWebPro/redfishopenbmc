@@ -146,6 +146,14 @@
 // influenced console content emit an SVG-driven subresource beacon to a
 // non-approved origin — distinct from HTML-element src/href beacons, CSS
 // @import/url() rules, worker scripts and programmatic egress),
+// no-Web-Speech-API / speech-synthesis audio exfiltration (speechSynthesis.speak
+// / SpeechSynthesisUtterance / SpeechRecognition; an out-of-frame audio output
+// channel that reads privileged console DOM aloud through the device speaker,
+// with no socket, form POST, navigation, clipboard write, screen capture or
+// subresource request; hard configuration-independent invariant; the opt-in
+// never lets attacker-influenced console content speak session data — distinct
+// from pixel capture, OS notifications, share/cast, clipboard and device
+// capability grants),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -1196,6 +1204,27 @@ const List<({String name, String marker})> evidenceChecks =
     name: 'opt-in-keeps-svg-exfil-denied',
     marker: 'never grant an svg external-resource'
   ),
+  // No Web Speech API / speech-synthesis audio exfiltration: an out-of-frame
+  // audio output channel (speechSynthesis.speak / SpeechSynthesisUtterance /
+  // SpeechRecognition) that reads privileged console DOM aloud through the
+  // device speaker, with no socket, form POST, navigation, clipboard write,
+  // screen capture or subresource request — distinct from pixel capture, OS
+  // notifications, share/cast, clipboard and device-capability grants.
+  (name: 'no-speech-synthesis-exfil', marker: 'speech synthesis'),
+  (name: 'no-speech-synthesis-speak', marker: 'speechsynthesis.speak'),
+  (name: 'no-speech-utterance', marker: 'speechsynthesisutterance'),
+  (name: 'no-speech-recognition', marker: 'speechrecognition'),
+  (name: 'speech-out-of-frame-audio', marker: 'device speaker'),
+  (
+    name: 'speech-never-bypassed',
+    marker: 'never bypasses speech synthesis exfiltration'
+  ),
+  (
+    name: 'speech-policy-getter',
+    marker: 'bypassspeechsynthesisexfiltration'
+  ),
+  (name: 'speech-distinct-from-capture', marker: 'audio output channel'),
+  (name: 'opt-in-keeps-speech-denied', marker: 'never grant a speech'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -2676,6 +2705,30 @@ void main() {
       expect(missing, contains('svg-exfil-policy-getter'));
       expect(missing, contains('svg-exfil-distinct-surface'));
       expect(missing, contains('opt-in-keeps-svg-exfil-denied'));
+    });
+
+    test('RED: dropping the no-Web-Speech/speech-synthesis box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutSpeech = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'speech synthesis|speechsynthesis\.speak|'
+              r'speechsynthesisutterance|speechrecognition|'
+              r'device speaker|audio output channel|'
+              r'bypassspeechsynthesisexfiltration|never grant a speech')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutSpeech);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-speech-synthesis-exfil'));
+      expect(missing, contains('no-speech-synthesis-speak'));
+      expect(missing, contains('no-speech-utterance'));
+      expect(missing, contains('no-speech-recognition'));
+      expect(missing, contains('speech-out-of-frame-audio'));
+      expect(missing, contains('speech-never-bypassed'));
+      expect(missing, contains('speech-policy-getter'));
+      expect(missing, contains('speech-distinct-from-capture'));
+      expect(missing, contains('opt-in-keeps-speech-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
