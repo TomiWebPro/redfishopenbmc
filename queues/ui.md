@@ -5,6 +5,17 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+- [x] EP-U32 Compound bidi-display-name × RTL × 2.0x a11y agreement — **LANDED (run 2026-11-24,
+        agent:redfish-automation)**: AUDIT FIRST — EP-U22 pins bidi display names (LTR/1.0x),
+        EP-U28 pins RTL (short names/1.0x), EP-U21 pins 2.0x (clean names), EP-U31 pins unbreakable×RTL×2.0x
+        (clean name) — none drove a bidi/RTL-control-bearing DISPLAY NAME through RTL + 2.0x. Added
+        `test/features/kvm/kvm_bidi_name_rtl_scale_a11y_agreement_test.dart` (10 tests): both real cards +
+        the viewer at 320/800/1300 px under RTL/2.0x announce + display the FULL byte-exact bidi name in one
+        merged node, no duplicate node, no overflow; LTR/1.0x control GREEN. Real-file RED: gated one-sided
+        bidi-strip of the capability card's announced header under a 600-perm backup → exactly 3 named
+        failures (`+7 -3`), viewer + controls GREEN; restored byte-clean (SHA `c6c4b09a…` unchanged, empty
+        `lib/` diff, backup shredded) → 10/10 GREEN. Test-only, dependency-free, TLS-safe; no `lib/` diff.
+
 <!-- rf-ideate split 2026-11-24 06:53 UTC: another fresh, display-only, unblocked slice of the
      still-open #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). EP-U24 pins ONE
      long unbreakable connect-type chip at a fixed font, EP-U28 pins LTR/RTL at a fixed font and the

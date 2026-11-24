@@ -15265,3 +15265,20 @@
 - **Next:** push the tracking commit by fast-forward only (preserve all prior unpushed commits); next PASS tip merges the same way; DMTF emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-U32 + EP-T53)
+
+**Done:**
+- FEATURE EP-U32 + EP-T53 for open #009/#021. AUDIT FIRST: EP-U22 pins bidi display names (LTR/1.0x), EP-U28 RTL (short/1.0x), EP-U21 2.0x (clean names), EP-U31 unbreakable×RTL×2.0x (clean name) — none drove a bidi/RTL-control-bearing DISPLAY NAME through RTL + 2.0x, where a one-sided "strip format marks from the announcement" edit on one card could desync its merged node while every single-axis suite stayed GREEN. Added `test/features/kvm/kvm_bidi_name_rtl_scale_a11y_agreement_test.dart` (10 tests): both real cards + viewer at 320/800/1300 px under RTL/2.0x announce + display the FULL byte-exact bidi name in one merged node, no duplicate, no overflow; LTR/1.0x control GREEN. Registered under a fresh pinned `epT53AddedGuards` epoch in `test/tool/guard_suite_liveness_test.dart`.
+- REAL RED (guard): gated one-sided RTL+2.0x bidi-strip of the capability card's announced header (600-perm backup) → exactly 3 named failures (`+7 -3`), viewer + controls GREEN; restored byte-clean (SHA `c6c4b09a…` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 10/10 GREEN. Registry REAL RED: dropped only the canonical entry → exactly 3 named failures (`+85 -3`: EP-T53 pin, EP-T20 completeness, liveness proof); restored byte-clean (SHA `9a73d27b…` unchanged, backup shredded) → 98/98 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (2 files); `flutter analyze` 0 issues; full `flutter test` GREEN — 2882 passed / 1 skipped (baseline 2871 +10 guard +1 registry pin); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool display-layer agreement guard + its liveness registration at a genuinely unguarded compound seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). Never force-push, rewrite history, `git clean`, or delete files. Five pre-existing stashes untouched; no new stash (clean baseline). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U32 + EP-T53 are LANDED; no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM compound seam; never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

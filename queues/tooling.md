@@ -5,6 +5,17 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+- [x] EP-T53 Guard-suite liveness registration of the newly-landed EP-U32 bidi-name a11y guard —
+       **LANDED (run 2026-11-24, agent:redfish-automation)**: AUDIT FIRST confirmed the post-EP-T52
+       `kvm_bidi_name_rtl_scale_a11y_agreement_test.dart` guard (10 live tests) was live + CI-reachable
+       yet absent from `canonicalGuardFiles` + every epoch. Registered under a fresh pinned
+       `epT53AddedGuards` epoch (length 1, pairwise-disjoint from all 43 earlier designations incl. EP-T52)
+       in `test/tool/guard_suite_liveness_test.dart` (+canonical path, +`allDesignatedGuards`, +EP-T20
+       completeness term, +disjointness pin test, +temp-root RED→GREEN proof). Real-file RED: dropped only
+       the canonical entry → exactly 3 named failures (EP-T53 pin, EP-T20 completeness, liveness proof);
+       restored byte-clean (SHA `9a73d27b…` unchanged, backup shredded) → 98/98 targeted GREEN. Pure
+       test/tool, dependency-free, no `lib/` diff, no production TLS weakening.
+
 <!-- rf-ideate split 2026-11-24 06:53 UTC: recurring "who guards the guards" gap in the still-open
      #009/#021 epic. EP-T50 registered the EP-U29 degenerate-empty guard, but every subsequent
      agreement guard that lands (and any post-EP-T50 guard) is live + CI-reachable via verify.yml
