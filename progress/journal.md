@@ -15091,3 +15091,20 @@
 - **Next:** push this tracking commit (never force-push; preserve all prior unpushed commits); next PASS tip merges the same way; DMTF emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-T48)
+
+**Done:**
+- FEATURE EP-T48 for open #009/#021: guard-suite liveness registration of the post-EP-T47 newly-landed agreement guard. AUDIT FIRST over every live `test/**/*_test.dart` against `canonicalGuardFiles` + all 37 pinned epochs found exactly ONE #009/#021 guard absent from BOTH (0 registry references): `kvm_service_hostile_oem_shape_agreement_test.dart` (EP-S21 hostile OEM console-shape cross-surface agreement, 6 live tests, landed 03:03 unpinned) — live + CI-reachable via verify.yml whole-tree `flutter test --coverage` yet unregistered, so deleting / emptying / test-stripping it stayed GREEN (`polling_policy_test` is closed-#007 domain, this registry file is not a subject). Registered it in `test/tool/guard_suite_liveness_test.dart` under a fresh pinned `epT48AddedGuards` epoch (length 1, pairwise-disjoint from all 37 earlier designations incl. EP-T47), wired into `allDesignatedGuards` + EP-T20 completeness arithmetic, with +1 containment/disjointness pin test +1 temp-root RED→GREEN proof.
+- Real-file RED: dropped only the canonical entry (epoch designation kept) under a 600-perm backup → exactly 3 named failures (`+77 -3`: EP-T48 pin, EP-T20 completeness, EP-T48 temp-root liveness), 77 GREEN; source restored byte-clean (SHA `c1edd2e2d0214ccd5199d402d5374c554897c00bc41d6ba142038e8b61045695`, 0 residue, backup shredded) → 80/80 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2811 passed / 1 skipped (baseline 2809 +2 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool "who guards the guards" liveness registration; genuine unguarded guard, no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). Never force-push, rewrite history, `git clean`, or delete files. Five pre-existing stashes untouched; no new stash (clean baseline). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve prior unpushed commits). AUDIT FIRST the remaining four 02:50-split dept heads EP-S22 / RM-26 / EP-U29 / EP-P24 (never churn; RED→GREEN only on a genuine divergence). Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
