@@ -15834,3 +15834,19 @@
 **Next:** push by fast-forward only when valid credentials exist (never force-push; `main` ahead of `origin/main`); next `rf-platform-check` PASS tip merges the same way; both open issues stay human-gated on WebView + BMC TLS validation.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-U43)
+
+**Done:**
+- FEATURE EP-U43 (test-only): added `test/features/kvm/kvm_external_notice_rtl_scale_a11y_agreement_test.dart` (11 tests) pinning the protocol-specific external-client notice to one merged visible==announced `excludeSemantics` node on both real operator cards and the viewer under RTL + 2.0x at 320/800/1300 px, plus both-`fromManager` factory label agreement and an LTR/1.0x control. AUDIT FIRST: LTR/1.0x (EP-U16) and 2.0x-LTR (EP-U21) coverage existed but the RTL x 2.0x compound family never touched this row — genuine unguarded seam, no live divergence.
+
+**Verification:**
+- REAL RED→GREEN: one-sided compound-gated reword of ONLY the capability card's announced external notice (600-perm backup) → exactly 6 named failures (3 "both cards" + 3 "capability card" RTL/2.0x width tests), 3 viewer + model + LTR controls GREEN, and 44 existing sibling tests GREEN under the mutation; restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) → 11/11 GREEN. `dart format` clean; `flutter analyze` 0; full `flutter test --concurrency=4` 3137 passed / 1 skipped (baseline 3126 +11); issues validate OK; diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Display-only regression guard at a confirmed unguarded compound seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). No manufactured UI churn. Tree clean at preflight — no concurrent WIP touched, no new stash, no `git clean`, no history rewrite; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed. Guard NOT epoch-registered this run (write scope `test/features/kvm/**`); deferred to next EP-T pass, live + CI-reachable meanwhile.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). Next EP-T pass must AUDIT FIRST and register the EP-U43 guard under a fresh pinned epoch disjoint from all earlier (incl. EP-T70); otherwise AUDIT FIRST a genuinely new KVM seam (never churn, RED→GREEN only on a genuine divergence); cheap DOCS anchor re-verify only; full emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
