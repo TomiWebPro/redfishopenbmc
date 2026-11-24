@@ -118,6 +118,12 @@
 // attacker-influenced console content inject a base element — distinct from
 // HTML subresource beacons, CSS rules, programmatic egress, form POST and
 // navigation confinement),
+// no-drag-and-drop exfiltration (HTML5 dragstart / dataTransfer.setData / drop
+// on a cross-origin target, or dragging a privileged link / credential out of
+// the secure frame; a user-interaction-driven data-transfer channel that needs
+// no socket, form POST or navigation; hard configuration-independent invariant;
+// the opt-in never lets attacker-influenced console content drag session data
+// out — distinct from clipboard, web-messaging, egress and navigation surfaces),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -1094,6 +1100,22 @@ const List<({String name, String marker})> evidenceChecks =
     marker: 'distinct from html-driven subresource'
   ),
   (name: 'opt-in-keeps-base-uri-denied', marker: 'never grant a base uri'),
+  // No drag-and-drop exfiltration: a user-interaction-driven data-transfer
+  // channel (dragstart / dataTransfer.setData / drop on a cross-origin target,
+  // or dragging a privileged link / credential out of the secure frame) that
+  // carries session data out without a socket, form POST or navigation —
+  // distinct from clipboard, web-messaging, egress and navigation surfaces.
+  (name: 'no-drag-and-drop-exfil', marker: 'drag-and-drop exfiltration'),
+  (name: 'no-dragstart-datatransfer', marker: 'datatransfer.setdata'),
+  (name: 'no-cross-origin-drop-target', marker: 'cross-origin drop target'),
+  (name: 'drag-out-of-secure-frame', marker: 'dragged out of the secure frame'),
+  (name: 'drag-and-drop-never-bypassed', marker: 'never bypasses drag-and-drop'),
+  (name: 'drag-and-drop-policy-getter', marker: 'bypassdraganddrop'),
+  (
+    name: 'drag-and-drop-distinct-from-clipboard',
+    marker: 'distinct from clipboard'
+  ),
+  (name: 'opt-in-keeps-drag-and-drop-denied', marker: 'never grant a drag'),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
 ];
@@ -2484,6 +2506,26 @@ void main() {
       expect(missing, contains('base-uri-policy-getter'));
       expect(missing, contains('base-uri-distinct-from-subresource'));
       expect(missing, contains('opt-in-keeps-base-uri-denied'));
+    });
+
+    test('RED: dropping the no-drag-and-drop-exfiltration box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutDragAndDrop = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'drag|datatransfer|drop target')))
+          .join('\n');
+      final String neutered =
+          matrixWithSection(realMatrix, withoutDragAndDrop);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-drag-and-drop-exfil'));
+      expect(missing, contains('no-dragstart-datatransfer'));
+      expect(missing, contains('no-cross-origin-drop-target'));
+      expect(missing, contains('drag-out-of-secure-frame'));
+      expect(missing, contains('drag-and-drop-never-bypassed'));
+      expect(missing, contains('drag-and-drop-policy-getter'));
+      expect(missing, contains('drag-and-drop-distinct-from-clipboard'));
+      expect(missing, contains('opt-in-keeps-drag-and-drop-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

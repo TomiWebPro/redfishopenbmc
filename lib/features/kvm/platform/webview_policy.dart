@@ -1826,6 +1826,46 @@ class KvmWebViewPolicy {
   /// resolve relative references. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
   bool get bypassBaseUriHijacking => false;
 
+  /// Always `false`: drag-and-drop exfiltration is NEVER available to
+  /// attacker-influenced console content, not even by the test-only self-signed
+  /// opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content move privileged
+  /// data out of the secure frame through a user-interaction-driven data-transfer
+  /// channel. HTML5 drag-and-drop (`dragstart` / `drag` / `drop`,
+  /// `dataTransfer.setData(...)` / `dataTransfer.getData(...)`) lets a page attach
+  /// arbitrary DOM data — KVM frame handles, session tokens, operator credentials
+  /// or managed-host inventory — to a drag operation and either auto-initiate it
+  /// or trick the operator into dropping it on a cross-origin drop target or an
+  /// external application. A privileged link, selection or credential field can
+  /// also be dragged out of the secure frame into another app directly, with no
+  /// socket, form POST or navigation, so a `connect-src 'self'` egress allowlist
+  /// alone does not confine it. Console content is served by the BMC and is
+  /// therefore attacker-influenced: a compromised/spoofed BMC or injected markup
+  /// or script must never turn the trusted frame into a drag-and-drop
+  /// exfiltration channel.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that permits a drag
+  /// data store to carry privileged console data to a non-approved target.
+  /// Tolerating the test BMC's untrusted server leaf relaxes ONLY that leaf's
+  /// trust for the expected host, via a scoped per-connection verifier; it must
+  /// never grant a drag-and-drop capability just to make a console render or to
+  /// debug it.
+  ///
+  /// This box governs the user-interaction data-transfer surface and is distinct
+  /// from clipboard isolation ([bypassClipboardIsolation]) (programmatic
+  /// `navigator.clipboard` read/write), from cross-origin web messaging
+  /// ([bypassCrossOriginMessagingIsolation]) (`postMessage` / `BroadcastChannel`
+  /// between contexts), from programmatic outbound egress
+  /// ([bypassOutboundEgressAllowlist]) (fetch / XHR / WebSocket / sendBeacon
+  /// confined by `connect-src`), from cross-origin form submission
+  /// ([bypassCrossOriginFormSubmission]) (the form action / POST body) and from
+  /// top-level navigation confinement ([bypassTopLevelNavigationConfinement]):
+  /// those govern other request, message or navigation surfaces, not the drag
+  /// data store. See `WEBVIEW_TLS_MATRIX.md` (RP-1).
+  bool get bypassDragAndDropExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console

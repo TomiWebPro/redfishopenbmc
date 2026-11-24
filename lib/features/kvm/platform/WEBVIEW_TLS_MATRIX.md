@@ -1926,6 +1926,45 @@ flag stays off for that target.
       (where the main frame navigates): those govern other request or navigation
       surfaces, not the base URL used to resolve relative references. Verified per
       target before the flag is flipped.
+* [ ] **No drag-and-drop exfiltration** — the embedded WebView must not let
+      attacker-influenced console content move privileged data out of the secure
+      frame through a user-interaction-driven data-transfer channel. HTML5
+      drag-and-drop (`dragstart` / `drag` / `drop`, `dataTransfer.setData(...)` /
+      `dataTransfer.getData(...)`) lets a page attach arbitrary DOM data — KVM
+      frame handles, session tokens, operator credentials, managed-host inventory
+      — to a drag operation and either auto-initiate it or trick the operator into
+      dropping it on a cross-origin drop target or an external application. A
+      privileged link, selection or credential field can also be dragged out of
+      the secure frame into another app directly, with no socket, form POST or
+      navigation, so a `connect-src 'self'` egress allowlist alone does not
+      confine it. Drag initiation and drop handling must be denied at the WebView
+      (external content may not start a drag and privileged data may not be set on
+      the drag data store or dropped on a non-approved target) on every target,
+      in strict mode and with the flag both off and on. Console content is served
+      by the BMC and is therefore attacker-influenced: a compromised/spoofed BMC
+      or injected markup/script must never turn the trusted frame into a
+      drag-and-drop exfiltration channel.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassDragAndDropExfiltration`,
+      always `false`): the test-only opt-in never bypasses drag-and-drop — console
+      content can never drag privileged session data out of the secure frame or
+      onto a non-approved origin, in strict mode and with the flag both off and
+      on. The opt-in relaxes ONLY the test BMC's untrusted server leaf for the
+      expected host, via a scoped per-connection verifier; it must never grant a
+      drag-and-drop capability just to make a console render or to debug it.
+      Operator/app-initiated interaction with the console's own approved-origin
+      content is a separate functional path and stays unaffected. This box governs
+      the user-driven drag data-transfer surface and is distinct from clipboard
+      isolation (`bypassClipboardIsolation`) (programmatic `navigator.clipboard`
+      read/write), from cross-origin web messaging
+      (`bypassCrossOriginMessagingIsolation`) (`postMessage` / `BroadcastChannel`
+      between contexts), from programmatic outbound egress
+      (`bypassOutboundEgressAllowlist`) (fetch / XHR / WebSocket confined by
+      `connect-src`), from cross-origin form submission
+      (`bypassCrossOriginFormSubmission`) (the form action / POST body) and from
+      top-level navigation confinement (`bypassTopLevelNavigationConfinement`):
+      those govern other request, message or navigation surfaces, not the drag
+      data store. Verified per target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
