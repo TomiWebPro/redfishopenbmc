@@ -15696,3 +15696,19 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U41 LANDED but NOT epoch-registered — next EP-T pass (EP-T68) must register it under a fresh pinned epoch disjoint from all earlier incl. EP-T67; then AUDIT FIRST a genuinely new KVM seam, never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-gate (sole merger) — #009/#021 (check#12969)
+
+**Done:**
+- Sole-merger gate: `rf-platform-check` latest run#12969 `SUCCESS exit=0`, `scheduler.py report 12969` explicit `CHECK: PASS` on the exact current `build/rf-platform` tip `7d7ab4d99143c5f12779bfc9c4f81a69da46d3e8`. `git merge --no-ff build/rf-platform` → merge `5bfb7a7cc45a1247874aecdf6eb57bb6c9e7b2d6` (parents `c2297d3` / `7d7ab4d`), clean ort auto-merge, one branch-unique commit. First-parent delta = 4 allowlisted additive files (+228/-0): `WEBVIEW_TLS_MATRIX.md`, `webview_policy.dart` (hard always-`false` `bypassSvgExternalResourceExfiltration` getter), `validation_evidence_checklist_guard_test.dart`, `webview_policy_test.dart`.
+
+**Verification:**
+- Post-merge on `main`: `flutter analyze` 0; full `flutter test --coverage --concurrency=4` GREEN — 3096 passed / 1 skipped; all coverage gates PASS (overall 90.7% / redfish+power+sensors 90.4% / kvm 97.7% / kvm-platform 97.7%), gate exit 0; `issues.py validate` OK; `git diff --check` clean; deps unchanged; no production TLS weakening. Emulator skipped (policy getter + matrix doc + tests only, no lib-wire/fixture/tool-runtime change; <7 days since last green 85/85).
+
+**Decisions:**
+- Sole-merger protocol: merged ONLY because the latest check verdict was PASS on the exact current tip, with a clean merge; no force-push, no history rewrite, no `git clean`, no file deletion. No new stash; five pre-existing stashes untouched; tree clean at merge start + verification. Remote URL carries a PAT — never echoed, staged or committed. No issue closed (#009 P3 / #021 P2 stay human-gated).
+
+**Next:**
+- Push by fast-forward only when valid credentials are available (never force-push; preserve all prior unpushed automation + rf-gate merge commits). Next `rf-platform-check` PASS tip merges the same way. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
