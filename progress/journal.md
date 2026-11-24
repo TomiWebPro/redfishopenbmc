@@ -15581,3 +15581,20 @@
 - Push by fast-forward only when valid credentials are available (never force-push; preserve all prior unpushed automation + rf-gate merge commits). Next `rf-platform-check` PASS tip merges the same way. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (RM-29 + EP-T64)
+
+**Done:**
+- FEATURE RM-29: new `test/features/kvm/kvm_relative_opaque_connect_uri_agreement_test.dart` (37 tests) pins the relative / opaque console `ConnectUri` family (relative paths, scheme-relative, opaque / query / fragment forms, control-bearing relatives, clean HTTPS control, non-string values) through BOTH `fromManager` factories + derived transport classifiers + fail-closed launch plan + control-safe clipboard target + never-throw. A genuine unguarded cross-factory seam (RM-23 covers hostile embedded-control / absolute hostile-scheme raw preservation only). AUDIT FIRST confirmed agreement holds by construction — both factories use mirrored trim-only helpers and the shared hardened core; no live divergence, no behaviour change.
+- FEATURE EP-T64: registered the new guard under a fresh pinned `epT64AddedGuards` epoch in `test/tool/guard_suite_liveness_test.dart` (canonical path, disjointness pin vs all 54 earlier epochs, temp-root RED→GREEN, EP-T20 completeness arithmetic). Full enumeration confirmed every other live guard already registered.
+
+**Verification:**
+- Two REAL RED→GREEN proofs: guard — one-sided relative-URI resolution in `kvm_models.dart` `_uriString` (600-perm backup) → 25 named failures / restore 37/37 (SHA `63e441141f07…` byte-clean, empty `lib/` diff, backup shredded); registry — dropped only the canonical entry → 3 named failures / restore 99/99 (SHA `72a304569b…` byte-clean). analyze 0; full `flutter test --concurrency=4` GREEN (count in automation-tracking); issues validate OK; diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Read-only cross-factory characterization + test/tool liveness guard at a genuinely untested seam; no live divergence, no behaviour change, no product code per §5. EP-S25 audited defeated-by-construction (`_fetchManagerBodies()` stateless) — no test added, no churn. No issue closed (#009/#021 stay human-gated). No manufactured UI churn. No WIP touched, no new stash, no `git clean`; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). AUDIT FIRST a genuinely new KVM seam, never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

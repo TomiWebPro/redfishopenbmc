@@ -940,6 +940,11 @@ const List<String> canonicalGuardFiles = <String>[
   // but absent from the registry until now. Registering it makes deleting /
   // emptying / test-stripping it fail closed.
   'test/features/kvm/platform/ipv6_zone_id_malformed_authority_agreement_test.dart',
+  // EP-T64 extension: the relative / opaque console `ConnectUri`
+  // cross-factory fail-closed agreement guard (RM-29), landed this run; live +
+  // CI-reachable but absent from the registry until now. Registering it makes
+  // deleting / emptying / test-stripping it fail closed.
+  'test/features/kvm/kvm_relative_opaque_connect_uri_agreement_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -1566,6 +1571,19 @@ const Set<String> epT63AddedGuards = <String>{
   'test/features/kvm/platform/ipv6_zone_id_malformed_authority_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-T64: the one cross-factory
+/// fail-closed agreement guard landed this run (RM-29 relative / opaque console
+/// `ConnectUri` — relative paths, scheme-relative / opaque / query-only forms,
+/// control-bearing relatives and a clean HTTPS control pinned field-for-field
+/// across both `fromManager` factories, the transport classifiers, the fail-
+/// closed launch plan, the copyable target and never-throw on non-string). It
+/// landed live + CI-reachable but absent from the registry, so deleting /
+/// emptying / test-stripping it stayed GREEN. Pinned separately so a future edit
+/// cannot drop it back out of the canonical set (issues #009/#021 closeout).
+const Set<String> epT64AddedGuards = <String>{
+  'test/features/kvm/kvm_relative_opaque_connect_uri_agreement_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -1625,6 +1643,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT61AddedGuards,
   ...epT62AddedGuards,
   ...epT63AddedGuards,
+  ...epT64AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -4081,6 +4100,76 @@ void main() {
       expect(epT63AddedGuards.intersection(epT62AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-T64: the relative / opaque ConnectUri cross-factory agreement '
+        'guard is in the canonical liveness set', () {
+      expect(epT64AddedGuards, isNotEmpty);
+      expect(epT64AddedGuards.length, 1);
+      for (final String path in epT64AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T64 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epT64AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(rm15AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epP13AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(sec010AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT26AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT28AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT29AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT30AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT32AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT33AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT35AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT36AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT37AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT39AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT40AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT41AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT42AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT43AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT44AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT45AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT46AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT47AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT48AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT49AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT50AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT51AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT52AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT53AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT54AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT55AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT56AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT57AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT58AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT59AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT60AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT61AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT62AddedGuards), isEmpty);
+      expect(epT64AddedGuards.intersection(epT63AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -4160,7 +4249,8 @@ void main() {
             epT60AddedGuards.length +
             epT61AddedGuards.length +
             epT62AddedGuards.length +
-            epT63AddedGuards.length,
+            epT63AddedGuards.length +
+            epT64AddedGuards.length,
       );
     });
   });
@@ -7079,6 +7169,40 @@ void main() {
         // IPv4-mapped forms pinned field-for-field across the classifier / plan /
         // navigation gate / model, with clean IPv6 / IPv4 controls).
         for (final String addedGuard in epT63AddedGuards) {
+          File(p(addedGuard)).deleteSync();
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'MISSING: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when deleted',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('  \n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'EMPTY: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when emptied',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when test-stripped',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+        }
+
+        // EP-T64: relative / opaque console ConnectUri cross-factory
+        // fail-closed agreement guard (RM-29 — relative paths, scheme-relative
+        // / opaque / query-only forms, control-bearing relatives and a clean
+        // HTTPS control pinned across both factories, classifiers, launch plan,
+        // copyable target and never-throw on non-string).
+        for (final String addedGuard in epT64AddedGuards) {
           File(p(addedGuard)).deleteSync();
           expect(
             evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
