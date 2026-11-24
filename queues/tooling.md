@@ -5,6 +5,17 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+- [x] EP-T54 Guard-suite liveness registration of the newly-landed EP-U33 C0/separator-name a11y guard —
+       **LANDED (run 2026-11-24, agent:redfish-automation)**: AUDIT FIRST confirmed the post-EP-T53
+       `kvm_control_separator_rtl_scale_a11y_agreement_test.dart` guard (13 live tests) was live +
+       CI-reachable yet absent from `canonicalGuardFiles` + every epoch. Registered under a fresh pinned
+       `epT54AddedGuards` epoch (length 1, pairwise-disjoint from all 44 earlier designations incl. EP-T53)
+       in `test/tool/guard_suite_liveness_test.dart` (+canonical path, +`allDesignatedGuards`, +EP-T20
+       completeness term, +disjointness pin test, +temp-root RED→GREEN proof). Real-file RED: dropped only
+       the canonical entry → exactly 3 named failures (`+86 -3`: EP-T54 pin, EP-T20 completeness, liveness
+       proof); restored byte-clean (SHA `105b485d…` unchanged, backup shredded) → 89/89 targeted GREEN.
+       Pure test/tool, dependency-free, no `lib/` diff, no production TLS weakening.
+
 - [x] EP-T53 Guard-suite liveness registration of the newly-landed EP-U32 bidi-name a11y guard —
        **LANDED (run 2026-11-24, agent:redfish-automation)**: AUDIT FIRST confirmed the post-EP-T52
        `kvm_bidi_name_rtl_scale_a11y_agreement_test.dart` guard (10 live tests) was live + CI-reachable

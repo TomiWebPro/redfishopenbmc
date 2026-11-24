@@ -15282,3 +15282,21 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-U32 + EP-T53 are LANDED; no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM compound seam; never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-U33 + EP-T54)
+
+**Done:**
+- FEATURE EP-U33 for open #009/#021: compound C0-control / Unicode line-paragraph-separator (Cc/Zl/Zp/Zs) DISPLAY-NAME × RTL × 2.0x text-scaler a11y agreement across both KVM operator cards + the viewer. AUDIT FIRST: EP-U30 pins the Cc/Zl/Zp/Zs name family at LTR/1.0x; EP-U28 RTL (short clean names/1.0x); EP-U21 2.0x (clean names); EP-U31 unbreakable×RTL×2.0x (clean name); EP-U32 bidi Cf name × RTL × 2.0x — none drove the layout-changing Cc/Zl/Zp/Zs family through RTL × 2.0x, so a one-sided "normalise the whitespace in the announcement" edit on one card could desync its merged node while every single-axis suite stayed GREEN. Added `test/features/kvm/kvm_control_separator_rtl_scale_a11y_agreement_test.dart` (13 tests): both real cards + the viewer at 320/800/1300 px under RTL/2.0x announce + display the FULL byte-exact control/separator name in one merged node, no duplicate node, no overflow; LTR/1.0x control GREEN.
+- Real-file RED (guard): one-sided RTL+2.0x-gated whitespace normalisation of the capability card's announced header under a 600-perm backup → exactly 3 named failures (`+10 -3`, the 3 compound "both cards" tests), viewer + controls + fixture GREEN; source restored byte-clean (SHA `c6c4b09a…` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 13/13 GREEN.
+- EP-T54 registration: fresh pinned `epT54AddedGuards` epoch (length 1, pairwise-disjoint from all 44 earlier designations incl. EP-T53) in `test/tool/guard_suite_liveness_test.dart` (+canonical path, +`allDesignatedGuards`, +EP-T20 completeness term, +disjointness pin test, +temp-root RED→GREEN proof). Registry real-file RED: dropped only the canonical entry → exactly 3 named failures (`+86 -3`: EP-T54 pin, EP-T20 completeness, liveness proof); restored byte-clean (SHA `105b485d…` unchanged, backup shredded) → 89/89 GREEN.
+
+**Verification:**
+- targeted 102/102 (13 guard + 89 registry); `dart format` clean (my files); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2896 passed / 1 skipped (baseline 2882 +13 guard +1 registry pin); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool display-layer agreement guard + its liveness registration at a genuinely unguarded compound seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). A whole-tree `dart format` side-effect touched five unrelated committed platform files (format-only); reverted to HEAD this run, NOT staged. Never force-push, rewrite history, `git clean`, or delete files. Five pre-existing stashes untouched; no new stash (clean baseline). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve prior unpushed commits). EP-U33 + EP-T54 are LANDED; no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM seam; never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

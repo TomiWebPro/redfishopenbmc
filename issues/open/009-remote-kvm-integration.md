@@ -291,6 +291,29 @@ Issue stays OPEN (embedded HTML5 rendering, fullscreen, input forwarding remain 
 
 - 2026-11-22 09:18 UTC (run, agent:redfish-automation) — Partial progress (EP-P13 guard-suite liveness registration, shared with the sibling open issue; dependency-free, TLS-safe, test/tool-only). CONFIRMED "who guards the guards" gap: `test/features/kvm/platform/navigation_launch_authority_confusion_agreement_test.dart` (4 live cross-layer fail-closed agreement tests) landed with EP-P13 and is reachable from verify.yml's whole-tree `flutter test --coverage`, but was never added to `canonicalGuardFiles` or any pinned epoch — so deleting / emptying / test-stripping it stayed GREEN. Registered it under a new pinned `epP13AddedGuards` epoch (length 1, disjoint from all eighteen earlier designations) in `test/tool/guard_suite_liveness_test.dart`, included in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 pin test with pairwise-disjointness assertions and a temp-root RED→GREEN (missing/emptied/test-less → violation, intact → clean). Real-file RED: dropped the canonical entry → exactly 3 failures (`+37 -3`: EP-P13 pin + EP-T20 completeness + EP-P13 temp-root liveness), all 37 independent liveness tests stayed GREEN; source restored byte-clean (SHA `56018be568eb64d326c59eedc545eda03ad857008c9a019b1b7b46dea1db9d82` unchanged, 0 residue, empty `lib/` diff), 600-perm backup shredded → 40/40 GREEN. `dart format` clean; analyze 0; full `flutter test --concurrency=4` 2138 passed / 1 skipped (baseline 2136 +2); issues validate OK; diff --check clean; deps unchanged; lib diff empty; emulator skipped (test/tool-only, <7 days since last green 85/85). No WebView/protocol import, no URL opened, no human approval, no production TLS weakening. Issue stays OPEN (in-app WebView rendering, fullscreen, input forwarding remain human-gated on platform WebView + BMC TLS validation).
 
+- 2026-11-24 09:04 UTC (run, agent:redfish-automation) — Partial progress (EP-U33 compound C0-control /
+  Unicode line-paragraph-separator display-name × RTL × 2.0x text-scaler a11y agreement across both KVM
+  operator cards + the viewer, plus EP-T54 liveness registration; shared with the sibling open issue;
+  dependency-free, TLS-safe, test/tool-only): AUDIT FIRST confirmed no existing test drives the Cc/Zl/Zp/Zs
+  display-name family through RTL + 2.0x (only EP-U31/EP-U32 combine RTL + textScaler, with an unbreakable
+  chip / bidi Cf name) — a genuine unguarded compound seam. Added
+  `test/features/kvm/kvm_control_separator_rtl_scale_a11y_agreement_test.dart` (13 tests): byte-exact visible
+  Text + single merged `excludeSemantics` node on all three surfaces at 320/800/1300 px under RTL/2.0x, no
+  split/duplicate/screen-reader-only node, no overflow; LTR/1.0x control GREEN. Real-file RED: one-sided
+  RTL+2.0x-gated C0/separator normalization of the capability card's announced header under a 600-perm
+  backup → exactly 3 named failures (`+10 -3`), viewer + controls GREEN; restored byte-clean (SHA
+  `c6c4b09a…` unchanged, 0 residue, empty `lib/` diff, backup shredded) → 13/13 GREEN. Registered under fresh
+  pinned `epT54AddedGuards` epoch (length 1, pairwise-disjoint from all 44 earlier designations incl.
+  EP-T53) in `test/tool/guard_suite_liveness_test.dart` (+canonical path, +`allDesignatedGuards`, +EP-T20
+  completeness term, +disjointness pin test, +temp-root RED→GREEN proof). Registry real-file RED: dropped
+  only the canonical entry → exactly 3 named failures (`+86 -3`), restored byte-clean (SHA `105b485d…`
+  unchanged, backup shredded) → 89/89 GREEN. `dart format` clean; analyze 0; full `flutter test
+  --concurrency=4` 2896 passed / 1 skipped (baseline 2882 +13 guard +1 registry pin); issues validate OK;
+  diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last
+  green 85/85). No WebView/protocol import, no URL opened, no human approval, no production TLS weakening.
+  Issue stays OPEN (in-app WebView rendering, fullscreen, input forwarding remain human-gated on platform
+  WebView + BMC TLS validation).
+
 ## References
 
 - `documentations/project_goal/goal.md:87-95`

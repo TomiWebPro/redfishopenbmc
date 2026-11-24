@@ -5,6 +5,18 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+- [x] EP-U33 Compound C0/separator display-name × RTL × 2.0x a11y agreement — **LANDED (run 2026-11-24,
+        agent:redfish-automation)**: AUDIT FIRST — EP-U30 pins the Cc/Zl/Zp/Zs display-name family (LTR/1.0x),
+        EP-U28 RTL (short clean names/1.0x), EP-U21 2.0x (clean names), EP-U31 unbreakable×RTL×2.0x (clean
+        name), EP-U32 bidi Cf name × RTL × 2.0x — none drove the layout-changing Cc/Zl/Zp/Zs family through
+        RTL × 2.0x. Added `test/features/kvm/kvm_control_separator_rtl_scale_a11y_agreement_test.dart` (13
+        tests): both real cards + the viewer at 320/800/1300 px under RTL/2.0x announce + display the FULL
+        byte-exact control/separator name in one merged node, no duplicate, no overflow; LTR/1.0x control
+        GREEN. Real-file RED: gated one-sided C0/separator whitespace normalization of the capability card's
+        announced header under a 600-perm backup → exactly 3 named failures (`+10 -3`), viewer + controls
+        GREEN; restored byte-clean (SHA `c6c4b09a…` unchanged, empty `lib/` diff, backup shredded) →
+        13/13 GREEN. Test-only, dependency-free, TLS-safe; no `lib/` diff.
+
 - [x] EP-U32 Compound bidi-display-name × RTL × 2.0x a11y agreement — **LANDED (run 2026-11-24,
         agent:redfish-automation)**: AUDIT FIRST — EP-U22 pins bidi display names (LTR/1.0x),
         EP-U28 pins RTL (short names/1.0x), EP-U21 pins 2.0x (clean names), EP-U31 pins unbreakable×RTL×2.0x
