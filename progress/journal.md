@@ -15119,3 +15119,20 @@
 - **Next:** push this tracking commit (never force-push; preserve all prior unpushed commits); next PASS tip merges the same way; DMTF emulator only on lib-wire/fixture/tool-runtime change or >7 days since last green 85/85.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (RM-26)
+
+**Done:**
+- FEATURE RM-26 for open #009/#021: hostile `ConnectTypesSupported` container-shape cross-factory agreement. AUDIT FIRST — EP-M5 pins hostile LIST MEMBERS, but the CONTAINER SHAPE (bare string / numeric / bool / map / null) is unguarded; the two `fromManager` normalizers are independent copies (`KvmConsole._normalizedConnectTypes` vs `KvmCapability._appendTypes`/`_advertises`) each failing closed via `value is! List<dynamic>`. Added `test/features/kvm/kvm_connect_type_container_shape_agreement_test.dart` (6 tests) pinning fail-closed agreement across all three standard blocks, no one-sided `supportsHtml5`/`supportsKvmIp`/`supported` flip, byte-exact valid-list control, and mixed-container agreement.
+- Real-file RED: one-sided "bare string is a single type" coercion in `KvmConsole._normalizedConnectTypes` under a 600-perm backup → exactly 4 named failures (`+2 -4`), 2 controls GREEN; source restored byte-clean (SHA `63e441141f07cf12f01b7412b198c0a2f296ab7dea632c2fc910af118196557f`, 0 residue, backup shredded) → 6/6 targeted GREEN.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN — 2821 passed / 1 skipped (baseline 2815 +6 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test-only model-layer characterization at a genuine one-sided-coercion seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). EP-S22 audited out (largely defeated by EP-S13/EP-S17). Never force-push, rewrite history, `git clean`, or delete files. Five pre-existing stashes untouched; no new stash (clean baseline). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve prior unpushed commits). AUDIT FIRST the three remaining dept heads EP-S22 (audit only), EP-U29 (degenerate-empty render), EP-P24 (alternate-notation IPv4); register the RM-26 guard in a future EP-T pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
