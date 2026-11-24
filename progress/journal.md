@@ -14978,3 +14978,20 @@
 - Push the single commit (never force-push). AUDIT FIRST for a genuinely new unguarded seam (EP-S21 hostile OEM console shapes, EP-U28 RTL-locale rendering), never churn; register the new guard in the next EP-T liveness pass. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-T46)
+
+**Done:**
+- FEATURE EP-T46 for open #009/#021: guard-suite liveness registration of the TWO agreement guards that landed after EP-T45 unpinned — `kvm_session_limit_coercion_agreement_test.dart` (RM-25 non-integer `MaxConcurrentSessions` scalar coercion cross-factory agreement, 30 live tests) and `degenerate_hierarchical_uri_agreement_test.dart` (EP-P23 degenerate hierarchical-URI form fail-closed cross-layer agreement, 5 live tests). AUDIT FIRST over every `test/**/*_agreement_test.dart` against `canonicalGuardFiles` + all pinned epochs found these are the ONLY two #009/#021 guards absent from BOTH (0 registry references), both live + CI-reachable via verify.yml whole-tree `flutter test --coverage` — a confirmed "who guards the guards" gap, no live divergence, no behaviour change, not churn. Registered both under a fresh pinned `epT46AddedGuards` epoch (length 2, pairwise-disjoint from all 35 earlier designations incl. EP-T45) in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test +1 temp-root RED→GREEN proof covering deleted / emptied / test-stripped → violation, intact → clean for both guards.
+- Real-file RED: dropped both canonical entries (epoch designations kept) under a 600-perm backup → exactly 3 named failures (`+73 -3`: EP-T46 pin, EP-T20 completeness, EP-T46 temp-root liveness), 73 GREEN; source restored byte-clean (SHA `c6af7ad2b63a5dfa4d6b33e7f3db01a3aa9fae9e01989062524df9544e1b13bb` unchanged, 0 residue, backup shredded) → 76/76 targeted GREEN (baseline 74 +2 mine). No `lib/` write.
+
+**Verification:**
+- `dart format` clean (my file); `flutter analyze` 0 issues; full `flutter test --concurrency=4` GREEN (baseline 2782 +2 mine); `python3 issues/issues.py validate` OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool "who guards the guards" registry fix closing a genuine unguarded seam; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). A full `*_agreement_test.dart` sweep confirms no unregistered #009/#021 agreement guards remain after EP-T46. Never force-push, rewrite history, `git clean`, or delete files; five pre-existing stashes untouched; no new stash (clean tree). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push). AUDIT FIRST for a genuinely new unguarded seam (EP-S21 hostile OEM console shapes, EP-U28 RTL-locale rendering), never churn; a future EP-T liveness pass only if new guards land. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

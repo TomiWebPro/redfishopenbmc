@@ -5,6 +5,19 @@ Never writes `lib/` product code. Verify: fixture parse tests + `flutter analyze
 
 ## Backlog (head first)
 
+<!-- build audit 2026-11-24 00:57 UTC: recurring "who guards the guards" gap in the still-open
+     #009/#021 epic. EP-T45 registered the EP-P22 userinfo-edge guard, but TWO agreement guards
+     landed after it unpinned — RM-25 (`kvm_session_limit_coercion_agreement_test.dart`, 23:42) and
+     EP-P23 (`degenerate_hierarchical_uri_agreement_test.dart`, 00:18) — both live + CI-reachable
+     via verify.yml whole-tree `flutter test --coverage` yet absent from BOTH `canonicalGuardFiles`
+     and every pinned epoch, so deleting / emptying / test-stripping either stayed GREEN. A full
+     `find test -name '*agreement_test.dart'` audit against the registry found these are the ONLY
+     two post-EP-T45 unregistered #009/#021 agreement guards. AUDIT FIRST, RED→GREEN only on a
+     genuine gap, never churn. Pure test/tool, dependency-free, never writes `lib/`. -->
+
+- [x] EP-T46 LANDED 2026-11-24 (run `auto: FEATURE #009/#021 EP-T46 guard-suite liveness registration of the RM-25 + EP-P23 agreement guards + RED->GREEN tests`, test/tool-only) — AUDIT FIRST enumerated every `test/**/*_agreement_test.dart` against `canonicalGuardFiles` + every pinned epoch and found exactly TWO #009/#021 guards absent from BOTH (registry grep 0 references), both landed after EP-T45: `kvm_session_limit_coercion_agreement_test.dart` (RM-25 non-integer `MaxConcurrentSessions` scalar coercion field-for-field agreement across both `fromManager` factories + shared `kvmSessionLimit` helper, 30 live tests) and `degenerate_hierarchical_uri_agreement_test.dart` (EP-P23 degenerate hierarchical-URI form fail-closed cross-layer agreement — opaque / single-slash / empty-authority / scheme-only HTTPS forms across classifier / HTTP family / launch plan / navigation gate / model, 5 live tests). Deleting / emptying / test-stripping either stayed GREEN — a confirmed "who guards the guards" gap, no live divergence, no behaviour change, not churn. Registered both under a fresh pinned `epT46AddedGuards` epoch (length 2, pairwise-disjoint from all 35 earlier designations incl. EP-T45) in `allDesignatedGuards` + EP-T20 completeness arithmetic, +1 containment/disjointness pin test +1 temp-root RED→GREEN proof (deleted / emptied / test-stripped → violation, intact → clean) for both guards. REAL RED: dropped both canonical entries (epoch designations kept) under a 600-perm backup → exactly 3 named failures (`+73 -3`: EP-T46 pin, EP-T20 completeness, EP-T46 temp-root liveness), 73 GREEN; source restored byte-clean (SHA `c6af7ad2b63a5dfa4d6b33e7f3db01a3aa9fae9e01989062524df9544e1b13bb` unchanged, 0 residue, backup shredded) → 76/76 targeted GREEN (baseline 74 +2 mine); analyze 0; full suite verified; issues validate OK; diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+       Verify: `flutter test test/tool/guard_suite_liveness_test.dart && flutter analyze` (0 issues); writes limited to `test/tool/**`; `git diff --exit-code -- pubspec.yaml pubspec.lock`; no `lib/` product code, no dependency, no production TLS weakening. Dept: rf-tooling.
+
 <!-- rf-ideate split 2026-11-23 22:45 UTC: another recurring "who guards the guards" gap in the still-open
      #009/#021 epic. EP-T44 registered the EP-S20 top-level-shape guard, but the EP-P22 userinfo-edge
      authority agreement guard (`userinfo_edge_authority_agreement_test.dart`, landed 22:23) is live +
