@@ -561,6 +561,28 @@
 // the updated EP-T20 completeness arithmetic, so deleting / emptying /
 // test-stripping it fails closed (issues #009/#021 closeout).
 //
+// EP-T61 registers the one agreement guard that landed immediately after
+// EP-T60 but was left deliberately unpinned (its Verify write scope was
+// limited to `test/features/kvm/platform/**`): EP-P25 control-at-URI-
+// structural-boundary cross-layer fail-closed agreement,
+// `test/features/kvm/platform/structural_boundary_control_agreement_test.dart`,
+// 3 live tests — a 12-case hostile matrix wedging raw C0/C1/DEL controls at
+// every URI structural boundary (scheme↔`://`, userinfo `@`, port `:`, IPv6
+// `[...]`, trailing authority) plus 3 clean spellings, pinned field-for-field
+// across the classifier / control-safety core, `planConsoleLaunch` (incl. the
+// stale-flag test-only opt-in TLS boundary), `allowsInAppNavigation` (both
+// directions) and the `KvmConsole` model — with the same-origin userinfo-NUL
+// case pinning the `Uri.tryParse` origin differential. It was live + CI-
+// reachable via verify.yml whole-tree `flutter test --coverage` yet absent from
+// BOTH `canonicalGuardFiles` and every pinned epoch (0 registry references),
+// so deleting / emptying / test-stripping it stayed GREEN — a genuine "who
+// guards the guards" gap, no live divergence, no behaviour change, not churn.
+// Registered under a fresh pinned `epT61AddedGuards` epoch (length 1,
+// pairwise-disjoint from every earlier designation incl. EP-T60) with a pin
+// test, a temp-root RED→GREEN proof and the updated EP-T20 completeness
+// arithmetic, so deleting / emptying / test-stripping it fails closed (issues
+// #009/#021 closeout).
+//
 // The evaluator lives in this TEST-only file so it never scans or touches
 // product code. It is dependency-free, opens no network, uses no credentials,
 // and never weakens production TLS. The RED→GREEN proof uses a temporary scan
@@ -868,6 +890,12 @@ const List<String> canonicalGuardFiles = <String>[
   // no overflow at 320/800/1300 px under RTL AND a 2.0x scaler, LTR/1.0x
   // control), live + CI-reachable but absent from the registry until this run.
   'test/features/kvm/kvm_primary_badge_rtl_scale_a11y_agreement_test.dart',
+  // EP-T61 extension: the control-at-URI-structural-boundary cross-layer
+  // fail-closed agreement guard (EP-P25), landed immediately after EP-T60 but
+  // deliberately left unpinned; live + CI-reachable but absent from the
+  // registry until this run. Registering it makes deleting / emptying /
+  // test-stripping it fail closed.
+  'test/features/kvm/platform/structural_boundary_control_agreement_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -1452,6 +1480,22 @@ const Set<String> epT60AddedGuards = <String>{
   'test/features/kvm/kvm_primary_badge_rtl_scale_a11y_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-T61: the one agreement guard
+/// landed immediately after EP-T60 but deliberately left unpinned (EP-P25
+/// control-at-URI-structural-boundary cross-layer fail-closed agreement — a
+/// 12-case hostile control-at-boundary matrix plus 3 clean spellings pinned
+/// field-for-field across the classifier / control-safety core,
+/// `planConsoleLaunch` (incl. the stale-flag test-only opt-in TLS boundary),
+/// `allowsInAppNavigation` (both directions) and the `KvmConsole` model, with
+/// the same-origin userinfo-NUL case pinning the `Uri.tryParse` origin
+/// differential). It landed live + CI-reachable but absent from the registry,
+/// so deleting / emptying / test-stripping it stayed GREEN. Pinned separately
+/// so a future edit cannot drop it back out of the canonical set (issues
+/// #009/#021 closeout).
+const Set<String> epT61AddedGuards = <String>{
+  'test/features/kvm/platform/structural_boundary_control_agreement_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -1508,6 +1552,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT58AddedGuards,
   ...epT59AddedGuards,
   ...epT60AddedGuards,
+  ...epT61AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -3760,6 +3805,73 @@ void main() {
       expect(epT60AddedGuards.intersection(epT59AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-T61: the control-at-URI-structural-boundary cross-layer '
+        'fail-closed agreement guard is in the canonical liveness set', () {
+      expect(epT61AddedGuards, isNotEmpty);
+      expect(epT61AddedGuards.length, 1);
+      for (final String path in epT61AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T61 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epT61AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(rm15AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epP13AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(sec010AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT26AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT28AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT29AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT30AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT32AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT33AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT35AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT36AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT37AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT39AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT40AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT41AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT42AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT43AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT44AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT45AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT46AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT47AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT48AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT49AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT50AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT51AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT52AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT53AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT54AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT55AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT56AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT57AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT58AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT59AddedGuards), isEmpty);
+      expect(epT61AddedGuards.intersection(epT60AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -3836,7 +3948,8 @@ void main() {
             epT57AddedGuards.length +
             epT58AddedGuards.length +
             epT59AddedGuards.length +
-            epT60AddedGuards.length,
+            epT60AddedGuards.length +
+            epT61AddedGuards.length,
       );
     });
   });
@@ -6652,6 +6765,41 @@ void main() {
         // duplicate, no overflow at 320/800/1300 px under RTL AND a 2.0x
         // scaler, LTR/1.0x control).
         for (final String addedGuard in epT60AddedGuards) {
+          File(p(addedGuard)).deleteSync();
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'MISSING: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when deleted',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('  \n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'EMPTY: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when emptied',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+
+          File(p(addedGuard)).writeAsStringSync('void main() {}\n');
+          expect(
+            evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())
+                .any((String v) => v == 'NO_TEST_CASES: $addedGuard'),
+            isTrue,
+            reason: '$addedGuard not liveness-checked when test-stripped',
+          );
+          File(p(addedGuard)).writeAsStringSync(syntheticGuardSource);
+        }
+
+        // or stripped of tests (EP-P25 control-at-URI-structural-boundary
+        // cross-layer fail-closed agreement — a 12-case hostile matrix wedging
+        // raw C0/C1/DEL controls at every URI structural boundary plus 3 clean
+        // spellings, pinned field-for-field across classifier / launch plan /
+        // navigation gate / model, with the same-origin userinfo-NUL case
+        // pinning the `Uri.tryParse` origin differential).
+        for (final String addedGuard in epT61AddedGuards) {
           File(p(addedGuard)).deleteSync();
           expect(
             evaluateGuardSuite(readSuite(temp), verify.readAsStringSync())

@@ -15495,3 +15495,20 @@
 - Push by fast-forward only when valid credentials are available (never force-push; preserve all prior unpushed automation + rf-gate merge commits). No emulator re-run needed. Next `rf-platform-check` PASS tip merges the same way.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-24 — agent:redfish-automation — #009/#021 (EP-T61)
+
+**Done:**
+- FEATURE EP-T61 for open #009/#021: registered the post-EP-T60 EP-P25 `structural_boundary_control_agreement_test.dart` guard (3 live tests) under a fresh pinned `epT61AddedGuards` epoch in `test/tool/guard_suite_liveness_test.dart` (+canonical path, `allDesignatedGuards`, EP-T20 completeness term, containment/disjointness pin test vs all 51 earlier epochs, temp-root RED→GREEN proof, header rationale). AUDIT FIRST: the guard was live + CI-reachable but absent from BOTH the canonical set and every epoch (0 registry references), so deleting / emptying / test-stripping it stayed GREEN — a genuine "who guards the guards" gap; the prior run deferred it (write scope limited to `test/features/kvm/platform/**`).
+- Registry real-file RED: dropped only the canonical entry (epoch kept) under a 600-perm backup → exactly 3 named failures (EP-T61 pin, EP-T20 completeness, temp-root liveness via `PathNotFoundException`); restored byte-clean (SHA `255a6efd22e1365e…`, backup shredded) → 96/96 targeted GREEN.
+
+**Verification:**
+- analyze 0; full `flutter test --concurrency=4` GREEN — 2982 passed / 1 skipped (baseline 2981 +1 registry pin); issues validate OK; diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Pure test/tool "who guards the guards" registration at a genuinely unregistered guard; no live divergence, no behaviour change, no product code per §5. No issue closed (#009/#021 stay human-gated). No production UI change (§5 bans standalone UI-only runs while issues open; no manufactured churn). Never force-push, rewrite history, `git clean`, or delete files. Five pre-existing stashes untouched; no new stash (clean baseline). Remote URL carries a PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). EP-T61 is LANDED; the EP-P25 guard is now epoch-registered and no unregistered #009/#021 agreement guards remain — next AUDIT FIRST a genuinely new KVM compound seam; never churn, RED→GREEN only on a genuine divergence. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
