@@ -754,6 +754,19 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+// EP-T72 (epic #009/#021) closes one more "who guards the guards" gap found by
+// AUDIT FIRST over every live `test/**/*_test.dart` against
+// `canonicalGuardFiles` + every pinned epoch: `kvm_webui_hint_external_client_test.dart`
+// (EP-U3 — launch-guidance consistency for the per-console card, 8 live model +
+// widget cases pinning that a console needing an external client NEVER also says
+// "open via BMC web UI", one merged visible==announced node, no overflow at
+// 320/800/1300 px) is live + CI-reachable via verify.yml whole-tree
+// `flutter test --coverage` yet had ZERO registry references, so deleting /
+// emptying / test-stripping it stayed GREEN. Registered under a fresh pinned
+// `epT72AddedGuards` epoch (length 1, pairwise-disjoint from all 62 earlier
+// designations incl. EP-T71). No product code, no dependency, no WebView or
+// protocol import, no URL opened, no production TLS weakening.
+
 /// The established KVM safety guard test files, stored as repo-relative,
 /// forward-slash paths for cross-platform stability. This is the minimum set
 /// named by EP-T12; adding a new guard to this list is cheap and intentional.
@@ -1108,6 +1121,10 @@ const List<String> canonicalGuardFiles = <String>[
   // live + CI-reachable but absent from the registry until now. Registering it
   // makes deleting / emptying / test-stripping it fail closed.
   'test/features/kvm/kvm_external_notice_rtl_scale_a11y_agreement_test.dart',
+  // EP-T72 extension: the EP-U3 launch-guidance consistency guard, live +
+  // CI-reachable but absent from the registry until now; registering it makes
+  // deleting / emptying / test-stripping it fail closed.
+  'test/features/kvm/kvm_webui_hint_external_client_test.dart',
 ];
 
 /// The eight guard files named by EP-T12 (the initial canonical set). Pinned so
@@ -1840,6 +1857,17 @@ const Set<String> epT71AddedGuards = <String>{
   'test/features/kvm/kvm_external_notice_rtl_scale_a11y_agreement_test.dart',
 };
 
+/// The subset of [canonicalGuardFiles] added by EP-T72: the EP-U3 launch-
+/// guidance consistency guard (a console that needs an external client must
+/// NEVER also advertise "open via BMC web UI"; one merged visible==announced
+/// node at 320/800/1300 px). It landed live + CI-reachable but absent from the
+/// registry, so deleting / emptying / test-stripping it stayed GREEN. Pinned
+/// separately so a future edit cannot drop it back out of the canonical set
+/// (issues #009/#021 closeout).
+const Set<String> epT72AddedGuards = <String>{
+  'test/features/kvm/kvm_webui_hint_external_client_test.dart',
+};
+
 /// Every epoch-designated guard: the EP-T12 initial set plus every pinned
 /// epT*AddedGuards extension. EP-T20 requires this to equal
 /// [canonicalGuardFiles] in both directions, so a guard added directly to the
@@ -1907,6 +1935,7 @@ const Set<String> allDesignatedGuards = <String>{
   ...epT69AddedGuards,
   ...epT70AddedGuards,
   ...epT71AddedGuards,
+  ...epT72AddedGuards,
 };
 
 /// Normalizes a path for comparison (Windows separators + a leading `./`).
@@ -4952,6 +4981,84 @@ void main() {
       expect(epT71AddedGuards.intersection(epT70AddedGuards), isEmpty);
     });
 
+    test(
+        'EP-T72: the EP-U3 launch-guidance consistency guard is in the '
+        'canonical liveness set', () {
+      expect(epT72AddedGuards, isNotEmpty);
+      expect(epT72AddedGuards.length, 1);
+      for (final String path in epT72AddedGuards) {
+        expect(
+          canonicalGuardFiles,
+          contains(path),
+          reason: 'EP-T72 guard dropped from canonical set: $path',
+        );
+      }
+      // The new epoch set stays disjoint from every earlier designation so a
+      // single guard cannot satisfy the completeness invariant twice.
+      expect(epT72AddedGuards.intersection(epT12InitialGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT14AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT15AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT16AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT17AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT18AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT19AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT20AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epU16AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epM5AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epS2AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT21AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT22AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(rm14AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(rm13AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epS9AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT23AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(rm15AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epP13AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(sec010AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT26AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT28AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT29AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT30AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT32AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT33AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT35AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT36AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT37AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT39AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT40AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT41AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT42AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT43AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT44AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT45AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT46AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT47AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT48AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT49AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT50AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT51AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT52AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT53AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT54AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT55AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT56AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT57AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT58AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT59AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT60AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT61AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT62AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT63AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT64AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT65AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT66AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT67AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT68AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT69AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT70AddedGuards), isEmpty);
+      expect(epT72AddedGuards.intersection(epT71AddedGuards), isEmpty);
+    });
+
     test('EP-T20: canonical registry is exactly the union of designated guards',
         () {
       // (a) Every designated guard must remain in the canonical set — a guard
@@ -5039,7 +5146,8 @@ void main() {
             epT68AddedGuards.length +
             epT69AddedGuards.length +
             epT70AddedGuards.length +
-            epT71AddedGuards.length,
+            epT71AddedGuards.length +
+            epT72AddedGuards.length,
       );
     });
   });
