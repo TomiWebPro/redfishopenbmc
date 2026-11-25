@@ -15916,3 +15916,19 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). AUDIT FIRST a genuinely new KVM seam (never churn, RED→GREEN only on a genuine divergence); cheap DOCS anchor re-verify only; full emulator only on lib-wire / fixture / tool-runtime change or >7 days since last green 85/85. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-25 — agent:redfish-automation — #009/#021 (RM-31)
+
+**Done:**
+- FEATURE RM-31 (test-only): added `test/features/kvm/kvm_oem_no_uri_source_fallback_cross_factory_agreement_test.dart` (17 tests) pinning that `KvmConsole.fromManager` and `KvmCapability.fromManager` derive identical `sourceManagerUri` / `safeManagerUri` / `managerId` / `launchUri` / `hasSecureLaunchUri` / control-safe clipboard fallback over a 16-case matrix of OEM no-URI leaves (absent / blank / non-string / CRLF / NUL / bidi / relative / scheme-relative) plus clean-HTTPS and clean-no-URI controls.
+
+**Verification:**
+- Targeted 17/17 GREEN (clean HEAD). REAL RED: one-sided OEM default-launch-endpoint fallback injected only into `KvmConsole.fromManager` under a 600-perm backup -> exactly 11 named failures, clean-HTTPS control GREEN; source restored byte-clean (SHA `63e441141f07cf12f01b7412b198c0a2f296ab7dea632c2fc910af118196557f`, backup shredded) -> 17/17 GREEN, empty `lib/` diff. `dart format` clean; `flutter analyze` 0; full `flutter test --concurrency=4` GREEN — 3164 passed / 1 skipped (baseline 3147 +17); issues validate OK; diff --check clean; deps unchanged; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- AUDIT FIRST: both factories share `kvmManagerSourceUri` / `kvmOemConsoleUri` so they agree by construction (no live divergence), but the OEM no-URI cross-factory family was genuinely unguarded — a load-bearing regression guard, not churn. No product code per §5 (read-only model guard); no issue closed (#009/#021 stay human-gated). Tree clean at preflight — no concurrent WIP touched; no new stash, no `git clean`, no history rewrite; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed. Guard NOT epoch-registered this run (model-dept scope); deferred to the next EP-T pass, live + CI-reachable meanwhile.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). Next EP-T pass must epoch-register the new guard under a fresh pinned epoch disjoint from all earlier incl. EP-T72; then AUDIT FIRST a genuinely new KVM seam (never churn, RED→GREEN only on a genuine divergence); cheap DOCS anchor re-verify only; full emulator only on lib-wire / fixture / tool-runtime change or >7 days since last green 85/85. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
