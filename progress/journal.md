@@ -15865,3 +15865,19 @@
 **Next:** push by fast-forward only when valid credentials exist (never force-push; `main` ahead of `origin/main`); next `rf-platform-check` PASS tip merges the same way; both open issues stay human-gated on WebView + BMC TLS validation.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-25 — agent:redfish-automation — #009/#021 (EP-T71)
+
+**Done:**
+- FEATURE EP-T71 (test/tool-only): registered the post-EP-T70 newly-landed EP-U43 external-client-notice compound RTL×2.0x a11y agreement guard (`kvm_external_notice_rtl_scale_a11y_agreement_test.dart`) under a fresh pinned `epT71AddedGuards` epoch (length 1, pairwise-disjoint from all 61 earlier designations incl. EP-T70) in `test/tool/guard_suite_liveness_test.dart`: +canonical path, epoch const, `allDesignatedGuards` spread, EP-T20 completeness arithmetic term, +1 containment/disjointness pin test, +header rationale. AUDIT FIRST: the guard was live + CI-reachable via verify.yml whole-tree `flutter test --coverage` yet had 0 registry references, so deleting / emptying / test-stripping it stayed GREEN — a genuine "who guards the guards" gap deferred by its owner run's `test/features/kvm/**` write scope; no live divergence, no behaviour change, not churn.
+
+**Verification:**
+- Registry REAL RED: dropped only the canonical entry (epoch kept) under a 600-perm backup -> exactly 2 named failures (EP-T71 pin + EP-T20 completeness), restore byte-clean (SHA `6c63cbc73fccc66168cda2b913402cd4a5d0053eeca549abecea2d4b656eaabc`, backup shredded) -> 106/106 targeted GREEN. Reverse RED: dropped only the epoch spread (canonical kept) -> exactly 1 named failure (EP-T20 completeness), restore byte-clean -> 106/106 GREEN. `dart format` clean; `flutter analyze` 0; full `flutter test --concurrency=4` GREEN — 3142 passed / 1 skipped (baseline 3141 +1); issues validate OK; diff --check clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only, <7 days since last green 85/85); no WebView/protocol import, no URL opened, no production TLS weakening.
+
+**Decisions:**
+- Registry-only liveness registration at a confirmed unguarded seam; no product code per §5. No issue closed (#009/#021 stay human-gated). Tree clean at preflight — no concurrent WIP touched, no new stash, no `git clean`, no history rewrite; five pre-existing stashes untouched. Remote URL carries a PAT — never echoed, staged or committed. EP-U43 is now LANDED and epoch-registered; no unregistered #009/#021 agreement guards remain.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). AUDIT FIRST a genuinely new KVM seam (never churn, RED→GREEN only on a genuine divergence); cheap DOCS anchor re-verify only; full emulator only on lib-wire / fixture / tool-runtime change or >7 days since last green 85/85. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
