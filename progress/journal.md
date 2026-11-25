@@ -15881,3 +15881,22 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). AUDIT FIRST a genuinely new KVM seam (never churn, RED→GREEN only on a genuine divergence); cheap DOCS anchor re-verify only; full emulator only on lib-wire / fixture / tool-runtime change or >7 days since last green 85/85. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-25 — agent:rf-gate — #009/#021 (PASS merge check#13471)
+
+**Done:**
+- Sole-merger gate read `scheduler.py state rf-platform-check` → latest run #13471 `SUCCESS exit=0`, `scheduler.py report 13471` explicit `CHECK: PASS` for tip `066bed4` (Web Audio acoustic-signal exfiltration gate) in clean worktree `/home/tomi/redfish-wt/platform`. Confirmed tip not in main, clean `git merge-tree`, then `git merge --no-ff build/rf-platform` → merge `3d40e88` (parents `c855b7a` / `066bed4`), no conflicts.
+
+**Merge:**
+- First-parent diff = 4 allowlisted additive files (+237/−0): `WEBVIEW_TLS_MATRIX.md`, `webview_policy.dart` (hard always-`false` `bypassWebAudioAcousticExfiltration` getter — no AudioContext / OscillatorNode / ScriptProcessorNode / AudioWorklet privileged-data waveform, a script-driven out-of-frame acoustic channel distinct from Web Speech TTS / screen-capture / device-capability / HTTP(S) egress channels; operator audio unaffected; test-only opt-in never grants an audio stream), `validation_evidence_checklist_guard_test.dart`, `webview_policy_test.dart`. One branch-unique commit beyond merge-base `3b9b37e` (already in main via `e39e5c6`). Pre-merge `main` = `c855b7a` (ahead 84); post-merge ahead 86 — prior unpushed automation + rf-gate merge commits preserved; fast-forward push only, never force-push.
+
+**Verification:**
+- `flutter analyze` 0 (No issues found!); full `flutter test --coverage --concurrency=4` GREEN — 3146 passed / 1 skipped; `dart run tool/coverage_gate.dart coverage/lcov.info` PASS overall 90.7% (6126/6757, need 75%) / redfish+power+sensors 90.4% (2119/2345, need 80%) / kvm 97.7% (1403/1436, need 75%) / kvm-platform 97.7% (518/530, need 75%), exit 0; `python3 issues/issues.py validate` OK; first-parent `git diff --check` clean; deps unchanged; added-line TLS/secret scan clean.
+
+**Decisions:**
+- Merged ONLY the PASS-verified branch tip with `--no-ff`; no history rewrite, no `git clean`, no file deletion. A concurrent `redfish-automation` run was actively working in this repo (EP-T72 WIP in `test/tool/guard_suite_liveness_test.dart`) — that WIP was left untouched and unstaged; only the three tracking files were staged by this gate. Remote URL carries a PAT — never echoed, staged or committed. DMTF 85-test emulator skipped — policy getter + matrix doc + guard/policy tests only (no lib-wire / transport / fixture / tool-runtime change in the merge delta), <7 days since last green 85/85; no WebView activation, no URL opened, no production TLS weakened. No issue closed (#009 P3 / #021 P2 stay human-gated).
+
+**Next:**
+- Push by fast-forward only when valid credentials exist (never force-push; `main` ahead of `origin/main`); next `rf-platform-check` PASS tip merges the same way; both open issues stay human-gated on WebView + BMC TLS validation.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
