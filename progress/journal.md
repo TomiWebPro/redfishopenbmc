@@ -15948,3 +15948,54 @@
 - Push by fast-forward only when valid credentials exist (never force-push; `main` ahead 91 of `origin/main`). Next `rf-platform-check` PASS tip merges the same way. RM-31 guard still needs an EP-T epoch registration; close #021 then #009 only on human WebView + BMC TLS evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-25 — agent:redfish-automation — #009/#021 (EP-T73)
+
+**Done:**
+- FEATURE EP-T73 (test/tool-only): registered the deferred RM-31 guard
+  `test/features/kvm/kvm_oem_no_uri_source_fallback_cross_factory_agreement_test.dart`
+  (17 live tests pinning identical `sourceManagerUri` / `safeManagerUri` /
+  `managerId` / `launchUri` / clipboard-safe fallback on both `fromManager`
+  factories over an OEM no-URI leaf matrix) under a fresh pinned
+  `epT73AddedGuards` epoch (length 1, pairwise-disjoint from all 63 earlier
+  designations incl. EP-T72) in `test/tool/guard_suite_liveness_test.dart`:
+  +1 canonical path, epoch const, `allDesignatedGuards` spread, EP-T20
+  completeness arithmetic term, +1 containment/disjointness pin test, +header
+  rationale. It was live + CI-reachable via verify.yml whole-tree
+  `flutter test --coverage` yet had ZERO registry references, so deleting /
+  emptying / test-stripping it stayed GREEN — a genuine "who guards the
+  guards" gap, no live divergence, no behaviour change, not churn.
+
+**Verification:**
+- Targeted `flutter test test/tool/guard_suite_liveness_test.dart` 108/108 GREEN
+  (baseline 107 +1 EP-T73 pin). Registry REAL RED: dropped only the canonical
+  entry (epoch kept) under a 600-perm backup -> exactly 2 named failures
+  (EP-T73 pin + EP-T20 completeness 'designated guard dropped from canonical
+  set'); restored byte-clean (SHA `7fc0128f348222a85bb93c8c8fefb120bd5cb164109e4a177f4985e3f2ab39bc`
+  unchanged, backup shredded) -> 108/108 GREEN. Reverse REAL RED: dropped only
+  `...epT73AddedGuards` from `allDesignatedGuards` (canonical kept) -> exactly 1
+  named failure (EP-T20 completeness 'unpinned guard added to canonical set');
+  restored byte-clean (same SHA) -> 108/108 GREEN. `dart format` clean;
+  `flutter analyze` 0; full `flutter test --concurrency=4` GREEN — 3169 passed /
+  1 skipped (baseline 3168 +1 pin); `issues.py validate` OK; `git diff --check`
+  clean; deps unchanged; empty `lib/` diff; emulator skipped (test/tool-only,
+  <7 days since last green 85/85); no WebView/protocol import, no URL opened,
+  no production TLS weakening.
+
+**Decisions:**
+- Registry-only liveness registration at a confirmed unguarded seam; no product
+  code per §5. No issue closed (#009/#021 stay human-gated). Tree clean at
+  preflight — no concurrent WIP touched; no new stash, no `git clean`, no
+  history rewrite; five pre-existing stashes untouched. Remote URL carries a
+  PAT — never echoed, staged or committed. EP-T73 is now epoch-registered; no
+  unregistered #009/#021 agreement guard found by this audit remains.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed
+  automation + rf-gate merge commits). AUDIT FIRST a genuinely new KVM seam
+  (never churn, RED→GREEN only on a genuine divergence); cheap DOCS anchor
+  re-verify only; full emulator only on lib-wire/fixture/tool-runtime change
+  or >7 days since last green 85/85. Close #021 then #009 only on human
+  WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
