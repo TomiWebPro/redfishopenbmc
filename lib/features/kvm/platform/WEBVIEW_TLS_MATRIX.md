@@ -2320,6 +2320,39 @@ flag stays off for that target.
       (`bypassShortRangeRadioExfiltration`), as well as generic device-permission
       grants and the outbound egress allowlist (HTTP(S) network destinations).
       Verified per target before the flag is flipped.
+* [ ] **No device-sensor / covert-channel exfiltration** — the embedded WebView
+      must not let attacker-influenced console content read a device sensor
+      stream — `DeviceMotionEvent` / `DeviceOrientationEvent`, Accelerometer,
+      Gyroscope, Magnetometer, Barometer, `AmbientLightSensor` or a proximity
+      sensor — as an out-of-frame sensor signal channel. A co-resident app could
+      modulate such a sensor (or the device's motor / ambient light) to feed
+      attacker-chosen commands into the trusted frame, or console script could
+      fingerprint the device, with no socket, form POST, navigation, clipboard
+      write, screen capture or subresource request that a network egress control
+      could observe — `connect-src 'self'` does not confine it because no
+      HTTP(S) connection is opened. Console content is served by the BMC and is
+      therefore attacker-influenced: a compromised / spoofed BMC or injected
+      script must never obtain a device sensor stream, on every target, in
+      strict mode and with the flag both off and on. Verified per target
+      (attempt to read motion / orientation / ambient-light / proximity sensors
+      from console content with the flag both off and on; observe no device
+      sensor stream is granted to console content) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult (`KvmWebViewPolicy.bypassDeviceSensorExfiltration`,
+      always `false`): the opt-in never bypasses device sensor isolation —
+      console content can never use a device sensor covert channel, in strict
+      mode and with the flag both off and on. The test-only self-signed opt-in
+      relaxes ONLY the test BMC's untrusted server leaf for the expected host via
+      a scoped per-connection verifier; it must never grant a device sensor
+      stream just to make a console render or to debug it. Operator/app-initiated
+      sensor use is a separate functional path and stays unaffected. This box
+      governs the inward sensor-read / cross-app covert channel, so it is
+      distinct from the vibration haptic actuator box
+      (`bypassVibrationHapticExfiltration`) (outward motor signal), the Web Audio
+      acoustic box, the Web MIDI wired stream, the wired USB/serial/HID
+      peripheral I/O box and the short-range radio box, as well as generic
+      device-permission grants and the outbound egress allowlist (HTTP(S)
+      network destinations). Verified per target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

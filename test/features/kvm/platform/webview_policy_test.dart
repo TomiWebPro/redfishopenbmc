@@ -3638,6 +3638,7 @@ void main() {
       expect(enabledSelfSigned.bypassWebMidiExfiltration, isFalse);
       expect(enabledSelfSigned.bypassShortRangeRadioExfiltration, isFalse);
       expect(enabledSelfSigned.bypassVibrationHapticExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassDeviceSensorExfiltration, isFalse);
     });
   });
 
@@ -3733,6 +3734,101 @@ void main() {
       expect(enabledSelfSigned.bypassWebMidiExfiltration, isFalse);
       expect(enabledSelfSigned.bypassShortRangeRadioExfiltration, isFalse);
       expect(enabledSelfSigned.bypassWebAudioAcousticExfiltration, isFalse);
+    });
+  });
+
+  group('KvmWebViewPolicy — device-sensor covert channel is never available',
+      () {
+    test('production default never permits device-sensor exfiltration', () {
+      expect(
+        KvmWebViewPolicy.productionDefault.bypassDeviceSensorExfiltration,
+        isFalse,
+      );
+    });
+
+    test('test-only self-signed opt-in still denies device-sensor exfil', () {
+      // Tolerating the test BMC's untrusted server leaf relaxes ONLY that leaf's
+      // trust. It must never let attacker-influenced console content read a
+      // device sensor stream (DeviceMotion / DeviceOrientation / Accelerometer /
+      // Gyroscope / AmbientLightSensor / Proximity) as an out-of-frame covert
+      // channel relayed through a co-resident app — no socket, form POST,
+      // navigation, clipboard write, screen capture or subresource request,
+      // bypassing every network egress control. Hard invariant, flag/TLS-free.
+      expect(
+        KvmWebViewPolicy.testOptIn.bypassDeviceSensorExfiltration,
+        isFalse,
+      );
+    });
+
+    test('no policy configuration can permit device-sensor exfiltration', () {
+      const KvmWebViewPolicy enabledStrict = KvmWebViewPolicy(enabled: true);
+      const KvmWebViewPolicy enabledSelfSigned = KvmWebViewPolicy(
+        enabled: true,
+        tlsMode: KvmWebViewTlsMode.testOptInSelfSigned,
+      );
+      expect(enabledStrict.bypassDeviceSensorExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassDeviceSensorExfiltration, isFalse);
+      expect(enabledSelfSigned.acceptsSelfSigned, isTrue);
+      // Every other hard invariant stays independent of the sensor surface:
+      // the test-only opt-in can disable none of them.
+      expect(enabledSelfSigned.bypassHostnameVerification, isFalse);
+      expect(enabledSelfSigned.bypassCertificatePinning, isFalse);
+      expect(enabledSelfSigned.bypassTlsProtocolFloor, isFalse);
+      expect(enabledSelfSigned.bypassHttpsOnlyTransport, isFalse);
+      expect(enabledSelfSigned.bypassCertificateRevocationCheck, isFalse);
+      expect(enabledSelfSigned.bypassValidatedOriginBinding, isFalse);
+      expect(enabledSelfSigned.bypassPlatformTrustStoreIntegrity, isFalse);
+      expect(enabledSelfSigned.bypassClientCertificateValidation, isFalse);
+      expect(enabledSelfSigned.bypassStrictReferrerPolicy, isFalse);
+      expect(enabledSelfSigned.bypassMixedContentBlocking, isFalse);
+      expect(enabledSelfSigned.bypassLogRedaction, isFalse);
+      expect(enabledSelfSigned.bypassSensitiveDataAtRestProtection, isFalse);
+      expect(enabledSelfSigned.bypassNativeBridgeIsolation, isFalse);
+      expect(enabledSelfSigned.bypassPrivateNetworkEgressProtection, isFalse);
+      expect(enabledSelfSigned.bypassCookieIsolation, isFalse);
+      expect(enabledSelfSigned.bypassWebViewRemoteDebugging, isFalse);
+      expect(enabledSelfSigned.bypassDevicePermissionControls, isFalse);
+      expect(enabledSelfSigned.bypassHttpAuthChallengeDenial, isFalse);
+      expect(enabledSelfSigned.bypassLocalFileAccess, isFalse);
+      expect(enabledSelfSigned.bypassOutboundEgressAllowlist, isFalse);
+      expect(enabledSelfSigned.bypassCrossOriginFormSubmission, isFalse);
+      expect(enabledSelfSigned.bypassSslErrorRejection, isFalse);
+      expect(enabledSelfSigned.bypassTopLevelNavigationConfinement, isFalse);
+      expect(enabledSelfSigned.bypassArbitraryFileDownload, isFalse);
+      expect(enabledSelfSigned.bypassAutofillCredentialCapture, isFalse);
+      expect(enabledSelfSigned.bypassFileChooserAccess, isFalse);
+      expect(enabledSelfSigned.bypassTapjackingProtection, isFalse);
+      expect(enabledSelfSigned.bypassJavaScriptDialogDenial, isFalse);
+      expect(enabledSelfSigned.bypassServiceWorkerRegistration, isFalse);
+      expect(enabledSelfSigned.bypassPrintExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassInputCaptureProtection, isFalse);
+      expect(enabledSelfSigned.bypassPictureInPictureEscape, isFalse);
+      expect(enabledSelfSigned.bypassShareCastExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassClipboardIsolation, isFalse);
+      expect(enabledSelfSigned.bypassCrossOriginMessagingIsolation, isFalse);
+      expect(enabledSelfSigned.bypassScreenCaptureProtection, isFalse);
+      expect(enabledSelfSigned.bypassHyperlinkAuditingExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassCredentialManagementApiAccess, isFalse);
+      expect(enabledSelfSigned.bypassSpeculationRulesEgress, isFalse);
+      expect(enabledSelfSigned.bypassNotificationApiAccess, isFalse);
+      expect(enabledSelfSigned.bypassWebRtcDataChannelExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassFileSystemAccessApi, isFalse);
+      expect(enabledSelfSigned.bypassWebTransportExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassPeripheralIoExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassCssExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassHtmlSubresourceExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassWorkerScriptExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassBaseUriHijacking, isFalse);
+      expect(enabledSelfSigned.bypassDragAndDropExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassWindowNameExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassDnsExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassSvgExternalResourceExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassSpeechSynthesisExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassDynamicModuleImportExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassWebMidiExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassShortRangeRadioExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassWebAudioAcousticExfiltration, isFalse);
+      expect(enabledSelfSigned.bypassVibrationHapticExfiltration, isFalse);
     });
   });
 

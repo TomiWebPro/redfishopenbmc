@@ -192,6 +192,13 @@
 // the opt-in never grants a vibration actuator to attacker-influenced console
 // content — distinct from Web Audio acoustic, Web MIDI wired, peripheral-I/O
 // wired and short-range radio boxes, device-permission grants and egress),
+// no-device-sensor/covert-channel exfiltration (DeviceMotion / DeviceOrientation
+// / Accelerometer / Gyroscope / AmbientLightSensor / Proximity as an out-of-frame
+// sensor signal channel relayed through a co-resident app; no socket, form POST,
+// navigation, clipboard write, screen capture or subresource request; hard
+// configuration-independent invariant; the opt-in never exposes a device sensor
+// stream to attacker-influenced console content — distinct from the vibration
+// haptic, Web Audio acoustic, Web MIDI and radio boxes and device grants),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -1386,6 +1393,35 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'opt-in-keeps-vibration-denied',
     marker: 'never grant a vibration'
+  ),
+  // No device-sensor / covert-channel exfiltration: an out-of-frame sensor
+  // signal channel (motion / orientation / ambient-light / proximity streams),
+  // distinct from the vibration haptic, Web Audio acoustic, Web MIDI wired and
+  // radio boxes, generic device grants and HTTP(S) egress.
+  (name: 'no-device-sensor-exfil', marker: 'device sensor'),
+  (name: 'no-devicemotion-stream', marker: 'devicemotion'),
+  (name: 'ambient-light-sensor', marker: 'ambientlightsensor'),
+  (name: 'proximity-sensor', marker: 'proximity sensor'),
+  (name: 'sensor-covert-channel', marker: 'covert channel'),
+  (
+    name: 'sensor-out-of-frame-channel',
+    marker: 'sensor signal channel'
+  ),
+  (
+    name: 'sensor-never-bypassed',
+    marker: 'never bypasses device sensor'
+  ),
+  (
+    name: 'sensor-policy-getter',
+    marker: 'bypassdevicesensorexfiltration'
+  ),
+  (
+    name: 'sensor-distinct-from-vibration',
+    marker: 'distinct from the vibration'
+  ),
+  (
+    name: 'opt-in-keeps-sensor-denied',
+    marker: 'never grant a device sensor'
   ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -3014,6 +3050,31 @@ void main() {
       expect(missing, contains('vibration-policy-getter'));
       expect(missing, contains('vibration-distinct-from-audio'));
       expect(missing, contains('opt-in-keeps-vibration-denied'));
+    });
+
+    test('RED: dropping the no-device-sensor covert-channel box fails closed',
+        () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutSensors = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'device sensor|devicemotion|ambientlightsensor|'
+              r'proximity sensor|covert channel|sensor signal channel|'
+              r'never bypasses device sensor|bypassdevicesensorexfiltration|'
+              r'distinct from the vibration|never grant a device sensor')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutSensors);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-device-sensor-exfil'));
+      expect(missing, contains('no-devicemotion-stream'));
+      expect(missing, contains('ambient-light-sensor'));
+      expect(missing, contains('proximity-sensor'));
+      expect(missing, contains('sensor-covert-channel'));
+      expect(missing, contains('sensor-out-of-frame-channel'));
+      expect(missing, contains('sensor-never-bypassed'));
+      expect(missing, contains('sensor-policy-getter'));
+      expect(missing, contains('sensor-distinct-from-vibration'));
+      expect(missing, contains('opt-in-keeps-sensor-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
