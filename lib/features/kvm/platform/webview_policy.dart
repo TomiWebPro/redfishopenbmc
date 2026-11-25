@@ -2205,6 +2205,44 @@ class KvmWebViewPolicy {
   /// (RP-1).
   bool get bypassWebAudioAcousticExfiltration => false;
 
+  /// Always `false`: the Vibration API / haptic-actuator signal channel is
+  /// NEVER available to attacker-influenced console content, not even by the
+  /// test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content use the
+  /// Vibration API (`navigator.vibrate` / a platform haptic actuator) to emit a
+  /// script-generated vibration pattern encoding privileged management-session
+  /// data (KVM frame handles, session tokens, operator credentials, managed-host
+  /// inventory) through the device's vibration motor for a co-resident sensor or
+  /// nearby observer to receive. This is a script-driven, out-of-frame haptic
+  /// signal channel that bypasses every network egress control and needs no
+  /// socket, form POST, navigation, clipboard write, screen capture or
+  /// subresource request, so a `connect-src 'self'` allowlist alone does not
+  /// confine it. Console content is served by the BMC and is therefore
+  /// attacker-influenced: a compromised / spoofed BMC or injected script must
+  /// never reach a vibration actuator or emit a haptic pattern, on every target,
+  /// in strict mode and with the flag both off and on.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content emit a privileged-data haptic signal. The test-only self-signed
+  /// opt-in relaxes ONLY that leaf's trust for the expected host via a scoped
+  /// per-connection verifier; it must never grant a vibration actuator just to
+  /// make a console render or to debug it. Operator/app-initiated haptics are a
+  /// separate functional path and stay unaffected.
+  ///
+  /// This box governs the tactile / haptic actuator channel, so it is distinct
+  /// from the Web Audio acoustic-signal box
+  /// ([bypassWebAudioAcousticExfiltration]) (speaker-to-microphone waveform),
+  /// the Web MIDI byte stream ([bypassWebMidiExfiltration]) and wired
+  /// USB/serial/HID peripheral I/O ([bypassPeripheralIoExfiltration]), and the
+  /// short-range radio box ([bypassShortRangeRadioExfiltration]) (proximity
+  /// wireless), as well as generic device-permission grants
+  /// ([bypassDevicePermissionControls]) and the HTTP(S) outbound egress
+  /// allowlist ([bypassOutboundEgressAllowlist]). See `WEBVIEW_TLS_MATRIX.md`
+  /// (RP-1).
+  bool get bypassVibrationHapticExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
