@@ -15999,3 +15999,54 @@
   WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-25 — agent:redfish-automation — #009/#021 (EP-U44)
+
+**Done:**
+- FEATURE EP-U44 (test-only): added
+  `test/features/kvm/kvm_insecure_transport_notice_rtl_scale_a11y_agreement_test.dart`
+  (11 tests) closing a genuinely unguarded compound a11y seam — the shared
+  `kvmInsecureTransportNotice` ("Unencrypted HTTP console URI") warning was
+  single-sourced + LTR/1.0x spot-checked but never driven through RTL x 2.0x
+  on both operator cards + the viewer. Pins: one merged visible==announced
+  `excludeSemantics` node per real card at 320/800/1300 px under RTL + 2.0x,
+  no reworded screen-reader-only warning, viewer's distinct merged
+  launch-status node byte-exact, both `fromManager` factories agree the body
+  is insecure, LTR/1.0x control. No product code, no dependency, no URL
+  opened, no WebView/protocol import, no production TLS weakening.
+
+**Verification:**
+- Targeted 11/11 GREEN on clean HEAD. Real-file RED: one-sided RTL-gated
+  reword of ONLY the capability card's announced warning under a 600-perm
+  backup -> exactly 6 named failures (3 'both cards' + 3 'capability card'
+  RTL/2.0x tests), model/viewer/LTR controls GREEN; 155 sibling tests GREEN
+  under mutation (confirming the seam was genuinely unguarded); source
+  restored byte-clean (SHA
+  `c6c4b09abeca88169859b85a6dc3999c963c9acd50b3ffd9716a1018d74d9b00`
+  unchanged, 0 residue, empty `lib/` diff, backup shredded) -> 11/11 GREEN.
+  `dart format` clean; `flutter analyze` 0; full `flutter test --concurrency=4`
+  GREEN — 3180 passed / 1 skipped (baseline 3169 +11); `issues.py validate`
+  OK; `git diff --check` clean; deps unchanged; empty `lib/` diff; emulator
+  skipped (test-only, <7 days since last green 85/85).
+
+**Decisions:**
+- New UI a11y guard lives inside the #009/#021 FEATURE issue per §5 (no
+  standalone UI-only run, no manufactured churn). Guard NOT epoch-registered
+  this run (standard deferral; live + CI-reachable meanwhile) — next EP-T
+  pass must register under a fresh pinned epoch disjoint from EP-T73 and all
+  earlier. No issue closed (#009/#021 stay human-gated). Tree clean at
+  preflight; no concurrent WIP touched; no new stash, no `git clean`, no
+  history rewrite; five pre-existing stashes untouched. Remote URL carries a
+  PAT — never echoed, staged or committed.
+
+**Next:**
+- Push the single commit (never force-push; preserve all prior unpushed
+  automation + rf-gate merge commits). Next EP-T pass: AUDIT FIRST and
+  register `kvm_insecure_transport_notice_rtl_scale_a11y_agreement_test.dart`
+  under a fresh pinned epoch; then AUDIT FIRST a genuinely new KVM seam
+  (never churn, RED→GREEN only on a genuine divergence); cheap DOCS anchor
+  re-verify only; full emulator only on lib-wire/fixture/tool-runtime change
+  or >7 days since last green 85/85. Close #021 then #009 only on human
+  WebView + BMC TLS validation evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.

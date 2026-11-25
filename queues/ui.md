@@ -5,6 +5,43 @@ Verify: widget tests (320/800/1300 no-overflow, visible text == announced Semant
 
 ## Backlog (head first)
 
+
+- [x] EP-U44 Compound RTL x 2.0x insecure-transport-notice a11y agreement across both KVM
+        operator cards + viewer — **LANDED (run 2026-11-25 02:51 UTC, agent:redfish-automation,
+        test-only, dependency-free, TLS-safe)**: AUDIT FIRST — the shared
+        `kvmInsecureTransportNotice` copy is single-sourced by `kvm_transport_notice.dart` and
+        mechanically pinned by `test/tool/notice_single_source_guard_test.dart`, and both cards'
+        LTR/1.0x rendering is spot-checked in `kvm_capability_card_test.dart` / `kvm_widget_test.dart`
+        / `kvm_open_affordance_gating_test.dart`, but the RTL x 2.0x compound family (EP-U31..U43)
+        drove chips / display names / the two shared notices / the external-client notice / the raw
+        URI / the session-limit row / the Primary badge / the manager-source row / the copy
+        affordance — NEVER the insecure-transport warning row. Added
+        `test/features/kvm/kvm_insecure_transport_notice_rtl_scale_a11y_agreement_test.dart`
+        (11 tests): both `fromManager` factories agree the plaintext-HTTP body is insecure; one
+        merged visible==announced `excludeSemantics` node with byte-exact warning on each real
+        card at 320/800/1300 px under RTL+2.0x; no reworded screen-reader-only warning; the
+        viewer's distinct merged launch-status node byte-exact; LTR/1.0x control. REAL RED:
+        one-sided RTL-gated reword of ONLY the capability card's announced warning (600-perm
+        backup) -> exactly 6 named failures (3 'both cards' + 3 'capability card' RTL/2.0x tests),
+        viewer/model/LTR controls GREEN and 155 sibling tests
+        (`kvm_capability_card_test.dart` / `kvm_widget_test.dart` /
+        `kvm_open_affordance_gating_test.dart` / `kvm_external_notice_cross_surface_agreement_test.dart`
+        / `notice_single_source_guard_test.dart`) GREEN under mutation; source restored byte-clean
+        (SHA `c6c4b09abeca88169859b85a6dc3999c963c9acd50b3ffd9716a1018d74d9b00` unchanged, empty
+        `lib/` diff, backup shredded) -> 11/11 GREEN. Analyze 0; full suite 3180 passed / 1 skipped
+        (baseline 3169 +11); issues validate OK; diff --check clean; deps unchanged; empty `lib/`
+        diff; emulator skipped (test-only, <7 days since last green 85/85); no WebView/protocol
+        import, no URL opened, no production TLS weakening. Guard NOT epoch-registered this run
+        (deferred to the next EP-T pass; live + CI-reachable meanwhile). Original item:
+        pump a plaintext-HTTP console through the per-console card, the capability card and
+        `KvmConsoleViewerPage` under `Directionality.rtl` + `MediaQuery.textScaler` 2.0x at
+        320/800/1300 px, pinning that each operator card surfaces ONE merged `excludeSemantics`
+        node whose visible text == announced `kvmInsecureTransportNotice`, byte-identical on both
+        cards, no duplicate / screen-reader-only / split node, no raw control or bidi byte leaked,
+        no overflow, with the viewer's intentionally distinct launch-status node byte-exact and
+        unchanged LTR / 1.0x controls. AUDIT FIRST; RED->GREEN only on a genuine divergence, never
+        churn. Display-only; the human-gated WebView/TLS rendering (EP-P1/P2/P4) stays gated.
+
 <!-- rf-ideate split 2026-11-24 23:23 UTC: another fresh, display-only, unblocked slice of the
      still-open #009/#021 closeout (never-empty-well a11y, MULTI_DEPT hard rule 10). #021's
      OEM/no-URI acceptance requires a clear, actionable "open externally" notice with the URI on
