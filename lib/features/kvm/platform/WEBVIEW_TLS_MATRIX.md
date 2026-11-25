@@ -2249,6 +2249,43 @@ flag stays off for that target.
       outbound egress allowlist (`bypassOutboundEgressAllowlist`) (HTTP(S)
       network destinations, not a nearby radio peer). Verified per target before
       the flag is flipped.
+* [ ] **No Web Audio / AudioWorklet acoustic-signal exfiltration** — the
+      embedded WebView must not let attacker-influenced console content use the
+      Web Audio API to emit a script-generated acoustic signal carrying
+      privileged management-session data (KVM frame handles, session tokens,
+      operator credentials, managed-host inventory): no `AudioContext` /
+      `OfflineAudioContext`, no `OscillatorNode` / `GainNode` tone generation and
+      no `ScriptProcessorNode` / `AudioWorklet` sample callback that encodes data
+      into an audible or ultrasonic waveform emitted through the device speaker
+      for a nearby microphone or co-resident app to receive. This is a
+      script-driven, out-of-frame acoustic-signal channel that bypasses every
+      network egress control and needs no socket, form POST, navigation,
+      clipboard write, screen capture or subresource request — `connect-src
+      'self'` does not confine it because no HTTP(S) connection is opened.
+      Console content is served by the BMC and is therefore attacker-influenced:
+      a compromised / spoofed BMC or injected script must never obtain an audio
+      rendering context or emit a waveform, on every target, in strict mode and
+      with the flag both off and on. Verified per target (attempt to create an
+      `AudioContext`, start an oscillator and post samples through an
+      `AudioWorklet` with the flag both off and on; observe the Console app
+      grants no audio output to console content) before the flag is flipped.
+      This is a hard, configuration-independent invariant that a future WebView
+      consumer can consult
+      (`KvmWebViewPolicy.bypassWebAudioAcousticExfiltration`, always `false`):
+      the opt-in never bypasses Web Audio acoustic-signal exfiltration — console
+      content can never emit a privileged-data waveform, in strict mode and
+      with the flag both off and on. The test-only self-signed opt-in relaxes
+      ONLY the test BMC's untrusted server leaf for the expected host, via a
+      scoped per-connection verifier; it must never grant a Web Audio stream
+      just to make a console render or to debug it. Operator/app-initiated audio
+      playback is a separate functional path and stays unaffected. This box
+      governs raw waveform / signal generation, so it is distinct from the Web
+      Speech / speech-synthesis box (`bypassSpeechSynthesisExfiltration`), which
+      governs text-to-speech reading of console DOM text, and is distinct from
+      screen/window capture, OS notification, share / remote-cast and clipboard
+      output channels, from device-capability grants (camera / microphone) and
+      from the outbound egress allowlist (HTTP(S) network destinations).
+      Verified per target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 

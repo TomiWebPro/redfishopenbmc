@@ -2164,6 +2164,47 @@ class KvmWebViewPolicy {
   /// (RP-1).
   bool get bypassShortRangeRadioExfiltration => false;
 
+  /// Always `false`: the Web Audio / AudioWorklet acoustic-signal channel is
+  /// NEVER available to attacker-influenced console content, not even by the
+  /// test-only self-signed opt-in.
+  ///
+  /// The embedded WebView must not let remote BMC console content use the Web
+  /// Audio API to emit a script-generated acoustic signal carrying privileged
+  /// management-session data (KVM frame handles, session tokens, operator
+  /// credentials, managed-host inventory): no `AudioContext` /
+  /// `OfflineAudioContext`, no `OscillatorNode` / `GainNode` tone generation and
+  /// no `ScriptProcessorNode` / `AudioWorklet` sample callback encoding data
+  /// into an audible or ultrasonic waveform emitted through the device speaker
+  /// for a nearby microphone or co-resident app to receive. This is a
+  /// script-driven, out-of-frame acoustic-signal channel that bypasses every
+  /// network egress control and needs no socket, form POST, navigation,
+  /// clipboard write, screen capture or subresource request, so a
+  /// `connect-src 'self'` allowlist alone does not confine it. Console content
+  /// is served by the BMC and is therefore attacker-influenced: a compromised /
+  /// spoofed BMC or injected script must never obtain an audio rendering
+  /// context or emit a waveform, on every target, in strict mode and with the
+  /// flag both off and on.
+  ///
+  /// This is a hard, configuration-independent invariant, so a future WebView
+  /// consumer can consult it and can never obtain a policy that lets console
+  /// content emit a privileged-data waveform. The test-only self-signed opt-in
+  /// relaxes ONLY that leaf's trust for the expected host via a scoped
+  /// per-connection verifier; it must never grant a Web Audio stream just to
+  /// make a console render or to debug it. Operator/app-initiated audio
+  /// playback is a separate functional path and stays unaffected.
+  ///
+  /// This box governs raw waveform / signal generation, so it is distinct from
+  /// the Web Speech / speech-synthesis box ([bypassSpeechSynthesisExfiltration]),
+  /// which governs text-to-speech reading of console DOM text, and is distinct
+  /// from screen/window capture ([bypassScreenCaptureProtection]), OS
+  /// notification ([bypassNotificationApiAccess]), share / remote-cast
+  /// ([bypassShareCastExfiltration]) and clipboard ([bypassClipboardIsolation])
+  /// output channels, from device-capability grants such as camera / microphone
+  /// ([bypassDevicePermissionControls]) and from the HTTP(S) outbound egress
+  /// allowlist ([bypassOutboundEgressAllowlist]). See `WEBVIEW_TLS_MATRIX.md`
+  /// (RP-1).
+  bool get bypassWebAudioAcousticExfiltration => false;
+
   /// Whether an in-app WebView may render this console.
   ///
   /// In-app rendering requires the opt-in flag AND an enabled, HTML5 console
