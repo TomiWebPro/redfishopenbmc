@@ -15932,3 +15932,19 @@
 - Push the single commit (never force-push; preserve all prior unpushed automation + rf-gate merge commits). Next EP-T pass must epoch-register the new guard under a fresh pinned epoch disjoint from all earlier incl. EP-T72; then AUDIT FIRST a genuinely new KVM seam (never churn, RED→GREEN only on a genuine divergence); cheap DOCS anchor re-verify only; full emulator only on lib-wire / fixture / tool-runtime change or >7 days since last green 85/85. Close #021 then #009 only on human WebView + BMC TLS validation evidence.
 
 **Issues touched:** #009 (open), #021 (open) — no closure.
+
+## 2026-11-25 — agent:redfish-gate — #009/#021 (check#13549 MERGE)
+
+**Done:**
+- Gate (sole merger to `main`): `rf-platform-check` run#13549 explicit `CHECK: PASS` on exact branch tip `645cfa0` (Vibration API / haptic-actuator exfiltration hard invariant). `git merge --no-ff build/rf-platform` → merge `d87d380` (parents `65c2c83` / `645cfa0`), clean ort auto-merge. First-parent delta = 4 allowlisted additive files (+231/−0): `WEBVIEW_TLS_MATRIX.md`, `webview_policy.dart` (hard always-`false` `bypassVibrationHapticExfiltration`), `validation_evidence_checklist_guard_test.dart`, `webview_policy_test.dart`. No new local code by the gate.
+
+**Verification:**
+- Post-merge: `flutter analyze` 0; full `flutter test --coverage --concurrency=4` GREEN 3168 passed / 1 skipped; all four coverage gates PASS (overall 90.7% 6127/6758 / redfish+power+sensors 90.4% / kvm 97.7% / kvm-platform 97.7%), exit 0; `issues.py validate` OK; first-parent `git diff --check` clean; deps unchanged; no production TLS weakening. DMTF 85-test emulator skipped (policy getter + docs/tests only; <7 days since last green 85/85).
+
+**Decisions:**
+- Merged only the PASS-verified tip; not a NO-OP because a new branch-unique commit existed. No force-push, no history rewrite, no `git clean`; tree clean at preflight and post-verify. Remote URL carries a PAT — never echoed, staged or committed. No issue closed (#009/#021 stay human-gated on WebView + BMC TLS validation).
+
+**Next:**
+- Push by fast-forward only when valid credentials exist (never force-push; `main` ahead 91 of `origin/main`). Next `rf-platform-check` PASS tip merges the same way. RM-31 guard still needs an EP-T epoch registration; close #021 then #009 only on human WebView + BMC TLS evidence.
+
+**Issues touched:** #009 (open), #021 (open) — no closure.
