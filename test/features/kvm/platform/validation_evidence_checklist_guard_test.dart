@@ -177,6 +177,14 @@
 // short-range radio stream — distinct from the wired USB/serial/HID peripheral
 // I/O box, the MIDI byte-stream box, generic device-permission prompts and
 // programmatic egress),
+// no-Web-Audio/audioWorklet acoustic-signal exfiltration (AudioContext /
+// oscillator / ScriptProcessorNode / AudioWorklet; a script-generated audible
+// or ultrasonic waveform emitted through the device speaker to a nearby
+// microphone, with no socket, form POST, navigation or subresource request;
+// hard configuration-independent invariant; the opt-in never lets attacker-
+// influenced console content emit a privileged-data waveform — distinct from
+// the Web Speech text-to-speech box, screen/notification/share/clipboard output,
+// device-capability grants and programmatic egress),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -1312,6 +1320,35 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'opt-in-keeps-short-range-denied',
     marker: 'never grant a short-range radio'
+  ),
+  // No Web Audio / AudioWorklet acoustic-signal exfiltration: a script-driven
+  // raw-waveform channel through the device speaker (AudioContext / oscillator /
+  // ScriptProcessorNode / AudioWorklet sample callbacks, audible or ultrasonic),
+  // distinct from the Web Speech text-to-speech box, pixel/notification/share
+  // output channels, device-capability grants and HTTP(S) egress.
+  (name: 'no-web-audio-acoustic-exfil', marker: 'web audio api'),
+  (name: 'no-audio-context', marker: 'audiocontext'),
+  (name: 'no-oscillator', marker: 'oscillator'),
+  (name: 'no-audio-worklet', marker: 'audioworklet'),
+  (name: 'no-script-processor', marker: 'scriptprocessor'),
+  (name: 'acoustic-ultrasonic', marker: 'ultrasonic'),
+  (name: 'acoustic-device-speaker', marker: 'device speaker'),
+  (name: 'acoustic-microphone-observer', marker: 'nearby microphone'),
+  (
+    name: 'web-audio-never-bypassed',
+    marker: 'never bypasses web audio'
+  ),
+  (
+    name: 'web-audio-policy-getter',
+    marker: 'bypasswebaudioacousticexfiltration'
+  ),
+  (
+    name: 'web-audio-distinct-from-speech',
+    marker: 'distinct from the web speech'
+  ),
+  (
+    name: 'opt-in-keeps-web-audio-denied',
+    marker: 'never grant a web audio'
   ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -2888,6 +2925,32 @@ void main() {
       expect(missing, contains('short-range-policy-getter'));
       expect(missing, contains('short-range-distinct-from-peripheral-io'));
       expect(missing, contains('opt-in-keeps-short-range-denied'));
+    });
+
+    test('RED: dropping the no-Web-Audio acoustic-signal box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutWebAudio = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'web audio|audiocontext|oscillator|audioworklet|'
+              r'scriptprocessor|ultrasonic|device speaker|nearby microphone|'
+              r'never bypasses web audio|bypasswebaudioacousticexfiltration|'
+              r'distinct from the web speech|never grant a web audio')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutWebAudio);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-web-audio-acoustic-exfil'));
+      expect(missing, contains('no-audio-context'));
+      expect(missing, contains('no-oscillator'));
+      expect(missing, contains('no-audio-worklet'));
+      expect(missing, contains('no-script-processor'));
+      expect(missing, contains('acoustic-ultrasonic'));
+      expect(missing, contains('acoustic-device-speaker'));
+      expect(missing, contains('acoustic-microphone-observer'));
+      expect(missing, contains('web-audio-never-bypassed'));
+      expect(missing, contains('web-audio-policy-getter'));
+      expect(missing, contains('web-audio-distinct-from-speech'));
+      expect(missing, contains('opt-in-keeps-web-audio-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {
