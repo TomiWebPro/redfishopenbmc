@@ -185,6 +185,13 @@
 // influenced console content emit a privileged-data waveform — distinct from
 // the Web Speech text-to-speech box, screen/notification/share/clipboard output,
 // device-capability grants and programmatic egress),
+// no-Vibration-API/haptic-actuator exfiltration (navigator.vibrate / a platform
+// haptic actuator emitting a script-driven vibration pattern through the device
+// motor for a co-resident sensor or nearby observer, with no socket, form POST,
+// navigation or subresource request; hard configuration-independent invariant;
+// the opt-in never grants a vibration actuator to attacker-influenced console
+// content — distinct from Web Audio acoustic, Web MIDI wired, peripheral-I/O
+// wired and short-range radio boxes, device-permission grants and egress),
 // no-js-dialog/modal spoofing (alert/confirm/prompt/beforeunload; hard
 // configuration-independent invariant; the opt-in never permits an unlabelled
 // JavaScript dialog or a blocking beforeunload for attacker-influenced content),
@@ -1349,6 +1356,36 @@ const List<({String name, String marker})> evidenceChecks =
   (
     name: 'opt-in-keeps-web-audio-denied',
     marker: 'never grant a web audio'
+  ),
+  // No Vibration API / haptic-actuator exfiltration: a script-driven tactile
+  // signal channel through the device vibration motor, distinct from the Web
+  // Audio acoustic, Web MIDI wired, peripheral-I/O wired and short-range radio
+  // boxes, device-permission grants and HTTP(S) egress.
+  (name: 'no-vibration-haptic-exfil', marker: 'vibration api'),
+  (name: 'no-navigator-vibrate', marker: 'navigator.vibrate'),
+  (name: 'haptic-actuator', marker: 'haptic actuator'),
+  (name: 'haptic-pattern-encoding', marker: 'vibration pattern'),
+  (name: 'haptic-coresident-sensor', marker: 'co-resident sensor'),
+  (name: 'haptic-nearby-observer', marker: 'nearby observer'),
+  (
+    name: 'haptic-out-of-frame-channel',
+    marker: 'haptic signal channel'
+  ),
+  (
+    name: 'vibration-never-bypassed',
+    marker: 'never bypasses vibration'
+  ),
+  (
+    name: 'vibration-policy-getter',
+    marker: 'bypassvibrationhapticexfiltration'
+  ),
+  (
+    name: 'vibration-distinct-from-audio',
+    marker: 'distinct from the web audio'
+  ),
+  (
+    name: 'opt-in-keeps-vibration-denied',
+    marker: 'never grant a vibration'
   ),
   (name: 'human-sign-off', marker: 'sign-off'),
   (name: 'no-approval-granted', marker: 'no approval'),
@@ -2951,6 +2988,32 @@ void main() {
       expect(missing, contains('web-audio-policy-getter'));
       expect(missing, contains('web-audio-distinct-from-speech'));
       expect(missing, contains('opt-in-keeps-web-audio-denied'));
+    });
+
+    test('RED: dropping the no-Vibration haptic-signal box fails closed', () {
+      final String section = rawEvidenceSection(realMatrix);
+      final String withoutVibration = section
+          .split('\n')
+          .where((String line) => !line.toLowerCase().contains(RegExp(
+              r'vibration api|navigator\.vibrate|haptic actuator|'
+              r'vibration pattern|co-resident sensor|nearby observer|'
+              r'haptic signal channel|never bypasses vibration|'
+              r'bypassvibrationhapticexfiltration|distinct from the web audio|'
+              r'never grant a vibration')))
+          .join('\n');
+      final String neutered = matrixWithSection(realMatrix, withoutVibration);
+      final List<String> missing = missingEvidenceMarkers(neutered);
+      expect(missing, contains('no-vibration-haptic-exfil'));
+      expect(missing, contains('no-navigator-vibrate'));
+      expect(missing, contains('haptic-actuator'));
+      expect(missing, contains('haptic-pattern-encoding'));
+      expect(missing, contains('haptic-coresident-sensor'));
+      expect(missing, contains('haptic-nearby-observer'));
+      expect(missing, contains('haptic-out-of-frame-channel'));
+      expect(missing, contains('vibration-never-bypassed'));
+      expect(missing, contains('vibration-policy-getter'));
+      expect(missing, contains('vibration-distinct-from-audio'));
+      expect(missing, contains('opt-in-keeps-vibration-denied'));
     });
 
     test('RED: erasing the human sign-off fails closed', () {

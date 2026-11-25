@@ -2319,6 +2319,40 @@ flag stays off for that target.
       output channels, from device-capability grants (camera / microphone) and
       from the outbound egress allowlist (HTTP(S) network destinations).
       Verified per target before the flag is flipped.
+* [ ] **No Vibration API / haptic-actuator exfiltration** — the embedded WebView
+      must not let attacker-influenced console content use the Vibration API
+      (`navigator.vibrate` / a platform haptic actuator) to emit a script-generated
+      vibration pattern encoding privileged management-session data (KVM frame
+      handles, session tokens, operator credentials, managed-host inventory)
+      through the device's vibration motor for a co-resident sensor or nearby
+      observer to receive. This is a script-driven, out-of-frame haptic signal
+      channel that bypasses every network egress control and needs no socket,
+      form POST, navigation, clipboard write, screen capture or subresource
+      request — `connect-src 'self'` does not confine it because no HTTP(S)
+      connection is opened. Console content is served by the BMC and is therefore
+      attacker-influenced: a compromised / spoofed BMC or injected script must
+      never reach a haptic actuator or emit a vibration pattern, on every target,
+      in strict mode and with the flag both off and on. Verified per target
+      (attempt `navigator.vibrate` from console content with the flag both off
+      and on; observe the Console app grants no haptic actuator to console
+      content) before the flag is flipped. This is a hard,
+      configuration-independent invariant that a future WebView consumer can
+      consult (`KvmWebViewPolicy.bypassVibrationHapticExfiltration`, always
+      `false`): the opt-in never bypasses Vibration API haptic exfiltration —
+      console content can never emit a privileged-data haptic signal, in strict
+      mode and with the flag both off and on. The test-only self-signed opt-in
+      relaxes ONLY the test BMC's untrusted server leaf for the expected host, via
+      a scoped per-connection verifier; it must never grant a vibration actuator
+      just to make a console render or to debug it. Operator/app-initiated haptics
+      are a separate functional path and stay unaffected. This box governs the
+      tactile / haptic actuator channel, so it is distinct from the Web Audio
+      acoustic-signal box (`bypassWebAudioAcousticExfiltration`), which governs a
+      speaker-to-microphone waveform, and from the Web MIDI wired byte stream
+      (`bypassWebMidiExfiltration`), the wired USB/serial/HID peripheral I/O box
+      (`bypassPeripheralIoExfiltration`) and the short-range radio box
+      (`bypassShortRangeRadioExfiltration`), as well as generic device-permission
+      grants and the outbound egress allowlist (HTTP(S) network destinations).
+      Verified per target before the flag is flipped.
 * [ ] **Flag-off fallback** — with the opt-in flag off, the external secure
       browser + copy path still works unchanged and no in-app render occurs.
 
